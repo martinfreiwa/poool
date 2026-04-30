@@ -11,6 +11,9 @@ pub async fn api_admin_users(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "users.view").await?;
+    admin.require_permission(&state.db, "pii.view").await?;
+
     // Audit every PII read — admin listing exposes emails, names, balances
     // and KYC state. We want after-the-fact forensics on who looked at
     // what, even without a mutation.
@@ -125,6 +128,9 @@ pub async fn api_admin_user_detail(
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "users.view").await?;
+    admin.require_permission(&state.db, "pii.view").await?;
+
     let uid = ApiError::parse_uuid(&user_id)?;
 
     // Audit the read — user detail returns PII (profile, DOB, address,
@@ -615,12 +621,14 @@ pub struct AdminUpdateProfilePayload {
 ///
 /// Updates PII data and can optionally override the user's loyalty tier.
 pub async fn api_admin_user_update_profile(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(payload): Json<AdminUpdateProfilePayload>,
 ) -> Result<axum::response::Response, ApiError> {
-    let admin_user = _admin.user.id;
+    admin.require_permission(&state.db, "users.edit").await?;
+    admin.require_permission(&state.db, "pii.view").await?;
+    let admin_user = admin.user.id;
 
     let uid = ApiError::parse_uuid(&user_id)?;
 
@@ -679,8 +687,10 @@ pub async fn api_admin_user_update_profile(
         None
     };
 
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
+
     // 1. Update Profile Information
-    let profile_result = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO user_profiles (user_id, first_name, last_name, date_of_birth, nationality, phone_number, address_line_1, address_line_2, city, state_province, postal_code, country, tax_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
            ON CONFLICT (user_id) DO UPDATE SET
@@ -710,53 +720,48 @@ pub async fn api_admin_user_update_profile(
     .bind(&payload.postal_code)
     .bind(&payload.country)
     .bind(&payload.tax_id)
-    .execute(&state.db)
-    .await;
-
-    if let Err(e) = profile_result {
-        tracing::error!("Failed to update user profile: {}", e);
-        return Err(ApiError::Internal(format!(
-            "Failed to update profile: {}",
-            e
-        )));
-    }
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
 
     // 2. Handle Tier Override if provided
     if let Some(tier_name) = &payload.tier {
-        let tier_id: Option<i32> = sqlx::query_scalar("SELECT id FROM tiers WHERE name = $1")
+        let tier_id = sqlx::query_scalar::<_, i32>("SELECT id FROM tiers WHERE name = $1")
             .bind(tier_name)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
-
-        if let Some(tid) = tier_id {
-            let _ = sqlx::query(
-                r#"INSERT INTO user_tiers (user_id, tier_id, invested_12m)
-                   VALUES ($1, $2, 0)
-                   ON CONFLICT (user_id) DO UPDATE SET
-                   tier_id = EXCLUDED.tier_id,
-                   updated_at = NOW()"#,
-            )
-            .bind(uid)
-            .bind(tid)
-            .execute(&state.db)
+            .fetch_optional(&mut *tx)
             .await;
 
-            // Log the tier change in audit_logs
-            let _ = sqlx::query(
-                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
-                   VALUES ($1, 'user.tier_override', 'users', $2, $3)"#,
-            )
-            .bind(admin_user)
-            .bind(uid)
-            .bind(serde_json::json!({"new_tier": tier_name}))
-            .execute(&state.db)
-            .await;
-        }
+        let tid: i32 = tier_id
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::BadRequest("Invalid tier".to_string()))?;
+
+        sqlx::query(
+            r#"INSERT INTO user_tiers (user_id, tier_id, invested_12m)
+               VALUES ($1, $2, 0)
+               ON CONFLICT (user_id) DO UPDATE SET
+               tier_id = EXCLUDED.tier_id,
+               updated_at = NOW()"#,
+        )
+        .bind(uid)
+        .bind(tid)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
+
+        sqlx::query(
+            r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+               VALUES ($1, 'user.tier_override', 'users', $2, $3)"#,
+        )
+        .bind(admin_user)
+        .bind(uid)
+        .bind(serde_json::json!({"new_tier": tier_name}))
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
     }
 
     // 3. Log profile update in audit_logs
-    let _ = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
            VALUES ($1, 'admin.profile_update', 'users', $2, $3)"#,
     )
@@ -770,8 +775,11 @@ pub async fn api_admin_user_update_profile(
         "city": payload.city,
         "phone_number": payload.phone_number,
     }))
-    .execute(&state.db)
-    .await;
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)?;
 
     Ok(Json(serde_json::json!({"success": true})).into_response())
 }
@@ -789,12 +797,15 @@ pub struct AdminUpdateBalancePayload {
 
 /// POST /api/admin/users/:user_id/balance - Adjust a user's wallet balance.
 pub async fn api_admin_user_update_balance(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(payload): Json<AdminUpdateBalancePayload>,
 ) -> Result<axum::response::Response, ApiError> {
-    let admin_user = _admin.user.id;
+    admin
+        .require_permission(&state.db, "treasury.write")
+        .await?;
+    let admin_user = admin.user.id;
 
     let uid = ApiError::parse_uuid(&user_id)?;
 
@@ -895,21 +906,23 @@ pub async fn api_admin_user_update_balance(
             "INSERT INTO rewards_balances (user_id, {}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET {} = rewards_balances.{} + EXCLUDED.{}",
             col, col, col, col
         );
-        let _ = sqlx::query(&sql)
+        sqlx::query(&sql)
             .bind(uid)
             .bind(payload.amount_cents)
             .execute(&mut *tx)
-            .await;
+            .await
+            .map_err(ApiError::from)?;
     }
 
     // Log in audit log
-    let _ = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, 'admin.balance_update', 'users', $2, $3)"#
     )
     .bind(admin_user)
     .bind(uid)
     .bind(serde_json::json!({"user_id": uid, "wallet_id": wallet_id, "category": payload.wallet_type, "amount_cents": payload.amount_cents, "new_balance": new_bal, "reason": payload.reason}))
-    .execute(&mut *tx).await;
+    .execute(&mut *tx).await
+    .map_err(ApiError::from)?;
 
     if tx.commit().await.is_err() {
         return Err(ApiError::Internal("Failed to commit tx".to_string()));
@@ -930,12 +943,13 @@ pub struct AdminUpdateStatusPayload {
 
 /// POST /api/admin/users/:user_id/status - Update a user's account status.
 pub async fn api_admin_user_update_status(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(payload): Json<AdminUpdateStatusPayload>,
 ) -> Result<axum::response::Response, ApiError> {
-    let admin_user = _admin.user.id;
+    admin.require_permission(&state.db, "users.edit").await?;
+    let admin_user = admin.user.id;
 
     let uid = ApiError::parse_uuid(&user_id)?;
 
@@ -945,32 +959,31 @@ pub async fn api_admin_user_update_status(
         ));
     }
 
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
     let result = sqlx::query(r#"UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2"#)
         .bind(&payload.status)
         .bind(uid)
-        .execute(&state.db)
-        .await;
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
 
-    match result {
-        Ok(_) => {
-            let _ = sqlx::query(
-                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"#
-            )
-            .bind(admin_user)
-            .bind(String::from("admin.user_status_update"))
-            .bind(String::from("users"))
-            .bind(uid)
-            .bind(serde_json::json!({"status": payload.status}))
-            .execute(&state.db).await;
-            Ok(Json(serde_json::json!({"success": true})).into_response())
-        }
-        Err(e) => {
-            tracing::error!("Failed to update user status: {}", e);
-            Err(ApiError::Internal(
-                "Failed to update user status".to_string(),
-            ))
-        }
+    if result.rows_affected() != 1 {
+        return Err(ApiError::NotFound("User not found".to_string()));
     }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"#
+    )
+    .bind(admin_user)
+    .bind(String::from("admin.user_status_update"))
+    .bind(String::from("users"))
+    .bind(uid)
+    .bind(serde_json::json!({"status": payload.status}))
+    .execute(&mut *tx).await
+    .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)?;
+    Ok(Json(serde_json::json!({"success": true})).into_response())
 }
 
 /// Payload for updating a user's roles.
@@ -989,6 +1002,7 @@ pub async fn api_admin_user_update_roles(
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(payload): Json<AdminUpdateRolesPayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "roles.edit").await?;
     let uid = ApiError::parse_uuid(&user_id)?;
 
     if !admin.is_super_admin(&state.db).await {
@@ -1057,7 +1071,7 @@ pub async fn api_admin_user_update_roles(
     }
 
     // 3. Log audit
-    let _ = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
            VALUES ($1, 'admin.roles_update', 'users', $2, $3)"#,
     )
@@ -1065,7 +1079,8 @@ pub async fn api_admin_user_update_roles(
     .bind(uid)
     .bind(serde_json::json!({ "new_roles": payload.roles }))
     .execute(&mut *tx)
-    .await;
+    .await
+    .map_err(ApiError::from)?;
 
     if let Err(e) = tx.commit().await {
         tracing::error!("Failed to commit roles update transaction: {e}");
@@ -1077,49 +1092,49 @@ pub async fn api_admin_user_update_roles(
 
 /// DELETE /api/admin/users/:user_id/sessions - Revoke all active sessions for a user.
 pub async fn api_admin_user_revoke_sessions(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    let admin_user = _admin.user.id;
+    admin.require_permission(&state.db, "users.edit").await?;
+    let admin_user = admin.user.id;
 
     let uid = ApiError::parse_uuid(&user_id)?;
 
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
+
     let result = sqlx::query(r#"DELETE FROM user_sessions WHERE user_id = $1"#)
         .bind(uid)
-        .execute(&state.db)
-        .await;
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
 
-    match result {
-        Ok(pg_res) => {
-            let _ = sqlx::query(
-                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"#
-            )
-            .bind(admin_user)
-            .bind(String::from("admin.revoke_sessions"))
-            .bind(String::from("user"))
-            .bind(uid)
-            .bind(serde_json::json!({"deleted_count": pg_res.rows_affected()}))
-            .execute(&state.db).await;
-            Ok(
-                Json(serde_json::json!({"success": true, "deleted_count": pg_res.rows_affected()}))
-                    .into_response(),
-            )
-        }
-        Err(e) => {
-            tracing::error!("Failed to revoke sessions: {}", e);
-            Err(ApiError::Internal("Failed to revoke sessions".to_string()))
-        }
-    }
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"#
+    )
+    .bind(admin_user)
+    .bind(String::from("admin.revoke_sessions"))
+    .bind(String::from("user"))
+    .bind(uid)
+    .bind(serde_json::json!({"deleted_count": result.rows_affected()}))
+    .execute(&mut *tx).await
+    .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)?;
+    Ok(
+        Json(serde_json::json!({"success": true, "deleted_count": result.rows_affected()}))
+            .into_response(),
+    )
 }
 
 /// POST /api/admin/users/:id/force-password-reset
 pub async fn api_admin_user_force_password_reset(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    let admin = _admin.user.clone();
+    admin.require_permission(&state.db, "users.edit").await?;
+    let admin = admin.user.clone();
     let uid = ApiError::parse_uuid(&user_id)?;
 
     // Verify user exists
@@ -1142,23 +1157,25 @@ pub async fn api_admin_user_force_password_reset(
     };
 
     // 1. Set force_password_reset flag (upsert user_settings)
-    let _ = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO user_settings (user_id, force_password_reset)
            VALUES ($1, TRUE)
            ON CONFLICT (user_id) DO UPDATE SET force_password_reset = TRUE, updated_at = NOW()"#,
     )
     .bind(uid)
     .execute(&mut *tx)
-    .await;
+    .await
+    .map_err(ApiError::from)?;
 
     // 2. Revoke all active sessions so user must log in again
-    let _ = sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+    sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
         .bind(uid)
         .execute(&mut *tx)
-        .await;
+        .await
+        .map_err(ApiError::from)?;
 
     // 3. Audit log
-    let _ = sqlx::query(
+    sqlx::query(
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)",
     )
     .bind(admin.id)
@@ -1167,7 +1184,8 @@ pub async fn api_admin_user_force_password_reset(
     .bind(uid)
     .bind(serde_json::json!({"force_password_reset": true, "sessions_revoked": true}))
     .execute(&mut *tx)
-    .await;
+    .await
+    .map_err(ApiError::from)?;
 
     match tx.commit().await {
         Ok(_) => {

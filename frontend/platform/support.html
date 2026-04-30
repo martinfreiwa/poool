@@ -88,7 +88,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
                 <div class="drop-zone" id="drop-zone">
                   <input type="file" id="ticket-attachment" name="attachment"
                     accept="image/png, image/jpeg, application/pdf" class="drop-zone-input" />
-                  <div class="drop-zone-content">
+                  <label class="drop-zone-content" for="ticket-attachment" role="button" tabindex="0">
                     <svg  width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                       <polyline points="17 8 12 3 7 8"/>
@@ -96,7 +96,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
                     </svg>
                   <span class="drop-zone-text">Drag & drop or <strong>click to browse</strong></span>
                   <span class="drop-zone-hint">Max 5MB. JPG, PNG, or PDF.</span>
-                </div>
+                  </label>
                   <div class="drop-zone-file-info" id="drop-zone-file-info" style="display: none;"></div>
                 </div>
               </div>

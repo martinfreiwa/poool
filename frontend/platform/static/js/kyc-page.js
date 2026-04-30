@@ -7,6 +7,15 @@
  *
  * The active provider is detected via /api/kyc/provider at page load.
  */
+function getCookie(name) {
+  const prefix = `${name}=`;
+  return document.cookie
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(prefix))
+    ?.slice(prefix.length) || "";
+}
+
 document.addEventListener("alpine:init", () => {
   Alpine.data("kycForm", () => ({
     status: "loading",
@@ -34,11 +43,9 @@ document.addEventListener("alpine:init", () => {
     },
 
     async initKyc() {
-      // Check if returning from provider redirect
-      if (localStorage.getItem("poool_kyc_pending") === "true") {
+      const returnedFromProvider = localStorage.getItem("poool_kyc_pending") === "true";
+      if (returnedFromProvider) {
         localStorage.removeItem("poool_kyc_pending");
-        this.status = "in_review";
-        return;
       }
 
       // 1. Fetch current KYC status
@@ -52,11 +59,11 @@ document.addEventListener("alpine:init", () => {
           window.location.href = "/auth/login";
           return;
         } else {
-          this.status = "not_started";
+          this.status = "error";
         }
       } catch (err) {
         if (typeof Sentry !== "undefined") Sentry.captureException(err);
-        this.status = "not_started";
+        this.status = "error";
       }
 
       // 2. Detect the active provider
@@ -263,6 +270,10 @@ document.addEventListener("alpine:init", () => {
         });
 
         xhr.open("POST", "/api/upload/kyc");
+        const csrfToken = getCookie("csrf_token");
+        if (csrfToken) {
+          xhr.setRequestHeader("X-CSRF-Token", decodeURIComponent(csrfToken));
+        }
         xhr.send(formData);
 
         const data = await uploadPromise;
@@ -348,7 +359,8 @@ document.addEventListener("alpine:init", () => {
           });
 
           if (response.ok) {
-            this.status = "pending";
+            const data = await response.json().catch(() => ({}));
+            this.status = data.status || "in_review";
             if (typeof showPooolToast === "function") {
               showPooolToast("Submitted", "KYC application submitted successfully.", "success");
             }

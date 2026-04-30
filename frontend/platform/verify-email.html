@@ -10,7 +10,7 @@
             <div id="logo-pool" style="margin-bottom: 24px">
               <img src="/static/images/icons/logo-pool.svg" alt="Pool Logo" width="184" height="48" />
             </div>
-            <div class="mail-icon">
+            <div class="mail-icon mail-icon--{{ status | default('pending') }}">
               <svg  width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6M22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6M22 6L12 13L2 6"
@@ -18,26 +18,44 @@
               </svg>
             </div>
             <div id="text-and-supporting-text">
-              <h1 id="text">Check your email</h1>
+              <h1 id="text">{{ heading | default("Check your email") }}</h1>
               <p id="supporting-text">
-                We sent a verification link to your email address. Please
-                click the link to verify your account.
+                {{ message | default("We sent a verification link to your email address. Please click the link to verify your account.") }}
               </p>
             </div>
           </div>
 
           <div id="content-inner">
-            <div id="auth-error"></div>
+            <div id="auth-error" role="status" aria-live="polite" tabindex="-1">
+              {% if status == "error" %}
+              <div class="auth-error-message" role="alert" aria-live="assertive">{{ message }}</div>
+              {% elif status == "success" %}
+              <div class="auth-success-message" role="status" aria-live="polite">
+                Your email is verified.
+              </div>
+              {% endif %}
+            </div>
 
+            {% if status == "success" %}
+            <a href="/auth/login" id="get-started-button" class="auth-primary-link">
+              <div id="button-text-padding">
+                <span id="button-text">Continue to log in</span>
+              </div>
+            </a>
+            {% else %}
             <!-- Verify email resend form -->
             <form id="verify-email-form" hx-post="/auth/resend-verification" hx-target="#auth-error"
-              hx-swap="innerHTML">
-              <button type="submit" id="get-started-button">
+              hx-swap="innerHTML" aria-busy="false">
+              <button type="submit" id="get-started-button" aria-busy="false">
                 <div id="button-text-padding">
                   <span id="button-text">Resend verification email</span>
                 </div>
               </button>
+              <div id="verify-email-loading" class="auth-loading htmx-indicator" role="status" aria-live="polite">
+                Sending verification email...
+              </div>
             </form>
+            {% endif %}
 
             <a href="/auth/login" id="back-to-login">
               <svg  width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -55,6 +73,37 @@
       <div id="testimonial-image"></div>
     </section>
   </div>
+  <script>
+    document.body.addEventListener('htmx:beforeRequest', function (evt) {
+      if (!evt.target || evt.target.id !== 'verify-email-form') return;
+      var form = evt.target;
+      var button = document.getElementById('get-started-button');
+      var buttonText = document.getElementById('button-text');
+      var feedback = document.getElementById('auth-error');
+      form.setAttribute('aria-busy', 'true');
+      if (button) {
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+      }
+      if (buttonText) buttonText.textContent = 'Sending...';
+      if (feedback) feedback.textContent = '';
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function (evt) {
+      if (!evt.target || evt.target.id !== 'verify-email-form') return;
+      var form = evt.target;
+      var button = document.getElementById('get-started-button');
+      var buttonText = document.getElementById('button-text');
+      var feedback = document.getElementById('auth-error');
+      form.setAttribute('aria-busy', 'false');
+      if (button) {
+        button.disabled = false;
+        button.setAttribute('aria-busy', 'false');
+      }
+      if (buttonText) buttonText.textContent = 'Resend verification email';
+      if (feedback && feedback.focus) feedback.focus({ preventScroll: true });
+    });
+  </script>
 </body>
 
 </html>

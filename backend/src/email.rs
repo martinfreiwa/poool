@@ -98,6 +98,17 @@ pub async fn run_email_scheduler(pool: PgPool) {
     }
 }
 
+/// Retry transactional email outbox items that must not be dropped.
+pub async fn run_transactional_email_outbox_worker(pool: PgPool) {
+    info!("Starting POOOL transactional email outbox worker...");
+    let mut interval = tokio::time::interval(Duration::from_secs(60));
+
+    loop {
+        interval.tick().await;
+        crate::common::email::process_password_reset_outbox(&pool, 25).await;
+    }
+}
+
 async fn process_onboarding_drips(_pool: &PgPool) -> Result<(), Box<dyn std::error::Error>> {
     // Find users older than 24h but no KYC record
     // Insert template to logs

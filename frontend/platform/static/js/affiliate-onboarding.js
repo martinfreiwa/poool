@@ -7,26 +7,66 @@
 document.addEventListener('DOMContentLoaded', () => {
     let currentStep = 1;
     const totalSteps = 5;
+    let kycStatus = 'loading';
 
     // ─── KYC Status Check ───
     // Fetch real KYC status from backend instead of relying on Jinja template
     fetchKycStatus();
 
     async function fetchKycStatus() {
+        setKycState('loading');
         try {
             const res = await fetch('/api/kyc/status', { credentials: 'same-origin' });
-            if (!res.ok) return;
+            if (!res.ok) {
+                setKycState('error');
+                return;
+            }
             const data = await res.json();
             const status = data.status || data.kyc_status || '';
             if (status === 'approved' || status === 'verified') {
-                const verified = document.getElementById('kyc-verified');
-                const pending = document.getElementById('kyc-pending');
-                if (verified) verified.style.display = 'flex';
-                if (pending) pending.style.display = 'none';
+                setKycState('approved');
+            } else {
+                setKycState(status || 'required');
             }
-        } catch (_) {
-            // Silently fail — default state shows "Verification Required"
+        } catch (err) {
+            console.error('[Onboarding] Failed to load KYC status:', err);
+            setKycState('error');
         }
+    }
+
+    function setKycState(status) {
+        kycStatus = status;
+        const loading = document.getElementById('kyc-loading');
+        const verified = document.getElementById('kyc-verified');
+        const pending = document.getElementById('kyc-pending');
+        const error = document.getElementById('kyc-error');
+        const pendingLabel = document.getElementById('kyc-pending-label');
+
+        [loading, verified, pending, error].forEach((el) => {
+            if (el) el.style.display = 'none';
+        });
+
+        if (status === 'loading') {
+            if (loading) loading.style.display = 'flex';
+            return;
+        }
+
+        if (status === 'approved') {
+            if (verified) verified.style.display = 'flex';
+            return;
+        }
+
+        if (status === 'error') {
+            if (error) error.style.display = 'flex';
+            return;
+        }
+
+        if (pendingLabel) {
+            pendingLabel.textContent = status === 'rejected'
+                ? 'Identity verification needs attention'
+                : 'Identity Verification Required';
+        }
+        if (pending) pending.style.display = 'flex';
     }
 
     // ─── Public API ───
@@ -184,24 +224,29 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Check native inputs (URL field)
-            const urlInput = document.getElementById('main-url');
-            if (urlInput && !urlInput.value.trim()) {
+            if (form && !form.checkValidity()) {
                 valid = false;
             }
 
             if (!valid) {
-                // Try reportValidity for the URL field; dropdowns show visual error state
-                if (urlInput && !urlInput.value.trim()) {
-                    urlInput.reportValidity();
-                } else {
-                    showToast('Please fill in all required fields.', 'warning');
+                const invalid = form ? form.querySelector(':invalid') : null;
+                if (invalid && invalid.offsetParent !== null) {
+                    invalid.reportValidity();
                 }
+                showToast('Please fill in all required fields.', 'warning');
                 return false;
             }
         }
         if (step === 2) {
-            const verified = document.getElementById('kyc-verified');
-            if (verified && verified.style.display === 'none') {
+            if (kycStatus === 'loading') {
+                showToast('Identity status is still loading. Please wait a moment.', 'warning');
+                return false;
+            }
+            if (kycStatus === 'error') {
+                showToast('Could not verify identity status. Please retry before continuing.', 'error');
+                return false;
+            }
+            if (kycStatus !== 'approved') {
                 showToast('You must complete Identity Verification before proceeding.', 'error');
                 return false;
             }
@@ -287,18 +332,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!targetId) return;
 
         // Switch tab buttons
-        document.querySelectorAll('.legal-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.legal-tab').forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+            t.setAttribute('tabindex', '-1');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        btn.setAttribute('tabindex', '0');
 
         // Switch tab content
         document.querySelectorAll('.legal-tab-content').forEach(c => {
             c.classList.remove('active');
             c.style.display = 'none';
+            c.hidden = true;
         });
         const target = document.getElementById(targetId);
         if (target) {
             target.classList.add('active');
             target.style.display = 'block';
+            target.hidden = false;
             target.scrollTop = 0; // Reset scroll position
         }
 
@@ -325,10 +378,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function initLegalTabs() {
+        const tabs = Array.from(document.querySelectorAll('.legal-tab'));
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('keydown', (event) => {
+                let nextIndex = null;
+                if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+                if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+                if (event.key === 'Home') nextIndex = 0;
+                if (event.key === 'End') nextIndex = tabs.length - 1;
+                if (nextIndex === null) return;
+
+                event.preventDefault();
+                const next = tabs[nextIndex];
+                window.switchLegalTab(next);
+                next.focus();
+            });
+        });
+    }
+
     // ─── Initialize ───
     updateProgressBar(1);
     initScrollHint();
     initDropdowns();
+    initLegalTabs();
+    const kycRetry = document.getElementById('kyc-retry-btn');
+    if (kycRetry) kycRetry.addEventListener('click', fetchKycStatus);
 
     // ─── Convert Native Selects to POOOL Dropdowns ───
     function initDropdowns() {

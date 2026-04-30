@@ -27,6 +27,7 @@
             {% endif %}
           </div>
 
+          {% if google_enabled %}
           <!-- Social login buttons -->
           <div id="social-buttons">
             <button id="google-button" class="social-button" onclick="window.location.href='/auth/google'">
@@ -43,9 +44,10 @@
             <span id="or-text">OR</span>
             <div id="divider-right"></div>
           </div>
+          {% endif %}
 
           <!-- Login form -->
-          <form id="login-form" method="post" action="/auth/login" hx-post="/auth/login" hx-target="#auth-error" hx-swap="innerHTML">
+          <form id="login-form" method="post" action="/auth/login" hx-post="/auth/login" hx-target="#auth-error" hx-swap="innerHTML" aria-busy="false">
             <input type="hidden" id="csrf-token-input" name="csrf_token" value="{{ csrf_token }}">
             <div class="input-field">
               <div class="input-with-label">
@@ -61,7 +63,7 @@
                 <label for="password-input" class="input-label">Password</label>
                 <div class="input-wrapper">
                   <input type="password" id="password-input" name="password" placeholder="Enter your password" required autocomplete="current-password">
-                  <button type="button" id="toggle-password" onclick="var i=document.getElementById('password-input');i.type=i.type==='password'?'text':'password';this.querySelector('.eye-off').style.display=i.type==='password'?'none':'block';this.querySelector('.eye-on').style.display=i.type==='password'?'block':'none';">
+                  <button type="button" id="toggle-password" aria-label="Show password" aria-pressed="false" onclick="var i=document.getElementById('password-input');var isHidden=i.type==='password';i.type=isHidden?'text':'password';this.setAttribute('aria-pressed', isHidden ? 'true' : 'false');this.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');this.querySelector('.eye-off').style.display=isHidden?'block':'none';this.querySelector('.eye-on').style.display=isHidden?'none':'block';">
                     <svg class="eye-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     <svg class="eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                   </button>
@@ -79,7 +81,7 @@
               </a>
             </div>
 
-            <button type="submit" id="login-button">
+            <button type="submit" id="login-button" aria-busy="false">
               <span id="button-text">Log in</span>
             </button>
           </form>
@@ -123,10 +125,10 @@
             </div>
           </div>
           <div id="arrows-container">
-            <button class="carousel-arrow" id="prev-arrow">
+            <button class="carousel-arrow" id="prev-arrow" aria-label="Previous testimonial">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
             </button>
-            <button class="carousel-arrow" id="next-arrow">
+            <button class="carousel-arrow" id="next-arrow" aria-label="Next testimonial">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
             </button>
           </div>
@@ -147,27 +149,30 @@
       }
       var csrfInput = document.getElementById('csrf-token-input');
       if (csrfInput) {
-        csrfInput.value = decodeURIComponent(getCookie('csrf_token') || '');
+        var cookieToken = getCookie('csrf_token');
+        if (cookieToken) {
+          csrfInput.value = decodeURIComponent(cookieToken);
+        }
       }
     })();
 
     var team = [
       { img: '/static/images/auth/indonesian-login-portrait.webp', quote: 'POOOL made my first real estate investment feel clear, local, and within reach.', name: 'POOOL Investor', role: 'Indonesia' },
-      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'All my real estate experience was building up to this moment — launching <span class="highlight-green">POOOL</span>.', name: 'Jonas Freiwald',       role: 'Co-CEO, Founder' },
-      { img: '/webp/team/Dmitry Sikorski.webp',       quote: 'I know what it\'s like to build from zero. <span class="highlight-green">POOOL</span> gives that chance to anyone.', name: 'Dmitry Sikorski',       role: 'Co-CEO, Founder' },
-      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Before it was a rich man\'s game. <span class="highlight-green">POOOL</span> hacked the rules for everyone.', name: 'Nikita Kokhanevych',    role: 'CTO, Blockchain' },
-      { img: '/webp/team/Mykyta Hlukhuvskyi.webp',   quote: 'Investing in real estate is now simpler than ordering a taxi. That\'s <span class="highlight-green">POOOL</span>.', name: 'Mykyta Hlukhuvskyi',   role: 'CTO, Back-end' },
-      { img: '/webp/team/Nataly Vovque.webp',         quote: 'Old money owned the buildings. <span class="highlight-green">POOOL</span> lets new money own the future.', name: 'Nataly Vovque',         role: 'Branding' },
-      { img: '/png/Jonathan Rizky.webp',              quote: 'For me, <span class="highlight-green">POOOL</span> is where compliance meets innovation — trust built on regulation.', name: 'Jonathan Rizky',         role: 'Compliance Officer' },
-      { img: '/png/Khai.webp',                        quote: 'For me, <span class="highlight-green">POOOL</span> is where ideas turn into action, and teamwork creates real change.', name: 'Khairatul Raudah',       role: 'Corporate Assistant' },
-      { img: '/webp/team/Sean Reno.webp',             quote: 'Seen so many platforms promise trust — <span class="highlight-green">POOOL</span> actually backs it up with law.', name: 'Sean Reno',              role: 'Government Relations' },
-      { img: '/webp/team/Patrick Werner.webp',        quote: '<span class="highlight-green">POOOL</span> is a fantastic tool to help people from around the world invest money.', name: 'Patrick Werner',         role: 'Local Director' },
-      { img: '/webp/team/Daniel Todorov.webp',        quote: 'Everyone sells dreams. We built <span class="highlight-green">POOOL</span> to fractionalize what\'s real.', name: 'Daniel Todorov',         role: 'Head of Design' },
-      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'Through <span class="highlight-green">POOOL</span>, I invested in a Bali villa. Real estate felt complex, but now I can invest in minutes from my phone.', name: 'Dewi Lestari',           role: 'Real Estate Investor' },
-      { img: '/webp/team/Patrick Werner.webp',        quote: '<span class="highlight-green">POOOL</span> gave me access to properties I never thought I could afford. My first investment was €500 in a Lisbon apartment.', name: 'Marco Fernandes',        role: 'Software Engineer' },
-      { img: '/webp/team/Sean Reno.webp',             quote: 'I\'ve tried stocks, crypto, and now real estate via <span class="highlight-green">POOOL</span>. This is the most transparent platform I\'ve used.', name: 'Aiko Tanaka',             role: 'Portfolio Investor' },
-      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Finally a platform where a teacher\'s salary can buy into real estate. <span class="highlight-green">POOOL</span> changed what I thought was possible.', name: 'Fatima Al-Rashid',        role: 'Educator & Investor' },
-      { img: '/webp/team/Nataly Vovque.webp',         quote: 'No bank ever offered me this. <span class="highlight-green">POOOL</span> let me diversify across three countries with one account.', name: 'Lena Hoffmann',           role: 'Independent Investor' },
+      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'All my real estate experience was building up to this moment — launching POOOL.', name: 'Jonas Freiwald',       role: 'Co-CEO, Founder' },
+      { img: '/webp/team/Dmitry Sikorski.webp',       quote: 'I know what it\'s like to build from zero. POOOL gives that chance to anyone.', name: 'Dmitry Sikorski',       role: 'Co-CEO, Founder' },
+      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Before it was a rich man\'s game. POOOL hacked the rules for everyone.', name: 'Nikita Kokhanevych',    role: 'CTO, Blockchain' },
+      { img: '/webp/team/Mykyta Hlukhuvskyi.webp',   quote: 'Investing in real estate is now simpler than ordering a taxi. That\'s POOOL.', name: 'Mykyta Hlukhuvskyi',   role: 'CTO, Back-end' },
+      { img: '/webp/team/Nataly Vovque.webp',         quote: 'Old money owned the buildings. POOOL lets new money own the future.', name: 'Nataly Vovque',         role: 'Branding' },
+      { img: '/png/Jonathan Rizky.webp',              quote: 'For me, POOOL is where compliance meets innovation — trust built on regulation.', name: 'Jonathan Rizky',         role: 'Compliance Officer' },
+      { img: '/png/Khai.webp',                        quote: 'For me, POOOL is where ideas turn into action, and teamwork creates real change.', name: 'Khairatul Raudah',       role: 'Corporate Assistant' },
+      { img: '/webp/team/Sean Reno.webp',             quote: 'Seen so many platforms promise trust — POOOL actually backs it up with law.', name: 'Sean Reno',              role: 'Government Relations' },
+      { img: '/webp/team/Patrick Werner.webp',        quote: 'POOOL is a fantastic tool to help people from around the world invest money.', name: 'Patrick Werner',         role: 'Local Director' },
+      { img: '/webp/team/Daniel Todorov.webp',        quote: 'Everyone sells dreams. We built POOOL to fractionalize what\'s real.', name: 'Daniel Todorov',         role: 'Head of Design' },
+      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'Through POOOL, I invested in a Bali villa. Real estate felt complex, but now I can invest in minutes from my phone.', name: 'Dewi Lestari',           role: 'Real Estate Investor' },
+      { img: '/webp/team/Patrick Werner.webp',        quote: 'POOOL gave me access to properties I never thought I could afford. My first investment was €500 in a Lisbon apartment.', name: 'Marco Fernandes',        role: 'Software Engineer' },
+      { img: '/webp/team/Sean Reno.webp',             quote: 'I\'ve tried stocks, crypto, and now real estate via POOOL. This is the most transparent platform I\'ve used.', name: 'Aiko Tanaka',             role: 'Portfolio Investor' },
+      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Finally a platform where a teacher\'s salary can buy into real estate. POOOL changed what I thought was possible.', name: 'Fatima Al-Rashid',        role: 'Educator & Investor' },
+      { img: '/webp/team/Nataly Vovque.webp',         quote: 'No bank ever offered me this. POOOL let me diversify across three countries with one account.', name: 'Lena Hoffmann',           role: 'Independent Investor' },
     ];
     var current = 0;
     var container = document.getElementById('testimonial-container');
@@ -183,7 +188,7 @@
       } else {
         container.style.backgroundImage = 'url("' + t.img + '")';
       }
-      quoteEl.innerHTML = '\u201c' + t.quote + '\u201d';
+      quoteEl.textContent = '\u201c' + t.quote + '\u201d';
       nameEl.textContent = t.name;
       roleEl.textContent = t.role;
     }
@@ -208,16 +213,26 @@
 
     document.body.addEventListener('htmx:beforeRequest', function (evt) {
       var btn = document.getElementById('login-button');
+      var form = document.getElementById('login-form');
+      if (form) {
+        form.setAttribute('aria-busy', 'true');
+      }
       if (btn) {
         btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
         btn.querySelector('#button-text').textContent = 'Logging in...';
       }
     });
 
     document.body.addEventListener('htmx:afterRequest', function (evt) {
       var btn = document.getElementById('login-button');
+      var form = document.getElementById('login-form');
+      if (form) {
+        form.setAttribute('aria-busy', 'false');
+      }
       if (btn) {
         btn.disabled = false;
+        btn.setAttribute('aria-busy', 'false');
         btn.querySelector('#button-text').textContent = 'Log in';
       }
     });

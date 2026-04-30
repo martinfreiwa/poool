@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -5,6 +6,7 @@ use uuid::Uuid;
 use super::didit::{DiditConfig, DiditProvider};
 use super::models::{KycInitiateResponse, KycStatusResponse, KycSubmitRequest};
 use super::provider::{KycProvider, KycStatusUpdate, ManualProvider};
+use crate::common::sanitize::sanitize_text;
 use crate::error::AppError;
 
 /// Build the active KYC provider based on environment configuration.
@@ -74,6 +76,8 @@ pub async fn initiate_kyc(
     callback_url: &str,
     document_type: Option<&str>,
 ) -> Result<KycInitiateResponse, AppError> {
+    let document_type = normalize_document_type(document_type)?;
+
     // Serialize concurrent initiate calls for the same user via a Postgres
     // transaction-scoped advisory lock. Prior version read existing state
     // and then inserted a new row in separate statements — a second request
@@ -126,16 +130,31 @@ pub async fn initiate_kyc(
         .create_session(user_id, user_email, callback_url)
         .await?;
 
-    let kyc_id: String = sqlx::query_scalar(
+    let kyc_id: Uuid = sqlx::query_scalar(
         r#"INSERT INTO kyc_records (user_id, provider, provider_ref_id, status, document_type)
            VALUES ($1, $2, $3, 'pending', $4)
-           RETURNING id::text"#,
+           RETURNING id"#,
     )
     .bind(user_id)
     .bind(provider.name())
     .bind(&session_result.session_id)
-    .bind(document_type)
+    .bind(document_type.as_deref())
     .fetch_one(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'kyc.initiated', 'kyc_records', $2, $3)"#,
+    )
+    .bind(user_id)
+    .bind(kyc_id)
+    .bind(serde_json::json!({
+        "provider": provider.name(),
+        "status": "pending",
+        "document_type": document_type.as_deref(),
+    }))
+    .execute(&mut *tx)
     .await
     .map_err(AppError::Database)?;
 
@@ -149,31 +168,24 @@ pub async fn initiate_kyc(
         session_result.session_id
     );
 
-    // Audit log
-    let _ = sqlx::query(
-        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
-           VALUES ($1, 'kyc.initiated', 'kyc_records', $2::uuid, $3)"#,
-    )
-    .bind(user_id)
-    .bind(&kyc_id)
-    .bind(serde_json::json!({
-        "provider": provider.name(),
-        "status": "pending",
-    }))
-    .execute(pool)
-    .await;
-
     // Trigger email notification
     let metadata = serde_json::json!({
         "provider": provider.name(),
-        "document_type": document_type,
+        "document_type": document_type.as_deref(),
     });
-    let _ =
-        crate::email::trigger_transactional_email(pool, &user_id, "kyc_submitted", metadata).await;
+    if let Err(e) =
+        crate::email::trigger_transactional_email(pool, &user_id, "kyc_submitted", metadata).await
+    {
+        tracing::error!(
+            "Failed to enqueue KYC submitted email for {}: {}",
+            user_id,
+            e
+        );
+    }
 
     Ok(KycInitiateResponse {
         success: true,
-        kyc_id,
+        kyc_id: kyc_id.to_string(),
         provider: provider.name().to_string(),
         verification_url: session_result.verification_url,
         message: "KYC verification initiated. Please complete the verification process."
@@ -192,14 +204,15 @@ pub async fn process_webhook_update(
     provider_name: &str,
 ) -> Result<(), AppError> {
     let new_status = update.status.as_db_str();
+    let mut tx = pool.begin().await.map_err(AppError::Database)?;
 
     // Find the kyc record by provider ref ID
     let kyc_record: Option<(Uuid, Uuid)> = sqlx::query_as(
-        "SELECT id, user_id FROM kyc_records WHERE provider_ref_id = $1 AND provider = $2 ORDER BY created_at DESC LIMIT 1"
+        "SELECT id, user_id FROM kyc_records WHERE provider_ref_id = $1 AND provider = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE"
     )
     .bind(&update.session_id)
     .bind(provider_name)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(AppError::Database)?;
 
@@ -253,19 +266,20 @@ pub async fn process_webhook_update(
     .bind(verified_at)
     .bind(expires_at)
     .bind(kyc_id)
-    .execute(pool)
+    .execute(&mut *tx)
     .await
     .map_err(AppError::Database)?;
 
     // If approved, update user profile with extracted identity data
     if let Some(ref data) = update.extracted_data {
         if new_status == "approved" {
-            let _ = sqlx::query(
+            sqlx::query(
                 r#"UPDATE user_profiles
                    SET first_name = COALESCE($1, first_name),
                        last_name = COALESCE($2, last_name),
                        date_of_birth = COALESCE($3::date, date_of_birth),
-                       nationality = COALESCE($4, nationality)
+                       nationality = COALESCE($4, nationality),
+                       updated_at = NOW()
                    WHERE user_id = $5"#,
             )
             .bind(&data.first_name)
@@ -273,26 +287,28 @@ pub async fn process_webhook_update(
             .bind(&data.date_of_birth)
             .bind(&data.nationality)
             .bind(user_id)
-            .execute(pool)
-            .await;
+            .execute(&mut *tx)
+            .await
+            .map_err(AppError::Database)?;
         }
     }
 
     // Phase 18 / 19: Intermediate Funnel Checkpoints (Affiliate Sync)
     // Update any pending referral stages to 'kyc_approved'
     if new_status == "approved" {
-        let _ = sqlx::query(
+        sqlx::query(
             r#"UPDATE affiliate_referrals 
                SET status = 'kyc_approved', updated_at = NOW() 
                WHERE referred_user_id = $1 AND status IN ('attributed', 'registered')"#,
         )
         .bind(user_id)
-        .execute(pool)
-        .await;
+        .execute(&mut *tx)
+        .await
+        .map_err(AppError::Database)?;
     }
 
     // Audit log
-    let _ = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
            VALUES ($1, $2, 'kyc_records', $3, $4)"#,
     )
@@ -304,8 +320,9 @@ pub async fn process_webhook_update(
         "status": new_status,
         "rejection_reason": update.rejection_reason,
     }))
-    .execute(pool)
-    .await;
+    .execute(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
 
     // Send notification to user
     let (title, message, notif_type) = match new_status {
@@ -319,18 +336,24 @@ pub async fn process_webhook_update(
             "Your identity verification was declined. Please check the reason and resubmit.",
             "kyc",
         ),
-        _ => return Ok(()),
+        _ => {
+            tx.commit().await.map_err(AppError::Database)?;
+            return Ok(());
+        }
     };
 
-    let _ = sqlx::query(
+    sqlx::query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)",
     )
     .bind(user_id)
     .bind(title)
     .bind(message)
     .bind(notif_type)
-    .execute(pool)
-    .await;
+    .execute(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
+
+    tx.commit().await.map_err(AppError::Database)?;
 
     Ok(())
 }
@@ -341,49 +364,165 @@ pub async fn submit_kyc(
     user_id: Uuid,
     payload: KycSubmitRequest,
 ) -> Result<(), AppError> {
-    // Update user profiles with personal info if provided
-    if let (Some(ref fname), Some(ref lname)) = (&payload.first_name, &payload.last_name) {
-        let _ = sqlx::query!(
-            "UPDATE user_profiles SET first_name = $1, last_name = $2 WHERE user_id = $3",
-            fname.clone(),
-            lname.clone(),
-            user_id
-        )
-        .execute(pool)
-        .await;
-    }
+    let first_name = required_text(payload.first_name.as_deref(), "First name", 100)?;
+    let last_name = required_text(payload.last_name.as_deref(), "Last name", 100)?;
+    let dob = parse_required_date(payload.date_of_birth.as_deref(), "Date of birth")?;
+    let nationality = required_text(payload.nationality.as_deref(), "Nationality", 100)?;
+    let address_line1 = required_text(payload.address_line1.as_deref(), "Address", 255)?;
+    let city = required_text(payload.address_city.as_deref(), "City", 100)?;
+    let country = required_text(payload.address_country.as_deref(), "Country", 100)?;
+    let document_type = normalize_document_type(payload.document_type.as_deref())?
+        .ok_or_else(|| AppError::BadRequest("Document type is required.".to_string()))?;
+    let doc_id = payload
+        .document_id
+        .ok_or_else(|| AppError::BadRequest("Identity document is required.".to_string()))?;
 
-    // Upsert a pending kyc record
-    let kyc_record_id: uuid::Uuid = sqlx::query_scalar!(
+    let mut tx = pool.begin().await.map_err(AppError::Database)?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO user_profiles
+            (user_id, first_name, last_name, date_of_birth, nationality, address_line_1, city, country)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (user_id) DO UPDATE SET
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            date_of_birth = EXCLUDED.date_of_birth,
+            nationality = EXCLUDED.nationality,
+            address_line_1 = EXCLUDED.address_line_1,
+            city = EXCLUDED.city,
+            country = EXCLUDED.country,
+            updated_at = NOW()
+        "#,
+    )
+    .bind(user_id)
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(dob)
+    .bind(&nationality)
+    .bind(&address_line1)
+    .bind(&city)
+    .bind(&country)
+    .execute(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
+
+    let kyc_record_id: uuid::Uuid = sqlx::query_scalar(
         r#"
         INSERT INTO kyc_records (user_id, status, provider, document_type)
-        VALUES ($1, 'pending', 'manual', $2)
+        VALUES ($1, 'in_review', 'manual', $2)
         RETURNING id
         "#,
-        user_id,
-        payload.document_type
     )
-    .fetch_one(pool)
-    .await?;
+    .bind(user_id)
+    .bind(&document_type)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
 
-    // Link the document if provided
-    if let Some(doc_id) = payload.document_id {
-        let _ = sqlx::query!(
-            "UPDATE kyc_documents SET kyc_record_id = $1 WHERE id = $2 AND user_id = $3",
-            kyc_record_id,
-            doc_id,
-            user_id
-        )
-        .execute(pool)
-        .await;
+    let linked = sqlx::query(
+        r#"
+        UPDATE kyc_documents
+        SET kyc_record_id = $1
+        WHERE id = $2
+          AND user_id = $3
+          AND status = 'pending'
+          AND kyc_record_id IS NULL
+        "#,
+    )
+    .bind(kyc_record_id)
+    .bind(doc_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
+
+    if linked.rows_affected() != 1 {
+        return Err(AppError::BadRequest(
+            "Identity document is invalid or already submitted.".to_string(),
+        ));
     }
 
-    // Call transactional email service
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'kyc.submitted', 'kyc_records', $2, $3)"#,
+    )
+    .bind(user_id)
+    .bind(kyc_record_id)
+    .bind(serde_json::json!({
+        "provider": "manual",
+        "status": "in_review",
+        "document_type": &document_type,
+        "document_id": doc_id,
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
+
+    tx.commit().await.map_err(AppError::Database)?;
+
     let metadata = serde_json::json!({
-        "document_type": payload.document_type
+        "document_type": &document_type
     });
-    let _ =
-        crate::email::trigger_transactional_email(pool, &user_id, "kyc_submitted", metadata).await;
+    if let Err(e) =
+        crate::email::trigger_transactional_email(pool, &user_id, "kyc_submitted", metadata).await
+    {
+        tracing::error!(
+            "Failed to enqueue KYC submitted email for {}: {}",
+            user_id,
+            e
+        );
+    }
 
     Ok(())
+}
+
+fn required_text(value: Option<&str>, label: &str, max_len: usize) -> Result<String, AppError> {
+    let value = value.unwrap_or("").trim();
+    if value.is_empty() {
+        return Err(AppError::BadRequest(format!("{} is required.", label)));
+    }
+
+    let sanitized = sanitize_text(value);
+    if sanitized.chars().count() > max_len {
+        return Err(AppError::BadRequest(format!("{} is too long.", label)));
+    }
+    if sanitized.is_empty() {
+        return Err(AppError::BadRequest(format!("{} is required.", label)));
+    }
+
+    Ok(sanitized)
+}
+
+fn parse_required_date(value: Option<&str>, label: &str) -> Result<NaiveDate, AppError> {
+    let value = value.unwrap_or("").trim();
+    if value.is_empty() {
+        return Err(AppError::BadRequest(format!("{} is required.", label)));
+    }
+
+    NaiveDate::parse_from_str(value, "%Y-%m-%d")
+        .map_err(|_| AppError::BadRequest(format!("{} must be a valid YYYY-MM-DD date.", label)))
+}
+
+pub fn normalize_document_type(value: Option<&str>) -> Result<Option<String>, AppError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let value = value.trim();
+    if value.is_empty() {
+        return Ok(None);
+    }
+
+    let normalized = match value {
+        "passport" => "passport",
+        "national_id" => "national_id",
+        "driving_licence" | "driving_license" => "driving_licence",
+        "proof_of_address" => "proof_of_address",
+        "other" => "other",
+        _ => {
+            return Err(AppError::BadRequest("Invalid document_type".to_string()));
+        }
+    };
+
+    Ok(Some(normalized.to_string()))
 }

@@ -153,6 +153,8 @@ pub async fn api_permissions_list(
         "assets.create",
         "assets.edit",
         "assets.publish",
+        "submissions.review",
+        "submissions.approve",
         "support.read",
         "support.write",
         "support.manage",

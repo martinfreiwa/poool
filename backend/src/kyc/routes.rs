@@ -10,6 +10,7 @@ use super::provider::KycProvider;
 use super::service;
 use crate::auth::middleware;
 use crate::auth::routes::AppState;
+use crate::error::AppError;
 
 async fn require_user_id(
     jar: &CookieJar,
@@ -22,6 +23,21 @@ async fn require_user_id(
             Json(serde_json::json!({"error": "Not authenticated"})),
         )
             .into_response()),
+    }
+}
+
+async fn require_kyc_rate_limit(
+    state: &AppState,
+    user_id: uuid::Uuid,
+    action: &str,
+) -> Result<(), axum::response::Response> {
+    match state
+        .auth_rate_limiter
+        .check(&format!("kyc:{}:{}", action, user_id))
+        .await
+    {
+        Ok(_) => Ok(()),
+        Err(retry_after) => Err(AppError::RateLimited(retry_after).into_response()),
     }
 }
 
@@ -56,15 +72,15 @@ pub async fn submit(
         Err(resp) => return resp,
     };
 
+    if let Err(resp) = require_kyc_rate_limit(&state, user_id, "submit").await {
+        return resp;
+    }
+
     match service::submit_kyc(&state.db, user_id, payload).await {
-        Ok(_) => Json(serde_json::json!({"status": "pending"})).into_response(),
+        Ok(_) => Json(serde_json::json!({"status": "in_review"})).into_response(),
         Err(e) => {
-            tracing::error!("Failed to submit KYC for {}: {}", user_id, e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Failed to submit KYC"})),
-            )
-                .into_response()
+            tracing::error!("Failed to submit KYC for {}: {}", user_id, e.detail());
+            e.into_response()
         }
     }
 }
@@ -92,6 +108,10 @@ pub async fn initiate(
     let provider = service::build_provider();
     let callback_url = format!("{}/kyc", state.config.base_url);
 
+    if let Err(resp) = require_kyc_rate_limit(&state, user.id, "initiate").await {
+        return resp;
+    }
+
     match service::initiate_kyc(
         &state.db,
         provider.as_ref(),
@@ -104,15 +124,8 @@ pub async fn initiate(
     {
         Ok(resp) => Json(resp).into_response(),
         Err(e) => {
-            tracing::error!("Failed to initiate KYC for {}: {}", user.id, e);
-            let (status_code, error_msg) = match &e {
-                crate::error::AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
-                _ => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to initiate KYC".to_string(),
-                ),
-            };
-            (status_code, Json(serde_json::json!({"error": error_msg}))).into_response()
+            tracing::error!("Failed to initiate KYC for {}: {}", user.id, e.detail());
+            e.into_response()
         }
     }
 }

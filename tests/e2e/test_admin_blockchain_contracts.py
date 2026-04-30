@@ -158,10 +158,10 @@ def test_admin_blockchain_contracts_auth_safe_rendering_and_copy_feedback(qualit
         expect(page.get_by_text(malicious_title, exact=True)).to_be_visible(timeout=10_000)
         expect(page.locator("#kpi-active-clones")).not_to_have_text("—")
         assert page.locator("img[src='x']").count() == 0
-        expect(page.locator(f"a[href*='{contract_address}']").first()).to_have_attribute(
+        expect(page.locator(f"a[href*='{contract_address}']").first).to_have_attribute(
             "rel", "noopener noreferrer"
         )
-        expect(page.get_by_text("Tx History").first()).to_have_attribute(
+        expect(page.get_by_text("Tx History").first).to_have_attribute(
             "rel", "noopener noreferrer"
         )
 

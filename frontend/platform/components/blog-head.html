@@ -2,26 +2,29 @@
 <html lang="en">
 
 <head>
+    {% set effective_meta_title = meta_title if meta_title else title ~ ' | POOOL Blog' %}
+    {% set effective_meta_description = meta_description if meta_description else description | default('Insights on fractional real estate investing, tokenization, and building wealth with POOOL.') %}
+    {% set effective_canonical_url = canonical_url if canonical_url else base_url ~ request_path %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
-    <title>{{ meta_title | default(title ~ ' | POOOL Blog') }}</title>
-    <meta name="description" content="{{ meta_description | default(description | default('Insights on fractional real estate investing, tokenization, and building wealth with POOOL.')) }}" />
-    <link rel="canonical" href="{{ canonical_url | default(base_url ~ request_path) }}" />
+    <title>{{ effective_meta_title }}</title>
+    <meta name="description" content="{{ effective_meta_description }}" />
+    <link rel="canonical" href="{{ effective_canonical_url }}" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="{% if schema_type == 'BlogPosting' %}article{% else %}website{% endif %}" />
-    <meta property="og:title" content="{{ meta_title | default(title) }}" />
-    <meta property="og:description" content="{{ meta_description | default(description | default('')) }}" />
+    <meta property="og:title" content="{{ effective_meta_title }}" />
+    <meta property="og:description" content="{{ effective_meta_description }}" />
     {% if og_image_url %}<meta property="og:image" content="{{ og_image_url }}" />{% endif %}
-    <meta property="og:url" content="{{ canonical_url | default(base_url ~ request_path) }}" />
+    <meta property="og:url" content="{{ effective_canonical_url }}" />
     <meta property="og:site_name" content="POOOL" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{{ meta_title | default(title) }}" />
-    <meta name="twitter:description" content="{{ meta_description | default(description | default('')) }}" />
+    <meta name="twitter:title" content="{{ effective_meta_title }}" />
+    <meta name="twitter:description" content="{{ effective_meta_description }}" />
     {% if og_image_url %}<meta name="twitter:image" content="{{ og_image_url }}" />{% endif %}
 
     <!-- Fonts (same as platform) -->

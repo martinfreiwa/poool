@@ -143,6 +143,21 @@ pub struct AdminCancelRequest {
     pub reason: Option<String>,
 }
 
+fn normalize_admin_cancel_reason(reason: Option<String>) -> Result<String, ApiError> {
+    let reason = reason
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| ApiError::BadRequest("Cancellation reason is required".into()))?;
+
+    if reason.len() > 500 {
+        return Err(ApiError::BadRequest(
+            "Cancellation reason must be 500 characters or fewer".into(),
+        ));
+    }
+
+    Ok(reason)
+}
+
 /// Aggregated orderbook price level (from SQL query).
 #[derive(Debug, Serialize, sqlx::FromRow)]
 #[allow(missing_docs)]
@@ -713,11 +728,12 @@ pub async fn api_admin_marketplace_trades_export_csv(
 
 /// GET /api/admin/marketplace/orders — Paginated open orders list.
 pub async fn api_admin_marketplace_orders(
-    _admin: AdminUser,
+    admin: AdminUser,
     Query(filters): Query<OrderFilters>,
     State(state): State<AppState>,
 ) -> Result<Json<PaginatedResponse<AdminOrder>>, ApiError> {
     let db = &state.db;
+    admin.require_permission(db, "marketplace.view").await?;
     let page = filters.page.unwrap_or(1).max(1);
     let per_page = filters.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
@@ -785,75 +801,143 @@ pub async fn api_admin_marketplace_order_cancel(
     Json(body): Json<AdminCancelRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let db = &state.db;
+    admin.require_permission(db, "marketplace.manage").await?;
     let order_uuid = ApiError::parse_uuid(&order_id)?;
+    let reason = normalize_admin_cancel_reason(body.reason)?;
 
-    // Verify order exists and is cancellable
-    let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM market_orders WHERE id = $1")
-            .bind(order_uuid)
-            .fetch_optional(db)
-            .await
-            .map_err(ApiError::Database)?;
+    let mut tx = db.begin().await.map_err(ApiError::Database)?;
 
-    let current_status = status.ok_or_else(|| ApiError::NotFound("Order not found".to_string()))?;
+    let order: MarketOrder = sqlx::query_as("SELECT * FROM market_orders WHERE id = $1 FOR UPDATE")
+        .bind(order_uuid)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?
+        .ok_or_else(|| ApiError::NotFound("Order not found".to_string()))?;
 
-    if current_status != "open" && current_status != "partially_filled" {
+    if order.status != "open" && order.status != "partially_filled" {
         return Err(ApiError::BadRequest(format!(
             "Order cannot be cancelled: status is '{}'",
-            current_status
+            order.status
         )));
     }
 
-    // Cancel the order inside a transaction
-    let mut tx = db.begin().await.map_err(ApiError::Database)?;
+    let remaining = order.quantity - order.quantity_filled;
+    if remaining <= 0 {
+        return Err(ApiError::Conflict(
+            "Order has no remaining quantity to cancel".into(),
+        ));
+    }
 
-    sqlx::query(
-        r#"
-        UPDATE market_orders
-        SET status = 'admin_cancelled',
-            updated_at = NOW(),
-            cancel_reason = $2
-        WHERE id = $1
-        "#,
+    let cancelled_order: MarketOrder = sqlx::query_as(
+        "UPDATE market_orders
+         SET status = 'admin_cancelled', updated_at = NOW(), cancel_reason = $2
+         WHERE id = $1 AND status IN ('open', 'partially_filled')
+         RETURNING *",
     )
     .bind(order_uuid)
-    .bind(body.reason.as_deref().unwrap_or("Admin cancellation"))
+    .bind(&reason)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::Conflict("Order was already cancelled or filled".into()))?;
+
+    match order.side.as_str() {
+        "buy" => {
+            let hold_cents = order_hold_cents(order.price_cents, remaining)?;
+            let result = sqlx::query(
+                "UPDATE wallets
+                 SET held_balance_cents = held_balance_cents - $1, updated_at = NOW()
+                 WHERE user_id = $2
+                   AND wallet_type = 'cash'
+                   AND currency = 'USD'
+                   AND held_balance_cents >= $1",
+            )
+            .bind(hold_cents)
+            .bind(order.user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+
+            if result.rows_affected() != 1 {
+                return Err(ApiError::Conflict(
+                    "Held balance could not be released for this order".into(),
+                ));
+            }
+        }
+        "sell" => {
+            let result = sqlx::query(
+                "UPDATE investments
+                 SET held_tokens = held_tokens - $1, updated_at = NOW()
+                 WHERE user_id = $2
+                   AND asset_id = $3
+                   AND status != 'exited'
+                   AND held_tokens >= $1",
+            )
+            .bind(remaining)
+            .bind(order.user_id)
+            .bind(order.asset_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+
+            if result.rows_affected() != 1 {
+                return Err(ApiError::Conflict(
+                    "Held tokens could not be released for this order".into(),
+                ));
+            }
+        }
+        _ => return Err(ApiError::BadRequest("Unsupported order side".into())),
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'marketplace.order.admin_cancelled', 'market_order', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(order_uuid)
+    .bind(serde_json::json!({
+        "status": order.status.clone(),
+        "side": order.side.clone(),
+        "price_cents": order.price_cents,
+        "quantity": order.quantity,
+        "quantity_filled": order.quantity_filled
+    }))
+    .bind(serde_json::json!({
+        "status": cancelled_order.status.clone(),
+        "reason": reason,
+        "remaining_quantity_released": remaining
+    }))
     .execute(&mut *tx)
     .await
     .map_err(ApiError::Database)?;
 
-    // Refund locked funds for buy orders
-    let refund_row: Option<(Uuid, String, i64, i32, i32)> = sqlx::query_as(
-        "SELECT user_id, side, price_cents, quantity, quantity_filled
-         FROM market_orders WHERE id = $1",
-    )
-    .bind(order_uuid)
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(ApiError::Database)?;
+    tx.commit().await.map_err(ApiError::Database)?;
 
-    if let Some((user_id, side, price_cents, qty, filled)) = refund_row {
-        let remaining = (qty - filled) as i64;
-        if side == "buy" && remaining > 0 {
-            let refund_cents = remaining * price_cents;
-            sqlx::query(
-                "UPDATE wallets SET held_balance_cents = GREATEST(held_balance_cents - $1, 0), updated_at = NOW() \
-                 WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
+    if let Some(redis) = state.redis.as_ref() {
+        if let Err(e) = crate::marketplace::orderbook::remove_order(redis, &order).await {
+            tracing::error!(
+                order_id = %order_uuid,
+                error = %e,
+                "Admin-cancelled marketplace order could not be removed from Redis orderbook"
+            );
+            sentry::capture_message(
+                "Admin-cancelled marketplace order failed Redis orderbook removal",
+                sentry::Level::Error,
+            );
+        } else {
+            crate::marketplace::websocket::broadcast_orderbook_update(
+                db,
+                Some(redis),
+                order.asset_id,
             )
-            .bind(refund_cents)
-            .bind(user_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(ApiError::Database)?;
+            .await;
         }
     }
-
-    tx.commit().await.map_err(ApiError::Database)?;
 
     tracing::info!(
         admin_id = %admin.user.id,
         %order_uuid,
-        reason = body.reason.as_deref().unwrap_or("Admin cancellation"),
+        reason = %reason,
         "Admin cancelled marketplace order"
     );
 

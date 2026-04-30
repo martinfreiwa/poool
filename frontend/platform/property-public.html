@@ -64,6 +64,11 @@
 
               <!-- 3. Property Main Content Card -->
               <div id="property-main-card">
+                {% if asset.public_data_notice %}
+                <div class="public-preview-notice" role="note">
+                  {{ asset.public_data_notice }}
+                </div>
+                {% endif %}
                 <!-- Heading -->
                 <div id="property-heading-section" class="heading-and-icon">
                   <h1 id="property-title">{{ asset.title | default('Modern Architectural Villa in Central Denpasar') }}</h1>
@@ -78,12 +83,12 @@
                   <div class="category-separator"></div>
                   <div class="category-badge">
                     <svg class="badge-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                      <path d="M9 9h.01"></path>
-                      <path d="M9 15h6"></path>
-                      <path d="M15 9h.01"></path>
+                      <path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"></path>
+                      <path d="M7 17v2"></path>
+                      <path d="M17 17v2"></path>
+                      <path d="M21 10V6a2 2 0 0 0-2-2"></path>
                     </svg>
-                    <span class="badge-text">Ready</span>
+                    <span class="badge-text">{{ asset.bathrooms | default('—', true) }}</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
@@ -92,12 +97,7 @@
                       <path d="M9 4v16"></path>
                       <path d="M4 9h16"></path>
                     </svg>
-                    <span class="badge-text">{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span>
-                  </div>
-                  <div class="category-separator"></div>
-                  <div class="category-badge">
-                    <img src="/static/images/prop-details/markerpin.svg" alt="Location" class="badge-icon" width="16" height="16" />
-                    <span class="badge-text" id="property-location">{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span>
+                    <span class="badge-text">{% if asset.building_size_sqm %}{{ asset.building_size_sqm }}{% elif asset.land_size_sqm %}{{ asset.land_size_sqm }}{% else %}—{% endif %} m²</span>
                   </div>
                 </div>
 
@@ -360,21 +360,13 @@
                     <div class="developer-social">
                       <div class="developer-website">
                         <span class="social-label">Website</span>
-                        <a href="https://alexvillasgroup.com" class="website-link" target="_blank">
+                        <a href="https://alexvillasgroup.com" class="website-link" target="_blank" rel="noopener noreferrer">
                           <svg class="globe-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <circle cx="8" cy="8" r="7" stroke="#0000FF" stroke-width="1.5"></circle>
                             <path d="M2 8H14M8 1C8 1 5 4 5 8C5 12 8 15 8 15C8 15 11 12 11 8C11 4 8 1 8 1Z" stroke="#0000FF" stroke-width="1.5"></path>
                           </svg>
                           <span>alexvillasgroup.com</span>
                         </a>
-                      </div>
-                      <div class="developer-socials">
-                        <span class="social-label">Social media</span>
-                        <div class="social-icons">
-                          <a href="#" class="social-icon facebook"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M20 10C20 4.477 15.523 0 10 0S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z" fill="#0000FF"></path></svg></a>
-                          <a href="#" class="social-icon instagram"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="4" stroke="#0000FF" stroke-width="2"></rect><circle cx="10" cy="10" r="3" stroke="#0000FF" stroke-width="2"></circle><circle cx="14.5" cy="5.5" r="1.5" fill="#0000FF"></circle></svg></a>
-                          <a href="#" class="social-icon youtube"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M19.543 5.491C19.353 4.766 18.784 4.197 18.059 4.007C16.728 3.667 10 3.667 10 3.667s-6.728 0-8.059.34C1.216 4.197.647 4.766.457 5.491.167 6.822.167 10 .167 10s0 3.178.29 4.509c.19.725.759 1.294 1.484 1.484C3.272 16.333 10 16.333 10 16.333s6.728 0 8.059-.34c.725-.19 1.294-.759 1.484-1.484.29-1.331.29-4.509.29-4.509s0-3.178-.29-4.509zM8 12.5V7.5l5.5 2.5L8 12.5z" fill="#0000FF"></path></svg></a>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -413,7 +405,7 @@
                             </div>
                           </div>
                         </div>
-                        <div class="price-card-supporting-text">Property price</div>
+                        <div class="price-card-supporting-text">{% if asset.is_public_preview %}Estimated property value{% else %}Property price{% endif %}</div>
                         <div class="price-card-price-text">
                           <span class="price-currency">USD</span>
                           <span class="price-amount">{{ asset.total_value_usd }}</span>
@@ -422,12 +414,12 @@
                       <div class="price-card-loading-bar">
                         <div class="loading-container"><div class="loading-fill" style="width: {{ asset.funded_percentage_display }}%"></div></div>
                         <div class="loading-text">
-                          <div class="funded-text">{% if asset.funded_percentage >= 100 %}Fully funded{% else %}{{ asset.funded_percentage_display }}% funded{% endif %}</div>
+                          <div class="funded-text">{% if asset.is_public_preview %}{% if asset.funded_percentage >= 100 %}Preview fully allocated{% else %}{{ asset.funded_percentage_display }}% preview interest{% endif %}{% elif asset.funded_percentage >= 100 %}Fully funded{% else %}{{ asset.funded_percentage_display }}% funded{% endif %}</div>
                           <div class="available-text-wrapper">
                             {% if asset.funded_percentage >= 100 %}
-                            <span class="available-text">Sold out</span>
+                            <span class="available-text">{% if asset.is_public_preview %}Join waitlist{% else %}Sold out{% endif %}</span>
                             {% else %}
-                            <span class="available-text">USD {{ asset.available_usd }} available</span>
+                            <span class="available-text">{% if asset.is_public_preview %}Sign up for live availability{% else %}USD {{ asset.available_usd }} available{% endif %}</span>
                             {% endif %}
                           </div>
                         </div>
@@ -437,7 +429,7 @@
                       <div class="investors-left">
                         <img src="/static/images/portfolio_asset_details/users-group.svg" alt="Investors" class="users-icon" width="20" height="20" />
                         <span class="investors-number">{{ asset.investor_count }}</span>
-                        <span class="investors-label">investors</span>
+                        <span class="investors-label">{% if asset.is_public_preview %}early interest{% else %}investors{% endif %}</span>
                       </div>
                       <div class="price-per-sqm-badge">
                         <span class="badge-text">USD {{ asset.price_per_sqm }}</span>
@@ -477,7 +469,7 @@
                       <button class="amount-badge quick-add-btn" data-amount="2000" disabled>+ USD 2000</button>
                       <button class="amount-badge quick-add-btn" data-amount="5000" disabled>+ USD 5000</button>
                     </div>
-                    <div class="disclaimer-text">This property has been fully funded. Sign up to be notified about new opportunities.</div>
+                    <div class="disclaimer-text">{% if asset.is_public_preview %}This preview is fully allocated. Sign up to see live opportunities.{% else %}This property has been fully funded. Sign up to be notified about new opportunities.{% endif %}</div>
                   </div>
                   {% else %}
                   <div class="price-card-investment">
@@ -497,7 +489,7 @@
                       <button class="amount-badge quick-add-btn" data-amount="2000">+ USD 2000</button>
                       <button class="amount-badge quick-add-btn" data-amount="5000">+ USD 5000</button>
                     </div>
-                    <div class="disclaimer-text">Create a free account to invest from USD 500</div>
+                    <div class="disclaimer-text">{% if asset.is_public_preview %}Create a free account to see live availability and documents{% else %}Create a free account to invest from USD 500{% endif %}</div>
                   </div>
                   {% endif %}
                 </div>
@@ -547,6 +539,7 @@
             </svg>
             <span>{{ (asset.image_urls | default([])) | length }} photos</span>
           </button>
+          {% if asset.youtube_video_id %}
           <div class="mobile-btn-divider"></div>
           <button class="mobile-gallery-btn" onclick="openVirtualTour()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -557,6 +550,7 @@
             </svg>
             <span>Virtual tour</span>
           </button>
+          {% endif %}
         </div>
         <div class="mobile-card-content">
           <div class="mobile-card-heading">
@@ -571,7 +565,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="mobile-supporting-text">Property price</div>
+                <div class="mobile-supporting-text">{% if asset.is_public_preview %}Estimated property value{% else %}Property price{% endif %}</div>
                 <div class="mobile-price-text">
                   <span class="price-currency">USD</span>
                   <span class="price-amount">{{ asset.total_value_usd }}</span>
@@ -580,12 +574,12 @@
               <div class="mobile-loading-bar">
                 <div class="loading-container"><div class="loading-fill" style="width: {{ asset.funded_percentage_display }}%"></div></div>
                 <div class="loading-text">
-                  <div class="funded-text">{% if asset.funded_percentage >= 100 %}Fully funded{% else %}{{ asset.funded_percentage_display }}% funded{% endif %}</div>
+                  <div class="funded-text">{% if asset.is_public_preview %}{% if asset.funded_percentage >= 100 %}Preview fully allocated{% else %}{{ asset.funded_percentage_display }}% preview interest{% endif %}{% elif asset.funded_percentage >= 100 %}Fully funded{% else %}{{ asset.funded_percentage_display }}% funded{% endif %}</div>
                   <div class="available-text-wrapper">
                     {% if asset.funded_percentage >= 100 %}
-                    <span class="available-text">Sold out</span>
+                    <span class="available-text">{% if asset.is_public_preview %}Join waitlist{% else %}Sold out{% endif %}</span>
                     {% else %}
-                    <span class="available-text">USD {{ asset.available_usd }} available</span>
+                    <span class="available-text">{% if asset.is_public_preview %}Sign up for live availability{% else %}USD {{ asset.available_usd }} available{% endif %}</span>
                     {% endif %}
                   </div>
                 </div>
@@ -595,7 +589,7 @@
               <div class="investors-left">
                 <img src="/static/images/portfolio_asset_details/users-group.svg" alt="Investors" class="users-icon" width="20" height="20" />
                 <span class="investors-number">{{ asset.investor_count }}</span>
-                <span class="investors-label">investors</span>
+                <span class="investors-label">{% if asset.is_public_preview %}early interest{% else %}investors{% endif %}</span>
               </div>
               <div class="price-per-sqm-badge">
                 <span class="badge-text">USD {{ asset.price_per_sqm }}</span>
@@ -624,7 +618,7 @@
               <button class="amount-badge mobile-quick-btn" data-amount="2000" disabled>+ USD 2000</button>
               <button class="amount-badge mobile-quick-btn" data-amount="5000" disabled>+ USD 5000</button>
             </div>
-            <div class="disclaimer-text">This property has been fully funded.</div>
+            <div class="disclaimer-text">{% if asset.is_public_preview %}This preview is fully allocated. Sign up to see live opportunities.{% else %}This property has been fully funded.{% endif %}</div>
           </div>
           {% else %}
           <div class="mobile-investment">
@@ -642,7 +636,7 @@
               <button class="amount-badge mobile-quick-btn" data-amount="2000">+ USD 2000</button>
               <button class="amount-badge mobile-quick-btn" data-amount="5000">+ USD 5000</button>
             </div>
-            <div class="disclaimer-text">Create a free account to invest from USD 500</div>
+            <div class="disclaimer-text">{% if asset.is_public_preview %}Create a free account to see live availability and documents{% else %}Create a free account to invest from USD 500{% endif %}</div>
           </div>
           {% endif %}
         </div>
@@ -654,11 +648,9 @@
         <div class="mobile-categories">
           <div class="mobile-category-badge"><img src="/static/images/icons/Bed.svg" alt="Beds" width="16" height="16" /><span>{{ asset.bedrooms | default(4) }}</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 9h.01"></path><path d="M9 15h6"></path><path d="M15 9h.01"></path></svg><span>Ready</span></div>
+          <div class="mobile-category-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"></path><path d="M7 17v2"></path><path d="M17 17v2"></path><path d="M21 10V6a2 2 0 0 0-2-2"></path></svg><span>{{ asset.bathrooms | default('—', true) }}</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M9 4v16"></path><path d="M4 9h16"></path></svg><span>{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span></div>
-          <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img src="/static/images/prop-details/markerpin.svg" alt="Location" width="16" height="16" /><span>{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span></div>
+          <div class="mobile-category-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M9 4v16"></path><path d="M4 9h16"></path></svg><span>{% if asset.building_size_sqm %}{{ asset.building_size_sqm }}{% elif asset.land_size_sqm %}{{ asset.land_size_sqm }}{% else %}—{% endif %} m²</span></div>
         </div>
       </div>
     </div>
@@ -676,9 +668,9 @@
             <p>By accessing this website and any of its sub-pages, you agree to be bound by our Terms of Service, Privacy Policy, and Risk Disclosure.</p>
             <div class="footer-brand-lang">
               <span>Website language:</span>
-              <button class="lang-btn">ID</button>
+              <span class="lang-option">ID</span>
               <span class="lang-sep">|</span>
-              <button class="lang-btn active">EN</button>
+              <span class="lang-option active">EN</span>
             </div>
           </div>
           <div class="footer-brand-divider"></div>
@@ -755,6 +747,17 @@
         body.property-public-body .header-nav { display: none; }
       }
 
+      body.property-public-body .public-preview-notice {
+        margin: 0 0 24px;
+        padding: 12px 14px;
+        border: 1px solid #D5D7DA;
+        border-radius: 10px;
+        background: #FFFFFF;
+        color: #414651;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
       /* Main region: no sidebar → full-width wrapper, no left offset */
       body.property-public-body .property-public-main {
         margin: 0 !important;
@@ -800,8 +803,8 @@
       .footer-brand-link-green { color: #03FF88; font-weight: 700; text-decoration: none; }
       .footer-brand-link-green:hover { opacity: 0.85; }
       .footer-brand-lang { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: #ffffff; margin-top: 6px; }
-      .footer-brand-lang .lang-btn { background: transparent; border: none; color: rgba(255,255,255,0.8); font-size: 0.9375rem; font-weight: 600; padding: 0 2px; cursor: pointer; }
-      .footer-brand-lang .lang-btn.active { color: #03FF88; }
+      .footer-brand-lang .lang-option { color: rgba(255,255,255,0.8); font-size: 0.9375rem; font-weight: 600; padding: 0 2px; }
+      .footer-brand-lang .lang-option.active { color: #03FF88; }
       .footer-brand-lang .lang-sep { color: rgba(255,255,255,0.5); }
       .footer-brand-nav { display: flex; flex-wrap: wrap; gap: 18px 20px; margin-top: 20px; }
       .footer-brand-nav a { font-size: 0.9375rem; font-weight: 700; color: #ffffff; text-decoration: none; }
@@ -855,11 +858,9 @@
       }
 
       function openVirtualTour() {
-        var toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--page-title-color);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
-        toast.textContent = 'Virtual tour coming soon!';
-        document.body.appendChild(toast);
-        setTimeout(function() { toast.remove(); }, 3000);
+        if (typeof playPropertyVideo === 'function') {
+          playPropertyVideo();
+        }
       }
 
       /* Dynamically position Similar Properties below the main card (same behavior as dashboard page) */

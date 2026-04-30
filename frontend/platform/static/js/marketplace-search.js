@@ -19,16 +19,22 @@
     const searchBtn = document.getElementById("filter-bar-search-btn");
     const clearBtn = document.getElementById("filter-bar-clear-btn");
 
-    // Identify the property grid — works for both marketplace and commodities
-    const propertyGrid =
-      document.getElementById("property-grid") ||
-      document.getElementById("commodity-grid");
+    function getPropertyGrid() {
+      return (
+        document.getElementById("property-grid") ||
+        document.getElementById("commodity-grid")
+      );
+    }
 
-    if (!searchInput || !propertyGrid) return;
+    if (!searchInput || !getPropertyGrid()) return;
+    if (searchInput.dataset.marketplaceSearchReady === "true") return;
+    searchInput.dataset.marketplaceSearchReady = "true";
 
     // ─── Search Logic ───
     function performSearch() {
       const query = searchInput.value.toLowerCase().trim();
+      const propertyGrid = getPropertyGrid();
+      if (!propertyGrid) return;
       const cards = propertyGrid.querySelectorAll(".property-card");
 
       cards.forEach(function (card) {
@@ -77,6 +83,9 @@
       const locationVal = locationSelect ? locationSelect.value : "";
       const investmentVal = investmentSelect ? investmentSelect.value : "";
       const propertyVal = propertyTypeSelect ? propertyTypeSelect.value : "";
+      const isCommoditiesPage = window.location.pathname === "/commodities-marketplace";
+      const propertyGrid = getPropertyGrid();
+      if (!propertyGrid) return;
 
       const cards = propertyGrid.querySelectorAll(".property-card");
 
@@ -113,28 +122,46 @@
         // 2. Asset Type Filter (Priority: data-asset-type)
         if (visible && propertyVal && propertyVal !== "any") {
           const assetType = (card.dataset.assetType || "").toLowerCase();
+          const commodityType = (card.dataset.commodityType || "").toLowerCase();
           const badgeEl = card.querySelector(".badge-text");
           const badgeText = badgeEl ? badgeEl.textContent.toLowerCase() : "";
 
-          if (propertyVal === "commercial") {
-            if (assetType !== "commercial" && !badgeText.includes("commercial")) visible = false;
+          if (isCommoditiesPage) {
+            if (commodityType !== propertyVal && !badgeText.includes(propertyVal)) visible = false;
+          } else if (["real_estate", "commercial_property", "land_plot"].includes(propertyVal)) {
+            if (assetType !== propertyVal) visible = false;
+          } else if (propertyVal === "commercial") {
+            if (assetType !== "commercial" && assetType !== "commercial_property" && !badgeText.includes("commercial")) visible = false;
           } else if (propertyVal === "villa" || propertyVal === "residential") {
-            if (assetType !== "villa" && assetType !== "residential" && badgeText.includes("commercial")) visible = false;
+            if (assetType !== "villa" && assetType !== "residential" && assetType !== "real_estate" && badgeText.includes("commercial")) visible = false;
           }
         }
 
         // 3. Investment Type / Duration Filter
         if (visible && investmentVal && investmentVal !== "any") {
           const duration = (card.dataset.duration || "").toLowerCase();
+          const durationMonths = parseInt(card.dataset.durationMonths || "", 10);
           const durationEl = card.querySelector('[id*="-duration-value"]');
           const durationText = duration || (durationEl ? durationEl.textContent.toLowerCase() : "");
 
           if (durationText) {
+            const monthsMatch = durationText.match(/(\d+)\s*month/);
+            const months = Number.isFinite(durationMonths) ? durationMonths : (monthsMatch ? parseInt(monthsMatch[1], 10) : null);
             if (investmentVal === "short-term" || investmentVal === "0-6") {
-              if (!durationText.includes("month") || durationText.includes("year")) visible = false;
+              if (months !== null) {
+                if (months > 12) visible = false;
+              } else if (!durationText.includes("month") || durationText.includes("year")) visible = false;
+            } else if (investmentVal === "7-12") {
+              if (months === null || months < 7 || months > 12) visible = false;
+            } else if (investmentVal === "13plus") {
+              if (months === null || months < 13) visible = false;
             } else if (investmentVal === "long-term" || investmentVal === "2-5" || investmentVal === "5plus") {
-              if (!durationText.includes("year")) visible = false;
+              if (months !== null) {
+                if (months <= 12) visible = false;
+              } else if (!durationText.includes("year")) visible = false;
             }
+          } else {
+            visible = false;
           }
         }
 
@@ -181,14 +208,31 @@
           existingMsg.className = "marketplace-no-results";
           existingMsg.style.cssText =
             "grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #717680; font-size: 16px;";
-          existingMsg.innerHTML = `
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; display: block;">
-                            <circle cx="11" cy="11" r="7" stroke="#A4A7AE" stroke-width="2"/>
-                            <path d="M16 16L21 21" stroke="#A4A7AE" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <p style="font-weight: 600; color: #414651; margin-bottom: 4px;">No properties found</p>
-                        <p>Try adjusting your search or filter criteria</p>
-                    `;
+          existingMsg.setAttribute("role", "status");
+          const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          icon.setAttribute("width", "48");
+          icon.setAttribute("height", "48");
+          icon.setAttribute("viewBox", "0 0 24 24");
+          icon.setAttribute("fill", "none");
+          icon.style.cssText = "margin: 0 auto 16px; display: block;";
+          const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          circle.setAttribute("cx", "11");
+          circle.setAttribute("cy", "11");
+          circle.setAttribute("r", "7");
+          circle.setAttribute("stroke", "#A4A7AE");
+          circle.setAttribute("stroke-width", "2");
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", "M16 16L21 21");
+          path.setAttribute("stroke", "#A4A7AE");
+          path.setAttribute("stroke-width", "2");
+          path.setAttribute("stroke-linecap", "round");
+          icon.append(circle, path);
+          const title = document.createElement("p");
+          title.style.cssText = "font-weight: 600; color: #414651; margin-bottom: 4px;";
+          title.textContent = window.location.pathname === "/commodities-marketplace" ? "No commodities found" : "No properties found";
+          const hint = document.createElement("p");
+          hint.textContent = "Try adjusting your search or filter criteria";
+          existingMsg.append(icon, title, hint);
           grid.appendChild(existingMsg);
         }
         existingMsg.style.display = "";
@@ -229,6 +273,8 @@
       clearBtn.addEventListener("click", function (e) {
         e.preventDefault();
         searchInput.value = "";
+        const propertyGrid = getPropertyGrid();
+        if (!propertyGrid) return;
 
         // Reset native selects
         [
@@ -282,14 +328,19 @@
     });
 
     // Also listen for POOOL custom dropdown change events
-    document.addEventListener("dropdown:change", function (e) {
-      const dropdown = e.target.closest(".filter-dropdown");
-      if (dropdown) {
-        // Small delay to let POOOL dropdown sync values
-        setTimeout(performDropdownFilter, 50);
-      }
-    });
+    if (document.body.dataset.marketplaceDropdownFilterReady !== "true") {
+      document.body.dataset.marketplaceDropdownFilterReady = "true";
+      document.addEventListener("dropdown:change", function (e) {
+        const dropdown = e.target.closest(".filter-dropdown");
+        if (dropdown) {
+          // Small delay to let POOOL dropdown sync values
+          setTimeout(performDropdownFilter, 50);
+        }
+      });
+    }
   }
+
+  window._initMarketplaceSearch = initMarketplaceSearch;
 
   // ─── Sidebar Search Wiring ───
   function initSidebarSearch() {

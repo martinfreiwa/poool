@@ -531,6 +531,13 @@ body#support-body {
     flex-direction: column;
     align-items: center;
     gap: 6px;
+    cursor: pointer;
+    outline: none;
+}
+
+.drop-zone-content:focus-visible {
+    border-radius: 8px;
+    box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.16);
 }
 
 .drop-zone-text {
@@ -829,9 +836,21 @@ body#support-body {
 
 .ticket-card-header {
     display: flex;
+    width: 100%;
     justify-content: space-between;
     align-items: flex-start;
     cursor: pointer;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    text-align: left;
+    font: inherit;
+}
+
+.ticket-card-header:focus-visible {
+    border-radius: 8px;
+    outline: 2px solid var(--primary-color);
+    outline-offset: 4px;
 }
 
 .ticket-card-left {

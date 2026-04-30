@@ -6,6 +6,9 @@
 function initializeStatusTabs() {
   const tabs = document.querySelectorAll(".status-tabs .status-tab");
   tabs.forEach((tab) => {
+    if (tab.dataset.statusTabReady === "true") return;
+    tab.dataset.statusTabReady = "true";
+
     tab.addEventListener("click", function () {
       // Remove active from all siblings
       tabs.forEach((t) => t.classList.remove("active"));

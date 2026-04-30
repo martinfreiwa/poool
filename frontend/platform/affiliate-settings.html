@@ -13,67 +13,67 @@
       <div class="affiliate-dashboard-container">
         <!-- Header -->
 
-        <div class="dash-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+        <div class="affiliate-settings-grid">
             <!-- Main Settings Form -->
-            <div class="ds-card" style="padding: 32px">
-                <form id="affiliate-settings-form">
-                    <h3 style="margin: 0 0 24px; font-size: 18px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">Tax Classification</h3>
+            <div class="ds-card affiliate-settings-card">
+                <form id="affiliate-settings-form" novalidate>
+                    <h3 class="affiliate-settings-section-title">Tax Classification</h3>
 
                     <!-- Attention Banner -->
-                    <div style="background: rgba(255, 165, 0, 0.1); border-left: 4px solid orange; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
-                        <p style="margin: 0; font-size: 13px; color: var(--text-primary);"><strong>Notice:</strong> Changing your tax classification or ID will temporarily freeze your payout capability while our compliance team verifies your updated information.</p>
+                    <div class="affiliate-settings-notice">
+                        <p><strong>Notice:</strong> Changing your tax classification or ID will temporarily freeze your payout capability while our compliance team verifies your updated information.</p>
                     </div>
 
-                    <div class="form-row" style="margin-bottom: 24px;">
+                    <div id="affiliate-settings-message" class="affiliate-settings-message" role="status" aria-live="polite" hidden></div>
+
+                    <div class="form-row affiliate-settings-row">
                         <div class="ds-input-wrapper">
-                            <label class="ds-label">Tax Classification <span style="color: red">*</span></label>
-                            <select class="ds-input" id="tax_class" name="tax_class" required onchange="markDirty()">
+                            <label class="ds-label" for="tax_class">Tax Classification <span class="required-marker" aria-hidden="true">*</span></label>
+                            <select class="ds-input" id="tax_class" name="tax_class" required>
                                 <option value="" disabled selected>Select classification...</option>
-                                <option value="individual">Individual / Sole Proprietor</option>
-                                <option value="c_corp">C Corporation</option>
-                                <option value="s_corp">S Corporation</option>
-                                <option value="partnership">Partnership</option>
-                                <option value="llc">Limited Liability Company (LLC)</option>
-                                <option value="non_profit">Non-Profit Organization</option>
+                                <option value="id_individual">Indonesian Individual / Sole Proprietor</option>
+                                <option value="id_entity">Indonesian Business Entity</option>
+                                <option value="foreign">Foreign Recipient</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="form-row" style="margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-row affiliate-settings-split-row">
                         <div class="ds-input-wrapper">
-                            <label class="ds-label">Tax ID / SSN <span style="color: red">*</span></label>
-                            <input type="text" class="ds-input" id="tax_id" name="tax_id" placeholder="XX-XXXXXXX" required oninput="markDirty()"/>
+                            <label class="ds-label" for="tax_id">Tax ID / SSN</label>
+                            <input type="text" class="ds-input" id="tax_id" name="tax_id" placeholder="Leave blank to keep existing" autocomplete="off" inputmode="text" aria-describedby="tax_id_hint"/>
+                            <p id="tax_id_hint" class="affiliate-settings-help">Current value: <span id="tax_id_masked">Not on file</span></p>
                         </div>
                         <div class="ds-input-wrapper">
-                            <label class="ds-label">VAT Number <span style="font-weight: 400; color: var(--text-muted);">(Optional)</span></label>
-                            <input type="text" class="ds-input" id="vat_number" name="vat_number" placeholder="EUXXXXXXXX" oninput="markDirty()"/>
-                        </div>
-                    </div>
-
-                    <div class="form-row" style="margin-bottom: 32px;">
-                        <div class="ds-input-wrapper">
-                            <label class="ds-label">Business / Full Name <span style="color: red">*</span></label>
-                            <input type="text" class="ds-input" id="tax_name" name="tax_name" required oninput="markDirty()"/>
+                            <label class="ds-label" for="vat_number">VAT Number <span class="optional-marker">(Optional)</span></label>
+                            <input type="text" class="ds-input" id="vat_number" name="vat_number" placeholder="EUXXXXXXXX"/>
                         </div>
                     </div>
 
-                    <h3 style="margin: 0 0 24px; font-size: 18px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">Payout Account</h3>
-
-                    <div class="form-row" style="margin-bottom: 24px;">
+                    <div class="form-row affiliate-settings-row affiliate-settings-row-spacious">
                         <div class="ds-input-wrapper">
-                            <label class="ds-label">Payout Preference</label>
-                            <select class="ds-input" id="payout_method" name="payout_method" required onchange="markDirty()">
+                            <label class="ds-label" for="tax_name">Business / Full Name <span class="required-marker" aria-hidden="true">*</span></label>
+                            <input type="text" class="ds-input" id="tax_name" name="tax_name" required/>
+                        </div>
+                    </div>
+
+                    <h3 class="affiliate-settings-section-title">Payout Account</h3>
+
+                    <div class="form-row affiliate-settings-row">
+                        <div class="ds-input-wrapper">
+                            <label class="ds-label" for="payout_method">Payout Preference</label>
+                            <select class="ds-input" id="payout_method" name="payout_method" required>
                                 <option value="poool_wallet" selected>POOOL Cash Wallet (Instant, Zero Fee)</option>
                                 <option value="bank_transfer" disabled>Direct Bank Transfer (Coming Soon)</option>
                                 <option value="usdc" disabled>USDC Crypto (Coming Soon)</option>
                             </select>
-                            <p style="margin: 8px 0 0; font-size: 12px; color: var(--text-muted);">Commissions are currently deposited directly into your internal POOOL investor wallet where they can be reinvested or withdrawn to your linked bank account.</p>
+                            <p class="affiliate-settings-help">Commissions are currently deposited directly into your internal POOOL investor wallet where they can be reinvested or withdrawn to your linked bank account.</p>
                         </div>
                     </div>
 
-                    <div class="form-row" style="display: flex; gap: 12px; align-items: flex-start; margin-top: 32px; padding: 16px; background: #F9FAFB; border-radius: 8px;">
-                        <input type="checkbox" id="tax_certify" style="margin-top: 4px;" required onchange="markDirty()"/>
-                        <label for="tax_certify" style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; cursor: pointer;">
+                    <div class="form-row affiliate-settings-certification">
+                        <input type="checkbox" id="tax_certify" name="tax_certify" required/>
+                        <label for="tax_certify">
                             Under penalties of perjury, I certify that the Taxpayer Identification Number shown on this form is correct and I am not subject to backup withholding.
                         </label>
                     </div>
@@ -83,28 +83,29 @@
 
             <!-- Status Sidebar Column -->
             <div class="side-col">
-                <div class="ds-card" style="padding: 24px; position: sticky; top: 100px;">
-                    <h4 style="margin: 0 0 16px; font-size: 14px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Account Status</h4>
+                <div class="ds-card affiliate-settings-status-card">
+                    <h4>Account Status</h4>
                     
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                        <span style="font-size: 14px; color: var(--text-secondary)">Tax Status</span>
-                        <span class="ds-badge" style="background: rgba(0,200,80,0.1); color: #00c850; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Verified</span>
+                    <div class="affiliate-settings-status-row">
+                        <span>Tax Status</span>
+                        <span class="ds-badge affiliate-settings-badge" id="tax_status_badge">Loading...</span>
                     </div>
                     
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                        <span style="font-size: 14px; color: var(--text-secondary)">Payouts</span>
-                        <span class="ds-badge" style="background: rgba(0,200,80,0.1); color: #00c850; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Active</span>
+                    <div class="affiliate-settings-status-row">
+                        <span>Payouts</span>
+                        <span class="ds-badge affiliate-settings-badge" id="payout_status_badge">Loading...</span>
                     </div>
+                    <p class="affiliate-settings-help" id="payout_hold_reason" hidden></p>
 
-                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                    <hr>
 
-                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px;">
-                        <li style="display: flex; gap: 12px; font-size: 13px; color: var(--text-secondary);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                    <ul class="affiliate-settings-notes">
+                        <li>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
                             Threshold minimum is $50.00.
                         </li>
-                        <li style="display: flex; gap: 12px; font-size: 13px; color: var(--text-secondary);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                        <li>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
                             Tax year 1099s will be generated by Jan 31st.
                         </li>
                     </ul>
@@ -117,21 +118,10 @@
     </main>
   </div>
 
-  <script src="/static/js/affiliate-settings.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.remove('fouc-guard');
     });
-
-    function markDirty() {
-        const btn = document.getElementById("save-settings-btn");
-        const checkbox = document.getElementById("tax_certify");
-        if(checkbox.checked) {
-            btn.disabled = false;
-        } else {
-            btn.disabled = true;
-        }
-    }
   </script>
 </body>
 </html>

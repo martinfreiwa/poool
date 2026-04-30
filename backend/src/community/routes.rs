@@ -266,6 +266,7 @@ pub fn map_to_post_display(
     author_name: String,
     author_avatar: Option<String>,
     author_badges: Vec<String>,
+    current_user_reacted: bool,
 ) -> PostDisplay {
     let mut author_initials = String::new();
     let parts: Vec<&str> = author_name.split_whitespace().collect();
@@ -331,6 +332,7 @@ pub fn map_to_post_display(
         link_preview_domain,
         reaction_count: p.reaction_count,
         comment_count: p.comment_count,
+        current_user_reacted,
         is_hidden: p.is_hidden,
         is_pinned: p.is_pinned,
         disclaimer_shown: p.disclaimer_shown,
@@ -376,6 +378,24 @@ pub async fn get_feed_data(
     let authors =
         user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
+    let reacted_post_ids = if let Some(current_user) = user {
+        let post_ids: Vec<Uuid> = posts.iter().map(|p| p.id).collect();
+        if post_ids.is_empty() {
+            std::collections::HashSet::new()
+        } else {
+            sqlx::query_scalar::<_, Uuid>(
+                "SELECT post_id FROM reactions WHERE user_id = $1 AND post_id = ANY($2) AND reaction_type = 'fire'",
+            )
+            .bind(current_user.id)
+            .bind(&post_ids)
+            .fetch_all(&c_pool)
+            .await?
+            .into_iter()
+            .collect()
+        }
+    } else {
+        std::collections::HashSet::new()
+    };
 
     let mut feed = Vec::with_capacity(posts.len());
 
@@ -391,6 +411,7 @@ pub async fn get_feed_data(
             author_name,
             author.and_then(|a| a.avatar_url.clone()),
             author_badges,
+            reacted_post_ids.contains(&p.id),
         ));
     }
 
@@ -452,12 +473,24 @@ async fn get_post_detail(
         .as_ref()
         .map(|a| a.display_name.clone())
         .unwrap_or_else(|| "Anonymous".into());
+    let current_user_reacted = if let Some(ref current_user) = user {
+        sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM reactions WHERE post_id = $1 AND user_id = $2 AND reaction_type = 'fire')",
+        )
+        .bind(p.id)
+        .bind(current_user.id)
+        .fetch_one(&c_pool)
+        .await?
+    } else {
+        false
+    };
 
     let response = map_to_post_display(
         &p,
         author_name,
         author_info.and_then(|a| a.avatar_url.clone()),
         author_badges,
+        current_user_reacted,
     );
 
     Ok(Json(response))
@@ -547,10 +580,11 @@ async fn toggle_reaction(
     // FIX-F7: Check ban before allowing reaction
     check_user_not_banned(&c_pool, user.id).await?;
 
-    let added = service::toggle_reaction(&c_pool, post_id, user.id, payload.reaction_type).await?;
+    let outcome =
+        service::toggle_reaction(&c_pool, post_id, user.id, payload.reaction_type).await?;
 
     // Award XP only when reaction is added (not removed)
-    if added {
+    if outcome.added {
         let _ = crate::community::xp::award_xp(
             &c_pool,
             user.id,
@@ -561,7 +595,10 @@ async fn toggle_reaction(
         .await;
     }
 
-    Ok(Json(serde_json::json!({ "added": added })))
+    Ok(Json(serde_json::json!({
+        "added": outcome.added,
+        "reaction_count": outcome.reaction_count,
+    })))
 }
 
 async fn create_comment(
@@ -1546,9 +1583,10 @@ pub struct AdminUserDisplay {
 }
 
 async fn admin_get_users(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_view_or_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
 
     // Use query! structure with an anonymous record but dynamic execute
@@ -1608,34 +1646,83 @@ pub struct BanUserPayload {
 
 async fn admin_toggle_ban_user(
     admin: crate::admin::extractors::AdminUser,
+    jar: CookieJar,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<BanUserPayload>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
+    require_csrf_header(&headers, &jar)?;
     let c_pool = get_community_pool(&state)?;
+    let reason = payload
+        .reason
+        .as_deref()
+        .map(str::trim)
+        .filter(|reason| !reason.is_empty())
+        .map(str::to_string);
+    if payload.is_banned && reason.is_none() {
+        return Err(AppError::BadRequest("Ban reason is required.".to_string()));
+    }
+    if reason
+        .as_ref()
+        .map(|reason| reason.chars().count() > 1000)
+        .unwrap_or(false)
+    {
+        return Err(AppError::BadRequest(
+            "Ban reason must be 1000 characters or fewer.".to_string(),
+        ));
+    }
 
-    sqlx::query("UPDATE community_profiles SET is_community_banned = $1, ban_reason = $2 WHERE user_id = $3")
+    use sqlx::Row;
+    let mut tx = c_pool.begin().await?;
+    let profile = sqlx::query(
+        "SELECT is_community_banned, ban_reason FROM community_profiles WHERE user_id = $1 FOR UPDATE",
+    )
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Community user not found.".to_string()))?;
+
+    let previous_is_banned: bool = profile.try_get("is_community_banned")?;
+    let previous_ban_reason: Option<String> = profile.try_get("ban_reason")?;
+
+    let result = sqlx::query("UPDATE community_profiles SET is_community_banned = $1, ban_reason = $2, updated_at = NOW() WHERE user_id = $3")
         .bind(payload.is_banned)
-        .bind(&payload.reason)
+        .bind(&reason)
         .bind(user_id)
-        .execute(&c_pool)
+        .execute(&mut *tx)
         .await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Community user not found.".to_string()));
+    }
 
     let action = if payload.is_banned {
         "user.ban"
     } else {
         "user.unban"
     };
-    crate::community::audit::log(
-        &c_pool,
+    log_community_admin_action_tx(
+        &mut tx,
         admin.user.id,
         action,
         "user",
         None,
         Some(user_id),
-        Some(serde_json::json!({"reason": payload.reason})),
+        serde_json::json!({
+            "previous_profile": {
+                "is_community_banned": previous_is_banned,
+                "ban_reason": previous_ban_reason,
+            },
+            "new_profile": {
+                "is_community_banned": payload.is_banned,
+                "ban_reason": reason,
+            }
+        }),
     )
-    .await;
+    .await?;
+
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1651,33 +1738,48 @@ async fn admin_mute_user(
     Path(user_id): Path<Uuid>,
     Json(payload): Json<MuteUserPayload>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
+
+    if let Some(hours) = payload.hours {
+        if hours <= 0 || hours > 24 * 365 {
+            return Err(AppError::BadRequest(
+                "Mute duration must be between 1 hour and 1 year.".to_string(),
+            ));
+        }
+    }
 
     let muted_until = payload
         .hours
         .map(|h| chrono::Utc::now() + chrono::Duration::hours(h as i64));
 
-    sqlx::query("UPDATE community_profiles SET muted_until = $1 WHERE user_id = $2")
+    let mut tx = c_pool.begin().await?;
+    let result = sqlx::query("UPDATE community_profiles SET muted_until = $1 WHERE user_id = $2")
         .bind(muted_until)
         .bind(user_id)
-        .execute(&c_pool)
+        .execute(&mut *tx)
         .await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Community user not found.".to_string()));
+    }
 
     let action = if payload.hours.is_some() {
         "user.mute"
     } else {
         "user.unmute"
     };
-    crate::community::audit::log(
-        &c_pool,
+    log_community_admin_action_tx(
+        &mut tx,
         admin.user.id,
         action,
         "user",
         None,
         Some(user_id),
-        Some(serde_json::json!({"hours": payload.hours})),
+        serde_json::json!({"hours": payload.hours}),
     )
-    .await;
+    .await?;
+
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1693,29 +1795,37 @@ async fn admin_toggle_shadowban(
     Path(user_id): Path<Uuid>,
     Json(payload): Json<ShadowbanPayload>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
 
-    sqlx::query("UPDATE community_profiles SET is_shadowbanned = $1 WHERE user_id = $2")
-        .bind(payload.is_shadowbanned)
-        .bind(user_id)
-        .execute(&c_pool)
-        .await?;
+    let mut tx = c_pool.begin().await?;
+    let result =
+        sqlx::query("UPDATE community_profiles SET is_shadowbanned = $1 WHERE user_id = $2")
+            .bind(payload.is_shadowbanned)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Community user not found.".to_string()));
+    }
 
     let action = if payload.is_shadowbanned {
         "user.shadowban"
     } else {
         "user.unshadowban"
     };
-    crate::community::audit::log(
-        &c_pool,
+    log_community_admin_action_tx(
+        &mut tx,
         admin.user.id,
         action,
         "user",
         None,
         Some(user_id),
-        None,
+        serde_json::json!({"is_shadowbanned": payload.is_shadowbanned}),
     )
-    .await;
+    .await?;
+
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1731,37 +1841,53 @@ async fn admin_warn_user(
     Path(user_id): Path<Uuid>,
     Json(payload): Json<WarnUserPayload>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
+    let reason = payload.reason.trim();
+    if reason.is_empty() || reason.chars().count() > 1000 {
+        return Err(AppError::BadRequest(
+            "Warning reason is required and must be 1000 characters or fewer.".to_string(),
+        ));
+    }
 
-    sqlx::query(
+    let mut tx = c_pool.begin().await?;
+    let result = sqlx::query(
         "UPDATE community_profiles SET warning_count = warning_count + 1 WHERE user_id = $1",
     )
     .bind(user_id)
-    .execute(&c_pool)
+    .execute(&mut *tx)
     .await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Community user not found.".to_string()));
+    }
 
-    // Create an in-app notification for the warning
-    crate::community::notifications::notify_user(
-        &c_pool,
-        user_id,
-        None,
-        "system_alert",
-        None,
-        &format!("Warning from Admin: {}", payload.reason),
-        None,
+    sqlx::query(
+        r#"
+        INSERT INTO notifications (user_id, actor_id, type, entity_id, content, link_url)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        "#,
     )
+    .bind(user_id)
+    .bind(Some(admin.user.id))
+    .bind("system_alert")
+    .bind(Option::<Uuid>::None)
+    .bind(format!("Warning from Admin: {reason}"))
+    .bind(Option::<String>::None)
+    .execute(&mut *tx)
     .await?;
 
-    crate::community::audit::log(
-        &c_pool,
+    log_community_admin_action_tx(
+        &mut tx,
         admin.user.id,
         "user.warn",
         "user",
         None,
         Some(user_id),
-        Some(serde_json::json!({"reason": payload.reason})),
+        serde_json::json!({"reason": reason}),
     )
-    .await;
+    .await?;
+
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1772,18 +1898,41 @@ pub struct UpdateModNotesPayload {
 }
 
 async fn admin_update_mod_notes(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<UpdateModNotesPayload>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
+    if payload.notes.chars().count() > 5000 {
+        return Err(AppError::BadRequest(
+            "Moderator notes must be 5000 characters or fewer.".to_string(),
+        ));
+    }
 
-    sqlx::query("UPDATE community_profiles SET mod_notes = $1 WHERE user_id = $2")
+    let mut tx = c_pool.begin().await?;
+    let result = sqlx::query("UPDATE community_profiles SET mod_notes = $1 WHERE user_id = $2")
         .bind(&payload.notes)
         .bind(user_id)
-        .execute(&c_pool)
+        .execute(&mut *tx)
         .await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Community user not found.".to_string()));
+    }
+
+    log_community_admin_action_tx(
+        &mut tx,
+        admin.user.id,
+        "user.mod_notes.update",
+        "user",
+        None,
+        Some(user_id),
+        serde_json::json!({"notes_length": payload.notes.chars().count()}),
+    )
+    .await?;
+
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -2541,6 +2690,7 @@ async fn search_community(
             author_name,
             auth.and_then(|a| a.avatar_url.clone()),
             author_badges,
+            false,
         ));
     }
 
@@ -4157,14 +4307,13 @@ async fn admin_get_user_detail(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = admin.user;
+    require_community_view_or_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
 
     // Community profile
-    let profile: Option<serde_json::Value> = sqlx::query_scalar(
+    let mut profile: Option<serde_json::Value> = sqlx::query_scalar(
         r#"SELECT json_build_object(
             'user_id', user_id,
-            'display_name', display_name,
             'bio', bio,
             'post_count', post_count,
             'follower_count', follower_count,
@@ -4176,12 +4325,29 @@ async fn admin_get_user_detail(
             'is_community_banned', is_community_banned,
             'ban_reason', ban_reason,
             'warning_count', warning_count,
+            'mod_notes', mod_notes,
+            'muted_until', muted_until,
+            'is_shadowbanned', is_shadowbanned,
             'created_at', created_at
         ) FROM community_profiles WHERE user_id = $1"#,
     )
     .bind(user_id)
     .fetch_optional(&c_pool)
     .await?;
+    if profile.is_none() {
+        return Err(AppError::NotFound("Community user not found.".to_string()));
+    }
+
+    if let Some(serde_json::Value::Object(profile_object)) = profile.as_mut() {
+        if let Ok(user_info) =
+            user_bridge::get_user_info(&state.db, state.redis.as_ref(), user_id).await
+        {
+            profile_object.insert(
+                "display_name".to_string(),
+                serde_json::json!(user_info.display_name),
+            );
+        }
+    }
 
     // User badges
     let badges = sqlx::query_as::<_, BadgeRow>(
@@ -4982,6 +5148,7 @@ async fn list_bookmarks(
             author_name,
             author.and_then(|a| a.avatar_url.clone()),
             author_badges,
+            false,
         ));
     }
 
@@ -5275,6 +5442,7 @@ async fn get_posts_by_hashtag(
             author_name,
             author.and_then(|a| a.avatar_url.clone()),
             author_badges,
+            false,
         ));
     }
 

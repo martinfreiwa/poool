@@ -11,84 +11,138 @@
       {% with investor_topbar_title="Marketing Materials", investor_topbar_variant="affiliate-materials" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="affiliate-dashboard-container">
-        
-        <!-- Header -->
-
-        <!-- Brand Guidelines -->
+        {% if affiliate_status == 'active' %}
         <div class="ds-card" style="margin-bottom: 24px; background: rgba(0,0,255,0.03); border: 1px solid rgba(0,0,255,0.1);">
-            <div style="display: flex; gap: 16px; align-items: flex-start;">
-                <div style="background: white; border-radius: 8px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); flex-shrink: 0;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                </div>
-                <div>
-                    <h3 style="margin: 0 0 4px; font-size: 16px; color: var(--text-primary);">Brand Guidelines & Legal</h3>
-                    <p style="margin: 0 0 12px; font-size: 14px; color: var(--text-secondary);">Before posting, please review our content compliance guidelines to ensure your promotions meet financial regulatory requirements.</p>
-                    <a href="/docs/POOOL-Affiliate-Brand-Guidelines.pdf" download class="ds-link" style="font-weight: 500; font-size: 14px; color: #0000FF;">Download Guidelines (PDF)</a>
-                </div>
+          <div style="display: flex; gap: 16px; align-items: flex-start;">
+            <div style="background: white; border-radius: 8px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); flex-shrink: 0;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             </div>
+            <div>
+              <h3 style="margin: 0 0 4px; font-size: 16px; color: var(--text-primary);">Brand Guidelines & Legal</h3>
+              <p style="margin: 0 0 12px; font-size: 14px; color: var(--text-secondary);">Use the current approved messaging, disclaimers, and visual identity rules for all POOOL affiliate promotions.</p>
+              <a href="/static/docs/POOOL-Affiliate-Brand-Guidelines.pdf" download class="ds-link" style="font-weight: 500; font-size: 14px; color: #0000FF;">Download Guidelines (PDF)</a>
+            </div>
+          </div>
         </div>
 
         <div class="dashboard-split" style="grid-template-columns: 1fr;">
           <div class="ds-card">
-              <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                  <h3 style="margin: 0;">Social Media Assets</h3>
-                  <button class="ds-btn ds-btn-secondary btn-sm">Download All (.zip)</button>
-              </div>
+            <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <h3 style="margin: 0;">Social Media Assets</h3>
+              <button class="ds-btn ds-btn-secondary btn-sm" type="button" data-download-all>Download All</button>
+            </div>
 
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
-                  <!-- Asset 1 -->
-                  <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
-                      <div style="aspect-ratio: 16/9; background: #F2F4F7; display: flex; align-items: center; justify-content: center;">
-                          <img src="/static/images/icons/logo-pool.svg" style="height: 40px; opacity: 0.5;" alt="16:9 Banner"/>
-                      </div>
-                      <div style="padding: 16px;">
-                          <h4 style="margin: 0 0 4px; font-size: 14px;">LinkedIn / Twitter Banner</h4>
-                          <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted);">1200 x 628px • PNG</p>
-                          <button class="ds-btn ds-btn-secondary" style="width: 100%; border-radius: 6px;">Download</button>
-                      </div>
-                  </div>
-
-                  <!-- Asset 2 -->
-                  <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
-                      <div style="aspect-ratio: 1/1; background: #F2F4F7; display: flex; align-items: center; justify-content: center;">
-                          <img src="/static/images/icons/logo-pool.svg" style="height: 40px; opacity: 0.5;" alt="1:1 Post"/>
-                      </div>
-                      <div style="padding: 16px;">
-                          <h4 style="margin: 0 0 4px; font-size: 14px;">Instagram Post</h4>
-                          <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted);">1080 x 1080px • PNG</p>
-                          <button class="ds-btn ds-btn-secondary" style="width: 100%; border-radius: 6px;">Download</button>
-                      </div>
-                  </div>
-
-                  <!-- Asset 3 -->
-                  <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
-                      <div style="aspect-ratio: 9/16; background: #EAEBFF; display: flex; align-items: center; justify-content: center;">
-                          <img src="/static/images/icons/logo-pool.svg" style="height: 40px; opacity: 0.5;" alt="9:16 Story"/>
-                      </div>
-                      <div style="padding: 16px;">
-                          <h4 style="margin: 0 0 4px; font-size: 14px;">Instagram / TikTok Story</h4>
-                          <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted);">1080 x 1920px • MP4</p>
-                          <button class="ds-btn ds-btn-primary" style="width: 100%; border-radius: 6px; background: #0000FF; color: white;">Download Video</button>
-                      </div>
-                  </div>
-              </div>
-
-              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
-                <h3 style="margin: 0 0 16px; font-size: 16px;">Logos & Brand Elements</h3>
-                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                    <div style="padding: 24px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: white; flex: 1; min-width: 200px; text-align: center;">
-                        <img src="/static/images/logos/Logo%20Pool.svg" style="height: 32px; margin-bottom: 16px;"/>
-                        <button class="ds-btn ds-btn-secondary btn-sm" style="width: 100%">Download SVG</button>
-                    </div>
-                    <div style="padding: 24px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #1A1A1A; flex: 1; min-width: 200px; text-align: center;">
-                        <img src="/static/images/logos/Logo%20Pool.svg" style="height: 32px; margin-bottom: 16px; filter: brightness(0) invert(1);"/>
-                        <button class="ds-btn ds-btn-secondary btn-sm" style="width: 100%">Download SVG (Dark)</button>
-                    </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
+              <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+                <div style="aspect-ratio: 16/9; background: #F2F4F7; display: flex; align-items: center; justify-content: center;">
+                  <img src="/static/images/icons/logo-pool.svg" style="height: 40px; opacity: 0.5;" alt="POOOL banner preview" />
+                </div>
+                <div style="padding: 16px;">
+                  <h4 style="margin: 0 0 4px; font-size: 14px;">LinkedIn / Twitter Banner</h4>
+                  <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted);">1200 x 628px - PNG</p>
+                  <button class="ds-btn ds-btn-secondary" type="button" data-material-download="banner" style="width: 100%; border-radius: 6px;">Download</button>
                 </div>
               </div>
+
+              <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+                <div style="aspect-ratio: 1/1; background: #F2F4F7; display: flex; align-items: center; justify-content: center;">
+                  <img src="/static/images/icons/logo-pool.svg" style="height: 40px; opacity: 0.5;" alt="POOOL square post preview" />
+                </div>
+                <div style="padding: 16px;">
+                  <h4 style="margin: 0 0 4px; font-size: 14px;">Instagram Post</h4>
+                  <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted);">1080 x 1080px - PNG</p>
+                  <button class="ds-btn ds-btn-secondary" type="button" data-material-download="instagram" style="width: 100%; border-radius: 6px;">Download</button>
+                </div>
+              </div>
+
+              <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+                <div style="aspect-ratio: 9/16; background: #EAEBFF; display: flex; align-items: center; justify-content: center;">
+                  <img src="/static/images/icons/logo-pool.svg" style="height: 40px; opacity: 0.5;" alt="POOOL story preview" />
+                </div>
+                <div style="padding: 16px;">
+                  <h4 style="margin: 0 0 4px; font-size: 14px;">Instagram / TikTok Story</h4>
+                  <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted);">1080 x 1920px - PNG</p>
+                  <button class="ds-btn ds-btn-primary" type="button" data-material-download="story" style="width: 100%; border-radius: 6px; background: #0000FF; color: white;">Download Story</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+              <h3 style="margin: 0 0 16px; font-size: 16px;">Logos & Brand Elements</h3>
+              <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <div style="padding: 24px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: white; flex: 1; min-width: 200px; text-align: center;">
+                  <img src="/static/images/logos/Logo%20Pool.svg" style="height: 32px; margin-bottom: 16px;" alt="POOOL logo preview" />
+                  <a class="ds-btn ds-btn-secondary btn-sm" href="/static/images/logos/Logo%20Pool.svg" download="poool-logo.svg" style="width: 100%">Download SVG</a>
+                </div>
+                <div style="padding: 24px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #1A1A1A; flex: 1; min-width: 200px; text-align: center;">
+                  <img src="/static/images/logos/Logo%20Pool.svg" style="height: 32px; margin-bottom: 16px; filter: brightness(0) invert(1);" alt="POOOL logo preview for dark backgrounds" />
+                  <a class="ds-btn ds-btn-secondary btn-sm" href="/static/images/logos/Logo%20Pool.svg" download="poool-logo-dark.svg" style="width: 100%">Download SVG (Dark)</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ds-card" style="margin-top: 24px;">
+            <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+              <h3 style="margin: 0 0 4px;">Custom Material Review</h3>
+              <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Submit original creatives for compliance review before publishing them.</p>
+            </div>
+
+            <form id="affiliate-material-upload-form" enctype="multipart/form-data" style="display: grid; gap: 16px; max-width: 720px;">
+              <div>
+                <label for="material-name" class="ds-label">Material name</label>
+                <input id="material-name" name="name" class="ds-input" type="text" maxlength="120" placeholder="Example: Bali villa Instagram carousel" autocomplete="off" />
+              </div>
+              <div>
+                <label for="material-file" class="ds-label">Upload file</label>
+                <input id="material-file" name="file" class="ds-input" type="file" accept=".png,.jpg,.jpeg,.svg,.pdf,.mp4,.zip,image/png,image/jpeg,image/svg+xml,application/pdf,video/mp4,application/zip" required />
+                <p style="margin: 6px 0 0; font-size: 12px; color: var(--text-muted);">Accepted: PNG, JPG, SVG, PDF, MP4, or ZIP up to 20 MB.</p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button id="affiliate-material-upload-submit" class="ds-btn ds-btn-primary" type="submit">Submit for Review</button>
+                <span id="affiliate-material-upload-status" role="status" aria-live="polite" style="font-size: 14px; color: var(--text-secondary);"></span>
+              </div>
+            </form>
+
+            <div style="margin-top: 28px;">
+              <h4 style="margin: 0 0 12px; font-size: 15px;">Review Status</h4>
+              <div style="overflow-x: auto;">
+                <table class="ds-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                      <th style="padding: 10px;">Material</th>
+                      <th style="padding: 10px;">Status</th>
+                      <th style="padding: 10px;">Submitted</th>
+                      <th style="padding: 10px;">Review note</th>
+                    </tr>
+                  </thead>
+                  <tbody id="affiliate-materials-status-body">
+                    <tr>
+                      <td colspan="4" style="padding: 18px; color: var(--text-muted);">Loading materials...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
-
+        {% else %}
+        <section class="affiliate-review-state ds-card" aria-labelledby="affiliate-materials-locked-title">
+          <div class="affiliate-review-icon" aria-hidden="true">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <p class="affiliate-review-eyebrow">Affiliate access required</p>
+          <h1 id="affiliate-materials-locked-title" class="affiliate-review-title">Marketing materials unlock after approval</h1>
+          <p class="affiliate-review-copy">Your affiliate status is currently {{ affiliate_status | default('unregistered') }}. Approved brand assets and custom material review are available only to active affiliates.</p>
+          <div class="affiliate-review-actions">
+            <a href="/affiliate/onboarding" class="ds-btn ds-btn--primary">Continue Application</a>
+            <a href="/affiliate/dashboard" class="ds-btn ds-btn--secondary">Back to Dashboard</a>
+          </div>
+        </section>
+        {% endif %}
       </div>
     </main>
   </div>

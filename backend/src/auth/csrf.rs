@@ -2,7 +2,7 @@ use axum::{
     extract::Request,
     http::{header, Method, StatusCode},
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::{Html, IntoResponse, Response},
     Json,
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
@@ -129,6 +129,19 @@ pub async fn csrf_middleware(
                         "success": false,
                         "message": "CSRF token missing or invalid. Please refresh the page and try again."
                     })),
+                )
+                    .into_response());
+            }
+            if req
+                .headers()
+                .get("HX-Request")
+                .and_then(|value| value.to_str().ok())
+                .map(|value| value.eq_ignore_ascii_case("true"))
+                .unwrap_or(false)
+            {
+                return Ok((
+                    StatusCode::FORBIDDEN,
+                    Html(r#"<div class="auth-error-message" role="alert" aria-live="assertive" tabindex="-1">Security check failed. Please refresh the page and try again.</div>"#),
                 )
                     .into_response());
             }

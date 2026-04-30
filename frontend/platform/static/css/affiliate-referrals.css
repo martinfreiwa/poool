@@ -1,0 +1,174 @@
+.affiliate-referrals-card {
+  margin-top: 24px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.affiliate-referrals-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.page-tabs {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.page-tab.active,
+.page-tab[aria-selected="true"] {
+  color: var(--page-title-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.page-tab:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 4px;
+}
+
+.affiliate-referrals-search {
+  display: flex;
+  gap: 12px;
+}
+
+.affiliate-referrals-search .settings-input {
+  width: 240px;
+}
+
+.affiliate-referrals-status {
+  min-height: 0;
+  padding: 0 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.affiliate-referrals-status:not(:empty) {
+  padding-top: 16px;
+}
+
+.affiliate-referrals-status.is-error {
+  color: var(--error-color, #d92d20);
+}
+
+.affiliate-referrals-status.is-success {
+  color: var(--success-color, #17b26a);
+}
+
+.affiliate-referrals-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.affiliate-referrals-table th {
+  padding: 16px 24px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--table-header-color);
+  text-transform: uppercase;
+  font-weight: 600;
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.affiliate-referrals-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.affiliate-referrals-table__amount {
+  text-align: right !important;
+}
+
+.affiliate-referrals-amount {
+  text-align: right;
+  font-weight: 500;
+  color: var(--page-title-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.affiliate-referrals-status-cell {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.affiliate-referrals-status-cell.is-paid {
+  color: var(--success-color);
+}
+
+.affiliate-referrals-status-cell.is-payable {
+  color: #b45309;
+}
+
+.affiliate-referrals-status-cell.is-muted {
+  color: var(--text-secondary);
+}
+
+.affiliate-referrals-email {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: none;
+}
+
+.affiliate-referrals-empty {
+  padding: 32px !important;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .affiliate-referrals-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-tabs {
+    gap: 16px;
+    overflow-x: auto;
+  }
+
+  .affiliate-referrals-search .settings-input {
+    width: 100%;
+  }
+}

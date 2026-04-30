@@ -308,6 +308,7 @@
   function statusConfig(status) {
     const m = {
       pending: { bg: "#fef3c7", color: "#d97706", label: "Pending", badgeClass: "warning" },
+      processing: { bg: "#dbeafe", color: "#2563eb", label: "Processing", badgeClass: "info" },
       approved: { bg: "#dcfce7", color: "#16a34a", label: "Approved", badgeClass: "success" },
       rejected: { bg: "#fee2e2", color: "#dc2626", label: "Rejected", badgeClass: "danger" },
     };

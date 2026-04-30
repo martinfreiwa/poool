@@ -88,6 +88,30 @@ pub struct SavePayoutSettingsForm {
     pub vat_number: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct AffiliateSettingsResponse {
+    pub tax_class: Option<String>,
+    pub tax_id_masked: Option<String>,
+    pub tax_name: Option<String>,
+    pub vat_number: Option<String>,
+    pub payout_method: String,
+    pub tax_status: String,
+    pub payout_status: String,
+    pub payout_hold_reason: Option<String>,
+    pub tax_document_on_file: bool,
+    pub tax_ready: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveAffiliateSettingsForm {
+    pub tax_class: String,
+    pub tax_id: Option<String>,
+    pub tax_name: String,
+    pub vat_number: Option<String>,
+    pub payout_method: String,
+    pub tax_certified: bool,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SubmitOnboardingForm {
     pub exam_passed: bool,

@@ -128,7 +128,7 @@ async function loadSubmission(id) {
     document.getElementById("loading-overlay").innerHTML =
       `<div style="color:var(--admin-danger);padding:40px;text-align:center;">
                 <div style="font-size:24px;margin-bottom:8px;">✗</div>
-                <div>Failed to load project: ${error.message}</div>
+                <div>Failed to load project: ${esc(error.message || "Unknown error")}</div>
                 <a href="/admin/developer-submissions" class="admin-btn admin-btn--secondary" style="margin-top:16px;display:inline-block;">← Back to List</a>
              </div>`;
   }
@@ -660,7 +660,7 @@ async function adminDeleteImage(imgId) {
   const assetId = _getAssetIdForImages();
   if (!assetId) { showToast("Could not determine asset ID", "error"); return; }
   try {
-    const res = await fetch(`/api/developer/draft/${assetId}/images/${imgId}`, {
+    const res = await fetch(`/api/admin/assets/${assetId}/images/${imgId}`, {
       method: "DELETE",
       headers: { "X-CSRF-Token": getCsrfToken() }
     });
@@ -715,6 +715,8 @@ async function adminImageDrop(e, targetImgId) {
 
   if (dragIndex === -1 || dropIndex === -1) return;
 
+  const previousImages = _adminImages.map((img) => ({ ...img }));
+
   // Move array item
   const [draggedItem] = _adminImages.splice(dragIndex, 1);
   _adminImages.splice(dropIndex, 0, draggedItem);
@@ -735,20 +737,27 @@ async function adminImageDrop(e, targetImgId) {
   }));
 
   try {
-    const res = await fetch(`/api/developer/draft/${assetId}/images/reorder`, {
+    const res = await fetch(`/api/admin/assets/${assetId}/images/reorder`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to save order");
+    }
   } catch (err) {
-    showToast("Failed to save new order to server.", "error");
+    _adminImages = previousImages;
+    _renderImageGrid();
+    showToast("Failed to save new order: " + err.message, "error");
   }
 }
 
 async function adminSetCover(imgId) {
   const index = _adminImages.findIndex(i => String(i.id) === String(imgId));
   if (index === -1) return;
+
+  const previousImages = _adminImages.map((img) => ({ ...img }));
   
   // Move it to index 0
   const [item] = _adminImages.splice(index, 1);
@@ -770,7 +779,7 @@ async function adminSetCover(imgId) {
   }));
 
   try {
-    const res = await fetch(`/api/developer/draft/${assetId}/images/reorder`, {
+    const res = await fetch(`/api/admin/assets/${assetId}/images/reorder`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
       body: JSON.stringify(payload)
@@ -778,6 +787,8 @@ async function adminSetCover(imgId) {
     if (!res.ok) throw new Error("Failed validation or unauthorized");
     showToast("Cover updated", "success");
   } catch (e) {
+    _adminImages = previousImages;
+    _renderImageGrid();
     showToast("Failed to set cover on server: " + e.message, "error");
   }
 }
@@ -832,7 +843,7 @@ async function _adminHandleFiles(files) {
     try {
       const assetIdForUpload = _getAssetIdForImages();
       const uploadEndpoint = assetIdForUpload
-        ? `/api/developer/draft/${assetIdForUpload}/images`
+        ? `/api/admin/assets/${assetIdForUpload}/images`
         : null;
       if (!uploadEndpoint) throw new Error("Cannot determine asset ID");
       const res = await fetch(uploadEndpoint, {
@@ -959,10 +970,44 @@ function openReasonModal(action) {
   setTimeout(() => document.getElementById("reason-modal-text").focus(), 50);
 }
 
+function closeReasonModal() {
+  const modal = document.getElementById("reason-modal");
+  if (modal) modal.style.display = "none";
+  _pendingAction = null;
+}
+
+function trapReasonModalFocus(event) {
+  if (event.key !== "Tab") return;
+  const modal = document.getElementById("reason-modal");
+  if (!modal || modal.style.display === "none") return;
+
+  const focusable = Array.from(
+    modal.querySelectorAll("textarea, button, [href], input, select, [tabindex]:not([tabindex='-1'])")
+  ).filter((el) => !el.disabled && el.offsetParent !== null);
+  if (!focusable.length) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("reason-modal-cancel")?.addEventListener("click", () => {
-    document.getElementById("reason-modal").style.display = "none";
-    _pendingAction = null;
+  const reasonModal = document.getElementById("reason-modal");
+  reasonModal?.addEventListener("keydown", trapReasonModalFocus);
+  reasonModal?.addEventListener("click", (event) => {
+    if (event.target === reasonModal) closeReasonModal();
+  });
+  document.getElementById("reason-modal-cancel")?.addEventListener("click", closeReasonModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && reasonModal && reasonModal.style.display !== "none") {
+      closeReasonModal();
+    }
   });
   document.getElementById("reason-modal-confirm")?.addEventListener("click", () => {
     const reason = document.getElementById("reason-modal-text").value.trim();
@@ -971,7 +1016,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("reason-modal-text").focus();
       return;
     }
-    document.getElementById("reason-modal").style.display = "none";
+    if (reasonModal) reasonModal.style.display = "none";
     submitDecision(_pendingAction, reason);
     _pendingAction = null;
   });

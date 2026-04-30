@@ -92,14 +92,25 @@ def main():
     s_aff.get(f"{BASE_URL}/settings", timeout=REQUEST_TIMEOUT)
     csrf = s_aff.cookies.get("csrf_token", "")
 
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM users WHERE email = %s", (affiliate_email,))
+    aff_user_id = cur.fetchone()[0]
+    cur.execute(
+        "INSERT INTO kyc_records (user_id, status, provider) VALUES (%s, 'approved', 'manual') ON CONFLICT DO NOTHING",
+        (aff_user_id,),
+    )
+    conn.commit()
+    conn.close()
+
     # Submit onboarding
     r = s_aff.post(
         f"{BASE_URL}/api/affiliate/onboarding/submit",
         json={
             "exam_passed": True,
             "status": None,
-            "traffic_source": "YouTube",
-            "audience_size": "10000+",
+            "traffic_source": "youtube",
+            "audience_size": "5k_50k",
             "main_url": "https://youtube.com/test",
             "phone_number": "+1234567890",
             "tax_id": "12-34567",
@@ -111,7 +122,7 @@ def main():
                 "Qualified Referral & Payout Policy",
                 "Affiliate Privacy Notice"
             ],
-            "exam_answers": {"q1": "10", "q2": "false", "q3": "fca", "q4": "true", "q5": "loss"}
+            "exam_answers": {"q1": "no", "q2": "no", "q3": "30days", "q4": "no", "q5": "no"}
         },
         headers={"X-CSRF-Token": csrf}
     )
@@ -142,6 +153,13 @@ def main():
         ok("Admin approval executed successfully via API")
     else:
         fail("Admin approval failed", r.text)
+
+    cur.execute(
+        "UPDATE affiliates SET tax_document_gcs_path = %s, is_tax_ready = TRUE WHERE user_id = %s",
+        (f"e2e/affiliate-tax-docs/{aff_user_id}.pdf", aff_user_id),
+    )
+    conn.commit()
+    ok("Seeded affiliate tax document gate for payout test")
 
     # Fetch referral code
     cur.execute("SELECT referral_code FROM affiliates WHERE user_id = %s", (aff_user_id,))
@@ -272,11 +290,11 @@ def main():
     cur.execute("UPDATE affiliate_commissions SET status = 'payable', provisional_amount_cents = 6000 WHERE id = %s", (commission_id,)) # Artificially bump > $50 for threshold
     
     # Ensure treasury has money
-    cur.execute("SELECT id FROM wallets WHERE label = 'System Treasury Wallet' AND wallet_type = 'affiliate_treasury'")
+    cur.execute("SELECT id FROM wallets WHERE wallet_type = 'affiliate_treasury' AND currency = 'USD' LIMIT 1")
     treasury = cur.fetchone()
     if not treasury:
         cur.execute(
-            "INSERT INTO wallets (user_id, label, wallet_type, balance_cents, currency) VALUES (NULL, 'System Treasury Wallet', 'affiliate_treasury', 9999999, 'USD') RETURNING id"
+            "INSERT INTO wallets (user_id, wallet_type, balance_cents, currency) VALUES (NULL, 'affiliate_treasury', 9999999, 'USD') RETURNING id"
         )
         treasury_wallet_id = cur.fetchone()[0]
     else:
@@ -308,12 +326,24 @@ def main():
         fail("Batch payout failed", r.text)
 
     # Verify wallets
-    cur.execute("SELECT balance_cents FROM wallets WHERE user_id = %s AND wallet_type = 'default'", (aff_user_id,))
+    cur.execute("SELECT balance_cents FROM wallets WHERE user_id = %s AND wallet_type = 'cash' AND currency = 'USD'", (aff_user_id,))
     aff_balance = cur.fetchone()[0]
     if aff_balance >= 6000:
         ok(f"Affiliate received funds! Wallet balance: {aff_balance} cents")
     else:
         fail(f"Affiliate wallet balance unchanged: {aff_balance}")
+
+    cur.execute("SELECT COUNT(*) FROM payout_batches WHERE affiliate_id = %s AND total_amount_cents = 6000", (aff_user_id,))
+    if cur.fetchone()[0] >= 1:
+        ok("Payout batch persisted with exact cents")
+    else:
+        fail("Payout batch missing after affiliate payout")
+
+    cur.execute("SELECT COUNT(*) FROM wallet_transactions WHERE external_ref_id IN (SELECT id::text FROM payout_batches WHERE affiliate_id = %s)", (aff_user_id,))
+    if cur.fetchone()[0] >= 2:
+        ok("Wallet ledger entries persisted for payout batch")
+    else:
+        fail("Payout wallet ledger entries missing")
 
     cur.close()
     conn.close()

@@ -77,45 +77,81 @@ function renderWhitelistQueue(queue) {
     const tbody = document.getElementById("whitelist-tbody");
     if (!tbody) return;
 
+    const badge = document.getElementById("whitelist-count-badge");
+
     if (!queue || queue.length === 0) {
+        if (badge) {
+            badge.textContent = "0 pending";
+            badge.style.color = "var(--admin-success)";
+        }
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
-            <div style="font-size:14px; font-weight:600; margin-bottom:4px; color:var(--admin-success);">✓ All Clear</div>
-            Whitelist Queue Empty — All KYC-approved users have been synced to Polygon.
+            <div style="font-size:14px; font-weight:600; margin-bottom:4px; color:var(--admin-success);">All Clear</div>
+            Whitelist Queue Empty - All KYC-approved users have been synced to Polygon.
         </td></tr>`;
         return;
     }
 
-    // Update the queue count badge
-    const badge = document.getElementById("whitelist-count-badge");
     if (badge) {
         badge.textContent = `${queue.length} pending`;
         badge.style.color = "var(--admin-danger)";
     }
 
-    tbody.innerHTML = queue.map(user => {
-        const shortId = user.user_id.split("-")[0] + "...";
-        return `
-            <tr>
-                <td>
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                        <span style="font-weight:600; color:var(--admin-text-primary);">${escapeHtml(user.email)}</span>
-                        <span style="font-size:11px; color:var(--admin-text-muted); font-family:'SF Mono', monospace;">ID: ${shortId}</span>
-                    </div>
-                </td>
-                <td>
-                    <span class="admin-badge admin-badge--success">${user.kyc_status}</span>
-                </td>
-                <td style="font-size:12px; color:var(--admin-text-muted);">${user.verified_at || "—"}</td>
-                <td style="color:var(--admin-danger); font-size:12px; font-weight:500;">Missing wallet address</td>
-                <td>
-                    <button class="admin-btn admin-btn--primary" style="padding: 6px 14px; font-size: 12px; font-weight: 600;"
-                        onclick="forceKycSync('${user.user_id}', '${escapeHtml(user.email)}', this)">
-                        Force Sync
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join("");
+    tbody.replaceChildren(...queue.map(buildWhitelistRow));
+}
+
+function buildWhitelistRow(user) {
+    const row = document.createElement("tr");
+
+    const userCell = document.createElement("td");
+    const userWrap = document.createElement("div");
+    userWrap.style.display = "flex";
+    userWrap.style.flexDirection = "column";
+    userWrap.style.gap = "2px";
+
+    const email = document.createElement("span");
+    email.style.fontWeight = "600";
+    email.style.color = "var(--admin-text-primary)";
+    email.textContent = user.email || "Unknown user";
+
+    const id = document.createElement("span");
+    id.style.fontSize = "11px";
+    id.style.color = "var(--admin-text-muted)";
+    id.style.fontFamily = "'SF Mono', monospace";
+    id.textContent = `ID: ${String(user.user_id || "").split("-")[0]}...`;
+
+    userWrap.append(email, id);
+    userCell.appendChild(userWrap);
+
+    const kycCell = document.createElement("td");
+    const status = document.createElement("span");
+    status.className = "admin-badge admin-badge--success";
+    status.textContent = user.kyc_status || "approved";
+    kycCell.appendChild(status);
+
+    const verifiedCell = document.createElement("td");
+    verifiedCell.style.fontSize = "12px";
+    verifiedCell.style.color = "var(--admin-text-muted)";
+    verifiedCell.textContent = user.verified_at || "—";
+
+    const walletCell = document.createElement("td");
+    walletCell.style.color = "var(--admin-danger)";
+    walletCell.style.fontSize = "12px";
+    walletCell.style.fontWeight = "500";
+    walletCell.textContent = "Missing wallet address";
+
+    const actionCell = document.createElement("td");
+    const button = document.createElement("button");
+    button.className = "admin-btn admin-btn--primary";
+    button.type = "button";
+    button.style.padding = "6px 14px";
+    button.style.fontSize = "12px";
+    button.style.fontWeight = "600";
+    button.textContent = "Force Sync";
+    button.addEventListener("click", () => forceKycSync(user.user_id, user.email || "this user", button));
+    actionCell.appendChild(button);
+
+    row.append(userCell, kycCell, verifiedCell, walletCell, actionCell);
+    return row;
 }
 
 function renderConfigPanel(config) {
@@ -223,7 +259,10 @@ async function forceKycSync(userId, email, btn) {
                 const shortAddr = result.wallet_address
                     ? `${result.wallet_address.substring(0, 10)}...${result.wallet_address.substring(34)}`
                     : "—";
-                cells[3].innerHTML = `<span style="color:var(--admin-success); font-size:12px; font-family:'SF Mono', monospace;">${shortAddr}</span>`;
+                cells[3].style.color = "var(--admin-success)";
+                cells[3].style.fontSize = "12px";
+                cells[3].style.fontFamily = "'SF Mono', monospace";
+                cells[3].textContent = shortAddr;
             }
         }
     } catch (e) {
@@ -248,15 +287,10 @@ function setText(id, text) {
 
 function setTerminalLog(msg) {
     const el = document.getElementById("event-log-terminal");
-    if (el) el.innerHTML = msg;
+    if (el) el.textContent = msg;
 }
 
 function truncAddr(addr) {
     if (!addr || addr.length < 20 || addr === "Not configured") return addr;
     return `${addr.substring(0, 10)}...${addr.substring(addr.length - 6)}`;
-}
-
-function escapeHtml(str) {
-    const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
-    return str ? str.replace(/[&<>"']/g, c => map[c]) : "";
 }

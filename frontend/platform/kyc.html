@@ -147,7 +147,7 @@ include "components/head.html" %}{% endwith %}
                       <select id="kyc-doc-type-redirect" x-model="formData.documentType" class="ds-select">
                         <option value="passport">Passport</option>
                         <option value="national_id">National ID</option>
-                        <option value="driving_license">Driver's License</option>
+                        <option value="driving_licence">Driver's License</option>
                       </select>
                     </div>
 
@@ -308,11 +308,11 @@ include "components/head.html" %}{% endwith %}
                               <label class="kyc-upload-link">
                                 <span>Click to upload</span>
                                 <input type="file" @change="handleDocSelect($event)" class="hidden"
-                                  accept="image/*,application/pdf">
+                                  accept="image/jpeg,image/png,image/webp,application/pdf">
                               </label>
                               <span> or drag and drop</span>
                             </div>
-                            <p class="kyc-upload-hint">PNG, JPG or PDF (max. 10MB)</p>
+                            <p class="kyc-upload-hint">PNG, JPG, WebP or PDF (max. 10MB)</p>
                           </div>
                         </template>
 

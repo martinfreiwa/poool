@@ -21,11 +21,9 @@
   let currentSearch = '';
   let currentTier = '';
   let currentPerPage = 10;
-  let hasMore = true;
   let isFetching = false;
   let searchTimeout = null;
   let cachedPrefs = null;
-  let usingDemoData = false;
 
   // ─── Sample / Demo Data ─────────────────────────────────────────
   var DEMO_RANKINGS = [
@@ -139,7 +137,6 @@
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
-    initSpotlight(); // Fire-and-forget background init for the spotlight card
     try {
       var results = await Promise.all([
         fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier),
@@ -149,139 +146,49 @@
       var prefs = results[1];
 
       cachedPrefs = prefs;
-
-      var forceDemo = new URLSearchParams(window.location.search).has('demo');
-
-      // Demo data is opt-in only. Low-participation live datasets should still render as real data.
-      if (forceDemo) {
-        usingDemoData = true;
-        var demo = getDemoData(data);
-        
-        // Demo pagination implementation
-        var start = (currentPage - 1) * currentPerPage;
-        var sliced = demo.rankings.slice(start, start + currentPerPage);
-        
-        renderBentoCards(demo.rankings); // Keep hero cards static from the full list
-        renderMinorCards(demo.rankings); // Keep minor cards static
-        renderMyRank(demo.my_rank);
-        renderTable(sliced, false); // Only show sliced for the ledger
-        renderMeta(demo);
-        renderPagination(demo);
-        applyPrefs(prefs);
-        showLayer('content');
-        return;
-      }
-
-      usingDemoData = false;
-      renderBentoCards(data.rankings);
-      renderMinorCards(data.rankings);
-      renderMyRank(data.my_rank);
-      renderTable(data.rankings, false);
-      renderMeta(data);
-      renderPagination(data);
+      renderLeaderboardData(data);
       applyPrefs(prefs);
-      showLayer('content');
     } catch (err) {
       console.error('Leaderboard init failed:', err);
       showLayer('error');
     }
   }
 
-  // ─── Featured Spotlight ────────────────────────────────────────
-  async function initSpotlight() {
-    try {
-      var res = await fetch('/api/assets/featured', { credentials: 'same-origin' });
-      if (!res.ok) throw new Error('Failed to fetch featured assets');
-      var data = await res.json();
-      var assets = data.assets || [];
-      
-      var card = document.getElementById('lb-spotlight-card');
-      if (assets.length === 0) {
-        if (card) card.style.display = 'none';
-        return;
-      }
-      if (card) card.style.display = '';
+  function renderLeaderboardData(data) {
+    var forceDemo = new URLSearchParams(window.location.search).has('demo');
 
-      var currentIndex = 0;
-      var intervalTimer = null;
+    if (forceDemo) {
+      var demo = getDemoData(data);
+      var start = (currentPage - 1) * currentPerPage;
+      var sliced = demo.rankings.slice(start, start + currentPerPage);
 
-      function renderAsset(index) {
-        var asset = assets[index];
-        if (!asset) return;
-        
-        var imgEl = document.getElementById('lb-spotlight-img');
-        var titleEl = document.getElementById('lb-spotlight-title');
-        var locationEl = document.getElementById('lb-spotlight-location');
-        var yieldEl = document.getElementById('lb-spotlight-yield');
-        var returnEl = document.getElementById('lb-spotlight-return');
-        var fundedEl = document.getElementById('lb-spotlight-funded');
-        var barEl = document.getElementById('lb-spotlight-bar');
-        var ctaEl = document.getElementById('lb-spotlight-cta');
-        var dotsContainer = document.getElementById('lb-spotlight-dots');
-
-        if (imgEl) imgEl.style.opacity = '0';
-        setTimeout(function() {
-          if (imgEl) {
-            imgEl.src = escHtml(asset.cover_image);
-            imgEl.style.opacity = '1';
-          }
-        }, 300);
-
-        if (titleEl) titleEl.innerText = asset.title || 'Featured Asset';
-        if (locationEl && asset.location_country && asset.location_city) {
-          locationEl.innerHTML = '<img src="/static/images/profiles/' + escHtml(asset.location_country) + '.webp" onerror="this.style.display=\'none\'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;"> ' + escHtml(asset.location_city) + ', ' + escHtml(asset.location_country);
-        } else if (locationEl) {
-          locationEl.innerText = 'Global';
-        }
-
-        if (yieldEl) yieldEl.innerText = ((asset.annual_yield_bps || 0) / 100).toFixed(2) + '%';
-        if (returnEl) returnEl.innerText = ((asset.capital_appreciation_bps || 0) / 100).toFixed(2) + '%';
-        if (fundedEl) fundedEl.innerText = asset.funded_pct + '%';
-        
-        if (barEl) {
-          barEl.style.width = '0%';
-          setTimeout(function() { barEl.style.width = asset.funded_pct + '%'; }, 100);
-        }
-
-        if (ctaEl) ctaEl.href = '/property/' + encodeURIComponent(asset.slug || asset.id);
-
-        if (dotsContainer) {
-          dotsContainer.innerHTML = '';
-          if (assets.length > 1) {
-            assets.forEach(function(_, i) {
-              var dot = document.createElement('div');
-              dot.className = 'lb-spotlight-dot' + (i === index ? ' active' : '');
-              dot.onclick = function() {
-                currentIndex = i;
-                renderAsset(currentIndex);
-                resetInterval();
-              };
-              dotsContainer.appendChild(dot);
-            });
-          }
-        }
-      }
-
-      function nextAsset() {
-        if (assets.length <= 1) return;
-        currentIndex = (currentIndex + 1) % assets.length;
-        renderAsset(currentIndex);
-      }
-
-      function resetInterval() {
-        if (intervalTimer) clearInterval(intervalTimer);
-        intervalTimer = setInterval(nextAsset, 10000); // 10s rotation
-      }
-
-      // Initial render & start
-      renderAsset(0);
-      resetInterval();
-
-    } catch (e) {
-      console.error('Spotlight error:', e);
-      var card = document.getElementById('lb-spotlight-card');
-      if (card) card.style.display = 'none';
+      renderBentoCards(demo.rankings);
+      renderMinorCards(demo.rankings);
+      renderMyRank(demo.my_rank);
+      renderTable(sliced, false);
+      renderMeta(demo);
+      renderPagination(demo);
+      hideInlineStatus();
+      showLayer('content');
+      return;
     }
+
+    if (!currentSearch && !currentTier && (!data.rankings || data.rankings.length === 0) && data.total_participants === 0) {
+      renderMyRank(data.my_rank);
+      renderMeta(data);
+      hideInlineStatus();
+      showLayer('empty');
+      return;
+    }
+
+    renderBentoCards(data.rankings || []);
+    renderMinorCards(data.rankings || []);
+    renderMyRank(data.my_rank);
+    renderTable(data.rankings || [], false);
+    renderMeta(data);
+    renderPagination(data);
+    hideInlineStatus();
+    showLayer('content');
   }
 
   // ─── API Calls ─────────────────────────────────────────────────
@@ -325,7 +232,9 @@
     // Previous Button
     var prev = document.createElement('button');
     prev.className = 'lb-pag-btn ds-btn ds-btn--secondary ds-btn--sm';
-    prev.innerHTML = '&laquo;';
+    prev.type = 'button';
+    prev.textContent = '‹';
+    prev.setAttribute('aria-label', 'Previous leaderboard page');
     prev.disabled = currentPage === 1;
     prev.onclick = function() { goToPage(currentPage - 1); };
     container.appendChild(prev);
@@ -345,7 +254,12 @@
        
        var btn = document.createElement('button');
        btn.className = 'lb-pag-btn ds-btn ds-btn--secondary ds-btn--sm' + (currentPage === i ? ' active' : '');
+       btn.type = 'button';
        btn.innerText = i;
+       btn.setAttribute('aria-label', 'Go to leaderboard page ' + i);
+       if (currentPage === i) {
+         btn.setAttribute('aria-current', 'page');
+       }
        (function(p) {
          btn.onclick = function() { goToPage(p); };
        })(i);
@@ -355,7 +269,9 @@
     // Next Button
     var next = document.createElement('button');
     next.className = 'lb-pag-btn ds-btn ds-btn--secondary ds-btn--sm';
-    next.innerHTML = '&raquo;';
+    next.type = 'button';
+    next.textContent = '›';
+    next.setAttribute('aria-label', 'Next leaderboard page');
     next.disabled = currentPage === totalPages;
     next.onclick = function() { goToPage(currentPage + 1); };
     container.appendChild(next);
@@ -373,15 +289,50 @@
 
   async function updatePreferences(prefs) {
     try {
-      await fetch('/api/leaderboard/preferences', {
+      var res = await fetch('/api/leaderboard/preferences', {
         method: 'PUT',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(prefs),
       });
+      if (!res.ok) throw new Error('Failed to update preferences');
+      cachedPrefs = await res.json();
+      applyPrefs(cachedPrefs);
+      setPreferenceStatus('Preference saved', false);
     } catch (err) {
       console.error('Failed to update preferences:', err);
+      setPreferenceStatus('Could not save preference. Refresh and try again.', true);
+      throw err;
     }
+  }
+
+  function setPreferenceStatus(message, isError) {
+    var status = document.getElementById('lb-preference-status');
+    if (!status) return;
+    status.textContent = message;
+    status.style.color = isError ? '#B42318' : 'var(--btn-primary-bg, #0000FF)';
+  }
+
+  function showInlineStatus(message) {
+    var status = document.getElementById('lb-inline-status');
+    if (!status) return;
+    status.textContent = message;
+    status.classList.remove('hidden');
+  }
+
+  function hideInlineStatus() {
+    var status = document.getElementById('lb-inline-status');
+    if (!status) return;
+    status.textContent = '';
+    status.classList.add('hidden');
+  }
+
+  function setControlsBusy(isBusy) {
+    var controls = document.querySelectorAll('.lb-topbar-tab[data-metric], .lb-tf-btn[data-timeframe], #lb-per-page-select, #lb-search-input, #lb-visibility-toggle');
+    controls.forEach(function(control) {
+      control.disabled = isBusy;
+      control.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+    });
   }
 
   // ─── Layer Management ──────────────────────────────────────────
@@ -566,7 +517,11 @@
        
        items.forEach(function(it) {
          var item = document.createElement('div');
-         item.innerHTML = '<span style="font-weight:700">' + it.label + ':</span> ' + (typeof it.val === 'number' && it.label !== 'Assets' && it.label !== 'Affiliates' ? formatCompact(it.val) : it.val);
+         var label = document.createElement('span');
+         label.style.fontWeight = '700';
+         label.textContent = it.label + ': ';
+         item.appendChild(label);
+         item.appendChild(document.createTextNode(typeof it.val === 'number' && it.label !== 'Assets' && it.label !== 'Affiliates' ? formatCompact(it.val) : String(it.val)));
          breakdown.appendChild(item);
        });
        
@@ -688,9 +643,13 @@
     }
 
     var updatedEl = document.getElementById('lb-last-updated');
-    if (updatedEl && data.last_updated) {
-      var d = new Date(data.last_updated);
-      updatedEl.textContent = 'Updated: ' + d.toLocaleString();
+    if (updatedEl) {
+      if (data.last_updated) {
+        var d = new Date(data.last_updated);
+        updatedEl.textContent = 'Updated: ' + d.toLocaleString();
+      } else {
+        updatedEl.textContent = 'Updated: live timeframe';
+      }
     }
   }
 
@@ -700,6 +659,11 @@
   function applyPrefs(prefs) {
     var toggle = document.getElementById('lb-visibility-toggle');
     if (toggle) toggle.checked = prefs.visible;
+    var label = document.getElementById('lb-visibility-label');
+    if (label) {
+      label.textContent = prefs.visible ? 'Visible in public rankings' : 'Hidden from public rankings';
+    }
+    setPreferenceStatus(prefs.visible ? 'Your public leaderboard profile is visible.' : 'Your public leaderboard profile is hidden.', false);
   }
 
   // ─── Global Handlers ──────────────────────────────────────────
@@ -708,10 +672,6 @@
   window.switchMetricTab = async function (metric, btn) {
     currentMetric = metric;
     currentPage = 1;
-
-    // Sync the dropdown too
-    var select = document.getElementById('lb-metric-select');
-    if (select) select.value = metric;
 
     // Update tab active state globally but only for metric components
     var metricTabs = document.querySelectorAll('.lb-topbar-tab[data-metric], .lb-tf-btn[data-metric]');
@@ -735,15 +695,6 @@
     await refetchAndRender();
   };
 
-  window.switchTier = async function (tier, btn) {
-    currentTier = tier;
-    currentPage = 1;
-    var buttons = document.querySelectorAll('#lb-tier-tabs .lb-tf-btn');
-    buttons.forEach(function (b) { b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
-    await refetchAndRender();
-  };
-
   window.debounceSearch = function(event) {
     if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async function() {
@@ -754,6 +705,7 @@
   };
 
   async function refetchAndRender() {
+    if (isFetching) return;
     isFetching = true;
     var hasFilters = !!(currentSearch || currentTier);
     var bentoGrid = document.getElementById('lb-bento-grid');
@@ -765,40 +717,17 @@
       el.style.opacity = '0.4';
       el.style.pointerEvents = 'none';
     });
+    setControlsBusy(true);
 
     try {
       var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier, currentPerPage);
-
-      var forceDemo = new URLSearchParams(window.location.search).has('demo');
-
-      if (forceDemo) {
-        usingDemoData = true;
-        var demo = getDemoData(data);
-        
-        // Demo pagination implementation
-        var start = (currentPage - 1) * currentPerPage;
-        var sliced = demo.rankings.slice(start, start + currentPerPage);
-        
-        renderBentoCards(demo.rankings); // Keep hero cards static from the full list
-        renderMinorCards(demo.rankings); // Keep minor cards static
-        renderMyRank(demo.my_rank);
-        renderTable(sliced, false);
-        renderMeta(demo);
-        renderPagination(demo);
-      } else {
-        usingDemoData = false;
-        renderBentoCards(data.rankings);
-        renderMinorCards(data.rankings);
-        renderMyRank(data.my_rank);
-        renderTable(data.rankings, false);
-        renderMeta(data);
-        renderPagination(data);
-      }
-      showLayer('content');
+      renderLeaderboardData(data);
     } catch (err) {
       console.error('Refetch failed:', err);
+      showInlineStatus('Could not refresh the leaderboard. Previous results are still shown.');
     } finally {
       isFetching = false;
+      setControlsBusy(false);
       fadables.forEach(function (el) {
         el.style.opacity = '1';
         el.style.pointerEvents = '';
@@ -807,12 +736,16 @@
   }
 
   window.toggleVisibility = function (checkbox) {
+    var previousPrefs = cachedPrefs ? Object.assign({}, cachedPrefs) : { visible: !checkbox.checked, show_avatar: false, display_name: null };
     var prefs = {
       visible: checkbox.checked,
       show_avatar: cachedPrefs ? (cachedPrefs.show_avatar || false) : false,
       display_name: cachedPrefs ? (cachedPrefs.display_name || null) : null,
     };
     cachedPrefs = Object.assign({}, cachedPrefs, { visible: checkbox.checked });
-    updatePreferences(prefs);
+    updatePreferences(prefs).catch(function() {
+      cachedPrefs = previousPrefs;
+      applyPrefs(previousPrefs);
+    });
   };
 })();

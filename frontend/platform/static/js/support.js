@@ -9,12 +9,11 @@
   let allTickets = [];
   let currentFilter = "";
   let faqDebounceTimeout;
-  const draftKey = "poool:support-ticket-draft";
 
   document.addEventListener("DOMContentLoaded", () => {
     loadMyTickets();
     initSupportNav();
-    initDraft();
+    clearLegacyDraft();
     updateCharacterCounts();
 
     // New ticket form
@@ -60,20 +59,11 @@
 
     // FAQ accordion toggle
     document.querySelectorAll(".faq-question").forEach((q) => {
+      q.setAttribute("aria-expanded", "false");
       q.addEventListener("click", () => {
         const item = q.closest(".faq-item");
-        item.classList.toggle("open");
-      });
-    });
-
-    // FAQ category filter tabs
-    document.querySelectorAll(".faq-cat-tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        document
-          .querySelectorAll(".faq-cat-tab")
-          .forEach((t) => t.classList.remove("active"));
-        tab.classList.add("active");
-        filterFAQ();
+        const isOpen = item.classList.toggle("open");
+        q.setAttribute("aria-expanded", String(isOpen));
       });
     });
 
@@ -158,45 +148,16 @@
     }
   }
 
-  function initDraft() {
-    const raw = window.localStorage?.getItem(draftKey);
-    if (raw) {
-      try {
-        const draft = JSON.parse(raw);
-        if (draft.subject) document.getElementById("ticket-subject").value = draft.subject;
-        if (draft.message) document.getElementById("ticket-message").value = draft.message;
-        if (draft.category) document.getElementById("ticket-category").value = draft.category;
-        if (draft.priority) {
-          const priority = document.getElementById("ticket-priority");
-          priority.value = draft.priority;
-          updateResponseTime(draft.priority);
-        }
-        setDraftStatus("Draft restored");
-      } catch (_) {
-        window.localStorage?.removeItem(draftKey);
-      }
-    }
+  function clearLegacyDraft() {
+    window.localStorage?.removeItem("poool:support-ticket-draft");
   }
 
   function saveDraft() {
-    const draft = {
-      subject: document.getElementById("ticket-subject")?.value || "",
-      message: document.getElementById("ticket-message")?.value || "",
-      category: document.getElementById("ticket-category")?.value || "general",
-      priority: document.getElementById("ticket-priority")?.value || "normal",
-      updatedAt: Date.now()
-    };
-    if (!draft.subject && !draft.message) {
-      window.localStorage?.removeItem(draftKey);
-      setDraftStatus("");
-      return;
-    }
-    window.localStorage?.setItem(draftKey, JSON.stringify(draft));
-    setDraftStatus("Draft saved");
+    setDraftStatus("");
   }
 
   function clearDraft() {
-    window.localStorage?.removeItem(draftKey);
+    clearLegacyDraft();
     const form = document.getElementById("support-form");
     form?.reset();
     resetFileInfo(document.getElementById("drop-zone-file-info"), document.getElementById("drop-zone"));
@@ -214,9 +175,15 @@
     const dropZone = document.getElementById("drop-zone");
     const fileInput = document.getElementById("ticket-attachment");
     const fileInfo = document.getElementById("drop-zone-file-info");
+    const trigger = dropZone?.querySelector(".drop-zone-content");
     if (!dropZone || !fileInput) return;
 
-    dropZone.addEventListener("click", () => fileInput.click());
+    trigger?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
 
     dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -301,10 +268,14 @@
         renderTickets();
       } else if (resp.status === 401) {
         window.location.href = "/auth/login";
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        renderTicketsError(err.error || "Could not load your tickets.");
       }
     } catch (e) {
       console.error("Error loading tickets", e);
       if (typeof Sentry !== 'undefined') Sentry.captureException(e);
+      renderTicketsError("Network error while loading tickets.");
     }
   }
 
@@ -344,7 +315,7 @@
       .map(
         (t) => `
             <div class="support-ticket-card ticket-priority-border--${esc(t.priority || "normal")}" data-ticket-id="${esc(t.id)}">
-                <div class="ticket-card-header" onclick="document.getElementById('detail-${esc(t.id)}')?.classList.toggle('open')">
+                <button type="button" class="ticket-card-header" data-ticket-toggle="${esc(t.id)}" aria-expanded="false" aria-controls="detail-${esc(t.id)}">
                     <div class="ticket-card-left">
                         <div class="ticket-card-meta">
                             <span class="ticket-priority ticket-priority--${esc(t.priority || "normal")}">${esc((t.priority || "normal").toUpperCase())}</span>
@@ -356,7 +327,7 @@
                         <span class="ticket-status ticket-status--${esc(t.status)}">${formatStatus(t.status)}</span>
                         <span class="ticket-card-date">${formatDate(t.created_at)}</span>
                     </div>
-                </div>
+                </button>
                 <div class="ticket-card-detail" id="detail-${esc(t.id)}">
                     <div class="ticket-card-message">${esc(t.message)}</div>
                     ${t.replies && t.replies.length
@@ -381,10 +352,10 @@
                     `
             : ""
           }
-                    <div class="ticket-actions" onclick="event.stopPropagation()">
+                    <div class="ticket-actions">
                         ${isOpenStatus(t.status)
             ? `
-                            <form class="ticket-reply-form" onsubmit="window._submitReply(event, '${esc(t.id)}')">
+                            <form class="ticket-reply-form" data-ticket-id="${esc(t.id)}">
                                 <textarea class="ticket-reply-input" placeholder="Type your reply…" required rows="2"></textarea>
                                 <button type="submit" class="ds-btn ds-btn--primary ticket-reply-btn">Send Reply</button>
                             </form>
@@ -393,7 +364,7 @@
           }
                         ${isClosedStatus(t.status)
             ? `
-                            <button class="ticket-reopen-btn" onclick="window._reopenTicket('${esc(t.id)}')">Reopen Ticket</button>
+                            <button type="button" class="ticket-reopen-btn" data-ticket-id="${esc(t.id)}">Reopen Ticket</button>
                         `
             : ""
           }
@@ -403,6 +374,37 @@
         `,
       )
       .join("");
+    bindTicketActions(container);
+  }
+
+  function renderTicketsError(message) {
+    const container = document.getElementById("tickets-list");
+    if (!container) return;
+    container.innerHTML = `
+      <div class="support-empty support-error" role="alert">
+        <p style="font-size: 16px; font-weight: 600; color: #344054; margin-top: 12px;">${esc(message)}</p>
+        <button type="button" class="ds-btn ds-btn--secondary" id="support-retry-btn">Retry</button>
+      </div>`;
+    document.getElementById("support-retry-btn")?.addEventListener("click", loadMyTickets);
+  }
+
+  function bindTicketActions(container) {
+    container.querySelectorAll("[data-ticket-toggle]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const detail = document.getElementById(`detail-${button.dataset.ticketToggle}`);
+        if (!detail) return;
+        const isOpen = detail.classList.toggle("open");
+        button.setAttribute("aria-expanded", String(isOpen));
+      });
+    });
+
+    container.querySelectorAll(".ticket-reply-form").forEach((form) => {
+      form.addEventListener("submit", (event) => submitReply(event, form.dataset.ticketId));
+    });
+
+    container.querySelectorAll(".ticket-reopen-btn").forEach((button) => {
+      button.addEventListener("click", () => reopenTicket(button.dataset.ticketId));
+    });
   }
 
   function updateTicketSummary() {
@@ -435,9 +437,9 @@
     </div>`;
   }
 
-  // Expose reply and reopen to window for inline handlers
-  window._submitReply = async function (e, ticketId) {
+  async function submitReply(e, ticketId) {
     e.preventDefault();
+    if (!ticketId) return;
     const form = e.target;
     const textarea = form.querySelector("textarea");
     const message = textarea?.value?.trim();
@@ -473,9 +475,10 @@
         btn.textContent = "Send Reply";
       }
     }
-  };
+  }
 
-  window._reopenTicket = async function (ticketId) {
+  async function reopenTicket(ticketId) {
+    if (!ticketId) return;
     if (!await pooolConfirm({ title: 'Reopen ticket', message: 'This will reopen the ticket and notify our support team.', confirmText: 'Reopen', type: 'default' })) return;
     try {
       const resp = await fetch(`/api/support/tickets/${ticketId}/reopen`, {
@@ -494,7 +497,7 @@
     } catch (e) {
       showToast("Network error.", "error");
     }
-  };
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -541,7 +544,7 @@
       if (resp.ok) {
         document.getElementById("ticket-subject").value = "";
         document.getElementById("ticket-message").value = "";
-        window.localStorage?.removeItem(draftKey);
+        clearLegacyDraft();
         setDraftStatus("");
         updateCharacterCounts();
         const fileInput = document.getElementById("ticket-attachment");
@@ -581,16 +584,12 @@
 
   function filterFAQ() {
     const q = document.getElementById("faq-search")?.value?.toLowerCase() || "";
-    const activeTab = document.querySelector(".faq-cat-tab.active");
-    const activeCat = activeTab ? activeTab.dataset.category : "";
 
     document.querySelectorAll(".faq-item").forEach((item) => {
       const text = item.textContent.toLowerCase();
-      const itemCat = item.dataset.category || "";
       const matchesSearch = text.includes(q);
-      const matchesCategory = !activeCat || itemCat === activeCat;
 
-      item.style.display = (matchesSearch && matchesCategory) ? "" : "none";
+      item.style.display = matchesSearch ? "" : "none";
     });
   }
 

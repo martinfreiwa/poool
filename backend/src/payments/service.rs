@@ -229,6 +229,16 @@ pub async fn create_deposit_request(
 /// Confirm a deposit (called by webhook or admin approval).
 /// This is the ATOMIC operation that credits the user's wallet.
 pub async fn confirm_deposit(pool: &PgPool, provider_reference: &str) -> Result<Uuid, String> {
+    confirm_deposit_with_audit(pool, provider_reference, None, None).await
+}
+
+/// Confirm a deposit with explicit audit context for admin/four-eyes actions.
+pub async fn confirm_deposit_with_audit(
+    pool: &PgPool,
+    provider_reference: &str,
+    audit_actor_user_id: Option<Uuid>,
+    admin_notes: Option<String>,
+) -> Result<Uuid, String> {
     let mut tx = pool
         .begin()
         .await
@@ -305,14 +315,25 @@ pub async fn confirm_deposit(pool: &PgPool, provider_reference: &str) -> Result<
     .map_err(|e| format!("Transaction log failed: {}", e))?;
 
     // 6. Audit log
+    let actor_user_id = audit_actor_user_id.unwrap_or(user_id);
+    let audit_state = serde_json::json!({
+        "status": "paid",
+        "credited_user_id": user_id,
+        "amount_cents": amount_cents,
+        "currency": currency,
+        "provider_reference": provider_reference,
+        "admin_notes": admin_notes,
+        "source": if audit_actor_user_id.is_some() { "admin" } else { "system_or_webhook" }
+    });
     sqlx::query(
         r#"
-        INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id)
-        VALUES ($1, 'deposit.confirmed', 'deposit_request', $2)
+        INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+        VALUES ($1, 'deposit.confirmed', 'deposit_request', $2, $3)
         "#,
     )
-    .bind(user_id)
+    .bind(actor_user_id)
     .bind(deposit_id)
+    .bind(audit_state)
     .execute(&mut *tx)
     .await
     .map_err(|e| format!("Audit log failed: {}", e))?;

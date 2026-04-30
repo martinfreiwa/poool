@@ -1,10 +1,160 @@
 use super::models::{
-    CommissionRecord, PayoutSettings, RewardsOverview, SavePayoutSettingsForm, TierInfo,
+    AffiliateSettingsResponse, CommissionRecord, PayoutSettings, RewardsOverview,
+    SaveAffiliateSettingsForm, SavePayoutSettingsForm, TierInfo,
 };
 use crate::error::AppError;
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce,
+};
+use base64::Engine as _;
 use chrono::NaiveDate;
-use sqlx::PgPool;
+use rand::RngCore;
+use sqlx::{PgPool, Row};
+use std::net::IpAddr;
+use url::Url;
 use uuid::Uuid;
+
+const MAX_POSTBACK_URL_LEN: usize = 512;
+const TAX_ID_SECRET_PREFIX: &str = "tax_id:v1";
+
+pub async fn validate_postback_url(url: &str) -> Result<String, AppError> {
+    let trimmed = url.trim();
+    if trimmed.is_empty() {
+        return Ok(String::new());
+    }
+    if trimmed.len() > MAX_POSTBACK_URL_LEN {
+        return Err(AppError::BadRequest(
+            "Postback URL must be 512 characters or fewer.".into(),
+        ));
+    }
+
+    let parsed = Url::parse(trimmed)
+        .map_err(|_| AppError::BadRequest("Postback URL must be a valid HTTPS URL.".into()))?;
+    if parsed.scheme() != "https" {
+        return Err(AppError::BadRequest("Postback URL must use HTTPS.".into()));
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err(AppError::BadRequest(
+            "Postback URL must not include embedded credentials.".into(),
+        ));
+    }
+
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| AppError::BadRequest("Postback URL must include a host.".into()))?;
+    let host_lower = host.trim_end_matches('.').to_ascii_lowercase();
+    if matches!(
+        host_lower.as_str(),
+        "localhost" | "metadata.google.internal" | "metadata"
+    ) || host_lower.ends_with(".localhost")
+    {
+        return Err(AppError::BadRequest(
+            "Postback URL host is not allowed.".into(),
+        ));
+    }
+
+    if let Ok(ip) = host.parse::<IpAddr>() {
+        if is_blocked_postback_ip(ip) {
+            return Err(AppError::BadRequest(
+                "Postback URL host is not allowed.".into(),
+            ));
+        }
+        return Ok(trimmed.to_string());
+    }
+
+    let port = parsed.port_or_known_default().unwrap_or(443);
+    let resolved = tokio::net::lookup_host((host, port))
+        .await
+        .map_err(|_| AppError::BadRequest("Postback URL host could not be resolved.".into()))?;
+
+    for addr in resolved {
+        if is_blocked_postback_ip(addr.ip()) {
+            return Err(AppError::BadRequest(
+                "Postback URL host resolves to a private or reserved address.".into(),
+            ));
+        }
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn is_blocked_postback_ip(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(ip) => {
+            ip.is_private()
+                || ip.is_loopback()
+                || ip.is_link_local()
+                || ip.is_broadcast()
+                || ip.is_documentation()
+                || ip.is_unspecified()
+                || ip.octets()[0] == 0
+                || ip.octets()[0] >= 224
+                || ip == std::net::Ipv4Addr::new(169, 254, 169, 254)
+        }
+        IpAddr::V6(ip) => {
+            ip.is_loopback()
+                || ip.is_unspecified()
+                || ip.is_unique_local()
+                || ip.is_unicast_link_local()
+                || ip.is_multicast()
+        }
+    }
+}
+
+fn url_encode(value: &str) -> String {
+    url::form_urlencoded::byte_serialize(value.as_bytes()).collect()
+}
+
+fn cents_to_decimal_string(cents: i64) -> String {
+    let sign = if cents < 0 { "-" } else { "" };
+    let abs = cents.saturating_abs();
+    format!("{}{}.{:02}", sign, abs / 100, abs % 100)
+}
+
+fn redact_url_query(url: &Url) -> String {
+    let mut redacted = url.clone();
+    if redacted.query().is_some() {
+        redacted.set_query(Some("[redacted]"));
+    }
+    redacted.to_string()
+}
+
+fn build_postback_url(
+    template: &str,
+    event: &str,
+    subid: Option<&str>,
+    payout_cents: i64,
+) -> Result<Url, AppError> {
+    let encoded_subid = url_encode(subid.unwrap_or(""));
+    let encoded_event = url_encode(event);
+    let payout = cents_to_decimal_string(payout_cents);
+    let encoded_payout = url_encode(&payout);
+
+    let mut url = Url::parse(
+        &template
+            .replace("{subid}", &encoded_subid)
+            .replace("{event}", &encoded_event)
+            .replace("{payout}", &encoded_payout),
+    )
+    .map_err(|_| AppError::BadRequest("Stored postback URL is invalid.".into()))?;
+
+    if !template.contains("{subid}") {
+        url.query_pairs_mut()
+            .append_pair("subid", subid.unwrap_or(""));
+    }
+    if !template.contains("{event}") {
+        url.query_pairs_mut().append_pair("event", event);
+    }
+    if !template.contains("{payout}") {
+        url.query_pairs_mut().append_pair("payout", &payout);
+    }
+    url.query_pairs_mut()
+        .append_pair("currency", "USD")
+        .append_pair("status", "approved");
+
+    Ok(url)
+}
 
 /// Recalculates the user's invested_12m and tier_id based on active investments in the last 12 months.
 pub async fn recalculate_user_tier(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
@@ -600,6 +750,434 @@ pub async fn save_payout_settings(
     Ok(row)
 }
 
+fn normalize_required_field(value: &str, field: &str, max_len: usize) -> Result<String, AppError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::BadRequest(format!("{} is required.", field)));
+    }
+    if trimmed.chars().count() > max_len {
+        return Err(AppError::BadRequest(format!(
+            "{} must be {} characters or fewer.",
+            field, max_len
+        )));
+    }
+    Ok(trimmed.to_string())
+}
+
+fn normalize_optional_field(
+    value: Option<&String>,
+    max_len: usize,
+) -> Result<Option<String>, AppError> {
+    match value.map(|v| v.trim()).filter(|v| !v.is_empty()) {
+        Some(v) if v.chars().count() > max_len => Err(AppError::BadRequest(format!(
+            "Value must be {} characters or fewer.",
+            max_len
+        ))),
+        Some(v) => Ok(Some(v.to_string())),
+        None => Ok(None),
+    }
+}
+
+fn validate_tax_class(value: &str) -> Result<String, AppError> {
+    match value.trim() {
+        "id_individual" | "id_entity" | "foreign" => Ok(value.trim().to_string()),
+        _ => Err(AppError::BadRequest(
+            "Invalid tax classification selected.".into(),
+        )),
+    }
+}
+
+fn validate_payout_method(value: &str) -> Result<String, AppError> {
+    match value.trim() {
+        "poool_wallet" => Ok("poool_wallet".to_string()),
+        _ => Err(AppError::BadRequest(
+            "Selected payout method is not currently available.".into(),
+        )),
+    }
+}
+
+fn tax_id_encryption_key() -> Result<[u8; 32], AppError> {
+    let raw = std::env::var("TAX_ID_ENCRYPTION_KEY")
+        .map_err(|_| AppError::Internal("TAX_ID_ENCRYPTION_KEY is not configured.".to_string()))?;
+
+    let trimmed = raw.trim();
+    let bytes = if trimmed.len() == 64 && trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        hex::decode(trimmed).map_err(|_| {
+            AppError::Internal("TAX_ID_ENCRYPTION_KEY is not valid hex.".to_string())
+        })?
+    } else {
+        base64::engine::general_purpose::STANDARD
+            .decode(trimmed)
+            .or_else(|_| base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(trimmed))
+            .unwrap_or_else(|_| trimmed.as_bytes().to_vec())
+    };
+
+    bytes.try_into().map_err(|_| {
+        AppError::Internal("TAX_ID_ENCRYPTION_KEY must decode to 32 bytes.".to_string())
+    })
+}
+
+fn encrypt_tax_id_payload(plaintext: &str) -> Result<String, AppError> {
+    let key = tax_id_encryption_key()?;
+    let cipher = Aes256Gcm::new_from_slice(&key)
+        .map_err(|_| AppError::Internal("Failed to initialize Tax ID encryption.".to_string()))?;
+    let mut nonce_bytes = [0u8; 12];
+    rand::rngs::OsRng.fill_bytes(&mut nonce_bytes);
+    let ciphertext = cipher
+        .encrypt(Nonce::from_slice(&nonce_bytes), plaintext.as_bytes())
+        .map_err(|_| AppError::Internal("Failed to encrypt Tax ID.".to_string()))?;
+    Ok(format!(
+        "{}:{}:{}",
+        TAX_ID_SECRET_PREFIX,
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(nonce_bytes),
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(ciphertext)
+    ))
+}
+
+fn tax_id_last4(value: &str) -> Option<String> {
+    let compact: String = value
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect();
+    if compact.is_empty() {
+        return None;
+    }
+    let suffix_len = compact.len().min(4);
+    Some(compact[compact.len() - suffix_len..].to_string())
+}
+
+fn mask_tax_id_last4(value: Option<&str>) -> Option<String> {
+    let suffix = value?.trim();
+    if suffix.is_empty() {
+        return None;
+    }
+    Some(format!("***-**-{}", suffix))
+}
+
+fn mask_tax_id(value: Option<&str>) -> Option<String> {
+    mask_tax_id_last4(value.and_then(tax_id_last4).as_deref())
+}
+
+pub struct TaxIdStorage {
+    pub encrypted: String,
+    pub last4: Option<String>,
+}
+
+pub fn encrypt_tax_id_for_storage(tax_id: &str) -> Result<TaxIdStorage, AppError> {
+    let normalized = normalize_required_field(tax_id, "Tax ID", 50)?;
+    Ok(TaxIdStorage {
+        encrypted: encrypt_tax_id_payload(&normalized)?,
+        last4: tax_id_last4(&normalized),
+    })
+}
+
+fn tax_status(is_tax_ready: bool, tax_class: Option<&str>, tax_id: Option<&str>) -> String {
+    if tax_class.is_none() || tax_id.map(|v| v.trim().is_empty()).unwrap_or(true) {
+        "Incomplete".to_string()
+    } else if is_tax_ready {
+        "Verified".to_string()
+    } else {
+        "Pending review".to_string()
+    }
+}
+
+fn payout_status(
+    affiliate_status: &str,
+    tax_ready: bool,
+    tax_document_on_file: bool,
+) -> (String, Option<String>) {
+    match affiliate_status {
+        "active" if tax_ready && tax_document_on_file => ("Active".to_string(), None),
+        "active" if !tax_ready => (
+            "On hold".to_string(),
+            Some("Tax details are pending compliance review.".to_string()),
+        ),
+        "active" => (
+            "On hold".to_string(),
+            Some("Tax document is required before payouts can be released.".to_string()),
+        ),
+        "suspended" => (
+            "Suspended".to_string(),
+            Some("Affiliate account is suspended.".to_string()),
+        ),
+        _ => (
+            "Under review".to_string(),
+            Some("Affiliate account is not active yet.".to_string()),
+        ),
+    }
+}
+
+fn build_affiliate_settings_response(
+    tax_class: Option<String>,
+    tax_id_last4: Option<String>,
+    tax_name: Option<String>,
+    vat_number: Option<String>,
+    payout_method: Option<String>,
+    affiliate_status: String,
+    tax_ready: bool,
+    tax_document_on_file: bool,
+) -> AffiliateSettingsResponse {
+    let (payout_status, payout_hold_reason) =
+        payout_status(&affiliate_status, tax_ready, tax_document_on_file);
+    AffiliateSettingsResponse {
+        tax_status: tax_status(tax_ready, tax_class.as_deref(), tax_id_last4.as_deref()),
+        tax_id_masked: mask_tax_id_last4(tax_id_last4.as_deref()),
+        tax_class,
+        tax_name,
+        vat_number,
+        payout_method: payout_method.unwrap_or_else(|| "poool_wallet".to_string()),
+        payout_status,
+        payout_hold_reason,
+        tax_document_on_file,
+        tax_ready,
+    }
+}
+
+/// Fetch affiliate tax and payout settings without exposing raw tax IDs.
+pub async fn get_affiliate_settings(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<AffiliateSettingsResponse, AppError> {
+    let row = sqlx::query(
+        r#"
+        SELECT
+            a.tax_recipient_class,
+            a.is_tax_ready,
+            a.status,
+            a.tax_id,
+            a.tax_id_encrypted,
+            a.tax_id_last4,
+            a.company_name,
+            a.tax_document_gcs_path,
+            ps.payment_method,
+            ps.full_name,
+            ps.vat_number
+        FROM affiliates a
+        LEFT JOIN payout_settings ps ON ps.user_id = a.user_id
+        WHERE a.user_id = $1
+        "#,
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let row = row.ok_or_else(|| {
+        AppError::Forbidden("Affiliate account is required to manage payout settings.".into())
+    })?;
+
+    let payout_full_name: Option<String> = row.try_get("full_name")?;
+    let affiliate_company_name: Option<String> = row.try_get("company_name")?;
+    let tax_name = payout_full_name.or(affiliate_company_name);
+    let stored_tax_id_last4: Option<String> = row.try_get("tax_id_last4")?;
+    let legacy_tax_id: Option<String> = row.try_get("tax_id")?;
+    let tax_id_mask_suffix = stored_tax_id_last4.or_else(|| {
+        legacy_tax_id
+            .as_deref()
+            .and_then(|value| tax_id_last4(value))
+    });
+
+    Ok(build_affiliate_settings_response(
+        row.try_get("tax_recipient_class")?,
+        tax_id_mask_suffix,
+        tax_name,
+        row.try_get("vat_number")?,
+        row.try_get("payment_method")?,
+        row.try_get("status")?,
+        row.try_get::<Option<bool>, _>("is_tax_ready")?
+            .unwrap_or(false),
+        row.try_get::<Option<String>, _>("tax_document_gcs_path")?
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false),
+    ))
+}
+
+/// Atomically update affiliate tax metadata and payout settings.
+pub async fn save_affiliate_settings(
+    pool: &PgPool,
+    user_id: Uuid,
+    form: SaveAffiliateSettingsForm,
+) -> Result<AffiliateSettingsResponse, AppError> {
+    if !form.tax_certified {
+        return Err(AppError::BadRequest(
+            "Tax certification must be accepted before saving.".into(),
+        ));
+    }
+
+    let tax_class = validate_tax_class(&form.tax_class)?;
+    let payout_method = validate_payout_method(&form.payout_method)?;
+    let tax_name = normalize_required_field(&form.tax_name, "Business / full name", 255)?;
+    let submitted_tax_id = normalize_optional_field(form.tax_id.as_ref(), 50)?;
+    let vat_number = normalize_optional_field(form.vat_number.as_ref(), 50)?;
+
+    let mut tx = pool.begin().await?;
+
+    let affiliate = sqlx::query(
+        r#"
+        SELECT
+            tax_recipient_class,
+            is_tax_ready,
+            status,
+            tax_id,
+            tax_id_encrypted,
+            tax_id_last4,
+            company_name,
+            tax_document_gcs_path
+        FROM affiliates
+        WHERE user_id = $1
+        FOR UPDATE
+        "#,
+    )
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let affiliate = affiliate.ok_or_else(|| {
+        AppError::Forbidden("Affiliate account is required to manage payout settings.".into())
+    })?;
+
+    let current_tax_class: Option<String> = affiliate.try_get("tax_recipient_class")?;
+    let current_tax_ready = affiliate
+        .try_get::<Option<bool>, _>("is_tax_ready")?
+        .unwrap_or(false);
+    let current_status: String = affiliate.try_get("status")?;
+    let current_legacy_tax_id: Option<String> = affiliate.try_get("tax_id")?;
+    let current_tax_id_encrypted: Option<String> = affiliate.try_get("tax_id_encrypted")?;
+    let current_tax_id_last4: Option<String> = affiliate.try_get("tax_id_last4")?;
+    let current_tax_name: Option<String> = affiliate.try_get("company_name")?;
+    let current_tax_document: Option<String> = affiliate.try_get("tax_document_gcs_path")?;
+
+    let payout_row = sqlx::query(
+        "SELECT payment_method, full_name, vat_number FROM payout_settings WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let current_payout_method: Option<String> = payout_row
+        .as_ref()
+        .and_then(|row| row.try_get("payment_method").ok());
+    let current_vat_number: Option<String> = payout_row
+        .as_ref()
+        .and_then(|row| row.try_get("vat_number").ok());
+
+    let submitted_tax_id = submitted_tax_id.as_deref();
+    let (next_tax_id_encrypted, next_tax_id_last4, tax_id_changed) =
+        if let Some(tax_id) = submitted_tax_id {
+            let storage = encrypt_tax_id_for_storage(tax_id)?;
+            (storage.encrypted, storage.last4, true)
+        } else if let Some(current_encrypted) = current_tax_id_encrypted {
+            (current_encrypted, current_tax_id_last4.clone(), false)
+        } else if current_legacy_tax_id
+            .as_deref()
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false)
+        {
+            return Err(AppError::BadRequest(
+                "Re-enter Tax ID once to secure stored tax details.".into(),
+            ));
+        } else {
+            return Err(AppError::BadRequest("Tax ID is required.".into()));
+        };
+
+    let tax_data_changed = current_tax_class.as_deref() != Some(tax_class.as_str())
+        || tax_id_changed
+        || current_tax_name.as_deref() != Some(tax_name.as_str());
+    let next_tax_ready = if tax_data_changed {
+        false
+    } else {
+        current_tax_ready
+    };
+
+    sqlx::query(
+        r#"
+        UPDATE affiliates
+        SET tax_recipient_class = $1,
+            tax_id = NULL,
+            tax_id_encrypted = $2,
+            tax_id_last4 = $3,
+            company_name = $4,
+            is_tax_ready = $5,
+            updated_at = NOW()
+        WHERE user_id = $6
+        "#,
+    )
+    .bind(&tax_class)
+    .bind(&next_tax_id_encrypted)
+    .bind(&next_tax_id_last4)
+    .bind(&tax_name)
+    .bind(next_tax_ready)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO payout_settings (user_id, payment_method, full_name, vat_number)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (user_id) DO UPDATE SET
+            payment_method = EXCLUDED.payment_method,
+            full_name = EXCLUDED.full_name,
+            vat_number = EXCLUDED.vat_number,
+            updated_at = NOW()
+        "#,
+    )
+    .bind(user_id)
+    .bind(&payout_method)
+    .bind(&tax_name)
+    .bind(&vat_number)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state, metadata)
+        VALUES ($1, 'AFFILIATE_SETTINGS_UPDATED', 'affiliates', $1, $2, $3, $4)
+        "#,
+    )
+    .bind(user_id)
+    .bind(serde_json::json!({
+        "tax_class": current_tax_class,
+        "tax_id_masked": current_tax_id_last4
+            .as_deref()
+            .and_then(|last4| mask_tax_id_last4(Some(last4)))
+            .or_else(|| mask_tax_id(current_legacy_tax_id.as_deref())),
+        "tax_name": current_tax_name,
+        "payout_method": current_payout_method,
+        "vat_number": current_vat_number,
+        "tax_ready": current_tax_ready
+    }))
+    .bind(serde_json::json!({
+        "tax_class": tax_class.clone(),
+        "tax_id_masked": mask_tax_id_last4(next_tax_id_last4.as_deref()),
+        "tax_name": tax_name.clone(),
+        "payout_method": payout_method.clone(),
+        "vat_number": vat_number.clone(),
+        "tax_ready": next_tax_ready
+    }))
+    .bind(serde_json::json!({
+        "tax_certified": true,
+        "tax_data_changed": tax_data_changed,
+        "payout_hold_applied": tax_data_changed && current_tax_ready
+    }))
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(build_affiliate_settings_response(
+        Some(tax_class),
+        next_tax_id_last4,
+        Some(tax_name),
+        vat_number,
+        Some(payout_method),
+        current_status,
+        next_tax_ready,
+        current_tax_document
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false),
+    ))
+}
+
 /// List commissions for a user, optionally filtered by date range.
 pub async fn list_commissions(
     pool: &PgPool,
@@ -893,33 +1471,49 @@ pub async fn trigger_s2s_postback(
             return;
         }
 
-        // 2. Replace Macros
-        let payout = format!("{:.2}", (payout_cents as f64) / 100.0);
-        let final_url = url
-            .replace("{subid}", subid.as_deref().unwrap_or(""))
-            .replace("{event}", &event)
-            .replace("{payout}", &payout);
+        if let Err(e) = validate_postback_url(&url).await {
+            tracing::warn!(
+                affiliate_id = %affiliate_id,
+                error = %e,
+                "Skipping unsafe affiliate S2S postback URL"
+            );
+            return;
+        }
+
+        let final_url = match build_postback_url(&url, &event, subid.as_deref(), payout_cents) {
+            Ok(url) => url,
+            Err(e) => {
+                tracing::warn!(
+                    affiliate_id = %affiliate_id,
+                    error = %e,
+                    "Skipping invalid affiliate S2S postback URL"
+                );
+                return;
+            }
+        };
+        let redacted_url = redact_url_query(&final_url);
 
         // 3. Fire-and-forget HTTP GET
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(10))
+            .redirect(reqwest::redirect::Policy::none())
             .build();
 
         if let Ok(client) = client {
-            match client.get(&final_url).send().await {
+            match client.get(final_url.clone()).send().await {
                 Ok(resp) => {
                     if resp.status().is_success() {
-                        tracing::info!("S2S Postback fired successfully to [{}]", final_url);
+                        tracing::info!("S2S Postback fired successfully to [{}]", redacted_url);
                     } else {
                         tracing::warn!(
                             "S2S Postback failed (Status {}): [{}]",
                             resp.status(),
-                            final_url
+                            redacted_url
                         );
                     }
                 }
                 Err(e) => {
-                    tracing::warn!("S2S Postback network error to [{}]: {}", final_url, e);
+                    tracing::warn!("S2S Postback network error to [{}]: {}", redacted_url, e);
                 }
             }
         }
@@ -1287,28 +1881,15 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
                         if let Some(url) = postback.postback_url {
                             let sub_id = postback.sub_id.unwrap_or_default();
                             let payout_cents = postback.payout_cents;
-
-                            // Construct final URL
-                            let mut parsed = url.clone();
-                            if !parsed.contains('?') {
-                                parsed.push('?');
-                            } else if !parsed.ends_with('?') && !parsed.ends_with('&') {
-                                parsed.push('&');
-                            }
-                            let webhook_url = format!("{}subid={}&payout={}&currency=USD&status=approved", parsed, sub_id, (payout_cents as f64) / 100.0);
-
-                            // Fire asynchronously without blocking the loop
-                            tokio::spawn(async move {
-                                let client = reqwest::Client::new();
-                                match client.get(&webhook_url).send().await {
-                                    Ok(res) => {
-                                        tracing::info!("✅ Postback Webhook successful. URL: {}, HTTP Status: {}", webhook_url, res.status());
-                                    }
-                                    Err(e) => {
-                                        tracing::warn!("❌ Postback Webhook failed. URL: {}, Error: {}", webhook_url, e);
-                                    }
-                                }
-                            });
+                            drop(url);
+                            trigger_s2s_postback(
+                                pool.clone(),
+                                aff_id,
+                                "approved".to_string(),
+                                Some(sub_id),
+                                payout_cents,
+                            )
+                            .await;
                         }
                     }
                 }
@@ -1586,4 +2167,209 @@ pub async fn scan_affiliate_fraud_rings(pool: &PgPool) -> Result<Vec<serde_json:
         .collect();
 
     Ok(flags)
+}
+
+/// Scans affiliate referral clicks for shared IP clusters across multiple active affiliates.
+pub async fn scan_affiliate_ip_overlaps(pool: &PgPool) -> Result<Vec<serde_json::Value>, AppError> {
+    let overlaps = sqlx::query!(
+        r#"
+        SELECT
+            host(rc.ip_address)::text AS ip_address,
+            array_agg(DISTINCT a.user_id::text ORDER BY a.user_id::text) AS affiliate_ids,
+            array_agg(DISTINCT u.email ORDER BY u.email) AS affiliate_emails,
+            COUNT(*)::bigint AS click_count
+        FROM referral_clicks rc
+        JOIN affiliates a ON a.referral_code = rc.code
+        JOIN users u ON u.id = a.user_id
+        WHERE a.status = 'active'
+          AND rc.ip_address IS NOT NULL
+        GROUP BY rc.ip_address
+        HAVING COUNT(DISTINCT a.user_id) > 1
+        ORDER BY click_count DESC
+        LIMIT 100
+        "#
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let flags: Vec<serde_json::Value> = overlaps
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "type": "ip_overlap",
+                "ip_address": r.ip_address,
+                "affiliate_ids": r.affiliate_ids,
+                "affiliate_emails": r.affiliate_emails,
+                "click_count": r.click_count.unwrap_or(0),
+                "description": "Multiple active affiliates generated referral clicks from the same IP address"
+            })
+        })
+        .collect();
+
+    Ok(flags)
+}
+
+/// Converts affiliate fraud findings into Cytoscape-compatible graph elements.
+pub fn affiliate_fraud_flags_to_cytoscape_elements(
+    flags: &[serde_json::Value],
+) -> Vec<serde_json::Value> {
+    let mut elements = Vec::new();
+    let mut seen_nodes = std::collections::HashSet::new();
+
+    for (idx, flag) in flags.iter().enumerate() {
+        match flag
+            .get("type")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+        {
+            "circular_ring" => {
+                let Some(a_id) = flag.get("affiliate_a_id").and_then(|v| v.as_str()) else {
+                    continue;
+                };
+                let Some(b_id) = flag.get("affiliate_b_id").and_then(|v| v.as_str()) else {
+                    continue;
+                };
+                let a_label = flag
+                    .get("affiliate_a_email")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Affiliate A");
+                let b_label = flag
+                    .get("affiliate_b_email")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Affiliate B");
+                push_fraud_node(&mut elements, &mut seen_nodes, a_id, a_label);
+                push_fraud_node(&mut elements, &mut seen_nodes, b_id, b_label);
+                elements.push(serde_json::json!({
+                    "data": {
+                        "id": format!("ring-{idx}-a-b"),
+                        "source": a_id,
+                        "target": b_id,
+                        "label": "RING"
+                    }
+                }));
+                elements.push(serde_json::json!({
+                    "data": {
+                        "id": format!("ring-{idx}-b-a"),
+                        "source": b_id,
+                        "target": a_id,
+                        "label": "RING"
+                    }
+                }));
+            }
+            "ip_overlap" => {
+                let ip = flag
+                    .get("ip_address")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("shared IP");
+                let ip_node = format!("ip-{idx}");
+                push_fraud_node(&mut elements, &mut seen_nodes, &ip_node, ip);
+
+                let ids = flag
+                    .get("affiliate_ids")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default();
+                let emails = flag
+                    .get("affiliate_emails")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default();
+
+                for (affiliate_idx, id_value) in ids.iter().enumerate() {
+                    let Some(affiliate_id) = id_value.as_str() else {
+                        continue;
+                    };
+                    let label = emails
+                        .get(affiliate_idx)
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Affiliate");
+                    push_fraud_node(&mut elements, &mut seen_nodes, affiliate_id, label);
+                    elements.push(serde_json::json!({
+                        "data": {
+                            "id": format!("ip-{idx}-{affiliate_idx}"),
+                            "source": ip_node,
+                            "target": affiliate_id,
+                            "label": "IP Overlap"
+                        }
+                    }));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    elements
+}
+
+fn push_fraud_node(
+    elements: &mut Vec<serde_json::Value>,
+    seen_nodes: &mut std::collections::HashSet<String>,
+    id: &str,
+    label: &str,
+) {
+    if seen_nodes.insert(id.to_string()) {
+        elements.push(serde_json::json!({
+            "data": {
+                "id": id,
+                "label": label
+            }
+        }));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn postback_url_builder_encodes_values_and_redacts_query() {
+        let url = build_postback_url(
+            "https://tracker.example/postback?click={subid}&amount={payout}",
+            "qualified referral",
+            Some("email <blast>&1"),
+            12345,
+        )
+        .expect("postback URL should build");
+
+        let rendered = url.as_str();
+        assert!(rendered.contains("click=email%20%3Cblast%3E%261"));
+        assert!(rendered.contains("amount=123.45"));
+        assert!(rendered.contains("event=qualified+referral"));
+        assert!(rendered.contains("currency=USD"));
+        assert_eq!(
+            redact_url_query(&url),
+            "https://tracker.example/postback?[redacted]"
+        );
+    }
+
+    #[test]
+    fn cents_to_decimal_string_uses_integer_minor_units() {
+        assert_eq!(cents_to_decimal_string(0), "0.00");
+        assert_eq!(cents_to_decimal_string(1), "0.01");
+        assert_eq!(cents_to_decimal_string(12345), "123.45");
+        assert_eq!(cents_to_decimal_string(-12345), "-123.45");
+    }
+
+    #[tokio::test]
+    async fn postback_validation_rejects_unsafe_hosts_and_schemes() {
+        assert!(validate_postback_url("http://tracker.example/postback")
+            .await
+            .is_err());
+        assert!(validate_postback_url("https://localhost/postback")
+            .await
+            .is_err());
+        assert!(validate_postback_url("https://127.0.0.1/postback")
+            .await
+            .is_err());
+        assert!(
+            validate_postback_url("https://169.254.169.254/latest/meta-data")
+                .await
+                .is_err()
+        );
+        assert!(
+            validate_postback_url("https://user:pass@example.com/postback")
+                .await
+                .is_err()
+        );
+    }
 }

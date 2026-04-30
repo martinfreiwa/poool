@@ -74,6 +74,16 @@ def run_affiliate_e2e():
         token = cur.fetchone()[0]
         s1.cookies.set("poool_session", str(token))
         fix_secure_cookies(s1)
+
+        cur.execute(
+            """
+            INSERT INTO kyc_records (user_id, status, provider)
+            VALUES (%s, 'approved', 'manual')
+            ON CONFLICT DO NOTHING
+            """,
+            (aff_user_id,),
+        )
+        conn.commit()
         
         # We need a fresh CSRF token for the API call
         r_get = s1.get(f"{BASE_URL}/rewards")
@@ -90,11 +100,12 @@ def run_affiliate_e2e():
                 "Qualified Referral & Payout Policy",
                 "Affiliate Privacy Notice"
             ],
-            "traffic_source": "YouTube",
-            "audience_size": "10000",
+            "traffic_source": "youtube",
+            "audience_size": "5k_50k",
             "main_url": "https://youtube.com/mychannel",
             "phone_number": "555-1234",
-            "tax_id": "TAX-123"
+            "tax_id": "TAX-123",
+            "exam_answers": {"q1": "no", "q2": "no", "q3": "30days", "q4": "no", "q5": "no"}
         }, headers={"X-CSRF-Token": csrf_token})
         results.check("Affiliate Onboarding API", r.status_code == 200, f"Status {r.status_code}. Response: {r.text}")
 

@@ -11,6 +11,8 @@ let currentPage = 1;
 const PAGE_SIZE = 15;
 let sortField = "created_at";
 let sortOrder = "desc";
+let loadError = "";
+let lastFocusedElement = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   loadSubmissions();
@@ -24,16 +26,40 @@ function setupSorting() {
   if (!table) return;
   table.querySelectorAll("th[data-sort]").forEach((th) => {
     th.style.cursor = "pointer";
+    th.tabIndex = 0;
+    th.setAttribute("role", "button");
+    th.setAttribute("aria-sort", "none");
     th.addEventListener("click", () => {
-      const field = th.dataset.sort;
-      if (sortField === field) {
-        sortOrder = sortOrder === "asc" ? "desc" : "asc";
-      } else {
-        sortField = field;
-        sortOrder = "asc";
-      }
-      applyFilters();
+      updateSort(th.dataset.sort);
     });
+    th.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        updateSort(th.dataset.sort);
+      }
+    });
+  });
+  updateSortHeaders();
+}
+
+function updateSort(field) {
+  if (sortField === field) {
+    sortOrder = sortOrder === "asc" ? "desc" : "asc";
+  } else {
+    sortField = field;
+    sortOrder = "asc";
+  }
+  applyFilters();
+}
+
+function updateSortHeaders() {
+  const table = document.getElementById("submissions-table");
+  if (!table) return;
+  table.querySelectorAll("th[data-sort]").forEach((th) => {
+    const value = th.dataset.sort === sortField
+      ? (sortOrder === "asc" ? "ascending" : "descending")
+      : "none";
+    th.setAttribute("aria-sort", value);
   });
 }
 
@@ -69,10 +95,20 @@ function setupEventListeners() {
   document.getElementById("review-modal")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
+  document.addEventListener("keydown", (e) => {
+    const modal = document.getElementById("review-modal");
+    if (!modal || modal.style.display !== "flex") return;
+    if (e.key === "Escape") {
+      closeModal();
+      return;
+    }
+    if (e.key === "Tab") trapModalFocus(e);
+  });
 }
 
 // ─── Data Loading ─────────────────────────────────────────────────────────────
 async function loadSubmissions() {
+  loadError = "";
   try {
     const resp = await fetch("/api/admin/developer-projects");
     if (resp.ok) {
@@ -80,9 +116,12 @@ async function loadSubmissions() {
       allSubmissions = data.projects || [];
     } else {
       allSubmissions = [];
+      const errorBody = await resp.json().catch(() => ({}));
+      loadError = errorBody.error || `Failed to load submissions (HTTP ${resp.status})`;
     }
   } catch (e) {
     allSubmissions = [];
+    loadError = e.message || "Network error while loading submissions.";
   }
   applyFilters();
   updateStats();
@@ -144,10 +183,13 @@ function applyFilters() {
 
   filteredSubs = result;
   currentPage = 1;
+  updateSortHeaders();
 
   const countEl = document.getElementById("sub-count-label");
   if (countEl)
-    countEl.textContent = `Showing ${filteredSubs.length} submission${filteredSubs.length !== 1 ? "s" : ""}`;
+    countEl.textContent = loadError
+      ? "Unable to load submissions"
+      : `Showing ${filteredSubs.length} submission${filteredSubs.length !== 1 ? "s" : ""}`;
   renderTable();
 }
 
@@ -170,9 +212,22 @@ function renderTable() {
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 
+  if (loadError) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center;padding:40px;color:var(--admin-danger);">
+          <div style="font-weight:700;margin-bottom:8px;">Could not load submissions</div>
+          <div style="font-size:13px;color:var(--admin-text-secondary);margin-bottom:16px;">${esc(loadError)}</div>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="retry-submissions-load">Retry</button>
+        </td>
+      </tr>`;
+    document.getElementById("retry-submissions-load")?.addEventListener("click", loadSubmissions);
+    return;
+  }
+
   if (slice.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No submissions match your filters.</td></tr>';
+      '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No submissions match your filters.</td></tr>';
     return;
   }
 
@@ -230,7 +285,8 @@ function renderTable() {
                     </a>
                     <button class="admin-btn admin-btn--secondary admin-btn--sm"
                             onclick="openQuickModal('${esc(s.id)}', '${esc(s.project_name || s.title)}')"
-                            title="Quick approve/reject">
+                            title="Quick status review"
+                            aria-label="Quick status review for ${esc(s.project_name || s.title || "submission")}">
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8l3.5 3.5L13 4"/></svg>
                     </button>
                 </div>
@@ -246,6 +302,7 @@ let reviewingId = null;
 let reviewingName = null;
 
 function openQuickModal(id, name) {
+  lastFocusedElement = document.activeElement;
   reviewingId = id;
   reviewingName = name;
 
@@ -253,16 +310,14 @@ function openQuickModal(id, name) {
     `Quick Review: ${name}`;
   document.getElementById("review-modal-details").innerHTML = `
         <div style="font-size:13px;color:var(--admin-text-secondary);margin-bottom:16px;">
-            For full document data room, financials, and KYC status, please use the 
+            Publishing requires full document, checklist, and KYC review. Use the
             <a href="/admin/developer-submission-review?id=${esc(id)}" style="color:var(--admin-primary);">Full Review Page</a>.
         </div>
         <p style="font-size:13px;color:var(--admin-text-muted);">
-            Quick actions will immediately update the project status and notify the developer.
+            Quick actions can mark a submission in review or reject it with a required reason.
         </p>
     `;
   document.getElementById("review-notes").value = "";
-  document.getElementById("review-modal-approve").onclick = () =>
-    handleQuickAction("approve");
   document.getElementById("review-modal-reject").onclick = () =>
     handleQuickAction("reject");
   const inReviewBtn = document.getElementById("review-modal-in-review");
@@ -270,12 +325,34 @@ function openQuickModal(id, name) {
     inReviewBtn.onclick = () => handleQuickAction("in_review");
   }
   document.getElementById("review-modal").style.display = "flex";
+  setTimeout(() => document.getElementById("review-notes")?.focus(), 50);
 }
 
 function closeModal() {
   document.getElementById("review-modal").style.display = "none";
   reviewingId = null;
   reviewingName = null;
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+    lastFocusedElement.focus();
+  }
+  lastFocusedElement = null;
+}
+
+function trapModalFocus(event) {
+  const modal = document.getElementById("review-modal");
+  const focusable = modal?.querySelectorAll(
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  );
+  if (!focusable || focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 async function handleQuickAction(action) {
@@ -351,6 +428,7 @@ function getStatusBadge(status) {
     in_review: ["admin-badge--info", "In Review"],
     approved: ["admin-badge--success", "Approved"],
     rejected: ["admin-badge--danger", "Rejected"],
+    revision_requested: ["admin-badge--warning", "Revision Requested"],
     live: ["admin-badge--success", "Live"],
   };
   const [cls, label] = map[status] || [

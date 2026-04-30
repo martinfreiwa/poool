@@ -158,10 +158,14 @@ pub async fn api_admin_treasury(
 
 /// POST /api/admin/dividends/calculate
 pub async fn api_admin_dividends_calculate(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.draft")
+        .await?;
+
     let asset_id = body.get("asset_id").and_then(|v| v.as_str()).unwrap_or("");
     let total_amount_cents = body
         .get("total_amount_cents")
@@ -182,7 +186,7 @@ pub async fn api_admin_dividends_calculate(
     .fetch_one(&state.db)
     .await;
 
-    let total_tokens_owned = total_tokens_owned_res.unwrap_or(Some(0)).unwrap_or(0);
+    let total_tokens_owned = total_tokens_owned_res.map_err(ApiError::from)?.unwrap_or(0);
 
     if total_tokens_owned == 0 {
         return Ok(Json(serde_json::json!({"splits":[], "total_tokens":0})).into_response());
@@ -191,7 +195,11 @@ pub async fn api_admin_dividends_calculate(
     // Get all investors
     let rows: Vec<(String, String, i32)> = sqlx::query_as(
         "SELECT u.email, u.id::text, i.tokens_owned FROM investments i JOIN users u ON u.id = i.user_id WHERE i.asset_id = $1 AND i.status = 'active' AND i.tokens_owned > 0"
-    ).bind(aid).fetch_all(&state.db).await.unwrap_or_default();
+    )
+    .bind(aid)
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::from)?;
 
     let mut cumulative_allocated: i64 = 0;
     let mut cumulative_exact: u128 = 0;
@@ -219,10 +227,14 @@ pub async fn api_admin_dividends_calculate(
 
 /// POST /api/admin/dividends/process
 pub async fn api_admin_dividends_process(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.draft")
+        .await?;
+
     let asset_id = body.get("asset_id").and_then(|v| v.as_str()).unwrap_or("");
     let total_amount_cents = body
         .get("total_amount_cents")
@@ -235,7 +247,7 @@ pub async fn api_admin_dividends_process(
 
     let aid = ApiError::parse_uuid(asset_id)?;
 
-    let user = _admin.user.clone();
+    let user = admin.user.clone();
 
     let payload = serde_json::json!({
         "total_amount_cents": total_amount_cents,
@@ -289,10 +301,14 @@ pub async fn api_admin_dividends_process(
 /// GET /api/admin/dividends/distributions
 /// List all dividend distributions, optionally filtered by asset_id.
 pub async fn api_admin_dividends_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.draft")
+        .await?;
+
     let asset_id = params
         .get("asset_id")
         .and_then(|v| uuid::Uuid::parse_str(v).ok());
@@ -314,6 +330,10 @@ pub async fn api_admin_dividends_create_distribution(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.draft")
+        .await?;
+
     let asset_id = body
         .get("asset_id")
         .and_then(|v| v.as_str())
@@ -343,6 +363,12 @@ pub async fn api_admin_dividends_create_distribution(
         .and_then(|v| v.as_i64())
         .unwrap_or(7) as i32;
 
+    if !(0..=365).contains(&min_holding_days) {
+        return Err(ApiError::BadRequest(
+            "min_holding_days must be between 0 and 365".to_string(),
+        ));
+    }
+
     let aid = ApiError::parse_uuid(asset_id)?;
 
     match crate::dividends::service::calculate_dividends(
@@ -368,10 +394,14 @@ pub async fn api_admin_dividends_create_distribution(
 /// GET /api/admin/dividends/distributions/:id
 /// Get distribution details with all payouts.
 pub async fn api_admin_dividends_distribution_detail(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(dist_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.draft")
+        .await?;
+
     let did = ApiError::parse_uuid(&dist_id)?;
 
     match crate::dividends::service::get_distribution_detail(&state.db, did).await {
@@ -387,6 +417,10 @@ pub async fn api_admin_dividends_approve_distribution(
     State(state): State<AppState>,
     axum::extract::Path(dist_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.approve")
+        .await?;
+
     let did = ApiError::parse_uuid(&dist_id)?;
 
     match crate::dividends::service::approve_distribution(&state.db, did, admin.user.id).await {
@@ -399,13 +433,17 @@ pub async fn api_admin_dividends_approve_distribution(
 /// Execute an approved distribution — credit all eligible wallets.
 /// 🔴 CRITICAL FINANCIAL OPERATION — This credits real money to user wallets.
 pub async fn api_admin_dividends_execute_distribution(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(dist_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.approve")
+        .await?;
+
     let did = ApiError::parse_uuid(&dist_id)?;
 
-    match crate::dividends::service::execute_distribution(&state.db, did).await {
+    match crate::dividends::service::execute_distribution(&state.db, did, admin.user.id).await {
         Ok(summary) => Ok(Json(serde_json::json!({
             "status": "distributed",
             "summary": summary
@@ -417,7 +455,15 @@ pub async fn api_admin_dividends_execute_distribution(
                 dist_id,
                 e
             );
-            Err(ApiError::Internal(format!("Distribution failed: {}", e)))
+            if e.starts_with("DB ")
+                || e.starts_with("TX ")
+                || e.starts_with("Wallet credit failed")
+                || e.starts_with("[P0-FINANCIAL]")
+            {
+                Err(ApiError::Internal(format!("Distribution failed: {}", e)))
+            } else {
+                Err(ApiError::BadRequest(format!("Distribution failed: {}", e)))
+            }
         }
     }
 }
@@ -425,18 +471,24 @@ pub async fn api_admin_dividends_execute_distribution(
 /// POST /api/admin/dividends/distributions/:id/cancel
 /// Cancel a distribution (only if not yet distributed).
 pub async fn api_admin_dividends_cancel_distribution(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(dist_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "financials.payout.draft")
+        .await?;
+
     let did = ApiError::parse_uuid(&dist_id)?;
     let reason = body
         .get("reason")
         .and_then(|v| v.as_str())
         .unwrap_or("Cancelled by admin");
 
-    match crate::dividends::service::cancel_distribution(&state.db, did, reason).await {
+    match crate::dividends::service::cancel_distribution(&state.db, did, reason, admin.user.id)
+        .await
+    {
         Ok(()) => Ok(Json(serde_json::json!({"status": "cancelled"})).into_response()),
         Err(e) => Err(ApiError::BadRequest(e)),
     }

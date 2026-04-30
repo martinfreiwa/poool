@@ -71,7 +71,7 @@
         <p class="ds-text-body" style="color:var(--text-secondary);margin:0 0 20px;">Create your own circle or
           browse the leaderboard to find one to join.</p>
         <button class="ds-btn ds-btn--primary"
-          onclick="document.getElementById('create-circle-modal').style.display='flex'">Create a Circle</button>
+          onclick="openCommunityModal('create-circle-modal', this)">Create a Circle</button>
       </div>
     </div>
 
@@ -85,7 +85,7 @@
               <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="openCircleSettings()">⚙️
                 Settings</button>
               <button class="ds-btn ds-btn--primary ds-btn--sm"
-                onclick="document.getElementById('invite-modal').style.display='flex'">Invite</button>
+                onclick="openCommunityModal('invite-modal', this)">Invite</button>
             </div>
           </div>
           <div id="circle-member-list" class="circle-member-list">
@@ -153,28 +153,30 @@
 
   <!-- Create Circle Modal -->
   <div id="create-circle-modal"
+    role="dialog" aria-modal="true" aria-labelledby="create-circle-title" aria-describedby="create-circle-description" aria-hidden="true"
     style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
-    <div class="ds-card" style="padding:32px;max-width:420px;width:90%;">
-      <h3 class="ds-text-md" style="margin:0 0 16px;">Create Your Circle</h3>
+    <div class="ds-card" style="padding:32px;max-width:420px;width:90%;max-height:calc(100vh - 32px);overflow:auto;">
+      <h3 id="create-circle-title" class="ds-text-md" style="margin:0 0 16px;">Create Your Circle</h3>
+      <p id="create-circle-description" class="ds-text-caption" style="margin:0 0 16px;color:var(--text-secondary);">Create a named investor circle and choose how it appears in the community leaderboard.</p>
       <div style="margin-bottom:16px;">
-        <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle Name</label>
+        <label for="circle-name-input" class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle Name</label>
         <input id="circle-name-input" type="text" class="ds-input" maxlength="100"
           placeholder="e.g. The Green Fund" style="width:100%;">
       </div>
       <div style="margin-bottom:16px;">
-        <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Description
+        <label for="circle-desc-input" class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Description
           (optional)</label>
         <textarea id="circle-desc-input" class="ds-input" maxlength="500" rows="3"
           placeholder="What's your circle about?" style="width:100%;resize:vertical;"></textarea>
       </div>
       <div style="margin-bottom:20px;">
-        <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Emoji</label>
+        <label for="circle-emoji-input" class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Emoji</label>
         <input id="circle-emoji-input" type="text" class="ds-input" maxlength="5" value="🟢"
           style="width:80px;font-size:24px;text-align:center;">
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button class="ds-btn ds-btn--secondary"
-          onclick="document.getElementById('create-circle-modal').style.display='none'">Cancel</button>
+          onclick="closeCommunityModal('create-circle-modal')">Cancel</button>
         <button class="ds-btn ds-btn--primary" onclick="handleCreateCircle()">Create Circle</button>
       </div>
     </div>
@@ -182,10 +184,11 @@
 
   <!-- Invite Modal -->
   <div id="invite-modal"
+    role="dialog" aria-modal="true" aria-labelledby="invite-circle-title" aria-describedby="invite-circle-description" aria-hidden="true"
     style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
-    <div class="ds-card" style="padding:32px;max-width:420px;width:90%;">
-      <h3 class="ds-text-md" style="margin:0 0 8px;">Invite to Circle</h3>
-      <p class="ds-text-body" style="color:var(--text-secondary);margin:0 0 16px;">Share your referral link to
+    <div class="ds-card" style="padding:32px;max-width:420px;width:90%;max-height:calc(100vh - 32px);overflow:auto;">
+      <h3 id="invite-circle-title" class="ds-text-md" style="margin:0 0 8px;">Invite to Circle</h3>
+      <p id="invite-circle-description" class="ds-text-body" style="color:var(--text-secondary);margin:0 0 16px;">Share your referral link to
         invite friends. When they sign up, they'll automatically join your circle!</p>
       <div
         style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
@@ -196,17 +199,18 @@
       </div>
       <div style="text-align:right;">
         <button class="ds-btn ds-btn--secondary"
-          onclick="document.getElementById('invite-modal').style.display='none'">Close</button>
+          onclick="closeCommunityModal('invite-modal')">Close</button>
       </div>
     </div>
   </div>
 
   <!-- Circle Settings Modal -->
   <div id="circle-settings-modal"
+    role="dialog" aria-modal="true" aria-labelledby="circle-settings-title" aria-describedby="circle-settings-description" aria-hidden="true"
     style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;"
-    onclick="if(event.target===this)this.style.display='none'">
+    onclick="if(event.target===this)closeCommunityModal('circle-settings-modal')">
     <div class="ds-card"
-      style="padding:0;max-width:480px;width:90%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+      style="padding:0;max-width:480px;width:90%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
       <!-- Modal Header -->
       <div
         style="padding:24px 28px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; justify-content:space-between;">
@@ -220,9 +224,10 @@
                 d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
           </div>
-          <h3 class="ds-text-md" style="margin:0;">Circle Settings</h3>
+          <h3 id="circle-settings-title" class="ds-text-md" style="margin:0;">Circle Settings</h3>
+          <span id="circle-settings-description" class="sr-only">Edit circle name, description, emoji, and privacy settings.</span>
         </div>
-        <button onclick="document.getElementById('circle-settings-modal').style.display='none'"
+        <button type="button" aria-label="Close circle settings" onclick="closeCommunityModal('circle-settings-modal')"
           style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-secondary);">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -236,7 +241,7 @@
       <div style="padding:24px 28px;">
         <!-- Circle Name -->
         <div style="margin-bottom:20px;">
-          <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle
+          <label for="settings-circle-name" class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle
             Name</label>
           <input id="settings-circle-name" type="text" class="ds-input" maxlength="100"
             placeholder="e.g. The Green Fund" style="width:100%;">
@@ -244,7 +249,7 @@
 
         <!-- Description -->
         <div style="margin-bottom:20px;">
-          <label class="ds-text-body"
+          <label for="settings-circle-desc" class="ds-text-body"
             style="font-weight:600;display:block;margin-bottom:6px;">Description</label>
           <textarea id="settings-circle-desc" class="ds-input" maxlength="500" rows="3"
             placeholder="What's your circle about?" style="width:100%;resize:vertical;"></textarea>
@@ -252,7 +257,7 @@
 
         <!-- Emoji -->
         <div style="margin-bottom:20px;">
-          <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle
+          <label for="settings-circle-emoji" class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle
             Emoji</label>
           <input id="settings-circle-emoji" type="text" class="ds-input" maxlength="5"
             style="width:80px;font-size:24px;text-align:center;">
@@ -267,8 +272,8 @@
               <div class="ds-text-caption" style="color:var(--text-secondary);">Anyone can join your circle
                 without approval</div>
             </div>
-            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
-              <input id="settings-circle-public" type="checkbox" style="opacity:0;width:0;height:0;">
+            <label for="settings-circle-public" style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+              <input id="settings-circle-public" type="checkbox" role="switch" aria-label="Public circle" style="opacity:0;width:0;height:0;">
               <span id="settings-toggle-track"
                 style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:var(--border-color);border-radius:12px;transition:0.2s;"
                 onclick="this.previousElementSibling.checked = !this.previousElementSibling.checked; this.style.backgroundColor = this.previousElementSibling.checked ? 'var(--brand-blue)' : 'var(--border-color)'; this.querySelector('span').style.transform = this.previousElementSibling.checked ? 'translateX(20px)' : 'translateX(0)';">
@@ -293,8 +298,8 @@
           Delete Circle
         </button>
         <div style="display:flex;gap:8px;">
-          <button class="ds-btn ds-btn--secondary"
-            onclick="document.getElementById('circle-settings-modal').style.display='none'">Cancel</button>
+        <button class="ds-btn ds-btn--secondary"
+            onclick="closeCommunityModal('circle-settings-modal')">Cancel</button>
           <button id="settings-save-btn" class="ds-btn ds-btn--primary"
             onclick="handleSaveCircleSettings()">Save Changes</button>
         </div>

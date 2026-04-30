@@ -12,6 +12,51 @@ let currentTotalAmountCents = 0;
 let currentDistributionId = null;
 let assetsListData = []; // Store globally for yield projection
 
+function clearNode(node) {
+  if (!node) return;
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+function appendText(parent, text, tagName = "span", className = "") {
+  const el = document.createElement(tagName);
+  if (className) el.className = className;
+  el.textContent = text ?? "";
+  parent.appendChild(el);
+  return el;
+}
+
+function formatUsd(cents) {
+  const value = Number.isFinite(Number(cents)) ? Math.trunc(Number(cents)) : 0;
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  return `${sign}$${Math.floor(abs / 100).toLocaleString()}.${String(abs % 100).padStart(2, "0")}`;
+}
+
+function setPreviewMessage(message, isLoading = false) {
+  const placeholder = document.getElementById("preview-placeholder");
+  if (!placeholder) return;
+  clearNode(placeholder);
+  if (isLoading) {
+    const spinner = document.createElement("div");
+    spinner.className = "loading-spinner";
+    placeholder.appendChild(spinner);
+  }
+  appendText(placeholder, message, "p");
+  placeholder.style.display = "block";
+}
+
+function showPreviewPanel() {
+  document.getElementById("preview-placeholder").style.display = "none";
+  document.getElementById("preview-data").style.display = "block";
+  document.getElementById("step-1-label").className = "step completed";
+  document.getElementById("step-2-label").className = "step active";
+}
+
+async function parseError(response, fallback) {
+  const body = await response.json().catch(() => ({}));
+  return body.error || body.message || fallback;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadAssets();
   loadDistributionHistory();
@@ -30,6 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-cancel")?.addEventListener("click", () => window.location.reload());
   document.getElementById("btn-refresh-distributions")?.addEventListener("click", loadDistributionHistory);
   document.getElementById("btn-export-csv")?.addEventListener("click", exportCsv);
+  document.getElementById("distributions-history-body")?.addEventListener("click", handleHistoryAction);
+  document.getElementById("btn-start-new-distribution")?.addEventListener("click", () => window.location.reload());
 
   // Auto-reset preview on config changes to prevent stale data
   document.querySelectorAll('#asset-select, #total-amount, #period-start, #period-end, #min-holding-days').forEach(input => {
@@ -76,7 +123,9 @@ function exportCsv() {
   currentSplits.forEach(p => {
     const share = p.percentage_bps ? (p.percentage_bps / 100).toFixed(2) : ((p.tokens / currentTotalAmountCents) * 100).toFixed(2);
     const amountStr = p.payout_cents ? (p.payout_cents / 100).toFixed(2) : (p.amount_cents / 100).toFixed(2);
-    csv += `${p.user_email || p.email},${p.tokens_held || p.tokens},${share}%,${p.holding_days || 0},${p.eligible !== false ? 'Yes' : 'No'},$${amountStr}\n`;
+    csv += [p.user_email || p.email, p.tokens_held || p.tokens, `${share}%`, p.holding_days || 0, p.eligible !== false ? 'Yes' : 'No', `$${amountStr}`]
+      .map(csvCell)
+      .join(",") + "\n";
   });
   
   const a = document.createElement("a");
@@ -87,6 +136,12 @@ function exportCsv() {
   a.click();
   document.body.removeChild(a);
   if (window.mpToast) mpToast('CSV Exported!', 'success');
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 async function loadAssets() {
@@ -105,9 +160,16 @@ async function loadAssets() {
         select.style.display = "";
       }
 
-      select.innerHTML = '<option value="">-- Select Published Asset --</option>';
+      clearNode(select);
+      const emptyOption = document.createElement("option");
+      emptyOption.value = "";
+      emptyOption.textContent = "-- Select Published Asset --";
+      select.appendChild(emptyOption);
       data.assets.filter(a => a.published === true || a.status === 'live' || a.funding_status === 'funded').forEach((a) => {
-        select.innerHTML += `<option value="${a.id}">${a.title} ($${(a.total_value_cents / 100).toLocaleString()})</option>`;
+        const option = document.createElement("option");
+        option.value = a.id;
+        option.textContent = `${a.title || "Untitled asset"} (${formatUsd(a.total_value_cents || 0)})`;
+        select.appendChild(option);
       });
 
       // Auto-select from URL
@@ -165,9 +227,7 @@ async function calculatePreview() {
 
   currentTotalAmountCents = Math.round(parseFloat(amountVal) * 100);
 
-  // Show loading
-  document.getElementById("preview-placeholder").innerHTML =
-    '<div class="loading-spinner"></div><p>Calculating splits with anti-sniping filter...</p>';
+  setPreviewMessage("Calculating splits with anti-sniping filter...", true);
 
   // Try Phase 9 API first (with anti-sniping)
   if (periodStart && periodEnd) {
@@ -184,16 +244,23 @@ async function calculatePreview() {
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.result) {
-          currentDistributionId = data.result.distribution_id;
-          renderPhase9Preview(data.result);
-          return;
-        }
+      if (!response.ok) {
+        const message = await parseError(response, "Failed to calculate dividend distribution.");
+        alert(message);
+        setPreviewMessage(message);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.result) {
+        currentDistributionId = data.result.distribution_id;
+        renderPhase9Preview(data.result);
+        return;
       }
     } catch (err) {
-      console.warn("Phase 9 API failed, falling back to legacy:", err);
+      alert("Network error during dividend calculation.");
+      setPreviewMessage("Network error during dividend calculation.");
+      return;
     }
   }
 
@@ -222,10 +289,7 @@ async function calculatePreview() {
 }
 
 function renderPhase9Preview(result) {
-  document.getElementById("preview-placeholder").style.display = "none";
-  document.getElementById("preview-data").style.display = "block";
-  document.getElementById("step-1-label").className = "step completed";
-  document.getElementById("step-2-label").className = "step active";
+  showPreviewPanel();
 
   document.getElementById("tokens-total-label").textContent =
     `Total Tokens: ${result.total_tokens.toLocaleString()}`;
@@ -240,81 +304,94 @@ function renderPhase9Preview(result) {
 
   const tbody = document.getElementById("splits-body");
   if (!result.payouts || result.payouts.length === 0) {
-    tbody.innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:40px;">No investors found for this asset.</td></tr>';
+    renderEmptyRow(tbody, 6, "No investors found for this asset.");
     document.getElementById("btn-process").disabled = true;
     return;
   }
 
-  tbody.innerHTML = result.payouts
-    .map((p) => {
-      const share = (p.percentage_bps / 100).toFixed(2);
-      const eligibleBadge = p.eligible
-        ? '<span class="admin-badge admin-badge--success">Yes</span>'
-        : '<span class="admin-badge admin-badge--danger">No</span>';
-      const amountDisplay = p.eligible && p.payout_cents > 0
-        ? `$${(p.payout_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-        : '<span style="color: var(--admin-text-muted);">—</span>';
-
-      return `
-        <tr style="${!p.eligible ? 'opacity: 0.5;' : ''}">
-          <td><strong>${p.user_email}</strong></td>
-          <td>${p.tokens_held.toLocaleString()}</td>
-          <td>${share}%</td>
-          <td>${p.holding_days}d</td>
-          <td>${eligibleBadge}</td>
-          <td style="text-align:right;font-weight:700;">${amountDisplay}</td>
-        </tr>
-      `;
-    })
-    .join("");
+  clearNode(tbody);
+  result.payouts.forEach((p) => {
+    const share = (p.percentage_bps / 100).toFixed(2);
+    const row = document.createElement("tr");
+    if (!p.eligible) row.style.opacity = "0.5";
+    appendText(row.insertCell(), p.user_email, "strong");
+    appendText(row.insertCell(), Number(p.tokens_held || 0).toLocaleString());
+    appendText(row.insertCell(), `${share}%`);
+    appendText(row.insertCell(), `${p.holding_days}d`);
+    row.insertCell().appendChild(statusBadge(p.eligible ? "success" : "danger", p.eligible ? "Yes" : "No"));
+    const amountCell = row.insertCell();
+    amountCell.style.textAlign = "right";
+    amountCell.style.fontWeight = "700";
+    if (p.eligible && p.payout_cents > 0) {
+      amountCell.textContent = formatUsd(p.payout_cents);
+    } else {
+      appendText(amountCell, "-", "span").style.color = "var(--admin-text-muted)";
+    }
+    tbody.appendChild(row);
+  });
 
   document.getElementById("btn-process").disabled = false;
+  document.getElementById("btn-process").textContent = "Submit for Approval";
   currentSplits = result.payouts;
 }
 
 function renderPreview(data) {
-  document.getElementById("preview-placeholder").style.display = "none";
-  document.getElementById("preview-data").style.display = "block";
-  document.getElementById("step-1-label").className = "step completed";
-  document.getElementById("step-2-label").className = "step active";
+  showPreviewPanel();
 
   document.getElementById("tokens-total-label").textContent =
     `Total Tokens: ${data.total_tokens.toLocaleString()}`;
 
   const tbody = document.getElementById("splits-body");
   if (!data.splits || data.splits.length === 0) {
-    tbody.innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:40px;">No investors found for this asset.</td></tr>';
+    renderEmptyRow(tbody, 6, "No investors found for this asset.");
     document.getElementById("btn-process").disabled = true;
     return;
   }
 
-  tbody.innerHTML = data.splits
-    .map((s) => {
-      const share = ((s.tokens / data.total_tokens) * 100).toFixed(2);
-      return `
-        <tr>
-          <td><strong>${s.email}</strong></td>
-          <td>${s.tokens.toLocaleString()}</td>
-          <td>${share}%</td>
-          <td>—</td>
-          <td><span class="admin-badge admin-badge--success">Yes</span></td>
-          <td style="text-align:right;font-weight:700;">$${(s.amount_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-        </tr>
-      `;
-    })
-    .join("");
+  clearNode(tbody);
+  data.splits.forEach((s) => {
+    const share = ((s.tokens / data.total_tokens) * 100).toFixed(2);
+    const row = document.createElement("tr");
+    appendText(row.insertCell(), s.email, "strong");
+    appendText(row.insertCell(), Number(s.tokens || 0).toLocaleString());
+    appendText(row.insertCell(), `${share}%`);
+    appendText(row.insertCell(), "-");
+    row.insertCell().appendChild(statusBadge("success", "Yes"));
+    const amountCell = row.insertCell();
+    amountCell.style.textAlign = "right";
+    amountCell.style.fontWeight = "700";
+    amountCell.textContent = formatUsd(s.amount_cents);
+    tbody.appendChild(row);
+  });
 
   document.getElementById("btn-process").disabled = false;
+  document.getElementById("btn-process").textContent = "Queue for Approval";
   currentSplits = data.splits;
+}
+
+function renderEmptyRow(tbody, colspan, message) {
+  clearNode(tbody);
+  const row = document.createElement("tr");
+  const cell = row.insertCell();
+  cell.colSpan = colspan;
+  cell.style.textAlign = "center";
+  cell.style.padding = "40px";
+  cell.textContent = message;
+  tbody.appendChild(row);
+}
+
+function statusBadge(variant, label) {
+  const badge = document.createElement("span");
+  badge.className = `admin-badge admin-badge--${variant}`;
+  badge.textContent = label;
+  return badge;
 }
 
 async function processBatch() {
   if (
     !await pooolConfirm({
       title: 'Process dividend batch',
-      message: `Distribute $${(currentTotalAmountCents / 100).toLocaleString()} to ${currentSplits.length} investors? ${currentDistributionId ? 'This will use the Phase 9 approval workflow.' : 'This will be queued for Four-Eyes approval.'}`,
+      message: `${currentDistributionId ? 'Submit this calculated distribution for a separate admin approval?' : 'Queue this dividend request for Four-Eyes approval?'}`,
       confirmText: 'Process',
       type: 'success',
     })
@@ -326,43 +403,8 @@ async function processBatch() {
   document.getElementById("step-2-label").className = "step completed";
   document.getElementById("step-3-label").className = "step active";
 
-  // If Phase 9 distribution exists, approve + execute it
   if (currentDistributionId) {
-    try {
-      // Step 1: Approve
-      const approveResp = await fetch(`/api/admin/dividends/distributions/${currentDistributionId}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!approveResp.ok) {
-        const err = await approveResp.json().catch(() => ({}));
-        alert("Approval failed: " + (err.error || "Unknown error"));
-        document.getElementById("processing-overlay").style.display = "none";
-        document.getElementById("preview-data").style.display = "block";
-        return;
-      }
-
-      // Step 2: Execute
-      const execResp = await fetch(`/api/admin/dividends/distributions/${currentDistributionId}/execute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (execResp.ok) {
-        const result = await execResp.json();
-        showPhase9Success(result);
-      } else {
-        const err = await execResp.json().catch(() => ({}));
-        alert("Execution failed: " + (err.error || "Unknown error"));
-        document.getElementById("processing-overlay").style.display = "none";
-        document.getElementById("preview-data").style.display = "block";
-      }
-    } catch (err) {
-      alert("Critical error during processing: " + err.message);
-      document.getElementById("processing-overlay").style.display = "none";
-      document.getElementById("preview-data").style.display = "block";
-    }
+    showPhase9Queued();
     return;
   }
 
@@ -391,17 +433,38 @@ async function processBatch() {
   }
 }
 
+function showPhase9Queued() {
+  document.getElementById("processing-overlay").style.display = "none";
+  document.getElementById("success-message").style.display = "block";
+  document.getElementById("step-3-label").className = "step completed";
+
+  const summaryEl = document.getElementById("final-summary-text");
+  clearNode(summaryEl);
+  appendText(summaryEl, "Distribution calculated and ready for separate admin approval.", "p");
+  const detail = appendText(summaryEl, `Distribution ID: ${currentDistributionId}`, "p");
+  detail.style.marginTop = "12px";
+  detail.style.fontSize = "12px";
+
+  loadDistributionHistory();
+}
+
 function showPhase9Success(result) {
   document.getElementById("processing-overlay").style.display = "none";
   document.getElementById("success-message").style.display = "block";
   document.getElementById("step-3-label").className = "step completed";
 
   const summary = result.summary || {};
-  document.getElementById("final-summary-text").innerHTML = `
-    <p>Successfully distributed $${((summary.total_credited_cents || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })} to ${summary.holders_credited || 0} eligible investors.</p>
-    ${summary.holders_skipped > 0 ? `<p style="margin-top: 8px; color: var(--admin-warning);">${summary.holders_skipped} holders were skipped (no wallet found).</p>` : ''}
-    <p style="margin-top: 12px; font-size: 12px;">Distribution ID: ${summary.distribution_id || currentDistributionId}</p>
-  `;
+  const summaryEl = document.getElementById("final-summary-text");
+  clearNode(summaryEl);
+  appendText(summaryEl, `Successfully distributed ${formatUsd(summary.total_credited_cents || 0)} to ${summary.holders_credited || 0} eligible investors.`, "p");
+  if (summary.holders_skipped > 0) {
+    const skipped = appendText(summaryEl, `${summary.holders_skipped} holders were skipped (no wallet found).`, "p");
+    skipped.style.marginTop = "8px";
+    skipped.style.color = "var(--admin-warning)";
+  }
+  const id = appendText(summaryEl, `Distribution ID: ${summary.distribution_id || currentDistributionId}`, "p");
+  id.style.marginTop = "12px";
+  id.style.fontSize = "12px";
 
   loadDistributionHistory();
 }
@@ -411,12 +474,15 @@ function showSuccess(result) {
   document.getElementById("success-message").style.display = "block";
   document.getElementById("step-3-label").className = "step completed";
 
-  document.getElementById("final-summary-text").innerHTML = `
-    <p>Requested distribution of $${(currentTotalAmountCents / 100).toLocaleString()} across ${currentSplits.length} investors.</p>
-    <p style="margin-top: 12px; color: var(--admin-warning);"><strong>Approval Required:</strong> This action has been queued for Four-Eyes approval. Another administrator must approve this request before funds are released.</p>
-    <p style="margin-top: 12px; font-size: 12px;">Request ID: ${result.payout_id || result.approval_id || result.id || "Pending"}</p>
-    </div>
-  `;
+  const summaryEl = document.getElementById("final-summary-text");
+  clearNode(summaryEl);
+  appendText(summaryEl, `Requested distribution of ${formatUsd(currentTotalAmountCents)} across ${currentSplits.length} investors.`, "p");
+  const approval = appendText(summaryEl, "Approval Required: This action has been queued for Four-Eyes approval. Another administrator must approve this request before funds are released.", "p");
+  approval.style.marginTop = "12px";
+  approval.style.color = "var(--admin-warning)";
+  const request = appendText(summaryEl, `Request ID: ${result.payout_id || result.approval_id || result.id || "Pending"}`, "p");
+  request.style.marginTop = "12px";
+  request.style.fontSize = "12px";
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -424,77 +490,106 @@ function showSuccess(result) {
 // ═══════════════════════════════════════════════════════════════
 
 async function loadDistributionHistory() {
+  const tbody = document.getElementById("distributions-history-body");
+  if (!tbody) return;
+
   try {
     const response = await fetch("/api/admin/dividends/distributions");
-    if (!response.ok) return;
-
-    const data = await response.json();
-    const tbody = document.getElementById("distributions-history-body");
-    if (!tbody) return;
-
-    const distributions = data.distributions || [];
-    if (distributions.length === 0) {
-      tbody.innerHTML =
-        '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--admin-text-muted);">No distributions created yet. Use the form above to create one.</td></tr>';
+    if (!response.ok) {
+      renderEmptyRow(tbody, 7, await parseError(response, "Failed to load distributions."));
       return;
     }
 
-    tbody.innerHTML = distributions.map((d) => {
-      const statusBadge = getStatusBadge(d.status);
-      const actions = getDistributionActions(d);
-      const date = d.created_at ? new Date(d.created_at).toLocaleDateString() : "—";
+    const data = await response.json();
 
-      return `
-        <tr>
-          <td><strong>${d.asset_name || 'Unknown'}</strong></td>
-          <td style="font-size: 12px;">${d.period}</td>
-          <td style="font-weight: 700;">${d.total_amount_display}</td>
-          <td>${d.eligible_holders}</td>
-          <td>${statusBadge}</td>
-          <td style="font-size: 12px;">${date}</td>
-          <td>${actions}</td>
-        </tr>
-      `;
-    }).join("");
+    const distributions = data.distributions || [];
+    if (distributions.length === 0) {
+      renderEmptyRow(tbody, 7, "No distributions created yet. Use the form above to create one.");
+      return;
+    }
+
+    clearNode(tbody);
+    distributions.forEach((d) => {
+      const date = d.created_at ? new Date(d.created_at).toLocaleDateString() : "—";
+      const row = document.createElement("tr");
+      appendText(row.insertCell(), d.asset_name || "Unknown", "strong");
+      const periodCell = row.insertCell();
+      periodCell.style.fontSize = "12px";
+      periodCell.textContent = d.period || "-";
+      const amountCell = row.insertCell();
+      amountCell.style.fontWeight = "700";
+      amountCell.textContent = d.total_amount_display || formatUsd(d.total_amount_cents);
+      appendText(row.insertCell(), d.eligible_holders ?? 0);
+      row.insertCell().appendChild(getStatusBadge(d.status));
+      const dateCell = row.insertCell();
+      dateCell.style.fontSize = "12px";
+      dateCell.textContent = date;
+      row.insertCell().appendChild(getDistributionActions(d));
+      tbody.appendChild(row);
+    });
   } catch (err) {
     console.error("Failed to load distribution history:", err);
+    renderEmptyRow(tbody, 7, "Network error while loading distributions.");
   }
 }
 
 function getStatusBadge(status) {
   switch (status) {
     case 'draft':
-      return '<span class="admin-badge admin-badge--neutral">Draft</span>';
+      return statusBadge("neutral", "Draft");
     case 'calculated':
-      return '<span class="admin-badge admin-badge--info">Calculated</span>';
+      return statusBadge("info", "Calculated");
     case 'approved':
-      return '<span class="admin-badge admin-badge--warning">Approved</span>';
+      return statusBadge("warning", "Approved");
     case 'distributed':
-      return '<span class="admin-badge admin-badge--success">Distributed</span>';
+      return statusBadge("success", "Distributed");
     case 'cancelled':
-      return '<span class="admin-badge admin-badge--danger">Cancelled</span>';
+      return statusBadge("danger", "Cancelled");
     default:
-      return `<span class="admin-badge">${status}</span>`;
+      return statusBadge("neutral", status || "Unknown");
   }
 }
 
 function getDistributionActions(d) {
+  const container = document.createElement("div");
   if (d.status === 'calculated') {
-    return `
-      <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="approveDistribution('${d.id}')">Approve</button>
-      <button class="admin-btn admin-btn--danger admin-btn--sm" onclick="cancelDistribution('${d.id}')" style="margin-left: 4px;">Cancel</button>
-    `;
+    container.appendChild(actionButton("approve", d.id, "Approve", "admin-btn--primary"));
+    container.appendChild(actionButton("cancel", d.id, "Cancel", "admin-btn--danger"));
+    return container;
   }
   if (d.status === 'approved') {
-    return `
-      <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="executeDistribution('${d.id}')">Execute</button>
-      <button class="admin-btn admin-btn--danger admin-btn--sm" onclick="cancelDistribution('${d.id}')" style="margin-left: 4px;">Cancel</button>
-    `;
+    container.appendChild(actionButton("execute", d.id, "Execute", "admin-btn--primary"));
+    container.appendChild(actionButton("cancel", d.id, "Cancel", "admin-btn--danger"));
+    return container;
   }
   if (d.status === 'distributed') {
-    return '<span style="font-size: 12px; color: var(--admin-success);">✓ Done</span>';
+    const done = appendText(container, "Done", "span");
+    done.style.fontSize = "12px";
+    done.style.color = "var(--admin-success)";
+    return container;
   }
-  return '—';
+  appendText(container, "-");
+  return container;
+}
+
+function actionButton(action, id, label, variant) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `admin-btn ${variant} admin-btn--sm`;
+  button.dataset.action = action;
+  button.dataset.id = id;
+  button.textContent = label;
+  if (action !== "approve") button.style.marginLeft = "4px";
+  return button;
+}
+
+function handleHistoryAction(event) {
+  const button = event.target.closest("button[data-action][data-id]");
+  if (!button) return;
+  const { action, id } = button.dataset;
+  if (action === "approve") approveDistribution(id);
+  if (action === "execute") executeDistribution(id);
+  if (action === "cancel") cancelDistribution(id);
 }
 
 async function approveDistribution(distId) {
@@ -556,4 +651,3 @@ async function cancelDistribution(distId) {
     alert("Error: " + err.message);
   }
 }
-

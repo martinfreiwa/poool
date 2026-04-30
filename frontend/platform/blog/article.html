@@ -1,4 +1,4 @@
-{% with title=article.title, description=article.excerpt, meta_title=article.meta_title, meta_description=article.meta_description, canonical_url=article.canonical_url, og_image_url=article.og_image_url | default(article.cover_image_url), schema_type=article.schema_type, request_path="/blog/" ~ article.slug %}{% include "components/blog-head.html" %}{% endwith %}
+{% with title=article.title, description=meta_description, meta_title=meta_title, meta_description=meta_description, canonical_url=canonical_url, og_image_url=og_image_url, schema_type=article.schema_type, request_path="/blog/" ~ article.slug %}{% include "components/blog-head.html" %}{% endwith %}
 
 <body>
     {% include 'components/blog-header.html' %}
@@ -53,6 +53,7 @@
                                 <button class="blog-share-btn blog-share-btn--copy" onclick="blogCopyLink(this)" aria-label="Copy link" title="Copy link">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                                 </button>
+                                <span class="blog-sr-only" id="blog-copy-status" aria-live="polite"></span>
                                 <a class="blog-share-btn blog-share-btn--whatsapp" href="{% if article.share_links.whatsapp_url %}{{ article.share_links.whatsapp_url }}{% else %}https://wa.me/?text={{ article.title }}%20{{ base_url }}/blog/{{ article.slug }}{% endif %}" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                                 </a>
@@ -166,9 +167,10 @@
                                 </button>
                             </div>
                             <p class="blog-newsletter__consent">By subscribing you agree to our <a href="/legal/privacy">Privacy Policy</a>. Unsubscribe anytime.</p>
-                            <div class="blog-newsletter__success" id="newsletter-success" style="display:none">
-                                🎉 You're in! Check your inbox for a confirmation email.
+                            <div class="blog-newsletter__success" id="newsletter-success" role="status" aria-live="polite" style="display:none">
+                                You are on the list. We will send POOOL market updates to this address.
                             </div>
+                            <div class="blog-newsletter__error" id="newsletter-error" role="alert" style="display:none"></div>
                         </form>
                     </div>
                 </section>
@@ -271,95 +273,89 @@
     {% include 'components/blog-footer.html' %}
 
     <!-- Structured Data: BlogPosting -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "{{ article.schema_type | default('BlogPosting') }}",
-        "headline": "{{ article.title }}",
-        "description": "{{ article.excerpt }}",
-        {% if article.cover_image_url %}"image": "{{ article.cover_image_url }}",{% endif %}
-        "author": {
-            "@type": "Person",
-            "name": "{{ article.author.name }}"
-            {% if article.author.website_url %},"url": "{{ article.author.website_url }}"{% endif %}
-        },
-        "publisher": {
-            "@type": "Organization",
-            "name": "POOOL",
-            "logo": { "@type": "ImageObject", "url": "https://poool.finance/static/images/icons/logo-pool.svg" }
-        },
-        "datePublished": "{{ article.published_at }}",
-        "dateModified": "{{ article.updated_at }}",
-        "mainEntityOfPage": "{{ base_url }}/blog/{{ article.slug }}"
-    }
-    </script>
+    <script type="application/ld+json">{{ blog_schema_json | safe }}</script>
 
     <!-- BreadcrumbList -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://poool.finance/" },
-            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://poool.finance/blog" },
-            { "@type": "ListItem", "position": 3, "name": "{{ article.category.name }}", "item": "https://poool.finance/blog/category/{{ article.category.slug }}" },
-            { "@type": "ListItem", "position": 4, "name": "{{ article.title }}" }
-        ]
-    }
-    </script>
+    <script type="application/ld+json">{{ breadcrumb_schema_json | safe }}</script>
 
-    {% if article.faq_data %}
+    {% if faq_schema_json %}
     <!-- FAQPage Schema -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {% for faq in article.faq_data %}
-            {
-                "@type": "Question",
-                "name": "{{ faq.q }}",
-                "acceptedAnswer": { "@type": "Answer", "text": "{{ faq.a }}" }
-            }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ]
-    }
-    </script>
+    <script type="application/ld+json">{{ faq_schema_json | safe }}</script>
     {% endif %}
 
     <script>
     document.body.classList.add('dom-ready');
 
-    function blogCopyLink(btn) {
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            const orig = btn.innerHTML;
-            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-            btn.style.background = '#03FF88';
-            btn.style.color = '#08232F';
-            setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 2200);
-        });
+    function blogCsrfToken() {
+        const value = `; ${document.cookie}`;
+        const parts = value.split('; csrf_token=');
+        return parts.length === 2 ? decodeURIComponent(parts.pop().split(';').shift()) : '';
     }
 
-    function blogNewsletterSubmit(e, form) {
-        e.preventDefault();
-        const email = form.querySelector('input[type="email"]').value;
-        const btn = form.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.textContent = 'Subscribing…';
+    function blogSetCopyStatus(message) {
+        const status = document.getElementById('blog-copy-status');
+        if (status) status.textContent = message;
+    }
 
-        // Simulate a successful API call (replace with real endpoint)
-        setTimeout(() => {
-            const success = form.querySelector('.blog-newsletter__success');
+    function blogCopyLink(btn) {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) {
+            blogSetCopyStatus('Copy is not available in this browser.');
+            return;
+        }
+        navigator.clipboard.writeText(window.location.href)
+            .then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                btn.style.background = '#03FF88';
+                btn.style.color = '#08232F';
+                blogSetCopyStatus('Link copied.');
+                setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 2200);
+            })
+            .catch(() => {
+                blogSetCopyStatus('Could not copy link.');
+            });
+    }
+
+    async function blogNewsletterSubmit(e, form) {
+        e.preventDefault();
+        const email = form.querySelector('input[type="email"]').value.trim();
+        const btn = form.querySelector('button[type="submit"]');
+        const success = form.querySelector('.blog-newsletter__success');
+        const error = form.querySelector('.blog-newsletter__error');
+        if (success) success.style.display = 'none';
+        if (error) {
+            error.textContent = '';
+            error.style.display = 'none';
+        }
+        btn.disabled = true;
+        btn.textContent = 'Subscribing...';
+
+        try {
+            const response = await fetch('/api/blog/newsletter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': blogCsrfToken()
+                },
+                body: JSON.stringify({ email })
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.error || 'Could not subscribe. Please try again.');
+            }
             if (success) {
                 form.querySelector('.blog-newsletter__field-wrap').style.display = 'none';
                 form.querySelector('.blog-newsletter__consent').style.display = 'none';
                 success.style.display = 'block';
-            } else {
-                btn.textContent = '🎉 Subscribed!';
-                btn.style.background = '#03FF88';
-                btn.style.color = '#08232F';
             }
-        }, 1000);
+        } catch (err) {
+            if (error) {
+                error.textContent = err.message || 'Could not subscribe. Please try again.';
+                error.style.display = 'block';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Subscribe';
+        }
     }
     </script>
 </body>

@@ -1,4 +1,4 @@
-{% with title="Blog", description="Expert insights on fractional real estate investing, asset tokenization, and building wealth with POOOL.", request_path="/blog" %}{% include "components/blog-head.html" %}{% endwith %}
+{% with title=page_title | default("Blog"), description=page_description | default("Expert insights on fractional real estate investing, asset tokenization, and building wealth with POOOL."), meta_title=page_title, meta_description=page_description, request_path=canonical_path | default("/blog") %}{% include "components/blog-head.html" %}{% endwith %}
 
 <body>
     {% include 'components/blog-header.html' %}
@@ -88,11 +88,11 @@
             {% if total_pages > 1 %}
             <nav class="blog-pagination" aria-label="Blog pagination">
                 {% if page > 1 %}
-                <a href="/blog?page={{ page - 1 }}{% if active_category %}&category={{ active_category }}{% endif %}" class="blog-pagination__btn">&larr; Previous</a>
+                <a href="{% if active_category %}/blog/category/{{ active_category }}?page={{ page - 1 }}{% else %}/blog?page={{ page - 1 }}{% endif %}" class="blog-pagination__btn">&larr; Previous</a>
                 {% endif %}
                 <span class="blog-pagination__info">Page {{ page }} of {{ total_pages }}</span>
                 {% if page < total_pages %}
-                <a href="/blog?page={{ page + 1 }}{% if active_category %}&category={{ active_category }}{% endif %}" class="blog-pagination__btn">Next &rarr;</a>
+                <a href="{% if active_category %}/blog/category/{{ active_category }}?page={{ page + 1 }}{% else %}/blog?page={{ page + 1 }}{% endif %}" class="blog-pagination__btn">Next &rarr;</a>
                 {% endif %}
             </nav>
             {% endif %}
@@ -117,7 +117,9 @@
         "@type": "BreadcrumbList",
         "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://poool.finance/" },
-            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://poool.finance/blog" }
+            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://poool.finance/blog" }{% if active_category_detail %},
+            { "@type": "ListItem", "position": 3, "name": "{{ active_category_detail.name }}", "item": "{{ base_url }}/blog/category/{{ active_category_detail.slug }}" }
+            {% endif %}
         ]
     }
     </script>

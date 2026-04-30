@@ -4,7 +4,28 @@ use axum::{
     extract::{Json, State},
     response::IntoResponse,
 };
+use axum_extra::extract::CookieJar;
 use sqlx::Row;
+use uuid::Uuid;
+
+async fn require_dispute_permission(
+    jar: &CookieJar,
+    state: &AppState,
+    permission: &str,
+) -> Result<crate::auth::models::User, ApiError> {
+    let user = crate::auth::middleware::get_current_user(jar, &state.db)
+        .await
+        .ok_or_else(|| ApiError::Unauthorized("Authentication required".to_string()))?;
+
+    if crate::auth::middleware::has_permission(&state.db, user.id, permission).await {
+        Ok(user)
+    } else {
+        Err(ApiError::Forbidden(format!(
+            "{} permission required",
+            permission
+        )))
+    }
+}
 
 //
 //  Admin Debug/Seed API (19)
@@ -150,9 +171,11 @@ pub async fn api_admin_tax_reports_generate(
 
 /// GET /api/admin/disputes — List disputes
 pub async fn api_admin_disputes(
-    _admin: AdminUser,
+    jar: CookieJar,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    require_dispute_permission(&jar, &state, "deposits.read").await?;
+
     let rows = sqlx::query(
         "SELECT d.id::text, d.user_id::text, u.email as user_email, d.transaction_id::text, d.provider, d.provider_dispute_id,
                 d.amount_cents, d.currency, COALESCE(d.reason, '') as reason, d.status, COALESCE(d.evidence_url, '') as evidence_url,
@@ -163,7 +186,7 @@ pub async fn api_admin_disputes(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::from)?;
 
     let disputes: Vec<serde_json::Value> = rows
         .iter()
@@ -191,58 +214,217 @@ pub async fn api_admin_disputes(
 
 /// PUT /api/admin/disputes/:id/status — Update dispute status
 pub async fn api_admin_disputes_status_update(
-    _admin: AdminUser,
+    jar: CookieJar,
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(payload): Json<serde_json::Value>,
-) -> axum::response::Response {
+) -> Result<axum::response::Response, ApiError> {
+    let admin = require_dispute_permission(&jar, &state, "deposits.write").await?;
+
     let dispute_id: sqlx::types::Uuid = match id.parse() {
         Ok(u) => u,
         Err(_) => {
-            return (
-                axum::http::StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({"error":"Invalid ID"})),
-            )
-                .into_response()
+            return Err(ApiError::BadRequest("Invalid ID".to_string()));
         }
     };
 
     let status = payload.get("status").and_then(|v| v.as_str()).unwrap_or("");
     if status.is_empty() {
-        return (
-            axum::http::StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({"error":"Missing status"})),
-        )
-            .into_response();
+        return Err(ApiError::BadRequest("Missing status".to_string()));
     }
 
     let valid_statuses = ["won", "lost", "under_review", "resolved", "escalated"];
     if !valid_statuses.contains(&status) {
-        return (
-            axum::http::StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({"error": format!("Invalid status. Must be one of: {}", valid_statuses.join(", "))})),
-        )
-            .into_response();
+        return Err(ApiError::BadRequest(format!(
+            "Invalid status. Must be one of: {}",
+            valid_statuses.join(", ")
+        )));
     }
 
-    let _ =
-        sqlx::query("UPDATE payment_disputes SET status = $1, updated_at = NOW() WHERE id = $2")
-            .bind(status)
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
+    let previous_status: Option<String> =
+        sqlx::query_scalar("SELECT status FROM payment_disputes WHERE id = $1 FOR UPDATE")
             .bind(dispute_id)
-            .execute(&state.db)
-            .await;
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(ApiError::from)?;
 
-    // Audit log
-    let _ = sqlx::query(
-        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
+    let Some(previous_status) = previous_status else {
+        return Err(ApiError::NotFound("Dispute not found".to_string()));
+    };
+
+    sqlx::query("UPDATE payment_disputes SET status = $1, updated_at = NOW() WHERE id = $2")
+        .bind(status)
+        .bind(dispute_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
+
+    sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state) VALUES ($1, $2, $3, $4, $5, $6)"
     )
-    .bind(_admin.user.id)
+    .bind(admin.id)
     .bind("admin.dispute_status_update")
     .bind("payment_disputes")
     .bind(dispute_id)
+    .bind(serde_json::json!({"status": previous_status}))
     .bind(serde_json::json!({"new_status": status}))
-    .execute(&state.db)
-    .await;
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
 
-    Json(serde_json::json!({"status": "success", "message": "Dispute updated"})).into_response()
+    tx.commit().await.map_err(ApiError::from)?;
+    Ok(
+        Json(serde_json::json!({"status": "success", "message": "Dispute updated"}))
+            .into_response(),
+    )
+}
+
+/// POST /api/admin/disputes/:id/evidence — Build an internal evidence bundle link.
+pub async fn api_admin_disputes_generate_evidence(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    let admin = require_dispute_permission(&jar, &state, "deposits.write").await?;
+    let dispute_id = parse_dispute_id(&id)?;
+    let evidence_url = format!("/api/admin/disputes/{}/evidence", dispute_id);
+
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
+    let previous_evidence_url: Option<String> =
+        sqlx::query_scalar("SELECT evidence_url FROM payment_disputes WHERE id = $1 FOR UPDATE")
+            .bind(dispute_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(ApiError::from)?;
+
+    let Some(previous_evidence_url) = previous_evidence_url else {
+        return Err(ApiError::NotFound("Dispute not found".to_string()));
+    };
+
+    sqlx::query("UPDATE payment_disputes SET evidence_url = $1, updated_at = NOW() WHERE id = $2")
+        .bind(&evidence_url)
+        .bind(dispute_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'admin.dispute_evidence_bundle_generated', 'payment_disputes', $2, $3, $4)"#,
+    )
+    .bind(admin.id)
+    .bind(dispute_id)
+    .bind(serde_json::json!({"evidence_url": previous_evidence_url}))
+    .bind(serde_json::json!({"evidence_url": evidence_url}))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)?;
+
+    Ok(Json(serde_json::json!({
+        "status": "success",
+        "evidence_url": evidence_url
+    }))
+    .into_response())
+}
+
+/// GET /api/admin/disputes/:id/evidence — Return the evidence bundle JSON.
+pub async fn api_admin_disputes_evidence_bundle(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    require_dispute_permission(&jar, &state, "deposits.read").await?;
+    let dispute_id = parse_dispute_id(&id)?;
+
+    let dispute = sqlx::query(
+        r#"SELECT d.id::text, d.user_id::text, u.email AS user_email,
+                  d.transaction_id::text, d.provider, d.provider_dispute_id,
+                  d.amount_cents, d.currency, COALESCE(d.reason, '') AS reason,
+                  d.status, COALESCE(d.evidence_url, '') AS evidence_url,
+                  d.created_at::text, d.updated_at::text
+           FROM payment_disputes d
+           JOIN users u ON u.id = d.user_id
+           WHERE d.id = $1"#,
+    )
+    .bind(dispute_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    let Some(dispute) = dispute else {
+        return Err(ApiError::NotFound("Dispute not found".to_string()));
+    };
+
+    let transaction_id = dispute
+        .get::<Option<String>, _>("transaction_id")
+        .and_then(|id| id.parse::<Uuid>().ok());
+    let transaction = if let Some(transaction_id) = transaction_id {
+        sqlx::query(
+            r#"SELECT wt.id::text, wt.wallet_id::text, wt.type, wt.status,
+                      wt.amount_cents, COALESCE(wt.currency, '') AS currency,
+                      COALESCE(wt.description, '') AS description,
+                      COALESCE(wt.external_ref_id, '') AS external_ref_id,
+                      wt.related_order_id::text, wt.created_at::text, wt.completed_at::text
+               FROM wallet_transactions wt
+               WHERE wt.id = $1"#,
+        )
+        .bind(transaction_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(ApiError::from)?
+    } else {
+        None
+    };
+
+    let transaction_json = transaction.map(|r| {
+        serde_json::json!({
+            "id": r.get::<String, _>("id"),
+            "wallet_id": r.get::<String, _>("wallet_id"),
+            "type": r.get::<String, _>("type"),
+            "status": r.get::<String, _>("status"),
+            "amount_cents": r.get::<i64, _>("amount_cents"),
+            "currency": r.get::<String, _>("currency"),
+            "description": r.get::<String, _>("description"),
+            "external_ref_id": r.get::<String, _>("external_ref_id"),
+            "related_order_id": r.get::<Option<String>, _>("related_order_id"),
+            "created_at": r.get::<String, _>("created_at"),
+            "completed_at": r.get::<Option<String>, _>("completed_at"),
+        })
+    });
+
+    Ok(Json(serde_json::json!({
+        "bundle_type": "payment_dispute_evidence",
+        "generated_from": "poool_admin",
+        "dispute": {
+            "id": dispute.get::<String, _>("id"),
+            "user_id": dispute.get::<String, _>("user_id"),
+            "user_email": dispute.get::<String, _>("user_email"),
+            "transaction_id": dispute.get::<Option<String>, _>("transaction_id"),
+            "provider": dispute.get::<String, _>("provider"),
+            "provider_dispute_id": dispute.get::<String, _>("provider_dispute_id"),
+            "amount_cents": dispute.get::<i64, _>("amount_cents"),
+            "currency": dispute.get::<String, _>("currency"),
+            "reason": dispute.get::<String, _>("reason"),
+            "status": dispute.get::<String, _>("status"),
+            "evidence_url": dispute.get::<String, _>("evidence_url"),
+            "created_at": dispute.get::<String, _>("created_at"),
+            "updated_at": dispute.get::<String, _>("updated_at"),
+        },
+        "transaction": transaction_json,
+        "checklist": [
+            "Verify provider_dispute_id matches the payment provider record.",
+            "Confirm amount_cents and currency match the disputed transaction.",
+            "Review transaction status, external_ref_id, and timestamps.",
+            "Attach external provider screenshots or documents before provider submission when required."
+        ]
+    }))
+    .into_response())
+}
+
+fn parse_dispute_id(id: &str) -> Result<Uuid, ApiError> {
+    id.parse()
+        .map_err(|_| ApiError::BadRequest("Invalid ID".to_string()))
 }

@@ -4,26 +4,32 @@
     <h3 class="documents-heading">Documents</h3>
   </div>
   <div class="documents-list">
+    {% if documents and documents | length > 0 %}
+    {% for document in documents %}
     <div class="document-item">
       <div class="document-info">
         <div class="document-icon"><img  src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
-        <span class="document-name">Smart Contract</span>
+        <div class="document-text">
+          <span class="document-name">{{ document.title }}</span>
+          <span class="document-meta">{{ document.file_size_label }}</span>
+        </div>
       </div>
-      <button class="download-button" type="button" disabled aria-disabled="true" title="Document download is not available yet"><img  src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download unavailable" width="24" height="24" /></button>
+      <a class="download-button" href="{{ document.download_url }}" target="_blank" rel="noopener" aria-label="Download {{ document.title }}">
+        <img src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="" width="24" height="24" />
+      </a>
     </div>
+    {% endfor %}
+    {% else %}
     <div class="document-item">
       <div class="document-info">
         <div class="document-icon"><img  src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
-        <span class="document-name">Token Registration</span>
+        <div class="document-text">
+          <span class="document-name">Documents are being prepared</span>
+          <span class="document-meta">Investor documents will appear here once approved.</span>
+        </div>
       </div>
       <button class="download-button" type="button" disabled aria-disabled="true" title="Document download is not available yet"><img  src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download unavailable" width="24" height="24" /></button>
     </div>
-    <div class="document-item">
-      <div class="document-info">
-        <div class="document-icon"><img  src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
-        <span class="document-name">Articles_of_Organization_LLC.pdf</span>
-      </div>
-      <button class="download-button" type="button" disabled aria-disabled="true" title="Document download is not available yet"><img  src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download unavailable" width="24" height="24" /></button>
-    </div>
+    {% endif %}
   </div>
 </div>

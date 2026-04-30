@@ -1,10 +1,9 @@
-//! Hardcoded property data for the public, logged-out property detail pages
-//! linked from `landing-v2.html`.
+//! Fallback property preview data for the public, logged-out property detail
+//! pages linked from `landing-v2.html`.
 //!
-//! The landing cards on `/landing-v2.html` are static marketing content (not
-//! backed by the `assets` table). For each card we expose a matching detail
-//! page at `/p/:slug` using the same `property-public.html` template the real
-//! dashboard property page uses.
+//! The route first tries to render a published live asset from the database.
+//! These landing-card specs are only used when there is no matching live asset,
+//! and the template labels them as previews rather than live availability.
 //!
 //! If you change a card on `landing-v2.html`, update the matching entry here
 //! (and vice versa). The landing HTML and this file are intentionally the
@@ -352,6 +351,7 @@ impl PublicPropertySpec {
             bathrooms: Some(self.bedrooms),
             lease_type: Some(self.lease_type.to_string()),
             term_months: Some(self.term_months),
+            area: Some(self.location_city.to_string()),
             image_urls,
             cover_image_url,
             funding_status: if self.tokens_available == 0 {
@@ -385,6 +385,11 @@ impl PublicPropertySpec {
             platform_fee_usd: super::models::format_number(total_value_dollars * 5 / 100),
             total_investment_cost_usd: super::models::format_number(
                 total_value_dollars * 105 / 100,
+            ),
+            is_public_preview: true,
+            public_data_notice: Some(
+                "Public preview based on landing-page marketing data. Sign up to see live availability, documents, and final investment terms."
+                    .to_string(),
             ),
         }
     }

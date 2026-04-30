@@ -9,7 +9,6 @@
   <title>Deposit Requests | Admin | POOOL</title>
   <meta name="description"
     content="POOOL Admin — Manage deposit requests, manual confirmations, and multi-currency bank deposits." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
@@ -197,7 +196,9 @@
               <select id="filter-provider" class="admin-select" aria-label="Filter by provider">
                 <option value="">All Providers</option>
                 <option value="stripe">Stripe</option>
-                <option value="xendit">Xendit</option>
+                <option value="ocbc">OCBC</option>
+                <option value="midtrans">Midtrans</option>
+                <option value="mangopay">Mangopay</option>
                 <option value="manual">Manual / Wire</option>
               </select>
               <span style="
@@ -217,10 +218,9 @@
                     <th data-sort="user_name">User</th>
                     <th data-sort="amount_cents">Amount</th>
                     <th data-sort="currency">Currency</th>
-                    <th data-sort="payment_provider">Provider</th>
-                    <th data-sort="reference">Reference</th>
+                    <th data-sort="provider">Provider</th>
+                    <th data-sort="external_ref_id">Reference</th>
                     <th data-sort="status">Status</th>
-                    <th>Plaid Match</th>
                     <th data-sort="expires_at">Expires</th>
                     <th data-sort="created_at">Created</th>
                     <th style="width: 140px">Actions</th>
@@ -228,7 +228,7 @@
                 </thead>
                 <tbody id="deposits-table-body">
                   <tr>
-                    <td colspan="10" style="
+                    <td colspan="9" style="
                           text-align: center;
                           padding: 40px;
                           color: var(--admin-text-muted);
@@ -308,7 +308,8 @@
   </div>
 
   <!-- Confirm Modal -->
-  <div id="confirm-modal" style="
+  <div id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title"
+    aria-describedby="confirm-modal-text" style="
         display: none;
         position: fixed;
         inset: 0;
@@ -327,7 +328,7 @@
           width: 90%;
           animation: admin-fadeIn 0.2s ease-out;
         ">
-      <h3 style="
+      <h3 id="confirm-modal-title" style="
             font-size: 18px;
             font-weight: 700;
             color: var(--admin-text-primary);

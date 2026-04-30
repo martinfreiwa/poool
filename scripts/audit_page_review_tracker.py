@@ -66,6 +66,7 @@ NON_PAGE_PREFIXES = (
 
 NON_PAGE_PATHS = {
     "/health",
+    "/blog/feed.xml",
     "/robots.txt",
     "/sitemap.xml",
 }

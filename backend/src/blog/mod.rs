@@ -20,6 +20,7 @@ pub fn router() -> Router<AppState> {
         // SSR pages (public, server-rendered HTML)
         .route("/blog", get(page_blog_index))
         .route("/blog/", get(page_blog_index))
+        .route("/blog/feed.xml", get(blog_feed_xml))
         .route("/blog/:slug", get(page_blog_article))
         .route("/blog/category/:slug", get(page_blog_category))
         // Public JSON API endpoints
@@ -27,6 +28,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/blog/articles/:slug", get(get_article))
         .route("/api/blog/categories", get(list_categories))
         .route("/api/blog/authors", get(list_authors))
+        .route("/api/blog/newsletter", post(subscribe_newsletter))
         // Admin write endpoints (separate path prefix to avoid Axum param conflicts)
         .route("/api/blog/admin/articles", post(create_article))
         .route(

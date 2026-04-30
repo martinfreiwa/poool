@@ -279,11 +279,41 @@ async fn get_rankings_alltime(
 
     let rankings = rows_to_entries(&rows, current_user_id);
 
-    // Total count
-    let total_participants: i64 =
-        sqlx::query_scalar("SELECT COUNT(*)::BIGINT FROM leaderboard_scores")
-            .fetch_one(pool)
-            .await?;
+    let count_query = format!(
+        r#"
+        WITH raw_data AS (
+            SELECT
+                ls.user_id,
+                COALESCE(lp.visible, false)              AS is_visible,
+                CASE
+                    WHEN COALESCE(lp.visible, false) OR ls.user_id = $3
+                    THEN COALESCE(
+                        lp.display_name,
+                        up.display_name,
+                        COALESCE(up.first_name || ' ' || LEFT(COALESCE(up.last_name, ''), 1) || '.', 'Investor')
+                    )
+                    ELSE 'Investor #' || substring(ls.user_id::text from 1 for 6)
+                END                                     AS full_name,
+                ut.tier_id
+            FROM leaderboard_scores ls
+            JOIN users u ON u.id = ls.user_id
+            LEFT JOIN user_profiles up   ON up.user_id = ls.user_id
+            LEFT JOIN user_tiers ut      ON ut.user_id = ls.user_id
+            LEFT JOIN leaderboard_preferences lp ON lp.user_id = ls.user_id
+            WHERE ls.{rank_col} IS NOT NULL
+        )
+        SELECT COUNT(*)::BIGINT FROM raw_data
+        WHERE ($1::int IS NULL OR tier_id = $1::int)
+          AND ($2::text IS NULL OR full_name ILIKE '%' || $2::text || '%')
+        "#,
+        rank_col = rank_col,
+    );
+    let total_participants: i64 = sqlx::query_scalar(&count_query)
+        .bind(tier_id)
+        .bind(search)
+        .bind(current_user_id)
+        .fetch_one(pool)
+        .await?;
 
     // My rank
     let my_rank = get_my_rank_alltime(pool, current_user_id, rank_col, val_col).await?;
@@ -433,19 +463,90 @@ async fn get_rankings_timeframed(
 
     let rankings = rows_to_entries(&rows, current_user_id);
 
-    // Total participants for this timeframe
     let count_query = format!(
         r#"
-        SELECT COUNT(DISTINCT user_id)::BIGINT
-        FROM investments
-        WHERE status = 'active' AND purchased_at >= {cutoff}
+        WITH inv_agg AS (
+            SELECT
+                i.user_id,
+                SUM(i.purchase_value_cents)::BIGINT              AS total_invested,
+                COUNT(DISTINCT i.asset_id)               AS unique_assets,
+                MAX(i.purchase_value_cents)               AS highest_inv,
+                COALESCE(
+                    SUM(i.purchase_value_cents * COALESCE(a.annual_yield_bps, 0))
+                    / NULLIF(SUM(i.purchase_value_cents), 0),
+                    0
+                )                                         AS weighted_roi_bps
+            FROM investments i
+            JOIN assets a ON a.id = i.asset_id
+            WHERE i.status = 'active'
+              AND i.purchased_at >= {cutoff}
+            GROUP BY i.user_id
+        ),
+        ref_agg AS (
+            SELECT
+                rt.referrer_id,
+                COUNT(DISTINCT rt.referred_id)            AS aff_count,
+                COALESCE(SUM(inv.purchase_value_cents)::BIGINT, 0::BIGINT) AS network_value
+            FROM referral_tracking rt
+            LEFT JOIN investments inv ON inv.user_id = rt.referred_id
+                AND inv.status = 'active'
+                AND inv.purchased_at >= {cutoff}
+            WHERE rt.created_at >= {cutoff}
+            GROUP BY rt.referrer_id
+        ),
+        merged AS (
+            SELECT
+                COALESCE(ia.user_id, ra.referrer_id)     AS user_id,
+                COALESCE(ia.total_invested, 0)           AS total_invested,
+                COALESCE(ia.unique_assets, 0)::INT       AS unique_assets,
+                COALESCE(ia.weighted_roi_bps, 0)::INT    AS weighted_roi_bps,
+                COALESCE(ia.highest_inv, 0)              AS highest_inv,
+                COALESCE(ra.aff_count, 0)::INT           AS aff_count,
+                COALESCE(ra.network_value, 0)            AS network_value
+            FROM inv_agg ia
+            FULL OUTER JOIN ref_agg ra ON ia.user_id = ra.referrer_id
+            WHERE COALESCE(ia.total_invested, 0) > 0 OR COALESCE(ra.aff_count, 0) > 0
+        ),
+        ranked AS (
+            SELECT
+                m.*,
+                ROW_NUMBER() OVER (ORDER BY {order_expr})::INT  AS rank,
+                {val_expr}::BIGINT                         AS metric_value
+            FROM merged m
+        ),
+        enriched AS (
+            SELECT
+                r.user_id,
+                CASE
+                    WHEN COALESCE(lp.visible, false) OR r.user_id = $1
+                    THEN COALESCE(
+                        lp.display_name,
+                        up.display_name,
+                        COALESCE(up.first_name || ' ' || LEFT(COALESCE(up.last_name, ''), 1) || '.', 'Investor')
+                    )
+                    ELSE 'Investor #' || substring(r.user_id::text from 1 for 6)
+                END                                      AS full_name,
+                ut.tier_id
+            FROM ranked r
+            JOIN users u ON u.id = r.user_id
+            LEFT JOIN user_profiles up   ON up.user_id = r.user_id
+            LEFT JOIN user_tiers ut      ON ut.user_id = r.user_id
+            LEFT JOIN leaderboard_preferences lp ON lp.user_id = r.user_id
+        )
+        SELECT COUNT(*)::BIGINT FROM enriched
+        WHERE ($2::int IS NULL OR tier_id = $2::int)
+          AND ($3::text IS NULL OR full_name ILIKE '%' || $3::text || '%')
         "#,
         cutoff = cutoff_sql,
+        order_expr = order_expr,
+        val_expr = val_expr,
     );
     let total_participants: i64 = sqlx::query_scalar(&count_query)
+        .bind(current_user_id)
+        .bind(tier_id)
+        .bind(search)
         .fetch_one(pool)
-        .await
-        .unwrap_or(0);
+        .await?;
 
     // My rank for this timeframe
     let my_rank = get_my_rank_timeframed(pool, current_user_id, metric_type, cutoff_sql).await?;

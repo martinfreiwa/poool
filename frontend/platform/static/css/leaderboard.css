@@ -931,6 +931,11 @@
   gap: 24px;
 }
 
+.lb-search-card-control {
+  width: 100%;
+  max-width: 520px;
+}
+
 /* Market Pulse card (left, large) */
 .lb-pulse-card {
   background: #ffffff;
@@ -1314,6 +1319,32 @@
 
 .lb-toggle-label input:checked + .lb-toggle-slider::before {
   transform: translateX(16px);
+}
+
+.lb-visibility-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lb-neutral-strong);
+}
+
+.lb-inline-status {
+  padding: 12px 16px;
+  border: 1px solid #FEC84B;
+  border-radius: 8px;
+  background: #FFFAEB;
+  color: #93370D;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lb-inline-status.hidden {
+  display: none;
 }
 
 /* Tooltip for score hover on table */

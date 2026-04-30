@@ -55,6 +55,7 @@ pub struct PropertyDisplayData {
     pub bathrooms: Option<i32>,
     pub lease_type: Option<String>,
     pub term_months: Option<i32>,
+    pub area: Option<String>,
     pub image_urls: Vec<String>,
     pub cover_image_url: Option<String>,
     pub funding_status: String,
@@ -87,6 +88,8 @@ pub struct PropertyDisplayData {
     pub land_size_sqm: Option<String>,
     pub platform_fee_usd: String,          // 5% of total_value
     pub total_investment_cost_usd: String, // total_value + 5% fee
+    pub is_public_preview: bool,
+    pub public_data_notice: Option<String>,
 }
 
 impl PropertyDisplayData {
@@ -145,7 +148,7 @@ impl PropertyDisplayData {
                 let paragraphs: Vec<&str> = trimmed.split("\n\n").collect();
                 let html: String = paragraphs
                     .iter()
-                    .map(|p| format!("<p>{}</p>", p.trim()))
+                    .map(|p| format!("<p>{}</p>", escape_html(p.trim())))
                     .collect::<Vec<_>>()
                     .join("\n");
                 Some(html)
@@ -175,6 +178,7 @@ impl PropertyDisplayData {
             bathrooms: asset.bathrooms,
             lease_type: asset.lease_type.clone(),
             term_months: asset.term_months,
+            area: asset.area.clone(),
             image_urls,
             cover_image_url,
             funding_status: asset.funding_status.clone(),
@@ -202,6 +206,8 @@ impl PropertyDisplayData {
             land_size_sqm: asset.land_size_sqm.map(|d| format!("{}", d)),
             platform_fee_usd: format_number(total_value_dollars * 5 / 100),
             total_investment_cost_usd: format_number(total_value_dollars * 105 / 100),
+            is_public_preview: false,
+            public_data_notice: None,
         }
     }
 
@@ -211,6 +217,21 @@ impl PropertyDisplayData {
         self.platform_fee_usd = format_number(fee_dollars);
         self.total_investment_cost_usd = format_number(total_value_dollars + fee_dollars);
     }
+
+    pub fn update_fee_bps(&mut self, fee_bps: i32) {
+        let total_value_dollars = self.total_value_cents / 100;
+        let fee_dollars = total_value_dollars.saturating_mul(fee_bps.max(0) as i64) / 10_000;
+        self.platform_fee_usd = format_number(fee_dollars);
+        self.total_investment_cost_usd = format_number(total_value_dollars + fee_dollars);
+    }
+}
+
+fn escape_html(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
 }
 
 /// Format a number with thousands separators (e.g. 1234567 -> "1,234,567")
@@ -542,12 +563,15 @@ impl CommodityDisplayData {
         }
     }
 
-    /// Recalculate platform fee from a dynamic percentage
-    pub fn update_fee(&mut self, fee_pct: f64) {
-        let total_value_dollars = self.total_value_cents / 100;
-        let fee_dollars = ((total_value_dollars as f64) * fee_pct / 100.0).round() as i64;
-        self.platform_fee_usd = format_number(fee_dollars);
-        self.total_investment_cost_usd = format_number(total_value_dollars + fee_dollars);
+    /// Recalculate platform fee from basis points using integer cents.
+    pub fn update_fee_bps(&mut self, fee_bps: i32) {
+        let bps = fee_bps.max(0) as i128;
+        let total_cents = self.total_value_cents.max(0) as i128;
+        let fee_cents = (total_cents.saturating_mul(bps) + 5_000) / 10_000;
+        let total_with_fee_cents = total_cents.saturating_add(fee_cents);
+
+        self.platform_fee_usd = format_number((fee_cents / 100) as i64);
+        self.total_investment_cost_usd = format_number((total_with_fee_cents / 100) as i64);
     }
 }
 
@@ -692,5 +716,16 @@ mod tests {
         assert_eq!(display.investor_payout_usd.as_deref(), Some("607,500"));
         assert_eq!(display.operator_split_pct, Some(55));
         assert_eq!(display.poool_split_pct, Some(45));
+    }
+
+    #[test]
+    fn test_update_fee_bps_uses_integer_cents() {
+        let asset = sample_commodity_asset();
+        let mut display = CommodityDisplayData::from_asset(&asset);
+
+        display.update_fee_bps(250);
+
+        assert_eq!(display.platform_fee_usd, "11,250");
+        assert_eq!(display.total_investment_cost_usd, "461,250");
     }
 }

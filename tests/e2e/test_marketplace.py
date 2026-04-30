@@ -36,6 +36,7 @@ def test_marketplace_listing_loads(authenticated_user_page):
     
     mp.navigate().verify_loaded().verify_heading()
     mp.verify_cards_visible(min_count=1)
+    mp.verify_card_contract()
     mp.full_health_check() # Console/Network/Blank errors check
 
 @pytest.fixture
@@ -45,7 +46,7 @@ def mock_funded_asset():
     cur = conn.cursor()
     
     cur.execute(
-        "SELECT id, slug, funding_status, tokens_available "
+        "SELECT id, slug, title, funding_status, tokens_available "
         "FROM assets "
         "WHERE published = true "
         "AND deleted_at IS NULL "
@@ -59,7 +60,7 @@ def mock_funded_asset():
         conn.close()
         pytest.skip("No live assets found to mock.")
         
-    asset_id, slug, orig_status, orig_tokens = row
+    asset_id, slug, title, orig_status, orig_tokens = row
     
     # Mock to fully funded
     cur.execute(
@@ -68,7 +69,7 @@ def mock_funded_asset():
     )
     conn.commit()
     
-    yield {"id": asset_id, "slug": slug}
+    yield {"id": asset_id, "slug": slug, "title": title}
     
     # Revert
     cur.execute(
@@ -102,8 +103,51 @@ def test_marketplace_tabs_and_filtering(authenticated_user_page, mock_funded_ass
     card = page.locator(asset_selector).first
     progress = card.locator(".funded-percentage").inner_text()
     assert "100" in progress
-    
+
+    # 5. Swapped fragment cards must preserve the parent filter contract.
+    expect(card).to_have_attribute("data-location", re.compile(r".+"))
+    expect(card).to_have_attribute("data-asset-type", re.compile(r".+"))
+    expect(card).to_have_attribute("data-duration", re.compile(r".+"))
+    expect(card).to_have_attribute("data-card-url", re.compile(r"^/property/.+"))
+
+    # 6. Repeated tab swaps should not break search/filter controls.
+    mp.switch_to_available_tab().verify_available_tab_active()
+    mp.switch_to_funded_tab().verify_funded_tab_active()
+    mp.search(asset["title"])
+    page.keyboard.press("Enter")
+    expect(page.locator(asset_selector).first).to_be_visible()
+
     mp.full_health_check()
+
+    # 7. Fragment-rendered cards must expose semantic keyboard navigation.
+    card = page.locator(asset_selector).first
+    title_link = card.locator(".property-title-link").first
+    expect(title_link).to_be_visible()
+    with page.expect_navigation(url=re.compile(r".*/property/.+")):
+        title_link.press("Enter")
+
+@pytest.mark.marketplace
+def test_marketplace_search_and_filters(authenticated_user_page):
+    """Verifies visible marketplace filters operate against current card data."""
+    page, tracker, user = authenticated_user_page
+    mp = MarketplacePage(page, tracker)
+
+    mp.navigate().verify_cards_visible(min_count=1)
+    first_card = mp.property_cards.first
+    first_title = first_card.locator(".property-title").inner_text().strip()
+    first_asset_type = first_card.get_attribute("data-asset-type")
+
+    mp.search(first_title)
+    expect(first_card).to_be_visible()
+    mp.clear_search().verify_cards_visible(min_count=1)
+
+    if first_asset_type in {"real_estate", "commercial_property", "land_plot"}:
+        mp.filter_property_type(first_asset_type)
+        expect(first_card).to_be_visible()
+
+    mp.clear_search().verify_cards_visible(min_count=1)
+    mp.filter_investment_type("short-term")
+    expect(mp.property_cards.first.or_(mp.no_results)).to_be_visible()
 
 @pytest.mark.marketplace
 def test_p2p_offer_modal_launch(authenticated_user_page):

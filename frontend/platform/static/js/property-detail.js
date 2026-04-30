@@ -8,6 +8,7 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchDeltaX = 0;
 let isSwiping = false;
+let lightboxReturnFocusEl = null;
 const POOOL_IMAGE_FALLBACK = "/static/images/icons/logo-pool.svg";
 
 window.applyPooolImageFallback = function (img) {
@@ -184,6 +185,7 @@ function preloadAdjacent() {
 // --- Core lightbox ---
 function openLightbox(index) {
   galleryImages = getGalleryImages();
+  lightboxReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
   var modal = document.getElementById("lightbox-modal");
   var img = document.getElementById("lightbox-img");
@@ -197,6 +199,8 @@ function openLightbox(index) {
 
   // Show modal
   modal.style.display = "flex";
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("role", "dialog");
   modal.offsetHeight; // reflow
 
   attachPooolImageFallback(img);
@@ -215,6 +219,8 @@ function openLightbox(index) {
 
   // Setup touch events on the image wrapper
   setupTouchEvents();
+  var closeButton = modal.querySelector(".lightbox-close");
+  if (closeButton) closeButton.focus();
 }
 
 function closeLightbox() {
@@ -236,6 +242,10 @@ function closeLightbox() {
     modal.classList.remove("lightbox-closing");
     document.body.style.overflow = "auto";
     document.body.classList.remove("lightbox-open");
+    if (lightboxReturnFocusEl && document.contains(lightboxReturnFocusEl)) {
+      lightboxReturnFocusEl.focus();
+    }
+    lightboxReturnFocusEl = null;
   }, 300);
 }
 
@@ -782,14 +792,18 @@ document.addEventListener("DOMContentLoaded", function () {
         faqItems.forEach(function (otherItem) {
           if (otherItem !== item) {
             otherItem.classList.remove("active");
+            const otherButton = otherItem.querySelector(".faq-item-content");
+            if (otherButton) otherButton.setAttribute("aria-expanded", "false");
           }
         });
 
         // Toggle current item
         if (isActive) {
           item.classList.remove("active");
+          itemContent.setAttribute("aria-expanded", "false");
         } else {
           item.classList.add("active");
+          itemContent.setAttribute("aria-expanded", "true");
         }
       });
     }

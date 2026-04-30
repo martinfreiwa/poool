@@ -1,11 +1,19 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     response::IntoResponse,
 };
+use serde::Deserialize;
 
 const AFFILIATE_REJECTION_REASON_MAX_CHARS: usize = 1000;
+
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct AffiliateFraudScanQuery {
+    #[serde(rename = "type")]
+    scan_type: Option<String>,
+}
 
 //
 //  Admin Rewards API
@@ -1035,19 +1043,34 @@ pub async fn api_admin_affiliate_payouts_pending(
         .require_permission(&state.db, "affiliates.manage")
         .await?;
 
-    let rows = sqlx::query!(
+    use sqlx::Row;
+
+    let rows = sqlx::query(
         r#"SELECT 
             u.id as user_id, u.email, 
             a.referral_code,
+            a.tax_document_gcs_path IS NOT NULL as tax_document_uploaded,
+            pr.id as payout_request_id,
+            pr.amount_cents as payout_request_amount_cents,
+            pr.requested_at::text as payout_requested_at,
+            pr.status as payout_request_status,
             COALESCE(up.first_name, '') as fn, COALESCE(up.last_name, '') as ln,
             SUM(ac.provisional_amount_cents)::bigint as total_payable_cents,
-            COUNT(ac.id) as commission_count
+            COUNT(ac.id)::bigint as commission_count
            FROM affiliate_commissions ac
            JOIN affiliates a ON a.user_id = ac.affiliate_id
            JOIN users u ON u.id = a.user_id
            LEFT JOIN user_profiles up ON up.user_id = u.id
+           LEFT JOIN LATERAL (
+               SELECT id, amount_cents, requested_at, status
+               FROM affiliate_payout_requests
+               WHERE affiliate_id = a.user_id
+                 AND status IN ('requested', 'processing')
+               ORDER BY requested_at ASC
+               LIMIT 1
+           ) pr ON true
            WHERE ac.status = 'payable'
-           GROUP BY u.id, u.email, a.referral_code, up.first_name, up.last_name
+           GROUP BY u.id, u.email, a.referral_code, a.tax_document_gcs_path, pr.id, pr.amount_cents, pr.requested_at, pr.status, up.first_name, up.last_name
            ORDER BY total_payable_cents DESC"#
     )
     .fetch_all(&state.db)
@@ -1060,23 +1083,47 @@ pub async fn api_admin_affiliate_payouts_pending(
     let payouts = rows
         .into_iter()
         .map(|r| {
+            let email: String = r.try_get("email").unwrap_or_default();
+            let user_id: uuid::Uuid = r.try_get("user_id").unwrap_or_default();
+            let referral_code: String = r.try_get("referral_code").unwrap_or_default();
+            let total_payable_cents: i64 = r.try_get("total_payable_cents").unwrap_or(0);
+            let commission_count: i64 = r.try_get("commission_count").unwrap_or(0);
+            let tax_document_uploaded: bool = r.try_get("tax_document_uploaded").unwrap_or(false);
+            let payout_request_id: Option<uuid::Uuid> =
+                r.try_get("payout_request_id").unwrap_or(None);
+            let payout_request_amount_cents: Option<i64> =
+                r.try_get("payout_request_amount_cents").unwrap_or(None);
+            let payout_requested_at: Option<String> =
+                r.try_get("payout_requested_at").unwrap_or(None);
+            let payout_request_status: Option<String> =
+                r.try_get("payout_request_status").unwrap_or(None);
             let mut name = format!(
                 "{} {}",
-                r.r#fn.unwrap_or_default(),
-                r.ln.unwrap_or_default()
+                r.try_get::<Option<String>, _>("fn")
+                    .unwrap_or(None)
+                    .unwrap_or_default(),
+                r.try_get::<Option<String>, _>("ln")
+                    .unwrap_or(None)
+                    .unwrap_or_default()
             )
             .trim()
             .to_string();
             if name.is_empty() {
-                name = r.email.clone();
+                name = email.clone();
             }
             serde_json::json!({
-                "affiliate_id": r.user_id,
-                "email": r.email,
+                "affiliate_id": user_id,
+                "email": email,
                 "name": name,
-                "referral_code": r.referral_code,
-                "total_payable_cents": r.total_payable_cents,
-                "commission_count": r.commission_count,
+                "referral_code": referral_code,
+                "total_payable_cents": total_payable_cents,
+                "commission_count": commission_count,
+                "tax_document_uploaded": tax_document_uploaded,
+                "payout_blocked_reason": if tax_document_uploaded { serde_json::Value::Null } else { serde_json::json!("Tax document required before release") },
+                "payout_request_id": payout_request_id,
+                "payout_request_amount_cents": payout_request_amount_cents,
+                "payout_requested_at": payout_requested_at,
+                "payout_request_status": payout_request_status,
             })
         })
         .collect::<Vec<_>>();
@@ -1202,17 +1249,28 @@ pub async fn api_admin_affiliate_batch_payout(
     .await
     .map_err(|_| ApiError::Internal("Failed to create payout batch".into()))?;
 
-    // 5. Update commissions
-    sqlx::query!(
-        r#"UPDATE affiliate_commissions 
+    // 5. Update only the exact commission rows that this transaction locked and summed.
+    let commission_ids: Vec<uuid::Uuid> = commissions.iter().map(|c| c.id).collect();
+    let updated_commissions = sqlx::query(
+        r#"UPDATE affiliate_commissions
            SET status = 'paid', payout_batch_id = $1, updated_at = NOW()
-           WHERE affiliate_id = $2 AND status = 'payable'"#,
-        batch_id,
-        affiliate_id
+           WHERE id = ANY($2)
+             AND affiliate_id = $3
+             AND status = 'payable'"#,
     )
+    .bind(batch_id)
+    .bind(&commission_ids)
+    .bind(affiliate_id)
     .execute(&mut *tx)
     .await
     .map_err(|_| ApiError::Internal("Failed to update commissions".into()))?;
+
+    if updated_commissions.rows_affected() != commissions.len() as u64 {
+        let _ = tx.rollback().await;
+        return Err(ApiError::Internal(
+            "Payout commission set changed while processing batch".into(),
+        ));
+    }
 
     // 6. Move money (Debit Treasury)
     sqlx::query!(
@@ -1273,6 +1331,23 @@ pub async fn api_admin_affiliate_batch_payout(
     .execute(&mut *tx)
     .await
     .map_err(|_| ApiError::Internal("Failed to write audit log".into()))?;
+
+    sqlx::query(
+        r#"UPDATE affiliate_payout_requests
+           SET status = 'paid',
+               processed_at = NOW(),
+               processed_by_admin_id = $1,
+               payout_batch_id = $2,
+               updated_at = NOW()
+           WHERE affiliate_id = $3
+             AND status IN ('requested', 'processing')"#,
+    )
+    .bind(admin.user.id)
+    .bind(batch_id)
+    .bind(affiliate_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| ApiError::Internal("Failed to update payout requests".into()))?;
 
     // 9. Automated Tax Invoice Generation (Phase 19 Placeholder)
     // Generates a structured PDF Credit Statement for tax/compliance purposes
@@ -1335,22 +1410,57 @@ pub struct ClawbackPayload {
 /// GET /api/admin/rewards/affiliates/fraud-scan
 /// Scans the affiliate network for circular referral rings and flags them for review.
 pub async fn api_admin_affiliate_fraud_scan(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
+    Query(query): Query<AffiliateFraudScanQuery>,
 ) -> Result<axum::response::Response, ApiError> {
-    let flags = crate::rewards::service::scan_affiliate_fraud_rings(&state.db)
-        .await
-        .map_err(|e| {
-            tracing::error!("Fraud scan failed: {}", e);
-            ApiError::Internal("Fraud scan failed".into())
-        })?;
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+    let scan_type = query.scan_type.as_deref().unwrap_or("circular");
+    if !matches!(scan_type, "circular" | "ip_overlap") {
+        return Err(ApiError::BadRequest(
+            "Unsupported fraud scan type".to_string(),
+        ));
+    }
+
+    let flags = match scan_type {
+        "ip_overlap" => crate::rewards::service::scan_affiliate_ip_overlaps(&state.db).await,
+        _ => crate::rewards::service::scan_affiliate_fraud_rings(&state.db).await,
+    }
+    .map_err(|e| {
+        tracing::error!("Fraud scan failed: {}", e);
+        ApiError::Internal("Fraud scan failed".into())
+    })?;
 
     let count = flags.len();
-    tracing::info!("Affiliate fraud scan complete: {} ring(s) detected", count);
+    let elements = crate::rewards::service::affiliate_fraud_flags_to_cytoscape_elements(&flags);
+    tracing::info!(
+        "Affiliate fraud scan complete: {} finding(s) detected for {}",
+        count,
+        scan_type
+    );
+
+    sqlx::query(
+        r#"
+        INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+        VALUES ($1, 'affiliate_fraud.scan_viewed', 'affiliate_fraud_scan', $2)
+        "#,
+    )
+    .bind(admin.user.id)
+    .bind(serde_json::json!({
+        "scan_type": scan_type,
+        "count": count,
+    }))
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::from)?;
 
     Ok(axum::response::Json(serde_json::json!({
         "success": true,
+        "scan_type": scan_type,
         "flags": flags,
+        "elements": elements,
         "count": count
     }))
     .into_response())

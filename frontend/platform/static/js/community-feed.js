@@ -1,4 +1,16 @@
 window.initCommunityFeed = function() {
+    function getCsrfToken() {
+        if (typeof window.getCsrfToken === 'function') return window.getCsrfToken();
+        if (typeof window.csrfToken === 'function') return window.csrfToken();
+        const value = `; ${document.cookie}`;
+        const parts = value.split('; csrf_token=');
+        return parts.length === 2 ? decodeURIComponent(parts.pop().split(';').shift()) : '';
+    }
+
+    function csrfHeaders(headers = {}) {
+        const token = getCsrfToken();
+        return token ? { ...headers, 'X-CSRF-Token': token } : headers;
+    }
 
     function renderSkeleton() {
         const feedContainer = document.getElementById('community-feed-container');
@@ -52,36 +64,32 @@ window.initCommunityFeed = function() {
     }
 
     async function toggleReaction(postId, btn, type) {
-        // Optimistic toggle
         const isCurrentlyActive = btn.classList.contains('active');
         const countSpan = btn.querySelector('span');
-        let currentCount = parseInt(countSpan.textContent, 10);
-        
-        if (isCurrentlyActive) {
-            btn.classList.remove('active');
-            countSpan.textContent = currentCount - 1;
-        } else {
-            btn.classList.add('active');
-            countSpan.textContent = currentCount + 1;
-        }
+        const currentCount = Number.parseInt(countSpan.textContent, 10) || 0;
+        btn.disabled = true;
 
         try {
-            await fetch(`/api/community/posts/${postId}/reactions`, {
+            const res = await fetch(`/api/community/posts/${postId}/reactions`, {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ reaction_type: type })
             });
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            btn.classList.toggle('active', Boolean(data.added));
+            btn.setAttribute('aria-pressed', data.added ? 'true' : 'false');
+            countSpan.textContent = Number.isInteger(data.reaction_count)
+                ? data.reaction_count
+                : Math.max(0, currentCount + (data.added ? 1 : -1));
         } catch (e) {
             console.error('Failed to toggle reaction', e);
-            // Revert on failure
-            if (isCurrentlyActive) {
-                btn.classList.add('active');
-                countSpan.textContent = currentCount;
-            } else {
-                btn.classList.remove('active');
-                countSpan.textContent = currentCount;
-            }
+            btn.classList.toggle('active', isCurrentlyActive);
+            btn.setAttribute('aria-pressed', isCurrentlyActive ? 'true' : 'false');
+            countSpan.textContent = currentCount;
+        } finally {
+            btn.disabled = false;
         }
     }
 
@@ -162,17 +170,31 @@ window.initCommunityFeed = function() {
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    function appendTextEmptyState(container, text, styles) {
+        container.replaceChildren();
+        const empty = document.createElement('div');
+        empty.textContent = text;
+        empty.style.cssText = styles;
+        container.appendChild(empty);
+    }
+
     // Deprecated Client-Side Functions have been removed in favor of HTMX server-side rendering.
 
     // ─── COMMENTS LOGIC ───────────────────────────────────────
     
-    window.toggleComments = async function(postId) {
+    window.toggleComments = async function(postId, trigger) {
         const section = document.getElementById(`comments-section-${postId}`);
-        if (section.style.display === 'none') {
+        const isOpening = section.style.display === 'none';
+        section.style.display = isOpening ? 'block' : 'none';
+        document
+            .querySelectorAll(`[aria-controls="comments-section-${postId}"]`)
+            .forEach((control) => control.setAttribute('aria-expanded', isOpening ? 'true' : 'false'));
+        if (trigger && trigger.setAttribute) {
+            trigger.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+        }
+        if (isOpening) {
             section.style.display = 'block';
             await loadComments(postId);
-        } else {
-            section.style.display = 'none';
         }
     };
 
@@ -246,7 +268,7 @@ window.initCommunityFeed = function() {
             const res = await fetch(`/api/community/posts/${postId}/comments`, {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ content })
             });
             if (!res.ok) {
@@ -269,7 +291,11 @@ window.initCommunityFeed = function() {
 
     window.openUserProfile = async function(userId) {
         currentProfileId = userId;
-        document.getElementById('user-profile-modal').style.display = 'block';
+        if (typeof window.openCommunityModal === 'function') {
+            window.openCommunityModal('user-profile-modal');
+        } else {
+            document.getElementById('user-profile-modal').style.display = 'block';
+        }
         document.getElementById('profile-loading-state').style.display = 'block';
         document.getElementById('profile-content-state').style.display = 'none';
 
@@ -286,25 +312,44 @@ window.initCommunityFeed = function() {
             document.getElementById('profile-modal-posts').innerText = profile.post_count;
 
             const badgesContainer = document.getElementById('profile-modal-badges');
+            badgesContainer.replaceChildren();
             if (profile.badges && profile.badges.length > 0) {
-                badgesContainer.innerHTML = profile.badges.map(b => 
-                    `<div title="${b.name}" style="background:#F2F4F7; border: 1px solid #EAECF0; border-radius:16px; padding: 4px 8px; font-size:14px; cursor:help; display:flex; align-items:center;">
-                        ${b.icon} <span style="font-size:12px; font-weight:500; margin-left:6px; color:#344054;">${b.name}</span>
-                    </div>`
-                ).join('');
+                profile.badges.forEach((badge) => {
+                    const badgeEl = document.createElement('div');
+                    badgeEl.title = badge.name || '';
+                    badgeEl.style.cssText = 'background:#F2F4F7; border: 1px solid #EAECF0; border-radius:16px; padding: 4px 8px; font-size:14px; cursor:help; display:flex; align-items:center;';
+
+                    const icon = document.createElement('span');
+                    icon.textContent = badge.icon || '';
+                    const name = document.createElement('span');
+                    name.style.cssText = 'font-size:12px; font-weight:500; margin-left:6px; color:#344054;';
+                    name.textContent = badge.name || 'Badge';
+
+                    badgeEl.appendChild(icon);
+                    badgeEl.appendChild(name);
+                    badgesContainer.appendChild(badgeEl);
+                });
             } else {
-                badgesContainer.innerHTML = `<div style="font-size:13px; color:#98A2B3;">No badges earned yet.</div>`;
+                appendTextEmptyState(badgesContainer, 'No badges earned yet.', 'font-size:13px; color:#98A2B3;');
             }
 
             const avatarContainer = document.getElementById('profile-modal-avatar');
+            avatarContainer.replaceChildren();
             if (profile.avatar_url) {
-                avatarContainer.style.background = `url(${profile.avatar_url}) center/cover`;
-                avatarContainer.innerHTML = '';
+                avatarContainer.style.background = '#F2F4F7';
+                const img = document.createElement('img');
+                img.src = profile.avatar_url;
+                img.alt = '';
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;';
+                avatarContainer.appendChild(img);
             } else {
                 avatarContainer.style.background = '#F2F4F7';
-                const parts = profile.display_name.split(' ');
+                const parts = String(profile.display_name || 'User').split(' ');
                 const init = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2);
-                avatarContainer.innerHTML = `<span id="profile-modal-initials">${init.toUpperCase()}</span>`;
+                const initials = document.createElement('span');
+                initials.id = 'profile-modal-initials';
+                initials.textContent = init.toUpperCase();
+                avatarContainer.appendChild(initials);
             }
 
             const followBtn = document.getElementById('profile-modal-follow-btn');
@@ -338,7 +383,7 @@ window.initCommunityFeed = function() {
             btnElement.innerText = "Updating...";
 
             if (currentlyFollowing) {
-                const res = await fetch(`/api/community/follow/${userId}`, { method: 'DELETE', credentials: 'same-origin' });
+                const res = await fetch(`/api/community/follow/${userId}`, { method: 'DELETE', credentials: 'same-origin', headers: csrfHeaders() });
                 if (!res.ok) throw new Error("Failed to unfollow");
                 
                 btnElement.innerText = "Follow User";
@@ -348,7 +393,7 @@ window.initCommunityFeed = function() {
                 const followersEl = document.getElementById('profile-modal-followers');
                 followersEl.innerText = Math.max(0, parseInt(followersEl.innerText) - 1);
             } else {
-                const res = await fetch(`/api/community/follow/${userId}`, { method: 'POST', credentials: 'same-origin' });
+                const res = await fetch(`/api/community/follow/${userId}`, { method: 'POST', credentials: 'same-origin', headers: csrfHeaders() });
                 if (!res.ok) {
                     const err = await res.text();
                     throw new Error(err);
@@ -414,6 +459,7 @@ window.initCommunityFeed = function() {
             const res = await fetch('/api/upload/post-image', {
                 method: 'POST',
                 credentials: 'same-origin',
+                headers: csrfHeaders(),
                 body: fd
             });
             const data = await res.json();
@@ -437,16 +483,28 @@ window.initCommunityFeed = function() {
     function renderPostImagePreviews() {
         const container = document.getElementById('post-image-previews');
         if (!container) return;
-        
-        let html = '';
+
+        container.replaceChildren();
         window.postImageUrls.forEach((url, index) => {
-            html += `
-            <div style="position: relative; flex-shrink: 0;">
-                <img src="${url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #EAECF0;">
-                <button type="button" onclick="removePostImage(${index})" style="position: absolute; top: -6px; right: -6px; background: white; border: 1px solid #EAECF0; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #D92D20; font-weight: bold; padding: 0;">✕</button>
-            </div>`;
+            const preview = document.createElement('div');
+            preview.style.cssText = 'position: relative; flex-shrink: 0;';
+
+            const image = document.createElement('img');
+            image.src = url;
+            image.alt = 'Selected post image preview';
+            image.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #EAECF0;';
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.setAttribute('aria-label', 'Remove selected post image');
+            remove.style.cssText = 'position: absolute; top: -6px; right: -6px; background: white; border: 1px solid #EAECF0; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #D92D20; font-weight: bold; padding: 0;';
+            remove.textContent = '✕';
+            remove.addEventListener('click', () => window.removePostImage(index));
+
+            preview.appendChild(image);
+            preview.appendChild(remove);
+            container.appendChild(preview);
         });
-        container.innerHTML = html;
         
         // Hide upload button if 4 images
         const btn = document.querySelector(`button[onclick="document.getElementById('post-image-file-input').click()"]`);
@@ -500,7 +558,7 @@ window.initCommunityFeed = function() {
             const res = await fetch('/api/community/posts', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(requestBody)
             });
             
@@ -529,7 +587,11 @@ window.initCommunityFeed = function() {
 
     window.openReportModal = function(postId) {
         document.getElementById('report-post-id').value = postId;
-        document.getElementById('report-post-modal').style.display = 'block';
+        if (typeof window.openCommunityModal === 'function') {
+            window.openCommunityModal('report-post-modal');
+        } else {
+            document.getElementById('report-post-modal').style.display = 'block';
+        }
     };
 
     window.submitReport = async function() {
@@ -540,7 +602,7 @@ window.initCommunityFeed = function() {
             const res = await fetch(`/api/community/posts/${postId}/report`, {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ reason })
             });
             
@@ -549,7 +611,11 @@ window.initCommunityFeed = function() {
                 throw new Error(err);
             }
             
-            document.getElementById('report-post-modal').style.display = 'none';
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('report-post-modal');
+            } else {
+                document.getElementById('report-post-modal').style.display = 'none';
+            }
             alert('Report submitted successfully. Our team will review it shortly.');
         } catch (e) {
             console.error(e);
@@ -957,6 +1023,57 @@ window.initCommunityFeed = function() {
         return card;
     }
 
+    async function renderSsrPostDetail() {
+        const postId = typeof window.SSR_POST_ID === 'string' ? window.SSR_POST_ID.trim() : '';
+        const contentArea = document.getElementById('community-content-area');
+        if (!postId || !contentArea || contentArea.dataset.ssrPostLoaded === 'true') return;
+
+        contentArea.dataset.ssrPostLoaded = 'true';
+        contentArea.removeAttribute('hx-get');
+        contentArea.removeAttribute('hx-trigger');
+        contentArea.innerHTML = '<div style="padding: 40px; text-align: center; color: #667085;">Loading post...</div>';
+
+        const renderNotFound = () => {
+            contentArea.innerHTML = `
+                <div class="ds-card" style="max-width: 720px; margin: 0 auto; text-align: center;">
+                    <h2 class="ds-text-xl" style="margin-bottom: 8px;">Post not found</h2>
+                    <p class="ds-text-subtitle" style="margin-bottom: 16px;">This community post is unavailable or has been removed.</p>
+                    <a class="ds-btn ds-btn--secondary" href="/community">Back to Community</a>
+                </div>`;
+        };
+
+        if (window.SSR_POST_FOUND === false) {
+            renderNotFound();
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/community/posts/${encodeURIComponent(postId)}`, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Post not found');
+            const post = await res.json();
+
+            contentArea.innerHTML = '';
+            const wrap = document.createElement('div');
+            wrap.className = 'community-content-layout';
+            wrap.style.cssText = 'display:block;max-width:760px;margin:0 auto;padding-bottom:60px;';
+
+            const back = document.createElement('a');
+            back.className = 'ds-btn ds-btn--secondary ds-btn--sm';
+            back.href = '/community';
+            back.textContent = 'Back to Community';
+            back.style.marginBottom = '16px';
+            wrap.appendChild(back);
+
+            const card = buildPostCard(post);
+            card.id = `post-${post.id}`;
+            wrap.appendChild(card);
+            contentArea.appendChild(wrap);
+        } catch (e) {
+            console.error('Failed to load direct community post', e);
+            renderNotFound();
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // UX.6: BOOKMARK FUNCTIONS
     // ═══════════════════════════════════════════════════════════════
@@ -969,6 +1086,8 @@ window.initCommunityFeed = function() {
                 if (data.bookmarked) {
                     btn.classList.add('bookmarked');
                     btn.title = 'Remove Bookmark';
+                    btn.setAttribute('aria-label', 'Remove saved post');
+                    btn.setAttribute('aria-pressed', 'true');
                 }
             }
         } catch (e) {
@@ -981,11 +1100,14 @@ window.initCommunityFeed = function() {
         const wasBookmarked = btn.classList.contains('bookmarked');
         btn.classList.toggle('bookmarked');
         btn.title = wasBookmarked ? 'Save Post' : 'Remove Bookmark';
+        btn.setAttribute('aria-label', wasBookmarked ? 'Save post' : 'Remove saved post');
+        btn.setAttribute('aria-pressed', wasBookmarked ? 'false' : 'true');
 
         try {
             const res = await fetch(`/api/community/posts/${postId}/bookmark`, {
                 method: 'POST',
                 credentials: 'same-origin',
+                headers: csrfHeaders(),
             });
             if (!res.ok) throw new Error('Failed');
             const data = await res.json();
@@ -993,18 +1115,26 @@ window.initCommunityFeed = function() {
             if (data.bookmarked) {
                 btn.classList.add('bookmarked');
                 btn.title = 'Remove Bookmark';
+                btn.setAttribute('aria-label', 'Remove saved post');
+                btn.setAttribute('aria-pressed', 'true');
             } else {
                 btn.classList.remove('bookmarked');
                 btn.title = 'Save Post';
+                btn.setAttribute('aria-label', 'Save post');
+                btn.setAttribute('aria-pressed', 'false');
             }
         } catch (e) {
             // Revert on failure
             if (wasBookmarked) {
                 btn.classList.add('bookmarked');
                 btn.title = 'Remove Bookmark';
+                btn.setAttribute('aria-label', 'Remove saved post');
+                btn.setAttribute('aria-pressed', 'true');
             } else {
                 btn.classList.remove('bookmarked');
                 btn.title = 'Save Post';
+                btn.setAttribute('aria-label', 'Save post');
+                btn.setAttribute('aria-pressed', 'false');
             }
         }
     };
@@ -1071,8 +1201,14 @@ window.initCommunityFeed = function() {
         const optionsWrap = document.createElement('div');
 
         poll.options.forEach(opt => {
-            const optEl = document.createElement('div');
+            const optEl = document.createElement('button');
+            optEl.type = 'button';
             optEl.className = 'poll-option' + (opt.user_voted ? ' voted' : '');
+            optEl.setAttribute('aria-pressed', opt.user_voted ? 'true' : 'false');
+            optEl.setAttribute('aria-label', `Vote for ${opt.label}`);
+            optEl.style.border = '0';
+            optEl.style.width = '100%';
+            optEl.style.textAlign = 'left';
 
             // Percentage bar
             const bar = document.createElement('div');
@@ -1109,6 +1245,8 @@ window.initCommunityFeed = function() {
 
             if (!poll.is_expired) {
                 optEl.addEventListener('click', () => voteOnPoll(postId, opt.id, container));
+            } else {
+                optEl.disabled = true;
             }
 
             optionsWrap.appendChild(optEl);
@@ -1146,7 +1284,7 @@ window.initCommunityFeed = function() {
             const res = await fetch(`/api/community/posts/${postId}/poll/vote`, {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ option_id: optionId })
             });
             if (!res.ok) {
@@ -1325,7 +1463,11 @@ window.initCommunityFeed = function() {
             console.error('Failed to load profile for editing', e);
         }
         
-        modal.style.display = 'block';
+        if (typeof window.openCommunityModal === 'function') {
+            window.openCommunityModal('edit-profile-modal');
+        } else {
+            modal.style.display = 'block';
+        }
     };
 
     window.saveProfileDetails = async function() {
@@ -1338,7 +1480,7 @@ window.initCommunityFeed = function() {
         try {
             const res = await fetch('/api/community/profile', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ bio: bio })
             });
             
@@ -1346,7 +1488,11 @@ window.initCommunityFeed = function() {
                 const updatedProfile = await res.json();
                 const bioEl = document.getElementById('my-profile-bio');
                 if (bioEl) bioEl.textContent = updatedProfile.bio || "No bio yet • Start your journey 🌱";
-                document.getElementById('edit-profile-modal').style.display = 'none';
+                if (typeof window.closeCommunityModal === 'function') {
+                    window.closeCommunityModal('edit-profile-modal');
+                } else {
+                    document.getElementById('edit-profile-modal').style.display = 'none';
+                }
                 if (window.showToast) window.showToast('Profile updated successfully');
             } else {
                 const err = await res.json();
@@ -1360,6 +1506,8 @@ window.initCommunityFeed = function() {
             btn.disabled = false;
         }
     };
+
+    renderSsrPostDetail();
 
 };
 

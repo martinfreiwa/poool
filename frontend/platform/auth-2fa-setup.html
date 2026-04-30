@@ -48,16 +48,20 @@ endwith %}
                                 Enter the 6-digit code from your app to confirm.
                             </p>
 
-                            <div id="auth-error" style="margin-top: 16px;"></div>
+                            <div id="auth-error" role="alert" aria-live="polite" style="margin-top: 16px;"></div>
                             <form hx-post="/auth/2fa/setup" hx-target="#auth-error" hx-swap="innerHTML"
-                                hx-ext="response-targets" hx-target-400="#auth-error" hx-indicator="#loading-indicator"
+                                hx-indicator="#loading-indicator"
+                                hx-on::before-request="this.querySelector('button[type=submit]').disabled = true; this.setAttribute('aria-busy', 'true')"
+                                hx-on::after-request="this.querySelector('button[type=submit]').disabled = false; this.setAttribute('aria-busy', 'false')"
                                 style="margin-top: 16px;">
-                                <input type="hidden" name="secret" value="{{ secret }}" />
+                                <input type="hidden" name="setup_token" value="{{ setup_token }}" />
                                 <div id="input-field">
                                     <div id="input-with-label">
+                                        <label for="totp-code-input" class="sr-only">Authentication code</label>
                                         <div id="email-input-wrapper">
-                                            <input type="text" id="email-input" name="code" placeholder="000000"
-                                                inputmode="numeric" pattern="[0-9]{6}" required />
+                                            <input type="text" id="totp-code-input" name="code" placeholder="000000"
+                                                inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                                                autocomplete="one-time-code" aria-describedby="auth-error" required />
                                         </div>
                                     </div>
                                 </div>
@@ -65,6 +69,7 @@ endwith %}
                                 <button type="submit" id="login-button" style="margin-top: 16px;">
                                     <div id="button-text-padding">
                                         <span id="button-text">Enable 2FA</span>
+                                        <span id="loading-indicator" class="htmx-indicator" aria-hidden="true">Verifying...</span>
                                     </div>
                                 </button>
                             </form>

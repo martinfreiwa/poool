@@ -76,7 +76,6 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                     <option value="any">Any type</option>
                     <option value="short-term">Short term</option>
                     <option value="long-term">Long term</option>
-                    <option value="flipping">Flipping</option>
                   </select>
                   <svg  id="filter-bar-investment-chevron" class="dropdown-chevron" width="20" height="20"
                     viewBox="0 0 20 20" fill="none">
@@ -100,9 +99,9 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                     class="dropdown-icon" />
                   <select id="filter-bar-property-select" class="dropdown-select">
                     <option value="any">Any type</option>
-                    <option value="residential">Residential</option>
-                    <option value="commercial">Commercial</option>
-                    <option value="villa">Villa</option>
+                    <option value="real_estate">Residential</option>
+                    <option value="commercial_property">Commercial</option>
+                    <option value="land_plot">Land plot</option>
                   </select>
                   <svg  id="filter-bar-property-chevron" class="dropdown-chevron" width="20" height="20"
                     viewBox="0 0 20 20" fill="none">
@@ -168,6 +167,8 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                 data-location="{{ asset.location_city }}, {{ asset.location_country }}"
                 data-area="{{ asset.area | default('', true) }}"
                 data-asset-type="{{ asset.asset_type }}" data-funding-status="{{ asset.funding_status }}"
+                data-duration="{% if asset.term_months %}{{ asset.term_months }} months{% endif %}"
+                data-duration-months="{{ asset.term_months | default('', true) }}"
                 data-price="{{ asset.total_value_cents / 100 }}"
                 onclick="window.location.href = '/property/{{ asset.slug }}'">
                 <div class="property-gallery">
@@ -230,7 +231,7 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
 
                   <div class="property-heading">
                     <h3 class="property-title">
-                      {{ asset.title }}
+                      <a href="/property/{{ asset.slug }}" class="property-title-link" onclick="event.stopPropagation()">{{ asset.title }}</a>
                     </h3>
                   </div>
 

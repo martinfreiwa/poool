@@ -2626,6 +2626,7 @@ dependencies = [
 name = "poool-backend"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm",
  "ammonia",
  "anyhow",
  "argon2",

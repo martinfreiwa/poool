@@ -51,6 +51,11 @@ fn action_spec(action_type: &str) -> Option<ApprovalActionSpec> {
             entity_id_required: true,
             permission: "financials.payout.approve",
         }),
+        "primary_escrow.release" => Some(ApprovalActionSpec {
+            entity_type: "assets",
+            entity_id_required: true,
+            permission: "marketplace.manage",
+        }),
         // treasury.payout has no durable executor/table contract yet; do not
         // allow new requests until the real payout flow is wired.
         "treasury.payout" => None,
@@ -282,7 +287,41 @@ pub async fn api_admin_approvals_approve(
     }
     admin.require_permission(&state.db, spec.permission).await?;
 
-    // Execute the action
+    let updated = sqlx::query(
+        r#"UPDATE admin_approval_requests
+           SET status = 'processing', approver_id = $1, updated_at = NOW()
+           WHERE id = $2 AND status = 'pending'"#,
+    )
+    .bind(user.id)
+    .bind(uid)
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    if updated.rows_affected() != 1 {
+        return Err(ApiError::Conflict(
+            "Approval request could not be claimed for execution".to_string(),
+        ));
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, $2, $3, $4, $5)"#,
+    )
+    .bind(user.id)
+    .bind("approval_request.execution_started")
+    .bind("admin_approval_requests")
+    .bind(uid)
+    .bind(serde_json::json!({
+        "action_type": action_type,
+        "requester_id": requester_id.to_string()
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)?;
+
     let execution_result = execute_approved_action(
         &state,
         user.id,
@@ -295,11 +334,10 @@ pub async fn api_admin_approvals_approve(
 
     match execution_result {
         Ok(result_json) => {
-            // Mark as approved
+            let mut tx = state.db.begin().await.map_err(ApiError::from)?;
             let updated = sqlx::query(
-                "UPDATE admin_approval_requests SET status = 'approved', approver_id = $1, updated_at = NOW() WHERE id = $2"
+                "UPDATE admin_approval_requests SET status = 'approved', updated_at = NOW() WHERE id = $1 AND status = 'processing'"
             )
-                .bind(user.id)
                 .bind(uid)
                 .execute(&mut *tx)
                 .await
@@ -335,6 +373,30 @@ pub async fn api_admin_approvals_approve(
         }
         Err(err_msg) => {
             tracing::error!("Four-Eyes action execution failed: {err_msg}");
+            let mut tx = state.db.begin().await.map_err(ApiError::from)?;
+            sqlx::query(
+                r#"UPDATE admin_approval_requests
+                   SET status = 'rejected', rejection_reason = $1, updated_at = NOW()
+                   WHERE id = $2 AND status = 'processing'"#,
+            )
+            .bind(format!("Execution failed: {err_msg}"))
+            .bind(uid)
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::from)?;
+            sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+                   VALUES ($1, $2, $3, $4, $5)"#,
+            )
+            .bind(user.id)
+            .bind("approval_request.execution_failed")
+            .bind("admin_approval_requests")
+            .bind(uid)
+            .bind(serde_json::json!({"action_type": action_type, "error": err_msg}))
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::from)?;
+            tx.commit().await.map_err(ApiError::from)?;
             Err(ApiError::Internal(err_msg))
         }
     }
@@ -462,9 +524,14 @@ async fn execute_approved_action(
                     .await
                     .unwrap_or(None);
             let provider_ref = provider_ref.ok_or("Deposit request not found")?;
-            payments::service::confirm_deposit(&state.db, &provider_ref)
-                .await
-                .map(|_| serde_json::json!({"deposit_id": eid.to_string(), "confirmed": true}))
+            payments::service::confirm_deposit_with_audit(
+                &state.db,
+                &provider_ref,
+                Some(approver_id),
+                Some("Four-eyes approval".to_string()),
+            )
+            .await
+            .map(|_| serde_json::json!({"deposit_id": eid.to_string(), "confirmed": true}))
         }
         "deposit.cancel" => {
             let eid = entity_id.ok_or("entity_id required")?;
@@ -742,6 +809,16 @@ async fn execute_approved_action(
             Ok(
                 serde_json::json!({"dividend_processed": true, "payout_id": payout_id.to_string(), "asset_id": aid.to_string()}),
             )
+        }
+        "primary_escrow.release" => {
+            let aid = entity_id.ok_or("entity_id (asset_id) required for primary_escrow.release")?;
+            crate::admin::primary_escrow::execute_primary_escrow_release(
+                &state.db,
+                approver_id,
+                aid,
+                payload,
+            )
+            .await
         }
         // Catch-all for future action types
         _ => Err(format!(

@@ -46,10 +46,8 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                   <img  id="filter-bar-location-icon" src="/static/images/ui/ID.webp" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-location-select" class="dropdown-select">
-                    <option value="bali-canggu" selected>Bali, Canggu</option>
-                    <option value="bali-uluwatu">Bali, Uluwatu</option>
-                    <option value="bali-ubud">Bali, Ubud</option>
-                    <option value="bali">Bali</option>
+                    <option value="any" selected>Any location</option>
+                    <option value="bali">Bali, Indonesia</option>
                   </select>
                   <svg  id="filter-bar-location-chevron" class="dropdown-chevron" width="20" height="20"
                     viewBox="0 0 20 20" fill="none">
@@ -60,8 +58,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
               </div>
               <!-- Investment Type Dropdown -->
               <div id="filter-bar-investment" class="filter-dropdown">
-                <label id="filter-bar-investment-label" class="filter-label"><span class="filter-label-text">Investment
-                    type</span>
+                <label id="filter-bar-investment-label" class="filter-label"><span class="filter-label-text">Term</span>
                   <svg  id="filter-bar-investment-help" class="help-icon" width="16" height="16" viewBox="0 0 16 16"
                     fill="none">
                     <circle cx="8" cy="8" r="6.67" stroke="#A4A7AE" stroke-width="1.33"></circle>
@@ -72,10 +69,10 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                   <img  id="filter-bar-investment-icon" src="/static/images/icons/dollar.svg" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-investment-select" class="dropdown-select">
-                    <option value="any">Any type</option>
-                    <option value="short-term">Short term</option>
-                    <option value="long-term">Long term</option>
-                    <option value="flipping">Flipping</option>
+                    <option value="any">Any term</option>
+                    <option value="0-6">0-6 months</option>
+                    <option value="7-12">7-12 months</option>
+                    <option value="13plus">13+ months</option>
                   </select>
                   <svg  id="filter-bar-investment-chevron" class="dropdown-chevron" width="20" height="20"
                     viewBox="0 0 20 20" fill="none">
@@ -86,8 +83,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
               </div>
               <!-- Property Type Dropdown -->
               <div id="filter-bar-property" class="filter-dropdown">
-                <label id="filter-bar-property-label" class="filter-label"><span class="filter-label-text">Type of
-                    property</span>
+                <label id="filter-bar-property-label" class="filter-label"><span class="filter-label-text">Commodity type</span>
                   <svg  id="filter-bar-property-help" class="help-icon" width="16" height="16" viewBox="0 0 16 16"
                     fill="none">
                     <circle cx="8" cy="8" r="6.67" stroke="#A4A7AE" stroke-width="1.33"></circle>
@@ -98,10 +94,8 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                   <img  id="filter-bar-property-icon" src="/static/images/icons/home-03.svg" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-property-select" class="dropdown-select">
-                    <option value="any">Any type</option>
-                    <option value="residential">Residential</option>
-                    <option value="commercial">Commercial</option>
-                    <option value="villa">Villa</option>
+                    <option value="any">Any commodity</option>
+                    <option value="agriculture">Agriculture</option>
                   </select>
                   <svg  id="filter-bar-property-chevron" class="dropdown-chevron" width="20" height="20"
                     viewBox="0 0 20 20" fill="none">
@@ -123,6 +117,8 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
               <input id="filter-bar-search-input" type="search" placeholder="Search" class="search-input" />
             </div>
             <button id="filter-bar-clear-btn" class="clear-btn">Clear</button>
+            <button id="filter-bar-more-filters" class="clear-btn" type="button" aria-expanded="false"
+              aria-controls="commodities-extra-filters">More filters</button>
             <button id="filter-bar-search-btn" class="search-btn">
               Search
             </button>
@@ -148,10 +144,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
               </div>
               {% else %}
               {% for asset in assets %}
-              {% set funded_percentage = 0 %}
-              {% if asset.tokens_total > 0 %}
-              {% set funded_percentage = ((asset.tokens_total - asset.tokens_available) / asset.tokens_total * 100) | round %}
-              {% endif %}
+              {% set funded_percentage = asset.funded_percentage %}
               {% set funding_status_label = "Available" %}
               {% if asset.funding_status == "funded" %}{% set funding_status_label = "Funded" %}
               {% elif asset.funding_status == "rented" %}{% set funding_status_label = "Rented" %}
@@ -161,9 +154,12 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
 
               <div class="property-card" data-property-id="{{ asset.slug }}"
                 data-location="{{ asset.location_city }}, {{ asset.location_country }}"
+                data-area="{{ asset.location_city }}"
                 data-asset-type="{{ asset.asset_type }}" data-funding-status="{{ asset.funding_status }}"
+                data-commodity-type="agriculture"
                 data-price="{{ asset.total_value_cents / 100 }}"
-                onclick="window.location.href = '/commodity/{{ asset.slug }}'">
+                data-yield="{{ asset.annual_yield_percent }}"
+                data-duration="{% if asset.term_months %}{{ asset.term_months }} months{% endif %}">
                 <div class="property-gallery">
                   <div class="property-image-container">
                     {% if asset.image_urls and asset.image_urls | length > 0 %}
@@ -208,7 +204,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                   <div class="card-meta-row">
                     <div class="card-meta-item">
                       <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22L2 12 12 2l10 10z"/><path d="M7.5 7.5L12 12"/></svg>
-                      <span>{% if asset.land_size_sqm %}{{ (asset.land_size_sqm / 10000) | int }} ha{% else %}60 ha{% endif %}</span>
+                      <span>{% if asset.land_size_hectares %}{{ asset.land_size_hectares }} ha{% else %}60 ha{% endif %}</span>
                     </div>
                     <div class="card-meta-divider"></div>
                     <div class="card-meta-item">
@@ -219,13 +215,14 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
 
                   <div class="property-heading">
                     <h3 class="property-title">
-                      {{ asset.title }}
+                      <a class="property-card-link" href="/commodity/{{ asset.slug }}"
+                        aria-label="View commodity {{ asset.title }}">{{ asset.title }}</a>
                     </h3>
                   </div>
 
                   <div class="property-pricing">
                     <div class="price-wrapper">
-                      <span class="property-price">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</span>
+                      <span class="property-price">USD {{ asset.total_value_usd }}</span>
                       <span class="funded-percentage">{{ (funded_percentage | round(1)) }}% funded</span>
                     </div>
                     <div class="property-progress ds-progress">
@@ -243,13 +240,13 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                     <div class="investment-row">
                       <span class="investment-label">Projected return</span>
                       <span class="investment-value">
-                        {% if asset.capital_appreciation_bps %}{{ (asset.capital_appreciation_bps / 100) }}%{% else %}N/A{% endif %}
+                        {% if asset.capital_appreciation_percent %}{{ asset.capital_appreciation_percent }}%{% else %}N/A{% endif %}
                       </span>
                     </div>
                     <div class="investment-row">
                       <span class="investment-label">Projected annualised net return</span>
                       <span class="investment-value">
-                        {% if asset.annual_yield_bps %}{{ (asset.annual_yield_bps / 100) }}%{% else %}N/A{% endif %}
+                        {% if asset.annual_yield_percent %}{{ asset.annual_yield_percent }}%{% else %}N/A{% endif %}
                       </span>
                     </div>
                   </div>

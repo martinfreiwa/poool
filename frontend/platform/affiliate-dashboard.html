@@ -71,11 +71,11 @@
                 <h4 style="font-size: 13px; font-weight: 600; margin-top: 0; margin-bottom: 12px; color: var(--admin-text-primary);">Advanced Tracking (Optional)</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                   <div>
-                    <label style="font-size: 11px; margin-bottom: 4px; display: block; color: var(--admin-text-muted);">SubID</label>
+                    <label for="link-gen-subid" style="font-size: 11px; margin-bottom: 4px; display: block; color: var(--admin-text-muted);">SubID</label>
                     <input type="text" id="link-gen-subid" class="ds-input ds-input-sm" placeholder="e.g. email_blast_1" style="padding: 8px; font-size: 13px; height: 32px;" />
                   </div>
                   <div>
-                    <label style="font-size: 11px; margin-bottom: 4px; display: block; color: var(--admin-text-muted);">UTM Source</label>
+                    <label for="link-gen-utm" style="font-size: 11px; margin-bottom: 4px; display: block; color: var(--admin-text-muted);">UTM Source</label>
                     <input type="text" id="link-gen-utm" class="ds-input ds-input-sm" placeholder="e.g. twitter" style="padding: 8px; font-size: 13px; height: 32px;" />
                   </div>
                 </div>
@@ -100,6 +100,7 @@
                   Save
                 </button>
               </div>
+              <div id="affiliate-action-status" class="affiliate-action-status" role="status" aria-live="polite"></div>
               <div class="qr-container">
                 <div id="qrcode" class="qr-box"></div>
                 <div class="qr-text">Scan to share</div>
@@ -141,6 +142,10 @@
             <!-- Tier Progress -->
             <div class="ds-card tier-progress-card">
               <h3>Tier Progression</h3>
+              <div class="tier-summary" aria-label="Current affiliate tier">
+                <span id="tier-name">Partner</span>
+                <span id="tier-rate">0 bps (0.00%)</span>
+              </div>
               <p class="tier-hint">Upgrade your tier to earn higher commission rates by referring more qualified volume.</p>
               
               <div class="tier-visual">

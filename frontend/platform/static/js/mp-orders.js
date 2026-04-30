@@ -1,7 +1,5 @@
 /**
- * Open Orders — mp-orders.js
- * Fetches open orders from the backend API with admin-cancel via DELETE.
- * Falls back to mock data if the API is unavailable.
+ * Open Orders - live admin order list with audited cancel action.
  */
 (function () {
   'use strict';
@@ -12,204 +10,365 @@
   let totalPages = 1;
   let totalOrders = 0;
   let ordersData = [];
-  let usingMockData = false;
+  let isLoading = false;
 
-  // ── Mock Data Fallback ──────────────────────────────────────────
-  const ASSETS = ['Bali Villa Resort (BVRT)', 'Jakarta Office Tower (JOTX)', 'Surabaya Warehouse (SWHS)', 'Bandung Tech Hub (BTHB)', 'Yogya Heritage Hotel (YHHT)'];
-  const USERS = ['USR-8291', 'USR-3384', 'USR-6643', 'USR-1738', 'USR-5561', 'USR-2201', 'USR-7829', 'USR-4410', 'USR-9203', 'USR-1105', 'USR-7712', 'USR-2290'];
-  const PRICES = [52.40, 105.00, 23.75, 87.20, 34.90];
-
-  function generateMockOrders() {
-    const orders = [];
-    for (let i = 0; i < 18; i++) {
-      const assetIdx = i % ASSETS.length;
-      const price = PRICES[assetIdx] + (Math.random() - 0.5) * 3;
-      const qty = Math.floor(Math.random() * 300) + 20;
-      const held = +(price * qty).toFixed(2);
-      const hoursAgo = Math.floor(Math.random() * 72) + 1;
-      orders.push({
-        id: `ORD-${(200000 + i)}`, user: USERS[i % USERS.length], asset: ASSETS[assetIdx],
-        side: i % 3 === 0 ? 'SELL' : 'BUY', type: i % 4 === 0 ? 'Market' : 'Limit',
-        qty, price: +price.toFixed(2), held, created: `${hoursAgo}h ago`, hoursAgo, status: 'open',
-      });
-    }
-    return orders;
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
   }
 
-  // ── Render Table ────────────────────────────────────────────────
-  function renderOrders(orders) {
-    ordersData = orders;
-
-    // KPIs
-    let totalHeld, avgAge;
-    if (usingMockData) {
-      totalHeld = orders.reduce((s, o) => s + o.held, 0);
-      avgAge = orders.length > 0 ? (orders.reduce((s, o) => s + o.hoursAgo, 0) / orders.length).toFixed(1) + 'h' : '0h';
-    } else {
-      totalHeld = orders.reduce((s, o) => s + (o.price_cents * (o.quantity - o.quantity_filled)), 0) / 100;
-      // Calculate average age from created_at
-      const now = Date.now();
-      const ages = orders.map(o => (now - new Date(o.created_at).getTime()) / 3600000);
-      avgAge = orders.length > 0 ? (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(1) + 'h' : '0h';
-    }
-
-    const kpiTotal = document.getElementById('kpi-total-open');
-    const kpiHeld = document.getElementById('kpi-held-balance');
-    const kpiAge = document.getElementById('kpi-avg-age');
-    if (kpiTotal) kpiTotal.textContent = totalOrders || orders.length;
-    if (kpiHeld) kpiHeld.textContent = '$' + totalHeld.toLocaleString(undefined, { minimumFractionDigits: 2 });
-    if (kpiAge) kpiAge.textContent = avgAge;
-
-    // Table
-    const tbody = document.getElementById('orders-body');
-    if (!tbody) return;
-
-    if (!orders || orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--admin-text-muted); padding:24px;">No open orders</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = orders.map((o, idx) => {
-      let orderId, user, asset, side, type, qty, price, held, created, status;
-      if (usingMockData) {
-        orderId = o.id; user = o.user; asset = o.asset; side = o.side; type = o.type;
-        qty = o.qty; price = o.price; held = o.held; created = o.created; status = o.status;
-      } else {
-        orderId = o.id.substring(0, 8);
-        user = o.user_email ? o.user_email.split('@')[0] : o.user_id.substring(0, 8);
-        asset = o.asset_name || o.asset_id.substring(0, 8);
-        side = o.side.toUpperCase();
-        type = o.order_type ? o.order_type.charAt(0).toUpperCase() + o.order_type.slice(1) : 'Limit';
-        qty = o.quantity;
-        price = (o.price_cents / 100).toFixed(2);
-        const remaining = o.quantity - o.quantity_filled;
-        held = ((o.price_cents * remaining) / 100).toFixed(2);
-        created = timeAgo(o.created_at);
-        status = o.status;
-      }
-      const sideClass = side === 'BUY' ? 'mp-side-buy' : 'mp-side-sell';
-      const statusBadge = status === 'partially_filled'
-        ? '<span class="admin-badge admin-badge--warning"><span class="admin-badge-dot"></span>Partial</span>'
-        : '<span class="admin-badge admin-badge--info"><span class="admin-badge-dot"></span>Open</span>';
-
-      return `
-        <tr data-order-idx="${idx}">
-          <td><code style="font-size:11px; padding:2px 6px; background:var(--admin-code-bg); border-radius:4px;">${orderId}</code></td>
-          <td><code style="font-size:11px; padding:2px 6px; background:var(--admin-code-bg); border-radius:4px;">${user}</code></td>
-          <td style="font-weight:600; color:var(--admin-text-primary);">${asset}</td>
-          <td><span class="${sideClass}">${side}</span></td>
-          <td><span class="admin-badge admin-badge--neutral">${type}</span></td>
-          <td style="text-align:right; font-variant-numeric:tabular-nums;">${typeof qty === 'number' ? qty.toLocaleString() : qty}</td>
-          <td style="text-align:right; font-variant-numeric:tabular-nums;">$${price}</td>
-          <td style="text-align:right;">
-            <span class="admin-badge admin-badge--warning" style="font-variant-numeric:tabular-nums;">
-              <span class="admin-badge-dot"></span>$${held}
-            </span>
-          </td>
-          <td style="font-size:12px; color:var(--admin-text-muted);">${created}</td>
-          <td>${statusBadge}</td>
-          <td style="text-align:center;">
-            <button class="admin-btn admin-btn--danger admin-btn--sm btn-cancel-order" data-idx="${idx}">Cancel Order</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    // Bind cancel buttons
-    document.querySelectorAll('.btn-cancel-order').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.idx);
-        openCancelModal(ordersData[idx], idx);
-      });
+  function formatMoney(cents) {
+    return '$' + (Number(cents || 0) / 100).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
   }
 
-  // ── Time Ago Helper ─────────────────────────────────────────────
+  function formatQuantity(value) {
+    return Number(value || 0).toLocaleString();
+  }
+
+  function shortId(value) {
+    return String(value || '').substring(0, 8);
+  }
+
+  function userLabel(order) {
+    if (order.user_email) return String(order.user_email).split('@')[0];
+    return shortId(order.user_id);
+  }
+
+  function sideLabel(order) {
+    return String(order.side || '').toUpperCase();
+  }
+
+  function typeLabel(order) {
+    const type = String(order.order_type || 'limit');
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+
+  function remainingQuantity(order) {
+    return Number(order.quantity || 0) - Number(order.quantity_filled || 0);
+  }
+
+  function heldCents(order) {
+    return Number(order.price_cents || 0) * remainingQuantity(order);
+  }
+
   function timeAgo(dateStr) {
-    const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+    const timestamp = new Date(dateStr).getTime();
+    if (!Number.isFinite(timestamp)) return '-';
+
+    const diff = Math.max(0, (Date.now() - timestamp) / 1000);
     if (diff < 60) return Math.floor(diff) + 's ago';
     if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
     if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
     return Math.floor(diff / 86400) + 'd ago';
   }
 
-  // ── Cancel Modal ────────────────────────────────────────────────
-  function openCancelModal(order, idx) {
-    const orderId = usingMockData ? order.id : order.id.substring(0, 8);
-    const asset = usingMockData ? order.asset : (order.asset_name || 'Asset');
-    const side = usingMockData ? order.side : order.side.toUpperCase();
-    const qty = usingMockData ? order.qty : order.quantity;
-    const price = usingMockData ? order.price.toFixed(2) : (order.price_cents / 100).toFixed(2);
-    const held = usingMockData ? order.held : ((order.price_cents * (order.quantity - order.quantity_filled)) / 100).toFixed(2);
+  function csrfToken() {
+    return document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith('csrf_token='))
+      ?.split('=')
+      .slice(1)
+      .join('=') || '';
+  }
+
+  function clearTable() {
+    const tbody = document.getElementById('orders-body');
+    if (tbody) tbody.replaceChildren();
+    return tbody;
+  }
+
+  function renderStateRow(message, tone) {
+    const tbody = clearTable();
+    if (!tbody) return;
+
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 11;
+    cell.style.textAlign = 'center';
+    cell.style.color = tone === 'error' ? 'var(--admin-danger)' : 'var(--admin-text-muted)';
+    cell.style.padding = '24px';
+    cell.textContent = message;
+    row.appendChild(cell);
+    tbody.appendChild(row);
+  }
+
+  function renderBadge(text, modifier) {
+    const badge = document.createElement('span');
+    badge.className = `admin-badge ${modifier}`;
+
+    const dot = document.createElement('span');
+    dot.className = 'admin-badge-dot';
+    badge.appendChild(dot);
+    badge.append(document.createTextNode(text));
+    return badge;
+  }
+
+  function appendTextCell(row, text, options = {}) {
+    const cell = document.createElement('td');
+    cell.textContent = text;
+    if (options.alignRight) cell.style.textAlign = 'right';
+    if (options.muted) {
+      cell.style.fontSize = '12px';
+      cell.style.color = 'var(--admin-text-muted)';
+    }
+    if (options.bold) {
+      cell.style.fontWeight = '600';
+      cell.style.color = 'var(--admin-text-primary)';
+    }
+    if (options.numeric) cell.style.fontVariantNumeric = 'tabular-nums';
+    row.appendChild(cell);
+    return cell;
+  }
+
+  function appendCodeCell(row, text) {
+    const cell = document.createElement('td');
+    const code = document.createElement('code');
+    code.style.fontSize = '11px';
+    code.style.padding = '2px 6px';
+    code.style.background = 'var(--admin-code-bg)';
+    code.style.borderRadius = '4px';
+    code.textContent = text;
+    cell.appendChild(code);
+    row.appendChild(cell);
+  }
+
+  function appendBadgeCell(row, badge, options = {}) {
+    const cell = document.createElement('td');
+    if (options.alignRight) cell.style.textAlign = 'right';
+    cell.appendChild(badge);
+    row.appendChild(cell);
+  }
+
+  function updateKpis(orders) {
+    const totalHeld = orders.reduce((sum, order) => sum + heldCents(order), 0);
+    const now = Date.now();
+    const ages = orders
+      .map((order) => (now - new Date(order.created_at).getTime()) / 3600000)
+      .filter(Number.isFinite);
+    const avgAge = ages.length
+      ? (ages.reduce((sum, age) => sum + age, 0) / ages.length).toFixed(1) + 'h'
+      : '0h';
+
+    setText('kpi-total-open', totalOrders.toLocaleString());
+    setText('kpi-held-balance', formatMoney(totalHeld));
+    setText('kpi-avg-age', avgAge);
+  }
+
+  function updatePagination() {
+    const info = document.getElementById('orders-page-info');
+    const prev = document.getElementById('orders-prev-page');
+    const next = document.getElementById('orders-next-page');
+    const pageCount = Math.max(totalPages, 1);
+
+    if (info) {
+      info.textContent = `${totalOrders.toLocaleString()} orders - page ${currentPage} of ${pageCount}`;
+    }
+    if (prev) prev.disabled = isLoading || currentPage <= 1;
+    if (next) next.disabled = isLoading || currentPage >= pageCount;
+  }
+
+  function renderOrders(orders) {
+    ordersData = Array.isArray(orders) ? orders : [];
+    updateKpis(ordersData);
+    updatePagination();
+
+    const tbody = clearTable();
+    if (!tbody) return;
+
+    if (ordersData.length === 0) {
+      renderStateRow('No open orders', 'empty');
+      return;
+    }
+
+    ordersData.forEach((order, idx) => {
+      const row = document.createElement('tr');
+      row.dataset.orderIdx = String(idx);
+      row.dataset.orderId = order.id;
+
+      appendCodeCell(row, shortId(order.id));
+      appendCodeCell(row, userLabel(order));
+      appendTextCell(row, order.asset_name || shortId(order.asset_id), { bold: true });
+
+      const side = sideLabel(order);
+      const sideCell = document.createElement('td');
+      const sideSpan = document.createElement('span');
+      sideSpan.className = side === 'BUY' ? 'mp-side-buy' : 'mp-side-sell';
+      sideSpan.textContent = side;
+      sideCell.appendChild(sideSpan);
+      row.appendChild(sideCell);
+
+      appendBadgeCell(row, renderBadge(typeLabel(order), 'admin-badge--neutral'));
+      appendTextCell(row, formatQuantity(order.quantity), { alignRight: true, numeric: true });
+      appendTextCell(row, formatMoney(order.price_cents), { alignRight: true, numeric: true });
+      appendBadgeCell(row, renderBadge(formatMoney(heldCents(order)), 'admin-badge--warning'), { alignRight: true });
+      appendTextCell(row, timeAgo(order.created_at), { muted: true });
+
+      const statusBadge = order.status === 'partially_filled'
+        ? renderBadge('Partial', 'admin-badge--warning')
+        : renderBadge('Open', 'admin-badge--info');
+      appendBadgeCell(row, statusBadge);
+
+      const actionCell = document.createElement('td');
+      actionCell.style.textAlign = 'center';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'admin-btn admin-btn--danger admin-btn--sm btn-cancel-order';
+      cancelBtn.textContent = 'Cancel Order';
+      cancelBtn.addEventListener('click', () => openCancelModal(order));
+      actionCell.appendChild(cancelBtn);
+      row.appendChild(actionCell);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  function buildCancelBody(order) {
+    const body = document.createElement('div');
+
+    const group = document.createElement('div');
+    group.className = 'admin-form-group';
+
+    const label = document.createElement('label');
+    label.className = 'admin-form-label';
+    label.setAttribute('for', 'cancel-reason');
+    label.textContent = 'Reason for Cancellation *';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'admin-textarea';
+    textarea.id = 'cancel-reason';
+    textarea.placeholder = 'Enter the legal reason for this cancellation...';
+    textarea.rows = 3;
+    textarea.style.minHeight = '80px';
+
+    group.append(label, textarea);
+    body.appendChild(group);
+
+    const warning = document.createElement('div');
+    warning.style.display = 'flex';
+    warning.style.alignItems = 'center';
+    warning.style.gap = '8px';
+    warning.style.padding = '10px 14px';
+    warning.style.background = 'var(--admin-danger-bg)';
+    warning.style.borderRadius = 'var(--admin-radius-sm)';
+    warning.style.marginTop = '8px';
+
+    const warningText = document.createElement('span');
+    warningText.style.color = 'var(--admin-danger)';
+    warningText.style.fontSize = '13px';
+    warningText.style.fontWeight = '500';
+    const heldText = sideLabel(order) === 'BUY'
+      ? `${formatMoney(heldCents(order))} from the user's wallet hold`
+      : `${formatQuantity(remainingQuantity(order))} held tokens`;
+    warningText.textContent = `This will release ${heldText}.`;
+    warning.appendChild(warningText);
+    body.appendChild(warning);
+
+    return body;
+  }
+
+  function openCancelModal(order) {
+    const orderId = shortId(order.id);
+    const asset = order.asset_name || 'Asset';
+    const side = sideLabel(order);
+    const qty = formatQuantity(order.quantity);
+    const price = formatMoney(order.price_cents);
 
     mpModal({
       title: 'Cancel Order',
-      subtitle: `Order ${orderId} — ${asset} (${side} ${qty} @ $${price})`,
-      bodyHTML: `
-        <div class="admin-form-group">
-          <label class="admin-form-label">Reason for Cancellation *</label>
-          <textarea class="admin-textarea" id="cancel-reason" placeholder="Enter the legal reason for this cancellation…" rows="3" style="min-height:80px;"></textarea>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--admin-danger-bg); border-radius:var(--admin-radius-sm); margin-top:8px;">
-          <span style="color:var(--admin-danger); font-size:13px; font-weight:500;">⚠️ This will release the held balance of $${held} back to the user's wallet.</span>
-        </div>
-      `,
+      subtitle: `Order ${orderId} - ${asset} (${side} ${qty} @ ${price})`,
+      bodyNode: buildCancelBody(order),
       confirmLabel: 'Cancel Order',
       confirmClass: 'admin-btn--danger',
       onConfirm: async (overlay) => {
         const reason = overlay.querySelector('#cancel-reason')?.value?.trim();
+        const confirmBtn = overlay.querySelector('.mp-modal-confirm');
         if (!reason) {
           mpToast('Please provide a cancellation reason', 'error');
-          return;
+          return false;
         }
 
-        if (usingMockData) {
-          ordersData.splice(idx, 1);
-          renderOrders(ordersData);
-          mpToast(`Order ${orderId} cancelled — "${reason}"`, 'success');
-          return;
-        }
-
-        // Real API call
         try {
-          const res = await fetch(`/api/admin/marketplace/orders/${order.id}`, {
+          if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Cancelling...';
+          }
+          const token = csrfToken();
+          const res = await fetch(`${API}/${encodeURIComponent(order.id)}`, {
             method: 'DELETE',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'X-CSRF-Token': token } : {}),
+            },
             body: JSON.stringify({ reason }),
           });
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || `HTTP ${res.status}`);
+            throw new Error(err.error || err.message || `HTTP ${res.status}`);
           }
-          mpToast(`Order ${orderId} cancelled — "${reason}"`, 'success');
-          loadOrders(); // Reload
+          mpToast(`Order ${orderId} cancelled`, 'success');
+          await loadOrders();
+          return true;
         } catch (err) {
           mpToast(`Failed to cancel: ${err.message}`, 'error');
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Cancel Order';
+          }
+          return false;
         }
       }
     });
   }
 
-  // ── Load Orders ─────────────────────────────────────────────────
   async function loadOrders() {
+    if (isLoading) return;
+    isLoading = true;
+    updatePagination();
+    renderStateRow('Loading orders...', 'empty');
+
     try {
       const res = await fetch(`${API}?page=${currentPage}&per_page=${PAGE_SIZE}`, { credentials: 'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || err.message || `HTTP ${res.status}`);
+      }
       const data = await res.json();
-      usingMockData = false;
-      totalOrders = data.total;
-      totalPages = data.total_pages || 1;
-      renderOrders(data.data);
+      totalOrders = Number(data.total || 0);
+      totalPages = Math.max(Number(data.total_pages || 0), 1);
+      if (currentPage > totalPages) currentPage = totalPages;
+      renderOrders(data.data || []);
     } catch (err) {
-      console.warn('[mp-orders] API unavailable, using mock data:', err);
-      usingMockData = true;
-      const mocks = generateMockOrders();
-      totalOrders = mocks.length;
+      console.warn('[mp-orders] Failed to load live order data:', err);
+      ordersData = [];
+      totalOrders = 0;
       totalPages = 1;
-      renderOrders(mocks);
+      setText('kpi-total-open', '-');
+      setText('kpi-held-balance', '-');
+      setText('kpi-avg-age', '-');
+      renderStateRow(`Could not load open orders: ${err.message}`, 'error');
+      mpToast('Could not load open orders', 'error');
+    } finally {
+      isLoading = false;
+      updatePagination();
     }
   }
 
-  document.addEventListener('DOMContentLoaded', loadOrders);
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('orders-prev-page')?.addEventListener('click', () => {
+      if (currentPage <= 1) return;
+      currentPage -= 1;
+      loadOrders();
+    });
+    document.getElementById('orders-next-page')?.addEventListener('click', () => {
+      if (currentPage >= totalPages) return;
+      currentPage += 1;
+      loadOrders();
+    });
+    loadOrders();
+  });
 })();

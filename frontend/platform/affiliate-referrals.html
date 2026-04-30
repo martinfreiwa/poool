@@ -29,37 +29,39 @@ include
 
         <div id="referrals-content" class="ds-hidden">
         
-          <div class="ds-card holo-card" style="padding: 0; overflow: hidden; margin-top: 24px;">
-            <div style="padding: 24px; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center;">
+          <div class="ds-card affiliate-referrals-card">
+            <div class="affiliate-referrals-toolbar">
               
               <!-- Tabs -->
-              <div class="page-tabs" style="border: none; margin: 0; padding: 0;">
-                 <a href="#all" class="page-tab active" onclick="switchReferralTab('all', this)">All Referrals</a>
-                 <a href="#holdback" class="page-tab" onclick="switchReferralTab('under_holdback', this)">Under Holdback</a>
-                 <a href="#payable" class="page-tab" onclick="switchReferralTab('payable', this)">Payable</a>
-                 <a href="#paid" class="page-tab" onclick="switchReferralTab('paid', this)">Completed</a>
+              <div class="page-tabs" role="tablist" aria-label="Referral status filters">
+                 <button type="button" class="page-tab active" role="tab" aria-selected="true" data-referral-filter="all">All Referrals</button>
+                 <button type="button" class="page-tab" role="tab" aria-selected="false" data-referral-filter="under_holdback">Under Holdback</button>
+                 <button type="button" class="page-tab" role="tab" aria-selected="false" data-referral-filter="payable">Payable</button>
+                 <button type="button" class="page-tab" role="tab" aria-selected="false" data-referral-filter="paid">Completed</button>
               </div>
 
               <!-- Filter / Search -->
-              <div style="display: flex; gap: 12px;">
-                <input type="text" id="referral-search" class="settings-input" placeholder="Search ID or Date..." onkeyup="filterReferrals()" style="width: 200px;" />
+              <div class="affiliate-referrals-search">
+                <label class="sr-only" for="referral-search">Search referrals by ID, email, or status</label>
+                <input type="search" id="referral-search" class="settings-input" placeholder="Search ID, email, or status" autocomplete="off" />
               </div>
 
             </div>
 
+            <div id="referrals-status" class="affiliate-referrals-status" role="status" aria-live="polite"></div>
+
             <!-- Table -->
-            <table class="ds-table" style="width: 100%; border-collapse: collapse;">
+            <table class="ds-table affiliate-referrals-table">
                <thead>
                  <tr>
-                   <th style="padding: 16px 24px; text-align: left; font-size: 12px; color: var(--table-header-color); text-transform: uppercase; font-weight: 600; border-bottom: 1px solid var(--table-border-color);">Status</th>
-                   <th style="padding: 16px 24px; text-align: left; font-size: 12px; color: var(--table-header-color); text-transform: uppercase; font-weight: 600; border-bottom: 1px solid var(--table-border-color);">Registration Date</th>
-                   <th style="padding: 16px 24px; text-align: left; font-size: 12px; color: var(--table-header-color); text-transform: uppercase; font-weight: 600; border-bottom: 1px solid var(--table-border-color);">Holdback Expiry</th>
-                   <th style="padding: 16px 24px; text-align: right; font-size: 12px; color: var(--table-header-color); text-transform: uppercase; font-weight: 600; border-bottom: 1px solid var(--table-border-color);">Commission</th>
+                   <th>Status</th>
+                   <th>Registration Date</th>
+                   <th>Holdback Expiry</th>
+                   <th class="affiliate-referrals-table__amount">Commission</th>
                  </tr>
                </thead>
                <tbody id="referrals-table-body">
-                 <!-- JS injeced rows -->
-                 <tr><td colspan="4" style="text-align: center; padding: 32px; color: var(--text-secondary);">No referral data available.</td></tr>
+                 <tr><td colspan="4" class="affiliate-referrals-empty">No referral data available.</td></tr>
                </tbody>
             </table>
           </div>
@@ -69,124 +71,6 @@ include
       </div>
     </main>
   </div>
-  
-  <style>
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    .page-tab {
-      display: inline-block;
-      text-decoration: none;
-      color: var(--text-secondary);
-      font-weight: 500;
-      margin-right: 24px;
-      padding-bottom: 8px;
-    }
-    .page-tab.active {
-      color: var(--page-title-color);
-      border-bottom: 2px solid var(--primary-color);
-    }
-  </style>
-
-  <script>
-    let allReferrals = [];
-    let currentFilter = 'all';
-
-    const formatCurrency = (cents) => '$' + (Math.floor(cents) / 100).toFixed(2);
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    };
-
-    function switchReferralTab(status, el) {
-      document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
-      el.classList.add('active');
-      currentFilter = status;
-      renderTable();
-    }
-
-    function filterReferrals() {
-        renderTable();
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('referrals-table-body');
-        const searchInput = document.getElementById('referral-search').value.toLowerCase();
-        
-        const filtered = allReferrals.filter(r => {
-            if (currentFilter !== 'all' && r.status !== currentFilter) return false;
-            
-            if (searchInput) {
-                const searchStr = `${r.referral_id || ''} ${r.email || ''} ${r.status || ''}`.toLowerCase();
-                if (!searchStr.includes(searchInput)) return false;
-            }
-            return true;
-        });
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 32px; color: var(--text-secondary);">No referral data available.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = filtered.map(r => `
-            <tr>
-              <td style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); font-weight: 500; text-transform: capitalize; color: ${
-                  r.status === 'paid' ? 'var(--success-color)' : 
-                  r.status === 'payable' ? '#F59E0B' : 'var(--text-secondary)'
-              };">
-                 ${r.status.replace('_', ' ')}
-                 ${r.email ? `<br><span style="font-size: 11px; color: var(--text-muted); text-transform: none;">${r.email}</span>` : ''}
-              </td>
-              <td style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">${formatDate(r.created_at)}</td>
-              <td style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">${r.status === 'under_holdback' ? formatDate(r.holdback_expires_at) : '-'}</td>
-              <td style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 500;">
-                 ${formatCurrency(r.amount_cents)}
-              </td>
-            </tr>
-        `).join('');
-    }
-
-    function exportReferralCSV() {
-        if (allReferrals.length === 0) return alert('No data to export.');
-        
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Referral ID,Status,Registered At,Holdback Expiry,Amount (USD),Email\n";
-
-        allReferrals.forEach(r => {
-            const row = [
-                r.referral_id,
-                r.status,
-                r.created_at,
-                r.holdback_expires_at || '',
-                (r.amount_cents / 100).toFixed(2),
-                r.email || ''
-            ];
-            csvContent += row.join(",") + "\n";
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `poool_referrals_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const res = await fetch('/api/affiliate/referrals');
-            if (res.ok) {
-                const data = await res.json();
-                allReferrals = data.data || [];
-                renderTable();
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            document.getElementById('referrals-loading').classList.add('ds-hidden');
-            document.getElementById('referrals-content').classList.remove('ds-hidden');
-        }
-    });
-  </script>
 
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>

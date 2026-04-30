@@ -7,13 +7,12 @@
   <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Detail | Admin | POOOL</title>
-  
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/csrf.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <style>
@@ -22,12 +21,14 @@
       grid-template-columns: 1fr 1fr;
       gap: 24px;
     }
+
     .profile-header {
       display: flex;
       align-items: center;
       gap: 16px;
       margin-bottom: 24px;
     }
+
     .avatar {
       width: 64px;
       height: 64px;
@@ -39,9 +40,174 @@
       font-weight: bold;
       color: #3538cd;
       font-size: 24px;
+      flex: 0 0 auto;
     }
+
+    .avatar-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 32px;
+      object-fit: cover;
+      flex: 0 0 auto;
+    }
+
+    .admin-user-detail-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .admin-user-detail-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .admin-user-detail-muted,
+    .admin-user-detail-ban,
+    .admin-user-detail-notes {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .admin-user-detail-muted,
+    .admin-user-detail-ban {
+      background: #fef3f2;
+      border: 1px solid #fee4e2;
+      color: #b42318;
+    }
+
+    .admin-user-detail-notes {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      color: #92400e;
+      white-space: pre-wrap;
+    }
+
+    .admin-user-detail-metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .admin-user-detail-metric {
+      border: 1px solid var(--admin-border-color);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .admin-user-detail-metric-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #101828;
+    }
+
+    .admin-user-detail-metric-label {
+      font-size: 12px;
+      color: #667085;
+      text-transform: uppercase;
+    }
+
+    .admin-user-detail-muted-label,
+    .admin-user-detail-ban-label,
+    .admin-user-detail-notes-label {
+      font-weight: 600;
+    }
+
+    .admin-user-detail-modal {
+      border: 0;
+      border-radius: 12px;
+      padding: 0;
+      width: min(520px, calc(100vw - 32px));
+      box-shadow: 0 20px 40px rgba(16, 24, 40, 0.18);
+    }
+
+    .admin-user-detail-modal::backdrop {
+      background: rgba(16, 24, 40, 0.45);
+    }
+
+    .admin-user-detail-modal-form {
+      padding: 24px;
+    }
+
+    .admin-user-detail-modal-title {
+      margin: 0 0 8px;
+      color: #101828;
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .admin-user-detail-modal-description {
+      margin: 0 0 20px;
+      color: #667085;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .admin-user-detail-modal-field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .admin-user-detail-modal-field label {
+      color: #344054;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .admin-user-detail-modal-field textarea,
+    .admin-user-detail-modal-field input {
+      width: 100%;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #101828;
+      font: inherit;
+    }
+
+    .admin-user-detail-modal-field textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .admin-user-detail-modal-status {
+      min-height: 20px;
+      margin: 0 0 16px;
+      color: #b42318;
+      font-size: 14px;
+    }
+
+    .admin-user-detail-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
     @media (max-width: 1024px) {
-      .grid-layout { grid-template-columns: 1fr; }
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-page-header {
+        align-items: flex-start !important;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .admin-user-detail-actions {
+        align-items: stretch;
+        width: 100%;
+      }
+
+      .admin-user-detail-actions-row {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
@@ -50,9 +216,7 @@
   <div class="admin-wrapper">
     {% include 'admin/components/sidebar.html' %}
 
-    <!-- ===== MAIN CONTENT ===== -->
     <main class="admin-main">
-      <!-- Top Bar -->
       <header class="admin-topbar">
         <div class="admin-topbar-left">
           <nav class="admin-breadcrumbs">
@@ -67,332 +231,563 @@
         </div>
       </header>
 
-      <!-- Page Content -->
       <div class="admin-content" id="user-detail-container">
         <div style="text-align:center; padding: 40px;">Loading...</div>
       </div>
     </main>
   </div>
 
+  <dialog class="admin-user-detail-modal" id="moderation-dialog" aria-labelledby="moderation-dialog-title">
+    <form class="admin-user-detail-modal-form" id="moderation-form" novalidate>
+      <h2 class="admin-user-detail-modal-title" id="moderation-dialog-title">Moderation action</h2>
+      <p class="admin-user-detail-modal-description" id="moderation-dialog-description"></p>
+
+      <div class="admin-user-detail-modal-field" id="moderation-text-field" hidden>
+        <label for="moderation-text-input" id="moderation-text-label">Reason</label>
+        <textarea id="moderation-text-input"></textarea>
+      </div>
+
+      <div class="admin-user-detail-modal-field" id="moderation-number-field" hidden>
+        <label for="moderation-number-input" id="moderation-number-label">Hours</label>
+        <input id="moderation-number-input" type="number" min="1" max="8760" step="1" />
+      </div>
+
+      <p class="admin-user-detail-modal-status" id="moderation-dialog-status" role="status" aria-live="polite"></p>
+
+      <div class="admin-user-detail-modal-actions">
+        <button class="admin-btn admin-btn--secondary" type="button" id="moderation-cancel-btn">Cancel</button>
+        <button class="admin-btn admin-btn--primary" type="submit" id="moderation-submit-btn">Submit</button>
+      </div>
+    </form>
+  </dialog>
+
   <script>
+    const detailContainer = document.getElementById('user-detail-container');
+    const moderationDialog = document.getElementById('moderation-dialog');
+    const moderationForm = document.getElementById('moderation-form');
+    const moderationTitle = document.getElementById('moderation-dialog-title');
+    const moderationDescription = document.getElementById('moderation-dialog-description');
+    const moderationTextField = document.getElementById('moderation-text-field');
+    const moderationTextLabel = document.getElementById('moderation-text-label');
+    const moderationTextInput = document.getElementById('moderation-text-input');
+    const moderationNumberField = document.getElementById('moderation-number-field');
+    const moderationNumberLabel = document.getElementById('moderation-number-label');
+    const moderationNumberInput = document.getElementById('moderation-number-input');
+    const moderationStatus = document.getElementById('moderation-dialog-status');
+    const moderationSubmitBtn = document.getElementById('moderation-submit-btn');
+    const moderationCancelBtn = document.getElementById('moderation-cancel-btn');
+    let currentAction = null;
+    let currentUserId = null;
+
     document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('id');
-        if (!userId) {
-            document.getElementById('user-detail-container').innerHTML = '<div style="padding:40px; color:red;">No user ID specified.</div>';
-            return;
+      const urlParams = new URLSearchParams(window.location.search);
+      currentUserId = urlParams.get('id');
+      if (!currentUserId) {
+        showMessage('No user ID specified.', true);
+        return;
+      }
+      loadUserDetail(currentUserId);
+    });
+
+    moderationCancelBtn.addEventListener('click', () => {
+      moderationDialog.close();
+    });
+
+    moderationDialog.addEventListener('close', () => {
+      currentAction = null;
+      moderationForm.reset();
+      setModalBusy(false);
+      moderationStatus.textContent = '';
+    });
+
+    moderationForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!currentAction) return;
+
+      const payload = currentAction.getPayload();
+      if (payload.error) {
+        moderationStatus.textContent = payload.error;
+        return;
+      }
+
+      setModalBusy(true);
+      moderationStatus.textContent = '';
+      try {
+        const response = await fetch(currentAction.endpoint, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+          credentials: 'same-origin',
+          body: JSON.stringify(payload.body)
+        });
+        if (!response.ok) {
+          moderationStatus.textContent = await getErrorMessage(response, currentAction.failureMessage);
+          setModalBusy(false);
+          return;
         }
-        loadUserDetail(userId);
+        moderationDialog.close();
+        await loadUserDetail(currentUserId);
+      } catch (error) {
+        console.error(error);
+        moderationStatus.textContent = 'Error connecting to server.';
+        setModalBusy(false);
+      }
     });
 
     async function loadUserDetail(userId) {
-        try {
-            const res = await fetch(`/api/admin/community/users/${userId}/detail`, { credentials: 'same-origin' });
-            if(res.ok) {
-                const data = await res.json();
-                renderDetail(userId, data);
-            } else {
-                document.getElementById('user-detail-container').innerHTML = '<div style="padding:40px; color:red;">User not found or network error.</div>';
-            }
-        } catch(e) {
-            console.error(e);
-            document.getElementById('user-detail-container').innerHTML = '<div style="padding:40px; color:red;">Error connecting to server.</div>';
+      showLoading();
+      try {
+        const response = await fetch(`/api/admin/community/users/${encodeURIComponent(userId)}/detail`, {
+          credentials: 'same-origin'
+        });
+        if (!response.ok) {
+          showMessage(await getErrorMessage(response, 'User not found or network error.'), true);
+          return;
         }
+        renderDetail(userId, await response.json());
+      } catch (error) {
+        console.error(error);
+        showMessage('Error connecting to server.', true);
+      }
     }
 
     function renderDetail(userId, data) {
-        const user = data.user || {};
-        const profile = data.profile || {};
-        const badges = data.badges || [];
-        const recentPosts = data.recent_posts || [];
-        const xp = data.xp_summary || { total_xp: 0, current_level: 1, current_level_name: 'Newcomer' };
+      const user = data.user || {};
+      const profile = data.profile || {};
+      const badges = Array.isArray(data.badges) ? data.badges : [];
+      const recentPosts = Array.isArray(data.recent_posts) ? data.recent_posts : [];
+      const xp = data.xp_summary || { total_xp: 0, current_level: 1, current_level_name: 'Newcomer' };
+      const displayName = profile.display_name || user.first_name || 'Anonymous User';
 
-        const displayName = profile.display_name || user.first_name || 'Anonymous User';
-        const initials = displayName.substring(0,2).toUpperCase();
-        
-        const avatarHtml = user.avatar_url 
-            ? `<img src="${user.avatar_url}" style="width:64px; height:64px; border-radius:32px; object-fit:cover;">`
-            : `<div class="avatar">${initials}</div>`;
+      const fragment = document.createDocumentFragment();
+      fragment.appendChild(buildHeader(userId, profile, displayName));
 
-        const banStatusHtml = profile.is_community_banned
-            ? `<div style="background:#FEF3F2; border:1px solid #FECDCA; padding:16px; border-radius:8px; margin-bottom:24px;">
-                 <div style="color:#B42318; font-weight:600; display:flex; align-items:center; gap:8px;">
-                   ⚠️ User is Currently Banned
-                 </div>
-                 <div style="color:#D92D20; font-size:14px; margin-top:8px;">Reason: ${profile.ban_reason || 'No reason provided'}</div>
-               </div>`
-            : '';
+      if (profile.mod_notes) {
+        fragment.appendChild(buildNotice('Mod Notes:', profile.mod_notes, 'admin-user-detail-notes'));
+      }
+      if (isFutureDate(profile.muted_until)) {
+        fragment.appendChild(buildNotice('Muted Until:', formatDate(profile.muted_until), 'admin-user-detail-muted'));
+      }
+      if (profile.is_community_banned) {
+        fragment.appendChild(buildNotice('User is Currently Banned:', profile.ban_reason || 'No reason provided', 'admin-user-detail-ban'));
+      }
 
-        let badgesHtml = badges.length === 0 ? '<p style="color:#667085;">No badges.</p>' : `
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                ${badges.map(b => `<span class="admin-badge" style="background:#f9fafb;" title="${b.description}">${b.icon} ${b.name}</span>`).join('')}
-            </div>
-        `;
+      const grid = createElement('div', { className: 'grid-layout', style: 'margin-top:24px;' });
+      const leftColumn = createElement('div', { style: 'display:flex; flex-direction: column; gap: 24px;' });
+      const rightColumn = createElement('div', { style: 'display:flex; flex-direction: column; gap: 24px;' });
 
-        let postsHtml = recentPosts.length === 0 ? '<p style="color:#667085;">No recent posts.</p>' : `
-            <table class="admin-table">
-                <thead><tr><th>Content</th><th>Type</th><th>Date</th></tr></thead>
-                <tbody>
-                    ${recentPosts.map(p => `
-                        <tr>
-                            <td style="max-width:200px; white-space:normal; font-size:13px;">
-                                <a href="/admin/community/post-detail.html?id=${p.id}" style="color:#3538cd; text-decoration:none;">${p.content}${p.content.length === 200 ? '...' : ''}</a>
-                                ${p.is_hidden ? '<span class="admin-badge" style="background:#FEF3F2; color:#B42318; margin-left:8px;">Hidden</span>' : ''}
-                            </td>
-                            <td><span class="admin-badge">${p.post_type}</span></td>
-                            <td><small>${new Date(p.created_at).toLocaleString()}</small></td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+      leftColumn.appendChild(buildProfileCard(user, profile, displayName, userId));
+      leftColumn.appendChild(buildXpCard(xp));
+      leftColumn.appendChild(buildBadgesCard(badges));
+      rightColumn.appendChild(buildRecentPostsCard(recentPosts));
+      grid.append(leftColumn, rightColumn);
+      fragment.appendChild(grid);
 
-        document.getElementById('user-detail-container').innerHTML = `
-            <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-                <div style="flex:1;">
-                  <h1 class="admin-page-title">${profile.display_name}</h1>
-                  <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${userId}</span></p>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:12px; align-items:flex-end;">
-                  <div style="display:flex; gap:12px;">
-                    <button class="admin-btn admin-btn--secondary" style="color:#d97706; border-color:#d97706;" onclick="warnUser('${userId}')">
-                      Send Warning
-                    </button>
-                    ${profile.muted_until && new Date(profile.muted_until) > new Date() 
-                        ? `<button class="admin-btn admin-btn--secondary" onclick="muteUser('${userId}', true)">Unmute</button>`
-                        : `<button class="admin-btn admin-btn--secondary" style="color:#d97706; border-color:#d97706;" onclick="muteUser('${userId}', false)">Mute User</button>`}
-                    
-                    <button class="admin-btn admin-btn--secondary" style="color:#667085; border-color:#667085;" onclick="toggleShadowban('${userId}', ${profile.is_shadowbanned})">
-                      ${profile.is_shadowbanned ? 'Un-Shadowban' : 'Shadowban'}
-                    </button>
-
-                    <button class="admin-btn admin-btn--secondary" style="color:#b42318; border-color:#b42318;" onclick="toggleBan('${userId}', ${profile.is_community_banned})">
-                      ${profile.is_community_banned ? 'Unban User' : 'Ban User'}
-                    </button>
-                  </div>
-                  <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="editModNotes('${userId}', \`${(profile.mod_notes || '').replace(/`/g, '\\`')}\`)">
-                    📝 Edit Mod Notes
-                  </button>
-                </div>
-              </div>
-
-              <!-- Mod Notes Display if they exist -->
-              ${profile.mod_notes ? `
-              <div style="margin-top: 16px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; font-size: 13px;">
-                <b style="color: #b45309;">Mod Notes:</b> <span style="color: #92400e; white-space: pre-wrap;">${profile.mod_notes}</span>
-              </div>
-              ` : ''}
-
-            ${profile.muted_until && new Date(profile.muted_until) > new Date() ? `
-              <div style="margin-top: 16px; padding: 12px; background: #fef3f2; border: 1px solid #fee4e2; border-radius: 6px; font-size: 13px;">
-                <b style="color: #b42318;">Muted Until:</b> <span style="color: #b42318;">${new Date(profile.muted_until).toLocaleString()}</span>
-              </div>
-            ` : ''}
-
-            ${banStatusHtml}
-
-            <div class="grid-layout" style="margin-top:24px;">
-                <!-- Left Column -->
-                <div style="display:flex; flex-direction: column; gap: 24px;">
-                    <div class="admin-card">
-                        <div class="admin-card-body">
-                            <div class="profile-header">
-                                ${avatarHtml}
-                                <div>
-                                    <div style="font-size:18px; font-weight:600; color:#101828;">${displayName}</div>
-                                    <div style="font-size:14px; color:#667085;">${user.email || 'No email associated'}</div>
-                                    <div style="font-size:12px; color:#667085; font-family:monospace; margin-top:4px;">Core ID: ${user.id}</div>
-                                </div>
-                            </div>
-                            
-                            <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:16px;">
-                                <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:8px;">Bio</div>
-                                <div style="font-size:14px; color:#344054;">${profile.bio || '<i>No bio provided</i>'}</div>
-                            </div>
-                            
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
-                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.post_count || 0}</div>
-                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Posts</div>
-                                </div>
-                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
-                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.follower_count || 0}</div>
-                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Followers</div>
-                                </div>
-                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
-                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.warning_count || 0}</div>
-                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Warnings</div>
-                                </div>
-                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
-                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.login_streak || 0}</div>
-                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Login Streak</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h2 class="admin-card-title">Level & XP</h2>
-                        </div>
-                        <div class="admin-card-body">
-                            <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-                                <div style="font-size:32px; font-weight:700; color:#1570EF;">Lvl ${xp.current_level}</div>
-                                <div>
-                                    <div style="font-weight:600; color:#101828;">${xp.current_level_name}</div>
-                                    <div style="font-size:14px; color:#667085;">${xp.total_xp} Total XP</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h2 class="admin-card-title">Badges (${badges.length})</h2>
-                        </div>
-                        <div class="admin-card-body">
-                            ${badgesHtml}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column -->
-                <div style="display:flex; flex-direction: column; gap: 24px;">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h2 class="admin-card-title">Recent Posts</h2>
-                        </div>
-                        <div class="admin-card-body admin-card-body--flush">
-                            ${postsHtml}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+      detailContainer.replaceChildren(fragment);
     }
 
-    async function warnUser(userId) {
-        const reason = prompt("Enter reason for warning this user (they will receive a notification):");
-        if (!reason) return;
+    function csrfHeaders(extraHeaders = {}) {
+      const token = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : '';
+      return token ? { ...extraHeaders, 'X-CSRF-Token': token } : extraHeaders;
+    }
 
-        try {
-            const res = await fetch(`/api/admin/community/users/${userId}/warn`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify({ reason })
-            });
-            if (res.ok) {
-                alert('Warning sent successfully.');
-                loadUserDetail(userId);
-            } else {
-                alert('Failed to send warning.');
-            }
-        } catch (e) {
-            alert("Error connecting to server");
+    function buildHeader(userId, profile, displayName) {
+      const header = createElement('div', {
+        className: 'admin-page-header',
+        style: 'display: flex; justify-content: space-between; align-items: flex-end;'
+      });
+
+      const titleWrap = createElement('div', { style: 'flex:1;' });
+      titleWrap.appendChild(createElement('h1', { className: 'admin-page-title' }, displayName));
+      const subtitle = createElement('p', { className: 'admin-page-subtitle' }, 'ID: ');
+      subtitle.appendChild(createElement('span', { style: 'font-family:monospace;' }, userId));
+      titleWrap.appendChild(subtitle);
+
+      const actions = createElement('div', { className: 'admin-user-detail-actions' });
+      const actionRow = createElement('div', { className: 'admin-user-detail-actions-row' });
+      actionRow.appendChild(buildActionButton('Send Warning', 'warning', () => openWarningDialog(userId)));
+      actionRow.appendChild(isFutureDate(profile.muted_until)
+        ? buildActionButton('Unmute', null, () => openUnmuteDialog(userId))
+        : buildActionButton('Mute User', 'warning', () => openMuteDialog(userId)));
+      actionRow.appendChild(buildActionButton(
+        profile.is_shadowbanned ? 'Un-shadowban' : 'Shadowban',
+        'neutral',
+        () => openShadowbanDialog(userId, Boolean(profile.is_shadowbanned))
+      ));
+      actionRow.appendChild(buildActionButton(
+        profile.is_community_banned ? 'Unban User' : 'Ban User',
+        'danger',
+        () => openBanDialog(userId, Boolean(profile.is_community_banned))
+      ));
+
+      actions.appendChild(actionRow);
+      actions.appendChild(buildActionButton('Edit Mod Notes', null, () => openModNotesDialog(userId, profile.mod_notes || ''), true));
+      header.append(titleWrap, actions);
+      return header;
+    }
+
+    function buildProfileCard(user, profile, displayName, userId) {
+      const card = buildCard();
+      const body = createElement('div', { className: 'admin-card-body' });
+      const profileHeader = createElement('div', { className: 'profile-header' });
+      profileHeader.appendChild(buildAvatar(user.avatar_url, displayName));
+      const identity = createElement('div');
+      identity.appendChild(createElement('div', { style: 'font-size:18px; font-weight:600; color:#101828;' }, displayName));
+      identity.appendChild(createElement('div', { style: 'font-size:14px; color:#667085;' }, user.email || 'No email associated'));
+      identity.appendChild(createElement('div', {
+        style: 'font-size:12px; color:#667085; font-family:monospace; margin-top:4px;'
+      }, `Core ID: ${user.id || userId}`));
+      profileHeader.appendChild(identity);
+      body.appendChild(profileHeader);
+
+      const bioBox = createElement('div', { style: 'background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:16px;' });
+      bioBox.appendChild(createElement('div', {
+        style: 'font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:8px;'
+      }, 'Bio'));
+      const bioText = createElement('div', { style: 'font-size:14px; color:#344054;' });
+      if (profile.bio) {
+        bioText.textContent = profile.bio;
+      } else {
+        bioText.appendChild(createElement('i', {}, 'No bio provided'));
+      }
+      bioBox.appendChild(bioText);
+      body.appendChild(bioBox);
+
+      const metrics = createElement('div', { className: 'admin-user-detail-metric-grid' });
+      metrics.append(
+        buildMetric('Posts', profile.post_count || 0),
+        buildMetric('Followers', profile.follower_count || 0),
+        buildMetric('Warnings', profile.warning_count || 0),
+        buildMetric('Login Streak', profile.login_streak || 0)
+      );
+      body.appendChild(metrics);
+      card.appendChild(body);
+      return card;
+    }
+
+    function buildXpCard(xp) {
+      const card = buildCard('Level & XP');
+      const body = createElement('div', { className: 'admin-card-body' });
+      const wrap = createElement('div', { style: 'display:flex; align-items:center; gap:16px; margin-bottom:16px;' });
+      wrap.appendChild(createElement('div', { style: 'font-size:32px; font-weight:700; color:#1570EF;' }, `Lvl ${xp.current_level || 1}`));
+      const copy = createElement('div');
+      copy.appendChild(createElement('div', { style: 'font-weight:600; color:#101828;' }, xp.current_level_name || 'Newcomer'));
+      copy.appendChild(createElement('div', { style: 'font-size:14px; color:#667085;' }, `${xp.total_xp || 0} Total XP`));
+      wrap.appendChild(copy);
+      body.appendChild(wrap);
+      card.appendChild(body);
+      return card;
+    }
+
+    function buildBadgesCard(badges) {
+      const card = buildCard(`Badges (${badges.length})`);
+      const body = createElement('div', { className: 'admin-card-body' });
+      if (badges.length === 0) {
+        body.appendChild(createElement('p', { style: 'color:#667085;' }, 'No badges.'));
+      } else {
+        const list = createElement('div', { style: 'display:flex; flex-wrap:wrap; gap:8px;' });
+        badges.forEach((badge) => {
+          const item = createElement('span', { className: 'admin-badge', style: 'background:#f9fafb;' });
+          if (badge.description) item.setAttribute('title', String(badge.description));
+          item.textContent = [badge.icon, badge.name].filter(Boolean).join(' ');
+          list.appendChild(item);
+        });
+        body.appendChild(list);
+      }
+      card.appendChild(body);
+      return card;
+    }
+
+    function buildRecentPostsCard(posts) {
+      const card = buildCard('Recent Posts');
+      const body = createElement('div', { className: 'admin-card-body admin-card-body--flush' });
+      if (posts.length === 0) {
+        body.appendChild(createElement('p', { style: 'color:#667085;' }, 'No recent posts.'));
+      } else {
+        const table = createElement('table', { className: 'admin-table' });
+        const thead = createElement('thead');
+        const headRow = createElement('tr');
+        ['Content', 'Type', 'Date'].forEach((label) => headRow.appendChild(createElement('th', {}, label)));
+        thead.appendChild(headRow);
+        const tbody = createElement('tbody');
+        posts.forEach((post) => tbody.appendChild(buildPostRow(post)));
+        table.append(thead, tbody);
+        body.appendChild(table);
+      }
+      card.appendChild(body);
+      return card;
+    }
+
+    function buildPostRow(post) {
+      const row = createElement('tr');
+      const contentCell = createElement('td', { style: 'max-width:200px; white-space:normal; font-size:13px;' });
+      const link = createElement('a', { style: 'color:#3538cd; text-decoration:none;' });
+      link.href = `/admin/community/post-detail.html?id=${encodeURIComponent(String(post.id || ''))}`;
+      const content = String(post.content || '');
+      link.textContent = content + (content.length === 200 ? '...' : '');
+      contentCell.appendChild(link);
+      if (post.is_hidden) {
+        contentCell.appendChild(createElement('span', {
+          className: 'admin-badge',
+          style: 'background:#FEF3F2; color:#B42318; margin-left:8px;'
+        }, 'Hidden'));
+      }
+      row.appendChild(contentCell);
+
+      const typeCell = createElement('td');
+      typeCell.appendChild(createElement('span', { className: 'admin-badge' }, post.post_type || 'post'));
+      row.appendChild(typeCell);
+
+      const dateCell = createElement('td');
+      dateCell.appendChild(createElement('small', {}, formatDate(post.created_at)));
+      row.appendChild(dateCell);
+      return row;
+    }
+
+    function buildAvatar(avatarUrl, displayName) {
+      const safeAvatarUrl = getSafeHttpUrl(avatarUrl);
+      if (safeAvatarUrl) {
+        const image = createElement('img', { className: 'avatar-img' });
+        image.src = safeAvatarUrl;
+        image.alt = `${displayName} avatar`;
+        image.referrerPolicy = 'no-referrer';
+        return image;
+      }
+      return createElement('div', { className: 'avatar', 'aria-hidden': 'true' }, displayName.substring(0, 2).toUpperCase());
+    }
+
+    function buildMetric(label, value) {
+      const metric = createElement('div', { className: 'admin-user-detail-metric' });
+      metric.appendChild(createElement('div', { className: 'admin-user-detail-metric-value' }, String(value)));
+      metric.appendChild(createElement('div', { className: 'admin-user-detail-metric-label' }, label));
+      return metric;
+    }
+
+    function buildNotice(label, value, className) {
+      const notice = createElement('div', { className });
+      notice.appendChild(createElement('span', { className: `${className}-label` }, label));
+      notice.appendChild(document.createTextNode(' '));
+      notice.appendChild(document.createTextNode(value));
+      return notice;
+    }
+
+    function buildCard(title) {
+      const card = createElement('div', { className: 'admin-card' });
+      if (title) {
+        const header = createElement('div', { className: 'admin-card-header' });
+        header.appendChild(createElement('h2', { className: 'admin-card-title' }, title));
+        card.appendChild(header);
+      }
+      return card;
+    }
+
+    function buildActionButton(label, tone, onClick, small = false) {
+      const button = createElement('button', {
+        className: `admin-btn admin-btn--secondary${small ? ' admin-btn--sm' : ''}`,
+        type: 'button'
+      }, label);
+      if (tone === 'warning') {
+        button.style.color = '#d97706';
+        button.style.borderColor = '#d97706';
+      } else if (tone === 'danger') {
+        button.style.color = '#b42318';
+        button.style.borderColor = '#b42318';
+      } else if (tone === 'neutral') {
+        button.style.color = '#667085';
+        button.style.borderColor = '#667085';
+      }
+      button.addEventListener('click', onClick);
+      return button;
+    }
+
+    function openWarningDialog(userId) {
+      openModerationDialog({
+        title: 'Send warning',
+        description: 'The user will receive an in-app notification with this reason.',
+        submitLabel: 'Send warning',
+        endpoint: `/api/admin/community/users/${encodeURIComponent(userId)}/warn`,
+        text: { label: 'Warning reason', required: true, maxLength: 1000 },
+        failureMessage: 'Failed to send warning.',
+        getPayload: () => {
+          const reason = moderationTextInput.value.trim();
+          if (!reason) return { error: 'Warning reason is required.' };
+          if (reason.length > 1000) return { error: 'Warning reason must be 1000 characters or fewer.' };
+          return { body: { reason } };
         }
+      });
     }
 
-    async function editModNotes(userId, existingNotes) {
-        const newNotes = prompt("Enter moderator notes for this user (only visible to admins):", existingNotes);
-        if (newNotes === null) return;
-
-        try {
-            const res = await fetch(`/api/admin/community/users/${userId}/mod-notes`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify({ notes: newNotes })
-            });
-            if (res.ok) {
-                loadUserDetail(userId);
-            } else {
-                alert('Failed to update notes.');
-            }
-        } catch (e) {
-            alert("Error connecting to server");
+    function openMuteDialog(userId) {
+      openModerationDialog({
+        title: 'Mute user',
+        description: 'Set how long this user should be unable to participate in community actions.',
+        submitLabel: 'Mute user',
+        endpoint: `/api/admin/community/users/${encodeURIComponent(userId)}/mute`,
+        number: { label: 'Mute duration in hours', required: true },
+        failureMessage: 'Failed to update mute status.',
+        getPayload: () => {
+          const hours = Number.parseInt(moderationNumberInput.value, 10);
+          if (!Number.isInteger(hours) || hours <= 0 || hours > 8760) {
+            return { error: 'Mute duration must be between 1 and 8760 hours.' };
+          }
+          return { body: { hours } };
         }
+      });
     }
 
-    async function muteUser(userId, isMuted) {
-        let hours = null;
-        if (!isMuted) {
-            const input = prompt("Enter number of hours to mute this user:");
-            if (input === null) return;
-            hours = parseInt(input, 10);
-            if (isNaN(hours) || hours <= 0) {
-                alert("Invalid number of hours.");
-                return;
-            }
+    function openUnmuteDialog(userId) {
+      openModerationDialog({
+        title: 'Unmute user',
+        description: 'Confirm that this user should be allowed to participate again.',
+        submitLabel: 'Unmute user',
+        endpoint: `/api/admin/community/users/${encodeURIComponent(userId)}/mute`,
+        failureMessage: 'Failed to update mute status.',
+        getPayload: () => ({ body: { hours: null } })
+      });
+    }
+
+    function openBanDialog(userId, isBanned) {
+      openModerationDialog({
+        title: isBanned ? 'Unban user' : 'Ban user',
+        description: isBanned
+          ? 'Confirm that this user should regain access to the community.'
+          : 'The user will be blocked from community participation until unbanned.',
+        submitLabel: isBanned ? 'Unban user' : 'Ban user',
+        endpoint: `/api/admin/community/users/${encodeURIComponent(userId)}/ban`,
+        text: isBanned ? null : { label: 'Ban reason', required: true, maxLength: 1000 },
+        failureMessage: isBanned ? 'Failed to unban user.' : 'Failed to ban user.',
+        getPayload: () => {
+          const reason = isBanned ? '' : moderationTextInput.value.trim();
+          if (!isBanned && !reason) return { error: 'Ban reason is required.' };
+          if (reason.length > 1000) return { error: 'Ban reason must be 1000 characters or fewer.' };
+          return { body: { is_banned: !isBanned, reason } };
+        }
+      });
+    }
+
+    function openShadowbanDialog(userId, isShadowbanned) {
+      openModerationDialog({
+        title: isShadowbanned ? 'Remove shadowban' : 'Shadowban user',
+        description: isShadowbanned
+          ? 'Confirm that this user should no longer be shadowbanned.'
+          : 'Confirm that this user should be hidden from other community members.',
+        submitLabel: isShadowbanned ? 'Remove shadowban' : 'Shadowban user',
+        endpoint: `/api/admin/community/users/${encodeURIComponent(userId)}/shadowban`,
+        failureMessage: isShadowbanned ? 'Failed to remove shadowban.' : 'Failed to shadowban user.',
+        getPayload: () => ({ body: { is_shadowbanned: !isShadowbanned } })
+      });
+    }
+
+    function openModNotesDialog(userId, existingNotes) {
+      openModerationDialog({
+        title: 'Edit moderator notes',
+        description: 'These notes are only visible to admins.',
+        submitLabel: 'Save notes',
+        endpoint: `/api/admin/community/users/${encodeURIComponent(userId)}/mod-notes`,
+        text: { label: 'Moderator notes', required: false, maxLength: 5000, value: existingNotes },
+        failureMessage: 'Failed to update notes.',
+        getPayload: () => {
+          const notes = moderationTextInput.value;
+          if (notes.length > 5000) return { error: 'Moderator notes must be 5000 characters or fewer.' };
+          return { body: { notes } };
+        }
+      });
+    }
+
+    function openModerationDialog(config) {
+      currentAction = config;
+      moderationTitle.textContent = config.title;
+      moderationDescription.textContent = config.description;
+      moderationSubmitBtn.textContent = config.submitLabel;
+      moderationStatus.textContent = '';
+
+      configureTextField(config.text);
+      configureNumberField(config.number);
+
+      if (moderationDialog.open) moderationDialog.close();
+      moderationDialog.showModal();
+      const firstField = config.text ? moderationTextInput : config.number ? moderationNumberInput : moderationSubmitBtn;
+      firstField.focus();
+    }
+
+    function configureTextField(config) {
+      moderationTextField.hidden = !config;
+      moderationTextInput.required = Boolean(config && config.required);
+      moderationTextInput.value = config && config.value ? config.value : '';
+      moderationTextInput.maxLength = config && config.maxLength ? config.maxLength : -1;
+      if (config) moderationTextLabel.textContent = config.label;
+    }
+
+    function configureNumberField(config) {
+      moderationNumberField.hidden = !config;
+      moderationNumberInput.required = Boolean(config && config.required);
+      moderationNumberInput.value = '';
+      if (config) moderationNumberLabel.textContent = config.label;
+    }
+
+    function setModalBusy(isBusy) {
+      moderationSubmitBtn.disabled = isBusy;
+      moderationCancelBtn.disabled = isBusy;
+      moderationSubmitBtn.textContent = isBusy ? 'Saving...' : (currentAction ? currentAction.submitLabel : 'Submit');
+    }
+
+    async function getErrorMessage(response, fallback) {
+      try {
+        const payload = await response.json();
+        return payload.error || payload.message || fallback;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function showLoading() {
+      detailContainer.replaceChildren(createElement('div', {
+        style: 'text-align:center; padding: 40px;'
+      }, 'Loading...'));
+    }
+
+    function showMessage(message, isError) {
+      detailContainer.replaceChildren(createElement('div', {
+        style: `padding:40px; color:${isError ? '#b42318' : '#667085'};`
+      }, message));
+    }
+
+    function createElement(tag, options = {}, text) {
+      const element = document.createElement(tag);
+      Object.entries(options).forEach(([key, value]) => {
+        if (key === 'className') {
+          element.className = value;
+        } else if (key === 'style') {
+          element.style.cssText = value;
         } else {
-            if(!confirm("Are you sure you want to unmute this user?")) return;
+          element.setAttribute(key, value);
         }
-
-        try {
-            const res = await fetch(`/api/admin/community/users/${userId}/mute`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify({ hours })
-            });
-            if (res.ok) {
-                loadUserDetail(userId);
-            } else {
-                alert('Failed to update mute status.');
-            }
-        } catch (e) {
-            alert("Error connecting to server");
-        }
+      });
+      if (text !== undefined) element.textContent = text;
+      return element;
     }
 
-    async function toggleBan(userId, isBanned) {
-        let reason = "";
-        let actionStr = isBanned ? "unban" : "ban";
-        
-        if (!isBanned) {
-            reason = prompt("Enter a reason for banning this user:");
-            if(reason === null) return;
-        } else {
-            if(!confirm("Are you sure you want to unban this user?")) return;
-        }
-
-        try {
-            const res = await fetch(`/api/admin/community/users/${userId}/ban`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify({ is_banned: !isBanned, reason: reason })
-            });
-            if (res.ok) {
-                loadUserDetail(userId);
-            } else {
-                alert(`Failed to ${actionStr} user.`);
-            }
-        } catch(e) {
-            alert("Error connecting to server");
-        }
+    function getSafeHttpUrl(value) {
+      if (!value) return null;
+      try {
+        const url = new URL(String(value), window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:') return url.href;
+      } catch (_) {
+        return null;
+      }
+      return null;
     }
 
-    async function toggleShadowban(userId, isShadowbanned) {
-        let actionStr = isShadowbanned ? "un-shadowban" : "shadowban";
-        if(!confirm(`Are you sure you want to ${actionStr} this user?`)) return;
+    function isFutureDate(value) {
+      if (!value) return false;
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) && date > new Date();
+    }
 
-        try {
-            const res = await fetch(`/api/admin/community/users/${userId}/shadowban`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify({ is_shadowbanned: !isShadowbanned })
-            });
-            if (res.ok) {
-                loadUserDetail(userId);
-            } else {
-                alert(`Failed to ${actionStr} user.`);
-            }
-        } catch(e) {
-            alert("Error connecting to server");
-        }
+    function formatDate(value) {
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date.toLocaleString() : 'Unknown';
     }
   </script>
 </body>
+
 </html>

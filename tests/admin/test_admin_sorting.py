@@ -81,7 +81,8 @@ def test_deposits_sorting():
         "data-sort=\"user_name\"",
         "data-sort=\"amount_cents\"",
         "data-sort=\"currency\"",
-        "data-sort=\"payment_provider\"",
+        "data-sort=\"provider\"",
+        "data-sort=\"external_ref_id\"",
         "data-sort=\"status\"",
         "data-sort=\"created_at\""
     ])

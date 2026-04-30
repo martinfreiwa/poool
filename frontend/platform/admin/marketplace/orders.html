@@ -92,9 +92,18 @@
                 </tr>
               </thead>
               <tbody id="orders-body">
-                <!-- Filled by JS -->
+                <tr>
+                  <td colspan="11" style="text-align:center; color:var(--admin-text-muted); padding:24px;">Loading orders...</td>
+                </tr>
               </tbody>
             </table>
+            <div class="admin-table-footer" id="orders-pagination" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-top:1px solid var(--admin-border);">
+              <span id="orders-page-info" style="font-size:13px; color:var(--admin-text-muted);">Page 1 of 1</span>
+              <div style="display:flex; gap:8px;">
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-prev-page" type="button">Previous</button>
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-next-page" type="button">Next</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

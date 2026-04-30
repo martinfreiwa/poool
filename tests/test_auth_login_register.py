@@ -21,6 +21,7 @@ import time
 import uuid
 
 import psycopg2
+import pytest
 import requests
 
 # ─── Configuration ───────────────────────────────────────────────
@@ -125,11 +126,21 @@ def htmx_headers(session, current_url=None):
         "HX-Request": "true",
         "HX-Current-URL": current_url or f"{BASE_URL}/auth/login",
         "X-CSRF-Token": get_cookie_value(session, "csrf_token") or "",
+        "X-Forwarded-For": f"127.0.0.{uuid.uuid4().int % 200 + 10}",
     }
 
 
 def db_connect():
     return psycopg2.connect(DB_DSN)
+
+
+@pytest.fixture(scope="module")
+def r():
+    """Shared result recorder for pytest collection of this script-style suite."""
+    results = Results()
+    yield results
+    cleanup_test_user(results)
+    assert results.failed == 0, results.errors
 
 
 # ─── 1. Login Page Rendering ────────────────────────────────────
@@ -399,8 +410,8 @@ def test_register_happy_path(r: Results):
     hx_redirect = resp.headers.get("HX-Redirect")
     if hx_redirect:
         r.ok(f"HX-Redirect header present: {hx_redirect}")
-        if "/marketplace" in hx_redirect:
-            r.ok("Redirected to /marketplace after signup")
+        if "/auth/verify-email" in hx_redirect:
+            r.ok("Redirected to email verification after signup")
         else:
             r.info(f"Redirect target: {hx_redirect}")
     else:
@@ -675,19 +686,44 @@ def test_logout(r: Results):
 
     r.ok("Logged in successfully for logout test")
 
+    # GET logout is a non-mutating compatibility page; the actual session
+    # invalidation must happen via CSRF-protected POST.
+    get_resp = s.get(f"{BASE_URL}/auth/logout", allow_redirects=False, timeout=REQUEST_TIMEOUT)
+    if get_resp.status_code == 200 and 'method="post" action="/auth/logout"' in get_resp.text:
+        r.ok("GET /auth/logout renders POST interstitial")
+    else:
+        r.fail(
+            "GET /auth/logout did not render POST interstitial",
+            f"{get_resp.status_code}",
+        )
+
     # Hit logout
-    resp = s.get(f"{BASE_URL}/auth/logout", allow_redirects=False, timeout=REQUEST_TIMEOUT)
+    headers = htmx_headers(s, current_url=f"{BASE_URL}/auth/logout")
+    resp = s.post(
+        f"{BASE_URL}/auth/logout",
+        headers=headers,
+        allow_redirects=False,
+        timeout=REQUEST_TIMEOUT,
+    )
     if resp.status_code in (302, 303):
-        r.ok(f"GET /auth/logout redirects ({resp.status_code})")
+        r.ok(f"POST /auth/logout redirects ({resp.status_code})")
         loc = resp.headers.get("Location", "")
         if "login" in loc:
             r.ok(f"Redirected to login page: {loc}")
         else:
             r.info(f"Redirect target: {loc}")
-    elif resp.status_code == 200:
-        r.ok("GET /auth/logout returns 200")
     else:
-        r.warn(f"GET /auth/logout returned {resp.status_code}")
+        r.fail(f"POST /auth/logout returned {resp.status_code}")
+
+    logout_cookies = resp.headers.get("Set-Cookie", "")
+    if "poool_session=;" in logout_cookies and "Path=/" in logout_cookies:
+        r.ok("Logout expires poool_session at Path=/")
+    else:
+        r.fail("Logout Set-Cookie missing poool_session Path=/ expiry", logout_cookies)
+    if "HttpOnly" in logout_cookies and "SameSite=Lax" in logout_cookies:
+        r.ok("Logout session expiry preserves HttpOnly and SameSite=Lax")
+    else:
+        r.fail("Logout Set-Cookie missing session security attributes", logout_cookies)
 
     # After logout, protected routes should redirect again
     me_resp = s.get(f"{BASE_URL}/api/me", timeout=REQUEST_TIMEOUT)

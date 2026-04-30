@@ -16,11 +16,14 @@
 {% set display_category = 'Platform Update' %}
 {% set icon_content = '<circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />' %}
 
-{% if p.category == 'new_commodities' %}
+{% if p.category == 'platform_update' %}
+    {% set icon_class = 'ann-icon--platform' %}
+    {% set display_category = 'Platform Update' %}
+{% elif p.category == 'new_commodity' %}
     {% set icon_class = 'ann-icon--commodity' %}
     {% set display_category = 'New Commodity' %}
     {% set icon_content = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />' %}
-{% elif p.category == 'dividends' %}
+{% elif p.category == 'dividend' %}
     {% set icon_class = 'ann-icon--dividend' %}
     {% set display_category = 'Dividend Update' %}
     {% set icon_content = '<line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />' %}
@@ -28,6 +31,10 @@
     {% set icon_class = 'ann-icon--market' %}
     {% set display_category = 'Market News' %}
     {% set icon_content = '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />' %}
+{% elif p.category == 'farm_update' %}
+    {% set icon_class = 'ann-icon--farm' %}
+    {% set display_category = 'Farm Update' %}
+    {% set icon_content = '<path d="M12 2v20" /><path d="M2 12h20" /><path d="m4.93 4.93 14.14 14.14" /><path d="m19.07 4.93-14.14 14.14" />' %}
 {% endif %}
 
 <div class="ann-card {% if p.is_pinned %}ann-card--pinned{% endif %}">
@@ -57,7 +64,7 @@
     </div>
 
     <div class="ann-footer">
-        <span class="ann-read-more" style="cursor:pointer;" onclick="const feedBtn = document.querySelector('[data-tab=community-feed-tab]'); if(feedBtn) feedBtn.click();">View in Feed →</span>
+        <button type="button" class="ann-read-more" data-community-ann-read-more>View in Feed →</button>
         <span class="ann-reactions">🔥 {{ p.reaction_count }} · 💬 {{ p.comment_count }}</span>
     </div>
 </div>

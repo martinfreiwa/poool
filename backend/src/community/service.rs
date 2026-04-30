@@ -224,13 +224,23 @@ pub async fn create_announcement(
     Ok(post_id)
 }
 
-/// Toggle a reaction on a post. Returns true if added, false if removed.
+pub struct ToggleReactionOutcome {
+    pub added: bool,
+    pub reaction_count: i32,
+}
+
+/// Toggle a reaction on a post.
 pub async fn toggle_reaction(
     pool: &PgPool,
     post_id: Uuid,
     user_id: Uuid,
     reaction_type: String,
-) -> Result<bool, AppError> {
+) -> Result<ToggleReactionOutcome, AppError> {
+    const ALLOWED_REACTIONS: &[&str] = &["fire", "insightful", "clap", "green"];
+    if !ALLOWED_REACTIONS.contains(&reaction_type.as_str()) {
+        return Err(AppError::BadRequest("Invalid reaction type.".to_string()));
+    }
+
     let mut tx = pool.begin().await?;
 
     // Check if reaction already exists (with advisory lock via FOR UPDATE)
@@ -265,6 +275,13 @@ pub async fn toggle_reaction(
         true
     };
 
+    let reaction_count =
+        sqlx::query_scalar::<_, i32>("SELECT reaction_count FROM posts WHERE id = $1")
+            .bind(post_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
+
     tx.commit().await?;
 
     if added {
@@ -290,7 +307,10 @@ pub async fn toggle_reaction(
         }
     }
 
-    Ok(added)
+    Ok(ToggleReactionOutcome {
+        added,
+        reaction_count,
+    })
 }
 
 /// Create a comment on a post
@@ -301,6 +321,8 @@ pub async fn create_comment(
     content: String,
     content_sanitized: String,
 ) -> Result<Uuid, AppError> {
+    let mut tx = pool.begin().await?;
+
     let comment_id = sqlx::query_scalar::<_, Uuid>(
         r#"
         INSERT INTO comments (post_id, user_id, content, content_sanitized)
@@ -312,36 +334,31 @@ pub async fn create_comment(
     .bind(user_id)
     .bind(&content)
     .bind(&content_sanitized)
-    .fetch_one(pool)
+    .fetch_one(&mut *tx)
     .await?;
 
-    // Increment post comment_count (since M1 doesn't have a DB trigger for comments yet, we do it in code,
-    // though the Masterplan might add a trigger later).
-    sqlx::query("UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1")
-        .bind(post_id)
-        .execute(pool)
-        .await?;
+    let owner_id = sqlx::query_scalar::<_, Uuid>(
+        "UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1 RETURNING user_id",
+    )
+    .bind(post_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
 
-    // Find owner of the post and notify
-    let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
-        .bind(post_id)
-        .fetch_optional(pool)
-        .await?;
+    tx.commit().await?;
 
-    if let Some(target_id) = owner_id {
-        let notif_content = format!("Someone commented on your post.");
-        let link = format!("/community/feed?post={}", post_id);
-        let _ = crate::community::notifications::notify_user(
-            pool,
-            target_id,
-            Some(user_id),
-            "comment_reply",
-            Some(post_id),
-            &notif_content,
-            Some(&link),
-        )
-        .await;
-    }
+    let notif_content = "Someone commented on your post.";
+    let link = format!("/community/feed?post={}", post_id);
+    let _ = crate::community::notifications::notify_user(
+        pool,
+        owner_id,
+        Some(user_id),
+        "comment_reply",
+        Some(post_id),
+        notif_content,
+        Some(&link),
+    )
+    .await;
 
     Ok(comment_id)
 }
@@ -509,18 +526,18 @@ pub async fn create_content_report(
         r#"
         INSERT INTO content_reports (post_id, reporter_id, reason)
         VALUES ($1, $2, $3)
-        ON CONFLICT (post_id, reporter_id) DO NOTHING
+        ON CONFLICT (post_id, reporter_id) DO UPDATE
+        SET updated_at = content_reports.updated_at
         RETURNING id
         "#,
     )
     .bind(post_id)
     .bind(reporter_id)
     .bind(&reason)
-    .fetch_optional(pool)
+    .fetch_one(pool)
     .await?;
 
-    // If it was already reported, just return a dummy UUID (or the actual one if we fetched it, but ON CONFLICT DO NOTHING returns nothing)
-    Ok(report_id.unwrap_or_else(Uuid::new_v4))
+    Ok(report_id)
 }
 
 /// Edit a user post (must be within 15 minutes of creation)

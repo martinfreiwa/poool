@@ -1078,6 +1078,34 @@
     margin-bottom: 20px !important;
   }
 
+  #commodities-body .filter-bar-container {
+    display: block !important;
+  }
+
+  #commodities-body .filter-controls {
+    display: flex !important;
+  }
+
+  #commodities-body .filter-dropdowns {
+    display: none !important;
+  }
+
+  #commodities-body #filter-bar-search {
+    display: flex !important;
+  }
+
+  #commodities-body #filter-bar-more-filters {
+    display: inline-flex !important;
+  }
+
+  #commodities-body #commodities-extra-filters {
+    left: 0 !important;
+    right: 0 !important;
+    min-width: 0 !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 420px !important;
+  }
+
   /* Adjust page header */
   .page-header {
     position: relative !important;

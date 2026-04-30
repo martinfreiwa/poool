@@ -13,7 +13,7 @@ Backend Routes: `backend/src/admin/mod.rs`, `backend/src/admin/rewards.rs`
 
 ## Summary
 
-The Affiliate Finance page is wired to real admin APIs and the payout backend uses integer cents, server-side authorization, row locks, a database transaction, wallet ledger entries, and audit logging. It is not ready to mark completed because the payout action renders user profile data into an inline JavaScript handler, and the payout transaction can update a broader set of payable commissions than the rows it locked and summed.
+The Affiliate Finance page is wired to real admin APIs and the payout backend uses integer cents, server-side authorization, row locks, a database transaction, wallet ledger entries, and audit logging. The 2026-04-28 fix pass closed the documented code issues: payout actions no longer embed profile data in inline JavaScript, the page route now requires `affiliates.manage`, pending rows expose tax-document readiness, modal keyboard semantics are wired, and batch payout updates now target only the exact locked commission IDs. Runtime authenticated payout E2E still needs to be executed against a seeded backend.
 
 ---
 
@@ -239,3 +239,33 @@ Update or replace the affiliate payout E2E tests before relying on them for rele
 `needs_recheck`
 
 Reason: The page is wired to real backend functionality, but high-risk frontend injection surface and payout transaction scoping issues must be fixed and verified before completion.
+
+---
+
+## Fix Pass: 2026-04-28
+
+Status: fixed, needs authenticated runtime recheck
+
+### Fixed
+
+| Issue | Severity | Files Changed | Verification |
+|------|----------|---------------|--------------|
+| Payout row action embeds profile data into inline JavaScript (`PAGE-ISSUE-0034`) | High | `frontend/platform/admin/js/admin-affiliate-finance.js`, `tests/admin/test_affiliate_route_contract_static.py` | `node --check frontend/platform/admin/js/admin-affiliate-finance.js`; `python3 -m pytest tests/admin/test_affiliate_route_contract_static.py -q` |
+| Payout can mark unsummed payable commissions as paid (`PAGE-ISSUE-0035`) | High | `backend/src/admin/rewards.rs`, `tests/admin/test_affiliate_route_contract_static.py` | `cargo check`; static regression asserts `WHERE id = ANY($2)` and affected-row validation. |
+| Finance board hides tax-document payout gate (`PAGE-ISSUE-0036`) | Medium | `backend/src/admin/rewards.rs`, `frontend/platform/admin/js/admin-affiliate-finance.js`, `frontend/platform/admin/affiliate-finance.html` | Static regression asserts API tax-readiness fields and disabled tax-blocked rows. |
+| Payout modal lacks dialog keyboard semantics (`PAGE-ISSUE-0037`) | Low | `frontend/platform/admin/affiliate-finance.html`, `frontend/platform/admin/js/admin-affiliate-finance.js` | Static regression asserts `role=dialog`, `aria-modal`, Escape close, Tab focus trap, backdrop close, and focus restore. |
+| Affiliate payout E2E tests are stale (`PAGE-ISSUE-0038`) | Medium | `tests/test_e2e_affiliate_full_funnel.py` | Test fixture updated for tax document gate, `cash` wallet, current treasury lookup, payout batch, and wallet ledger assertions. Runtime E2E still pending. |
+| Affiliate finance page lacks page-level permission gate (`PAGE-ISSUE-0368`) | High | `backend/src/admin/pages.rs`, `tests/admin/test_affiliate_route_contract_static.py` | Static regression asserts `/admin/affiliate-finance` and `.html` route aliases require `affiliates.manage`. |
+| Affiliate finance notification action is unwired (`PAGE-ISSUE-0369`) | Low | `frontend/platform/admin/js/admin-affiliate-finance.js`, `tests/admin/test_affiliate_route_contract_static.py` | Static regression asserts the page notification button routes to `/admin/notifications`. |
+
+### Tests Run
+
+| Command/Test | Result | Notes |
+|--------------|--------|-------|
+| `node --check frontend/platform/admin/js/admin-affiliate-finance.js` | Pass | Verifies changed page script syntax. |
+| `python3 -m pytest tests/admin/test_affiliate_route_contract_static.py tests/admin/test_affiliate_dashboard_static.py -q` | Pass | 20 static regression checks for affiliate finance and dashboard payout workflow contracts. |
+| `CARGO_BUILD_JOBS=1 CARGO_TARGET_DIR=/tmp/poool-target-affiliate-dashboard cargo check` | Pass | Backend compiles with payout scoping, request reconciliation, tax-readiness API fields, and affiliate settings fix. |
+
+### Remaining Follow-Up
+
+1. Run the authenticated payout UI/API/DB E2E against a seeded local backend to verify exact cents, CSRF, permissions, audit logs, tax gate, request closure, and concurrency behavior in runtime.

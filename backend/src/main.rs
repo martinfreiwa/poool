@@ -223,6 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Spawn background tasks
     tokio::spawn(email::run_email_scheduler(pool.clone()));
+    tokio::spawn(email::run_transactional_email_outbox_worker(pool.clone()));
     tokio::spawn(support::sla::monitor_sla_breaches(pool.clone()));
 
     if let Some(c_pool) = &state.community_db {
@@ -788,7 +789,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── Platform Router (login, dashboard, API) ──────────────────────
     let platform_router = Router::new()
         .nest("/auth", auth::routes::router(state.clone()))
-        .route("/logout", get(auth::routes::logout))
+        .route(
+            "/logout",
+            get(auth::routes::logout_page).post(auth::routes::logout),
+        )
         // ── Domain Routers (each module owns its routes) ────────────────
         .merge(assets::router())
         .merge(kyc::router())
@@ -2536,11 +2540,9 @@ async fn community_feed_list_htmx(
     jar: CookieJar,
     State(state): State<AppState>,
     axum::extract::Query(query): axum::extract::Query<crate::community::routes::FeedQuery>,
-) -> impl IntoResponse {
+) -> Result<axum::response::Response, crate::error::AppError> {
     let user = crate::auth::middleware::get_current_user(&jar, &state.db).await;
-    let posts = crate::community::routes::get_feed_data(&state, &query, user.as_ref())
-        .await
-        .unwrap_or_default();
+    let posts = crate::community::routes::get_feed_data(&state, &query, user.as_ref()).await?;
 
     #[derive(serde::Serialize)]
     struct Context {
@@ -2551,7 +2553,7 @@ async fn community_feed_list_htmx(
 
     let current_feed_mode = query.feed_mode.clone().unwrap_or_else(|| "all".to_string());
 
-    common::routes_helper::serve_protected_with_context(
+    Ok(common::routes_helper::serve_protected_with_context(
         jar,
         &state,
         "partials/community_post_list.html",
@@ -2561,8 +2563,7 @@ async fn community_feed_list_htmx(
             base_url: state.config.base_url.clone(),
         },
     )
-    .await
-    .into_response()
+    .await)
 }
 
 /// GET /community/partials/announcements/list — Serves the populated list of announcements natively via MiniJinja
@@ -2570,24 +2571,44 @@ async fn community_announcements_list_htmx(
     jar: CookieJar,
     State(state): State<AppState>,
     axum::extract::Query(query): axum::extract::Query<crate::community::routes::FeedQuery>,
-) -> impl IntoResponse {
-    let posts = crate::community::service::get_announcements(&state.db, query.category.clone(), 50)
-        .await
-        .unwrap_or_default();
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let category = query.category.and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    });
+
+    if let Some(category) = category.as_deref() {
+        if !matches!(
+            category,
+            "new_commodity" | "dividend" | "platform_update" | "market_news" | "farm_update"
+        ) {
+            return Err(crate::error::AppError::BadRequest(
+                "Invalid announcement category.".to_string(),
+            ));
+        }
+    }
+
+    let community_pool = state.community_db.as_ref().ok_or_else(|| {
+        crate::error::AppError::ServiceUnavailable("Community database is offline".to_string())
+    })?;
+    let posts = crate::community::service::get_announcements(community_pool, category, 50).await?;
 
     #[derive(serde::Serialize)]
     struct Context {
         posts: Vec<crate::community::models::AnnouncementDisplay>,
     }
 
-    common::routes_helper::serve_protected_with_context(
+    Ok(common::routes_helper::serve_protected_with_context(
         jar,
         &state,
         "partials/community_announcements_list.html",
         Context { posts },
     )
-    .await
-    .into_response()
+    .await)
 }
 
 /// GET /community — Community demo page (protected).
@@ -2600,43 +2621,67 @@ async fn page_community_post(
     Path(id): Path<uuid::Uuid>,
     jar: CookieJar,
     State(state): State<AppState>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
     #[derive(sqlx::FromRow)]
     struct PostOgData {
         content: String,
-        image_urls: Option<serde_json::Value>,
-        display_name: Option<String>,
-        avatar_url: Option<String>,
+        image_urls: Option<Vec<String>>,
+        user_id: uuid::Uuid,
     }
 
-    let post_record = sqlx::query_as::<_, PostOgData>(
-        r#"
-        SELECT
-            posts.content,
-            posts.image_urls,
-            up.display_name,
-            u.avatar_url
-        FROM posts
-        LEFT JOIN user_profiles up ON up.user_id = posts.user_id
-        LEFT JOIN users u ON u.id = posts.user_id
-        WHERE posts.id = $1
-        "#,
-    )
-    .bind(id)
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten();
+    #[derive(sqlx::FromRow)]
+    struct AuthorOgData {
+        display_name: Option<String>,
+    }
+
+    let current_user = auth::middleware::get_current_user(&jar, &state.db).await;
+    let post_record = if let Some(c_pool) = state.community_db.as_ref() {
+        sqlx::query_as::<_, PostOgData>(
+            r#"
+            SELECT p.content, p.image_urls, p.user_id
+            FROM posts p
+            JOIN community_profiles cp ON p.user_id = cp.user_id
+            WHERE p.id = $1
+              AND p.is_hidden = false
+              AND (cp.is_shadowbanned = false OR p.user_id = $2)
+            "#,
+        )
+        .bind(id)
+        .bind(current_user.as_ref().map(|u| u.id))
+        .fetch_optional(c_pool)
+        .await
+        .ok()
+        .flatten()
+    } else {
+        None
+    };
 
     let mut context = serde_json::Map::new();
+    let post_found = post_record.is_some();
     if let Some(p) = post_record {
-        let content_snippet = if p.content.len() > 150 {
-            format!("{}...", &p.content[..147])
+        let content_snippet = if p.content.chars().count() > 150 {
+            let snippet: String = p.content.chars().take(147).collect();
+            format!("{}...", snippet)
         } else {
             p.content.clone()
         };
 
-        let author = p.display_name.unwrap_or_else(|| "User".to_string());
+        let author = sqlx::query_as::<_, AuthorOgData>(
+            r#"
+            SELECT up.display_name
+            FROM users u
+            LEFT JOIN user_profiles up ON up.user_id = u.id
+            WHERE u.id = $1
+            "#,
+        )
+        .bind(p.user_id)
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|a| a.display_name)
+        .unwrap_or_else(|| "Community Member".to_string());
+
         let og_title = format!("Post by {}", author);
         context.insert("og_title".to_string(), serde_json::Value::String(og_title));
         context.insert(
@@ -2644,15 +2689,12 @@ async fn page_community_post(
             serde_json::Value::String(content_snippet),
         );
 
-        // Ensure image_urls is an array then extract the first string
         if let Some(imgs) = p.image_urls {
-            if let Some(arr) = imgs.as_array() {
-                if let Some(serde_json::Value::String(s)) = arr.first() {
-                    context.insert(
-                        "og_image".to_string(),
-                        serde_json::Value::String(s.to_string()),
-                    );
-                }
+            if let Some(s) = imgs.first() {
+                context.insert(
+                    "og_image".to_string(),
+                    serde_json::Value::String(crate::storage::service::rewrite_gcs_url(s)),
+                );
             }
         }
 
@@ -2664,9 +2706,24 @@ async fn page_community_post(
         "ssr_post_id".to_string(),
         serde_json::Value::String(id.to_string()),
     );
+    context.insert(
+        "ssr_post_found".to_string(),
+        serde_json::Value::Bool(post_found),
+    );
 
     // Serve via public with context, which will include user if logged in, but won't force login for crawlers
-    common::routes_helper::serve_public_with_context(jar, &state, "community.html", context).await
+    let response =
+        common::routes_helper::serve_public_with_context(jar, &state, "community.html", context)
+            .await
+            .into_response();
+
+    if post_found {
+        response
+    } else {
+        let (mut parts, body) = response.into_parts();
+        parts.status = axum::http::StatusCode::NOT_FOUND;
+        axum::response::Response::from_parts(parts, body)
+    }
 }
 
 /// GET /marketplace-trading-v2 — V2 Marketplace trading page without charts (protected).

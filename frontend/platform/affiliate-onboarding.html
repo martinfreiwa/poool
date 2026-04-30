@@ -139,14 +139,21 @@
               <p class="wizard-kyc-info">You must complete the standard platform identity verification to receive commission payouts.</p>
 
               <!-- KYC status is checked dynamically via JS against /api/kyc/status -->
-              <div id="kyc-status-display" class="wizard-kyc-status">
+              <div id="kyc-status-display" class="wizard-kyc-status" aria-live="polite">
+                <div id="kyc-loading" class="wizard-kyc-loading">
+                  <span class="wizard-kyc-label">Checking identity status...</span>
+                </div>
                 <div id="kyc-verified" class="wizard-kyc-verified" style="display: none;">
                   <img src="/static/images/icons/check-verified-02.svg" class="wizard-kyc-icon wizard-kyc-icon--green" alt="" />
                   <span class="wizard-kyc-label wizard-kyc-label--green">Identity Verified</span>
                 </div>
-                <div id="kyc-pending" class="wizard-kyc-pending">
-                  <span class="wizard-kyc-label wizard-kyc-label--red">Identity Verification Required</span>
+                <div id="kyc-pending" class="wizard-kyc-pending" style="display: none;">
+                  <span class="wizard-kyc-label wizard-kyc-label--red" id="kyc-pending-label">Identity Verification Required</span>
                   <a href="/kyc" class="ds-btn ds-btn--outline wizard-kyc-btn">Start KYC</a>
+                </div>
+                <div id="kyc-error" class="wizard-kyc-error" style="display: none;">
+                  <span class="wizard-kyc-label wizard-kyc-label--red">Could not load identity status.</span>
+                  <button type="button" class="ds-btn ds-btn--outline wizard-kyc-btn" id="kyc-retry-btn">Retry</button>
                 </div>
               </div>
 
@@ -194,26 +201,26 @@
             </div>
 
             <!-- Policy Tabs -->
-            <div class="legal-tabs">
-              <button type="button" class="legal-tab active" data-target="tab-terms" onclick="switchLegalTab(this)">
+            <div class="legal-tabs" role="tablist" aria-label="Affiliate legal documents">
+              <button type="button" class="legal-tab active" id="legal-tab-terms" role="tab" aria-selected="true" aria-controls="tab-terms" tabindex="0" data-target="tab-terms" onclick="switchLegalTab(this)">
                 Terms &amp; Conditions
               </button>
-              <button type="button" class="legal-tab" data-target="tab-conduct" onclick="switchLegalTab(this)">
+              <button type="button" class="legal-tab" id="legal-tab-conduct" role="tab" aria-selected="false" aria-controls="tab-conduct" tabindex="-1" data-target="tab-conduct" onclick="switchLegalTab(this)">
                 Code of Conduct
               </button>
-              <button type="button" class="legal-tab" data-target="tab-payout" onclick="switchLegalTab(this)">
+              <button type="button" class="legal-tab" id="legal-tab-payout" role="tab" aria-selected="false" aria-controls="tab-payout" tabindex="-1" data-target="tab-payout" onclick="switchLegalTab(this)">
                 Payout Policy
               </button>
-              <button type="button" class="legal-tab" data-target="tab-materials" onclick="switchLegalTab(this)">
+              <button type="button" class="legal-tab" id="legal-tab-materials" role="tab" aria-selected="false" aria-controls="tab-materials" tabindex="-1" data-target="tab-materials" onclick="switchLegalTab(this)">
                 Marketing
               </button>
-              <button type="button" class="legal-tab" data-target="tab-privacy" onclick="switchLegalTab(this)">
+              <button type="button" class="legal-tab" id="legal-tab-privacy" role="tab" aria-selected="false" aria-controls="tab-privacy" tabindex="-1" data-target="tab-privacy" onclick="switchLegalTab(this)">
                 Privacy
               </button>
             </div>
 
             <!-- Tab 1: Terms & Conditions -->
-            <div id="tab-terms" class="wizard-legal-box legal-tab-content active">
+            <div id="tab-terms" class="wizard-legal-box legal-tab-content active" role="tabpanel" aria-labelledby="legal-tab-terms" tabindex="0">
               <h4>Affiliate Terms &amp; Conditions</h4>
 
               <div class="legal-section">
@@ -250,7 +257,7 @@
             </div>
 
             <!-- Tab 2: Code of Conduct -->
-            <div id="tab-conduct" class="wizard-legal-box legal-tab-content" style="display:none;">
+            <div id="tab-conduct" class="wizard-legal-box legal-tab-content" role="tabpanel" aria-labelledby="legal-tab-conduct" tabindex="0" style="display:none;" hidden>
               <h4>Affiliate Code of Conduct</h4>
 
               <div class="legal-section">
@@ -286,7 +293,7 @@
             </div>
 
             <!-- Tab 3: Referral & Payout Policy -->
-            <div id="tab-payout" class="wizard-legal-box legal-tab-content" style="display:none;">
+            <div id="tab-payout" class="wizard-legal-box legal-tab-content" role="tabpanel" aria-labelledby="legal-tab-payout" tabindex="0" style="display:none;" hidden>
               <h4>Qualified Referral &amp; Payout Policy</h4>
 
               <div class="legal-section">
@@ -321,7 +328,7 @@
             </div>
 
             <!-- Tab 4: Marketing Materials Policy -->
-            <div id="tab-materials" class="wizard-legal-box legal-tab-content" style="display:none;">
+            <div id="tab-materials" class="wizard-legal-box legal-tab-content" role="tabpanel" aria-labelledby="legal-tab-materials" tabindex="0" style="display:none;" hidden>
               <h4>Approved Marketing Materials Policy</h4>
 
               <div class="legal-section">
@@ -352,7 +359,7 @@
             </div>
 
             <!-- Tab 5: Privacy Notice -->
-            <div id="tab-privacy" class="wizard-legal-box legal-tab-content" style="display:none;">
+            <div id="tab-privacy" class="wizard-legal-box legal-tab-content" role="tabpanel" aria-labelledby="legal-tab-privacy" tabindex="0" style="display:none;" hidden>
               <h4>Affiliate Privacy Notice</h4>
 
               <div class="legal-section">

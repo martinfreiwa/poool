@@ -8,8 +8,6 @@
     <link rel="stylesheet" href="/static/css/fonts.css">
     <link rel="stylesheet" href="/static/css/admin.css">
 
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
     <!-- Cytoscape or D3 placeholder for Visualizer -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 
@@ -42,12 +40,40 @@
         }
         .fraud-toolbar {
             display: flex;
+            flex-wrap: wrap;
             gap: 12px;
             padding: 16px;
             background: rgba(255, 255, 255, 0.03);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             position: relative;
             z-index: 10;
+        }
+        .fraud-status {
+            margin-left: auto;
+            align-self: center;
+            color: var(--text-tertiary);
+            font-size: 13px;
+            min-height: 18px;
+        }
+        .fraud-status.is-error {
+            color: #EF4444;
+        }
+        .fraud-results {
+            margin-top: 16px;
+            display: grid;
+            gap: 8px;
+        }
+        .fraud-result {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .fraud-result strong {
+            color: #fff;
+            display: block;
+            margin-bottom: 4px;
         }
     </style>
 </head>
@@ -64,89 +90,137 @@
 
             <div class="fraud-visualizer-container">
                 <div class="fraud-toolbar">
-                    <button class="ds-btn ds-btn--outline ds-btn--sm" onclick="buildGraph('circular')">Scan Circular Rings</button>
-                    <button class="ds-btn ds-btn--outline ds-btn--sm" onclick="buildGraph('ip_overlap')">Scan IP Overlaps</button>
-                    <button class="ds-btn ds-btn--danger ds-btn--sm" style="margin-left:auto;">Freeze Node</button>
+                    <button id="scan-circular" type="button" class="ds-btn ds-btn--outline ds-btn--sm" data-scan-type="circular">Scan Circular Rings</button>
+                    <button id="scan-ip-overlap" type="button" class="ds-btn ds-btn--outline ds-btn--sm" data-scan-type="ip_overlap">Scan IP Overlaps</button>
+                    <span id="fraud-status" class="fraud-status" role="status" aria-live="polite">Ready</span>
                 </div>
-                <div id="cy"></div>
+                <div id="cy" aria-label="Affiliate fraud graph"></div>
             </div>
+            <div id="fraud-results" class="fraud-results" aria-live="polite"></div>
             </div>
         </main>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            window.cy = cytoscape({
-                container: document.getElementById('cy'),
-                elements: [],
-                style: [
-                    {
-                        selector: 'node',
-                        style: {
-                            'background-color': '#1E58FB',
-                            'label': 'data(label)',
-                            'color': '#fff',
-                            'text-valign': 'bottom',
-                            'text-halign': 'center',
-                            'text-margin-y': 8,
-                            'font-size': '12px'
+        const statusEl = document.getElementById('fraud-status');
+        const resultsEl = document.getElementById('fraud-results');
+        const scanButtons = document.querySelectorAll('[data-scan-type]');
+
+        function setStatus(message, isError = false) {
+            statusEl.textContent = message;
+            statusEl.classList.toggle('is-error', isError);
+        }
+
+        function renderFindings(flags) {
+            resultsEl.replaceChildren();
+            if (!flags.length) {
+                const empty = document.createElement('div');
+                empty.className = 'fraud-result';
+                empty.textContent = 'No fraud patterns detected for this scan type.';
+                resultsEl.appendChild(empty);
+                return;
+            }
+
+            flags.forEach((flag) => {
+                const item = document.createElement('div');
+                item.className = 'fraud-result';
+                const title = document.createElement('strong');
+                title.textContent = flag.type === 'ip_overlap' ? 'IP overlap' : 'Circular referral ring';
+                const description = document.createElement('span');
+                const parties = flag.type === 'ip_overlap'
+                    ? `${(flag.affiliate_emails || []).join(', ')} shared ${flag.ip_address || 'an IP address'}`
+                    : `${flag.affiliate_a_email || 'Affiliate A'} and ${flag.affiliate_b_email || 'Affiliate B'}`;
+                description.textContent = `${parties}. ${flag.description || ''}`;
+                item.append(title, description);
+                resultsEl.appendChild(item);
+            });
+        }
+
+        function initGraph() {
+            if (!window.cytoscape) return null;
+            return cytoscape({
+                    container: document.getElementById('cy'),
+                    elements: [],
+                    style: [
+                        {
+                            selector: 'node',
+                            style: {
+                                'background-color': '#1E58FB',
+                                'label': 'data(label)',
+                                'color': '#fff',
+                                'text-valign': 'bottom',
+                                'text-halign': 'center',
+                                'text-margin-y': 8,
+                                'font-size': '12px'
+                            }
+                        },
+                        {
+                            selector: 'edge',
+                            style: {
+                                'width': 2,
+                                'line-color': 'rgba(255, 255, 255, 0.2)',
+                                'target-arrow-color': 'rgba(255, 255, 255, 0.2)',
+                                'target-arrow-shape': 'triangle',
+                                'curve-style': 'bezier',
+                                'label': 'data(label)',
+                                'color': '#A4A7AE',
+                                'font-size': '10px',
+                                'text-rotation': 'autorotate'
+                            }
+                        },
+                        {
+                            selector: 'edge[label*="RING"]',
+                            style: {
+                                'line-color': '#EF4444',
+                                'target-arrow-color': '#EF4444'
+                            }
+                        },
+                        {
+                            selector: 'edge[label*="Overlap"]',
+                            style: {
+                                'line-color': '#F59E0B',
+                                'target-arrow-color': '#F59E0B'
+                            }
                         }
-                    },
-                    {
-                        selector: 'edge',
-                        style: {
-                            'width': 2,
-                            'line-color': 'rgba(255, 255, 255, 0.2)',
-                            'target-arrow-color': 'rgba(255, 255, 255, 0.2)',
-                            'target-arrow-shape': 'triangle',
-                            'curve-style': 'bezier',
-                            'label': 'data(label)',
-                            'color': '#A4A7AE',
-                            'font-size': '10px',
-                            'text-rotation': 'autorotate'
-                        }
-                    },
-                    {
-                        selector: 'edge[label*="RING"]',
-                        style: {
-                            'line-color': '#EF4444',
-                            'target-arrow-color': '#EF4444'
-                        }
-                    },
-                    {
-                        selector: 'edge[label*="Overlap"]',
-                        style: {
-                            'line-color': '#F59E0B',
-                            'target-arrow-color': '#F59E0B'
-                        }
+                    ],
+                    layout: {
+                        name: 'circle',
+                        padding: 50
                     }
-                ],
-                layout: {
-                    name: 'circle',
-                    padding: 50
+                });
+        }
+
+        async function buildGraph(type) {
+            scanButtons.forEach((button) => { button.disabled = true; });
+            setStatus('Scanning...');
+            try {
+                const res = await fetch(`/api/admin/rewards/affiliates/fraud-scan?type=${type}`);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || `Fraud scan failed (${res.status})`);
+                
+                const elements = Array.isArray(data.elements) ? data.elements : [];
+                if (window.cy) {
+                    window.cy.elements().remove();
+                    window.cy.add(elements);
+                    window.cy.layout({ name: 'circle', padding: 50 }).run();
                 }
+                renderFindings(Array.isArray(data.flags) ? data.flags : []);
+                setStatus(`${data.count || 0} finding${data.count === 1 ? '' : 's'} found.`);
+            } catch (err) {
+                console.error(err);
+                setStatus(err.message || 'Could not fetch graph data.', true);
+            } finally {
+                scanButtons.forEach((button) => { button.disabled = false; });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            window.cy = initGraph();
+            scanButtons.forEach((button) => {
+                button.addEventListener('click', () => buildGraph(button.dataset.scanType));
             });
             buildGraph('circular');
         });
-
-        window.buildGraph = async function(type) {
-            try {
-                const res = await fetch(`/api/admin/rewards/affiliates/fraud-scan?type=${type}`);
-                if (!res.ok) throw new Error('API Error');
-                const data = await res.json();
-                
-                window.cy.elements().remove();
-                if (data.elements && data.elements.length > 0) {
-                    window.cy.add(data.elements);
-                    window.cy.layout({ name: 'circle', padding: 50 }).run();
-                } else {
-                    alert('No fraud patterns detected for this scan type!');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Could not fetch graph data.');
-            }
-        }
     </script>
 </body>
 </html>

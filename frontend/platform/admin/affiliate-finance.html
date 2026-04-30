@@ -80,12 +80,13 @@
                   <th>Referral Code</th>
                   <th>Commission Count</th>
                   <th>Treasury Due</th>
+                  <th>Compliance</th>
                   <th style="width: 200px">Action</th>
                 </tr>
               </thead>
               <tbody id="payouts-body">
                 <tr>
-                  <td colspan="5" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                  <td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
                     <div style="margin: 0 auto 12px; width: 24px; height: 24px; border: 2px solid var(--admin-border); border-top-color: var(--admin-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
                     Loading payable commissions…
                   </td>
@@ -99,9 +100,9 @@
   </div>
 
   <!-- Execute Payout Modal -->
-  <div id="payout-modal" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+  <div id="payout-modal" role="dialog" aria-modal="true" aria-labelledby="payout-modal-title" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
     <div style="background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl); padding: 28px; max-width: 480px; width: 90%; animation: admin-fadeIn 0.2s ease-out;">
-      <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0 0 8px;">Release Batch Payout</h3>
+      <h3 id="payout-modal-title" style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0 0 8px;">Release Batch Payout</h3>
       <p style="font-size: 14px; color: var(--admin-text-secondary); margin: 0 0 20px;" id="payout-modal-details">—</p>
       
       <div style="background: rgba(0, 200, 83, 0.05); border: 1px solid rgba(0, 200, 83, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
@@ -122,8 +123,8 @@
       </div>
 
       <div style="display: flex; gap: 8px; justify-content: flex-end">
-        <button class="admin-btn admin-btn--secondary" onclick="closePayoutModal()">Cancel</button>
-        <button class="admin-btn admin-btn--primary" id="payout-confirm-btn" onclick="confirmPayout()">
+        <button class="admin-btn admin-btn--secondary" id="payout-cancel-btn">Cancel</button>
+        <button class="admin-btn admin-btn--primary" id="payout-confirm-btn">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 13l4 4L19 7" /></svg>
           Execute Transfer
         </button>

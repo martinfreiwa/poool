@@ -18,6 +18,12 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
+fn format_usd_cents(cents: i64) -> String {
+    let sign = if cents < 0 { "-" } else { "" };
+    let abs = cents.unsigned_abs();
+    format!("{sign}${}.{:02}", abs / 100, abs % 100)
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ── TYPES ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
@@ -136,7 +142,7 @@ pub async fn calculate_dividends(
         sqlx::query_as::<_, (Uuid, i64, Option<chrono::DateTime<chrono::Utc>>)>(
             r#"SELECT user_id,
                   COALESCE(tokens_owned, 0)::bigint as tokens_held,
-                  created_at as first_acquired_at
+                  purchased_at as first_acquired_at
            FROM investments
            WHERE asset_id = $1 AND tokens_owned > 0
            ORDER BY tokens_owned DESC"#,
@@ -246,7 +252,7 @@ pub async fn calculate_dividends(
         if actual_payout > 0 || !is_eligible {
             // Only insert if there's something meaningful to record
             let insert_payout_cents = if actual_payout > 0 { actual_payout } else { 1 }; // DB has CHECK payout_cents > 0
-            let _ = sqlx::query(
+            let result = sqlx::query(
                 r#"INSERT INTO dividend_payouts
                    (distribution_id, user_id, asset_id, amount_cents, payout_type, status,
                     tokens_held, percentage_bps, first_acquired_at, holding_days, eligible)
@@ -263,7 +269,15 @@ pub async fn calculate_dividends(
             .bind(holding_days)
             .bind(is_eligible)
             .execute(&mut *tx)
-            .await;
+            .await
+            .map_err(|e| format!("DB payout insert error: {e}"))?;
+
+            if result.rows_affected() == 0 {
+                return Err(format!(
+                    "Duplicate payout row for distribution {} and user {}",
+                    distribution_id, holder.user_id
+                ));
+            }
         }
 
         payouts.push(PayoutPreview {
@@ -278,11 +292,17 @@ pub async fn calculate_dividends(
     }
 
     // Update eligible_holders count on the distribution
-    let _ = sqlx::query("UPDATE dividend_distributions SET eligible_holders = $1 WHERE id = $2")
-        .bind(eligible_count)
-        .bind(distribution_id)
-        .execute(&mut *tx)
-        .await;
+    let update_result =
+        sqlx::query("UPDATE dividend_distributions SET eligible_holders = $1 WHERE id = $2")
+            .bind(eligible_count)
+            .bind(distribution_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| format!("DB distribution update error: {e}"))?;
+
+    if update_result.rows_affected() != 1 {
+        return Err("Failed to update dividend distribution holder counts".to_string());
+    }
 
     // Commit
     tx.commit()
@@ -373,6 +393,36 @@ pub async fn approve_distribution(
     distribution_id: Uuid,
     admin_user_id: Uuid,
 ) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("TX begin error: {e}"))?;
+
+    let current: Option<(Option<Uuid>, String)> = sqlx::query_as(
+        "SELECT created_by, status FROM dividend_distributions WHERE id = $1 FOR UPDATE",
+    )
+    .bind(distribution_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("DB error: {e}"))?;
+
+    let (created_by, status) = match current {
+        Some(row) => row,
+        None => return Err("Distribution not found".to_string()),
+    };
+
+    if status != "calculated" {
+        return Err("Distribution not in 'calculated' status".to_string());
+    }
+
+    let created_by = created_by.ok_or_else(|| {
+        "Distribution is missing creator metadata and cannot be approved".to_string()
+    })?;
+
+    if created_by == admin_user_id {
+        return Err("Creator cannot approve their own dividend distribution".to_string());
+    }
+
     let result = sqlx::query(
         r#"UPDATE dividend_distributions
            SET status = 'approved', approved_by = $1, approved_at = NOW()
@@ -380,13 +430,30 @@ pub async fn approve_distribution(
     )
     .bind(admin_user_id)
     .bind(distribution_id)
-    .execute(pool)
+    .execute(&mut *tx)
     .await
     .map_err(|e| format!("DB error: {e}"))?;
 
     if result.rows_affected() == 0 {
         return Err("Distribution not found or not in 'calculated' status".to_string());
     }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs
+           (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'dividend_distribution.approved', 'dividend_distributions', $2, $3, $4)"#,
+    )
+    .bind(admin_user_id)
+    .bind(distribution_id)
+    .bind(serde_json::json!({"status": "calculated"}))
+    .bind(serde_json::json!({"status": "approved"}))
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("DB audit log error: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("TX commit error: {e}"))?;
 
     tracing::info!(
         "💰 Distribution {} approved by {}",
@@ -401,7 +468,25 @@ pub async fn cancel_distribution(
     pool: &PgPool,
     distribution_id: Uuid,
     reason: &str,
+    admin_user_id: Uuid,
 ) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("TX begin error: {e}"))?;
+
+    let previous_status: Option<String> =
+        sqlx::query_scalar("SELECT status FROM dividend_distributions WHERE id = $1 FOR UPDATE")
+            .bind(distribution_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| format!("DB error: {e}"))?;
+
+    let previous_status = match previous_status {
+        Some(status) => status,
+        None => return Err("Distribution not found".to_string()),
+    };
+
     let result = sqlx::query(
         r#"UPDATE dividend_distributions
            SET status = 'cancelled', cancelled_at = NOW(), cancel_reason = $1
@@ -409,13 +494,30 @@ pub async fn cancel_distribution(
     )
     .bind(reason)
     .bind(distribution_id)
-    .execute(pool)
+    .execute(&mut *tx)
     .await
     .map_err(|e| format!("DB error: {e}"))?;
 
     if result.rows_affected() == 0 {
         return Err("Distribution not found or already distributed".to_string());
     }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs
+           (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'dividend_distribution.cancelled', 'dividend_distributions', $2, $3, $4)"#,
+    )
+    .bind(admin_user_id)
+    .bind(distribution_id)
+    .bind(serde_json::json!({"status": previous_status}))
+    .bind(serde_json::json!({"status": "cancelled", "reason": reason}))
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("DB audit log error: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("TX commit error: {e}"))?;
 
     tracing::info!("💰 Distribution {} cancelled: {}", distribution_id, reason);
     Ok(())
@@ -440,6 +542,7 @@ pub async fn cancel_distribution(
 pub async fn execute_distribution(
     pool: &PgPool,
     distribution_id: Uuid,
+    executor_user_id: Uuid,
 ) -> Result<DistributionSummary, String> {
     // 1. Begin ACID transaction first so the distribution row is locked
     //    for the whole execution. Previously we SELECT'd outside the tx,
@@ -450,8 +553,8 @@ pub async fn execute_distribution(
         .await
         .map_err(|e| format!("TX begin error: {e}"))?;
 
-    let dist_info: Option<(Uuid, i64, String)> = sqlx::query_as(
-        r#"SELECT asset_id, total_amount_cents, status
+    let dist_info: Option<(Uuid, i64, String, Option<Uuid>, Option<Uuid>)> = sqlx::query_as(
+        r#"SELECT asset_id, total_amount_cents, status, created_by, approved_by
            FROM dividend_distributions WHERE id = $1 FOR UPDATE"#,
     )
     .bind(distribution_id)
@@ -459,7 +562,7 @@ pub async fn execute_distribution(
     .await
     .map_err(|e| format!("DB error: {e}"))?;
 
-    let (asset_id, total_amount_cents, status) = match dist_info {
+    let (asset_id, total_amount_cents, status, created_by, approved_by) = match dist_info {
         Some(info) => info,
         None => return Err("Distribution not found".to_string()),
     };
@@ -469,6 +572,17 @@ pub async fn execute_distribution(
             "Distribution is '{}', must be 'approved' to execute",
             status
         ));
+    }
+
+    let created_by = created_by.ok_or_else(|| {
+        "Distribution is missing creator metadata and cannot be executed".to_string()
+    })?;
+    let approved_by = approved_by.ok_or_else(|| {
+        "Distribution is missing approver metadata and cannot be executed".to_string()
+    })?;
+
+    if executor_user_id == created_by {
+        return Err("Creator cannot execute their own dividend distribution".to_string());
     }
 
     // 3. Get all eligible, uncredited payouts
@@ -550,7 +664,7 @@ pub async fn execute_distribution(
                 };
 
                 // 4d. Mark payout as credited
-                let _ = sqlx::query(
+                let payout_update = sqlx::query(
                     r#"UPDATE dividend_payouts
                        SET wallet_credited = true, credited_at = NOW(), wallet_tx_id = $1,
                            status = 'paid', paid_at = NOW()
@@ -561,6 +675,14 @@ pub async fn execute_distribution(
                 .execute(&mut *tx)
                 .await
                 .map_err(|e| format!("DB payout update error: {e}"))?;
+
+                if payout_update.rows_affected() != 1 {
+                    return Err(format!(
+                        "Payout update affected {} rows for payout {}",
+                        payout_update.rows_affected(),
+                        payout_id
+                    ));
+                }
 
                 total_credited += amount_cents;
                 holders_credited += 1;
@@ -589,15 +711,47 @@ pub async fn execute_distribution(
     }
 
     // 6. Update distribution status to 'distributed'
-    let _ = sqlx::query(
+    let distribution_update = sqlx::query(
         r#"UPDATE dividend_distributions
-           SET status = 'distributed', distributed_at = NOW()
-           WHERE id = $1"#,
+           SET status = 'distributed', distributed_at = NOW(), distributed_by = $1
+           WHERE id = $2"#,
     )
+    .bind(executor_user_id)
     .bind(distribution_id)
     .execute(&mut *tx)
     .await
     .map_err(|e| format!("DB distribution update error: {e}"))?;
+
+    if distribution_update.rows_affected() != 1 {
+        return Err("Failed to mark dividend distribution as distributed".to_string());
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs
+           (actor_user_id, action, entity_type, entity_id, previous_state, new_state, metadata)
+           VALUES ($1, 'dividend_distribution.executed', 'dividend_distributions', $2, $3, $4, $5)"#,
+    )
+    .bind(executor_user_id)
+    .bind(distribution_id)
+    .bind(serde_json::json!({
+        "status": "approved",
+        "approved_by": approved_by,
+    }))
+    .bind(serde_json::json!({
+        "status": "distributed",
+        "total_credited_cents": total_credited,
+        "holders_credited": holders_credited,
+        "holders_skipped": holders_skipped,
+    }))
+    .bind(serde_json::json!({
+        "asset_id": asset_id,
+        "created_by": created_by,
+        "approved_by": approved_by,
+        "executor_user_id": executor_user_id,
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("DB audit log error: {e}"))?;
 
     // 7. COMMIT — all payouts atomically applied
     tx.commit()
@@ -704,7 +858,7 @@ pub async fn list_distributions(
                 "asset_name": r.2,
                 "period": r.3,
                 "total_amount_cents": r.4,
-                "total_amount_display": format!("${:.2}", r.4 as f64 / 100.0),
+                "total_amount_display": format_usd_cents(r.4),
                 "status": r.5,
                 "eligible_holders": r.6,
                 "created_at": r.7,
@@ -784,7 +938,7 @@ pub async fn get_distribution_detail(
                 "user_email": p.1,
                 "tokens_held": p.2,
                 "payout_cents": p.3,
-                "payout_display": format!("${:.2}", p.3 as f64 / 100.0),
+                "payout_display": format_usd_cents(p.3),
                 "percentage_bps": p.4,
                 "holding_days": p.5,
                 "eligible": p.6,
@@ -800,7 +954,7 @@ pub async fn get_distribution_detail(
             "asset_name": dist.2,
             "period": dist.3,
             "total_amount_cents": dist.4,
-            "total_amount_display": format!("${:.2}", dist.4 as f64 / 100.0),
+            "total_amount_display": format_usd_cents(dist.4),
             "status": dist.5,
             "eligible_holders": dist.6,
             "min_holding_days": dist.7,

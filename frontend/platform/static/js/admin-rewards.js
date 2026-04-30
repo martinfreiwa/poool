@@ -984,17 +984,26 @@ function renderPayouts() {
 
   filtered.forEach(p => {
     const amountStr = "$" + (p.total_payable_cents / 100).toFixed(2);
+    const requested = Boolean(p.payout_request_id);
+    const requestLabel = requested
+      ? `Requested ${p.payout_requested_at ? fmtDate(p.payout_requested_at) : ''}`.trim()
+      : "Auto-eligible";
+    const requestAmount = p.payout_request_amount_cents
+      ? `$${(p.payout_request_amount_cents / 100).toFixed(2)} requested`
+      : "";
+    const blockedReason = p.payout_blocked_reason || "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
         <div style="font-weight:500;color:var(--admin-text-primary);">${escapeHtml(p.name)}</div>
         <div style="font-size:12px;color:var(--admin-text-muted);">${escapeHtml(p.email)}</div>
+        <div style="font-size:11px;color:${requested ? 'var(--admin-accent)' : 'var(--admin-text-muted)'};margin-top:4px;">${escapeHtml(requestLabel)}</div>
       </td>
       <td><code>${escapeHtml(p.referral_code)}</code></td>
-      <td style="font-weight:600;color:var(--admin-success);">${amountStr}</td>
-      <td>${p.commission_count} commissions</td>
+      <td style="font-weight:600;color:var(--admin-success);">${amountStr}${requestAmount ? `<div style="font-size:11px;color:var(--admin-text-muted);font-weight:400;">${escapeHtml(requestAmount)}</div>` : ""}</td>
+      <td>${p.commission_count} commissions${blockedReason ? `<div style="font-size:11px;color:var(--admin-error);margin-top:4px;">${escapeHtml(blockedReason)}</div>` : ""}</td>
       <td style="text-align: right;">
-        <button class="btn btn-primary" style="padding:4px 12px; font-size:12px;" onclick="executePayout('${p.affiliate_id}')">Payout Batch</button>
+        <button class="btn btn-primary" style="padding:4px 12px; font-size:12px;" ${blockedReason ? `disabled title="${escapeHtml(blockedReason)}"` : ""} onclick="executePayout('${p.affiliate_id}')">Payout Batch</button>
       </td>
     `;
     t.appendChild(tr);
@@ -1022,4 +1031,3 @@ window.executePayout = async function(id) {
 };
 
 document.getElementById("payout-search")?.addEventListener("input", debounce(() => renderPayouts(), 250));
-

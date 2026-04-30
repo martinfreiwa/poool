@@ -1,3 +1,7 @@
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce,
+};
 /// Auth business logic – ISOLATED from HTTP handlers.
 ///
 /// This is the core of the auth system. All business rules live here,
@@ -9,11 +13,12 @@
 /// - Failed logins return generic errors (no user enumeration)
 /// - All state mutations happen in atomic DB transactions
 use argon2::{
-    password_hash::{rand_core::OsRng, SaltString},
+    password_hash::{rand_core::OsRng as PasswordOsRng, SaltString},
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
 use base64::Engine;
 use chrono::{Duration, Utc};
+use rand::RngCore;
 use sqlx::PgPool;
 use totp_rs::{Algorithm, Secret, TOTP};
 use uuid::Uuid;
@@ -113,6 +118,110 @@ pub async fn register_user(
     Ok(user)
 }
 
+/// Register a password user and persist legal consent plus an email
+/// verification token in the same transaction as account creation.
+pub async fn register_user_with_consent_and_verification(
+    pool: &PgPool,
+    email: &str,
+    password: &str,
+    terms_version: &str,
+    ip_address: Option<&str>,
+    user_agent: Option<&str>,
+) -> Result<(User, String), AppError> {
+    let email = email.trim().to_lowercase();
+
+    validation::validate_email(&email)?;
+    validation::validate_password(password)?;
+
+    let existing = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE email = $1")
+        .bind(&email)
+        .fetch_one(pool)
+        .await?;
+
+    if existing > 0 {
+        return Err(AppError::Conflict(
+            "An account with this email already exists.".to_string(),
+        ));
+    }
+
+    let password_hash = hash_password(password)?;
+    let verification_token = generate_session_token();
+    let verification_hash = crate::config::hash_token(&verification_token);
+    let verification_expires_at = Utc::now() + Duration::hours(24);
+
+    let mut tx = pool.begin().await?;
+
+    let user = sqlx::query_as::<_, User>(
+        r#"
+        INSERT INTO users (email, password_hash, email_verified, status)
+        VALUES ($1, $2, FALSE, 'active')
+        RETURNING *
+        "#,
+    )
+    .bind(&email)
+    .bind(&password_hash)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query("INSERT INTO user_profiles (user_id) VALUES ($1)")
+        .bind(user.id)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query(
+        "INSERT INTO wallets (user_id, wallet_type, balance_cents) VALUES ($1, 'cash', 0), ($1, 'rewards', 0)",
+    )
+    .bind(user.id)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO user_roles (user_id, role_id)
+        SELECT $1, id FROM roles WHERE name = 'investor'
+        "#,
+    )
+    .bind(user.id)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query("INSERT INTO user_settings (user_id) VALUES ($1)")
+        .bind(user.id)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query(
+        "INSERT INTO user_consents (user_id, terms_version, ip_address, user_agent) VALUES ($1, $2, $3, $4)"
+    )
+    .bind(user.id)
+    .bind(terms_version)
+    .bind(ip_address)
+    .bind(user_agent)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
+        VALUES ($1, $2, $3)
+        "#,
+    )
+    .bind(user.id)
+    .bind(&verification_hash)
+    .bind(verification_expires_at)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    tracing::info!(
+        "New user registered pending email verification: {}",
+        user.id
+    );
+
+    Ok((user, verification_token))
+}
+
 // ─── Login ─────────────────────────────────────────────────────
 
 /// Dummy Argon2id hash lazily computed once at first use. Used as a
@@ -165,10 +274,7 @@ pub async fn authenticate_user(
                     scope.set_tag("security.reason", "unknown_email");
                 },
                 || {
-                    sentry::capture_message(
-                        &format!("Failed login: unknown email {}", email),
-                        sentry::Level::Warning,
-                    );
+                    sentry::capture_message("Failed login: unknown email", sentry::Level::Warning);
                 },
             );
             return Err(AppError::Unauthorized(
@@ -184,12 +290,13 @@ pub async fn authenticate_user(
             |scope| {
                 scope.set_tag("security.event", "failed_login");
                 scope.set_tag("security.reason", "oauth_only_account");
+                scope.set_user(Some(sentry::User {
+                    id: Some(user.id.to_string()),
+                    ..Default::default()
+                }));
             },
             || {
-                sentry::capture_message(
-                    &format!("Failed login: OAuth-only account {}", email),
-                    sentry::Level::Warning,
-                );
+                sentry::capture_message("Failed login: OAuth-only account", sentry::Level::Warning);
             },
         );
         AppError::Unauthorized(
@@ -207,7 +314,7 @@ pub async fn authenticate_user(
                     },
                     || {
                         sentry::capture_message(
-                            &format!("Login blocked: email not verified {}", email),
+                            "Login blocked: email not verified",
                             sentry::Level::Info,
                         );
                     },
@@ -226,15 +333,11 @@ pub async fn authenticate_user(
                     scope.set_tag("security.reason", "wrong_password");
                     scope.set_user(Some(sentry::User {
                         id: Some(user.id.to_string()),
-                        email: Some(email.clone()),
                         ..Default::default()
                     }));
                 },
                 || {
-                    sentry::capture_message(
-                        &format!("Failed login: wrong password for {}", email),
-                        sentry::Level::Warning,
-                    );
+                    sentry::capture_message("Failed login: wrong password", sentry::Level::Warning);
                 },
             );
             Err(AppError::Unauthorized(
@@ -337,6 +440,7 @@ pub async fn get_user_by_session(
         WHERE s.session_token = $1
           AND s.expires_at > NOW()
           AND u.status = 'active'
+          AND u.email_verified = TRUE
         "#,
         session_token
     )
@@ -371,7 +475,10 @@ pub async fn get_user_by_session(
             updated_at: r.updated_at,
         }))
     } else {
-        tracing::warn!("Session {}… not found or expired in DB", tok_preview);
+        tracing::warn!(
+            "Session {}… not found, expired, unverified, or inactive in DB",
+            tok_preview
+        );
         Ok(None)
     }
 }
@@ -545,10 +652,9 @@ pub async fn oauth_find_or_create_user(
     tx.commit().await?;
 
     tracing::info!(
-        "New OAuth user registered: {} ({}) via {}",
-        user.id,
-        email,
-        provider
+        user_id = %user.id,
+        provider = provider,
+        "New OAuth user registered"
     );
 
     Ok(user)
@@ -600,6 +706,7 @@ pub async fn create_password_reset_token(
     base_url: &str,
 ) -> Result<(), AppError> {
     let email = email.trim().to_lowercase();
+    validation::validate_email(&email)?;
 
     // Check if user exists
     let user =
@@ -617,19 +724,6 @@ pub async fn create_password_reset_token(
     let token_hash = crate::config::hash_token(&token);
     let expires_at = Utc::now() + Duration::hours(1);
 
-    sqlx::query(
-        r#"
-        INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-        VALUES ($1, $2, $3)
-        "#,
-    )
-    .bind(user.id)
-    .bind(&token_hash)
-    .bind(expires_at)
-    .execute(pool)
-    .await?;
-
-    // Send Email using Resend
     let subject = "Reset your POOOL password";
     let body = format!(
         r#"
@@ -641,9 +735,45 @@ pub async fn create_password_reset_token(
         base_url, token
     );
 
-    crate::common::email::send_email(&email, subject, &body).await?;
+    let mut tx = pool.begin().await?;
 
-    tracing::info!("Sent Password Reset link to {}", email);
+    let token_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+        VALUES ($1, $2, $3)
+        RETURNING id
+        "#,
+    )
+    .bind(user.id)
+    .bind(&token_hash)
+    .bind(expires_at)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let outbox_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO password_reset_email_outbox (
+            user_id,
+            password_reset_token_id,
+            recipient_email,
+            subject,
+            html_body
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+        "#,
+    )
+    .bind(user.id)
+    .bind(token_id)
+    .bind(&email)
+    .bind(subject)
+    .bind(body)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    crate::common::email::send_password_reset_outbox_item(pool, outbox_id).await;
 
     Ok(())
 }
@@ -724,6 +854,13 @@ pub async fn create_email_verification_token(
     let token_hash = crate::config::hash_token(&token);
     let expires_at = Utc::now() + Duration::hours(24);
 
+    let mut tx = pool.begin().await?;
+
+    sqlx::query("DELETE FROM email_verification_tokens WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
     sqlx::query(
         r#"
         INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
@@ -733,10 +870,30 @@ pub async fn create_email_verification_token(
     .bind(user_id)
     .bind(&token_hash)
     .bind(expires_at)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
 
-    // Send Email using Resend
+    tx.commit().await?;
+
+    if let Err(error) = send_email_verification(email, base_url, &token).await {
+        let _ = sqlx::query("DELETE FROM email_verification_tokens WHERE token_hash = $1")
+            .bind(&token_hash)
+            .execute(pool)
+            .await;
+        return Err(error);
+    }
+
+    tracing::info!("Sent Email Verification link to {}", email);
+
+    Ok(())
+}
+
+/// Send an email verification message for an already-persisted token.
+pub async fn send_email_verification(
+    email: &str,
+    base_url: &str,
+    token: &str,
+) -> Result<(), AppError> {
     let subject = "Verify your POOOL email";
     let body = format!(
         r#"
@@ -749,13 +906,10 @@ pub async fn create_email_verification_token(
 
     crate::common::email::send_email(email, subject, &body).await?;
 
-    tracing::info!("Sent Email Verification link to {}", email);
-
     Ok(())
 }
 
 /// Verify a user's email using a token.
-#[allow(dead_code)]
 pub async fn verify_email(pool: &PgPool, token: &str) -> Result<(), AppError> {
     let mut tx = pool.begin().await?;
 
@@ -826,8 +980,151 @@ pub fn generate_totp_secret(email: &str) -> Result<(String, String, String), App
     )
     .map_err(|e| AppError::Internal(format!("Failed to configure TOTP: {}", e)))?;
 
-    let qr_code_base64 = totp.get_qr_base64().unwrap_or_default();
+    let qr_code_base64 = totp
+        .get_qr_base64()
+        .map_err(|e| AppError::Internal(format!("Failed to generate TOTP QR code: {}", e)))?;
     Ok((totp.get_secret_base32(), totp.get_url(), qr_code_base64))
+}
+
+const TOTP_SECRET_PREFIX: &str = "enc:v1";
+const TOTP_SETUP_PREFIX: &str = "totp_setup:v1";
+
+fn totp_encryption_key() -> Result<[u8; 32], AppError> {
+    let raw = std::env::var("TOTP_SECRET_ENCRYPTION_KEY").map_err(|_| {
+        AppError::Internal("TOTP_SECRET_ENCRYPTION_KEY is not configured.".to_string())
+    })?;
+
+    let trimmed = raw.trim();
+    let bytes = if trimmed.len() == 64 && trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        hex::decode(trimmed).map_err(|_| {
+            AppError::Internal("TOTP_SECRET_ENCRYPTION_KEY is not valid hex.".to_string())
+        })?
+    } else {
+        base64::engine::general_purpose::STANDARD
+            .decode(trimmed)
+            .or_else(|_| base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(trimmed))
+            .unwrap_or_else(|_| trimmed.as_bytes().to_vec())
+    };
+
+    bytes.try_into().map_err(|_| {
+        AppError::Internal("TOTP_SECRET_ENCRYPTION_KEY must decode to 32 bytes.".to_string())
+    })
+}
+
+fn encrypt_secret_payload(prefix: &str, plaintext: &str) -> Result<String, AppError> {
+    let key = totp_encryption_key()?;
+    let cipher = Aes256Gcm::new_from_slice(&key)
+        .map_err(|_| AppError::Internal("Failed to initialize TOTP encryption.".to_string()))?;
+    let mut nonce_bytes = [0u8; 12];
+    rand::rngs::OsRng.fill_bytes(&mut nonce_bytes);
+    let ciphertext = cipher
+        .encrypt(Nonce::from_slice(&nonce_bytes), plaintext.as_bytes())
+        .map_err(|_| AppError::Internal("Failed to encrypt TOTP secret.".to_string()))?;
+    Ok(format!(
+        "{}:{}:{}",
+        prefix,
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(nonce_bytes),
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(ciphertext)
+    ))
+}
+
+fn decrypt_secret_payload(prefix: &str, value: &str) -> Result<String, AppError> {
+    let Some(rest) = value.strip_prefix(prefix).and_then(|s| s.strip_prefix(':')) else {
+        return Err(AppError::BadRequest(
+            "Invalid TOTP setup token.".to_string(),
+        ));
+    };
+    let mut parts = rest.splitn(2, ':');
+    let nonce = parts
+        .next()
+        .ok_or_else(|| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    let ciphertext = parts
+        .next()
+        .ok_or_else(|| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    let nonce = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(nonce)
+        .map_err(|_| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    let ciphertext = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(ciphertext)
+        .map_err(|_| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    if nonce.len() != 12 {
+        return Err(AppError::BadRequest(
+            "Invalid TOTP setup token.".to_string(),
+        ));
+    }
+
+    let key = totp_encryption_key()?;
+    let cipher = Aes256Gcm::new_from_slice(&key)
+        .map_err(|_| AppError::Internal("Failed to initialize TOTP encryption.".to_string()))?;
+    let plaintext = cipher
+        .decrypt(Nonce::from_slice(&nonce), ciphertext.as_ref())
+        .map_err(|_| AppError::BadRequest("Invalid or expired TOTP setup token.".to_string()))?;
+    String::from_utf8(plaintext)
+        .map_err(|_| AppError::BadRequest("Invalid TOTP setup token.".to_string()))
+}
+
+pub fn build_totp_setup_token(user_id: Uuid, secret_b32: &str) -> Result<String, AppError> {
+    let expires_at = (Utc::now() + Duration::minutes(10)).timestamp();
+    encrypt_secret_payload(
+        TOTP_SETUP_PREFIX,
+        &format!("{}:{}:{}", user_id, expires_at, secret_b32),
+    )
+}
+
+pub fn read_totp_setup_token(token: &str, expected_user_id: Uuid) -> Result<String, AppError> {
+    let payload = decrypt_secret_payload(TOTP_SETUP_PREFIX, token)?;
+    let mut parts = payload.splitn(3, ':');
+    let user_id = parts
+        .next()
+        .ok_or_else(|| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    let expires_at = parts
+        .next()
+        .ok_or_else(|| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    let secret = parts
+        .next()
+        .ok_or_else(|| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    let user_id = Uuid::parse_str(user_id)
+        .map_err(|_| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    if user_id != expected_user_id {
+        return Err(AppError::Forbidden(
+            "TOTP setup token does not match this session.".to_string(),
+        ));
+    }
+    let expires_at = expires_at
+        .parse::<i64>()
+        .map_err(|_| AppError::BadRequest("Invalid TOTP setup token.".to_string()))?;
+    if Utc::now().timestamp() > expires_at {
+        return Err(AppError::BadRequest(
+            "This 2FA setup session expired. Refresh the page and try again.".to_string(),
+        ));
+    }
+    Ok(secret.to_string())
+}
+
+pub fn encrypt_totp_secret(secret_b32: &str) -> Result<String, AppError> {
+    encrypt_secret_payload(TOTP_SECRET_PREFIX, secret_b32)
+}
+
+pub fn decrypt_stored_totp_secret(stored_secret: &str) -> Result<String, AppError> {
+    if stored_secret.starts_with(&format!("{}:", TOTP_SECRET_PREFIX)) {
+        decrypt_secret_payload(TOTP_SECRET_PREFIX, stored_secret)
+    } else {
+        tracing::warn!(
+            "Using legacy plaintext TOTP secret; migrate this user to encrypted storage"
+        );
+        Ok(stored_secret.to_string())
+    }
+}
+
+pub async fn user_totp_enabled(pool: &PgPool, user_id: Uuid) -> Result<bool, AppError> {
+    let enabled = sqlx::query_scalar::<_, bool>(
+        "SELECT COALESCE(totp_enabled, FALSE) FROM user_settings WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?
+    .unwrap_or(false);
+    Ok(enabled)
 }
 
 /// Verify a TOTP code against a secret.
@@ -913,14 +1210,33 @@ pub async fn verify_totp_code_with_replay_guard(
 
 /// Enable TOTP for a user after successful verification of the first code.
 pub async fn enable_totp(pool: &PgPool, user_id: Uuid, secret_b32: &str) -> Result<(), AppError> {
+    let encrypted_secret = encrypt_totp_secret(secret_b32)?;
+    let mut tx = pool.begin().await?;
     sqlx::query(
-        "UPDATE user_settings SET totp_secret = $1, totp_enabled = TRUE WHERE user_id = $2",
+        r#"
+        INSERT INTO user_settings (user_id, totp_secret, totp_enabled, updated_at)
+        VALUES ($1, $2, TRUE, NOW())
+        ON CONFLICT (user_id)
+        DO UPDATE SET totp_secret = EXCLUDED.totp_secret, totp_enabled = TRUE, updated_at = NOW()
+        "#,
     )
-    .bind(secret_b32)
     .bind(user_id)
-    .execute(pool)
+    .bind(&encrypted_secret)
+    .execute(&mut *tx)
     .await?;
 
+    sqlx::query(
+        r#"
+        INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id)
+        VALUES ($1, 'totp_enabled', 'user', $2)
+        "#,
+    )
+    .bind(user_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
     Ok(())
 }
 
@@ -1097,7 +1413,7 @@ pub async fn get_user_profile(
 
 /// Hash a password with Argon2id (recommended for financial applications).
 fn hash_password(password: &str) -> Result<String, AppError> {
-    let salt = SaltString::generate(&mut OsRng);
+    let salt = SaltString::generate(&mut PasswordOsRng);
     let argon2 = Argon2::default();
     let hash = argon2
         .hash_password(password.as_bytes(), &salt)
@@ -1123,4 +1439,47 @@ fn generate_session_token() -> String {
     let mut bytes = [0u8; 64];
     rand::Rng::fill(&mut rand::thread_rng(), &mut bytes);
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn install_test_totp_key() {
+        std::env::set_var(
+            "TOTP_SECRET_ENCRYPTION_KEY",
+            "0123456789abcdef0123456789abcdef",
+        );
+    }
+
+    #[test]
+    fn totp_secret_encryption_round_trips_and_is_not_plaintext() {
+        install_test_totp_key();
+
+        let encrypted = encrypt_totp_secret("JBSWY3DPEHPK3PXP").expect("encrypt secret");
+
+        assert!(encrypted.starts_with("enc:v1:"));
+        assert!(!encrypted.contains("JBSWY3DPEHPK3PXP"));
+        assert_eq!(
+            decrypt_stored_totp_secret(&encrypted).expect("decrypt secret"),
+            "JBSWY3DPEHPK3PXP"
+        );
+    }
+
+    #[test]
+    fn totp_setup_token_is_bound_to_user() {
+        install_test_totp_key();
+
+        let user_id = Uuid::new_v4();
+        let other_user_id = Uuid::new_v4();
+        let token = build_totp_setup_token(user_id, "JBSWY3DPEHPK3PXP").expect("build token");
+
+        assert!(token.starts_with("totp_setup:v1:"));
+        assert!(!token.contains("JBSWY3DPEHPK3PXP"));
+        assert_eq!(
+            read_totp_setup_token(&token, user_id).expect("read token"),
+            "JBSWY3DPEHPK3PXP"
+        );
+        assert!(read_totp_setup_token(&token, other_user_id).is_err());
+    }
 }

@@ -6,6 +6,7 @@ use serde::Serialize;
 use sqlx::PgPool;
 
 const BLOCKCHAIN_CONTROL_PERMISSION: &str = "blockchain.manage";
+const BLOCKCHAIN_READ_PERMISSION: &str = "treasury.read";
 const BLOCKCHAIN_TOKENIZE_PERMISSION: &str = "blockchain.tokenize";
 
 // ═══════════════════════════════════════════════════════════════
@@ -270,9 +271,10 @@ fn explorer_url_for_network(network: &str) -> &'static str {
 }
 
 fn chain_tokenize_mock_enabled() -> bool {
-    std::env::var("CHAIN_TOKENIZE_MOCK")
-        .map(|value| value.eq_ignore_ascii_case("true") || value == "1")
-        .unwrap_or(false)
+    match std::env::var("CHAIN_TOKENIZE_MOCK") {
+        Ok(value) => value.eq_ignore_ascii_case("true") || value == "1",
+        Err(_) => cfg!(debug_assertions),
+    }
 }
 
 fn chain_configured_for_tokenize() -> bool {
@@ -1399,41 +1401,47 @@ pub struct BlockchainConfigSummary {
 
 /// Web3 Sync & Health — indexer status, settlement stats, whitelist queue.
 pub async fn api_admin_blockchain_sync_status(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<BlockchainSyncResponse>, ApiError> {
     let pool = &state.db;
+    admin
+        .require_permission(pool, BLOCKCHAIN_READ_PERMISSION)
+        .await?;
 
     // ── Indexer Status ──
-    let indexer_enabled: bool = sqlx::query_scalar::<_, String>(
-        "SELECT value FROM platform_settings WHERE key = 'chain_indexer_enabled'",
-    )
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten()
-    .and_then(|v| v.parse().ok())
-    .unwrap_or(false);
+    let indexer_enabled = parse_optional_setting(
+        "chain_indexer_enabled",
+        sqlx::query_scalar::<_, String>(
+            "SELECT value FROM platform_settings WHERE key = 'chain_indexer_enabled'",
+        )
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to read indexer setting: {}", e)))?,
+        false,
+    )?;
 
-    let poll_secs: i64 = sqlx::query_scalar::<_, String>(
-        "SELECT value FROM platform_settings WHERE key = 'chain_indexer_poll_secs'",
-    )
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten()
-    .and_then(|v| v.parse().ok())
-    .unwrap_or(5);
+    let poll_secs = parse_optional_setting(
+        "chain_indexer_poll_secs",
+        sqlx::query_scalar::<_, String>(
+            "SELECT value FROM platform_settings WHERE key = 'chain_indexer_poll_secs'",
+        )
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to read poll setting: {}", e)))?,
+        5_i64,
+    )?;
 
-    let confirmation_depth: i64 = sqlx::query_scalar::<_, String>(
-        "SELECT value FROM platform_settings WHERE key = 'chain_indexer_confirmation_depth'",
-    )
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten()
-    .and_then(|v| v.parse().ok())
-    .unwrap_or(3);
+    let confirmation_depth = parse_optional_setting(
+        "chain_indexer_confirmation_depth",
+        sqlx::query_scalar::<_, String>(
+            "SELECT value FROM platform_settings WHERE key = 'chain_indexer_confirmation_depth'",
+        )
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to read confirmation setting: {}", e)))?,
+        3_i64,
+    )?;
 
     let contract_address =
         std::env::var("CHAIN_CONTRACT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
@@ -1445,13 +1453,12 @@ pub async fn api_admin_blockchain_sync_status(
     .bind(&contract_address.to_lowercase())
     .fetch_optional(pool)
     .await
-    .ok()
-    .flatten();
+    .map_err(|e| ApiError::Internal(format!("Failed to read indexer cursor: {}", e)))?;
 
     let total_balance_entries: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM onchain_balances")
         .fetch_one(pool)
         .await
-        .unwrap_or(0);
+        .map_err(|e| ApiError::Internal(format!("Failed to count on-chain balances: {}", e)))?;
 
     let indexer = IndexerStatus {
         enabled: indexer_enabled,
@@ -1473,36 +1480,35 @@ pub async fn api_admin_blockchain_sync_status(
         sqlx::query_scalar("SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'pending'")
             .fetch_one(pool)
             .await
-            .unwrap_or(0);
+            .map_err(|e| ApiError::Internal(format!("Failed to count pending trades: {}", e)))?;
 
     let submitted_trades: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'submitted'",
     )
     .fetch_one(pool)
     .await
-    .unwrap_or(0);
+    .map_err(|e| ApiError::Internal(format!("Failed to count submitted trades: {}", e)))?;
 
     let confirmed_trades: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'confirmed'",
     )
     .fetch_one(pool)
     .await
-    .unwrap_or(0);
+    .map_err(|e| ApiError::Internal(format!("Failed to count confirmed trades: {}", e)))?;
 
     let failed_batches_24h: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM chain_settlement_batches WHERE status = 'failed' AND created_at > NOW() - INTERVAL '24 hours'",
     )
     .fetch_one(pool)
     .await
-    .unwrap_or(0);
+    .map_err(|e| ApiError::Internal(format!("Failed to count failed batches: {}", e)))?;
 
     let last_batch_at: Option<String> = sqlx::query_scalar::<_, chrono::DateTime<chrono::Utc>>(
         "SELECT created_at FROM chain_settlement_batches ORDER BY created_at DESC LIMIT 1",
     )
     .fetch_optional(pool)
     .await
-    .ok()
-    .flatten()
+    .map_err(|e| ApiError::Internal(format!("Failed to read last settlement batch: {}", e)))?
     .map(|dt| dt.format("%b %d, %Y %H:%M UTC").to_string());
 
     let avg_batch_size: f64 = sqlx::query_scalar::<_, f64>(
@@ -1510,7 +1516,7 @@ pub async fn api_admin_blockchain_sync_status(
     )
     .fetch_one(pool)
     .await
-    .unwrap_or(0.0);
+    .map_err(|e| ApiError::Internal(format!("Failed to calculate average batch size: {}", e)))?;
 
     let settlement = SettlementStats {
         enabled: settlement_enabled,
@@ -1543,7 +1549,7 @@ pub async fn api_admin_blockchain_sync_status(
     )
     .fetch_all(pool)
     .await
-    .unwrap_or_default();
+    .map_err(|e| ApiError::Internal(format!("Failed to read whitelist queue: {}", e)))?;
 
     let whitelist_queue: Vec<WhitelistQueueEntry> = queue_rows
         .into_iter()
@@ -1604,22 +1610,53 @@ pub async fn api_admin_blockchain_force_kyc_sync(
     axum::extract::Path(user_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
+    admin
+        .require_permission(pool, BLOCKCHAIN_CONTROL_PERMISSION)
+        .await?;
 
-    // 1. Verify user exists and has KYC approved
-    let user = sqlx::query_as::<_, (uuid::Uuid, String, Option<String>)>(
-        "SELECT u.id, u.email, u.chain_wallet_address FROM users u WHERE u.id = $1",
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to start transaction: {}", e)))?;
+
+    // 1. Lock and verify the same eligibility predicate used by the queue.
+    let user = sqlx::query_as::<_, (uuid::Uuid, String, String, Option<String>, bool)>(
+        r#"
+        SELECT u.id, u.email, u.status, u.chain_wallet_address,
+               EXISTS(
+                   SELECT 1
+                   FROM kyc_records k
+                   WHERE k.user_id = u.id
+                   AND k.status = 'approved'
+               ) AS has_approved_kyc
+        FROM users u
+        WHERE u.id = $1
+        FOR UPDATE
+        "#,
     )
     .bind(user_id)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?
     .ok_or_else(|| ApiError::NotFound("User not found".to_string()))?;
 
-    if user.2.is_some() && !user.2.as_deref().unwrap_or("").is_empty() {
+    if user.2 != "active" {
+        return Err(ApiError::BadRequest(
+            "User is not active and cannot be force-synced".to_string(),
+        ));
+    }
+
+    if !user.4 {
+        return Err(ApiError::BadRequest(
+            "User does not have approved KYC and cannot be force-synced".to_string(),
+        ));
+    }
+
+    if user.3.is_some() && !user.3.as_deref().unwrap_or("").is_empty() {
         return Err(ApiError::BadRequest(format!(
             "User {} already has a wallet address: {}",
             user.1,
-            user.2.unwrap_or_default()
+            user.3.unwrap_or_default()
         )));
     }
 
@@ -1642,7 +1679,7 @@ pub async fn api_admin_blockchain_force_kyc_sync(
     sqlx::query("UPDATE users SET chain_wallet_address = $1 WHERE id = $2")
         .bind(&wallet_address)
         .bind(user_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| ApiError::Internal(format!("DB update failed: {}", e)))?;
 
@@ -1654,12 +1691,16 @@ pub async fn api_admin_blockchain_force_kyc_sync(
     .bind(admin.user.id)
     .bind(user_id)
     .bind(serde_json::json!({
-        "wallet_address": wallet_address,
+        "wallet_address": &wallet_address,
         "triggered_by": "admin_force_sync",
     }))
-    .execute(pool)
+    .execute(&mut *tx)
     .await
-    .ok();
+    .map_err(|e| ApiError::Internal(format!("Audit log failed: {}", e)))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Transaction commit failed: {}", e)))?;
 
     tracing::info!(
         "🔑 Admin {} force-synced KYC whitelist for user {} → {}",
@@ -1674,6 +1715,19 @@ pub async fn api_admin_blockchain_force_kyc_sync(
         "email": user.1,
         "wallet_address": wallet_address,
     })))
+}
+
+fn parse_optional_setting<T>(key: &str, value: Option<String>, default: T) -> Result<T, ApiError>
+where
+    T: std::str::FromStr,
+    T::Err: std::fmt::Display,
+{
+    match value {
+        Some(raw) => raw
+            .parse::<T>()
+            .map_err(|e| ApiError::Internal(format!("Invalid platform setting {}: {}", key, e))),
+        None => Ok(default),
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════

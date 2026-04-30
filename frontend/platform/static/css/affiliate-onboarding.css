@@ -267,7 +267,9 @@
 }
 
 .wizard-kyc-verified,
-.wizard-kyc-pending {
+.wizard-kyc-pending,
+.wizard-kyc-loading,
+.wizard-kyc-error {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -281,6 +283,17 @@
 }
 
 .wizard-kyc-pending {
+    background: #FEF3F2;
+    border: 1px solid #FEE4E2;
+}
+
+.wizard-kyc-loading {
+    background: #F5F8FF;
+    border: 1px solid #D1E0FF;
+    color: var(--text-secondary);
+}
+
+.wizard-kyc-error {
     background: #FEF3F2;
     border: 1px solid #FEE4E2;
 }
@@ -387,6 +400,11 @@
 
 .legal-tab:hover:not(.active) {
     background: #ECEDF0;
+}
+
+.legal-tab:focus-visible {
+    outline: 2px solid var(--brand-electric-blue, #0000FF);
+    outline-offset: 2px;
 }
 
 .legal-tab svg {

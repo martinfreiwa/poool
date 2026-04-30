@@ -16,17 +16,17 @@
                         </div>
                     </div>
                     <div id="content-inner">
-                        <div id="auth-error" style="margin-bottom: 16px;"></div>
+                        <div id="auth-error" aria-live="polite" style="margin-bottom: 16px;"></div>
                         <form id="2fa-form" hx-post="/auth/2fa" hx-target="#auth-error" hx-swap="innerHTML"
-                            hx-ext="response-targets" hx-target-400="#auth-error" hx-indicator="#loading-indicator">
+                            hx-indicator="#loading-indicator">
                             <div id="input-field">
                                 <div id="input-with-label">
                                     <div class="label-wrapper">
                                         <label for="code-input" class="input-label">Verification Code</label>
                                     </div>
                                     <div id="email-input-wrapper">
-                                        <input type="text" id="email-input" name="code" placeholder="000000"
-                                            inputmode="numeric" pattern="[0-9]{6}" required autofocus />
+                                        <input type="text" id="code-input" name="code" placeholder="000000"
+                                            inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" required autofocus />
                                     </div>
                                 </div>
                             </div>
@@ -38,6 +38,9 @@
                                     <span id="button-text">Verify</span>
                                 </div>
                             </button>
+                            <div id="loading-indicator" class="auth-loading htmx-indicator" role="status" aria-live="polite">
+                                Verifying...
+                            </div>
                         </form>
                         <div id="signup-row">
                             <span id="signup-text">Having trouble?</span>
@@ -51,6 +54,44 @@
             <div id="testimonial-image"></div>
         </section>
     </div>
+    <script>
+        (function () {
+            var form = document.getElementById('2fa-form');
+            var button = document.getElementById('login-button');
+            var buttonText = document.getElementById('button-text');
+            var errorBox = document.getElementById('auth-error');
+
+            document.body.addEventListener('htmx:beforeSwap', function (evt) {
+                if (evt.detail.xhr && evt.detail.xhr.status >= 400) {
+                    evt.detail.target = errorBox;
+                    evt.detail.shouldSwap = true;
+                    evt.detail.isError = false;
+                }
+            });
+
+            if (!form || !button || !buttonText) {
+                return;
+            }
+
+            form.addEventListener('htmx:beforeRequest', function () {
+                button.disabled = true;
+                button.setAttribute('aria-busy', 'true');
+                buttonText.textContent = 'Verifying...';
+                if (errorBox) {
+                    errorBox.textContent = '';
+                }
+            });
+
+            form.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.xhr && evt.detail.xhr.getResponseHeader('HX-Redirect')) {
+                    return;
+                }
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+                buttonText.textContent = 'Verify';
+            });
+        })();
+    </script>
 </body>
 
 </html>

@@ -881,10 +881,16 @@ button.community-tab-btn.active {
 }
 
 .ann-read-more {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
   font-size: 13px;
   font-weight: 600;
+  font-family: inherit;
   color: var(--btn-primary-bg);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .ann-read-more:hover { text-decoration: underline; }

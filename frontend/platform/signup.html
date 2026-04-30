@@ -17,7 +17,7 @@
           </div>
 
           <!-- Error area -->
-          <div id="auth-error">
+          <div id="auth-error" role="alert" aria-live="assertive" tabindex="-1">
             {% if error %}
             <div class="auth-error-message" style="color: #F04438; background: #FEF3F2; border: 1px solid #FEE4E2; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px;">
               {{ error }}
@@ -25,6 +25,7 @@
             {% endif %}
           </div>
 
+          {% if google_enabled %}
           <!-- Social login buttons -->
           <div id="social-buttons">
             <button id="google-button" class="social-button" onclick="window.location.href='/auth/google'">
@@ -41,6 +42,7 @@
             <span id="or-text">OR</span>
             <div id="divider-right"></div>
           </div>
+          {% endif %}
 
           <!-- Referral Notice -->
           {% if referral_code %}
@@ -88,7 +90,7 @@
               </label>
             </div>
 
-            <button type="submit" id="login-button">
+            <button type="submit" id="login-button" aria-describedby="auth-error">
               <span id="button-text">Get started</span>
             </button>
           </form>
@@ -121,6 +123,7 @@
       var btn = document.getElementById('login-button');
       if (btn) {
         btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
         btn.querySelector('#button-text').textContent = 'Creating account...';
       }
     });
@@ -129,7 +132,15 @@
       var btn = document.getElementById('login-button');
       if (btn) {
         btn.disabled = false;
+        btn.removeAttribute('aria-busy');
         btn.querySelector('#button-text').textContent = 'Get started';
+      }
+
+      if (evt.detail && evt.detail.xhr && evt.detail.xhr.status >= 400) {
+        var error = document.getElementById('auth-error');
+        if (error && error.textContent.trim()) {
+          error.focus();
+        }
       }
     });
   </script>

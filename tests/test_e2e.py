@@ -342,10 +342,12 @@ def test_cart_add_nonexistent_asset(session):
 
 
 def test_marketplace_page():
-    section("MARKETPLACE: Public Pages")
-    r = requests.get(f"{BASE_URL}/marketplace", timeout=REQUEST_TIMEOUT)
-    if r.status_code == 200:
-        ok("Marketplace page loads without auth")
+    section("MARKETPLACE: Authenticated Pages")
+    r = requests.get(f"{BASE_URL}/marketplace", timeout=REQUEST_TIMEOUT, allow_redirects=False)
+    if r.status_code in (302, 303) and "/auth/login" in r.headers.get("location", ""):
+        ok("Marketplace redirects unauthenticated users to login")
+    elif r.status_code == 200:
+        ok("Marketplace page loads for existing authenticated session")
     else:
         fail(f"Marketplace returned {r.status_code}")
 

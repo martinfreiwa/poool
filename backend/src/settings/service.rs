@@ -1108,6 +1108,7 @@ pub async fn disable_totp(
     let secret = secret.ok_or_else(|| {
         AppError::BadRequest("Two-factor authentication is not configured.".to_string())
     })?;
+    let secret = crate::auth::service::decrypt_stored_totp_secret(&secret)?;
     if !crate::auth::service::verify_totp_code_with_replay_guard(redis, user_id, &secret, code)
         .await
     {

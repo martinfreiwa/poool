@@ -24,6 +24,10 @@ pub struct Config {
     pub base_url: String,
     pub google_client_id: Option<String>,
     pub google_client_secret: Option<String>,
+    /// Google OAuth token endpoint. Defaults to Google's live endpoint; override in tests only.
+    pub google_oauth_token_url: String,
+    /// Google OAuth userinfo endpoint. Defaults to Google's live endpoint; override in tests only.
+    pub google_oauth_userinfo_url: String,
     pub facebook_app_id: Option<String>,
     pub facebook_app_secret: Option<String>,
     /// Didit.me KYC provider API key.
@@ -85,6 +89,14 @@ impl Config {
             base_url: env_or("BASE_URL", "http://localhost:8888"),
             google_client_id: env_optional("GOOGLE_CLIENT_ID"),
             google_client_secret: env_optional("GOOGLE_CLIENT_SECRET"),
+            google_oauth_token_url: env_or(
+                "GOOGLE_OAUTH_TOKEN_URL",
+                "https://oauth2.googleapis.com/token",
+            ),
+            google_oauth_userinfo_url: env_or(
+                "GOOGLE_OAUTH_USERINFO_URL",
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+            ),
             facebook_app_id: env_optional("FACEBOOK_APP_ID"),
             facebook_app_secret: env_optional("FACEBOOK_APP_SECRET"),
             didit_api_key: env_optional("DIDIT_API_KEY"),

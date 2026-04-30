@@ -1,7 +1,7 @@
 {% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones,
 and grow together.",
 extra_css=['community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed',
-'community-circles'] %}{%
+'community-circles', 'community-challenges'] %}{%
 include
 "components/head.html" %}{% endwith %}
 
@@ -13,6 +13,7 @@ include
 <body id="community-body" class="fouc-guard">
   <script>
     window.SSR_POST_ID = '{{ ssr_post_id | default("") }}';
+    window.SSR_POST_FOUND = {% if ssr_post_found %}true{% else %}false{% endif %};
   </script>
   {% include 'components/mobile-menu.html' %}
 
@@ -30,19 +31,38 @@ include
         <!-- Tab Navigation — HTMX-driven via topbar buttons -->
         <script>
           /**
-           * switchCommunityTab — programmatically activates a topbar HTMX tab button.
-           * Works by clicking the button, which triggers both the HTMX swap and the
-           * onclick active-state handler.
+           * switchCommunityTab — activates topbar tabs. HTMX-backed tabs load into
+           * #community-content-area; client tabs reveal panels already in this page.
            */
           function switchCommunityTab(clickedBtn) {
             if (!clickedBtn) return;
-            // Update active states
+
             document.querySelectorAll('.community-tab-btn').forEach(function (b) { b.classList.remove('active'); });
             clickedBtn.classList.add('active');
-            // Trigger HTMX swap by clicking the button
-            if (typeof htmx !== 'undefined') {
-              htmx.trigger(clickedBtn, 'click');
+
+            const contentArea = document.getElementById('community-content-area');
+            const targetPanel = document.getElementById(clickedBtn.dataset.tab);
+            document.querySelectorAll('.community-tab-panel').forEach(function (panel) {
+              panel.classList.add('hidden');
+            });
+
+            if (clickedBtn.dataset.clientTab) {
+              if (contentArea) contentArea.style.display = 'none';
+              if (targetPanel) targetPanel.classList.remove('hidden');
+              const tab = clickedBtn.dataset.clientTab;
+              const url = tab === 'search' ? '/community?tab=search' : '/community?tab=' + tab;
+              window.history.replaceState({}, '', url);
+              if (tab === 'saved' && typeof window.loadSavedPosts === 'function') {
+                window.loadSavedPosts();
+              }
+              if (tab === 'search') {
+                const searchInput = document.querySelector('#community-search-tab input[type="text"]');
+                if (searchInput) searchInput.focus();
+              }
+              return;
             }
+
+            if (contentArea) contentArea.style.display = '';
           }
 
           window.addEventListener('DOMContentLoaded', () => {
@@ -51,10 +71,29 @@ include
             if (tab && tab !== 'feed') {
               const targetTab = document.querySelector(`.community-tab-btn[data-tab="community-${tab}-tab"]`);
               if (targetTab) {
-                switchCommunityTab(targetTab);
+                targetTab.click();
               }
             }
             // Default (feed) is already loaded via hx-trigger="load" on #community-content-area
+
+            const topbarSearch = document.getElementById('community-topbar-search');
+            if (topbarSearch) {
+              topbarSearch.addEventListener('focus', function () {
+                const searchTab = document.querySelector('.community-tab-btn[data-tab="community-search-tab"]');
+                if (searchTab) switchCommunityTab(searchTab);
+              });
+              topbarSearch.addEventListener('keydown', function (event) {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                const searchTab = document.querySelector('.community-tab-btn[data-tab="community-search-tab"]');
+                if (searchTab) switchCommunityTab(searchTab);
+                const panelInput = document.querySelector('#community-search-tab input[type="text"]');
+                if (panelInput) {
+                  panelInput.value = topbarSearch.value;
+                  panelInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+              });
+            }
           });
         </script>
         <div style="display: none;" class="community-tab-nav">
@@ -108,7 +147,7 @@ include
                   <template x-for="u in users" :key="u.user_id">
                     <div class="ds-card"
                       style="display: flex; align-items: center; justify-content: space-between; padding: 16px; cursor: pointer; transition: all 0.2s;"
-                      @click="window.location.href='/community/feed?profile=' + u.user_id"
+                      @click="openUserProfile(u.user_id)"
                       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';"
                       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
                       <div style="display: flex; align-items: center; gap: 12px;">
@@ -138,7 +177,7 @@ include
                 <h3 class="ds-text-md" style="margin-bottom: 16px;">Posts</h3>
                 <div style="display: flex; flex-direction: column; gap: 16px;">
                   <template x-for="p in posts" :key="p.id">
-                    <div class="ds-card feed-post-card" @click="window.location.href='/community/feed?post=' + p.id"
+                    <div class="ds-card feed-post-card" @click="window.location.href='/community/post/' + p.id"
                       style="cursor: pointer; transition: all 0.2s;"
                       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';"
                       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
@@ -228,7 +267,7 @@ include
         <!-- ═══════════════════════════════════════════════════════════
              TAB 1: FEED
              ═══════════════════════════════════════════════════════════ -->
-        <div id="community-content-area" hx-get="/community/partials/feed" hx-trigger="load">
+        <div id="community-content-area"{% if not ssr_post_id %} hx-get="/community/partials/feed" hx-trigger="load"{% endif %}>
         </div>
 
 
@@ -486,6 +525,55 @@ include
 
 
         <script>
+          window.openCommunityModal = function (modalId, trigger) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.dataset.previousFocus = '';
+            const active = trigger || document.activeElement;
+            if (active && active.id) modal.dataset.previousFocus = active.id;
+            window._communityModalPreviousFocus = active instanceof HTMLElement ? active : null;
+            modal.setAttribute('aria-hidden', 'false');
+            modal.style.display = modal.classList.contains('ds-modal') ? 'block' : 'flex';
+            const focusTarget = modal.querySelector('[autofocus], button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusTarget) focusTarget.focus();
+          };
+
+          window.closeCommunityModal = function (modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            const previousFocus = modal.dataset.previousFocus
+              ? document.getElementById(modal.dataset.previousFocus)
+              : window._communityModalPreviousFocus;
+            if (previousFocus) previousFocus.focus();
+            window._communityModalPreviousFocus = null;
+          };
+
+          document.addEventListener('keydown', function (event) {
+            const openModal = Array.from(document.querySelectorAll('[role="dialog"]'))
+              .find((modal) => modal.style.display && modal.style.display !== 'none');
+            if (!openModal) return;
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              closeCommunityModal(openModal.id);
+              return;
+            }
+            if (event.key !== 'Tab') return;
+            const focusable = Array.from(openModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+              .filter((el) => !el.disabled && el.offsetParent !== null);
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          });
+
           function triggerComposerTag(charType) {
             const textarea = document.getElementById('post-content-input');
             if (!textarea) return;
@@ -505,14 +593,14 @@ include
         </script>
 
         <!-- Report Post Modal -->
-        <div id="report-post-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('report-post-modal').style.display='none'">
+        <div id="report-post-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="report-post-title" style="display: none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('report-post-modal')">
           </div>
           <div class="ds-modal__content" style="max-width: 400px;">
             <div class="ds-modal__header">
-              <h3 class="ds-modal__title">Report Post</h3>
+              <h3 id="report-post-title" class="ds-modal__title">Report Post</h3>
               <button type="button" class="ds-modal__close"
-                onclick="document.getElementById('report-post-modal').style.display='none'">
+                aria-label="Close report dialog" onclick="closeCommunityModal('report-post-modal')">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -523,7 +611,7 @@ include
             <div class="ds-modal__body">
               <input type="hidden" id="report-post-id">
               <div class="ds-form-group">
-                <label class="ds-label">Reason for reporting</label>
+                <label for="report-reason" class="ds-label">Reason for reporting</label>
                 <select id="report-reason" class="ds-input">
                   <option value="spam">Spam or scam</option>
                   <option value="harassment">Harassment or hate speech</option>
@@ -535,7 +623,7 @@ include
             <div class="ds-modal__footer"
               style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
               <button type="button" class="ds-btn ds-btn--secondary"
-                onclick="document.getElementById('report-post-modal').style.display='none'">Cancel</button>
+                onclick="closeCommunityModal('report-post-modal')">Cancel</button>
               <button type="button" class="ds-btn ds-btn--primary" id="submit-report-btn" onclick="submitReport()"
                 style="background: #D92D20; color: white; border: none;">Submit Report</button>
             </div>
@@ -543,14 +631,14 @@ include
         </div>
 
         <!-- Edit Profile Modal -->
-        <div id="edit-profile-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('edit-profile-modal').style.display='none'">
+        <div id="edit-profile-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" style="display: none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('edit-profile-modal')">
           </div>
           <div class="ds-modal__content" style="max-width: 480px;">
             <div class="ds-modal__header">
-              <h3 class="ds-modal__title">Edit Profile</h3>
+              <h3 id="edit-profile-title" class="ds-modal__title">Edit Profile</h3>
               <button type="button" class="ds-modal__close"
-                onclick="document.getElementById('edit-profile-modal').style.display='none'">
+                aria-label="Close profile editor" onclick="closeCommunityModal('edit-profile-modal')">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -569,7 +657,7 @@ include
             <div class="ds-modal__footer"
               style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
               <button type="button" class="ds-btn ds-btn--secondary"
-                onclick="document.getElementById('edit-profile-modal').style.display='none'">Cancel</button>
+                onclick="closeCommunityModal('edit-profile-modal')">Cancel</button>
               <button type="button" class="ds-btn ds-btn--primary" id="save-profile-btn"
                 onclick="saveProfileDetails()">Save Changes</button>
             </div>
@@ -577,8 +665,8 @@ include
         </div>
 
         <!-- User Profile Modal (M3-FE.2) -->
-        <div id="user-profile-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('user-profile-modal').style.display='none'">
+        <div id="user-profile-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-name" style="display: none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('user-profile-modal')">
           </div>
           <div class="ds-modal__content" style="max-width: 480px;">
             <!-- Loading State -->
@@ -591,7 +679,7 @@ include
             <div id="profile-content-state" style="display: none;">
               <div class="ds-modal__header" style="border-bottom: none; padding-bottom: 0;">
                 <button type="button" class="ds-modal__close"
-                  onclick="document.getElementById('user-profile-modal').style.display='none'">
+                  aria-label="Close user profile" onclick="closeCommunityModal('user-profile-modal')">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>

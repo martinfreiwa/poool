@@ -8,17 +8,20 @@
 /// NO business logic lives here.
 use axum::{
     extract::{Extension, Query, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, HeaderValue, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
     routing::{get, post},
     Form, Router,
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use minijinja::context;
+use std::time::Duration;
+use tokio::time::{sleep, Instant};
 
 use super::middleware;
 use super::middleware::SESSION_COOKIE;
 use super::models::{LoginForm, SignupForm};
+use crate::common::{email, validation};
 
 /// Determine whether the session cookie should have the `Secure` flag.
 ///
@@ -65,7 +68,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/2fa", get(totp_verify_page).post(totp_verify_submit))
         .route("/2fa/setup", get(totp_setup_page).post(totp_setup_submit))
         .route("/2fa/step-up", post(step_up_verify))
-        .route("/logout", get(logout))
+        .route("/logout", get(logout_page).post(logout))
         .route("/google", get(google_redirect))
         .route("/google/callback", get(google_callback))
         .route(
@@ -132,14 +135,43 @@ pub async fn reset_password_page(State(state): State<AppState>) -> impl IntoResp
 }
 
 /// GET /auth/verify-email – Render the email verification page.
-pub async fn verify_email_page(State(state): State<AppState>) -> impl IntoResponse {
-    match state.templates.get_template("verify-email.html") {
-        Ok(t) => match t.render(minijinja::context! {}) {
-            Ok(c) => Html(c).into_response(),
-            Err(_) => Redirect::to("/auth/login").into_response(),
-        },
-        Err(_) => Redirect::to("/auth/login").into_response(),
+pub async fn verify_email_page(
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> impl IntoResponse {
+    if let Some(token) = params.get("token").filter(|value| !value.trim().is_empty()) {
+        return match service::verify_email(&state.db, token).await {
+            Ok(()) => Redirect::to("/auth/verify-email?verified=1").into_response(),
+            Err(err) => {
+                tracing::warn!("Email verification failed: {}", err);
+                Redirect::to("/auth/verify-email?error=invalid_token").into_response()
+            }
+        };
     }
+
+    let (status, title, message) = if params.get("verified").is_some_and(|v| v == "1") {
+        (
+            "success",
+            "Email verified",
+            "Your email address is verified. You can continue to POOOL.",
+        )
+    } else if params.get("error").is_some_and(|v| v == "invalid_token") {
+        (
+            "error",
+            "Verification link expired",
+            "This verification link is invalid or expired. Request a new link and try again.",
+        )
+    } else if let Some(error) = params.get("error").filter(|value| !value.trim().is_empty()) {
+        ("error", "Unable to resend email", error.as_str())
+    } else {
+        (
+            "pending",
+            "Check your email",
+            "We sent a verification link to your email address. Please click the link to verify your account.",
+        )
+    };
+
+    render_verify_email(&state, status, title, message)
 }
 
 // ─── Form Handlers (HTMX) ─────────────────────────────────────
@@ -178,7 +210,7 @@ pub async fn login_submit(
         .check(&format!("login:email:{}", email_key))
         .await
     {
-        tracing::warn!("Rate limit exceeded for login on email: {}", email_key);
+        tracing::warn!("Rate limit exceeded for login on submitted email bucket");
         return Ok(login_error_response(
             AppError::RateLimited(retry_after),
             &headers,
@@ -301,6 +333,7 @@ pub async fn totp_verify_page(
 pub async fn totp_verify_submit(
     State(state): State<AppState>,
     jar: CookieJar,
+    headers: HeaderMap,
     Form(form): Form<super::models::TotpForm>,
 ) -> Result<Response, AppError> {
     let session_token = jar
@@ -313,10 +346,42 @@ pub async fn totp_verify_submit(
         .await?
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
 
+    let client_ip = crate::common::net::client_ip(&headers);
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("2fa:ip:{}", client_ip))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for 2FA verification from IP: {}",
+            client_ip
+        );
+        return Ok(login_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+        ));
+    }
+
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("2fa:user:{}", user.id))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for 2FA verification for user: {}",
+            user.id
+        );
+        return Ok(login_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+        ));
+    }
+
     let settings = service::get_user_settings(&state.db, user.id).await?;
     let secret = settings
         .totp_secret
         .ok_or_else(|| AppError::Internal("2FA not configured.".to_string()))?;
+    let secret = service::decrypt_stored_totp_secret(&secret)?;
 
     if !service::verify_totp_code_with_replay_guard(
         state.redis.as_ref(),
@@ -326,8 +391,10 @@ pub async fn totp_verify_submit(
     )
     .await
     {
-        return Err(AppError::Unauthorized(
-            "Invalid authentication code.".to_string(),
+        tracing::warn!("Invalid 2FA code submitted for user {}", user.id);
+        return Ok(login_error_response(
+            AppError::Unauthorized("Invalid authentication code.".to_string()),
+            &headers,
         ));
     }
 
@@ -343,7 +410,7 @@ pub async fn totp_verify_submit(
     let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
 
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
+    response_headers.insert("HX-Redirect", HeaderValue::from_static("/marketplace"));
 
     Ok((jar, response_headers, Html("")).into_response())
 }
@@ -362,7 +429,12 @@ pub async fn totp_setup_page(
         .await?
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
 
+    if service::user_totp_enabled(&state.db, user.id).await? {
+        return Ok(Redirect::to("/settings?error=2fa_already_enabled").into_response());
+    }
+
     let (secret, url, qr_code) = service::generate_totp_secret(&user.email)?;
+    let setup_token = service::build_totp_setup_token(user.id, &secret)?;
 
     let tmpl = state
         .templates
@@ -373,6 +445,7 @@ pub async fn totp_setup_page(
         .render(context! {
             email => user.email,
             secret => secret,
+            setup_token => setup_token,
             url => url,
             qr_code => qr_code
         })
@@ -385,6 +458,7 @@ pub async fn totp_setup_page(
 pub async fn totp_setup_submit(
     State(state): State<AppState>,
     jar: CookieJar,
+    headers: HeaderMap,
     Form(form): Form<super::models::TotpSetupForm>,
 ) -> Result<Response, AppError> {
     let session_token = jar
@@ -396,15 +470,75 @@ pub async fn totp_setup_submit(
         .await?
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
 
+    let client_ip = crate::common::net::client_ip(&headers);
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("2fa_setup:ip:{}", client_ip))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for 2FA setup verification from IP: {}",
+            client_ip
+        );
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/2fa/setup",
+        ));
+    }
+
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("2fa_setup:user:{}", user.id))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for 2FA setup verification for user: {}",
+            user.id
+        );
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/2fa/setup",
+        ));
+    }
+
+    if service::user_totp_enabled(&state.db, user.id).await? {
+        return Ok(auth_form_error_response(
+            AppError::Forbidden(
+                "Two-factor authentication is already enabled. Disable it from Settings before enrolling again."
+                    .to_string(),
+            ),
+            &headers,
+            "/auth/2fa/setup",
+        ));
+    }
+
+    let setup_secret = match service::read_totp_setup_token(&form.setup_token, user.id) {
+        Ok(secret) => secret,
+        Err(error) => return Ok(auth_form_error_response(error, &headers, "/auth/2fa/setup")),
+    };
+
     // Verify first code
-    if !service::verify_totp_code(&form.secret, &form.code) {
-        return Err(AppError::BadRequest(
-            "Invalid authentication code. Please check your authenticator app.".to_string(),
+    if !service::verify_totp_code_with_replay_guard(
+        state.redis.as_ref(),
+        user.id,
+        &setup_secret,
+        &form.code,
+    )
+    .await
+    {
+        return Ok(auth_form_error_response(
+            AppError::BadRequest(
+                "Invalid authentication code. Please check your authenticator app.".to_string(),
+            ),
+            &headers,
+            "/auth/2fa/setup",
         ));
     }
 
     // Enable in DB
-    service::enable_totp(&state.db, user.id, &form.secret).await?;
+    service::enable_totp(&state.db, user.id, &setup_secret).await?;
 
     // Rotate session token on 2FA enrollment (privilege change).
     let new_token = service::rotate_session_token(&state.db, session_token).await?;
@@ -417,7 +551,7 @@ pub async fn totp_setup_submit(
     let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
 
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
+    response_headers.insert("HX-Redirect", HeaderValue::from_static("/marketplace"));
 
     Ok((jar, response_headers, Html("")).into_response())
 }
@@ -482,15 +616,21 @@ pub async fn signup_submit(
         .await
     {
         tracing::warn!("Rate limit exceeded for signup from IP: {}", client_ip);
-        return Err(AppError::RateLimited(retry_after));
+        return Ok(signup_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+        ));
     }
 
     // ── Terms acceptance guard ──────────────────────────────────
     if !form.terms_accepted() {
-        let html = r#"<div id="signup-error" style="color:#D92D20;font-size:14px;padding:8px 12px;background:#FEF3F2;border-radius:8px;border:1px solid #FDA29B;margin-bottom:8px;">
-            You must accept the Terms and Conditions and Privacy Policy to create an account.
-        </div>"#;
-        return Ok(Html(html).into_response());
+        return Ok(signup_error_response(
+            AppError::BadRequest(
+                "You must accept the Terms and Conditions and Privacy Policy to create an account."
+                    .to_string(),
+            ),
+            &headers,
+        ));
     }
 
     // Determine the referral code to use (form priority, fallback to cookie)
@@ -498,15 +638,6 @@ pub async fn signup_submit(
         jar.get(super::middleware::REFERRAL_COOKIE)
             .map(|c| c.value().to_string())
     });
-
-    // Register user (validates, hashes, creates user + wallets + role)
-    let user = service::register_user(
-        &state.db,
-        &form.email,
-        &form.password,
-        &state.config.base_url,
-    )
-    .await?;
 
     // Extract client info
     let ip = match crate::common::net::client_ip(&headers).as_str() {
@@ -524,20 +655,34 @@ pub async fn signup_submit(
     let terms_version: String =
         sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'legal_terms_version'")
             .fetch_optional(&state.db)
-            .await
-            .ok()
+            .await?
             .flatten()
             .unwrap_or_else(|| "1.0".to_string());
 
-    let _ = sqlx::query(
-        "INSERT INTO user_consents (user_id, terms_version, ip_address, user_agent) VALUES ($1, $2, $3, $4)"
+    let (user, verification_token) = match service::register_user_with_consent_and_verification(
+        &state.db,
+        &form.email,
+        &form.password,
+        &terms_version,
+        ip.as_deref(),
+        user_agent.as_deref(),
     )
-    .bind(user.id)
-    .bind(&terms_version)
-    .bind(ip.as_deref())
-    .bind(user_agent.as_deref())
-    .execute(&state.db)
-    .await;
+    .await
+    {
+        Ok(result) => result,
+        Err(err) => return Ok(signup_error_response(err, &headers)),
+    };
+
+    if let Err(err) =
+        service::send_email_verification(&user.email, &state.config.base_url, &verification_token)
+            .await
+    {
+        tracing::error!(
+            "Failed to send verification email for newly registered user {}: {}",
+            user.id,
+            err
+        );
+    }
 
     // ── Referral System Tracking ─────────────────────────────────
     if let Some(mut code_str) = referral_code.filter(|c| !c.trim().is_empty()) {
@@ -624,7 +769,8 @@ pub async fn signup_submit(
     .await
     .ok();
 
-    // Set session cookie (24h for new signups)
+    // Set a short session cookie for resend/verification UX. Normal
+    // authenticated access still requires users.email_verified = TRUE.
     let cookie = Cookie::build((SESSION_COOKIE, session_token))
         .path("/")
         .http_only(true)
@@ -635,10 +781,14 @@ pub async fn signup_submit(
     // Also clear referral cookie if it was used
     let jar = jar
         .remove(Cookie::from(super::middleware::REFERRAL_COOKIE))
-        .add(cookie);
+        .add(cookie)
+        .add(super::csrf::rotation_cookie());
 
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
+    response_headers.insert(
+        "HX-Redirect",
+        HeaderValue::from_static("/auth/verify-email?sent=1"),
+    );
 
     Ok((jar, response_headers, Html("")).into_response())
 }
@@ -651,6 +801,29 @@ pub async fn forgot_password_submit(
     headers: HeaderMap,
     Form(form): Form<super::models::ForgotPasswordForm>,
 ) -> Result<Response, AppError> {
+    let started_at = Instant::now();
+
+    if let Err(error) = validation::validate_email(&form.email) {
+        wait_for_password_reset_response_floor(started_at).await;
+        return Ok(auth_form_error_response(
+            error,
+            &headers,
+            "/auth/forgot-password",
+        ));
+    }
+
+    if state.config.app_env.eq_ignore_ascii_case("production") && !email::resend_configured() {
+        tracing::error!(
+            "Password reset requested while RESEND_API_KEY is not configured in production"
+        );
+        wait_for_password_reset_response_floor(started_at).await;
+        return Ok(auth_form_error_response(
+            AppError::ServiceUnavailable("Password reset email is not configured".to_string()),
+            &headers,
+            "/auth/forgot-password",
+        ));
+    }
+
     // Rate limiting — prevent email bombing
     let client_ip = crate::common::net::client_ip(&headers);
 
@@ -663,7 +836,12 @@ pub async fn forgot_password_submit(
             "Rate limit exceeded for forgot-password from IP: {}",
             client_ip
         );
-        return Err(AppError::RateLimited(retry_after));
+        wait_for_password_reset_response_floor(started_at).await;
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/forgot-password",
+        ));
     }
 
     // Per-email cap — stops attackers rotating IPs to spam a single inbox
@@ -678,19 +856,35 @@ pub async fn forgot_password_submit(
             "Rate limit exceeded for forgot-password on email: {}",
             email_key
         );
-        return Err(AppError::RateLimited(retry_after));
+        wait_for_password_reset_response_floor(started_at).await;
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/forgot-password",
+        ));
     }
 
-    service::create_password_reset_token(&state.db, &form.email, &state.config.base_url).await?;
+    if let Err(error) =
+        service::create_password_reset_token(&state.db, &form.email, &state.config.base_url).await
+    {
+        wait_for_password_reset_response_floor(started_at).await;
+        return Ok(auth_form_error_response(
+            error,
+            &headers,
+            "/auth/forgot-password",
+        ));
+    }
+
+    wait_for_password_reset_response_floor(started_at).await;
 
     let html = r##"
-        <div style="text-align: center; padding: 20px;">
+        <div id="forgot-password-success" role="status" aria-live="polite" tabindex="-1" style="text-align: center; padding: 20px;">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin-bottom: 16px; color: #12B76A;">
                 <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" fill="#D1FADF"/>
                 <path d="M7.75 12L10.58 14.83L16.25 9.17" stroke="#039855" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <h3 style="color: #101828; font-size: 18px; margin-bottom: 8px;">Check your email</h3>
-            <p style="color: #475467; font-size: 14px;">We've sent password reset instructions to your email.</p>
+            <p style="color: #475467; font-size: 14px;">If an active account exists for that address, we've sent password reset instructions.</p>
         </div>
     "##;
 
@@ -700,19 +894,75 @@ pub async fn forgot_password_submit(
 /// POST /auth/reset-password
 pub async fn reset_password_submit(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Form(form): Form<super::models::ResetPasswordForm>,
 ) -> Result<Response, AppError> {
-    if form.password != form.confirm_password {
-        return Err(AppError::BadRequest("Passwords do not match.".to_string()));
-    }
-    if form.token.is_empty() {
-        return Err(AppError::BadRequest("Missing reset token.".to_string()));
+    let client_ip = crate::common::net::client_ip(&headers);
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("reset:{}", client_ip))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for reset-password from IP: {}",
+            client_ip
+        );
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/reset-password",
+        ));
     }
 
-    service::reset_password(&state.db, &form.token, &form.password).await?;
+    let token_key = if form.token.trim().is_empty() {
+        "missing".to_string()
+    } else {
+        crate::config::hash_token(form.token.trim())
+    };
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("reset:token:{}", token_key))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for reset-password token from IP: {}",
+            client_ip
+        );
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/reset-password",
+        ));
+    }
+
+    if form.password != form.confirm_password {
+        return Ok(auth_form_error_response(
+            AppError::BadRequest("Passwords do not match.".to_string()),
+            &headers,
+            "/auth/reset-password",
+        ));
+    }
+    if form.token.trim().is_empty() {
+        return Ok(auth_form_error_response(
+            AppError::BadRequest(
+                "This reset link is missing or expired. Please request a new password reset email."
+                    .to_string(),
+            ),
+            &headers,
+            "/auth/reset-password",
+        ));
+    }
+
+    if let Err(err) = service::reset_password(&state.db, form.token.trim(), &form.password).await {
+        return Ok(auth_form_error_response(
+            err,
+            &headers,
+            "/auth/reset-password",
+        ));
+    }
 
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", "/auth/login".parse().unwrap());
+    response_headers.insert("HX-Redirect", HeaderValue::from_static("/auth/login"));
 
     Ok((response_headers, Html("")).into_response())
 }
@@ -721,22 +971,88 @@ pub async fn reset_password_submit(
 pub async fn resend_verification_submit(
     State(state): State<AppState>,
     jar: CookieJar,
+    headers: HeaderMap,
 ) -> Result<Response, AppError> {
-    if let Some(cookie) = jar.get(SESSION_COOKIE) {
-        if let Ok(Some(user)) = service::get_user_by_session(&state.db, cookie.value()).await {
-            let _ = service::create_email_verification_token(
-                &state.db,
-                user.id,
-                &user.email,
-                &state.config.base_url,
-            )
-            .await;
+    let client_ip = crate::common::net::client_ip(&headers);
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("resend_verification:ip:{}", client_ip))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for email verification resend from IP: {}",
+            client_ip
+        );
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/verify-email",
+        ));
+    }
+
+    let user = match jar.get(SESSION_COOKIE) {
+        Some(cookie) => service::get_user_by_session_unverified(&state.db, cookie.value())
+            .await?
+            .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?,
+        None => {
+            return Ok(auth_form_error_response(
+                AppError::Unauthorized(
+                    "Your session expired. Please sign in to resend the verification email."
+                        .to_string(),
+                ),
+                &headers,
+                "/auth/verify-email",
+            ))
         }
+    };
+
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("resend_verification:user:{}", user.id))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for email verification resend for user: {}",
+            user.id
+        );
+        return Ok(auth_form_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+            "/auth/verify-email",
+        ));
+    }
+
+    if user.email_verified {
+        return Ok(Html(
+            r#"<div class="auth-success-message" role="status" aria-live="polite" tabindex="-1">Your email is already verified.</div>"#
+                .to_string(),
+        )
+        .into_response());
+    }
+
+    if let Err(error) = service::create_email_verification_token(
+        &state.db,
+        user.id,
+        &user.email,
+        &state.config.base_url,
+    )
+    .await
+    {
+        tracing::warn!(
+            "Failed to resend verification email for user {}: {}",
+            user.id,
+            error
+        );
+        return Ok(auth_form_error_response(
+            error,
+            &headers,
+            "/auth/verify-email",
+        ));
     }
 
     let html = r#"
-        <div style="text-align: center; padding: 20px;">
-            <p style="color: #039855; font-size: 14px; font-weight: 500;">Verification email resent successfully!</p>
+        <div class="auth-success-message" role="status" aria-live="polite" tabindex="-1">
+            Verification email resent successfully.
         </div>
     "#;
 
@@ -745,17 +1061,55 @@ pub async fn resend_verification_submit(
 
 // ─── Logout ────────────────────────────────────────────────────
 
-/// GET /logout – Destroy session and redirect to login.
+/// GET /logout – Compatibility page that submits the CSRF-protected logout POST.
+pub async fn logout_page(
+    Extension(csrf_token): Extension<super::csrf::CsrfToken>,
+) -> impl IntoResponse {
+    Html(format!(
+        r#"<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signing out | POOOL</title>
+</head>
+<body>
+  <form id="logout-form" method="post" action="/auth/logout">
+    <input type="hidden" name="csrf_token" value="{csrf_token}">
+    <button type="submit">Sign out</button>
+  </form>
+  <script>document.getElementById("logout-form").submit();</script>
+</body>
+</html>"#,
+        csrf_token = csrf_token.0
+    ))
+    .into_response()
+}
+
+fn expired_session_cookie() -> Cookie<'static> {
+    Cookie::build((SESSION_COOKIE, ""))
+        .path("/")
+        .http_only(true)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .max_age(time::Duration::seconds(0))
+        .build()
+}
+
+/// POST /logout – Destroy session and redirect to login.
 pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
-    // Delete session from DB
+    // Delete session from DB. The cookie is expired regardless, but a failed
+    // DB delete means the server-side session may remain valid elsewhere.
     if let Some(cookie) = jar.get(SESSION_COOKIE) {
-        let _ = service::delete_session(&state.db, cookie.value()).await;
+        if let Err(error) = service::delete_session(&state.db, cookie.value()).await {
+            tracing::error!("Failed to delete session during logout: {}", error);
+        }
     }
 
     // Clear cookies — session and CSRF both rotate on logout so the next
     // authenticated session starts with fresh tokens.
     let jar = jar
-        .remove(Cookie::from(SESSION_COOKIE))
+        .add(expired_session_cookie())
         .add(super::csrf::rotation_cookie());
 
     (jar, Redirect::to("/auth/login"))
@@ -813,13 +1167,13 @@ pub async fn google_redirect(
     );
 
     let state_cookie = Cookie::build(("oauth_state", state_token))
-        .path("/auth")
+        .path("/")
         .http_only(true)
         .secure(cookie_is_secure())
         .same_site(axum_extra::extract::cookie::SameSite::Lax)
         .max_age(time::Duration::minutes(10));
     let verifier_cookie = Cookie::build(("oauth_pkce", code_verifier))
-        .path("/auth")
+        .path("/")
         .http_only(true)
         .secure(cookie_is_secure())
         .same_site(axum_extra::extract::cookie::SameSite::Lax)
@@ -829,7 +1183,7 @@ pub async fn google_redirect(
     let jar = if is_link_flow {
         jar.add(
             Cookie::build(("oauth_link", "1"))
-                .path("/auth")
+                .path("/")
                 .http_only(true)
                 .secure(cookie_is_secure())
                 .same_site(axum_extra::extract::cookie::SameSite::Lax)
@@ -847,14 +1201,24 @@ pub async fn google_callback(
     jar: CookieJar,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Response {
-    match google_callback_inner(&state, jar, params).await {
+    match google_callback_inner(&state, jar.clone(), params).await {
         Ok(response) => response,
         Err(e) => {
             tracing::error!("Google OAuth callback error: {}", e);
-            Redirect::to("/auth/login?error=Google+sign+in+failed.+Please+try+again.")
+            let jar = clear_oauth_cookies(jar);
+            (
+                jar,
+                Redirect::to("/auth/login?error=Google+sign+in+failed.+Please+try+again."),
+            )
                 .into_response()
         }
     }
+}
+
+fn clear_oauth_cookies(jar: CookieJar) -> CookieJar {
+    jar.remove(Cookie::from("oauth_state"))
+        .remove(Cookie::from("oauth_pkce"))
+        .remove(Cookie::from("oauth_link"))
 }
 
 async fn google_callback_inner(
@@ -900,7 +1264,7 @@ async fn google_callback_inner(
     // Exchange code for access token (with PKCE verifier)
     let client = reqwest::Client::new();
     let token_response = client
-        .post("https://oauth2.googleapis.com/token")
+        .post(&state.config.google_oauth_token_url)
         .form(&[
             ("code", code.as_str()),
             ("client_id", client_id.as_str()),
@@ -932,13 +1296,20 @@ async fn google_callback_inner(
     }
 
     let access_token = token_data["access_token"].as_str().ok_or_else(|| {
-        tracing::error!("No access_token in Google response: {:?}", token_data);
+        let response_keys = token_data
+            .as_object()
+            .map(|obj| obj.keys().cloned().collect::<Vec<_>>())
+            .unwrap_or_default();
+        tracing::error!(
+            response_keys = ?response_keys,
+            "Google OAuth token response missing access_token"
+        );
         AppError::Internal("No access token in Google response".to_string())
     })?;
 
     // Fetch user info
     let user_info: serde_json::Value = client
-        .get("https://www.googleapis.com/oauth2/v2/userinfo")
+        .get(&state.config.google_oauth_userinfo_url)
         .bearer_auth(access_token)
         .send()
         .await
@@ -994,10 +1365,7 @@ async fn google_callback_inner(
         .execute(&state.db)
         .await?;
 
-        let jar = jar
-            .remove(Cookie::from("oauth_state"))
-            .remove(Cookie::from("oauth_pkce"))
-            .remove(Cookie::from("oauth_link"));
+        let jar = clear_oauth_cookies(jar);
 
         return Ok((jar, Redirect::to("/settings#sec-security")).into_response());
     }
@@ -1023,9 +1391,7 @@ async fn google_callback_inner(
     };
 
     // Clear transient OAuth cookies
-    let jar = jar
-        .remove(Cookie::from("oauth_state"))
-        .remove(Cookie::from("oauth_pkce"));
+    let jar = clear_oauth_cookies(jar);
 
     let session_token =
         service::create_session(&state.db, user.id, true, is_2fa_verified, None, None).await?;
@@ -1056,7 +1422,94 @@ fn is_htmx_request(headers: &HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
+async fn wait_for_password_reset_response_floor(started_at: Instant) {
+    const RESPONSE_FLOOR: Duration = Duration::from_millis(650);
+
+    let elapsed = started_at.elapsed();
+    if elapsed < RESPONSE_FLOOR {
+        sleep(RESPONSE_FLOOR - elapsed).await;
+    }
+}
+
+fn auth_form_error_response(error: AppError, headers: &HeaderMap, fallback_path: &str) -> Response {
+    let (status, message, retry_after) = match error {
+        AppError::BadRequest(message) => (StatusCode::BAD_REQUEST, message, None),
+        AppError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message, None),
+        AppError::Forbidden(message) => (StatusCode::FORBIDDEN, message, None),
+        AppError::Conflict(message) => (StatusCode::CONFLICT, message, None),
+        AppError::RateLimited(seconds) => (
+            StatusCode::TOO_MANY_REQUESTS,
+            format!(
+                "Too many attempts. Please try again in {} seconds.",
+                seconds
+            ),
+            Some(seconds),
+        ),
+        AppError::ServiceUnavailable(message) => {
+            tracing::error!("Auth form service unavailable: {}", message);
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Service temporarily unavailable. Please try again later.".to_string(),
+                None,
+            )
+        }
+        AppError::Internal(message) => {
+            tracing::error!("Auth form internal error: {}", message);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again.".to_string(),
+                None,
+            )
+        }
+        AppError::Database(err) => {
+            tracing::error!("Auth form database error: {}", err);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again.".to_string(),
+                None,
+            )
+        }
+        other => {
+            tracing::warn!("Unexpected auth form error: {}", other);
+            (
+                StatusCode::BAD_REQUEST,
+                "Unable to process that request. Please try again.".to_string(),
+                None,
+            )
+        }
+    };
+
+    if is_htmx_request(headers) {
+        let mut response = (StatusCode::OK, Html(render_auth_error_html(&message))).into_response();
+        if let Ok(value) = status.as_u16().to_string().parse() {
+            response
+                .headers_mut()
+                .insert("X-POOOL-Auth-Error-Status", value);
+        }
+        if let Some(seconds) = retry_after {
+            if let Ok(value) = seconds.to_string().parse() {
+                response
+                    .headers_mut()
+                    .insert(axum::http::header::RETRY_AFTER, value);
+            }
+        }
+        return response;
+    }
+
+    let encoded_message: String =
+        url::form_urlencoded::byte_serialize(message.as_bytes()).collect();
+    Redirect::to(&format!("{}?error={}", fallback_path, encoded_message)).into_response()
+}
+
 fn login_error_response(error: AppError, headers: &HeaderMap) -> Response {
+    auth_error_response(error, headers, "/auth/login")
+}
+
+fn signup_error_response(error: AppError, headers: &HeaderMap) -> Response {
+    auth_error_response(error, headers, "/auth/signup")
+}
+
+fn auth_error_response(error: AppError, headers: &HeaderMap, fallback_path: &str) -> Response {
     let (status, message, retry_after) = match error {
         AppError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message, None),
         AppError::Forbidden(message) => (StatusCode::FORBIDDEN, message, None),
@@ -1115,7 +1568,7 @@ fn login_error_response(error: AppError, headers: &HeaderMap) -> Response {
 
     let encoded_message: String =
         url::form_urlencoded::byte_serialize(message.as_bytes()).collect();
-    Redirect::to(&format!("/auth/login?error={}", encoded_message)).into_response()
+    Redirect::to(&format!("{}?error={}", fallback_path, encoded_message)).into_response()
 }
 
 fn render_auth_error_html(message: &str) -> String {
@@ -1127,9 +1580,28 @@ fn render_auth_error_html(message: &str) -> String {
         .replace('\'', "&#39;");
 
     format!(
-        r#"<div class="auth-error-message" role="alert">{}</div>"#,
+        r#"<div class="auth-error-message" role="alert" aria-live="assertive" tabindex="-1">{}</div>"#,
         escaped
     )
+}
+
+fn render_verify_email(state: &AppState, status: &str, title: &str, message: &str) -> Response {
+    let tmpl = match state.templates.get_template("verify-email.html") {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::error!("Failed to load verify-email.html template: {}", e);
+            return Html("<h1>Internal Server Error</h1>".to_string()).into_response();
+        }
+    };
+
+    let html = tmpl
+        .render(context! {
+            status => status,
+            heading => title,
+            message => message,
+        })
+        .unwrap_or_else(|e| format!("Template error: {}", e));
+    Html(html).into_response()
 }
 
 fn render_login(state: &AppState, error: Option<String>, csrf_token: String) -> Response {
@@ -1188,6 +1660,139 @@ mod urlencoding {
             }
         }
         encoded
+    }
+}
+
+#[cfg(test)]
+mod google_oauth_tests {
+    use super::*;
+    use crate::auth::rate_limit::RateLimiter;
+    use crate::config::Config;
+    use sqlx::postgres::PgPoolOptions;
+    use std::time::Duration;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    fn test_app_state(token_url: String, userinfo_url: String) -> AppState {
+        AppState {
+            db: PgPoolOptions::new()
+                .connect_lazy("postgres://localhost/poool_test")
+                .expect("test database URL should parse"),
+            db_replica: None,
+            community_db: None,
+            templates: crate::templates::create_engine(),
+            config: Config {
+                database_url: "postgres://localhost/poool_test".to_string(),
+                server_host: "127.0.0.1".to_string(),
+                server_port: 8888,
+                base_url: "http://localhost:8888".to_string(),
+                google_client_id: Some("test-client".to_string()),
+                google_client_secret: Some("test-secret".to_string()),
+                google_oauth_token_url: token_url,
+                google_oauth_userinfo_url: userinfo_url,
+                facebook_app_id: None,
+                facebook_app_secret: None,
+                didit_api_key: None,
+                didit_workflow_id: None,
+                didit_webhook_secret: None,
+                redis_url: None,
+                database_replica_url: None,
+                community_database_url: None,
+                sentry_dsn: None,
+                app_env: "test".to_string(),
+                gcs_bucket: None,
+                blog_content_source: "sanity".to_string(),
+                sanity_project_id: "test".to_string(),
+                sanity_dataset: "test".to_string(),
+                sanity_api_version: "2026-04-24".to_string(),
+                sanity_studio_url: "https://example.test".to_string(),
+                sanity_read_token: None,
+                sanity_write_token: None,
+                metabase_base_url: String::new(),
+                metabase_public_dashboard_path: String::new(),
+                metabase_dashboard_id: String::new(),
+            },
+            redis: None,
+            auth_rate_limiter: RateLimiter::new(10, Duration::from_secs(60)),
+        }
+    }
+
+    async fn one_shot_json_server(body: &'static str) -> String {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind one-shot server");
+        let addr = listener.local_addr().expect("read one-shot server addr");
+
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.expect("accept request");
+            let mut request = [0_u8; 2048];
+            let _ = stream.read(&mut request).await;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream
+                .write_all(response.as_bytes())
+                .await
+                .expect("write response");
+        });
+
+        format!("http://{addr}")
+    }
+
+    fn oauth_jar() -> CookieJar {
+        CookieJar::new()
+            .add(Cookie::build(("oauth_state", "state-123")).path("/auth"))
+            .add(Cookie::build(("oauth_pkce", "verifier-123")).path("/auth"))
+    }
+
+    fn oauth_params() -> std::collections::HashMap<String, String> {
+        std::collections::HashMap::from([
+            ("state".to_string(), "state-123".to_string()),
+            ("code".to_string(), "code-123".to_string()),
+        ])
+    }
+
+    #[tokio::test]
+    async fn google_callback_uses_mock_token_endpoint_and_rejects_missing_access_token() {
+        let token_url = one_shot_json_server(r#"{"id_token":"redacted-test-token"}"#).await;
+        let state = test_app_state(token_url, "http://127.0.0.1:9/userinfo".to_string());
+
+        let err = google_callback_inner(&state, oauth_jar(), oauth_params())
+            .await
+            .expect_err("missing access_token must fail before userinfo or DB access");
+
+        assert!(
+            matches!(err, AppError::Internal(message) if message == "No access token in Google response")
+        );
+    }
+
+    #[tokio::test]
+    async fn google_callback_uses_mock_userinfo_endpoint_and_rejects_unverified_email() {
+        let token_url = one_shot_json_server(r#"{"access_token":"test-access-token"}"#).await;
+        let userinfo_url = one_shot_json_server(
+            r#"{"id":"google-123","email":"user@example.test","verified_email":false}"#,
+        )
+        .await;
+        let state = test_app_state(token_url, userinfo_url);
+
+        let err = google_callback_inner(&state, oauth_jar(), oauth_params())
+            .await
+            .expect_err("unverified Google email must fail before DB access");
+
+        assert!(
+            matches!(err, AppError::Unauthorized(message) if message == "Google account email is not verified")
+        );
+    }
+
+    #[test]
+    fn callback_error_cleanup_removes_all_transient_oauth_cookies() {
+        let jar = oauth_jar().add(Cookie::build(("oauth_link", "1")).path("/auth"));
+        let jar = clear_oauth_cookies(jar);
+
+        assert!(jar.get("oauth_state").is_none());
+        assert!(jar.get("oauth_pkce").is_none());
+        assert!(jar.get("oauth_link").is_none());
     }
 }
 

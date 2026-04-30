@@ -120,3 +120,47 @@ def test_public_property_full_health(quality_page):
     tracker.assert_no_critical_errors()
     tracker.assert_no_network_failures(ignore_status=[401, 404])
     tracker.assert_no_broken_images()
+
+
+def test_public_property_mobile_gallery_dots_do_not_error(quality_page):
+    """Mobile gallery dot taps should navigate without undefined JS handlers."""
+    page, tracker = quality_page
+    page.set_viewport_size({"width": 375, "height": 812})
+    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+
+    dots = page.locator(".mobile-gallery-dot")
+    expect(dots.first).to_be_visible(timeout=8000)
+    dots.nth(1).click()
+
+    assert "active" in (dots.nth(1).get_attribute("class") or "")
+    tracker.assert_no_critical_errors()
+
+
+def test_public_property_mobile_quick_amount_adds_once(quality_page):
+    """Public mobile amount chips must add the displayed amount once."""
+    page, tracker = quality_page
+    page.set_viewport_size({"width": 375, "height": 812})
+    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+
+    amount_input = page.locator("#mobile-investment-amount")
+    expect(amount_input).to_be_visible(timeout=8000)
+    assert amount_input.input_value() == "2,000"
+
+    page.locator(".mobile-quick-btn[data-amount='500']").click()
+    assert amount_input.input_value() == "2,500"
+    tracker.assert_no_critical_errors()
+
+
+def test_public_property_contact_and_tour_controls_are_real_or_hidden(quality_page):
+    """Public lead-capture controls should not expose fake/dead actions."""
+    page, tracker = quality_page
+    page.set_viewport_size({"width": 375, "height": 812})
+    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+
+    contact = page.locator(".contact-button.chat-button").first
+    expect(contact).to_be_visible(timeout=8000)
+    assert (contact.get_attribute("href") or "").startswith("https://wa.me/")
+
+    virtual_tour = page.locator("#mobile-property-price-card .mobile-gallery-btn", has_text="Virtual tour")
+    assert virtual_tour.count() == 0
+    tracker.assert_no_critical_errors()

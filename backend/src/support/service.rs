@@ -82,6 +82,15 @@ fn validate_category(category: &str) -> Result<&str, String> {
     }
 }
 
+fn attachment_signature_matches(mime: &str, bytes: &[u8]) -> bool {
+    match mime {
+        "image/png" => bytes.starts_with(b"\x89PNG\r\n\x1a\n"),
+        "image/jpeg" => bytes.starts_with(&[0xFF, 0xD8, 0xFF]),
+        "application/pdf" => bytes.starts_with(b"%PDF-"),
+        _ => false,
+    }
+}
+
 /// Submits a new support ticket (with context and attachments) and notifies admins.
 #[allow(clippy::too_many_arguments)]
 pub async fn submit_ticket(
@@ -110,6 +119,14 @@ pub async fn submit_ticket(
                 bytes.len() / (1024 * 1024)
             ));
         }
+        let mime = file_type
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("Attachment content type is required"))?;
+        if !attachment_signature_matches(mime, bytes) {
+            return Err(anyhow::anyhow!(
+                "Attachment file content does not match the declared file type"
+            ));
+        }
     }
 
     // 1. Fetch Backend Context (KYC, Balances)
@@ -127,7 +144,45 @@ pub async fn submit_ticket(
     let sanitized_subject = sanitize::sanitize_text(subject);
     let sanitized_message = sanitize::sanitize_multiline(message);
 
-    let (ticket_id, reply_id) = db::create_ticket_v2(
+    let mut uploaded_attachment: Option<(String, String)> = None;
+    if let Some(bytes) = file_bytes {
+        let mime = file_type
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("Attachment content type is required"))?;
+        let bucket = state
+            .config
+            .gcs_bucket
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("Attachment upload is not configured"))?;
+        let ext = crate::storage::service::extension_for_mime(mime);
+        let fname = file_name
+            .as_deref()
+            .unwrap_or("attachment")
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_') {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect::<String>();
+        let object_path = format!("support/pending/{}_{}.{}", Uuid::new_v4(), fname, ext);
+
+        let file_url = crate::storage::service::upload_private(bucket, &object_path, bytes, mime)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to upload support attachment: {}", e);
+                anyhow::anyhow!("Attachment upload failed. Please try again.")
+            })?;
+        uploaded_attachment = Some((file_url, mime.to_string()));
+    }
+
+    let attachment_ref = uploaded_attachment
+        .as_ref()
+        .map(|(file_url, mime)| (file_url.as_str(), mime.as_str()));
+
+    let (_ticket_id, _reply_id) = db::create_ticket_v2(
         &state.db,
         user_id,
         &sanitized_subject,
@@ -135,47 +190,9 @@ pub async fn submit_ticket(
         priority,
         category,
         &combined_context,
+        attachment_ref,
     )
     .await?;
-
-    // 3. Handle File Upload if present — use reply_id directly (no guessing)
-    if let Some(bytes) = file_bytes {
-        if let Some(mime) = file_type {
-            let ext = crate::storage::service::extension_for_mime(&mime);
-            let fname = file_name.as_deref().unwrap_or("attachment");
-            let object_path = format!("support/{}/{}_{}.{}", ticket_id, Uuid::new_v4(), fname, ext);
-
-            if let Some(bucket) = state.config.gcs_bucket.as_deref() {
-                match crate::storage::service::upload_private(bucket, &object_path, bytes, &mime)
-                    .await
-                {
-                    Ok(file_url) => {
-                        if let Err(e) =
-                            db::add_ticket_attachment(&state.db, &reply_id, &file_url, &mime).await
-                        {
-                            tracing::error!(
-                                "Failed to save attachment record for ticket {}: {}",
-                                ticket_id,
-                                e
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        tracing::error!(
-                            "Failed to upload support attachment for ticket {}: {}",
-                            ticket_id,
-                            e
-                        );
-                    }
-                }
-            } else {
-                tracing::warn!(
-                    "Support attachment skipped for ticket {} because GCS_BUCKET_NAME is not configured",
-                    ticket_id
-                );
-            }
-        }
-    }
 
     let _ = db::notify_admins_of_ticket(&state.db, subject).await;
     Ok(())

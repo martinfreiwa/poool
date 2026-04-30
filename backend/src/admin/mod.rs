@@ -119,8 +119,8 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/assets", get(page_admin_generic))
         .route("/admin/orders.html", get(page_admin_generic))
         .route("/admin/orders", get(page_admin_generic))
-        .route("/admin/deposits.html", get(page_admin_generic))
-        .route("/admin/deposits", get(page_admin_generic))
+        .route("/admin/deposits.html", get(page_admin_deposits))
+        .route("/admin/deposits", get(page_admin_deposits))
         .route("/admin/treasury.html", get(page_admin_generic))
         .route("/admin/treasury", get(page_admin_generic))
         .route("/admin/rewards.html", get(page_admin_generic))
@@ -485,6 +485,18 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/assets/:asset_id/detail",
             get(api_admin_asset_detail),
         )
+        .route(
+            "/api/admin/assets/:asset_id/images",
+            post(api_admin_asset_image_upload),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/images/:image_id",
+            delete(api_admin_asset_image_delete),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/images/reorder",
+            put(api_admin_asset_images_reorder),
+        )
         // Treasury & Rewards
         .route("/api/admin/treasury", get(api_admin_treasury))
         .route("/api/admin/rewards", get(api_admin_rewards))
@@ -658,6 +670,10 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/disputes/:id/status",
             put(api_admin_disputes_status_update),
         )
+        .route(
+            "/api/admin/disputes/:id/evidence",
+            get(api_admin_disputes_evidence_bundle).post(api_admin_disputes_generate_evidence),
+        )
         // Approvals
         .route(
             "/api/admin/approvals",
@@ -682,6 +698,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/primary-escrow",
             get(primary_escrow::api_admin_primary_escrow_list),
+        )
+        .route(
+            "/api/admin/primary-escrow/:asset_id/release-request",
+            post(primary_escrow::api_admin_primary_escrow_release_request),
         )
         .route(
             "/api/admin/marketplace/stats",

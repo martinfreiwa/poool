@@ -112,13 +112,12 @@
         </div>
         <span class="mobile-burger-menu__nav-text">Cart</span>
       </a><!-- Leaderboard -->
-      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+      <a href="/leaderboard" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
           <img  src="/static/images/icons/award-05.svg" alt="Leaderboard" class="mobile-burger-menu__nav-icon" />
         </div>
         <span class="mobile-burger-menu__nav-text">Leaderboard</span>
-        <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
-      </div>
+      </a>
       <!-- Settings -->
       <a href="{% if is_developer %}/developer/settings{% else %}/settings{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
@@ -638,13 +637,12 @@
         </div>
         <span class="mobile-burger-menu__nav-text">Cart</span>
       </a><!-- Leaderboard -->
-      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+      <a href="/leaderboard" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
           <img  src="/static/images/icons/award-05.svg" alt="Leaderboard" class="mobile-burger-menu__nav-icon" />
         </div>
         <span class="mobile-burger-menu__nav-text">Leaderboard</span>
-        <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
-      </div>
+      </a>
       <!-- Settings -->
       <a href="{% if is_developer %}/developer/settings{% else %}/settings{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
@@ -1346,6 +1344,8 @@
         activateItem("/affiliate");
       } else if (path.includes("/cart") || path.includes("/checkout")) {
         activateItem("/cart");
+      } else if (path.includes("/leaderboard")) {
+        activateItem("/leaderboard");
       } else if (path.includes("/settings")) {
         activateItem("/settings");
       } else if (path.includes("/support")) {

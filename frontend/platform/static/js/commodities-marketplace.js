@@ -44,8 +44,8 @@
                     if (typeof window._initMarketplaceSearch === "function") {
                         window._initMarketplaceSearch();
                     }
-                    if (typeof initializePropertyDots === "function") {
-                        initializePropertyDots();
+                    if (typeof window.initializePropertyCards === "function") {
+                        window.initializePropertyCards(evt.detail.target);
                     }
                     // Re-attach card animation
                     document
@@ -93,10 +93,7 @@
           <select id="filter-commodity-type"
             style="width:100%;height:40px;border:1px solid #d5d7da;border-radius:8px;padding:0 12px;font-size:14px;color:#181d27;background:#fff;cursor:pointer;appearance:none;-webkit-appearance:none;">
             <option value="any" selected>All types</option>
-            <option value="precious-metals">Precious Metals</option>
             <option value="agriculture">Agriculture</option>
-            <option value="energy">Energy</option>
-            <option value="livestock">Livestock</option>
           </select>
         </div>
         <!-- Min / max price -->
@@ -167,14 +164,27 @@
             const price = parseFloat(card.dataset.price) || 0;
             if (price < minP || price > maxP) visible = false;
 
+            if (visible && typeVal !== "any") {
+                const cardType = (card.dataset.commodityType || "").toLowerCase();
+                const badge = card.querySelector(".badge-text");
+                const badgeText = badge ? badge.textContent.toLowerCase() : "";
+                if (cardType !== typeVal && !badgeText.includes(typeVal)) visible = false;
+            }
+
             // Yield filter — read from card's investment-value cells
             if (visible && minY > 0) {
+                const dataYield = parseFloat(card.dataset.yield);
                 const rows = card.querySelectorAll(".investment-row");
-                let yieldPct = 0;
+                let yieldPct = Number.isFinite(dataYield) ? dataYield : 0;
                 rows.forEach(function (row) {
                     const label = row.querySelector(".investment-label");
                     const value = row.querySelector(".investment-value");
-                    if (label && value && label.textContent.trim().toLowerCase().includes("yield")) {
+                    const labelText = label ? label.textContent.trim().toLowerCase() : "";
+                    if (
+                        value &&
+                        (labelText.includes("yield") ||
+                            labelText.includes("annualised net return"))
+                    ) {
                         yieldPct = parseFloat(value.textContent) || 0;
                     }
                 });
@@ -194,7 +204,10 @@
         extraPanel.style.display = "flex";
         moreFiltersOpen = true;
         const moreBtn = document.getElementById("filter-bar-more-filters");
-        if (moreBtn) moreBtn.style.background = "#f0fdf8";
+        if (moreBtn) {
+            moreBtn.style.background = "#f0fdf8";
+            moreBtn.setAttribute("aria-expanded", "true");
+        }
     }
 
     function closeExtraPanel() {
@@ -202,12 +215,17 @@
         extraPanel.style.display = "none";
         moreFiltersOpen = false;
         const moreBtn = document.getElementById("filter-bar-more-filters");
-        if (moreBtn) moreBtn.style.background = "";
+        if (moreBtn) {
+            moreBtn.style.background = "";
+            moreBtn.setAttribute("aria-expanded", "false");
+        }
     }
 
     function initMoreFilters() {
         const moreBtn = document.getElementById("filter-bar-more-filters");
         if (!moreBtn) return;
+        if (moreBtn.dataset.commoditiesMoreFiltersReady === "true") return;
+        moreBtn.dataset.commoditiesMoreFiltersReady = "true";
 
         // Build and inject panel as sibling of the filter container
         extraPanel = buildExtraFilterPanel();

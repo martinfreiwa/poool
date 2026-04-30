@@ -88,45 +88,45 @@ This document is the human-readable view of `docs/page-review-tracker.yml`. It t
 - [ ] no obvious visual regressions
 
 ## Audit Snapshot
-Generated: 2026-04-26
+Generated: 2026-04-28
 
 | Metric | Count |
 | --- | --- |
 | Discovered page routes | 233 |
-| Discovered page templates | 134 |
+| Discovered page templates | 135 |
 | Discovered supporting templates | 48 |
 | Missing tracker routes | 0 |
 | Missing page template entries | 0 |
 | Missing supporting template entries | 0 |
 | Tracker references to missing files | 0 |
 | Pages with stale reviews | 0 |
-| Pages with not-reviewed categories | 95 |
-| Pages with last_tested_date set | 66 |
+| Pages with not-reviewed categories | 44 |
+| Pages with last_tested_date set | 117 |
 
 ## Coverage Summary
 | Dimension | Counts |
 | --- | --- |
 | Business risk | critical: 16, high: 80, low: 42, medium: 25 |
 | Access level | admin: 70, authenticated user: 54, developer: 13, public: 23, unknown or needs verification: 2, verified investor: 1 |
-| Open issues | 74 |
+| Open issues | 75 |
 
 ## Page Inventory
 | ID | Name | URL | Last Tested | Access | Sensitivity | Risk | Review Statuses | Stale | Issues |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| admin.admins | Admins | /admin/admins | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 8 |
-| admin.affiliate-applications | Affiliate Applications | /admin/affiliate-applications | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: reviewed, functional: fixed | - | 12 |
+| admin.admins | Admins | /admin/admins | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, needs runtime recheck, e2e: needs recheck, functional: issues found | - | 8 |
+| admin.affiliate-applications | Affiliate Applications | /admin/affiliate-applications | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, needs runtime recheck, e2e: reviewed, functional: fixed | - | 12 |
 | admin.affiliate-compliance-route | Affiliate compliance route | /admin/affiliate-compliance | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: not applicable, e2e: reviewed, functional: fixed | - | 2 |
-| admin.affiliate-finance | Affiliate Finance | /admin/affiliate-finance | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 5 |
-| admin.affiliate-fraud-route | Affiliate fraud route | /admin/affiliate-fraud | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 5 |
-| admin.approvals | Approvals | /admin/approvals | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 5 |
+| admin.affiliate-finance | Affiliate Finance | /admin/affiliate-finance | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 7 |
+| admin.affiliate-fraud-route | Affiliate fraud route | /admin/affiliate-fraud | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, needs browser recheck, functional: fixed | - | 5 |
+| admin.approvals | Approvals | /admin/approvals | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs browser recheck, functional: fixed | - | 5 |
 | admin.asset-details | Asset Details | /admin/asset-details | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 7 |
 | admin.asset-tokenize | Asset Tokenize | /admin/asset-tokenize | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
 | admin.assets | Assets | /admin/assets | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
 | admin.audit-logs | Audit Logs | /admin/audit-logs | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
 | admin.blockchain-contract-detail | Blockchain Contract Detail | /admin/blockchain-contract-detail | 2026-04-26 | admin | admin-only data | critical | security: passed, accessibility: passed, e2e: passed, functional: passed | - | 9 |
-| admin.blockchain-contracts | Blockchain Contracts | /admin/blockchain-contracts | 2026-04-26 | admin | admin-only data | critical | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 5 |
-| admin.blockchain-sync | Blockchain Sync | /admin/blockchain-sync | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| admin.blockchain-treasury | Blockchain Treasury | /admin/blockchain-treasury | 2026-04-24 | admin | admin-only data | critical | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
+| admin.blockchain-contracts | Blockchain Contracts | /admin/blockchain-contracts | 2026-04-28 | admin | admin-only data | critical | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 5 |
+| admin.blockchain-sync | Blockchain Sync | /admin/blockchain-sync | 2026-04-28 | admin | admin-only data | critical | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
+| admin.blockchain-treasury | Blockchain Treasury | /admin/blockchain-treasury | 2026-04-28 | admin | admin-only data | critical | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 1 |
 | admin.community.amas | Community AMAS | /admin/community/amas | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.community.announcements | Community Announcements | /admin/community/announcements | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
 | admin.community.badges | Community Badges | /admin/community/badges | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
@@ -139,12 +139,12 @@ Generated: 2026-04-26
 | admin.community.post-detail | Community Post Detail | /admin/community/post-detail | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 6 |
 | admin.community.posts | Community Posts | /admin/community/posts | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
 | admin.community.reports | Community Reports | /admin/community/reports | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
-| admin.community.user-detail | Community User Detail | /admin/community/user-detail | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
-| admin.community.users | Community Users | /admin/community/users | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
-| admin.deposits | Deposits | /admin/deposits | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| admin.developer-submission-review | Developer Submission Review | /admin/developer-submission-review | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
-| admin.developer-submissions | Developer Submissions | /admin/developer-submissions | 2026-04-25 | admin | admin-only data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| admin.dividends | Dividends | /admin/dividends | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
+| admin.community.user-detail | Community User Detail | /admin/community/user-detail | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 3 |
+| admin.community.users | Community Users | /admin/community/users | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
+| admin.deposits | Deposits | /admin/deposits | 2026-04-28 | admin | admin-only data | critical | security: fixed, needs runtime recheck, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
+| admin.developer-submission-review | Developer Submission Review | /admin/developer-submission-review | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, needs browser recheck, e2e: static regression covered, runtime blocked, functional: fixed | - | 5 |
+| admin.developer-submissions | Developer Submissions | /admin/developer-submissions | 2026-04-27 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 5 |
+| admin.dividends | Dividends | /admin/dividends | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: fixed, needs runtime recheck, e2e: fixed, needs runtime recheck, functional: fixed | - | 8 |
 | admin.email-marketing | Email Marketing | /admin/email-marketing | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | admin.index | Index | /admin/ | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.kyc | KYC | /admin/kyc | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 7 |
@@ -155,72 +155,72 @@ Generated: 2026-04-26
 | admin.marketplace.fees | Marketplace Fees | /admin/marketplace/fees | - | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 9 |
 | admin.marketplace.index | Marketplace Index | /admin/marketplace/ | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.marketplace.orderbook | Marketplace Orderbook | /admin/marketplace/orderbook | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
-| admin.marketplace.orders | Marketplace Orders | /admin/marketplace/orders | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| admin.marketplace.orders | Marketplace Orders | /admin/marketplace/orders | 2026-04-28 | admin | admin-only data | critical | security: needs recheck, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 5 |
 | admin.marketplace.p2p | Marketplace P2P | /admin/marketplace/p2p | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
-| admin.marketplace.primary-escrow | Marketplace Primary Escrow | /admin/marketplace/primary-escrow | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| admin.marketplace.primary-escrow | Marketplace Primary Escrow | /admin/marketplace/primary-escrow | 2026-04-28 | admin | admin-only data | critical | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.marketplace.reconciliation | Marketplace Reconciliation | /admin/marketplace/reconciliation | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | admin.marketplace.settings | Marketplace Settings | /admin/marketplace/settings | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 10 |
 | admin.marketplace.trades | Marketplace Trades | /admin/marketplace/trades | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.notifications | Notifications | /admin/notifications | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.orders | Orders | /admin/orders | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
 | admin.reports | Reports | /admin/reports | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
-| admin.rewards | Rewards | /admin/rewards | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 3 |
+| admin.rewards | Rewards | /admin/rewards | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 3 |
 | admin.roles | Roles | /admin/roles | 2026-04-26 | admin | admin-only data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | admin.settings | Settings | /admin/settings | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | admin.support | Support | /admin/support | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | admin.support-ticket | Support Ticket | /admin/support-ticket | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | admin.system | System | /admin/system | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
 | admin.treasury | Treasury | /admin/treasury | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| admin.user-details | User Details | /admin/user-details | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
+| admin.user-details | User Details | /admin/user-details | 2026-04-28 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs browser recheck, functional: fixed | - | 2 |
 | admin.users | Users | /admin/users | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
-| affiliate.dashboard | Affiliate dashboard | /affiliate/dashboard | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| affiliate.materials | Affiliate materials | /affiliate/materials | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| affiliate.onboarding | Affiliate onboarding | /affiliate/onboarding | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| affiliate.promo | Affiliate promo | /affiliate | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| affiliate.referrals | Affiliate referrals | /affiliate/referrals | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| affiliate.settings | Affiliate settings | /affiliate/settings | - | authenticated user | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| assets.commodities-marketplace | Commodities marketplace | /commodities-marketplace | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| assets.commodities-tab | Commodities tab fragment | /commodities-marketplace/tab | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| assets.commodity | Commodity detail | /commodity | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| assets.marketplace | Marketplace | /marketplace | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| assets.marketplace-tab | Marketplace tab fragment | /marketplace/tab | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| assets.property | Property detail | /property | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: needs recheck | - | 1 |
-| assets.property-public | Public property detail | /p/:slug | - | public | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.auth-2fa | 2FA verify | /auth/2fa | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.auth-2fa-setup | 2FA setup | /auth/2fa/setup | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.auth-forgot-password | Forgot password | /auth/forgot-password | - | public | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.auth-login | Login | /auth/login | - | public | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.auth-reset-password | Reset password | /auth/reset-password | - | public | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.auth-signup | Signup | /auth/signup | - | public | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.auth-verify-email | Verify email | /auth/verify-email | - | public | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.google | Google OAuth redirect | /auth/google | - | public | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.google-callback | Google OAuth callback | /auth/google/callback | - | public | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| auth.logout | Logout | /auth/logout | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| blog.article | Blog article | /blog/:slug | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| blog.category | Blog category | /blog/category/:slug | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| blog.index | Blog index | /blog | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| cart.cart | Cart | /cart | - | authenticated user | financial data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: fixed | - | 1 |
-| community.community | Community | /community | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: needs recheck | - | 1 |
-| community.partial-announcements | Community announcements partial | /community/partials/announcements/list | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| community.partial-feed | Community feed partial | /community/partials/feed/list | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| community.partial-tab | Community tab partial | /community/partials/:tab | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| community.post | Community post | /community/post/:id | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.add-asset | Developer add asset | /developer/add-asset | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| affiliate.dashboard | Affiliate dashboard | /affiliate/dashboard | 2026-04-28 | authenticated user | personal data | medium | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 5 |
+| affiliate.materials | Affiliate materials | /affiliate/materials | 2026-04-28 | authenticated user | personal data | medium | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
+| affiliate.onboarding | Affiliate onboarding | /affiliate/onboarding | 2026-04-28 | authenticated user | personal data | medium | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 8 |
+| affiliate.promo | Affiliate promo | /affiliate | 2026-04-28 | authenticated user | personal data | medium | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 5 |
+| affiliate.referrals | Affiliate referrals | /affiliate/referrals | 2026-04-28 | authenticated user | personal data | medium | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
+| affiliate.settings | Affiliate settings | /affiliate/settings | 2026-04-28 | authenticated user | personal data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 7 |
+| assets.commodities-marketplace | Commodities marketplace | /commodities-marketplace | 2026-04-28 | authenticated user | public | medium | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
+| assets.commodities-tab | Commodities tab fragment | /commodities-marketplace/tab | 2026-04-28 | authenticated user | public | medium | security: reviewed, accessibility: fixed, e2e: fixed, functional: fixed | - | 4 |
+| assets.commodity | Commodity detail | /commodity | 2026-04-28 | authenticated user | public | medium | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
+| assets.marketplace | Marketplace | /marketplace | 2026-04-28 | authenticated user | public | medium | security: reviewed, accessibility: fixed, E2E verified, e2e: E2E verified, functional: fixed | - | 5 |
+| assets.marketplace-tab | Marketplace tab fragment | /marketplace/tab | 2026-04-28 | authenticated user | public | medium | security: reviewed, accessibility: fixed, E2E verified, e2e: E2E verified, functional: fixed | - | 4 |
+| assets.property | Property detail | /property | 2026-04-28 | authenticated user | public | medium | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 5 |
+| assets.property-public | Public property detail | /p/:slug | 2026-04-28 | public | public | medium | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
+| auth.auth-2fa | 2FA verify | /auth/2fa | 2026-04-28 | authenticated user | personal data | low | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 4 |
+| auth.auth-2fa-setup | 2FA setup | /auth/2fa/setup | 2026-04-28 | authenticated user | personal data | low | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 7 |
+| auth.auth-forgot-password | Forgot password | /auth/forgot-password | 2026-04-28 | public | personal data | low | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 5 |
+| auth.auth-login | Login | /auth/login | 2026-04-28 | public | personal data | low | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 3 |
+| auth.auth-reset-password | Reset password | /auth/reset-password | 2026-04-28 | public | personal data | low | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 4 |
+| auth.auth-signup | Signup | /auth/signup | 2026-04-28 | public | personal data | low | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
+| auth.auth-verify-email | Verify email | /auth/verify-email | 2026-04-28 | public | personal data | low | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 3 |
+| auth.google | Google OAuth redirect | /auth/google | 2026-04-28 | public | personal data | low | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 2 |
+| auth.google-callback | Google OAuth callback | /auth/google/callback | 2026-04-28 | public | personal data | low | security: fixed, accessibility: not applicable, e2e: fixed, functional: fixed | - | 3 |
+| auth.logout | Logout | /auth/logout | 2026-04-28 | authenticated user | personal data | low | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 2 |
+| blog.article | Blog article | /blog/:slug | 2026-04-28 | public | public | low | security: fixed, accessibility: fixed, e2e: fixed, needs browser coverage, functional: fixed | - | 5 |
+| blog.category | Blog category | /blog/category/:slug | 2026-04-28 | public | public | low | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 3 |
+| blog.index | Blog index | /blog | 2026-04-28 | public | public | low | security: reviewed, accessibility: fixed, e2e: fixed, functional: fixed | - | 3 |
+| cart.cart | Cart | /cart | 2026-04-27 | authenticated user | financial data | high | security: issues found, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 4 |
+| community.community | Community | /community | 2026-04-28 | authenticated user | personal data | medium | security: reviewed, accessibility: reviewed, e2e: needs recheck, functional: reviewed | - | 7 |
+| community.partial-announcements | Community announcements partial | /community/partials/announcements/list | 2026-04-28 | authenticated user | personal data | medium | security: reviewed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 4 |
+| community.partial-feed | Community feed partial | /community/partials/feed/list | 2026-04-28 | authenticated user | personal data | medium | security: reviewed, accessibility: fixed, e2e: fixed, functional: fixed | - | 5 |
+| community.partial-tab | Community tab partial | /community/partials/:tab | 2026-04-28 | authenticated user | personal data | medium | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 4 |
+| community.post | Community post | /community/post/:id | 2026-04-28 | authenticated user | personal data | medium | security: needs recheck, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 6 |
+| developer.add-asset | Developer add asset | /developer/add-asset | 2026-04-27 | developer | personal data | high | security: reviewed, accessibility: issues found, e2e: needs recheck, functional: reviewed | - | 1 |
 | developer.application-form | Developer application form | /developer/application-form | 2026-04-25 | authenticated user | personal data | high | security: needs recheck, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 3 |
-| developer.asset-detail | Developer asset detail | /developer/asset-detail | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.assets | Developer assets | /developer/assets | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.dashboard | Developer dashboard | /developer/dashboard | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.document-upload-step3 | Developer document upload | /developer/document-upload-step3 | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.fragment-assets | Developer assets fragment | /developer/dashboard/fragments/assets | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.fragment-chart | Developer chart fragment | /developer/dashboard/fragments/chart | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.property-content | Developer property content | /developer/property-content | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.root | Developer root redirect | /developer | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.settings | Developer settings | /developer/settings | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.submission-success | Developer submission success | /developer/submission-success | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.submissions | Developer submissions | /developer/submissions | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| developer.support | Developer support | /developer/support | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| kyc.identity-verification | Identity verification | /kyc | - | authenticated user | KYC/identity data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| leaderboard.leaderboard | Leaderboard | /leaderboard | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: fixed | - | 1 |
+| developer.asset-detail | Developer asset detail | /developer/asset-detail | 2026-04-27 | developer | personal data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
+| developer.assets | Developer assets | /developer/assets | 2026-04-27 | developer | personal data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| developer.dashboard | Developer dashboard | /developer/dashboard | 2026-04-28 | developer | personal data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| developer.document-upload-step3 | Developer document upload | /developer/document-upload-step3 | 2026-04-28 | developer | personal data | high | security: reviewed, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 2 |
+| developer.fragment-assets | Developer assets fragment | /developer/dashboard/fragments/assets | 2026-04-28 | developer | personal data | high | security: issues found, accessibility: needs recheck, e2e: issues found, functional: needs recheck | - | 1 |
+| developer.fragment-chart | Developer chart fragment | /developer/dashboard/fragments/chart | 2026-04-28 | developer | personal data | high | security: issues found, accessibility: needs recheck, e2e: issues found, functional: needs recheck | - | 1 |
+| developer.property-content | Developer property content | /developer/property-content | 2026-04-28 | developer | personal data | high | security: reviewed, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 2 |
+| developer.root | Developer root redirect | /developer | 2026-04-28 | developer | personal data | high | security: reviewed, accessibility: not applicable, e2e: reviewed, functional: reviewed | - | 0 |
+| developer.settings | Developer settings | /developer/settings | 2026-04-28 | developer | personal data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
+| developer.submission-success | Developer submission success | /developer/submission-success | 2026-04-28 | developer | personal data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
+| developer.submissions | Developer submissions | /developer/submissions | 2026-04-28 | developer | personal data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 3 |
+| developer.support | Developer support | /developer/support | 2026-04-28 | developer | personal data | high | security: fixed, accessibility: fixed, e2e: fixed, needs runtime recheck, functional: fixed | - | 7 |
+| kyc.identity-verification | Identity verification | /kyc | 2026-04-28 | authenticated user | KYC/identity data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 9 |
+| leaderboard.leaderboard | Leaderboard | /leaderboard | 2026-04-28 | authenticated user | public | medium | security: reviewed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 5 |
 | legal.cookies | Cookies policy | /cookies | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | legal.currency | Currency policy | /currency-policy | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | legal.privacy | Privacy policy | /privacy-policy | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
@@ -245,10 +245,10 @@ Generated: 2026-04-26
 | rewards.v2 | Rewards V2 | /rewards-v2 | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | settings.account-deletion | Account deletion | /account-deletion | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | settings.settings | Settings | /settings | - | authenticated user | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.blog | Blog CMS | /admin/blog | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.blog-editor | Blog Editor | /admin/blog-editor | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.blog-persona | Blog Persona | /admin/blog-persona | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.blog-strategy | Blog Strategy | /admin/blog-strategy | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| admin.blog | Blog CMS | /admin/blog | 2026-04-27 | admin | admin-only data | high | security: reviewed, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 2 |
+| admin.blog-editor | Blog Editor | /admin/blog-editor | 2026-04-27 | admin | admin-only data | high | security: issues found, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 3 |
+| admin.blog-persona | Blog Persona | /admin/blog-persona | 2026-04-27 | admin | admin-only data | high | security: reviewed, accessibility: issues found, e2e: needs recheck, functional: reviewed | - | 1 |
+| admin.blog-strategy | Blog Strategy | /admin/blog-strategy | 2026-04-27 | admin | admin-only data | high | security: reviewed, accessibility: issues found, e2e: needs recheck, functional: reviewed | - | 1 |
 | admin.templates-icons | Admin Icon Templates | /admin/templates/icons | - | admin | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | design.fonts-template | Fonts Template | /fonts-template.html | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | design.forms-template | Forms Template | /forms-template.html | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
@@ -280,42 +280,15 @@ Generated: 2026-04-26
 ## Open Issues
 | Page | Issue ID | Category | Severity | Status | Title | Owner |
 | --- | --- | --- | --- | --- | --- | --- |
-| admin.admins | PAGE-ISSUE-0022 | security_review | medium | open | Invitation revoke/resend lack durable audit and state-transition handling | unassigned |
 | admin.admins | PAGE-ISSUE-0023 | security_review | medium | open | Admin directory staff PII and security posture reads are not audit logged | unassigned |
-| admin.affiliate-finance | PAGE-ISSUE-0034 | security_review | high | open | Payout row action embeds profile data into inline JavaScript | unassigned |
-| admin.affiliate-finance | PAGE-ISSUE-0035 | functional_review | high | open | Payout can mark unsummed payable commissions as paid | unassigned |
-| admin.affiliate-finance | PAGE-ISSUE-0036 | functional_review | medium | open | Finance board hides tax-document payout gate | unassigned |
-| admin.affiliate-finance | PAGE-ISSUE-0037 | accessibility_review | low | open | Payout modal lacks dialog keyboard semantics | unassigned |
-| admin.affiliate-finance | PAGE-ISSUE-0038 | e2e_review | medium | open | Affiliate payout E2E tests are stale | unassigned |
-| admin.affiliate-fraud-route | PAGE-ISSUE-0039 | functional_review | high | open | Affiliate fraud clean route resolves to missing template | unassigned |
-| admin.affiliate-fraud-route | PAGE-ISSUE-0040 | functional_review | high | open | Fraud graph API response does not match UI contract | unassigned |
-| admin.affiliate-fraud-route | PAGE-ISSUE-0041 | security_review | high | open | Fraud scan missing fine-grained affiliate permission | unassigned |
-| admin.affiliate-fraud-route | PAGE-ISSUE-0042 | functional_review | medium | open | IP overlap scan button is not backed by backend logic | unassigned |
-| admin.affiliate-fraud-route | PAGE-ISSUE-0043 | functional_review | medium | open | Freeze Node danger action is dead UI | unassigned |
-| admin.approvals | PAGE-ISSUE-0044 | security_review | critical | open | Approval execution can double-run sensitive actions | unassigned |
-| admin.approvals | PAGE-ISSUE-0045 | security_review | high | open | Approval APIs lack fine-grained permissions | unassigned |
-| admin.approvals | PAGE-ISSUE-0046 | functional_review | high | open | Approval executors can fail or report false success | unassigned |
-| admin.approvals | PAGE-ISSUE-0047 | functional_review | medium | open | Approval queue can hide database failures | unassigned |
-| admin.approvals | PAGE-ISSUE-0048 | accessibility_review | medium | open | Reject flow and action buttons need accessible mutation states | unassigned |
-| admin.blockchain-contracts | PAGE-ISSUE-0292 | security_review | high | open | Blockchain contracts page and treasury API are overbroad | unassigned |
-| admin.blockchain-contracts | PAGE-ISSUE-0293 | security_review | high | open | Contract rows render DB fields through innerHTML | unassigned |
-| admin.blockchain-contracts | PAGE-ISSUE-0294 | functional_review | medium | open | Treasury API masks database failures as empty success | unassigned |
-| admin.blockchain-contracts | PAGE-ISSUE-0295 | accessibility_review | low | open | Copy address action lacks visible feedback | unassigned |
-| admin.blockchain-contracts | PAGE-ISSUE-0296 | functional_review | low | open | Unused external HTMX dependency remains on admin blockchain page | unassigned |
-| admin.blockchain-treasury | PAGE-ISSUE-0001 | security_review | critical | open | Emergency pause/unpause sends an empty CSRF header |  |
-| admin.community.post-detail | PAGE-ISSUE-0147 | security_review | high | open | Post detail APIs lack community permission checks | unassigned |
+| admin.community.post-detail | PAGE-ISSUE-0427 | security_review | high | open | Post detail APIs lack community permission checks | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0148 | security_review | high | open | Admin post detail renderer injects community fields as HTML | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0149 | functional_review | high | open | Post moderation mutations are non-transactional and weakly audited | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0150 | functional_review | medium | open | Tag update accepts unvalidated arbitrary tag arrays | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0151 | accessibility_review | medium | open | Moderation actions rely on prompt alert confirm flows | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0152 | security_review | medium | open | Admin post detail loads unused external CDN scripts | unassigned |
 | admin.community.posts | PAGE-ISSUE-0139 | security_review | high | open | Community posts admin table injects unescaped user content | unassigned |
-| admin.community.user-detail | PAGE-ISSUE-0142 | security_review | high | open | Community user detail page injects unescaped profile and moderation data | unassigned |
-| admin.community.users | PAGE-ISSUE-0141 | security_review | medium | open | Community users admin table injects unescaped profile data | unassigned |
-| admin.developer-submission-review | PAGE-ISSUE-0143 | security_review | medium | open | Developer submission review load error renders unescaped error text | unassigned |
-| admin.dividends | PAGE-ISSUE-0144 | security_review | high | open | Dividend execution does not record the executing admin | unassigned |
-| admin.dividends | PAGE-ISSUE-0145 | security_review | medium | open | Dividend admin UI renders asset and payout data without escaping | unassigned |
-| admin.email-marketing | PAGE-ISSUE-0146 | security_review | high | open | Email campaign and template changes lack audit, approval, and abuse controls | unassigned |
+| admin.email-marketing | PAGE-ISSUE-0560 | security_review | high | open | Email campaign and template changes lack audit, approval, and abuse controls | unassigned |
 | admin.kyc | PAGE-ISSUE-0160 | security_review | high | open | KYC routes lack KYC-specific permission gates | unassigned |
 | admin.kyc | PAGE-ISSUE-0161 | security_review | high | open | KYC document signed URLs are overbroad and best-effort audited | unassigned |
 | admin.kyc | PAGE-ISSUE-0162 | security_review | high | open | KYC decisions lack audit logs and atomic side effects | unassigned |
@@ -339,6 +312,11 @@ Generated: 2026-04-26
 | admin.marketplace.fees | PAGE-ISSUE-0211 | security_review | medium | open | Fee mutations are not audit logged | unassigned |
 | admin.marketplace.fees | PAGE-ISSUE-0212 | functional_review | medium | open | Settlement and minimum fee fields lack backend support | unassigned |
 | admin.marketplace.fees | PAGE-ISSUE-0213 | accessibility_review | low | open | Fee page tabs lack accessible tab semantics | unassigned |
+| admin.marketplace.orders | PAGE-ISSUE-0528 | security_review | high | needs recheck | Marketplace orders APIs lack granular permission checks | unassigned |
+| admin.marketplace.orders | PAGE-ISSUE-0529 | security_review | high | needs recheck | Admin order cancel is not locked or audited | unassigned |
+| admin.marketplace.orders | PAGE-ISSUE-0530 | functional_review | high | needs recheck | Open orders page renders mock financial orders on API failure | unassigned |
+| admin.marketplace.orders | PAGE-ISSUE-0531 | security_review | high | needs recheck | Open order rows render backend values through innerHTML | unassigned |
+| admin.marketplace.orders | PAGE-ISSUE-0532 | functional_review | medium | needs recheck | Marketplace orders pagination is not reachable | unassigned |
 | admin.marketplace.reconciliation | PAGE-ISSUE-0002 | functional_review | high | open | Reconciliation page displays mock mismatch data when the API fails |  |
 | admin.rewards | PAGE-ISSUE-0279 | security_review | high | open | Rewards management mutations lack granular permissions | unassigned |
 | admin.rewards | PAGE-ISSUE-0280 | functional_review | medium | open | Rewards affiliate approval button calls an unregistered endpoint | unassigned |
@@ -349,11 +327,34 @@ Generated: 2026-04-26
 | admin.support-ticket | PAGE-ISSUE-0285 | security_review | high | open | Support ticket detail and reply actions lack support permissions and durable audit | unassigned |
 | admin.system | PAGE-ISSUE-0286 | functional_review | high | open | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | unassigned |
 | admin.system | PAGE-ISSUE-0287 | security_review | high | open | System maintenance and session operations lack granular authorization and audit | unassigned |
-| admin.user-details | PAGE-ISSUE-0288 | security_review | critical | open | User detail PII, balance, and account mutations lack granular authorization | unassigned |
-| admin.user-details | PAGE-ISSUE-0289 | security_review | high | open | User profile update performs multi-table changes outside a transaction | unassigned |
 | admin.users | PAGE-ISSUE-0290 | functional_review | medium | open | Tracked clean URL /admin/users returns 404 instead of the users page | unassigned |
 | admin.users | PAGE-ISSUE-0291 | security_review | high | open | User directory exposes PII and status mutation without granular user permissions | unassigned |
+| auth.auth-signup | PAGE-ISSUE-0460 | functional_review | medium | open | Verification email delivery lacks outbox retry worker | unassigned |
+| cart.cart | PAGE-ISSUE-0387 | security_review | high | open | Populated cart HTML uses incomplete manual escaping for asset data | unassigned |
+| cart.cart | PAGE-ISSUE-0388 | security_review | high | open | Cart quantity update fails open when availability lock cannot be read | unassigned |
+| cart.cart | PAGE-ISSUE-0389 | accessibility_review | medium | open | Generated cart item controls lack robust accessible labels | unassigned |
+| community.partial-tab | PAGE-ISSUE-0506 | e2e_review | low | needs recheck | Dynamic community tab E2E coverage is incomplete | unassigned |
+| developer.add-asset | PAGE-ISSUE-0390 | accessibility_review | medium | open | Asset type selection is mouse-only and not semantic | unassigned |
+| developer.asset-detail | PAGE-ISSUE-0391 | functional_review | high | open | Asset detail destructive/publish controls are placeholders that imply success | unassigned |
+| developer.asset-detail | PAGE-ISSUE-0392 | security_review | medium | open | Developer cap table renders admin user-detail links | unassigned |
+| developer.document-upload-step3 | PAGE-ISSUE-0483 | accessibility_review | medium | open | Document upload controls lack complete accessible names | unassigned |
+| developer.document-upload-step3 | PAGE-ISSUE-0484 | functional_review | medium | open | Document upload page renders hardcoded demo document rows before JS cleanup | unassigned |
+| developer.fragment-assets | PAGE-ISSUE-0482 | security_review | medium | open | Assets fragment returns HTTP 200 for unauthenticated requests | unassigned |
+| developer.fragment-chart | PAGE-ISSUE-0481 | security_review | medium | open | Chart fragment returns HTTP 200 for unauthenticated requests | unassigned |
+| developer.property-content | PAGE-ISSUE-0485 | functional_review | medium | open | Property media upload copy does not match accepted formats or limits | unassigned |
+| developer.property-content | PAGE-ISSUE-0488 | accessibility_review | medium | open | Generated property image remove buttons have no accessible names | unassigned |
+| developer.settings | PAGE-ISSUE-0487 | functional_review | medium | open | Developer logo upload UI advertises SVG files that the backend rejects | unassigned |
+| developer.submission-success | PAGE-ISSUE-0486 | functional_review | low | open | Submission success WhatsApp contact link points to a placeholder | unassigned |
+| kyc.identity-verification | PAGE-ISSUE-0550 | security_review | medium | open | KYC email delivery still lacks durable outbox | unassigned |
+| kyc.identity-verification | PAGE-ISSUE-0566 | functional_review | low | open | KYC upload can orphan private object after DB failure | unassigned |
 | marketplace.tax-report | PAGE-ISSUE-0003 | functional_review | low | open | Tax report route requires format despite route comment and path contract |  |
+| admin.blog | PAGE-ISSUE-0380 | accessibility_review | medium | open | Blog CMS taxonomy form fields lack explicit labels | unassigned |
+| admin.blog | PAGE-ISSUE-0381 | functional_review | medium | open | Blog CMS exposes controls that require permissions the page does not require | unassigned |
+| admin.blog-editor | PAGE-ISSUE-0382 | security_review | medium | open | Blog cover upload lacks server-side image type validation | unassigned |
+| admin.blog-editor | PAGE-ISSUE-0383 | accessibility_review | medium | open | Blog editor URL override fields lack field-specific labels | unassigned |
+| admin.blog-editor | PAGE-ISSUE-0384 | functional_review | medium | open | Blog editor exposes publish/archive actions without checking granular permissions | unassigned |
+| admin.blog-persona | PAGE-ISSUE-0385 | accessibility_review | low | open | Blog persona output textarea lacks an explicit label | unassigned |
+| admin.blog-strategy | PAGE-ISSUE-0386 | accessibility_review | low | open | Blog strategy output textarea lacks an explicit label | unassigned |
 
 ## Ambiguous Or Needs Verification
 | ID | Kind | Path/Route | Reason | Follow-up |

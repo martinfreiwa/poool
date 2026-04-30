@@ -284,7 +284,7 @@ def test_registration_validation():
         data={
             "email": "test_validaton@example.com",
             "password": "123",  # Too weak
-            "terms": "on",
+            "terms_accepted": "on",
         },
         headers={"X-CSRF-Token": csrf, "HX-Request": "true"},
         timeout=REQUEST_TIMEOUT,
@@ -307,7 +307,7 @@ def test_registration_validation():
         data={
             "email": "not-an-email",
             "password": "StrongPass123!",
-            "terms": "on",
+            "terms_accepted": "on",
         },
         headers={"X-CSRF-Token": csrf2, "HX-Request": "true"},
         timeout=REQUEST_TIMEOUT,

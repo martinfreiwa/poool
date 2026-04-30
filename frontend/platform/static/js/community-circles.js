@@ -33,6 +33,24 @@ window.initCommunityCircles = function () {
         'admin_revoke': '⚠️ Admin Adjustment',
     };
 
+    function appendEmptyState(container, text, styles) {
+        container.replaceChildren();
+        const empty = document.createElement('div');
+        empty.textContent = text;
+        empty.style.cssText = styles || 'text-align:center;padding:16px;color:#667085;';
+        container.appendChild(empty);
+    }
+
+    function createButton(label, className, onClick, extraStyles) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.textContent = label;
+        if (extraStyles) button.style.cssText = extraStyles;
+        button.addEventListener('click', onClick);
+        return button;
+    }
+
     // ─── Load XP Summary ─────────────────────────────────────────
 
     async function loadXpSummary() {
@@ -69,18 +87,18 @@ window.initCommunityCircles = function () {
         try {
             const res = await fetch('/api/community/xp/history?page=1');
             if (!res.ok) {
-                container.innerHTML = '<div style="text-align:center;color:#667085;padding:24px;font-size:14px;">No XP activity yet.</div>';
+                appendEmptyState(container, 'No XP activity yet.', 'text-align:center;color:#667085;padding:24px;font-size:14px;');
                 return;
             }
             const data = await res.json();
             const entries = data.entries || [];
 
             if (entries.length === 0) {
-                container.innerHTML = '<div style="text-align:center;color:#667085;padding:24px;font-size:14px;">No XP activity yet. Start posting and investing to earn XP!</div>';
+                appendEmptyState(container, 'No XP activity yet. Start posting and investing to earn XP!', 'text-align:center;color:#667085;padding:24px;font-size:14px;');
                 return;
             }
 
-            let html = '';
+            container.replaceChildren();
             for (const e of entries) {
                 const label = XP_REASON_LABELS[e.reason] || e.reason;
                 const isPositive = e.amount > 0;
@@ -90,21 +108,30 @@ window.initCommunityCircles = function () {
                 const date = new Date(e.created_at);
                 const timeStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-                html += `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--card-border-color);">
-                    <div>
-                        <div style="font-size:14px;font-weight:500;color:#101828;">${label}</div>
-                        <div style="font-size:12px;color:#667085;margin-top:2px;">${timeStr}</div>
-                    </div>
-                    <div style="font-size:14px;font-weight:700;color:${color};background:${bg};padding:4px 12px;border-radius:20px;">
-                        ${sign}${e.amount} XP
-                    </div>
-                </div>`;
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--card-border-color);';
+
+                const meta = document.createElement('div');
+                const reason = document.createElement('div');
+                reason.style.cssText = 'font-size:14px;font-weight:500;color:#101828;';
+                reason.textContent = label;
+                meta.appendChild(reason);
+
+                const time = document.createElement('div');
+                time.style.cssText = 'font-size:12px;color:#667085;margin-top:2px;';
+                time.textContent = timeStr;
+                meta.appendChild(time);
+                row.appendChild(meta);
+
+                const amount = document.createElement('div');
+                amount.style.cssText = `font-size:14px;font-weight:700;color:${color};background:${bg};padding:4px 12px;border-radius:20px;`;
+                amount.textContent = `${sign}${e.amount} XP`;
+                row.appendChild(amount);
+                container.appendChild(row);
             }
-            container.innerHTML = html;
         } catch (e) {
             console.error('Failed to load XP history', e);
-            container.innerHTML = '<div style="text-align:center;color:#667085;padding:24px;">Failed to load XP history.</div>';
+            appendEmptyState(container, 'Failed to load XP history.', 'text-align:center;color:#667085;padding:24px;');
         }
     }
 
@@ -155,27 +182,53 @@ window.initCommunityCircles = function () {
         const container = document.getElementById('circle-member-list');
         const colors = ['#E3F2FD', '#F3E5F5', '#E8F5E9', '#FFF3E0', '#FCE4EC', '#E0F2F1'];
 
-        let html = '';
+        container.replaceChildren();
         members.forEach((m, i) => {
             const bg = colors[i % colors.length];
             const initials = (m.user_id || '').substring(0, 2).toUpperCase();
-            const roleLabel = m.role === 'owner' ? '<span style="font-size:10px;background:#0000FF;color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px;">Owner</span>'
-                : m.role === 'admin' ? '<span style="font-size:10px;background:#7A5AF8;color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px;">Admin</span>'
-                : '';
             const joined = new Date(m.joined_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
-            html += `
-            <div class="circle-member">
-                <div class="circle-member-avatar" style="background:${bg};">${initials}</div>
-                <div class="circle-member-info">
-                    <span class="circle-member-name">Investor #${(m.user_id || '').substring(0, 6)} ${roleLabel}</span>
-                    <span class="circle-member-detail">Joined ${joined}</span>
-                </div>
-                <span class="circle-member-status circle-member-status--active">${m.role}</span>
-            </div>`;
+            const row = document.createElement('div');
+            row.className = 'circle-member';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'circle-member-avatar';
+            avatar.style.background = bg;
+            avatar.textContent = initials;
+
+            const info = document.createElement('div');
+            info.className = 'circle-member-info';
+
+            const name = document.createElement('span');
+            name.className = 'circle-member-name';
+            name.textContent = `Investor #${(m.user_id || '').substring(0, 6)}`;
+
+            if (m.role === 'owner' || m.role === 'admin') {
+                const roleLabel = document.createElement('span');
+                roleLabel.style.cssText = `font-size:10px;background:${m.role === 'owner' ? '#0000FF' : '#7A5AF8'};color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px;`;
+                roleLabel.textContent = m.role === 'owner' ? 'Owner' : 'Admin';
+                name.appendChild(roleLabel);
+            }
+
+            const detail = document.createElement('span');
+            detail.className = 'circle-member-detail';
+            detail.textContent = `Joined ${joined}`;
+
+            const status = document.createElement('span');
+            status.className = 'circle-member-status circle-member-status--active';
+            status.textContent = m.role || 'member';
+
+            info.appendChild(name);
+            info.appendChild(detail);
+            row.appendChild(avatar);
+            row.appendChild(info);
+            row.appendChild(status);
+            container.appendChild(row);
         });
 
-        container.innerHTML = html || '<div style="text-align:center;padding:16px;color:#667085;">No members yet</div>';
+        if (members.length === 0) {
+            appendEmptyState(container, 'No members yet');
+        }
     }
 
     // ─── Load Circle Leaderboard ─────────────────────────────────────
@@ -202,45 +255,74 @@ window.initCommunityCircles = function () {
             const circles = data.circles || [];
 
             if (circles.length === 0) {
-                container.innerHTML = '<div style="text-align:center;padding:16px;color:#667085;font-size:13px;">No circles yet. Be the first!</div>';
+                appendEmptyState(container, 'No circles yet. Be the first!', 'text-align:center;padding:16px;color:#667085;font-size:13px;');
                 return;
             }
 
             const medals = ['🥇', '🥈', '🥉'];
-            let html = '';
+            container.replaceChildren();
             circles.forEach((c, i) => {
                 const medal = medals[i] || `#${i + 1}`;
                 const isPrivate = !c.is_public;
-                const privacyBadge = isPrivate
-                    ? '<span style="font-size:10px;background:#F2F4F7;color:#667085;padding:1px 6px;border-radius:4px;margin-left:4px;">🔒 Private</span>'
-                    : '<span style="font-size:10px;background:#ECFDF3;color:#027A48;padding:1px 6px;border-radius:4px;margin-left:4px;">🌐 Public</span>';
 
-                let actionBtn = '';
-                if (isPrivate) {
-                    if (myJoinRequestCircleIds.has(c.id)) {
-                        actionBtn = `<span style="font-size:12px;color:#667085;background:#F2F4F7;padding:4px 10px;border-radius:6px;">⏳ Pending</span>`;
-                    } else {
-                        actionBtn = `<button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="handleRequestJoinCircle('${c.id}')" style="font-size:12px;">🔒 Request</button>`;
-                    }
+                const item = document.createElement('div');
+                item.className = 'circle-lb-item';
+                item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--card-border-color);';
+
+                const medalEl = document.createElement('span');
+                medalEl.style.cssText = 'font-size:18px;min-width:28px;text-align:center;';
+                medalEl.textContent = medal;
+
+                const emoji = document.createElement('span');
+                emoji.style.fontSize = '18px';
+                emoji.textContent = c.avatar_emoji || '🟢';
+
+                const info = document.createElement('div');
+                info.style.flex = '1';
+
+                const title = document.createElement('div');
+                title.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-primary);';
+                title.textContent = c.name || 'Circle';
+
+                const privacyBadge = document.createElement('span');
+                privacyBadge.style.cssText = isPrivate
+                    ? 'font-size:10px;background:#F2F4F7;color:#667085;padding:1px 6px;border-radius:4px;margin-left:4px;'
+                    : 'font-size:10px;background:#ECFDF3;color:#027A48;padding:1px 6px;border-radius:4px;margin-left:4px;';
+                privacyBadge.textContent = isPrivate ? '🔒 Private' : '🌐 Public';
+                title.appendChild(privacyBadge);
+
+                const meta = document.createElement('div');
+                meta.style.cssText = 'font-size:11px;color:#667085;';
+                meta.textContent = `${Number(c.member_count || 0).toLocaleString()} members · Lv.${c.level || 1}`;
+
+                const actions = document.createElement('div');
+                actions.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;';
+
+                const xp = document.createElement('span');
+                xp.style.cssText = 'font-size:14px;font-weight:700;color:var(--primary-color);';
+                xp.textContent = `${(c.total_xp || 0).toLocaleString()} XP`;
+
+                let actionEl;
+                if (isPrivate && myJoinRequestCircleIds.has(c.id)) {
+                    actionEl = document.createElement('span');
+                    actionEl.style.cssText = 'font-size:12px;color:#667085;background:#F2F4F7;padding:4px 10px;border-radius:6px;';
+                    actionEl.textContent = '⏳ Pending';
+                } else if (isPrivate) {
+                    actionEl = createButton('🔒 Request', 'ds-btn ds-btn--secondary ds-btn--sm', () => window.handleRequestJoinCircle(c.id), 'font-size:12px;');
                 } else {
-                    actionBtn = `<button class="ds-btn ds-btn--primary ds-btn--sm" onclick="handleJoinCircle('${c.id}')" style="font-size:12px;">Join</button>`;
+                    actionEl = createButton('Join', 'ds-btn ds-btn--primary ds-btn--sm', () => window.handleJoinCircle(c.id), 'font-size:12px;');
                 }
 
-                html += `
-                <div class="circle-lb-item" style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--card-border-color);">
-                    <span style="font-size:18px;min-width:28px;text-align:center;">${medal}</span>
-                    <span style="font-size:18px;">${c.avatar_emoji || '🟢'}</span>
-                    <div style="flex:1;">
-                        <div style="font-size:14px;font-weight:600;color:var(--text-primary);">${c.name} ${privacyBadge}</div>
-                        <div style="font-size:11px;color:#667085;">${c.member_count} members · Lv.${c.level}</div>
-                    </div>
-                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-                        <span style="font-size:14px;font-weight:700;color:var(--primary-color);">${(c.total_xp || 0).toLocaleString()} XP</span>
-                        ${actionBtn}
-                    </div>
-                </div>`;
+                info.appendChild(title);
+                info.appendChild(meta);
+                actions.appendChild(xp);
+                actions.appendChild(actionEl);
+                item.appendChild(medalEl);
+                item.appendChild(emoji);
+                item.appendChild(info);
+                item.appendChild(actions);
+                container.appendChild(item);
             });
-            container.innerHTML = html;
         } catch (e) {
             console.error('Failed to load circle leaderboard', e);
         }
@@ -259,21 +341,30 @@ window.initCommunityCircles = function () {
 
             document.getElementById('pending-invites-section').style.display = 'block';
             const container = document.getElementById('invite-list');
-            let html = '';
+            container.replaceChildren();
             for (const inv of invites) {
-                html += `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border-color);">
-                    <div>
-                        <div style="font-size:14px;font-weight:500;color:#101828;">Circle invite from #${(inv.inviter_id || '').substring(0, 6)}</div>
-                        <div style="font-size:12px;color:#667085;">Expires ${new Date(inv.expires_at).toLocaleDateString()}</div>
-                    </div>
-                    <div style="display:flex;gap:8px;">
-                        <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="handleAcceptInvite('${inv.id}')">Accept</button>
-                        <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="handleDeclineInvite('${inv.id}')">Decline</button>
-                    </div>
-                </div>`;
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border-color);';
+
+                const info = document.createElement('div');
+                const title = document.createElement('div');
+                title.style.cssText = 'font-size:14px;font-weight:500;color:#101828;';
+                title.textContent = `Circle invite from #${(inv.inviter_id || '').substring(0, 6)}`;
+                const expires = document.createElement('div');
+                expires.style.cssText = 'font-size:12px;color:#667085;';
+                expires.textContent = `Expires ${new Date(inv.expires_at).toLocaleDateString()}`;
+
+                const actions = document.createElement('div');
+                actions.style.cssText = 'display:flex;gap:8px;';
+                actions.appendChild(createButton('Accept', 'ds-btn ds-btn--primary ds-btn--sm', () => window.handleAcceptInvite(inv.id)));
+                actions.appendChild(createButton('Decline', 'ds-btn ds-btn--secondary ds-btn--sm', () => window.handleDeclineInvite(inv.id)));
+
+                info.appendChild(title);
+                info.appendChild(expires);
+                row.appendChild(info);
+                row.appendChild(actions);
+                container.appendChild(row);
             }
-            container.innerHTML = html;
         } catch (e) {
             console.error('Failed to load invites', e);
         }
@@ -298,7 +389,11 @@ window.initCommunityCircles = function () {
                 const err = await res.text();
                 throw new Error(err);
             }
-            document.getElementById('create-circle-modal').style.display = 'none';
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('create-circle-modal');
+            } else {
+                document.getElementById('create-circle-modal').style.display = 'none';
+            }
             loadAll();
         } catch (e) {
             alert('Failed to create circle: ' + e.message);
@@ -364,7 +459,11 @@ window.initCommunityCircles = function () {
             if (knob) knob.style.transform = isPublic ? 'translateX(20px)' : 'translateX(0)';
 
             // Show modal
-            document.getElementById('circle-settings-modal').style.display = 'flex';
+            if (typeof window.openCommunityModal === 'function') {
+                window.openCommunityModal('circle-settings-modal');
+            } else {
+                document.getElementById('circle-settings-modal').style.display = 'flex';
+            }
         } catch (e) {
             console.error('Failed to open circle settings', e);
             alert('Error loading settings: ' + e.message);
@@ -413,7 +512,11 @@ window.initCommunityCircles = function () {
             }
 
             // Close modal and reload data
-            document.getElementById('circle-settings-modal').style.display = 'none';
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('circle-settings-modal');
+            } else {
+                document.getElementById('circle-settings-modal').style.display = 'none';
+            }
             if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
         } catch (e) {
             alert('Failed to save settings: ' + e.message);
@@ -436,7 +539,11 @@ window.initCommunityCircles = function () {
                 const err = await res.text();
                 throw new Error(err);
             }
-            document.getElementById('circle-settings-modal').style.display = 'none';
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('circle-settings-modal');
+            } else {
+                document.getElementById('circle-settings-modal').style.display = 'none';
+            }
             if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
         } catch (e) {
             alert('Failed to delete circle: ' + e.message);
@@ -501,27 +608,40 @@ window.initCommunityCircles = function () {
             section.style.display = 'block';
             badge.textContent = requests.length + ' pending';
 
-            let html = '';
+            container.replaceChildren();
             for (const req of requests) {
                 const date = new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                html += `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border-color);">
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div style="width:36px;height:36px;border-radius:50%;background:#EEF4FF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#2E90FA;">
-                            ${(req.user_name || 'U').charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                            <div style="font-size:14px;font-weight:500;color:#101828;">${req.user_name || 'Unknown User'}</div>
-                            <div style="font-size:12px;color:#667085;">Requested ${date}</div>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:8px;">
-                        <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="handleApproveRequest('${req.id}')">✓ Approve</button>
-                        <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="handleDeclineRequest('${req.id}')" style="color:#F04438;">✗ Decline</button>
-                    </div>
-                </div>`;
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border-color);';
+
+                const requester = document.createElement('div');
+                requester.style.cssText = 'display:flex;align-items:center;gap:10px;';
+
+                const avatar = document.createElement('div');
+                avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#EEF4FF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#2E90FA;';
+                avatar.textContent = (req.user_name || 'U').charAt(0).toUpperCase();
+
+                const info = document.createElement('div');
+                const name = document.createElement('div');
+                name.style.cssText = 'font-size:14px;font-weight:500;color:#101828;';
+                name.textContent = req.user_name || 'Unknown User';
+                const requested = document.createElement('div');
+                requested.style.cssText = 'font-size:12px;color:#667085;';
+                requested.textContent = `Requested ${date}`;
+
+                const actions = document.createElement('div');
+                actions.style.cssText = 'display:flex;gap:8px;';
+                actions.appendChild(createButton('✓ Approve', 'ds-btn ds-btn--primary ds-btn--sm', () => window.handleApproveRequest(req.id)));
+                actions.appendChild(createButton('✗ Decline', 'ds-btn ds-btn--secondary ds-btn--sm', () => window.handleDeclineRequest(req.id), 'color:#F04438;'));
+
+                info.appendChild(name);
+                info.appendChild(requested);
+                requester.appendChild(avatar);
+                requester.appendChild(info);
+                row.appendChild(requester);
+                row.appendChild(actions);
+                container.appendChild(row);
             }
-            container.innerHTML = html;
         } catch (e) {
             console.error('Failed to load join requests', e);
         }
@@ -605,6 +725,7 @@ window.initCommunityCircles = function () {
     // Also expose for other scripts
     window.loadCirclesAndXp = loadAll;
     window.showLevelUpAnimation = showLevelUpAnimation;
+    loadAll();
 };
 
 document.addEventListener('DOMContentLoaded', window.initCommunityCircles);

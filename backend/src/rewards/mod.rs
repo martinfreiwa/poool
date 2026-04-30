@@ -46,6 +46,14 @@ pub fn router() -> Router<AppState> {
             "/api/affiliate/referrals",
             get(api_affiliate_referrals_list),
         )
+        .route(
+            "/api/affiliate/settings",
+            get(get_affiliate_settings_handler).post(save_affiliate_settings_handler),
+        )
+        .route(
+            "/api/affiliate/materials",
+            get(api_affiliate_materials_list),
+        )
         // GAP-08: Policy re-acceptance for updated versions
         .route(
             "/api/affiliate/policy-reaccept",

@@ -117,10 +117,75 @@
     }
     .escrow-footer {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: flex-end;
       gap: 12px;
       padding-top: 16px;
       border-top: 1px solid var(--admin-border);
+      flex-wrap: wrap;
+    }
+    .escrow-page-status {
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      font-weight: 600;
+    }
+    .escrow-error {
+      text-align: center;
+      padding: 40px;
+      color: var(--admin-danger, #d92d20);
+    }
+    .escrow-error .admin-btn {
+      margin-top: 16px;
+    }
+    .escrow-release-note {
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      align-self: center;
+    }
+    .escrow-release-form {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      flex: 1 1 640px;
+    }
+    .escrow-release-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--admin-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .escrow-release-form input {
+      height: 38px;
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-sm);
+      padding: 0 10px;
+      color: var(--admin-text-primary);
+      background: var(--admin-bg-card);
+      font: inherit;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .escrow-release-feedback {
+      flex-basis: 100%;
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      min-height: 18px;
+    }
+    .escrow-release-feedback.is-error {
+      color: var(--admin-danger, #d92d20);
+    }
+    .escrow-release-feedback.is-success {
+      color: var(--admin-success, #079455);
+    }
+    @media (max-width: 920px) {
+      .escrow-release-form {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -141,10 +206,7 @@
           </nav>
         </div>
         <div class="admin-topbar-right">
-          <div class="admin-health-indicators" title="System Health">
-            <span class="admin-health-dot admin-health-dot--ok"></span>
-            <span class="admin-health-dot admin-health-dot--ok"></span>
-          </div>
+          <span class="escrow-page-status">Escrow operations dashboard</span>
         </div>
       </header>
 
@@ -154,8 +216,13 @@
           <p class="admin-page-subtitle">Track Primary Offerings funding goals and Escrow pools in real-time.</p>
         </div>
 
-        <div id="loading" style="text-align:center; padding: 40px; color: var(--admin-text-muted);">
+        <div id="loading" role="status" aria-live="polite" style="text-align:center; padding: 40px; color: var(--admin-text-muted);">
           Loading escrow data...
+        </div>
+
+        <div id="escrow-error" class="escrow-error" role="alert" aria-live="assertive" style="display:none;">
+          <div id="escrow-error-text">Failed to load escrow data.</div>
+          <button type="button" id="escrow-retry" class="admin-btn admin-btn--secondary">Retry</button>
         </div>
 
         <div id="escrow-grid" style="display:none;"></div>
@@ -173,92 +240,224 @@
 
   <script src="/static/js/mp-toast.js"></script>
   <script>
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('escrow-error');
+    const errorTextEl = document.getElementById('escrow-error-text');
+    const retryBtn = document.getElementById('escrow-retry');
+    const gridEl = document.getElementById('escrow-grid');
+    const emptyEl = document.getElementById('escrow-empty');
+
     function formatMoney(cents) {
       if (!cents) return "$0.00";
       return "$" + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    async function loadEscrow() {
+    function appendText(parent, tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      el.textContent = text;
+      parent.appendChild(el);
+      return el;
+    }
+
+    function createStat(label, value, options = {}) {
+      const item = document.createElement('div');
+      item.className = 'stat-item';
+      appendText(item, 'span', 'stat-label', label);
+      const valueEl = appendText(item, 'span', 'stat-val', value);
+      if (options.primary) valueEl.style.color = 'var(--admin-primary)';
+      if (options.compact) {
+        valueEl.style.fontSize = '14px';
+        valueEl.style.fontWeight = '500';
+      }
+      if (options.subtext) appendText(item, 'span', 'target-val', options.subtext);
+      return item;
+    }
+
+    function csrfHeaders() {
+      const token = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('csrf_token='))
+        ?.split('=')[1];
+      return token ? { 'X-CSRF-Token': decodeURIComponent(token) } : {};
+    }
+
+    async function requestRelease(camp, form, feedback, button) {
+      const notarizationInput = form.querySelector('[name="notarization_reference"]');
+      const reasonInput = form.querySelector('[name="reason"]');
+      const notarizationReference = notarizationInput.value.trim();
+      const reason = reasonInput.value.trim();
+      feedback.className = 'escrow-release-feedback';
+      feedback.textContent = '';
+
+      if (!notarizationReference) {
+        feedback.classList.add('is-error');
+        feedback.textContent = 'Notarization reference is required.';
+        notarizationInput.focus();
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Requesting...';
       try {
-        const res = await fetch('/api/admin/primary-escrow');
-        if (!res.ok) throw new Error('Failed to fetch data');
-        const data = await res.json();
-        
-        document.getElementById('loading').style.display = 'none';
-
-        if (!data || data.length === 0) {
-          document.getElementById('escrow-empty').style.display = 'block';
-          return;
-        }
-
-        const grid = document.getElementById('escrow-grid');
-        grid.style.display = 'block';
-        grid.innerHTML = '';
-
-        data.forEach(camp => {
-          const badgeCls = camp.funding_status === 'funding_open' ? 'badge-open' : 'badge-progress';
-          const badgeText = camp.funding_status.replace('_', ' ');
-          
-          let fillCls = 'progress-fill';
-          if (camp.progress_percent >= 100) fillCls += ' success';
-
-          const minTargetDesc = camp.target_min_cents > 0 ? `Soft Cap: ${formatMoney(camp.target_min_cents)}` : '';
-
-          const html = `
-            <div class="escrow-card">
-              <div class="escrow-header">
-                <div>
-                  <h3 class="escrow-title">${camp.title}</h3>
-                  <div class="escrow-id">${camp.asset_id}</div>
-                </div>
-                <div class="escrow-badge ${badgeCls}">${badgeText}</div>
-              </div>
-
-              <div>
-                <div class="progress-track">
-                  <div class="${fillCls}" style="width: ${Math.min(camp.progress_percent, 100)}%;"></div>
-                </div>
-                <div class="progress-meta">
-                  <span>${camp.progress_percent.toFixed(1)}% Funded</span>
-                  <span>${camp.tokens_total - camp.tokens_available} / ${camp.tokens_total} Tokens</span>
-                </div>
-              </div>
-
-              <div class="escrow-stats-grid">
-                <div class="stat-item">
-                  <span class="stat-label">Current Escrow Balance</span>
-                  <span class="stat-val" style="color:var(--admin-primary)">${formatMoney(camp.current_escrow_cents)}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Funding Target</span>
-                  <span class="stat-val">${formatMoney(camp.target_total_cents)}</span>
-                  <span class="target-val">${minTargetDesc}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Escrow Agent</span>
-                  <span class="stat-val" style="font-size: 14px; font-weight:500;">${camp.escrow_agent}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Deadline</span>
-                  <span class="stat-val" style="font-size: 14px; font-weight:500;">${camp.funding_end_at || 'None'}</span>
-                </div>
-              </div>
-
-              <div class="escrow-footer">
-                <button class="admin-btn admin-btn--secondary" onclick="window.location.href='/admin/asset-details.html?id=${camp.asset_id}'">View Asset</button>
-                <button class="admin-btn admin-btn--primary" onclick="alert('Release functions will be enabled when notarization is complete.');">Close & Release Escrow</button>
-              </div>
-            </div>
-          `;
-          grid.insertAdjacentHTML('beforeend', html);
+        const res = await fetch(`/api/admin/primary-escrow/${encodeURIComponent(camp.asset_id)}/release-request`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...csrfHeaders(),
+          },
+          body: JSON.stringify({
+            notarization_reference: notarizationReference,
+            reason: reason || null,
+          }),
         });
-
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `Release request failed (${res.status})`);
+        feedback.classList.add('is-success');
+        feedback.textContent = `Approval request created: ${body.approval_id}`;
+        form.querySelectorAll('input, button').forEach((el) => { el.disabled = true; });
       } catch (err) {
-        console.error(err);
-        document.getElementById('loading').innerText = 'Failed to load escrow data: ' + err.message;
+        feedback.classList.add('is-error');
+        feedback.textContent = err.message;
+        button.disabled = false;
+        button.textContent = 'Request Release';
       }
     }
 
+    function renderEscrowCard(camp) {
+      const card = document.createElement('article');
+      card.className = 'escrow-card';
+
+      const header = document.createElement('div');
+      header.className = 'escrow-header';
+      const titleWrap = document.createElement('div');
+      appendText(titleWrap, 'h3', 'escrow-title', camp.title || 'Untitled asset');
+      appendText(titleWrap, 'div', 'escrow-id', camp.asset_id || 'Unknown asset');
+      header.appendChild(titleWrap);
+
+      const status = String(camp.funding_status || 'unknown');
+      const badge = appendText(header, 'div', `escrow-badge ${status === 'funding_open' ? 'badge-open' : 'badge-progress'}`, status.replace(/_/g, ' '));
+      badge.setAttribute('aria-label', `Funding status: ${badge.textContent}`);
+      card.appendChild(header);
+
+      const progress = Number.isFinite(Number(camp.progress_percent)) ? Number(camp.progress_percent) : 0;
+      const progressWrap = document.createElement('div');
+      const progressTrack = document.createElement('div');
+      progressTrack.className = 'progress-track';
+      progressTrack.setAttribute('role', 'progressbar');
+      progressTrack.setAttribute('aria-valuemin', '0');
+      progressTrack.setAttribute('aria-valuemax', '100');
+      progressTrack.setAttribute('aria-valuenow', String(Math.max(0, Math.min(progress, 100)).toFixed(1)));
+      progressTrack.setAttribute('aria-label', 'Funding progress');
+      const fill = document.createElement('div');
+      fill.className = `progress-fill${progress >= 100 ? ' success' : ''}`;
+      fill.style.width = `${Math.max(0, Math.min(progress, 100))}%`;
+      progressTrack.appendChild(fill);
+      progressWrap.appendChild(progressTrack);
+
+      const progressMeta = document.createElement('div');
+      progressMeta.className = 'progress-meta';
+      appendText(progressMeta, 'span', '', `${progress.toFixed(1)}% Funded`);
+      const soldTokens = Number(camp.tokens_total || 0) - Number(camp.tokens_available || 0);
+      appendText(progressMeta, 'span', '', `${soldTokens} / ${Number(camp.tokens_total || 0)} Tokens`);
+      progressWrap.appendChild(progressMeta);
+      card.appendChild(progressWrap);
+
+      const stats = document.createElement('div');
+      stats.className = 'escrow-stats-grid';
+      stats.appendChild(createStat('Current Escrow Balance', formatMoney(camp.current_escrow_cents), { primary: true }));
+      stats.appendChild(createStat('Funding Target', formatMoney(camp.target_total_cents), {
+        subtext: camp.target_min_cents > 0 ? `Soft Cap: ${formatMoney(camp.target_min_cents)}` : '',
+      }));
+      stats.appendChild(createStat('Escrow Agent', camp.escrow_agent || 'unassigned', { compact: true }));
+      stats.appendChild(createStat('Deadline', camp.funding_end_at || 'None', { compact: true }));
+      card.appendChild(stats);
+
+      const footer = document.createElement('div');
+      footer.className = 'escrow-footer';
+      const assetLink = document.createElement('a');
+      assetLink.className = 'admin-btn admin-btn--secondary';
+      assetLink.href = `/admin/asset-details.html?id=${encodeURIComponent(camp.asset_id || '')}`;
+      assetLink.textContent = 'View Asset';
+      footer.appendChild(assetLink);
+
+      const releaseForm = document.createElement('form');
+      releaseForm.className = 'escrow-release-form';
+      const referenceLabel = document.createElement('label');
+      referenceLabel.textContent = 'Notarization reference';
+      const referenceInput = document.createElement('input');
+      referenceInput.name = 'notarization_reference';
+      referenceInput.maxLength = 500;
+      referenceInput.placeholder = 'Notary deed / closing memo ID';
+      referenceLabel.appendChild(referenceInput);
+      releaseForm.appendChild(referenceLabel);
+
+      const reasonLabel = document.createElement('label');
+      reasonLabel.textContent = 'Release reason';
+      const reasonInput = document.createElement('input');
+      reasonInput.name = 'reason';
+      reasonInput.maxLength = 500;
+      reasonInput.placeholder = 'Optional operator note';
+      reasonLabel.appendChild(reasonInput);
+      releaseForm.appendChild(reasonLabel);
+
+      const releaseButton = document.createElement('button');
+      releaseButton.type = 'submit';
+      releaseButton.className = 'admin-btn admin-btn--primary';
+      releaseButton.textContent = 'Request Release';
+      releaseButton.disabled = !camp.release_ready;
+      releaseForm.appendChild(releaseButton);
+      footer.appendChild(releaseForm);
+      const feedback = appendText(footer, 'div', 'escrow-release-feedback', camp.release_ready ? '' : 'Release requires the soft cap and escrow ledger balance.');
+      releaseForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        requestRelease(camp, releaseForm, feedback, releaseButton);
+      });
+      card.appendChild(footer);
+
+      return card;
+    }
+
+    function showLoading() {
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      emptyEl.style.display = 'none';
+      gridEl.style.display = 'none';
+      gridEl.replaceChildren();
+    }
+
+    function showError(message) {
+      loadingEl.style.display = 'none';
+      gridEl.style.display = 'none';
+      emptyEl.style.display = 'none';
+      errorTextEl.textContent = message;
+      errorEl.style.display = 'block';
+      retryBtn.focus();
+    }
+
+    async function loadEscrow() {
+      showLoading();
+      try {
+        const res = await fetch('/api/admin/primary-escrow', { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(`Failed to fetch data (${res.status})`);
+        const data = await res.json();
+
+        loadingEl.style.display = 'none';
+        if (!data || data.length === 0) {
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        gridEl.style.display = 'block';
+        data.forEach((camp) => gridEl.appendChild(renderEscrowCard(camp)));
+      } catch (err) {
+        console.error(err);
+        showError(`Failed to load escrow data: ${err.message}`);
+      }
+    }
+
+    retryBtn.addEventListener('click', loadEscrow);
     document.addEventListener('DOMContentLoaded', loadEscrow);
   </script>
 </body>

@@ -116,6 +116,7 @@ pub struct PostDisplay {
     pub link_preview_domain: Option<String>,
     pub reaction_count: i32,
     pub comment_count: i32,
+    pub current_user_reacted: bool,
     pub is_hidden: bool,
     pub is_pinned: bool,
     pub disclaimer_shown: bool,

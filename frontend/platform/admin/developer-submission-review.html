@@ -863,7 +863,7 @@
 
 
   <!-- Reason Modal (for reject / request revision) -->
-  <div id="reason-modal" style="display:none;position:fixed;inset:0;z-index:2000;
+  <div id="reason-modal" role="dialog" aria-modal="true" aria-labelledby="reason-modal-title" aria-describedby="reason-modal-subtitle" style="display:none;position:fixed;inset:0;z-index:2000;
        background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
        align-items:center;justify-content:center;">
     <div style="background:var(--admin-bg-card);border:1px solid var(--admin-border);
@@ -881,6 +881,7 @@
     </div>
   </div>
 
+  <script src="/static/js/toast.js"></script>
   <script src="/static/js/admin-submission-review.js"></script>
 </body>
 

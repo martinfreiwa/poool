@@ -400,6 +400,7 @@ def cleanup_test_user(user_id):
             ("DELETE FROM referral_tracking WHERE user_id = %s", (uid,)),
             ("DELETE FROM user_tiers WHERE user_id = %s", (uid,)),
             ("DELETE FROM user_consents WHERE user_id = %s", (uid,)),
+            ("DELETE FROM audit_logs WHERE actor_user_id = %s OR entity_id = %s", (uid, uid)),
         ]
         for sql, params in cleanup_statements:
             try:

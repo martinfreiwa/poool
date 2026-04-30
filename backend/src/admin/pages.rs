@@ -158,6 +158,28 @@ pub async fn page_admin_marketplace_compliance(
     }
 }
 
+/// GET /admin/deposits  Deposit operations board.
+///
+/// Uses granular deposit permissions so finance/deposit operators can access
+/// the page without broad generic-admin privileges.
+pub async fn page_admin_deposits(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let Some(user) = crate::auth::middleware::get_current_user(&jar, &state.db).await else {
+        return Redirect::to("/auth/login").into_response();
+    };
+
+    if crate::auth::middleware::has_permission(&state.db, user.id, "deposits.read").await
+        || crate::auth::middleware::has_permission(&state.db, user.id, "deposits.write").await
+        || crate::auth::middleware::has_permission(&state.db, user.id, "deposits.confirm").await
+    {
+        render_admin_template(&state, "admin/deposits.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
 /// GET /admin/{any}.html  Serve admin sub-pages (protected).
 pub async fn page_admin_generic(
     jar: CookieJar,
@@ -194,8 +216,23 @@ pub async fn page_admin_generic(
     }
 
     if (relative == "admin/affiliate-applications"
-        || relative == "admin/affiliate-applications.html")
+        || relative == "admin/affiliate-applications.html"
+        || relative == "admin/affiliate-finance"
+        || relative == "admin/affiliate-finance.html"
+        || relative == "admin/affiliate-fraud"
+        || relative == "admin/affiliate-fraud.html"
+        || relative == "admin/admin-affiliate-fraud"
+        || relative == "admin/admin-affiliate-fraud.html")
         && !crate::auth::middleware::has_permission(&state.db, admin.id, "affiliates.manage").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/developer-submissions"
+        || relative == "admin/developer-submissions.html"
+        || relative == "admin/developer-submission-review"
+        || relative == "admin/developer-submission-review.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "submissions.review").await
     {
         return Redirect::to("/admin/").into_response();
     }
@@ -225,6 +262,12 @@ pub async fn page_admin_generic(
     }
 
     if (relative == "admin/blockchain-contracts" || relative == "admin/blockchain-contracts.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "treasury.read").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/blockchain-sync" || relative == "admin/blockchain-sync.html")
         && !crate::auth::middleware::has_permission(&state.db, admin.id, "treasury.read").await
     {
         return Redirect::to("/admin/").into_response();

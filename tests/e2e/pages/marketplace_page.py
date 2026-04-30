@@ -31,15 +31,23 @@ class MarketplacePage(BasePage):
 
     @property
     def search_input(self):
-        return self.page.locator("input[type='search'], #marketplace-search")
+        return self.page.locator("#filter-bar-search-input")
 
     @property
-    def category_filter(self):
-        return self.page.locator("#category-filter, .category-select")
+    def location_filter(self):
+        return self.page.locator("#filter-bar-location-select")
 
     @property
-    def sort_select(self):
-        return self.page.locator("#sort-select, .sort-dropdown")
+    def investment_filter(self):
+        return self.page.locator("#filter-bar-investment-select")
+
+    @property
+    def property_type_filter(self):
+        return self.page.locator("#filter-bar-property-select")
+
+    @property
+    def no_results(self):
+        return self.page.locator(".marketplace-no-results")
 
     # ── Actions ──
     def switch_to_funded_tab(self):
@@ -62,12 +70,43 @@ class MarketplacePage(BasePage):
         self.search_input.fill(query)
         return self
 
+    def clear_search(self):
+        self.page.locator("#filter-bar-clear-btn").click()
+        return self
+
+    def filter_property_type(self, value: str):
+        self.property_type_filter.evaluate(
+            "(select, value) => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); }",
+            value,
+        )
+        return self
+
+    def filter_investment_type(self, value: str):
+        self.investment_filter.evaluate(
+            "(select, value) => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); }",
+            value,
+        )
+        return self
+
     # ── Assertions ──
     def verify_cards_visible(self, min_count=1):
         """Verify at least N property cards are rendered."""
         expect(self.property_cards.first).to_be_visible(timeout=10000)
         count = self.property_cards.count()
         assert count >= min_count, f"Expected >= {min_count} cards, got {count}"
+        return self
+
+    def verify_card_contract(self, card=None):
+        """Verify card attributes used by filtering and accessible navigation."""
+        import re
+
+        card = card or self.property_cards.first
+        expect(card).to_have_attribute("data-property-id", re.compile(r".+"))
+        expect(card).to_have_attribute("data-location", re.compile(r".+"))
+        expect(card).to_have_attribute("data-asset-type", re.compile(r".+"))
+        expect(card).to_have_attribute("data-duration", re.compile(r".*"))
+        expect(card.locator(".property-title-link")).to_have_attribute("href", re.compile(r"^/property/.+"))
+        assert card.locator(".ds-progress__fill").count() > 0
         return self
 
     def verify_available_tab_active(self):

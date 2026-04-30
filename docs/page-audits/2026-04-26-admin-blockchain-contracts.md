@@ -1,7 +1,7 @@
 # Page Audit: Blockchain Contracts
 
 Date: 2026-04-26
-Status: needs_recheck
+Status: completed
 Auditor: ChatGPT/Codex
 Page URL: `/admin/blockchain-contracts`
 Template: `frontend/platform/admin/blockchain-contracts.html`
@@ -13,7 +13,7 @@ Backend Routes: `GET /admin/blockchain-contracts`, `GET /admin/blockchain-contra
 
 ## Summary
 
-The page is registered and unauthenticated access fails closed, but the authenticated read path is not production-ready. The page and treasury API are available to any generic admin instead of a granular blockchain/treasury permission, the API masks database failures as zero/empty data, and the table renders asset data with template-string `innerHTML`.
+The original audit findings have been fixed and verified with targeted authenticated E2E. `/admin/blockchain-contracts` and `/api/admin/blockchain/treasury` now require `treasury.read`, treasury database read failures propagate as API errors, contract rows are rendered with DOM/textContent APIs, copy actions provide visible accessible feedback, and the unused external HTMX dependency was removed.
 
 ---
 
@@ -24,7 +24,9 @@ The page is registered and unauthenticated access fails closed, but the authenti
 - Backend route and handler review in `backend/src/admin/mod.rs`, `backend/src/admin/pages.rs`, and `backend/src/admin/blockchain.rs`.
 - Schema review of `database/058_blockchain_integration.sql`, `database/085_admin_blockchain_contract_controls.sql`, and related schema docs.
 - Runtime unauthenticated curl smoke against the already-running local backend on `localhost:8888`.
+- Fix verification on fresh local backend `http://localhost:8894`.
 - Syntax check with `node --check frontend/platform/static/js/admin-blockchain-contracts.js`.
+- Targeted authenticated E2E: `BASE_URL=http://localhost:8894 python3 -m pytest tests/e2e/test_admin_blockchain_contracts.py -q`.
 
 ---
 
@@ -34,8 +36,8 @@ The page is registered and unauthenticated access fails closed, but the authenti
 |------|--------------|-------|
 | URL | `/admin/blockchain-contracts` | Clean admin page route. |
 | URL alias | `/admin/blockchain-contracts.html` | Registered alias. |
-| Template | `frontend/platform/admin/blockchain-contracts.html` | KPI cards, contracts table, inline copy helper. |
-| JS | `frontend/platform/static/js/admin-blockchain-contracts.js` | Fetches treasury API and renders KPI/table rows. |
+| Template | `frontend/platform/admin/blockchain-contracts.html` | KPI cards, contracts table, accessible copy status region. |
+| JS | `frontend/platform/static/js/admin-blockchain-contracts.js` | Fetches treasury API and renders KPI/table rows with safe DOM construction. |
 | Shared JS | `admin-permission-guard.js`, `admin-theme.js`, `admin-global-search.js`, dropdown scripts, `user-data.js` | Loaded by template. |
 | Backend page route | `GET /admin/blockchain-contracts` | `page_admin_generic`. |
 | Backend API route | `GET /api/admin/blockchain/treasury` | `api_admin_blockchain_treasury`. |
@@ -51,16 +53,16 @@ The page is registered and unauthenticated access fails closed, but the authenti
 |--------|---------------------|-------------------|-----------------|----------------|----------------|
 | Admin breadcrumb | `nav.admin-breadcrumbs a[href="/admin/"]` | Navigate back to admin dashboard. | Link only. | Yes, admin dashboard route. | Not clicked; route exists. |
 | Tokenize New Asset | `a[href="/admin/asset-tokenize.html"]` | Navigate to tokenization workflow. | Link only. | Yes, page is gated by `blockchain.tokenize`. | Not clicked; route exists. |
-| Active Deployments KPI | `#kpi-active-clones` | Show tokenized assets with contract addresses. | Yes. | Yes via treasury API. | Unauthenticated API returns 401; authenticated not run. |
-| Total Circulating Supply KPI | `#kpi-total-supply` | Sum `tokens_total`. | Yes. | Yes via treasury API. | Static verified only. |
-| Distributed Tokens KPI | `#kpi-distributed`, `#kpi-distributed-sub` | Sum sold tokens and percentage. | Yes. | Yes via treasury API. | Static verified only. |
-| Total count badge | `#total-count-badge` | Show number of contract rows. | Yes. | Yes via treasury API. | Static verified only. |
-| Contracts table | `#contracts-tbody` | Render loading, empty, error, and rows. | Yes. | Yes via treasury API. | Error/loading paths exist; row rendering is unsafe. |
+| Active Deployments KPI | `#kpi-active-clones` | Show tokenized assets with contract addresses. | Yes. | Yes via treasury API. | Verified by authenticated E2E. |
+| Total Circulating Supply KPI | `#kpi-total-supply` | Sum `tokens_total`. | Yes. | Yes via treasury API. | Verified by authenticated E2E smoke. |
+| Distributed Tokens KPI | `#kpi-distributed`, `#kpi-distributed-sub` | Sum sold tokens and percentage. | Yes. | Yes via treasury API. | Verified by authenticated E2E smoke. |
+| Total count badge | `#total-count-badge` | Show number of contract rows. | Yes. | Yes via treasury API. | Verified by authenticated E2E. |
+| Contracts table | `#contracts-tbody` | Render loading, empty, error, and rows. | Yes. | Yes via treasury API. | Safe DOM rendering verified by E2E. |
 | Empty-state Tokenize Asset | Injected link in `renderContractsTable` | Navigate to tokenization when no contracts exist. | Yes. | Yes, page route exists. | Static verified only. |
-| Contract explorer link | `.basescan-link` | Open contract in configured explorer. | Yes. | Explorer URL supplied by API/env. | Static verified only; URL is interpolated into HTML. |
-| Copy Address button | `.copy-btn`, inline `onclick` | Copy contract address with Clipboard API. | Yes. | No backend needed. | Static verified only; no visible success/failure feedback. |
-| View Clone link | `href="/admin/blockchain-contract-detail.html?address=..."` | Navigate to contract detail page. | Yes. | Detail page/API exist. | Static verified only. |
-| Tx History link | `txLink` | Open transaction in explorer. | Yes. | `chain_tx_hash` supplied by API. | Static verified only; URL is interpolated into HTML. |
+| Contract explorer link | `.basescan-link` | Open contract in configured explorer. | Yes. | Explorer URL supplied by API/env. | Verified with `rel="noopener noreferrer"` and validated URL construction. |
+| Copy Address button | `.copy-btn` | Copy contract address with Clipboard API/fallback. | Yes. | No backend needed. | Verified visible `#contracts-status` success feedback. |
+| View Clone link | `href="/admin/blockchain-contract-detail.html?address=..."` | Navigate to contract detail page. | Yes. | Detail page/API exist. | Verified safe encoded address link. |
+| Tx History link | `Tx History` | Open transaction in explorer. | Yes. | `chain_tx_hash` supplied by API. | Verified with `rel="noopener noreferrer"` and validated hash construction. |
 
 ---
 
@@ -89,6 +91,8 @@ Recommended fix:
 
 Replace table rendering with `document.createElement`/`textContent`, `addEventListener` for copy buttons, and strict client-side URL construction from validated address/hash patterns. Keep backend validation as the authority.
 
+Status: fixed 2026-04-26. `admin-blockchain-contracts.js` now builds rows with DOM APIs, uses `textContent`, validates contract addresses and transaction hashes before constructing links, and uses `addEventListener` instead of inline handlers. Targeted E2E seeded a malicious title and verified it rendered as text with no injected image.
+
 ### P2 - Copy action has no visible success or error state
 
 Location:
@@ -111,6 +115,8 @@ Recommended fix:
 
 Use the shared toast/status helper, remove inline event handlers, and add an accessible status region or button label update.
 
+Status: fixed 2026-04-26. The template now includes `#contracts-status` with `role="status"` and `aria-live="polite"`, and the copy handler shows visible success/failure feedback. Targeted E2E stubs `navigator.clipboard`, clicks the copy button, and verifies the copied address plus visible success message.
+
 ### P3 - Page loads external HTMX although no HTMX behavior is used
 
 Location:
@@ -132,6 +138,8 @@ Static template review found no HTMX attributes.
 Recommended fix:
 
 Delete the unused external script from the page.
+
+Status: fixed 2026-04-26. The external HTMX script was removed from `frontend/platform/admin/blockchain-contracts.html`.
 
 ---
 
@@ -160,6 +168,8 @@ Recommended fix:
 
 Add a blockchain page gate in `page_admin_generic` and require the same permission in the treasury API. Add denial tests for admins without that permission.
 
+Status: fixed 2026-04-26. The page route and `GET /api/admin/blockchain/treasury` now both require `treasury.read`. Targeted E2E verifies unauthenticated API 401, admin-without-permission denial, and admin-with-`treasury.read` access.
+
 ### P2 - Treasury API silently converts database failures into empty/zero data
 
 Location:
@@ -184,6 +194,8 @@ Recommended fix:
 
 Return `Result<Vec<_>, ApiError>` from helpers, use `?` for all database reads, and let the frontend display its existing error state for non-2xx responses.
 
+Status: fixed 2026-04-26. Core treasury count queries and tokenized asset/batch helpers now propagate `ApiError` instead of using `unwrap_or(0)`/`unwrap_or_default()`. `cargo check` verifies the new result contract; fault-injection of a live DB failure was not performed.
+
 ---
 
 ## End-to-End Test Results
@@ -193,17 +205,19 @@ Return `Result<Vec<_>, ApiError>` from helpers, use `?` for all database reads, 
 | Unauthenticated page access | `curl -i http://localhost:8888/admin/blockchain-contracts` | Redirect to login. | `303 See Other` with `location: /auth/login`. | Pass |
 | Unauthenticated API access | `curl -i http://localhost:8888/api/admin/blockchain/treasury` | JSON auth error. | `401 Unauthorized` with `{"error":"Authentication required"}`. | Pass |
 | JS syntax | `node --check frontend/platform/static/js/admin-blockchain-contracts.js` | No syntax errors. | Passed with no output. | Pass |
-| Authenticated contracts render | Open page with admin session and seeded tokenized asset. | KPI/table rows render from DB. | Not run in this documentation-only audit. | Not verified |
-| Permission denial | Admin without blockchain/treasury permission opens page/API. | Denied or redirected. | Not run; static review indicates overbroad access. | Fail by static evidence |
-| DB failure state | Force treasury query failure. | API returns error and UI shows error state. | Not run; static review indicates failures are masked. | Fail by static evidence |
+| Authenticated contracts render | Open page with admin session and seeded tokenized asset. | KPI/table rows render from DB. | `tests/e2e/test_admin_blockchain_contracts.py` passed on `BASE_URL=http://localhost:8894`. | Pass |
+| Permission denial | Admin without `treasury.read` opens page/API. | Page redirects to `/admin/`; API returns 403. | Targeted E2E passed. | Pass |
+| Safe row rendering | Seed title with `<img src=x onerror=alert(1)>`. | Title renders as text; no injected image exists. | Targeted E2E passed. | Pass |
+| Copy feedback | Click contract copy button with clipboard stub. | Address is copied and visible status appears. | Targeted E2E passed. | Pass |
+| DB failure state | Force treasury query failure. | API returns error and UI shows error state. | Not fault-injected; code now propagates `ApiError` and `cargo check` passes. | Static verified |
 
 ---
 
 ## Security Findings
 
-- P1: Generic admin access is too broad for a critical blockchain/contracts page and API.
-- P1: Contract rows use `innerHTML` with database-sourced values, creating XSS risk in an admin-only surface.
-- P3: Unused external HTMX script adds avoidable third-party dependency exposure.
+- Fixed: Generic admin access is replaced by aligned `treasury.read` page/API gates.
+- Fixed: Contract rows no longer use `innerHTML` for database-sourced values.
+- Fixed: Unused external HTMX script removed.
 - Pass: unauthenticated page/API requests fail closed.
 
 ---
@@ -213,32 +227,30 @@ Return `Result<Vec<_>, ApiError>` from helpers, use `?` for all database reads, 
 - Required blockchain columns exist on `assets`: `chain_token_id`, `chain_contract_address`, `chain_network`, `chain_tx_hash`, and `chain_metadata_uri`.
 - `chain_settlement_batches` exists for shared treasury batch data.
 - `chain_contract_controls` exists for the contract-detail pause/unpause page, but this list page does not use it and always labels any asset with `chain_contract_address` as `Live Clone`; paused state is only visible after clicking through to detail.
-- Query failures are swallowed in the treasury handler and helpers, which can hide schema/data issues from operators.
+- Fixed: core treasury query failures now propagate through `ApiError`; empty states only come from successful empty result sets.
 
 ---
 
 ## Missing Tests
 
-- Authenticated E2E for `/admin/blockchain-contracts` with a seeded tokenized asset.
-- Permission denial tests for admins without `treasury.read`/blockchain view permission.
-- UI test proving asset titles/network/address/tx values render safely and cannot inject HTML.
-- API test proving database read failures return errors instead of zero/empty success payloads.
+- Added: authenticated E2E for `/admin/blockchain-contracts` with a seeded tokenized asset.
+- Added: permission denial tests for admins without `treasury.read`.
+- Added: UI test proving malicious asset titles render as text and cannot inject HTML.
+- Partially covered: API database failure propagation is statically verified and compiled; live DB fault injection was not added.
 - Keyboard/mobile smoke for copy buttons, explorer links, and detail navigation.
 
 ---
 
 ## Recommended Fix Order
 
-1. Gate `/admin/blockchain-contracts` and `/api/admin/blockchain/treasury` behind a granular blockchain/treasury read permission.
-2. Replace table `innerHTML` rendering and inline copy handlers with safe DOM construction and event listeners.
-3. Propagate treasury database errors instead of returning empty/zero data.
-4. Remove the unused external HTMX dependency and add accessible copy feedback.
-5. Add authenticated permission, rendering, XSS, and error-state tests.
+1. Follow-up: add mobile viewport smoke for the contracts table.
+2. Follow-up: add a fault-injection test for treasury DB errors if a safe test harness is introduced.
+3. Follow-up: optionally surface paused clone state on the list by joining `chain_contract_controls`.
 
 ---
 
 ## Final Status
 
-`needs_recheck`
+`completed`
 
-Reason: the page was audited and unauthenticated access was verified, but security, XSS, DB error-masking, accessibility, and authenticated E2E gaps require fixes and recheck.
+Reason: PAGE-ISSUE-0292 through PAGE-ISSUE-0296 were fixed and targeted authenticated E2E passed. Remaining work is non-blocking broader mobile/fault-injection coverage.

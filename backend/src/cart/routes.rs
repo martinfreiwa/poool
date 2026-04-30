@@ -185,7 +185,7 @@ pub async fn add_to_cart(
         Ok(tx) => tx,
         Err(e) => {
             tracing::error!("Failed to begin add-to-cart transaction: {}", e);
-            return Redirect::to("/cart").into_response();
+            return Redirect::to("/cart?error=cart_unavailable").into_response();
         }
     };
 
@@ -214,7 +214,7 @@ pub async fn add_to_cart(
                 property_id
             );
             let _ = tx.commit().await;
-            return Redirect::to("/cart").into_response();
+            return Redirect::to("/cart?error=asset_not_found").into_response();
         }
     };
 
@@ -268,10 +268,13 @@ pub async fn add_to_cart(
     if let Err(e) = &result {
         tracing::error!("Cart upsert failed: {}", e);
         let _ = tx.rollback().await;
-        return Redirect::to("/cart").into_response();
+        return Redirect::to("/cart?error=add_failed").into_response();
     }
 
-    let _ = tx.commit().await;
+    if let Err(e) = tx.commit().await {
+        tracing::error!("Cart add commit failed: {}", e);
+        return Redirect::to("/cart?error=add_failed").into_response();
+    }
 
     match result {
         Ok(_) => {
@@ -798,7 +801,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             r##"<div id="cart-item-{idx}" class="cart-item-card" data-cart-id="{cart_id}">
                 <div class="cart-item-card__image-wrapper">
                     <a href="/property/{slug}">
-                        <img class="cart-item-card__image" src="{image_url}" alt="{title}" onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f2f4f7;border-radius:10px;&quot;><svg width=&quot;32&quot; height=&quot;32&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#98a2b3&quot; stroke-width=&quot;1.5&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;18&quot; height=&quot;18&quot; rx=&quot;2&quot;/><circle cx=&quot;8.5&quot; cy=&quot;8.5&quot; r=&quot;1.5&quot;/><path d=&quot;m21 15-5-5L5 21&quot;/></svg></div>';">
+                        <img class="cart-item-card__image" src="{image_url}" alt="{title}" onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<div class=&quot;cart-brand-image-placeholder&quot;><img src=&quot;/static/images/icons/logo-pool.svg&quot; alt=&quot;POOOL&quot; class=&quot;cart-brand-image-placeholder__logo&quot;></div>';">
                     </a>
                 </div>
                 <div class="cart-item-card__body">
@@ -918,7 +921,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             r##"<div class="mobile-cart-item-card" data-cart-id="{cart_id}">
                 <div class="mobile-cart-item-info">
                     <div class="mobile-cart-item-header">
-                        <a href="/property/{slug}"><img src="{image_url}" class="mobile-cart-item-image" alt="{title}" style="object-fit:cover;" onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f2f4f7;border-radius:8px;&quot;><svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#98a2b3&quot; stroke-width=&quot;1.5&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;18&quot; height=&quot;18&quot; rx=&quot;2&quot;/><circle cx=&quot;8.5&quot; cy=&quot;8.5&quot; r=&quot;1.5&quot;/><path d=&quot;m21 15-5-5L5 21&quot;/></svg></div>';"></a>
+                        <a href="/property/{slug}"><img src="{image_url}" class="mobile-cart-item-image" alt="{title}" style="object-fit:cover;" onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<div class=&quot;cart-brand-image-placeholder cart-brand-image-placeholder--mobile&quot;><img src=&quot;/static/images/icons/logo-pool.svg&quot; alt=&quot;POOOL&quot; class=&quot;cart-brand-image-placeholder__logo&quot;></div>';"></a>
                         <div class="mobile-cart-item-details">
                             <a href="/property/{slug}" style="text-decoration:none;"><div class="mobile-cart-item-title">{title}</div></a>
                             {mobile_property_details}
@@ -1312,7 +1315,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let populated_content = format!(
         r##"<!-- Cart Content --><div id="cart-page-content" class="cart-page-content"><div id="cart-page-items-container" class="cart-items-container"><div class="cart-items-list">{items_html}<a href="/marketplace" class="cart-add-more-card">
             <div class="cart-add-more-card__image-placeholder">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                <img src="/static/images/icons/logo-pool.svg" alt="" class="cart-add-more-card__logo" aria-hidden="true">
             </div>
             <div class="cart-add-more-card__body">
                 <div class="cart-add-more-card__header-row">

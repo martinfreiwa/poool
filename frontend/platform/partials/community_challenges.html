@@ -19,6 +19,12 @@
         <p class="ds-text-body" style="color: var(--text-secondary);">Loading challenges...</p>
       </div>
 
+      <div x-show="!loading && error" class="ds-card"
+        style="text-align: center; border: 1px solid var(--btn-danger-bg, #F04438); box-shadow: none; margin-bottom: 16px;">
+        <p class="ds-text-subtitle" style="margin: 0 0 12px; color: var(--btn-danger-bg, #F04438);" x-text="error"></p>
+        <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" @click="loadChallenges()">Retry</button>
+      </div>
+
       <div x-show="!loading" style="display: flex; flex-direction: column; gap: 16px;">
         <template x-for="ch in challenges" :key="ch.id">
           <div class="ds-card" style="padding: 24px; display: flex; gap: 24px; align-items: flex-start; transition: all 0.2s; cursor: default;"
@@ -26,7 +32,7 @@
             onmouseout="this.style.boxShadow='none';">
             
             <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(3, 255, 136, 0.1); color: #0000FF; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
-              <span x-text="ch.challenge_type === 'investment' ? '💰' : ch.challenge_type === 'social' ? '👥' : ch.challenge_type === 'learning' ? '📚' : '🎯'"></span>
+              <span x-text="challengeIcon(ch)"></span>
             </div>
             
             <div style="flex: 1;">
@@ -39,7 +45,7 @@
               <p class="ds-text-body" style="color: var(--text-secondary); margin: 0 0 16px; line-height: 1.5;" x-text="ch.description"></p>
               
               <div class="ds-progress" style="margin-bottom: 8px; background: #F2F4F7;">
-                <div class="ds-progress__fill" :style="`width: ${Math.min(100, (ch.user_progress / ch.target_value) * 100)}%; background: #0000FF; height: 100%; border-radius: 4px;`"></div>
+                <div class="ds-progress__fill" :style="challengeProgressStyle(ch)"></div>
               </div>
               <div style="display: flex; justify-content: space-between;" class="ds-text-caption">
                 <span style="color: var(--text-secondary);" x-text="`${ch.user_progress} / ${ch.target_value} completed`"></span>
@@ -51,7 +57,7 @@
       </div>
 
       <!-- Empty State -->
-      <div x-show="!loading && challenges.length === 0" class="ds-card"
+      <div x-show="!loading && !error && challenges.length === 0" class="ds-card"
         style="text-align: center; border: 1px dashed var(--card-border-color); box-shadow: none;">
         <p class="ds-text-subtitle" style="margin: 0;">No active challenges right now. Check back later!</p>
       </div>
@@ -59,9 +65,3 @@
 
   </div>
 </div>
-
-<script>
-  if (typeof Alpine !== 'undefined') {
-    document.dispatchEvent(new CustomEvent('alpine:init'));
-  }
-</script>

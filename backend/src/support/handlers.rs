@@ -3,9 +3,39 @@ use super::service;
 use crate::AppState;
 use axum::{
     extract::{Path, State},
+    http::StatusCode,
     response::{IntoResponse, Json},
 };
 use axum_extra::extract::cookie::CookieJar;
+
+async fn require_support_rate_limit(
+    state: &AppState,
+    user_id: uuid::Uuid,
+    action: &str,
+) -> Result<(), axum::response::Response> {
+    match state
+        .auth_rate_limiter
+        .check(&format!("support:{}:{}", action, user_id))
+        .await
+    {
+        Ok(_) => Ok(()),
+        Err(retry_after) => {
+            tracing::warn!(
+                "Rate limit exceeded for support action: action={} user={}",
+                action,
+                user_id
+            );
+            Err((
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(serde_json::json!({
+                    "success": false,
+                    "error": format!("Too many support requests. Please wait {} seconds.", retry_after)
+                })),
+            )
+                .into_response())
+        }
+    }
+}
 
 /// GET /api/support/tickets — List the current user's own support tickets with replies.
 pub async fn api_support_tickets_list(
@@ -53,6 +83,10 @@ pub async fn api_support_tickets_submit(
         }
     };
 
+    if let Err(resp) = require_support_rate_limit(&state, user.id, "create").await {
+        return resp;
+    }
+
     let mut subject = String::new();
     let mut message = String::new();
     let mut priority = "normal".to_string();
@@ -63,7 +97,17 @@ pub async fn api_support_tickets_submit(
     let mut file_name: Option<String> = None;
     let mut file_type: Option<String> = None;
 
-    while let Some(field) = multipart.next_field().await.unwrap_or(None) {
+    while let Some(field) = match multipart.next_field().await {
+        Ok(field) => field,
+        Err(e) => {
+            tracing::warn!("Invalid support multipart payload: {}", e);
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Invalid upload payload"})),
+            )
+                .into_response();
+        }
+    } {
         let name = field.name().unwrap_or("").to_string();
 
         if name == "attachment" {
@@ -74,16 +118,23 @@ pub async fn api_support_tickets_submit(
             if let Some(ref mime) = file_type {
                 if !["image/png", "image/jpeg", "application/pdf"].contains(&mime.as_str()) {
                     return (
-                        axum::http::StatusCode::BAD_REQUEST,
+                        StatusCode::BAD_REQUEST,
                         Json(serde_json::json!({"error": "Invalid file type. Allowed: JPG, PNG, PDF."})),
                     )
                         .into_response();
                 }
             }
 
-            if let Ok(data) = field.bytes().await {
-                if !data.is_empty() {
-                    file_bytes = Some(data.to_vec());
+            match field.bytes().await {
+                Ok(data) if !data.is_empty() => file_bytes = Some(data.to_vec()),
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::warn!("Failed reading support attachment bytes: {}", e);
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(serde_json::json!({"error": "Could not read attachment"})),
+                    )
+                        .into_response();
                 }
             }
         } else if let Ok(text) = field.text().await {
@@ -100,7 +151,7 @@ pub async fn api_support_tickets_submit(
 
     if subject.trim().is_empty() || message.trim().is_empty() {
         return (
-            axum::http::StatusCode::BAD_REQUEST,
+            StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Subject and message are required"})),
         )
             .into_response();
@@ -109,7 +160,7 @@ pub async fn api_support_tickets_submit(
     // Validate lengths
     if subject.trim().len() < 5 {
         return (
-            axum::http::StatusCode::BAD_REQUEST,
+            StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Subject must be at least 5 characters"})),
         )
             .into_response();
@@ -117,7 +168,7 @@ pub async fn api_support_tickets_submit(
 
     if message.trim().len() < 20 {
         return (
-            axum::http::StatusCode::BAD_REQUEST,
+            StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Message must be at least 20 characters"})),
         )
             .into_response();
@@ -144,16 +195,19 @@ pub async fn api_support_tickets_submit(
         Err(e) => {
             let err_msg = e.to_string();
             // Return validation errors as 400, everything else as 500
-            if err_msg.contains("Validation error") || err_msg.contains("too large") {
+            if err_msg.contains("Validation error")
+                || err_msg.contains("too large")
+                || err_msg.contains("Attachment")
+            {
                 (
-                    axum::http::StatusCode::BAD_REQUEST,
+                    StatusCode::BAD_REQUEST,
                     Json(serde_json::json!({"error": err_msg})),
                 )
                     .into_response()
             } else {
                 tracing::error!("Failed to create ticket: {:?}", e);
                 (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({"error": "Failed to create support ticket"})),
                 )
                     .into_response()
@@ -182,10 +236,14 @@ pub async fn api_support_ticket_reply(
 
     if payload.message.trim().len() < 2 {
         return (
-            axum::http::StatusCode::BAD_REQUEST,
+            StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Message is required (min 2 characters)"})),
         )
             .into_response();
+    }
+
+    if let Err(resp) = require_support_rate_limit(&state, user.id, "reply").await {
+        return resp;
     }
 
     match service::reply_to_ticket(&state, user.id, &ticket_id, &payload.message).await {
@@ -215,6 +273,10 @@ pub async fn api_support_ticket_reopen(
                 .into_response()
         }
     };
+
+    if let Err(resp) = require_support_rate_limit(&state, user.id, "reopen").await {
+        return resp;
+    }
 
     match service::reopen_ticket(&state, user.id, &ticket_id).await {
         Ok(_) => Json(serde_json::json!({ "status": "success", "message": "Ticket reopened" }))

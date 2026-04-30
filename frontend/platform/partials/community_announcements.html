@@ -2,14 +2,16 @@
   <div class="announcements-filter-bar" id="ann-category-filters">
     <button class="ann-filter-btn" :class="{ 'active': currentCategory === '' }" @click="currentCategory = ''"
       hx-get="/community/partials/announcements/list" hx-target="#community-announcements-container">All</button>
-    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'new_commodities' }" @click="currentCategory = 'new_commodities'"
-      hx-get="/community/partials/announcements/list?category=new_commodities" hx-target="#community-announcements-container">New Commodities</button>
-    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'dividends' }" @click="currentCategory = 'dividends'"
-      hx-get="/community/partials/announcements/list?category=dividends" hx-target="#community-announcements-container">Dividends</button>
-    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'platform_updates' }" @click="currentCategory = 'platform_updates'"
-      hx-get="/community/partials/announcements/list?category=platform_updates" hx-target="#community-announcements-container">Platform Updates</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'new_commodity' }" @click="currentCategory = 'new_commodity'"
+      hx-get="/community/partials/announcements/list?category=new_commodity" hx-target="#community-announcements-container">New Commodities</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'dividend' }" @click="currentCategory = 'dividend'"
+      hx-get="/community/partials/announcements/list?category=dividend" hx-target="#community-announcements-container">Dividends</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'platform_update' }" @click="currentCategory = 'platform_update'"
+      hx-get="/community/partials/announcements/list?category=platform_update" hx-target="#community-announcements-container">Platform Updates</button>
     <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'market_news' }" @click="currentCategory = 'market_news'"
       hx-get="/community/partials/announcements/list?category=market_news" hx-target="#community-announcements-container">Market News</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'farm_update' }" @click="currentCategory = 'farm_update'"
+      hx-get="/community/partials/announcements/list?category=farm_update" hx-target="#community-announcements-container">Farm Updates</button>
   </div>
 
   <div class="announcements-list" id="community-announcements-container"

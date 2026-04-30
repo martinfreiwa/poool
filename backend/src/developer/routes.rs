@@ -1330,10 +1330,7 @@ pub async fn api_developer_submit_draft(
     axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => return Err(AppError::Unauthorized("Please log in".to_string())),
-    };
+    let user = require_developer_api(&jar, &state).await?;
 
     // Verify ownership and ensure asset is not deleted
     let owner_id: Option<uuid::Uuid> = sqlx::query_scalar(
@@ -1342,7 +1339,11 @@ pub async fn api_developer_submit_draft(
     .bind(id)
     .fetch_optional(&state.db)
     .await
-    .unwrap_or(None);
+    .map_err(|err| {
+        tracing::error!("Failed to load asset owner for submission: {err}");
+        AppError::Internal("Database error".to_string())
+    })?
+    .flatten();
 
     if owner_id != Some(user.id) {
         return Err(AppError::Forbidden(
@@ -1350,28 +1351,41 @@ pub async fn api_developer_submit_draft(
         ));
     }
 
-    // Only allow submit from draft or revision_requested
-    let current_status: Option<String> = sqlx::query_scalar(
-        "SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1",
-    )
-    .bind(id)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
-
-    if let Some(ref status) = current_status {
-        if status != "draft" && status != "revision_requested" {
-            return Err(AppError::BadRequest(format!(
-                "Cannot submit from '{}' status. Only draft or revision-requested assets can be submitted.",
-                status
-            )));
-        }
-    }
-
     let mut tx = state.db.begin().await.map_err(|e| {
         tracing::error!("Failed to begin transaction: {e}");
         AppError::Internal("Database error".to_string())
     })?;
+
+    // Only allow submit from draft or revision_requested.
+    let current_status: Option<String> = sqlx::query_scalar(
+        "SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1",
+    )
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|err| {
+        tracing::error!("Failed to load developer project status for submission: {err}");
+        AppError::Internal("Database error".to_string())
+    })?
+    .flatten();
+
+    let current_status = match current_status {
+        Some(status) => status,
+        None => {
+            let _ = tx.rollback().await;
+            return Err(AppError::Internal(
+                "Developer project record missing".to_string(),
+            ));
+        }
+    };
+
+    if current_status != "draft" && current_status != "revision_requested" {
+        let _ = tx.rollback().await;
+        return Err(AppError::BadRequest(format!(
+            "Cannot submit from '{}' status. Only draft or revision-requested assets can be submitted.",
+            current_status
+        )));
+    }
 
     // Ensure the asset has at least one image uploaded before allowing submission
     let image_count: i64 =
@@ -1379,7 +1393,10 @@ pub async fn api_developer_submit_draft(
             .bind(id)
             .fetch_one(&mut *tx)
             .await
-            .unwrap_or(0);
+            .map_err(|err| {
+                tracing::error!("Failed to count asset images for submission: {err}");
+                AppError::Internal("Database error".to_string())
+            })?;
 
     if image_count == 0 {
         let _ = tx.rollback().await;
@@ -1396,12 +1413,19 @@ pub async fn api_developer_submit_draft(
         .await?;
 
     // Update developer_projects status to 'submitted' and clear revision_notes
-    sqlx::query(
+    let project_update = sqlx::query(
         "UPDATE developer_projects SET status = 'submitted', revision_notes = NULL, updated_at = NOW() WHERE asset_id = $1",
     )
     .bind(id)
     .execute(&mut *tx)
     .await?;
+
+    if project_update.rows_affected() != 1 {
+        let _ = tx.rollback().await;
+        return Err(AppError::Internal(
+            "Developer project record missing".to_string(),
+        ));
+    }
 
     tx.commit().await.map_err(|e| {
         tracing::error!("Failed to commit submission: {e}");
@@ -1420,10 +1444,7 @@ pub async fn api_developer_duplicate_draft(
     axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => return Err(AppError::Unauthorized("Please log in".to_string())),
-    };
+    let user = require_developer_api(&jar, &state).await?;
 
     // Verify ownership and ensure asset is not deleted
     let owner_id: Option<uuid::Uuid> = sqlx::query_scalar(
@@ -1432,7 +1453,11 @@ pub async fn api_developer_duplicate_draft(
     .bind(id)
     .fetch_optional(&state.db)
     .await
-    .unwrap_or(None);
+    .map_err(|err| {
+        tracing::error!("Failed to load asset owner for duplicate: {err}");
+        AppError::Internal("Database error".to_string())
+    })?
+    .flatten();
 
     if owner_id != Some(user.id) {
         return Err(AppError::Forbidden(
@@ -1461,6 +1486,27 @@ pub async fn api_developer_duplicate_draft(
         tracing::error!("Failed to begin transaction: {e}");
         AppError::Internal("Database error".to_string())
     })?;
+
+    let source_project_name: Option<String> = sqlx::query_scalar(
+        "SELECT project_name FROM developer_projects WHERE asset_id = $1 LIMIT 1",
+    )
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|err| {
+        tracing::error!("Failed to load source developer project for duplicate: {err}");
+        AppError::Internal("Database error".to_string())
+    })?;
+
+    let source_project_name = match source_project_name {
+        Some(project_name) => project_name,
+        None => {
+            let _ = tx.rollback().await;
+            return Err(AppError::Internal(
+                "Developer project record missing".to_string(),
+            ));
+        }
+    };
 
     // Clone the asset row (text fields only, no images/documents)
     let new_id: uuid::Uuid = sqlx::query_scalar(
@@ -1498,15 +1544,22 @@ pub async fn api_developer_duplicate_draft(
     .await?;
 
     // Create developer_projects row for the clone
-    sqlx::query(
+    let project_insert = sqlx::query(
         "INSERT INTO developer_projects (developer_id, asset_id, project_name, status)
-         SELECT developer_id, $1, project_name || ' (Copy)', 'draft'
-         FROM developer_projects WHERE asset_id = $2",
+         VALUES ($1, $2, $3, 'draft')",
     )
+    .bind(user.id)
     .bind(new_id)
-    .bind(id)
+    .bind(format!("{source_project_name} (Copy)"))
     .execute(&mut *tx)
     .await?;
+
+    if project_insert.rows_affected() != 1 {
+        let _ = tx.rollback().await;
+        return Err(AppError::Internal(
+            "Failed to create duplicate project record".to_string(),
+        ));
+    }
 
     tx.commit().await.map_err(|e| {
         tracing::error!("Failed to commit duplicate: {e}");
@@ -1526,10 +1579,7 @@ pub async fn api_developer_delete_draft(
     axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => return Err(AppError::Unauthorized("Please log in".to_string())),
-    };
+    let user = require_developer_api(&jar, &state).await?;
 
     // Verify ownership
     let owner_id: Option<uuid::Uuid> = sqlx::query_scalar(
@@ -1538,7 +1588,11 @@ pub async fn api_developer_delete_draft(
     .bind(id)
     .fetch_optional(&state.db)
     .await
-    .unwrap_or(None);
+    .map_err(|err| {
+        tracing::error!("Failed to load asset owner for delete: {err}");
+        AppError::Internal("Database error".to_string())
+    })?
+    .flatten();
 
     if owner_id != Some(user.id) {
         return Err(AppError::Forbidden("Not authorized".to_string()));
@@ -1558,7 +1612,10 @@ pub async fn api_developer_delete_draft(
     })?
     .flatten();
 
-    let project_status = project_status.unwrap_or_else(|| "draft".to_string());
+    let project_status = project_status.ok_or_else(|| {
+        tracing::error!("Developer project record missing for draft delete: {id}");
+        AppError::Internal("Developer project record missing".to_string())
+    })?;
     if project_status != "draft" {
         return Err(AppError::BadRequest(
             "Only draft assets can be deleted. Please contact support for submitted assets."

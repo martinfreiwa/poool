@@ -97,7 +97,7 @@ pub struct AuthorResponse {
 }
 
 /// Full category detail (for /api/blog/categories).
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CategoryResponse {
     pub id: String,
     pub name: String,

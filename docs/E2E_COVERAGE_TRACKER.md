@@ -25,7 +25,7 @@ All screens a regular investor or issuer can see are rigidly tracked below. Cros
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
 |---|---|---|---|---|---|
 | **F-1.01** | `/auth/signup` → `signup.html` | Account Creation | 🖥️📱 | ⚠️ Flaky | Brittle CSS. Lacks `page.route` checks. |
-| **F-1.02** | `/auth/login` → `login.html` | Login (Email+PW) | 🖥️📱 | ⚠️ Flaky | Needs `expect_response` intercept. |
+| **F-1.02** | `/auth/login` → `login.html` | Login (Email+PW) | 🖥️📱 | 🔴 Gap Audited | 2026-04-28 report: `docs/automation-reports/2026-04-28-e2e-coverage-auth-login.md`. Existing `requests` smoke covers page render, valid/invalid POST, session cookie, `/api/me`, and DB session row checks, but no committed Playwright/browser spec exercises the real form, HTMX redirect, remember-me duration, 2FA redirect, disabled/configured Google button, CSRF failure UI, keyboard/mobile states, or console/network health. |
 | **F-1.03** | `/auth/google` | Google OAuth Redirect | 🖥️📱 | ⚪ Planned | Mock `page.route` for Google consent screen. |
 | **F-1.04** | `/auth/google/callback` | OAuth Callback | 🖥️📱 | ⚪ Planned | Validate redirect logic after Google auth. |
 | **F-1.05** | `/auth/forgot-password` → `forgot-password.html` | Password Recovery | 🖥️📱 | ⚪ Planned | Missing email token interception tests. |
@@ -199,6 +199,7 @@ Cross-referenced against **61 admin HTML files** and **100+ admin API endpoints*
 | **A-2.11** | API: `/api/admin/disputes` | Disputes Mgmt | 🖥️ | ⚪ Planned | Status update logic. |
 | **A-2.12** | API: `/api/admin/tax-reports` | Tax & Fiscal | 🖥️ | ⚪ Planned | Report generation. |
 | **A-2.13** | `/admin/affiliate-applications` + `/api/admin/rewards/affiliates/{pending,approve,reject}` | Affiliate Application Review | 🖥️📱 | 🔴 Gap Audited | 2026-04-26 report: `docs/automation-reports/2026-04-26-e2e-coverage-admin-affiliate-applications.md`. Existing affiliate scripts are stale, ignored, or bypass the admin UI; add pending-list/detail, approve/reject, CSRF, `affiliates.manage`, KYC gate, duplicate-code, state/audit, error-state, XSS, and keyboard/mobile coverage. |
+| **A-2.14** | `/admin/affiliate-finance` + `/api/admin/rewards/affiliates/payouts/pending` + `/api/admin/rewards/affiliates/:id/payout` | Affiliate Finance & Batch Payouts | 🖥️📱 | 🔴 Gap Audited | 2026-04-27 report: `docs/automation-reports/2026-04-27-e2e-coverage-admin-affiliate-finance.md`. Existing affiliate payout scripts bypass the admin finance UI or are stale against current tax-document and cash-wallet behavior; add authenticated payout fixture, exact cents/ledger/audit assertions, tax gate, CSRF, `affiliates.manage`, minimum threshold, concurrency/idempotency, error-state, XSS, and keyboard/mobile coverage. |
 
 ### 3.3 Blockchain, Web3 & Tokenization
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
@@ -456,3 +457,4 @@ npx playwright show-trace tests/e2e/traces/FAIL_*.zip
 | `/support` ticket form | Attachment upload failure, GCS-disabled, invalid MIME, and successful attachment visibility should be covered. | PAGE-ISSUE-0015 |
 | `/rewards` commissions table | Export button should either download a real PDF/CSV or be absent/disabled until implemented. | PAGE-ISSUE-0016 |
 | `/admin/affiliate-applications` admin review | Pending list/detail, approve/reject mutations, CSRF denial, `affiliates.manage`, KYC gate, duplicate referral code, durable state/audit rows, error states, XSS fixtures, and modal keyboard/mobile behavior need committed E2E coverage. | 2026-04-26 E2E gap audit |
+| `/admin/affiliate-finance` batch payout | Authenticated payout release must verify exact cents, selected commission IDs, payout batch, treasury debit, cash-wallet credit, wallet transactions, audit log, tax gate, minimum threshold, CSRF, permissions, concurrency, error states, XSS fixtures, and modal keyboard/mobile behavior. | 2026-04-27 E2E gap audit |

@@ -185,6 +185,7 @@ pub async fn create_ticket_v2(
     priority: &str,
     category: &str,
     metadata: &serde_json::Value,
+    attachment: Option<(&str, &str)>,
 ) -> Result<(String, String), sqlx::Error> {
     let breach_hours = match priority {
         "urgent" => 1,
@@ -223,6 +224,17 @@ pub async fn create_ticket_v2(
     .bind(message)
     .fetch_one(&mut *tx)
     .await?;
+
+    if let Some((file_url, file_type)) = attachment {
+        sqlx::query(
+            "INSERT INTO support_ticket_attachments (reply_id, file_url, file_type) VALUES ($1::uuid, $2, $3)",
+        )
+        .bind(reply_id)
+        .bind(file_url)
+        .bind(file_type)
+        .execute(&mut *tx)
+        .await?;
+    }
 
     tx.commit().await?;
 
@@ -293,6 +305,8 @@ pub async fn add_reply(
     author_name: &str,
     content: &str,
 ) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
     sqlx::query(
         r#"INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content)
            VALUES ($1::uuid, $2, $3, 'user', 'reply', $4)"#,
@@ -301,14 +315,15 @@ pub async fn add_reply(
     .bind(author_id)
     .bind(author_name)
     .bind(content)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
 
     sqlx::query("UPDATE support_tickets SET updated_at = NOW() WHERE id = $1::uuid")
         .bind(ticket_id)
-        .execute(pool)
-        .await
-        .map(|_| ())
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await
 }
 
 /// Updates a ticket's status back to 'open'.

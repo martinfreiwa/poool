@@ -14,7 +14,7 @@
 
         <!-- Center Nav Pill -->
         <div class="blog-header__nav-wrapper">
-            <nav class="blog-header__nav" aria-label="Main navigation">
+            <nav class="blog-header__nav" id="blog-primary-nav" aria-label="Main navigation">
                 <a href="/blog" class="blog-header__link">Blog</a>
                 <a href="/blog/category/investment-guides" class="blog-header__link">Guides</a>
                 <a href="/blog/category/market-insights" class="blog-header__link">Insights</a>
@@ -30,10 +30,50 @@
         </div>
 
         <!-- Mobile hamburger -->
-        <button class="blog-header__mobile-toggle" id="blog-nav-toggle" aria-label="Menu" onclick="document.querySelector('.blog-header__nav').classList.toggle('open')">
+        <button class="blog-header__mobile-toggle" id="blog-nav-toggle" type="button" aria-label="Menu" aria-controls="blog-primary-nav" aria-expanded="false">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CDF6F6" stroke-width="2" stroke-linecap="round">
                 <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
         </button>
     </div>
 </header>
+<script>
+    (function () {
+        var toggle = document.getElementById('blog-nav-toggle');
+        var nav = document.getElementById('blog-primary-nav');
+        if (!toggle || !nav) {
+            return;
+        }
+
+        function setOpen(isOpen) {
+            nav.classList.toggle('open', isOpen);
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        toggle.addEventListener('click', function () {
+            setOpen(!nav.classList.contains('open'));
+        });
+
+        nav.addEventListener('click', function (event) {
+            if (event.target.closest('a')) {
+                setOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                setOpen(false);
+                toggle.focus();
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!nav.classList.contains('open')) {
+                return;
+            }
+            if (!nav.contains(event.target) && !toggle.contains(event.target)) {
+                setOpen(false);
+            }
+        });
+    })();
+</script>

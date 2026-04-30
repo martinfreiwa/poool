@@ -643,55 +643,35 @@ function syncSelectAllCheckbox() {
   allCb.indeterminate = selectedVisible > 0 && selectedVisible < visibleDraftIds.length;
 }
 
-function confirmBulkDelete() {
+async function confirmBulkDelete() {
   const count = selectedIds.size;
   if (count === 0) return;
   const ids = Array.from(selectedIds);
 
-  const overlay = document.createElement("div");
-  overlay.className = "sub-modal-overlay";
-  overlay.innerHTML = `
-    <div class="sub-modal">
-      <div class="sub-modal__icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-          <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
-        </svg>
-      </div>
-      <h3 class="sub-modal__title">Delete ${count} asset${count > 1 ? 's' : ''}?</h3>
-      <p class="sub-modal__text">This action cannot be undone. The selected draft${count > 1 ? 's' : ''} and all associated data will be permanently removed.</p>
-      <div class="sub-modal__actions">
-        <button class="sub-modal__btn sub-modal__btn--cancel" onclick="this.closest('.sub-modal-overlay').remove()">Cancel</button>
-        <button class="sub-modal__btn sub-modal__btn--danger" id="confirm-bulk-delete-btn">Delete ${count} Draft${count > 1 ? 's' : ''}</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) overlay.remove();
+  const confirmed = await confirmAction({
+    title: `Delete ${count} asset${count > 1 ? "s" : ""}?`,
+    message: `This action cannot be undone. The selected draft${count > 1 ? "s" : ""} and all associated data will be permanently removed.`,
+    confirmText: `Delete ${count} Draft${count > 1 ? "s" : ""}`,
+    type: "danger",
   });
+  if (!confirmed) return;
 
-  document.getElementById("confirm-bulk-delete-btn").onclick = async () => {
-    const btn = document.getElementById("confirm-bulk-delete-btn");
-    btn.textContent = "Deleting...";
-    btn.disabled = true;
-    let failed = 0;
-    for (const id of ids) {
-      try {
-        const res = await fetch(`/api/developer/draft/${id}`, { method: "DELETE", headers: { "X-CSRF-Token": getCsrfToken() } });
-        if (!res.ok) failed++;
-      } catch { failed++; }
+  let failed = 0;
+  for (const id of ids) {
+    try {
+      const res = await fetch(`/api/developer/draft/${id}`, { method: "DELETE", headers: { "X-CSRF-Token": getCsrfToken() } });
+      if (!res.ok) failed++;
+    } catch {
+      failed++;
     }
-    overlay.remove();
-    if (failed === 0) {
-      showToast("success", `${count} draft${count > 1 ? 's' : ''} deleted`);
-    } else {
-      showToast("error", `${failed} deletion${failed > 1 ? 's' : ''} failed`);
-    }
-    selectedIds.clear();
-    setTimeout(() => window.location.reload(), 800);
-  };
+  }
+  if (failed === 0) {
+    showToast("success", `${count} draft${count > 1 ? "s" : ""} deleted`);
+  } else {
+    showToast("error", `${failed} deletion${failed > 1 ? "s" : ""} failed`);
+  }
+  selectedIds.clear();
+  setTimeout(() => window.location.reload(), 800);
 }
 
 // ─── Actions ──────────────────────────────────────────────
@@ -760,48 +740,24 @@ async function resubmitDraft(assetId, title) {
 
 // ─── Delete Confirmation Modal ────────────────────────────
 
-function confirmDelete(assetId, title) {
-  const safeTitle = escapeHtml(title || "Untitled asset");
-  const overlay = document.createElement("div");
-  overlay.className = "sub-modal-overlay";
-  overlay.innerHTML = `
-    <div class="sub-modal">
-      <div class="sub-modal__icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-          <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
-        </svg>
-      </div>
-      <h3 class="sub-modal__title">Delete "${safeTitle}"?</h3>
-      <p class="sub-modal__text">This action cannot be undone. The draft and all associated data will be permanently removed.</p>
-      <div class="sub-modal__actions">
-        <button class="sub-modal__btn sub-modal__btn--cancel" onclick="this.closest('.sub-modal-overlay').remove()">Cancel</button>
-        <button class="sub-modal__btn sub-modal__btn--danger" id="confirm-delete-btn">Delete Draft</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) overlay.remove();
+async function confirmDelete(assetId, title) {
+  const confirmed = await confirmAction({
+    title: `Delete "${title || "Untitled asset"}"?`,
+    message: "This action cannot be undone. The draft and all associated data will be permanently removed.",
+    confirmText: "Delete Draft",
+    type: "danger",
   });
+  if (!confirmed) return;
 
-  document.getElementById("confirm-delete-btn").onclick = async () => {
-    const btn = document.getElementById("confirm-delete-btn");
-    btn.textContent = "Deleting...";
-    btn.disabled = true;
     try {
       const res = await fetch(`/api/developer/draft/${assetId}`, { method: "DELETE", headers: { "X-CSRF-Token": getCsrfToken() } });
       if (!res.ok) throw new Error(await readApiErrorMessage(res, "Delete failed"));
-      overlay.remove();
       showToast("success", "Draft deleted");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       console.error("Delete error:", err);
-      overlay.remove();
       showToast("error", err.message || "Failed to delete. Please try again.");
     }
-  };
 }
 
 // ─── Toast ────────────────────────────────────────────────

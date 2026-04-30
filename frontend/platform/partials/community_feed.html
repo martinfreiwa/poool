@@ -88,25 +88,25 @@
           <div style="display: flex; gap: 4px; align-items: center;">
             <input type="file" id="post-image-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadPostImage(event)">
             <!-- Photo Upload Icon -->
-            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="document.getElementById('post-image-file-input').click()" title="Photo/Video">
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="document.getElementById('post-image-file-input').click()" title="Photo/Video" aria-label="Add photo or video">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#45bd62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
               </svg>
             </button>
             <!-- Tag People Icon -->
-            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="triggerComposerTag('@')" title="Tag People">
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="triggerComposerTag('@')" title="Tag People" aria-label="Tag people">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1877f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line>
               </svg>
             </button>
             <!-- Tag Asset Icon -->
-            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="triggerComposerTag('$')" title="Tag Asset">
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="triggerComposerTag('$')" title="Tag Asset" aria-label="Tag asset">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e83f5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
               </svg>
             </button>
             <!-- Poll Icon -->
-            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="togglePollCreator()" title="Create Poll">
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="togglePollCreator()" title="Create Poll" aria-label="Create poll">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5c33b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path>
               </svg>

@@ -1,11 +1,13 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Multipart, Path, State},
     response::IntoResponse,
 };
 use serde::Deserialize;
 use sqlx::Row;
+use std::collections::HashSet;
+use uuid::Uuid;
 
 //
 //  Admin Assets API (Live/Published)
@@ -300,6 +302,17 @@ pub struct AssetFundingStatusPayload {
     pub funding_status: String,
 }
 
+/// Payload item for reordering asset images.
+#[derive(Debug, Deserialize)]
+pub struct AdminImageOrderUpdate {
+    /// Image row id.
+    pub id: Uuid,
+    /// New zero-based sort position.
+    pub sort_order: i32,
+    /// Whether this image should be the cover image.
+    pub is_cover: bool,
+}
+
 /// PATCH /api/admin/assets/:asset_id/funding-status
 pub async fn api_admin_asset_funding_status(
     admin: AdminUser,
@@ -360,4 +373,410 @@ pub async fn api_admin_asset_funding_status(
         "funding_status": payload.funding_status
     }))
     .into_response())
+}
+
+/// POST /api/admin/assets/:asset_id/images
+pub async fn api_admin_asset_image_upload(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(asset_id): Path<String>,
+    multipart: Multipart,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    ensure_asset_exists(&state, aid).await?;
+
+    let upload = read_admin_asset_image_multipart(multipart).await?;
+    let object_path = format!(
+        "properties/{}/images/{}.{}",
+        aid,
+        Uuid::new_v4(),
+        crate::storage::service::extension_for_mime(&upload.mime_type)
+    );
+
+    let image_url =
+        upload_admin_asset_image(&state, &object_path, &upload.bytes, &upload.mime_type)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to upload admin asset image for {aid}: {e}");
+                ApiError::Internal("Failed to upload image".to_string())
+            })?;
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+    if upload.is_cover {
+        sqlx::query("UPDATE asset_images SET is_cover = FALSE WHERE asset_id = $1")
+            .bind(aid)
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+    }
+
+    let image_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id",
+    )
+    .bind(aid)
+    .bind(&image_url)
+    .bind(upload.alt_text.as_deref())
+    .bind(upload.sort_order)
+    .bind(upload.is_cover)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'asset.image_uploaded', 'assets', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({
+        "image_id": image_id,
+        "image_url": image_url,
+        "sort_order": upload.sort_order,
+        "is_cover": upload.is_cover,
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "status": "success",
+        "image_id": image_id,
+        "image_url": crate::storage::service::rewrite_gcs_url(&image_url),
+        "is_cover": upload.is_cover,
+        "sort_order": upload.sort_order,
+    }))
+    .into_response())
+}
+
+/// DELETE /api/admin/assets/:asset_id/images/:image_id
+pub async fn api_admin_asset_image_delete(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path((asset_id, image_id)): Path<(String, String)>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let iid = ApiError::parse_uuid(&image_id)?;
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    let previous = sqlx::query(
+        "SELECT image_url, alt_text, sort_order, is_cover
+         FROM asset_images
+         WHERE id = $1 AND asset_id = $2
+         FOR UPDATE",
+    )
+    .bind(iid)
+    .bind(aid)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Image not found".to_string()))?;
+
+    let deleted = sqlx::query("DELETE FROM asset_images WHERE id = $1 AND asset_id = $2")
+        .bind(iid)
+        .bind(aid)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    if deleted.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Image not found".to_string()));
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state)
+           VALUES ($1, 'asset.image_deleted', 'assets', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({
+        "image_id": iid,
+        "image_url": previous.get::<String, _>("image_url"),
+        "alt_text": previous.get::<Option<String>, _>("alt_text"),
+        "sort_order": previous.get::<i32, _>("sort_order"),
+        "is_cover": previous.get::<bool, _>("is_cover"),
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({"status": "success"})).into_response())
+}
+
+/// PUT /api/admin/assets/:asset_id/images/reorder
+pub async fn api_admin_asset_images_reorder(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(asset_id): Path<String>,
+    Json(payload): Json<Vec<AdminImageOrderUpdate>>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+
+    if payload.is_empty() {
+        return Err(ApiError::BadRequest(
+            "At least one image order update is required".to_string(),
+        ));
+    }
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let cover_count = payload.iter().filter(|img| img.is_cover).count();
+    if cover_count != 1 {
+        return Err(ApiError::BadRequest(
+            "Exactly one image must be marked as cover".to_string(),
+        ));
+    }
+
+    let mut seen = HashSet::with_capacity(payload.len());
+    for item in &payload {
+        if item.sort_order < 0 {
+            return Err(ApiError::BadRequest(
+                "sort_order must not be negative".to_string(),
+            ));
+        }
+        if !seen.insert(item.id) {
+            return Err(ApiError::BadRequest(
+                "Duplicate image id in reorder payload".to_string(),
+            ));
+        }
+    }
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    sqlx::query("UPDATE asset_images SET is_cover = FALSE WHERE asset_id = $1")
+        .bind(aid)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    for item in &payload {
+        let updated = sqlx::query(
+            "UPDATE asset_images
+             SET sort_order = $3, is_cover = $4
+             WHERE id = $1 AND asset_id = $2",
+        )
+        .bind(item.id)
+        .bind(aid)
+        .bind(item.sort_order)
+        .bind(item.is_cover)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+        if updated.rows_affected() == 0 {
+            return Err(ApiError::NotFound(format!(
+                "Image not found for asset: {}",
+                item.id
+            )));
+        }
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'asset.images_reordered', 'assets', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(
+        serde_json::json!({ "images": payload.iter().map(|item| serde_json::json!({
+        "id": item.id,
+        "sort_order": item.sort_order,
+        "is_cover": item.is_cover,
+    })).collect::<Vec<_>>() }),
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({"status": "success"})).into_response())
+}
+
+struct AdminAssetImageUpload {
+    bytes: Vec<u8>,
+    mime_type: String,
+    sort_order: i32,
+    is_cover: bool,
+    alt_text: Option<String>,
+}
+
+const MAX_ADMIN_ASSET_IMAGE_BYTES: usize = 20 * 1024 * 1024;
+
+async fn ensure_asset_exists(state: &AppState, asset_id: Uuid) -> Result<(), ApiError> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM assets WHERE id = $1 AND deleted_at IS NULL)",
+    )
+    .bind(asset_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    if exists {
+        Ok(())
+    } else {
+        Err(ApiError::NotFound("Asset not found".to_string()))
+    }
+}
+
+async fn read_admin_asset_image_multipart(
+    mut multipart: Multipart,
+) -> Result<AdminAssetImageUpload, ApiError> {
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut client_mime = "application/octet-stream".to_string();
+    let mut sort_order = 0;
+    let mut is_cover = false;
+    let mut alt_text: Option<String> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| ApiError::BadRequest("Failed to read multipart data".to_string()))?
+    {
+        let field_name = field.name().unwrap_or("").to_string();
+        match field_name.as_str() {
+            "file" => {
+                client_mime = field
+                    .content_type()
+                    .unwrap_or("application/octet-stream")
+                    .to_string();
+                let bytes = field
+                    .bytes()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Failed to read uploaded image".to_string()))?
+                    .to_vec();
+                if bytes.len() > MAX_ADMIN_ASSET_IMAGE_BYTES {
+                    return Err(ApiError::BadRequest("Image must be <= 20 MB".to_string()));
+                }
+                file_bytes = Some(bytes);
+            }
+            "sort_order" => {
+                let text = field
+                    .text()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid sort_order".to_string()))?;
+                sort_order = text
+                    .trim()
+                    .parse::<i32>()
+                    .map_err(|_| ApiError::BadRequest("Invalid sort_order".to_string()))?;
+                if sort_order < 0 {
+                    return Err(ApiError::BadRequest(
+                        "sort_order must not be negative".to_string(),
+                    ));
+                }
+            }
+            "is_cover" => {
+                let text = field
+                    .text()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid is_cover".to_string()))?;
+                is_cover = matches!(text.trim(), "true" | "1" | "on");
+            }
+            "alt_text" => {
+                let text = field
+                    .text()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid alt_text".to_string()))?;
+                let sanitized = crate::common::sanitize::sanitize_text(&text);
+                if !sanitized.is_empty() {
+                    alt_text = Some(sanitized.chars().take(255).collect());
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let bytes =
+        file_bytes.ok_or_else(|| ApiError::BadRequest("No file field in request".to_string()))?;
+    let sniffed = sniff_admin_image_mime(&bytes).ok_or_else(|| {
+        ApiError::BadRequest("Unsupported or unrecognized image format".to_string())
+    })?;
+
+    if !admin_mime_matches(&client_mime, sniffed) {
+        return Err(ApiError::BadRequest(
+            "File content does not match declared type".to_string(),
+        ));
+    }
+
+    crate::storage::service::validate_asset_image_mime(sniffed).map_err(|_| {
+        ApiError::BadRequest("Only JPEG, PNG, WebP, and GIF images are accepted".to_string())
+    })?;
+
+    Ok(AdminAssetImageUpload {
+        bytes,
+        mime_type: sniffed.to_string(),
+        sort_order,
+        is_cover,
+        alt_text,
+    })
+}
+
+async fn upload_admin_asset_image(
+    state: &AppState,
+    object_path: &str,
+    file_bytes: &[u8],
+    mime_type: &str,
+) -> Result<String, crate::error::AppError> {
+    if let Some(bucket) = &state.config.gcs_bucket {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            crate::storage::service::upload_public(
+                bucket,
+                object_path,
+                file_bytes.to_vec(),
+                mime_type,
+            ),
+        )
+        .await
+        {
+            Ok(Ok(url)) => return Ok(url),
+            Ok(Err(e)) => {
+                tracing::warn!("Admin asset image GCS upload failed: {e}; falling back to local");
+            }
+            Err(_) => {
+                tracing::warn!("Admin asset image GCS upload timed out; falling back to local");
+            }
+        }
+    }
+
+    crate::storage::service::upload_local(object_path, file_bytes.to_vec()).await
+}
+
+fn sniff_admin_image_mime(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        Some("image/jpeg")
+    } else if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+        Some("image/png")
+    } else if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        Some("image/webp")
+    } else if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
+        Some("image/gif")
+    } else {
+        None
+    }
+}
+
+fn admin_mime_matches(client_mime: &str, sniffed: &str) -> bool {
+    let declared = client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+
+    declared == sniffed
+        || matches!(
+            (declared.as_str(), sniffed),
+            ("image/jpg", "image/jpeg")
+                | ("image/pjpeg", "image/jpeg")
+                | ("application/octet-stream", _)
+        )
 }

@@ -153,6 +153,7 @@
               <option value="in_review">In Review</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+              <option value="revision_requested">Revision Requested</option>
               <option value="live">Live</option>
               <option value="draft">Draft</option>
             </select>
@@ -246,7 +247,7 @@
         backdrop-filter: blur(4px);
         align-items: center;
         justify-content: center;
-      ">
+      " role="dialog" aria-modal="true" aria-labelledby="review-modal-title">
     <div style="
           background: var(--admin-bg-card);
           border: 1px solid var(--admin-border);
@@ -289,13 +290,6 @@
             <line x1="15" y1="15" x2="19" y2="19" />
           </svg>
           Mark in Review
-        </button>
-        <button class="admin-btn admin-btn--primary" id="review-modal-approve">
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 6l-10 10-5-5" />
-          </svg>
-          Approve &amp; Publish
         </button>
       </div>
     </div>

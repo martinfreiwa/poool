@@ -26,6 +26,21 @@ const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024; // 5 MB
 const MAX_KYC_BYTES: usize = 10 * 1024 * 1024; // 10 MB
 const MAX_DEVELOPER_LOGO_BYTES: usize = 2 * 1024 * 1024; // 2 MB
 
+fn is_investor_visible_asset_document(document_type: &str) -> bool {
+    matches!(
+        document_type,
+        "proof_of_title"
+            | "legal_basis"
+            | "building_permit"
+            | "site_plan"
+            | "expose"
+            | "appraisal"
+            | "financial"
+            | "floor_plan"
+            | "other"
+    )
+}
+
 // ─── Avatar ────────────────────────────────────────────────────
 
 /// POST /api/upload/avatar
@@ -340,6 +355,14 @@ pub async fn upload_kyc_document(
         }
     };
 
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("kyc:upload:{}", user.id))
+        .await
+    {
+        return crate::error::AppError::RateLimited(retry_after).into_response();
+    }
+
     // Read all multipart fields: `file` and `document_type`
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut mime_type = String::from("application/octet-stream");
@@ -427,21 +450,11 @@ pub async fn upload_kyc_document(
         return e.into_response();
     }
 
-    // Validate document_type
-    let allowed_doc_types = [
-        "passport",
-        "national_id",
-        "driving_licence",
-        "proof_of_address",
-        "other",
-    ];
-    if !allowed_doc_types.contains(&document_type.as_str()) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({"error": "Invalid document_type"})),
-        )
-            .into_response();
-    }
+    let document_type = match crate::kyc::service::normalize_document_type(Some(&document_type)) {
+        Ok(Some(value)) => value,
+        Ok(None) => "other".to_string(),
+        Err(e) => return e.into_response(),
+    };
 
     let ext = service::extension_for_mime(&mime_type);
     let file_id = Uuid::new_v4();
@@ -457,6 +470,18 @@ pub async fn upload_kyc_document(
             }
         };
 
+    let mut tx = match state.db.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            tracing::error!(
+                "Failed to begin KYC document transaction for {}: {}",
+                user.id,
+                e
+            );
+            return crate::error::AppError::Database(e).into_response();
+        }
+    };
+
     // Persist to kyc_documents table
     let doc_id: uuid::Uuid = match sqlx::query_scalar(
         r#"
@@ -469,7 +494,7 @@ pub async fn upload_kyc_document(
     .bind(user.id)
     .bind(&document_type)
     .bind(&gcs_path)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await
     {
         Ok(id) => id,
@@ -484,18 +509,31 @@ pub async fn upload_kyc_document(
     };
 
     // Audit log
-    let _ = sqlx::query(
+    if let Err(e) = sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
            VALUES ($1, 'kyc_document.uploaded', 'kyc_documents', $2, $3)"#,
     )
     .bind(user.id)
     .bind(doc_id)
     .bind(serde_json::json!({
-        "document_type": document_type,
-        "gcs_path": gcs_path,
+        "document_type": &document_type,
+        "gcs_path": &gcs_path,
     }))
-    .execute(&state.db)
-    .await;
+    .execute(&mut *tx)
+    .await
+    {
+        tracing::error!("Failed to audit KYC document upload for {}: {}", user.id, e);
+        return crate::error::AppError::Database(e).into_response();
+    }
+
+    if let Err(e) = tx.commit().await {
+        tracing::error!(
+            "Failed to commit KYC document upload for {}: {}",
+            user.id,
+            e
+        );
+        return crate::error::AppError::Database(e).into_response();
+    }
 
     tracing::info!(
         "KYC document uploaded: user={}, doc_id={}, type={}",
@@ -1325,7 +1363,8 @@ pub async fn reorder_asset_images(
 
 /// GET /api/documents/:id/download
 /// Securely retrieves a time-limited signed URL for a private asset document.
-/// Only the developer who owns the asset or an admin can access this.
+/// Developers/admins can access every asset document. Authenticated users can
+/// access the investor-visible document subset for published assets.
 pub async fn download_asset_document(
     jar: CookieJar,
     axum::extract::Path(doc_id): axum::extract::Path<Uuid>,
@@ -1342,9 +1381,9 @@ pub async fn download_asset_document(
         }
     };
 
-    // Find the document and the owner of the asset
-    let doc_meta: Option<(String, Uuid)> = sqlx::query_as(
-        "SELECT d.file_url, a.developer_user_id 
+    // Find the document and the owner/visibility state of the asset.
+    let doc_meta: Option<(String, Option<Uuid>, String, bool)> = sqlx::query_as(
+        "SELECT d.file_url, a.developer_user_id, d.document_type, COALESCE(a.published, false)
          FROM asset_documents d 
          JOIN assets a ON d.asset_id = a.id 
          WHERE d.id = $1",
@@ -1354,14 +1393,17 @@ pub async fn download_asset_document(
     .await
     .unwrap_or(None);
 
-    let (file_url, owner_id) = match doc_meta {
+    let (file_url, owner_id, document_type, asset_published) = match doc_meta {
         Some(m) => m,
         None => return (StatusCode::NOT_FOUND, "Document not found").into_response(),
     };
 
-    // Check authorization: must be the asset owner OR an admin
+    // Check authorization: must be the asset owner, an admin, or an
+    // authenticated investor viewing a published asset's public diligence doc.
     let is_admin = middleware::is_admin(&jar, &state.db).await;
-    if owner_id != user.id && !is_admin {
+    let investor_visible =
+        asset_published && is_investor_visible_asset_document(document_type.as_str());
+    if owner_id != Some(user.id) && !is_admin && !investor_visible {
         return (
             StatusCode::FORBIDDEN,
             Json(serde_json::json!({"error": "Not authorized to view this document"})),

@@ -367,9 +367,21 @@
 /* Loading state for gallery images */
 .gallery-image {
   position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  overflow: hidden;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
+}
+
+.gallery-image:focus-visible,
+.faq-item-content:focus-visible,
+.download-button:focus-visible {
+  outline: 2px solid #0000ff;
+  outline-offset: 3px;
 }
 
 @keyframes loading {
@@ -770,158 +782,61 @@ body.lightbox-open {
    =========================== */
 /* Categories */
 #property-categories {
-  /* Auto layout */
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 0px 24px;
-  gap: 12px;
-  width: 428px;
-  height: 32px;
+  gap: 0;
+  width: 100%;
+  max-width: 428px;
+  min-height: 32px;
   margin-top: 16px;
-  /* Inside auto layout */
   flex: none;
-  flex-grow: 0;
 }
 
-/* Badge 1 - Beds */
-.category-badge:nth-child(1) {
-  /* Auto layout */
+.category-badge {
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 4px 0px;
-  gap: 4px;
-  width: 38px;
+  gap: 5px;
   height: 32px;
   border-radius: 16px;
-  /* Inside auto layout */
   flex: none;
-  order: 0;
-  flex-grow: 0;
+  min-width: 0;
 }
 
-/* Rectangle 201 - Separator 1 */
-.category-separator:nth-child(2) {
-  width: 2px;
-  height: 20px;
-  background: #d9d9d9;
-  /* Inside auto layout */
-  flex: none;
-  order: 1;
-  flex-grow: 0;
+.category-badge:last-child {
+  flex-shrink: 1;
 }
 
-/* Badge 2 - Ready */
-.category-badge:nth-child(3) {
-  /* Auto layout */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 4px 0px;
-  gap: 4px;
-  width: 62px;
-  height: 32px;
-  border-radius: 16px;
-  /* Inside auto layout */
+.category-separator {
+  width: 1px;
+  height: 16px;
+  margin: 0 8px;
+  background: #E5E7EB;
   flex: none;
-  order: 2;
-  flex-grow: 0;
-}
-
-/* Rectangle 202 - Separator 2 */
-.category-separator:nth-child(4) {
-  width: 2px;
-  height: 20px;
-  background: #d9d9d9;
-  /* Inside auto layout */
-  flex: none;
-  order: 3;
-  flex-grow: 0;
-}
-
-/* Badge 3 - Square Meters */
-.category-badge:nth-child(5) {
-  /* Auto layout */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 4px 0px;
-  gap: 4px;
-  width: 95px;
-  height: 32px;
-  border-radius: 16px;
-  /* Inside auto layout */
-  flex: none;
-  order: 4;
-  flex-grow: 0;
-}
-
-/* Rectangle 203 - Separator 3 */
-.category-separator:nth-child(6) {
-  width: 2px;
-  height: 20px;
-  background: #d9d9d9;
-  /* Inside auto layout */
-  flex: none;
-  order: 5;
-  flex-grow: 0;
-}
-
-/* Badge 4 - Location */
-.category-badge:nth-child(7) {
-  /* Auto layout */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 4px 0px;
-  gap: 4px;
-  width: 107px;
-  height: 32px;
-  border-radius: 16px;
-  /* Inside auto layout */
-  flex: none;
-  order: 6;
-  flex-grow: 0;
-}
-
-/* Bed icon and other icons */
-.badge-icon {
-  /* Inside auto layout */
-  flex: none;
-  order: 0;
-  flex-grow: 0;
 }
 
 /* Match compact v19 card metadata icons */
-.category-badge:nth-child(1) .badge-icon {
+.badge-icon {
   width: 16px;
   height: 16px;
-}
-
-.category-badge:nth-child(3) .badge-icon,
-.category-badge:nth-child(5) .badge-icon,
-.category-badge:nth-child(7) .badge-icon {
-  width: 16px;
-  height: 16px;
+  flex: none;
 }
 
 /* Text */
 #property-categories .badge-text {
-  height: 20px;
-  /* Text sm/Medium */
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 20px;
-  /* identical to box height, or 143% */
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
   text-align: center;
-  color: #000000 !important;
-  /* Inside auto layout */
-  flex: none;
-  order: 1;
-  flex-grow: 0;
+  color: #667085 !important;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1853,6 +1768,21 @@ body.lightbox-open {
   flex-grow: 0;
 }
 
+.property-cart-error {
+  width: 100%;
+  margin-top: 10px;
+  color: #b42318;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.add-to-cart-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .btn-text {
   width: 76px;
   height: 20px;
@@ -2331,6 +2261,12 @@ body.youtube-modal-active {
 }
 
 .faq-item-content {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  background: transparent;
   cursor: pointer;
   transition: background 0.2s ease;
 }
@@ -4750,9 +4686,9 @@ body.youtube-modal-active {
   gap: 11px;
 
   /* Inside auto layout */
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
   order: 0;
-  flex-grow: 0;
 }
 
 /* Document Icon */
@@ -4776,13 +4712,31 @@ body.youtube-modal-active {
   color: var(--page-title-color);
 }
 
+.document-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.document-meta {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--body-color);
+}
+
 /* Download Button */
 .download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
   background: transparent;
   border: none;
   cursor: pointer;
+  text-decoration: none;
 
   /* Inside auto layout */
   flex: none;
@@ -5299,6 +5253,8 @@ body.youtube-modal-active {
   border-radius: 8px;
   background: transparent;
   cursor: pointer;
+  color: inherit;
+  text-decoration: none;
   flex: none;
   order: 0;
   flex-grow: 0;

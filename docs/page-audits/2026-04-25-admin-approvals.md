@@ -243,6 +243,28 @@ Add an action schema table or static validator that defines required entity type
 |------|-------|----------|--------|--------|
 | JS syntax | `node --check frontend/platform/static/js/admin-approvals.js` | No syntax errors. | Passed. | Pass |
 | Local schema check | Query `information_schema.columns` for `admin_approval_requests`. | Required columns exist. | `id`, `requester_id`, `approver_id`, `action_type`, `entity_type`, `entity_id`, `payload`, `status`, `rejection_reason`, `expires_at`, `created_at`, `updated_at` exist. | Pass |
+
+## 2026-04-28 Fix Pass
+
+Status: fixed, needs authenticated maker/checker E2E recheck.
+
+Fixed issues:
+
+- PAGE-ISSUE-0044: Approval execution now locks the request row, claims `pending` requests as `processing`, rejects duplicate claims, and requires final status/audit writes.
+- PAGE-ISSUE-0045: List/create/approve/reject now require `approvals.manage`, and create/approve/reject enforce action-specific permissions from the action contract.
+- PAGE-ISSUE-0046: Unsupported `treasury.payout` is disabled instead of advertised as executable, and `settings.update` writes the real `platform_settings` key/value schema.
+- PAGE-ISSUE-0047: Queue list database/query failures now propagate as errors instead of returning a false empty queue.
+- PAGE-ISSUE-0048: Reject flow now uses an accessible modal with labelled reason input and live validation, and approval buttons enter disabled/busy states during mutations.
+
+Verification:
+
+- `python3 -m pytest tests/admin/test_admin_approvals_static.py -q`
+- `node --check frontend/platform/static/js/admin-approvals.js`
+- `rustfmt --edition 2021 --check backend/src/admin/approvals.rs`
+
+Remaining:
+
+- Authenticated maker/checker browser or API E2E still needs to recheck create, approve, reject, duplicate approve conflict, and action-specific permission denial with real admin roles.
 | Local queue count check | `SELECT status, COUNT(*) FROM admin_approval_requests GROUP BY status`. | Safe read only. | Local DB had one `expired` request. | Pass |
 | Unauthenticated page | `curl http://localhost:8888/admin/approvals` | Protected route rejects unauthenticated access. | HTTP 401. | Pass |
 | Unauthenticated API | `curl http://localhost:8888/api/admin/approvals` | Protected API rejects unauthenticated access. | HTTP 401. | Pass |

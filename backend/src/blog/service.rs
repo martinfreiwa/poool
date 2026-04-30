@@ -2,6 +2,46 @@ use sqlx::PgPool;
 
 use super::models::*;
 
+fn clean_public_url(value: Option<String>) -> Option<String> {
+    value.map(|item| item.trim().to_string()).filter(|item| {
+        let lower = item.to_ascii_lowercase();
+        lower.starts_with("https://") || lower.starts_with("http://")
+    })
+}
+
+fn sanitize_article_html(html: &str) -> String {
+    ammonia::Builder::default()
+        .add_tags([
+            "h2",
+            "h3",
+            "h4",
+            "p",
+            "blockquote",
+            "ul",
+            "ol",
+            "li",
+            "strong",
+            "em",
+            "code",
+            "pre",
+            "a",
+            "br",
+            "hr",
+            "table",
+            "thead",
+            "tbody",
+            "tr",
+            "th",
+            "td",
+            "img",
+        ])
+        .add_tag_attributes("a", ["href", "target", "title"])
+        .add_tag_attributes("img", ["src", "alt", "title", "width", "height", "loading"])
+        .link_rel(Some("noopener noreferrer"))
+        .clean(html)
+        .to_string()
+}
+
 /// Render markdown source to HTML. Used as fallback when content_html is missing.
 fn render_markdown(md: &str) -> String {
     use pulldown_cmark::{html, Options, Parser};
@@ -106,11 +146,11 @@ pub async fn list_articles(
                     .get::<Option<String>, _>("author_avatar")
                     .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                 bio: r.get("author_bio"),
-                website_url: r.get("author_website"),
+                website_url: clean_public_url(r.get("author_website")),
                 twitter_handle: r.get("author_twitter"),
-                linkedin_url: r.get("author_linkedin"),
-                facebook_url: r.get("author_facebook"),
-                instagram_url: r.get("author_instagram"),
+                linkedin_url: clean_public_url(r.get("author_linkedin")),
+                facebook_url: clean_public_url(r.get("author_facebook")),
+                instagram_url: clean_public_url(r.get("author_instagram")),
                 whatsapp: r.get("author_whatsapp"),
             },
             category: CategorySummary {
@@ -193,11 +233,14 @@ pub async fn get_article_by_slug(
         content: r.get("content"),
         content_html: {
             let existing: Option<String> = r.get("content_html");
-            existing.filter(|s| !s.trim().is_empty()).or_else(|| {
-                r.get::<Option<String>, _>("content")
-                    .filter(|s| !s.trim().is_empty())
-                    .map(|md| render_markdown(&md))
-            })
+            existing
+                .filter(|s| !s.trim().is_empty())
+                .map(|html| sanitize_article_html(&html))
+                .or_else(|| {
+                    r.get::<Option<String>, _>("content")
+                        .filter(|s| !s.trim().is_empty())
+                        .map(|md| sanitize_article_html(&render_markdown(&md)))
+                })
         },
         meta_title: r.get("meta_title"),
         meta_description: r.get("meta_description"),
@@ -212,11 +255,11 @@ pub async fn get_article_by_slug(
                 .get::<Option<String>, _>("author_avatar")
                 .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             bio: r.get("author_bio"),
-            website_url: r.get("author_website"),
+            website_url: clean_public_url(r.get("author_website")),
             twitter_handle: r.get("author_twitter"),
-            linkedin_url: r.get("author_linkedin"),
-            facebook_url: r.get("author_facebook"),
-            instagram_url: r.get("author_instagram"),
+            linkedin_url: clean_public_url(r.get("author_linkedin")),
+            facebook_url: clean_public_url(r.get("author_facebook")),
+            instagram_url: clean_public_url(r.get("author_instagram")),
             whatsapp: r.get("author_whatsapp"),
         },
         category: CategorySummary {
@@ -480,11 +523,11 @@ pub async fn get_recent_articles(
                     .get::<Option<String>, _>("author_avatar")
                     .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                 bio: r.get("author_bio"),
-                website_url: r.get("author_website"),
+                website_url: clean_public_url(r.get("author_website")),
                 twitter_handle: r.get("author_twitter"),
-                linkedin_url: r.get("author_linkedin"),
-                facebook_url: r.get("author_facebook"),
-                instagram_url: r.get("author_instagram"),
+                linkedin_url: clean_public_url(r.get("author_linkedin")),
+                facebook_url: clean_public_url(r.get("author_facebook")),
+                instagram_url: clean_public_url(r.get("author_instagram")),
                 whatsapp: r.get("author_whatsapp"),
             },
             category: CategorySummary {
@@ -574,14 +617,67 @@ pub async fn list_authors(pool: &PgPool) -> Result<Vec<AuthorResponse>, sqlx::Er
             avatar_url: r
                 .get::<Option<String>, _>("avatar_url")
                 .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
-            website_url: r.get("website_url"),
+            website_url: clean_public_url(r.get("website_url")),
             twitter_handle: r.get("twitter_handle"),
-            linkedin_url: r.get("linkedin_url"),
-            facebook_url: r.get("facebook_url"),
-            instagram_url: r.get("instagram_url"),
+            linkedin_url: clean_public_url(r.get("linkedin_url")),
+            facebook_url: clean_public_url(r.get("facebook_url")),
+            instagram_url: clean_public_url(r.get("instagram_url")),
             whatsapp: r.get("whatsapp"),
             expertise: r.get::<Vec<String>, _>("expertise"),
             article_count: r.get::<Option<i64>, _>("article_count").unwrap_or(0),
         })
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{clean_public_url, render_markdown, sanitize_article_html};
+
+    #[test]
+    fn sanitize_article_html_removes_scripts_events_and_unsafe_urls() {
+        let html = r#"
+            <h2>Safe heading</h2>
+            <script>alert("x")</script>
+            <p onclick="alert(1)">Body <strong>text</strong></p>
+            <a href="javascript:alert(1)" target="_blank">bad</a>
+            <img src="javascript:alert(1)" onerror="alert(1)" alt="bad">
+            <iframe src="https://example.com"></iframe>
+        "#;
+
+        let cleaned = sanitize_article_html(html);
+
+        assert!(cleaned.contains("<h2>Safe heading</h2>"));
+        assert!(cleaned.contains("<strong>text</strong>"));
+        assert!(!cleaned.contains("<script"));
+        assert!(!cleaned.contains("onclick"));
+        assert!(!cleaned.contains("javascript:"));
+        assert!(!cleaned.contains("onerror"));
+        assert!(!cleaned.contains("<iframe"));
+    }
+
+    #[test]
+    fn markdown_fallback_html_is_sanitizable() {
+        let rendered =
+            render_markdown("[bad](javascript:alert(1))\n\n<img src=x onerror=alert(1)>");
+        let cleaned = sanitize_article_html(&rendered);
+
+        assert!(!cleaned.contains("javascript:"));
+        assert!(!cleaned.contains("onerror"));
+    }
+
+    #[test]
+    fn clean_public_url_allows_only_http_urls() {
+        assert_eq!(
+            clean_public_url(Some(" https://example.com/profile ".to_string())),
+            Some("https://example.com/profile".to_string())
+        );
+        assert_eq!(
+            clean_public_url(Some("javascript:alert(1)".to_string())),
+            None
+        );
+        assert_eq!(
+            clean_public_url(Some("mailto:test@example.com".to_string())),
+            None
+        );
+    }
 }

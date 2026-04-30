@@ -6,6 +6,32 @@
 // 3. Loading saved profile state
 // 4. Redirecting to the correct dashboard on profile switch
 
+function submitPooolLogout() {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/auth/logout";
+  form.style.display = "none";
+
+  const token = typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+  if (!token) {
+    window.location.href = "/logout";
+    return;
+  }
+
+  if (token) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "csrf_token";
+    input.value = token;
+    form.appendChild(input);
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+}
+
+window.submitPooolLogout = submitPooolLogout;
+
 function toggleProfileDropdown() {
   const dropdown = document.getElementById("profile-dropdown-menu");
   const accountCard =
@@ -224,7 +250,7 @@ function setupProfileEventHandlers() {
         window.open("/docs", "_blank");
         break;
       case "menu-item-sign-out":
-        window.location.href = "/logout";
+        submitPooolLogout();
         return;
     }
 

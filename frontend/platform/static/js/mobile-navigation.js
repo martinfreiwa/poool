@@ -129,6 +129,35 @@ function updateMobileBadges() {
 
 // Initialize mobile navigation
 document.addEventListener("DOMContentLoaded", function () {
+  function submitLogout() {
+    if (typeof window.submitPooolLogout === "function") {
+      window.submitPooolLogout();
+      return;
+    }
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/auth/logout";
+    form.style.display = "none";
+
+    const token = typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+    if (!token) {
+      window.location.href = "/logout";
+      return;
+    }
+
+    if (token) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "csrf_token";
+      input.value = token;
+      form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+
   // Update badges on load
   updateMobileBadges();
 
@@ -304,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
           window.open("/docs", "_blank");
           break;
         case "mobile-menu-item-sign-out":
-          window.location.href = "/logout";
+          submitLogout();
           return;
       }
 

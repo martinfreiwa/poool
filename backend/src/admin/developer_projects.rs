@@ -7,15 +7,32 @@ use axum::{
 };
 use sqlx::Row;
 
+const SUBMISSIONS_REVIEW_PERMISSION: &str = "submissions.review";
+const SUBMISSIONS_APPROVE_PERMISSION: &str = "submissions.approve";
+const REQUIRED_APPROVAL_CHECKS: &[&str] = &[
+    "chk-kyc",
+    "chk-legal",
+    "chk-tax",
+    "chk-fin",
+    "chk-spv",
+    "chk-math",
+    "chk-loc",
+    "chk-fields",
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Developer Projects (Canonical Submission Pipeline)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// GET /api/admin/developer-projects  Full list of all developer_projects with linked asset + developer info.
 pub async fn api_admin_developer_projects(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+
     // Use UNION ALL: first assets WITH developer_projects rows, then orphaned assets WITHOUT.
     // This ensures all assets are visible in the submissions list.
     let rows = sqlx::query(
@@ -102,7 +119,10 @@ pub async fn api_admin_developer_projects(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(|e| {
+        tracing::error!("Failed to fetch developer projects list: {e}");
+        ApiError::Database(e)
+    })?;
 
     let projects: Vec<serde_json::Value> = rows
         .iter()
@@ -149,11 +169,14 @@ pub async fn api_admin_developer_projects(
 /// GET /api/admin/developer-projects/:project_id  Full detail: project + asset + developer + docs + images + milestones.
 /// Side-effect: if status = 'submitted', auto-transitions to 'in_review' and logs to audit_logs.
 pub async fn api_admin_developer_project_detail(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(project_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    let admin_user = Some(_admin.user.clone());
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+    let admin_user = Some(admin.user.clone());
 
     let pid = ApiError::parse_uuid(&project_id)?;
 
@@ -253,23 +276,34 @@ pub async fn api_admin_developer_project_detail(
 
     // Auto-transition submitted → in_review when admin opens the detail
     if was_transitioned {
-        let _ = sqlx::query(
-            "UPDATE developer_projects SET status = 'in_review', updated_at = NOW() WHERE id = $1",
+        let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+        let updated = sqlx::query(
+            "UPDATE developer_projects SET status = 'in_review', updated_at = NOW() WHERE id = $1 AND status = 'submitted'",
         )
         .bind(pid)
-        .execute(&state.db)
-        .await;
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
 
-        // Audit log the auto-transition
-        let _ = sqlx::query(
+        if updated.rows_affected() == 0 {
+            return Err(ApiError::Conflict(
+                "Project status changed while starting review".to_string(),
+            ));
+        }
+
+        sqlx::query(
             r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
                VALUES ($1, 'developer_project.review_started', 'developer_projects', $2,
-                       '{"status":"submitted"}', '{"status":"in_review"}')"#
+                       '{"status":"submitted"}', '{"status":"in_review"}')"#,
         )
         .bind(admin_user.as_ref().map(|u| u.id))
         .bind(pid)
-        .execute(&state.db)
-        .await;
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+        tx.commit().await.map_err(ApiError::Database)?;
     }
 
     // Fetch the asset_id for related data queries
@@ -449,10 +483,14 @@ pub async fn api_admin_developer_project_review(
 
 /// GET /api/admin/developer-projects/:id/notes — list all notes for a project
 pub async fn api_admin_project_notes_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(project_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+
     let pid = ApiError::parse_uuid(&project_id)?;
 
     let rows = sqlx::query(
@@ -472,7 +510,10 @@ pub async fn api_admin_project_notes_list(
     .bind(pid)
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(|e| {
+        tracing::error!("Failed to fetch project notes for {project_id}: {e}");
+        ApiError::Database(e)
+    })?;
 
     let notes: Vec<serde_json::Value> = rows
         .iter()
@@ -493,12 +534,15 @@ pub async fn api_admin_project_notes_list(
 
 /// POST /api/admin/developer-projects/:id/notes — add a note or review decision to a project
 pub async fn api_admin_project_notes_create(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(project_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    let admin_user = Some(_admin.user.clone());
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+    let admin_user = Some(admin.user.clone());
 
     let pid = ApiError::parse_uuid(&project_id)?;
 
@@ -603,6 +647,7 @@ pub async fn api_admin_project_notes_create(
         .await
         {
             tracing::error!("Failed to create admin note audit log for project {pid}: {e}");
+            return Err(ApiError::Database(e));
         }
 
         tx.commit().await.map_err(|e| {
@@ -627,36 +672,51 @@ pub async fn api_admin_project_notes_create(
 
     match action.as_str() {
         "approve" => {
+            admin
+                .require_permission(&state.db, SUBMISSIONS_APPROVE_PERMISSION)
+                .await?;
+
+            validate_project_ready_for_approval(&state, pid).await?;
+
             // 1. Update developer_projects status
             let result = sqlx::query(
-                "UPDATE developer_projects SET status = 'approved', updated_at = NOW() WHERE id = $1"
+                "UPDATE developer_projects SET status = 'approved', updated_at = NOW() WHERE id = $1 AND status IN ('submitted', 'in_review')"
             )
             .bind(pid)
             .execute(&mut *tx)
             .await;
 
-            if let Err(e) = result {
-                tracing::error!("Failed to update project status to approved: {e}");
-                return Err(ApiError::BadRequest(format!(
-                    "Failed to update project status: {e}"
-                )));
+            match result {
+                Ok(r) if r.rows_affected() == 0 => {
+                    return Err(ApiError::Conflict(
+                        "Project must be submitted or in review before approval".to_string(),
+                    ));
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::error!("Failed to update project status to approved: {e}");
+                    return Err(ApiError::BadRequest(format!(
+                        "Failed to update project status: {e}"
+                    )));
+                }
             }
 
             // 2. Publish the asset
-            if let Some(aid) = asset_id {
-                let result = sqlx::query(
-                    "UPDATE assets SET published = TRUE, funding_status = CASE WHEN funding_status IN ('funded', 'exited') THEN funding_status ELSE 'funding_open' END, updated_at = NOW() WHERE id = $1"
-                )
-                .bind(aid)
-                .execute(&mut *tx)
-                .await;
+            let aid = asset_id.ok_or_else(|| {
+                ApiError::BadRequest("Cannot approve project without a linked asset".to_string())
+            })?;
+            let result = sqlx::query(
+                "UPDATE assets SET published = TRUE, funding_status = CASE WHEN funding_status IN ('funded', 'exited') THEN funding_status ELSE 'funding_open' END, updated_at = NOW() WHERE id = $1"
+            )
+            .bind(aid)
+            .execute(&mut *tx)
+            .await;
 
-                if let Err(e) = result {
-                    tracing::error!("Failed to publish asset {aid}: {e}");
-                    return Err(ApiError::BadRequest(format!(
-                        "Failed to publish asset: {e}"
-                    )));
-                }
+            if let Err(e) = result {
+                tracing::error!("Failed to publish asset {aid}: {e}");
+                return Err(ApiError::BadRequest(format!(
+                    "Failed to publish asset: {e}"
+                )));
             }
 
             // 3. Notify developer
@@ -696,6 +756,7 @@ pub async fn api_admin_project_notes_create(
 
             if let Err(e) = result {
                 tracing::error!("Failed to create audit log for project approval {pid}: {e}");
+                return Err(ApiError::Database(e));
             }
 
             // Commit the transaction
@@ -739,6 +800,7 @@ pub async fn api_admin_project_notes_create(
 
                 if let Err(e) = result {
                     tracing::error!("Failed to unpublish asset {aid}: {e}");
+                    return Err(ApiError::Database(e));
                 }
             }
 
@@ -758,6 +820,7 @@ pub async fn api_admin_project_notes_create(
 
             if let Err(e) = result {
                 tracing::error!("Failed to create rejection notification: {e}");
+                return Err(ApiError::Database(e));
             }
 
             // 4. Record as an admin note for history
@@ -773,6 +836,7 @@ pub async fn api_admin_project_notes_create(
 
                 if let Err(e) = result {
                     tracing::error!("Failed to create rejection note: {e}");
+                    return Err(ApiError::Database(e));
                 }
             }
 
@@ -790,6 +854,7 @@ pub async fn api_admin_project_notes_create(
 
             if let Err(e) = result {
                 tracing::error!("Failed to create rejection audit log: {e}");
+                return Err(ApiError::Database(e));
             }
 
             // Commit the transaction
@@ -840,6 +905,7 @@ pub async fn api_admin_project_notes_create(
 
             if let Err(e) = result {
                 tracing::error!("Failed to create revision notification: {e}");
+                return Err(ApiError::Database(e));
             }
 
             // 3. Record as an admin note for history
@@ -855,6 +921,7 @@ pub async fn api_admin_project_notes_create(
 
                 if let Err(e) = result {
                     tracing::error!("Failed to create revision note: {e}");
+                    return Err(ApiError::Database(e));
                 }
             }
 
@@ -872,6 +939,7 @@ pub async fn api_admin_project_notes_create(
 
             if let Err(e) = result {
                 tracing::error!("Failed to create revision audit log: {e}");
+                return Err(ApiError::Database(e));
             }
 
             // Commit the transaction
@@ -974,6 +1042,7 @@ pub async fn api_admin_project_notes_create(
 
             if let Err(e) = result {
                 tracing::error!("Failed to create in_review notification: {e}");
+                return Err(ApiError::Database(e));
             }
 
             // 3. Audit log
@@ -990,6 +1059,7 @@ pub async fn api_admin_project_notes_create(
 
             if let Err(e) = result {
                 tracing::error!("Failed to create in_review audit log: {e}");
+                return Err(ApiError::Database(e));
             }
 
             // Commit the transaction
@@ -1017,10 +1087,14 @@ pub async fn api_admin_project_notes_create(
 
 /// GET /api/admin/developer-projects/:id/checklist — retrieve saved checklist state
 pub async fn api_admin_project_checklist_get(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(project_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+
     let pid = ApiError::parse_uuid(&project_id)?;
 
     let checklist: Option<serde_json::Value> = sqlx::query_scalar(
@@ -1043,11 +1117,15 @@ pub async fn api_admin_project_checklist_get(
 /// PUT /api/admin/developer-projects/:id/checklist — persist checklist state
 /// Payload: { "checklist": { "chk-kyc": true, "chk-legal": false, ... } }
 pub async fn api_admin_project_checklist_save(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(project_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+
     let pid = ApiError::parse_uuid(&project_id)?;
 
     let checklist = body
@@ -1082,4 +1160,78 @@ pub async fn api_admin_project_checklist_save(
             Err(ApiError::Internal("Failed to save checklist".to_string()))
         }
     }
+}
+
+async fn validate_project_ready_for_approval(
+    state: &AppState,
+    project_id: uuid::Uuid,
+) -> Result<(), ApiError> {
+    let row = sqlx::query(
+        r#"
+        SELECT
+            dp.asset_id,
+            COALESCE(dp.compliance_checklist, '{}'::jsonb) AS compliance_checklist,
+            (
+                SELECT kr.status
+                FROM kyc_records kr
+                WHERE kr.user_id = dp.developer_id
+                ORDER BY kr.created_at DESC
+                LIMIT 1
+            ) AS kyc_status
+        FROM developer_projects dp
+        WHERE dp.id = $1
+        "#,
+    )
+    .bind(project_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Project not found".to_string()))?;
+
+    let asset_id: uuid::Uuid = row
+        .get::<Option<uuid::Uuid>, _>("asset_id")
+        .ok_or_else(|| ApiError::BadRequest("Project has no linked asset".to_string()))?;
+
+    let kyc_status = row.get::<Option<String>, _>("kyc_status");
+    if kyc_status.as_deref() != Some("approved") {
+        return Err(ApiError::BadRequest(
+            "Developer KYC must be approved before publishing".to_string(),
+        ));
+    }
+
+    let checklist = row.get::<serde_json::Value, _>("compliance_checklist");
+    for key in REQUIRED_APPROVAL_CHECKS {
+        if checklist.get(*key).and_then(|v| v.as_bool()) != Some(true) {
+            return Err(ApiError::BadRequest(format!(
+                "Approval checklist item '{}' must be completed before publishing",
+                key
+            )));
+        }
+    }
+
+    let document_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_documents WHERE asset_id = $1")
+            .bind(asset_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(ApiError::Database)?;
+    if document_count == 0 {
+        return Err(ApiError::BadRequest(
+            "At least one asset document is required before publishing".to_string(),
+        ));
+    }
+
+    let image_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_images WHERE asset_id = $1")
+            .bind(asset_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(ApiError::Database)?;
+    if image_count == 0 {
+        return Err(ApiError::BadRequest(
+            "At least one asset image is required before publishing".to_string(),
+        ));
+    }
+
+    Ok(())
 }

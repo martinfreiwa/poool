@@ -293,6 +293,7 @@ pub async fn verify_and_create_trading_session(
             "Two-factor authentication is not enabled on your account.".to_string(),
         )
     })?;
+    let secret = super::service::decrypt_stored_totp_secret(&secret)?;
 
     // 2. Verify TOTP code with Redis-backed replay protection
     if !super::service::verify_totp_code_with_replay_guard(redis, user_id, &secret, code).await {

@@ -146,7 +146,7 @@ pub struct TotpForm {
 /// TOTP setup form.
 #[derive(Debug, serde::Deserialize)]
 pub struct TotpSetupForm {
-    pub secret: String,
+    pub setup_token: String,
     pub code: String,
 }
 

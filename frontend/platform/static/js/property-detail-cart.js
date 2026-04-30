@@ -15,6 +15,54 @@ document.addEventListener("DOMContentLoaded", function () {
   // Get the main add to cart button
   const addToCartBtn = document.getElementById("add-to-cart-main-btn");
 
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return decodeURIComponent(parts.pop().split(";").shift());
+    }
+    return "";
+  }
+
+  function showCartError(message) {
+    if (!addToCartBtn) return;
+    let errorEl = document.getElementById("property-cart-error");
+    if (!errorEl) {
+      errorEl = document.createElement("div");
+      errorEl.id = "property-cart-error";
+      errorEl.className = "property-cart-error";
+      errorEl.setAttribute("role", "alert");
+      addToCartBtn.insertAdjacentElement("afterend", errorEl);
+    }
+    errorEl.textContent = message;
+  }
+
+  function messageForCartError(code) {
+    switch (code) {
+      case "invalid_amount":
+        return "Enter a valid investment amount before adding this asset.";
+      case "sold_out":
+        return "This asset is currently sold out.";
+      case "asset_not_found":
+        return "This asset is no longer available.";
+      case "cart_unavailable":
+      case "add_failed":
+        return "Your cart could not be updated. Please try again.";
+      default:
+        return "Unable to add this asset to your cart. Please try again.";
+    }
+  }
+
+  function setCartLoading(isLoading) {
+    if (!addToCartBtn) return;
+    addToCartBtn.disabled = isLoading;
+    addToCartBtn.setAttribute("aria-busy", isLoading ? "true" : "false");
+    const text = addToCartBtn.querySelector(".btn-text");
+    if (text) {
+      text.textContent = isLoading ? "Adding..." : "Add to cart";
+    }
+  }
+
   // Handle quick add buttons - accumulate amounts
   quickAddButtons.forEach((button) => {
     button.addEventListener("click", function (e) {
@@ -97,28 +145,41 @@ document.addEventListener("DOMContentLoaded", function () {
       formData.append("duration", "5 years");
       formData.append("projected_return", projectedReturn);
       formData.append("annualized_return", annualizedReturn);
+      const csrfToken = getCookie("csrf_token");
+      if (csrfToken) {
+        formData.append("csrf_token", csrfToken);
+      }
 
       // Send AJAX request to add to cart
       // fetch() follows 302 redirects automatically. We check response.url
       // to see if the server redirected to /kyc or /auth/login instead of /cart.
+      setCartLoading(true);
       fetch("/cart/add", {
         method: "POST",
+        headers: csrfToken ? { "X-CSRF-Token": csrfToken } : {},
         body: formData,
       })
         .then((response) => {
+          if (!response.ok) {
+            throw new Error("Unable to add this property to your cart. Please refresh and try again.");
+          }
           // Check where the server actually sent us after following redirects
           const finalUrl = new URL(response.url, window.location.origin);
           if (finalUrl.pathname !== "/cart") {
             // Server redirected somewhere else (e.g. /kyc, /auth/login)
             window.location.href = finalUrl.pathname + finalUrl.search;
+          } else if (finalUrl.searchParams.has("error")) {
+            setCartLoading(false);
+            showCartError(messageForCartError(finalUrl.searchParams.get("error")));
           } else {
             // Successfully added to cart, go to cart page
             window.location.href = finalUrl.pathname + finalUrl.search;
           }
         })
         .catch((error) => {
-          console.error("Add to cart error:", error);
-          window.location.href = "/cart";
+          console.warn("Add to cart failed:", error);
+          setCartLoading(false);
+          showCartError(error.message || "Unable to add this property to your cart. Please try again.");
         });
     });
   }

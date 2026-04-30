@@ -25,11 +25,14 @@
       </div>
       {% elif investor_topbar_variant == 'community' %}
       <div class="lb-topbar-tabs">
-        <button type="button" class="lb-topbar-tab active community-tab-btn" data-tab="community-feed-tab" hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Feed</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-announcements-tab" hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Announcements</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">My Circle</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Expert AMAs</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-challenges-tab" hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Challenges</button>
+        <button type="button" class="lb-topbar-tab active community-tab-btn" data-tab="community-feed-tab" hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed" onclick="switchCommunityTab(this)">Feed</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-announcements-tab" hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements" onclick="switchCommunityTab(this)">Announcements</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="switchCommunityTab(this)">My Circle</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="switchCommunityTab(this)">Expert AMAs</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-challenges-tab" hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges" onclick="switchCommunityTab(this)">Challenges</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-search-tab" data-client-tab="search" onclick="switchCommunityTab(this)">Search</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-notifications-tab" data-client-tab="notifications" onclick="switchCommunityTab(this)">Notifications</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-saved-tab" data-client-tab="saved" onclick="switchCommunityTab(this)">Saved</button>
       </div>
       {% endif %}
     </div>
@@ -69,12 +72,12 @@
     </div>
     {% elif investor_topbar_variant == 'community' %}
     <div class="lb-topbar-right">
-      <div class="lb-topbar-search" style="opacity: 0.5;">
+      <div class="lb-topbar-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" placeholder="Search community..." disabled />
+        <input id="community-topbar-search" type="search" placeholder="Search community..." autocomplete="off" aria-label="Search community" />
       </div>
     </div>
     {% elif investor_topbar_variant == 'settings' %}
@@ -102,14 +105,14 @@
     </div>
     {% elif investor_topbar_variant == 'affiliate-settings' %}
     <div class="lb-topbar-right">
-      <button id="save-settings-btn" class="ds-btn ds-btn-primary" disabled>
+      <button id="save-settings-btn" class="ds-btn ds-btn-primary" type="submit" form="affiliate-settings-form" disabled>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
         Save Changes
       </button>
     </div>
     {% elif investor_topbar_variant == 'affiliate-referrals' %}
     <div class="lb-topbar-right">
-      <button class="ds-btn ds-btn--secondary" onclick="exportReferralCSV()">
+      <button id="affiliate-referrals-export-btn" class="ds-btn ds-btn--secondary" type="button">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export CSV
       </button>

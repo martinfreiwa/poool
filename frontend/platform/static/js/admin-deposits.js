@@ -5,6 +5,7 @@ let currentPage = 1;
 const PAGE_SIZE = 15;
 let sortField = "created_at";
 let sortOrder = "desc";
+let confirmModalReturnFocus = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   loadDeposits();
@@ -47,6 +48,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("confirm-modal")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeConfirmModal();
   });
+  document.addEventListener("keydown", (e) => {
+    const modal = document.getElementById("confirm-modal");
+    if (e.key === "Escape" && modal?.style.display === "flex") {
+      closeConfirmModal();
+    }
+  });
 
   // Tabs
   document.querySelectorAll(".admin-tab").forEach((tab) => {
@@ -71,6 +78,9 @@ function setupSorting() {
   if (!table) return;
   table.querySelectorAll("th[data-sort]").forEach((th) => {
     th.style.cursor = "pointer";
+    th.setAttribute("role", "button");
+    th.setAttribute("tabindex", "0");
+    th.setAttribute("aria-sort", getAriaSortValue(th.dataset.sort));
     th.addEventListener("click", () => {
       const field = th.dataset.sort;
       if (sortField === field) {
@@ -80,8 +90,26 @@ function setupSorting() {
         sortOrder = "asc";
       }
       applyFilters();
+      updateSortIndicators();
+    });
+    th.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        th.click();
+      }
     });
   });
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll("#deposits-table th[data-sort]").forEach((th) => {
+    th.setAttribute("aria-sort", getAriaSortValue(th.dataset.sort));
+  });
+}
+
+function getAriaSortValue(field) {
+  if (field !== sortField) return "none";
+  return sortOrder === "asc" ? "ascending" : "descending";
 }
 
 async function loadDeposits() {
@@ -97,9 +125,20 @@ async function loadDeposits() {
       updateStats(data.stats);
       if (btn) btn.classList.remove("admin-btn--loading");
     } else {
+      allDeposits = [];
+      filteredDeposits = [];
+      updateStats();
+      renderDepositError("Could not load deposit requests.");
+      const err = await resp.json().catch(() => ({}));
+      showToast(err.error || "Could not load deposit requests.", "danger");
       if (btn) btn.classList.remove("admin-btn--loading");
     }
   } catch (e) {
+    allDeposits = [];
+    filteredDeposits = [];
+    updateStats();
+    renderDepositError("Network error loading deposit requests.");
+    showToast("Network error loading deposit requests.", "danger");
     if (btn) btn.classList.remove("admin-btn--loading");
   }
 }
@@ -205,17 +244,11 @@ function renderTable() {
   if (slice.length === 0) {
     tbody.innerHTML =
       '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No deposits match your filters.</td></tr>';
+    updatePagination(totalPages);
     return;
   }
 
-  // Update Pagination UI
-  const info = document.getElementById("pagination-info");
-  if (info)
-    info.textContent = `Page ${currentPage} of ${totalPages} (${filteredDeposits.length} total)`;
-  const prevBtn = document.getElementById("prev-page");
-  const nextBtn = document.getElementById("next-page");
-  if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+  updatePagination(totalPages);
 
   tbody.innerHTML = slice
     .map(
@@ -261,12 +294,32 @@ function renderTable() {
     .join("");
 }
 
+function updatePagination(totalPages) {
+  const info = document.getElementById("pagination-info");
+  if (info)
+    info.textContent = `Page ${currentPage} of ${totalPages} (${filteredDeposits.length} total)`;
+  const prevBtn = document.getElementById("prev-page");
+  const nextBtn = document.getElementById("next-page");
+  if (prevBtn) prevBtn.disabled = currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+}
+
+function renderDepositError(message) {
+  const tbody = document.getElementById("deposits-table-body");
+  if (!tbody) return;
+  const depositCountEl = document.getElementById("deposit-count-label");
+  if (depositCountEl) depositCountEl.textContent = "Showing 0 deposits";
+  tbody.innerHTML = `<tr><td colspan="9" role="alert" style="text-align:center;padding:40px;color:var(--admin-danger);">${esc(message)}</td></tr>`;
+  updatePagination(1);
+}
+
 // ─── Confirm Modal ──────────────────────────────────────────────
 
 let confirmingDepositId = null;
 
 function openConfirmModal(depositId) {
   confirmingDepositId = depositId;
+  confirmModalReturnFocus = document.activeElement;
   const dep = allDeposits.find((d) => d.id === depositId);
   if (!dep) return;
   document.getElementById("confirm-modal-text").textContent =
@@ -274,6 +327,7 @@ function openConfirmModal(depositId) {
   document.getElementById("confirm-notes").value = "";
   const modal = document.getElementById("confirm-modal");
   modal.style.display = "flex";
+  document.getElementById("confirm-notes")?.focus();
 
   document.getElementById("confirm-submit").onclick = () => {
     confirmDeposit(confirmingDepositId);
@@ -284,6 +338,10 @@ function openConfirmModal(depositId) {
 function closeConfirmModal() {
   document.getElementById("confirm-modal").style.display = "none";
   confirmingDepositId = null;
+  if (confirmModalReturnFocus && typeof confirmModalReturnFocus.focus === "function") {
+    confirmModalReturnFocus.focus();
+  }
+  confirmModalReturnFocus = null;
 }
 
 async function confirmDeposit(depositId) {
@@ -308,16 +366,23 @@ async function confirmDeposit(depositId) {
 }
 
 async function cancelDeposit(depositId) {
-  const reason = prompt(
-    "Are you sure you want to cancel this deposit?\n\nPlease enter a reason for cancellation:",
-  );
-  if (reason === null) return; // User cancelled the prompt
+  const dep = allDeposits.find((d) => d.id === depositId);
+  const label = dep
+    ? `${dep.user_name} (${formatAmount(dep.amount_cents, dep.currency)})`
+    : depositId;
+  const confirmed = await confirmAction({
+    title: "Cancel deposit",
+    message: `Cancel the pending deposit from ${label}? This does not credit the wallet.`,
+    confirmText: "Cancel deposit",
+    type: "danger",
+  });
+  if (!confirmed) return;
 
   try {
     const resp = await fetch(`/api/admin/deposits/${depositId}/cancel`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: reason || "Admin cancelled" }),
+      body: JSON.stringify({ reason: "Admin cancelled from deposits board" }),
     });
 
     if (resp.ok) {
@@ -337,7 +402,7 @@ async function extendDeposit(depositId) {
   const label = dep
     ? `${dep.user_name} (${formatAmount(dep.amount_cents, dep.currency)})`
     : depositId;
-  if (!await pooolConfirm({ title: 'Extend deposit expiry', message: `Extend expiry by 48 hours for deposit from ${label}?`, confirmText: 'Extend', type: 'warning' })) return;
+  if (!await confirmAction({ title: 'Extend deposit expiry', message: `Extend expiry by 48 hours for deposit from ${label}?`, confirmText: 'Extend', type: 'warning' })) return;
   try {
     const resp = await fetch(`/api/admin/deposits/${depositId}/extend`, {
       method: "POST",
@@ -357,10 +422,13 @@ async function extendDeposit(depositId) {
 async function loadDisputes() {
   const tbody = document.getElementById("disputes-table-body");
   if (!tbody) return;
+  tbody.innerHTML =
+    '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--admin-text-muted);">Loading disputes…</td></tr>';
   try {
     const resp = await fetch("/api/admin/disputes");
     if (resp.ok) {
-      const disputes = await resp.json();
+      const data = await resp.json();
+      const disputes = Array.isArray(data) ? data : data.disputes || [];
       const countEl = document.getElementById("dispute-count");
       if (countEl) countEl.textContent = `${disputes.length} active`;
       if (disputes.length === 0) {
@@ -371,58 +439,84 @@ async function loadDisputes() {
           .map(
             (d) => `
                     <tr>
-                        <td>
-                            <div class="admin-user-inline">
-                                <div>
-                                    <div class="admin-user-inline-name">${esc(d.user_email)}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td><span class="admin-badge admin-badge--neutral">${esc(d.payment_provider)}</span></td>
-                        <td style="font-weight:700;">${formatUSD(d.amount_cents)}</td>
-                        <td>${getStatusBadge(d.status)}</td>
-                        <td style="font-size:12px;color:var(--admin-text-muted);">${formatDateTime(d.created_at)}</td>
-                        <td>
-                            ${d.evidence_url && (d.evidence_url.startsWith('http://') || d.evidence_url.startsWith('https://')) ? `<a href="${esc(d.evidence_url)}" target="_blank" rel="noopener" class="admin-btn admin-btn--secondary admin-btn--sm">View Bundle</a>` : `<button onclick="buildEvidence('${esc(d.id)}')" class="admin-btn admin-btn--secondary admin-btn--sm">Build Bundle</button>`}
-                        </td>
-                        <td>
-                            <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="resolveDispute('${esc(d.id)}')">Update</button>
-                        </td>
-                    </tr>
-                `,
+	                        <td>
+	                            <div class="admin-user-inline">
+	                                <div>
+	                                    <div class="admin-user-inline-name">${esc(d.user_email)}</div>
+	                                </div>
+	                            </div>
+	                        </td>
+	                        <td>${getProviderBadge(d.provider)}</td>
+	                        <td style="font-weight:700;">${formatAmount(d.amount_cents, d.currency)}</td>
+	                        <td>${getStatusBadge(d.status)}</td>
+	                        <td style="font-size:12px;color:var(--admin-text-muted);">${formatDateTime(d.created_at)}</td>
+	                        <td>
+	                            ${renderEvidenceBundleControl(d)}
+	                        </td>
+	                        <td style="display:flex;gap:6px;align-items:center;">
+	                            ${renderDisputeStatusSelect(d)}
+	                            <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="resolveDispute('${esc(d.id)}')">Save</button>
+	                        </td>
+	                    </tr>
+	                `,
           )
           .join("");
       }
+    } else {
+        const err = await resp.json().catch(() => ({}));
+        tbody.innerHTML = `<tr><td colspan="7" role="alert" style="text-align:center;padding:40px;color:var(--admin-danger);">${esc(err.error || "Could not load disputes.")}</td></tr>`;
+        showToast(err.error || "Could not load disputes.", "danger");
     }
   } catch (e) {
     console.error("Error loading disputes", e);
     if (typeof Sentry !== 'undefined') Sentry.captureException(e);
+    tbody.innerHTML =
+      '<tr><td colspan="7" role="alert" style="text-align:center;padding:40px;color:var(--admin-danger);">Network error loading disputes.</td></tr>';
+    showToast("Network error loading disputes.", "danger");
   }
 }
 
-async function buildEvidence(disputeId) {
-  showToast("Compiling transaction history and KYC proof...", "info");
+function renderDisputeStatusSelect(dispute) {
+  const id = esc(dispute.id);
+  const current = dispute.status || "under_review";
+  const statuses = ["under_review", "resolved", "escalated", "won", "lost"];
+  return `<select id="dispute-status-${id}" class="admin-select" aria-label="Update dispute status">${statuses
+    .map((status) => `<option value="${esc(status)}"${status === current ? " selected" : ""}>${esc(status.replace("_", " "))}</option>`)
+    .join("")}</select>`;
+}
+
+function renderEvidenceBundleControl(dispute) {
+  const evidenceUrl = dispute.evidence_url || "";
+  if (isSafeEvidenceUrl(evidenceUrl)) {
+    return `<a href="${esc(evidenceUrl)}" target="_blank" rel="noopener" class="admin-btn admin-btn--secondary admin-btn--sm">View Bundle</a>`;
+  }
+  return `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="buildEvidenceBundle('${esc(dispute.id)}')">Build Bundle</button>`;
+}
+
+function isSafeEvidenceUrl(url) {
+  return url.startsWith("/api/admin/disputes/") || url.startsWith("https://") || url.startsWith("http://");
+}
+
+async function buildEvidenceBundle(disputeId) {
   try {
     const resp = await fetch(`/api/admin/disputes/${disputeId}/evidence`, {
       method: "POST",
+      headers: { "X-CSRF-Token": getCsrfToken() },
     });
     if (resp.ok) {
-      showToast(
-        "Evidence bundle (PDF) generated and uploaded to provider portal.",
-        "success",
-      );
+      showToast("Evidence bundle generated.", "success");
       loadDisputes();
     } else {
       const err = await resp.json().catch(() => ({}));
       showToast(err.error || "Failed to generate evidence bundle.", "danger");
     }
   } catch (e) {
-    showToast("Network error generating evidence.", "danger");
+    showToast("Network error generating evidence bundle.", "danger");
   }
 }
 
 async function resolveDispute(disputeId) {
-  const newStatus = prompt("Update dispute status (won, lost, under_review):");
+  const newStatus = document.getElementById(`dispute-status-${disputeId}`)?.value;
   if (!newStatus) return;
   try {
     const resp = await fetch(`/api/admin/disputes/${disputeId}/status`, {
@@ -433,6 +527,9 @@ async function resolveDispute(disputeId) {
     if (resp.ok) {
       showToast("Dispute status updated.", "success");
       loadDisputes();
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      showToast(err.error || "Failed to update dispute status.", "danger");
     }
   } catch (e) {
     showToast("Update failed.", "danger");
@@ -443,6 +540,11 @@ function showToast(msg, type = "success") {
   if(window.showPooolToast) {
     window.showPooolToast(null, msg, type);
   }
+}
+
+async function confirmAction(options) {
+  if (typeof window.pooolConfirm === "function") return window.pooolConfirm(options);
+  return window.confirm(options.message || options.title || "Continue?");
 }
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -504,17 +606,19 @@ function getStatusBadge(status) {
     expired: ["admin-badge--danger", "Expired"],
   };
   const [cls, label] = map[status] || ["admin-badge--neutral", status];
-  return `<span class="admin-badge ${cls}"><span class="admin-badge-dot"></span>${label}</span>`;
+  return `<span class="admin-badge ${cls}"><span class="admin-badge-dot"></span>${esc(label)}</span>`;
 }
 
 function getProviderBadge(provider) {
   const map = {
     stripe: ["admin-badge--info", "Stripe"],
-    xendit: ["admin-badge--warning", "Xendit"],
+    ocbc: ["admin-badge--warning", "OCBC"],
+    midtrans: ["admin-badge--warning", "Midtrans"],
+    mangopay: ["admin-badge--info", "Mangopay"],
     manual: ["admin-badge--neutral", "Manual"],
   };
   const [cls, label] = map[provider] || ["admin-badge--neutral", provider];
-  return `<span class="admin-badge ${cls}"><span class="admin-badge-dot"></span>${label}</span>`;
+  return `<span class="admin-badge ${cls}"><span class="admin-badge-dot"></span>${esc(label)}</span>`;
 }
 
 function debounce(fn, ms) {

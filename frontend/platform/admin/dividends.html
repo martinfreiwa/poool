@@ -116,8 +116,8 @@
               ⛓ On-Chain Ownership Snapshot
             </div>
             <p style="font-size: 11px; color: var(--admin-text-secondary); margin: 0; line-height: 1.5;">
-              Distribution splits are calculated from the on-chain token ownership recorded in the ERC-1155 smart contract.
-              Anti-sniping logic requires a minimum holding period before investors are eligible for dividends.
+              Distribution splits are calculated from the platform investment ledger. Anti-sniping logic requires a minimum
+              holding period before investors are eligible for dividends.
             </p>
           </div>
         </div>
@@ -243,7 +243,7 @@
                     Discard
                   </button>
                   <button class="admin-btn admin-btn--primary" id="btn-process" style="padding: 0 32px">
-                    Confirm &amp; Distribute Funds
+                    Submit for Approval
                   </button>
                 </div>
               </div>
@@ -284,7 +284,7 @@
                     font-size: 14px;
                     margin-bottom: 24px;
                   " id="final-summary-text"></p>
-              <button class="admin-btn admin-btn--secondary" onclick="window.location.reload()">
+              <button class="admin-btn admin-btn--secondary" id="btn-start-new-distribution">
                 Start New Distribution
               </button>
             </div>

@@ -12,6 +12,17 @@
   // ── DOM references ──────────────────────────────────────────
   const el = (id) => document.getElementById(id);
 
+  function csrfHeaders(headers = {}) {
+    const token = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : getCsrfTokenFromCookie();
+    return token ? { ...headers, 'X-CSRF-Token': token } : headers;
+  }
+
+  function getCsrfTokenFromCookie() {
+    const value = `; ${document.cookie}`;
+    const parts = value.split('; csrf_token=');
+    return parts.length === 2 ? parts.pop().split(';').shift() : '';
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     loadTreasury();
   });
@@ -242,14 +253,10 @@
     if (!confirm('⚠️ EMERGENCY PAUSE\n\nThis will freeze ALL token transfers on the smart contract.\n\nAre you absolutely sure?')) return;
     if (!confirm('FINAL CONFIRMATION: Pause the contract NOW?')) return;
     try {
-      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
       const res = await fetch(PAUSE_API, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrf,
-        },
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
       });
       const data = await res.json();
       if (data.success) {
@@ -266,14 +273,10 @@
   window._blockchainUnpause = async function () {
     if (!confirm('Unpause the contract? Token transfers will resume.')) return;
     try {
-      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
       const res = await fetch(UNPAUSE_API, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrf,
-        },
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
       });
       const data = await res.json();
       if (data.success) {
