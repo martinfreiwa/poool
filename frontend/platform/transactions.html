@@ -66,6 +66,26 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
                 <!-- Main Content -->
                 <div id="transactions-content" class="hidden">
 
+                    <!-- Filter Bar -->
+                    <div id="transactions-filter-bar" class="transactions-filter-bar" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+                        <select id="transactions-type-filter" class="ds-select" style="min-width:160px;padding:8px 12px;border:1px solid var(--table-border-color,#EAECF0);border-radius:8px;font-size:14px;color:#344054;background:#fff;">
+                            <option value="">All types</option>
+                            <option value="deposit">Deposit</option>
+                            <option value="withdrawal">Withdrawal</option>
+                            <option value="dividend">Dividend</option>
+                            <option value="investment">Investment</option>
+                        </select>
+                        <input type="date" id="transactions-date-from" class="ds-input"
+                            title="From date"
+                            style="padding:8px 12px;border:1px solid var(--table-border-color,#EAECF0);border-radius:8px;font-size:14px;color:#344054;background:#fff;" />
+                        <input type="date" id="transactions-date-to" class="ds-input"
+                            title="To date"
+                            style="padding:8px 12px;border:1px solid var(--table-border-color,#EAECF0);border-radius:8px;font-size:14px;color:#344054;background:#fff;" />
+                        <button id="transactions-clear-filters" class="ds-btn ds-btn--secondary" style="padding:8px 14px;font-size:14px;">
+                            Clear filters
+                        </button>
+                    </div>
+
                     <!-- No Transactions Empty State -->
                     <div id="wallet-transactions-empty" class="hidden">
                         <div class="table__wrapper table__wrapper--wallet ds-table-container">

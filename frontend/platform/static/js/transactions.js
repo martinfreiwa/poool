@@ -79,7 +79,10 @@ function getStatusBadge(status) {
         </div>`;
 }
 
-function processTransactions(transactionsData) {
+// All transactions loaded from the API — kept in memory for client-side filtering
+var _allTransactions = [];
+
+function renderTransactions(transactions) {
     const listBody = document.getElementById('wallet-transactions-list-body');
     const listContainer = document.getElementById('wallet-transactions-list-container');
     const emptyState = document.getElementById('wallet-transactions-empty');
@@ -88,7 +91,7 @@ function processTransactions(transactionsData) {
     // Clear list
     listBody.innerHTML = '';
 
-    if (!transactionsData || !transactionsData.transactions || transactionsData.transactions.length === 0) {
+    if (!transactions || transactions.length === 0) {
         if (listContainer) listContainer.classList.add('hidden');
         if (emptyState) emptyState.classList.remove('hidden');
         return;
@@ -97,7 +100,7 @@ function processTransactions(transactionsData) {
     if (listContainer) listContainer.classList.remove('hidden');
     if (emptyState) emptyState.classList.add('hidden');
 
-    transactionsData.transactions.forEach((tx, idx) => {
+    transactions.forEach(function(tx) {
         const row = document.createElement('div');
         row.className = 'table__row';
 
@@ -129,7 +132,7 @@ function processTransactions(transactionsData) {
                 <span class="${escHtml(amountCss)}">${escHtml(amountPrefix)} USD ${escHtml(formatUSD(tx.amount_cents))}</span>
             </div>
             <div class="table__cell table__cell--actions">
-                <button class="wallet-transaction-action-btn">
+                <button class="wallet-transaction-action-btn" data-transaction-id="${escHtml(String(tx.id))}">
                     View details
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 </button>
@@ -137,6 +140,32 @@ function processTransactions(transactionsData) {
         `;
         listBody.appendChild(row);
     });
+}
+
+function applyFilters() {
+    var typeVal = (document.getElementById('transactions-type-filter') || {}).value || '';
+    var fromVal = (document.getElementById('transactions-date-from') || {}).value || '';
+    var toVal = (document.getElementById('transactions-date-to') || {}).value || '';
+
+    var filtered = _allTransactions.filter(function(tx) {
+        if (typeVal && tx.type.toLowerCase() !== typeVal.toLowerCase()) return false;
+        if (fromVal) {
+            var txDate = tx.created_at ? tx.created_at.slice(0, 10) : '';
+            if (txDate < fromVal) return false;
+        }
+        if (toVal) {
+            var txDate = tx.created_at ? tx.created_at.slice(0, 10) : '';
+            if (txDate > toVal) return false;
+        }
+        return true;
+    });
+
+    renderTransactions(filtered);
+}
+
+function processTransactions(transactionsData) {
+    _allTransactions = (transactionsData && transactionsData.transactions) ? transactionsData.transactions : [];
+    applyFilters();
 }
 
 function escHtml(str) {
@@ -169,8 +198,36 @@ async function loadTransactions() {
 }
 
 // Initialise when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     loadTransactions();
+
+    // Wire up filter controls (auto-apply on change)
+    var typeFilter = document.getElementById('transactions-type-filter');
+    var dateFrom = document.getElementById('transactions-date-from');
+    var dateTo = document.getElementById('transactions-date-to');
+    var clearBtn = document.getElementById('transactions-clear-filters');
+
+    if (typeFilter) typeFilter.addEventListener('change', applyFilters);
+    if (dateFrom) dateFrom.addEventListener('change', applyFilters);
+    if (dateTo) dateTo.addEventListener('change', applyFilters);
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (typeFilter) typeFilter.value = '';
+            if (dateFrom) dateFrom.value = '';
+            if (dateTo) dateTo.value = '';
+            applyFilters();
+        });
+    }
+});
+
+// TRANSACTIONS-BUG-002: View-details click handler via event delegation
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.wallet-transaction-action-btn');
+    if (!btn) return;
+    var txId = btn.dataset.transactionId;
+    if (txId) {
+        window.location.href = '/transactions/' + txId;
+    }
 });
 
 // Expose reload function for "Retry" buttons

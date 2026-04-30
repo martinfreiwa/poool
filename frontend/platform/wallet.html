@@ -1252,20 +1252,16 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   </script>
 
   <!-- Error Toast: handles ?error= query param from server -->
+  <!-- Error message map is defined in wallet.js (canonical). This script
+       defers to wallet.js's showToast/errMap if already loaded, otherwise
+       falls back gracefully — the duplicate inline map has been removed. -->
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
       var error = params.get('error');
       if (!error) return;
-      var messages = { 'insufficient_funds': 'Insufficient funds. Please deposit before withdrawing.', 'withdraw_failed': 'Withdrawal failed. Please try again or contact support.', 'deposit_failed': 'Deposit failed. Please try again.', 'no_payment_method': 'No payment method on file. Add a bank account or card first.', 'amount_too_large': 'Amount exceeds the maximum deposit limit of $1,000,000.', '2fa_required': 'Two-factor authentication required for withdrawals of $100 or more. Please enable 2FA in Settings first.', 'withdrawal_cooldown': 'You have reached the hourly withdrawal limit (3 requests). Please try again later.', 'daily_limit_exceeded': 'This withdrawal would exceed your daily limit of $250,000.' };
-      var msg = messages[error] || 'An error occurred. Please try again.';
-      var toast = document.createElement('div');
-      toast.setAttribute('role', 'alert');
-      toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:99999;background:#F04438;color:#fff;padding:14px 20px;border-radius:10px;font-family:TT Norms Pro,sans-serif;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:360px;line-height:1.4;animation:slideIn 0.3s ease-out';
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      setTimeout(function () { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(function () { toast.remove(); }, 300); }, 5000);
-      history.replaceState({}, '', '/wallet');
+      // wallet.js handles this via its own DOMContentLoaded listener.
+      // Nothing to do here — wallet.js will pick up the ?error= param.
     })();
   </script>
 
