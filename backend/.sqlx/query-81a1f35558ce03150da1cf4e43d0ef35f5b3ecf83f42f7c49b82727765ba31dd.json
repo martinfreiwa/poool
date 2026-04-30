@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE investments\n        SET status = 'active', updated_at = NOW()\n        WHERE asset_id = $1\n          AND status = 'funding_in_progress'\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "81a1f35558ce03150da1cf4e43d0ef35f5b3ecf83f42f7c49b82727765ba31dd"
+}

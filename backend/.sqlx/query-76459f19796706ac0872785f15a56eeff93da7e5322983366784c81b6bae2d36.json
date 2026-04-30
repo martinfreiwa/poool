@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            host(rc.ip_address)::text AS ip_address,\n            array_agg(DISTINCT a.user_id::text ORDER BY a.user_id::text) AS affiliate_ids,\n            array_agg(DISTINCT u.email ORDER BY u.email) AS affiliate_emails,\n            COUNT(*)::bigint AS click_count\n        FROM referral_clicks rc\n        JOIN affiliates a ON a.referral_code = rc.code\n        JOIN users u ON u.id = a.user_id\n        WHERE a.status = 'active'\n          AND rc.ip_address IS NOT NULL\n        GROUP BY rc.ip_address\n        HAVING COUNT(DISTINCT a.user_id) > 1\n        ORDER BY click_count DESC\n        LIMIT 100\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ip_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "affiliate_ids",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 2,
+        "name": "affiliate_emails",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 3,
+        "name": "click_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "76459f19796706ac0872785f15a56eeff93da7e5322983366784c81b6bae2d36"
+}

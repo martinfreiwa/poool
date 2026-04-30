@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT title, description, month_index, is_completed\n            FROM asset_milestones\n            WHERE asset_id = $1\n            ORDER BY COALESCE(month_index, 0), created_at ASC\n            ",
+  "query": "\n        SELECT title, description, month_index, is_completed\n        FROM asset_milestones\n        WHERE asset_id = $1\n        ORDER BY COALESCE(month_index, 0), created_at ASC\n        ",
   "describe": {
     "columns": [
       {
@@ -36,5 +36,5 @@
       false
     ]
   },
-  "hash": "8e16586f8ae613153336b05d6722962fd83e7b6bcdd3c87316046a185e23898f"
+  "hash": "016522643be0b673d6b731ccad879b1d11059bbce7bdbb7eceeda9254ef9f532"
 }

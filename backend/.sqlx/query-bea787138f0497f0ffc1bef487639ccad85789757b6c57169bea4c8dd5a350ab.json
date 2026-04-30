@@ -1,0 +1,214 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            a.id,\n            a.title,\n            a.slug,\n            a.short_description,\n            a.description,\n            a.asset_type,\n            a.location_city,\n            a.location_country,\n            a.total_value_cents,\n            a.token_price_cents,\n            a.tokens_total,\n            a.tokens_available,\n            a.annual_yield_bps,\n            a.capital_appreciation_bps,\n            a.funding_status,\n            ARRAY(\n                SELECT image_url\n                FROM asset_images\n                WHERE asset_id = a.id\n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls?\",\n            a.term_months,\n            a.area,\n            a.land_size_sqm,\n            a.google_maps_url,\n            a.video_url,\n            (\n                SELECT COUNT(DISTINCT o.user_id)\n                FROM order_items oi\n                JOIN orders o ON oi.order_id = o.id\n                WHERE oi.asset_id = a.id\n                  AND o.status = 'completed'\n            ) AS \"investor_count?\",\n            a.operator_name,\n            a.fixed_roi_bps,\n            a.revenue_min_cents,\n            a.revenue_max_cents,\n            a.expenses_cents,\n            a.net_profit_min_cents,\n            a.net_profit_max_cents,\n            a.investor_payout_cents,\n            a.operator_split_pct,\n            a.poool_split_pct,\n            a.location_description\n        FROM assets a\n        WHERE a.slug = $1\n          AND a.published = true\n          AND a.asset_type = 'commodity'\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "short_description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "asset_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "location_city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "location_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "total_value_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "token_price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "annual_yield_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "capital_appreciation_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "image_urls?",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 16,
+        "name": "term_months",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "area",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "land_size_sqm",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 19,
+        "name": "google_maps_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 20,
+        "name": "video_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 21,
+        "name": "investor_count?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 22,
+        "name": "operator_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 23,
+        "name": "fixed_roi_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 24,
+        "name": "revenue_min_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 25,
+        "name": "revenue_max_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 26,
+        "name": "expenses_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 27,
+        "name": "net_profit_min_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 28,
+        "name": "net_profit_max_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 29,
+        "name": "investor_payout_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 30,
+        "name": "operator_split_pct",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 31,
+        "name": "poool_split_pct",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 32,
+        "name": "location_description",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "bea787138f0497f0ffc1bef487639ccad85789757b6c57169bea4c8dd5a350ab"
+}

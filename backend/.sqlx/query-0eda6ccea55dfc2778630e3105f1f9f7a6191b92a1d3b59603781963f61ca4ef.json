@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT title, funding_status, tokens_total, tokens_available, min_funding_tokens\n        FROM assets\n        WHERE id = $1\n        FOR UPDATE\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "min_funding_tokens",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0eda6ccea55dfc2778630e3105f1f9f7a6191b92a1d3b59603781963f61ca4ef"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE assets\n            SET funding_status = 'aborted', updated_at = NOW()\n            WHERE id = $1\n              AND funding_status IN ('funding_open', 'funding_in_progress')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "685f59c974df70c272b02563aa173b8f590b9d868ad466212859d766650ed892"
+}

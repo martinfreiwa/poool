@@ -15,7 +15,7 @@ fn build_display_name(
     display_name: Option<String>,
     first_name: Option<String>,
     last_name: Option<String>,
-    email: String,
+    email: Option<String>,
 ) -> String {
     if let Some(dn) = display_name.filter(|s| !s.trim().is_empty()) {
         return dn;
@@ -23,7 +23,11 @@ fn build_display_name(
     let first = first_name.unwrap_or_default();
     let last = last_name.unwrap_or_default();
     if first.is_empty() && last.is_empty() {
-        email.split('@').next().unwrap_or("User").to_string()
+        email
+            .as_deref()
+            .and_then(|e| e.split('@').next())
+            .unwrap_or("User")
+            .to_string()
     } else {
         format!("{} {}", first, last).trim().to_string()
     }
@@ -73,7 +77,7 @@ pub async fn get_user_info(
                     r.display_name,
                     r.first_name,
                     r.last_name,
-                    r.email,
+                    Some(r.email),
                 ),
                 avatar_url: r
                     .avatar_url

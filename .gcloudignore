@@ -13,6 +13,7 @@ frontend/node_modules/
 __pycache__/
 *.pyc
 .agent/
+.claude/
 scripts/
 tests/
 frontend/platform/static/css/bundle.css

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state, metadata)\n            VALUES (NULL, 'primary_escrow.auto_refund', 'assets', $1, $2, $3)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "12eac6a897745c5c92a370b7a88681c4b327fee6c9038638e43081fcd185bd8b"
+}
