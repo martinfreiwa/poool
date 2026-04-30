@@ -301,6 +301,9 @@ function renderTable() {
                     <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="toggleFeatured('${esc(a.id)}', event)" title="Toggle featured" aria-label="Toggle featured for ${esc(a.title)}">
                         <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 1l2 4 4.5.7-3.3 3.2.8 4.6L8 11.3 3.9 13.5l.8-4.6L1.5 5.7 6 5z"/></svg>
                     </button>
+                    <a href="/admin/asset-details.html?id=${esc(a.id)}" class="admin-btn admin-btn--secondary admin-btn--sm" title="Manage asset" aria-label="Manage ${esc(a.title)}">
+                        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42"/></svg>
+                    </a>
                     <a href="/property/${esc(a.slug)}" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm" title="View on marketplace" aria-label="View ${esc(a.title)} on marketplace">
                         <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1v-3"/><path d="M9 2h5v5M14 2L7 9"/></svg>
                     </a>

@@ -356,6 +356,21 @@ pub async fn api_admin_support_update(
             .execute(&state.db)
             .await;
 
+            // Email ticket owner when status changes to resolved/closed
+            if (new_status == "resolved" || new_status == "closed") && curr_status != new_status {
+                if let Some((owner_id, ticket_subject, _)) =
+                    crate::support::db::get_ticket_owner(&state.db, &ticket_id).await
+                {
+                    let _ = crate::email::trigger_transactional_email(
+                        &state.db,
+                        &owner_id,
+                        "support_ticket_resolved",
+                        serde_json::json!({ "ticket_subject": ticket_subject }),
+                    )
+                    .await;
+                }
+            }
+
             Ok(Json(serde_json::json!({"status":"updated"})).into_response())
         }
         Ok(_) => Err(ApiError::NotFound("Ticket not found".to_string())),
@@ -578,7 +593,7 @@ pub async fn api_admin_support_ticket_reply(
     let inserted = sqlx::query(
         "INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content) VALUES ($1, $2, $3, 'admin', $4, $5)"
     )
-    .bind(uid).bind(current_user.id).bind(&name).bind(mtype).bind(sanitized_content)
+    .bind(uid).bind(current_user.id).bind(&name).bind(mtype).bind(&sanitized_content)
     .execute(&state.db).await;
 
     match inserted {
@@ -587,6 +602,27 @@ pub async fn api_admin_support_ticket_reply(
                 .bind(uid)
                 .execute(&state.db)
                 .await;
+
+            // Email ticket owner when admin sends a reply (not internal notes)
+            if mtype == "reply" {
+                if let Some((owner_id, ticket_subject, _)) =
+                    crate::support::db::get_ticket_owner(&state.db, &ticket_id).await
+                {
+                    let preview: String = sanitized_content.chars().take(160).collect();
+                    let _ = crate::email::trigger_transactional_email(
+                        &state.db,
+                        &owner_id,
+                        "support_ticket_reply",
+                        serde_json::json!({
+                            "ticket_subject": ticket_subject,
+                            "reply_preview": preview,
+                            "ticket_id": ticket_id,
+                        }),
+                    )
+                    .await;
+                }
+            }
+
             Ok(Json(serde_json::json!({"status":"reply_added"})).into_response())
         }
         Err(e) => {

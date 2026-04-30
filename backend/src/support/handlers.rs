@@ -1,4 +1,3 @@
-use super::models::AddReplyRequest;
 use super::service;
 use crate::AppState;
 use axum::{
@@ -217,11 +216,12 @@ pub async fn api_support_tickets_submit(
 }
 
 /// POST /api/support/tickets/:ticket_id/reply — Add a user reply to their own ticket.
+/// Accepts multipart/form-data with fields: `message` (required), `attachment` (optional file).
 pub async fn api_support_ticket_reply(
     jar: CookieJar,
     State(state): State<AppState>,
     Path(ticket_id): Path<String>,
-    Json(payload): Json<AddReplyRequest>,
+    mut multipart: Multipart,
 ) -> impl IntoResponse {
     let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
@@ -234,7 +234,46 @@ pub async fn api_support_ticket_reply(
         }
     };
 
-    if payload.message.trim().len() < 2 {
+    let mut message = String::new();
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut file_name: Option<String> = None;
+    let mut file_type: Option<String> = None;
+
+    while let Some(field) = match multipart.next_field().await {
+        Ok(f) => f,
+        Err(e) => {
+            tracing::warn!("Invalid reply multipart payload: {}", e);
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Invalid request format"})),
+            )
+                .into_response();
+        }
+    } {
+        let name = field.name().unwrap_or("").to_string();
+        if name == "message" {
+            message = field.text().await.unwrap_or_default();
+        } else if name == "attachment" {
+            file_name = field.file_name().map(|s| s.to_string());
+            file_type = field.content_type().map(|s| s.to_string());
+
+            if let Some(ref mime) = file_type {
+                if !matches!(mime.as_str(), "image/jpeg" | "image/png" | "application/pdf") {
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(serde_json::json!({"error": "Invalid file type. Allowed: JPG, PNG, PDF."})),
+                    )
+                        .into_response();
+                }
+            }
+            match field.bytes().await {
+                Ok(data) if !data.is_empty() => file_bytes = Some(data.to_vec()),
+                _ => {}
+            }
+        }
+    }
+
+    if message.trim().len() < 2 {
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Message is required (min 2 characters)"})),
@@ -246,7 +285,7 @@ pub async fn api_support_ticket_reply(
         return resp;
     }
 
-    match service::reply_to_ticket(&state, user.id, &ticket_id, &payload.message).await {
+    match service::reply_to_ticket(&state, user.id, &ticket_id, &message, file_bytes, file_name, file_type).await {
         Ok(_) => Json(serde_json::json!({ "status": "success", "message": "Reply added" }))
             .into_response(),
         Err(e) => (

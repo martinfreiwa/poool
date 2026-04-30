@@ -1,5 +1,5 @@
 use super::models::{SupportTicket, SupportTicketReply};
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 /// Fetches up to 50 tickets for a specific user, ordered by creation date.
@@ -106,6 +106,32 @@ pub async fn check_ticket_ownership(
         .fetch_optional(pool)
         .await
         .map(|opt| opt.map(|row| row.get("status")))
+}
+
+/// Fetches the ticket subject and owner user_id for notification purposes.
+pub async fn get_ticket_owner(
+    pool: &PgPool,
+    ticket_id: &str,
+) -> Option<(Uuid, String, String)> {
+    sqlx::query(
+        r#"SELECT st.user_id, st.subject, st.priority,
+                  COALESCE(u.email, '') as user_email
+           FROM support_tickets st
+           JOIN users u ON u.id = st.user_id
+           WHERE st.id = $1::uuid"#,
+    )
+    .bind(ticket_id)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten()
+    .map(|row| {
+        (
+            row.get::<Uuid, _>("user_id"),
+            row.get::<String, _>("subject"),
+            row.get::<String, _>("user_email"),
+        )
+    })
 }
 
 /// Retrieves the profile display name of a user.
@@ -298,24 +324,26 @@ pub async fn notify_admins_of_ticket(pool: &PgPool, subject: &str) -> Result<(),
 }
 
 /// Inserts a reply into the database and updates the ticket's `updated_at` timestamp.
+/// Returns the new reply's UUID for attaching files.
 pub async fn add_reply(
     pool: &PgPool,
     ticket_id: &str,
     author_id: Uuid,
     author_name: &str,
     content: &str,
-) -> Result<(), sqlx::Error> {
+) -> Result<Uuid, sqlx::Error> {
     let mut tx = pool.begin().await?;
 
-    sqlx::query(
+    let row = sqlx::query(
         r#"INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content)
-           VALUES ($1::uuid, $2, $3, 'user', 'reply', $4)"#,
+           VALUES ($1::uuid, $2, $3, 'user', 'reply', $4)
+           RETURNING id"#,
     )
     .bind(ticket_id)
     .bind(author_id)
     .bind(author_name)
     .bind(content)
-    .execute(&mut *tx)
+    .fetch_one(&mut *tx)
     .await?;
 
     sqlx::query("UPDATE support_tickets SET updated_at = NOW() WHERE id = $1::uuid")
@@ -323,7 +351,27 @@ pub async fn add_reply(
         .execute(&mut *tx)
         .await?;
 
-    tx.commit().await
+    tx.commit().await?;
+
+    Ok(row.get::<Uuid, _>("id"))
+}
+
+/// Links an uploaded file to an existing reply.
+pub async fn add_reply_attachment(
+    pool: &PgPool,
+    reply_id: Uuid,
+    file_url: &str,
+    file_type: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO support_ticket_attachments (reply_id, file_url, file_type) VALUES ($1, $2, $3)",
+    )
+    .bind(reply_id)
+    .bind(file_url)
+    .bind(file_type)
+    .execute(pool)
+    .await
+    .map(|_| ())
 }
 
 /// Updates a ticket's status back to 'open'.

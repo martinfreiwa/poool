@@ -59,6 +59,9 @@
       const makerPct = (c.maker_fee_bps / 100).toFixed(2) + '%';
       const scope = esc(c.scope.charAt(0).toUpperCase() + c.scope.slice(1));
       const label = c.asset_id ? esc(c.asset_id.substring(0, 8)) : scope;
+      const actionCell = c.is_active
+        ? `<button class="admin-btn admin-btn--danger admin-btn--sm btn-remove-fee" data-fee-id="${esc(c.id)}">Deactivate</button>`
+        : `<span class="admin-badge admin-badge--neutral">Inactive</span>`;
       return `
         <tr>
           <td style="font-weight:600; color:var(--admin-text-primary);">${label}</td>
@@ -66,9 +69,7 @@
           <td><span class="admin-badge admin-badge--success">${makerPct}</span></td>
           <td><span class="admin-badge admin-badge--neutral">${scope}</span></td>
           <td style="font-size:12px; color:var(--admin-text-muted);">${esc(c.reason || '—')}</td>
-          <td style="text-align:center;">
-            <span class="admin-badge ${c.is_active ? 'admin-badge--success' : 'admin-badge--neutral'}">${c.is_active ? 'Active' : 'Inactive'}</span>
-          </td>
+          <td style="text-align:center;">${actionCell}</td>
         </tr>
       `;
     }).join('');
@@ -78,14 +79,33 @@
 
   function bindRemoveButtons() {
     document.querySelectorAll('.btn-remove-fee').forEach(btn => {
-      btn.addEventListener('click', function () {
-        if (typeof mpButtonAction === 'function') {
-          mpButtonAction(this, 'Fee override removed', 800, () => {
+      btn.addEventListener('click', async function () {
+        const feeId = this.dataset.feeId;
+        if (!feeId) return;
+        this.disabled = true;
+        this.textContent = '…';
+        try {
+          const res = await fetch(`/api/admin/marketplace/fees/${feeId}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: { 'X-CSRF-Token': document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '' },
+          });
+          if (res.ok) {
+            if (typeof mpToast === 'function') mpToast('Fee configuration deactivated.', 'success');
             const tr = this.closest('tr');
             tr.style.transition = 'opacity 0.3s';
             tr.style.opacity = '0';
             setTimeout(() => tr.remove(), 300);
-          });
+          } else {
+            const err = await res.json().catch(() => ({}));
+            if (typeof mpToast === 'function') mpToast(err.error || `Error (${res.status}).`, 'error');
+            this.disabled = false;
+            this.textContent = 'Deactivate';
+          }
+        } catch (e) {
+          if (typeof mpToast === 'function') mpToast('Network error.', 'error');
+          this.disabled = false;
+          this.textContent = 'Deactivate';
         }
       });
     });
@@ -101,6 +121,9 @@
         const makerPct = (p.maker_fee_bps / 100).toFixed(2) + '%';
         const endDate = new Date(p.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const isActive = p.is_active && new Date(p.ends_at) > new Date();
+        const deactivateBtn = isActive
+          ? `<button class="admin-btn admin-btn--danger admin-btn--sm btn-deactivate-promo" data-promo-id="${esc(p.id)}" data-idx="${i}">Deactivate</button>`
+          : `<span class="admin-badge admin-badge--neutral">Expired</span>`;
         return `
           <div class="mp-promo-card" id="promo-${i}">
             <div class="mp-promo-badge">● ${isActive ? 'Active' : 'Expired'}</div>
@@ -111,17 +134,27 @@
                 <span style="font-size:11px; color:var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Valid until</span>
                 <div style="font-size:13px; font-weight:600; color:var(--admin-text-primary);">${endDate}</div>
               </div>
-              <button class="admin-btn admin-btn--danger admin-btn--sm btn-deactivate-promo" data-idx="${i}">Deactivate</button>
+              ${deactivateBtn}
             </div>
           </div>
         `;
     }).join('');
 
     document.querySelectorAll('.btn-deactivate-promo').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const idx = parseInt(this.dataset.idx);
-        if (typeof mpButtonAction === 'function') {
-          mpButtonAction(this, 'Promotion deactivated', 1000, () => {
+      btn.addEventListener('click', async function () {
+        const promoId = this.dataset.promoId;
+        const idx = this.dataset.idx;
+        if (!promoId) return;
+        this.disabled = true;
+        this.textContent = '…';
+        try {
+          const res = await fetch(`/api/admin/marketplace/promotions/${promoId}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: { 'X-CSRF-Token': document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '' },
+          });
+          if (res.ok) {
+            if (typeof mpToast === 'function') mpToast('Promotion deactivated.', 'success');
             const card = document.getElementById(`promo-${idx}`);
             if (card) {
               card.style.transition = 'all 0.3s ease';
@@ -129,7 +162,16 @@
               card.style.transform = 'scale(0.95)';
               setTimeout(() => card.remove(), 300);
             }
-          });
+          } else {
+            const err = await res.json().catch(() => ({}));
+            if (typeof mpToast === 'function') mpToast(err.error || `Error (${res.status}).`, 'error');
+            this.disabled = false;
+            this.textContent = 'Deactivate';
+          }
+        } catch (e) {
+          if (typeof mpToast === 'function') mpToast('Network error.', 'error');
+          this.disabled = false;
+          this.textContent = 'Deactivate';
         }
       });
     });
@@ -224,7 +266,10 @@
         const res = await fetch(API, {
           method: 'POST',
           credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '',
+          },
           body: JSON.stringify({ scope: 'platform', taker_fee_bps: takerBps, maker_fee_bps: makerBps }),
         });
         if (res.ok) {
@@ -244,6 +289,20 @@
 
     document.getElementById('btn-add-override')?.addEventListener('click', () => {
       if (typeof mpToast === 'function') mpToast('Fee override creation is not yet available.', 'info');
+    });
+
+    document.getElementById('btn-save-tiers')?.addEventListener('click', () => {
+      if (typeof mpToast === 'function') mpToast('Tier discount configuration is read-only. Contact engineering to adjust tier thresholds.', 'info');
+    });
+
+    // Settlement and min fee fields are informational — no backend column yet
+    ['fee-settlement', 'fee-min'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.disabled = true;
+        el.title = 'Not yet configurable via this interface';
+        el.style.opacity = '0.5';
+      }
     });
   });
 })();

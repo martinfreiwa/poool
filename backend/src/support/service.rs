@@ -195,15 +195,53 @@ pub async fn submit_ticket(
     .await?;
 
     let _ = db::notify_admins_of_ticket(&state.db, subject).await;
+
+    // Email admins: fetch their user_ids and send notification
+    let user_email = sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_default();
+
+    let admin_ids: Vec<uuid::Uuid> = sqlx::query_scalar(
+        r#"SELECT u.id FROM users u
+           JOIN user_roles ur ON u.id = ur.user_id
+           JOIN roles r ON ur.role_id = r.id
+           WHERE r.name IN ('admin', 'super_admin')"#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    for admin_id in admin_ids {
+        let _ = crate::email::trigger_transactional_email(
+            &state.db,
+            &admin_id,
+            "support_ticket_new",
+            serde_json::json!({
+                "ticket_subject": subject,
+                "user_email": user_email,
+                "priority": priority,
+            }),
+        )
+        .await;
+    }
+
     Ok(())
 }
 
 /// Adds a reply to a ticket after validating ownership and status.
+/// Optionally uploads a file attachment to GCS and links it to the reply.
 pub async fn reply_to_ticket(
     state: &AppState,
     user_id: Uuid,
     ticket_id: &str,
     message: &str,
+    file_bytes: Option<Vec<u8>>,
+    file_name: Option<String>,
+    file_type: Option<String>,
 ) -> Result<(), String> {
     let status = db::check_ticket_ownership(&state.db, ticket_id, user_id)
         .await
@@ -215,10 +253,9 @@ pub async fn reply_to_ticket(
     }
 
     let author_name = db::get_user_display_name(&state.db, user_id).await;
-
     let sanitized_message = sanitize::sanitize_multiline(message);
 
-    db::add_reply(
+    let reply_id = db::add_reply(
         &state.db,
         ticket_id,
         user_id,
@@ -227,6 +264,29 @@ pub async fn reply_to_ticket(
     )
     .await
     .map_err(|e| format!("Failed to add reply: {}", e))?;
+
+    // Upload attachment if provided
+    if let Some(bytes) = file_bytes {
+        let mime = file_type.as_deref().unwrap_or("application/octet-stream");
+        if let Some(bucket) = state.config.gcs_bucket.as_deref() {
+            let ext = crate::storage::service::extension_for_mime(mime);
+            let fname = file_name
+                .as_deref()
+                .unwrap_or("attachment")
+                .chars()
+                .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_') { c } else { '_' })
+                .collect::<String>();
+            let object_path = format!("support/replies/{}_{}.{}", Uuid::new_v4(), fname, ext);
+            match crate::storage::service::upload_private(bucket, &object_path, bytes, mime).await {
+                Ok(file_url) => {
+                    if let Err(e) = db::add_reply_attachment(&state.db, reply_id, &file_url, mime).await {
+                        tracing::warn!("Failed to save reply attachment record: {}", e);
+                    }
+                }
+                Err(e) => tracing::warn!("Failed to upload reply attachment: {}", e),
+            }
+        }
+    }
 
     Ok(())
 }

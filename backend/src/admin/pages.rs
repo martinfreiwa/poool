@@ -237,6 +237,18 @@ pub async fn page_admin_generic(
         return Redirect::to("/admin/").into_response();
     }
 
+    if (relative == "admin/users" || relative == "admin/users.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "users.view").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/roles" || relative == "admin/roles.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "roles.edit").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
     if (relative == "admin/notifications" || relative == "admin/notifications.html")
         && !crate::auth::middleware::has_permission(&state.db, admin.id, "notifications.view").await
     {

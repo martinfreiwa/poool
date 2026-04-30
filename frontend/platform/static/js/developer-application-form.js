@@ -50,7 +50,8 @@ function getDropdownVal(selectId) {
 }
 
 function isStaleDraftResponse(resp) {
-  return resp && (resp.status === 404 || resp.status === 410);
+  // 403 = draft belongs to a different user (stale localStorage pointer); treat as stale
+  return resp && (resp.status === 404 || resp.status === 410 || resp.status === 403);
 }
 
 async function readApiErrorMessage(resp, fallback) {

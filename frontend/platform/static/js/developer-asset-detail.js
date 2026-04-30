@@ -396,9 +396,7 @@ async function toggleFeatured() {
 }
 
 async function togglePublished() {
-  // Placeholder — would need backend route
-  document.getElementById("toggle-published")?.classList.toggle("active");
-  showToast("Published status toggled (save pending)");
+  showToast("Publishing status is managed by admins. Contact support to request a change.", "warning");
 }
 
 async function dangerAction(action) {

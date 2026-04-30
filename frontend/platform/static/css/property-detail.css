@@ -753,12 +753,11 @@ body.lightbox-open {
    =========================== */
 #property-heading-section {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: flex-start;
   padding: 28px 28px 0;
-  gap: 16px;
+  gap: 0;
   width: 100%;
-  min-height: 62px;
   height: auto;
   box-sizing: border-box;
 }
@@ -776,6 +775,17 @@ body.lightbox-open {
   color: var(--page-title-color);
   margin: 0;
   word-wrap: break-word;
+}
+
+/* Property subtitle (location · type) */
+#property-subtitle {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #667085;
+  margin: 6px 0 0 0;
+  line-height: 22px;
+  letter-spacing: 0;
 }
 
 /* ===========================
@@ -1045,14 +1055,16 @@ body.lightbox-open {
 }
 
 .info-badge-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   flex: none;
   order: 0;
   flex-grow: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #F5F7FF;
+  border-radius: 10px;
 }
 
 .flag-icon {
@@ -1917,22 +1929,22 @@ body.lightbox-open {
 #property-info-cards {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  padding: 0px;
-  gap: 8px;
-  width: 607px;
-  height: 180px;
+  align-items: stretch;
+  padding: 0;
+  gap: 12px;
+  width: 100%;
+  height: auto;
 }
 
 .info-card {
   box-sizing: border-box;
   position: relative;
-  width: 197px;
-  height: 180px;
+  flex: 1;
+  min-width: 0;
+  min-height: 180px;
   background: #ffffff;
   border: 1px solid var(--table-border-color);
   border-radius: 12px;
-  flex: none;
 }
 
 .card-image {
@@ -2399,8 +2411,29 @@ body.youtube-modal-active {
 }
 
 .section-icon {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  background: #F5F7FF;
+  border-radius: 8px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Shared icon-with-bg style for all section header icons */
+.financial-icon,
+.location-icon,
+.developer-icon,
+.documents-icon,
+.calendar-icon,
+.key-icon {
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  background: #F5F7FF;
+  border-radius: 8px;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .section-header > img,

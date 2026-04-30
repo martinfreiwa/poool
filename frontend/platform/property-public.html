@@ -67,12 +67,13 @@
                 <!-- Heading -->
                 <div id="property-heading-section" class="heading-and-icon">
                   <h1 id="property-title">{{ asset.title | default('Modern Architectural Villa in Central Denpasar') }}</h1>
+                  <p id="property-subtitle">{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}{% if asset.ownership_type %} · {{ asset.ownership_type }}{% else %} · Freehold{% endif %}</p>
                 </div>
 
                 <!-- Categories -->
                 <div id="property-categories" class="categories-section">
                   <div class="category-badge">
-                    <img src="/static/images/icons/Bed.svg" alt="Beds" class="badge-icon" width="20" height="20" />
+                    <svg class="badge-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v5"/><path d="M2 9h20v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9Z"/><path d="M2 14h20"/><path d="M7 9V3"/></svg>
                     <span class="badge-text">{{ asset.bedrooms | default(4) }}</span>
                   </div>
                   <div class="category-separator"></div>

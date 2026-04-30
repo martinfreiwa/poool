@@ -1013,14 +1013,14 @@ async fn apply_security_headers(
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
         // BUG-003: Added https://www.youtube.com https://player.vimeo.com https://*.dropbox.com to frame-src to unblock video embeds
-        // Dropped 'unsafe-eval' from script-src — none of our current libraries
-        // (Stripe, Sentry, Quill v2, jsdelivr CDN bundles) use eval/new Function.
-        // 'unsafe-inline' remains pending a template-wide nonce rollout that
-        // replaces inline <script>/on* handlers. See security follow-up.
+        // 'unsafe-eval' is required by Alpine.js v3 — it uses new Function() to parse
+        // x-data/x-bind/@click string expressions. Without it Alpine loads but all
+        // reactive bindings silently no-op.
+        // 'unsafe-inline' remains pending a template-wide nonce rollout.
         if is_local_request {
-            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' http: https: ws: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self';")
+            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' http: https: ws: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self';")
         } else {
-            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;")
+            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;")
         },
     );
     headers.insert(

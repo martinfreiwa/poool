@@ -8,12 +8,18 @@
 
   let allTickets = [];
   let currentFilter = "";
+  let currentSearch  = "";
+  let visibleCount   = 10;
   let faqDebounceTimeout;
+  let pollTimer = null;
 
   document.addEventListener("DOMContentLoaded", () => {
     loadMyTickets();
     initSupportNav();
+    initClipboardPaste();
+    initPolling();
     clearLegacyDraft();
+    loadDraft();
     updateCharacterCounts();
 
     // New ticket form
@@ -82,6 +88,13 @@
     document.getElementById("ticket-category")?.addEventListener("change", saveDraft);
     document.getElementById("clear-ticket-draft-btn")?.addEventListener("click", clearDraft);
 
+    // Ticket list search
+    document.getElementById("tickets-search")?.addEventListener("input", (e) => {
+      currentSearch = e.target.value.toLowerCase();
+      visibleCount = 10;
+      renderTickets();
+    });
+
     // Drag-and-drop file upload
     initDragDropUpload();
   });
@@ -148,16 +161,49 @@
     }
   }
 
+  var DRAFT_KEY = "poool:support-draft-v2";
+
   function clearLegacyDraft() {
     window.localStorage?.removeItem("poool:support-ticket-draft");
   }
 
   function saveDraft() {
-    setDraftStatus("");
+    try {
+      const draft = {
+        subject:  document.getElementById("ticket-subject")?.value  || "",
+        message:  document.getElementById("ticket-message")?.value  || "",
+        category: document.getElementById("ticket-category")?.value || "general",
+        priority: document.getElementById("ticket-priority")?.value || "normal",
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      setDraftStatus("Draft saved");
+      clearTimeout(saveDraft._clearTimer);
+      saveDraft._clearTimer = setTimeout(() => setDraftStatus(""), 2000);
+    } catch (_) {}
+  }
+
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      const subjectEl  = document.getElementById("ticket-subject");
+      const messageEl  = document.getElementById("ticket-message");
+      const categoryEl = document.getElementById("ticket-category");
+      const priorityEl = document.getElementById("ticket-priority");
+      if (subjectEl  && draft.subject)  subjectEl.value  = draft.subject;
+      if (messageEl  && draft.message)  messageEl.value  = draft.message;
+      if (categoryEl && draft.category) categoryEl.value = draft.category;
+      if (priorityEl && draft.priority) priorityEl.value = draft.priority;
+      updateCharacterCounts();
+      if (priorityEl) updateResponseTime(priorityEl.value);
+      if (draft.subject || draft.message) setDraftStatus("Draft restored");
+    } catch (_) {}
   }
 
   function clearDraft() {
     clearLegacyDraft();
+    localStorage.removeItem(DRAFT_KEY);
     const form = document.getElementById("support-form");
     form?.reset();
     resetFileInfo(document.getElementById("drop-zone-file-info"), document.getElementById("drop-zone"));
@@ -299,32 +345,45 @@
     if (currentFilter === "resolved")
       filtered = allTickets.filter((t) => isClosedStatus(t.status));
 
+    // Search filter
+    if (currentSearch) {
+      filtered = filtered.filter(
+        (t) =>
+          (t.subject || "").toLowerCase().includes(currentSearch) ||
+          (t.message || "").toLowerCase().includes(currentSearch) ||
+          (t.category || "").toLowerCase().includes(currentSearch)
+      );
+    }
+
     if (filtered.length === 0) {
       container.innerHTML = `
                 <div class="support-empty">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D0D5DD" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                     </svg>
-                    <p style="font-size: 16px; font-weight: 600; color: #344054; margin-top: 12px;">No tickets ${currentFilter ? `with "${currentFilter}" status` : "yet"}</p>
-                    <p class="muted">Submit a ticket above and we'll get back to you shortly.</p>
+                    <p style="font-size: 16px; font-weight: 600; color: #344054; margin-top: 12px;">${currentSearch ? "No tickets match your search" : `No tickets ${currentFilter ? `with "${currentFilter}" status` : "yet"}`}</p>
+                    <p class="muted">${currentSearch ? "Try different keywords." : "Submit a ticket above and we'll get back to you shortly."}</p>
                 </div>`;
       return;
     }
 
-    container.innerHTML = filtered
+    const page = filtered.slice(0, visibleCount);
+    const hasMore = filtered.length > visibleCount;
+
+    container.innerHTML = page
       .map(
         (t) => `
             <div class="support-ticket-card ticket-priority-border--${esc(t.priority || "normal")}" data-ticket-id="${esc(t.id)}">
                 <button type="button" class="ticket-card-header" data-ticket-toggle="${esc(t.id)}" aria-expanded="false" aria-controls="detail-${esc(t.id)}">
                     <div class="ticket-card-left">
                         <div class="ticket-card-meta">
-                            <span class="ticket-priority ticket-priority--${esc(t.priority || "normal")}">${esc((t.priority || "normal").toUpperCase())}</span>
+                            <span class="ticket-priority ticket-priority--${esc(t.priority || "normal")}">${priorityIcon(t.priority || "normal")}${esc((t.priority || "normal").toUpperCase())}</span>
                             ${t.category && t.category !== 'general' ? `<span class="ticket-category-tag">${esc(t.category)}</span>` : ''}
                         </div>
                         <h3 class="ticket-card-subject">${esc(t.subject)}</h3>
                     </div>
                     <div class="ticket-card-right">
-                        <span class="ticket-status ticket-status--${esc(t.status)}">${formatStatus(t.status)}</span>
+                        <span class="ticket-status ticket-status--${esc(t.status)}">${statusIcon(t.status)}${formatStatus(t.status)}</span>
                         <span class="ticket-card-date">${formatDate(t.created_at)}</span>
                     </div>
                 </button>
@@ -339,10 +398,10 @@
                 (r) => `
                                 <div class="ticket-reply ${r.is_admin ? "reply-admin" : "reply-user"}">
                                     <div class="reply-header">
-                                        <span class="reply-author">${r.is_admin ? "🛡️ Support Team" : "👤 You"}</span>
+                                        <span class="reply-author">${r.is_admin ? SVG_ADMIN_AVATAR + " Support Team" : SVG_USER_AVATAR + " You"}</span>
                                         <span class="reply-date">${formatDate(r.created_at)}</span>
                                     </div>
-                                    <div class="reply-body">${esc(r.message)}</div>
+                                    <div class="reply-body">${r.is_admin ? sanitizeAdminContent(r.message) : esc(r.message).replace(/\n/g, "<br>")}</div>
                                     ${renderAttachments(r.attachments_json)}
                                 </div>
                             `,
@@ -352,12 +411,21 @@
                     `
             : ""
           }
+                    ${renderCsat(t)}
                     <div class="ticket-actions">
                         ${isOpenStatus(t.status)
             ? `
                             <form class="ticket-reply-form" data-ticket-id="${esc(t.id)}">
                                 <textarea class="ticket-reply-input" placeholder="Type your reply…" required rows="2"></textarea>
-                                <button type="submit" class="ds-btn ds-btn--primary ticket-reply-btn">Send Reply</button>
+                                <div class="ticket-reply-footer">
+                                    <label class="ticket-reply-attach-btn" for="reply-attach-${esc(t.id)}" title="Attach screenshot or file (JPG, PNG, PDF — max 5 MB)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                        Attach
+                                    </label>
+                                    <input type="file" id="reply-attach-${esc(t.id)}" class="reply-attach-input" accept="image/png,image/jpeg,application/pdf" />
+                                    <span class="reply-attach-name" id="reply-attach-name-${esc(t.id)}"></span>
+                                    <button type="submit" class="ds-btn ds-btn--primary ticket-reply-btn">Send Reply</button>
+                                </div>
                             </form>
                         `
             : ""
@@ -374,6 +442,19 @@
         `,
       )
       .join("");
+
+    if (hasMore) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "support-load-more";
+      btn.textContent = `Show more (${filtered.length - visibleCount} remaining)`;
+      btn.addEventListener("click", () => {
+        visibleCount += 10;
+        renderTickets();
+      });
+      container.appendChild(btn);
+    }
+
     bindTicketActions(container);
   }
 
@@ -400,6 +481,17 @@
 
     container.querySelectorAll(".ticket-reply-form").forEach((form) => {
       form.addEventListener("submit", (event) => submitReply(event, form.dataset.ticketId));
+      const fileInput = form.querySelector(".reply-attach-input");
+      if (fileInput) {
+        fileInput.addEventListener("change", () => {
+          const nameEl = form.querySelector(".reply-attach-name");
+          if (nameEl) {
+            const f = fileInput.files[0];
+            nameEl.textContent = f ? f.name : "";
+            nameEl.title = f ? f.name : "";
+          }
+        });
+      }
     });
 
     container.querySelectorAll(".ticket-reopen-btn").forEach((button) => {
@@ -445,36 +537,47 @@
     const message = textarea?.value?.trim();
     if (!message) return;
 
-    const btn = form.querySelector("button");
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "Sending…";
+    const fileInput = form.querySelector(".reply-attach-input");
+    const attachment = fileInput?.files[0];
+    if (attachment && attachment.size > 5 * 1024 * 1024) {
+      showToast("Attachment must be under 5 MB.", "error");
+      return;
     }
 
+    const btn = form.querySelector(".ticket-reply-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
+
     try {
+      const formData = new FormData();
+      formData.append("message", message);
+      if (attachment) formData.append("attachment", attachment);
+
       const resp = await fetch(`/api/support/tickets/${ticketId}/reply`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": getCookie("csrf_token") || ""
-        },
-        body: JSON.stringify({ message }),
+        headers: { "X-CSRF-Token": getCookie("csrf_token") || "" },
+        body: formData,
       });
       if (resp.ok) {
+        textarea.value = "";
+        if (fileInput) { fileInput.value = ""; }
+        const nameEl = form.querySelector(".reply-attach-name");
+        if (nameEl) nameEl.textContent = "";
         showToast("Reply sent!", "success");
         loadMyTickets();
       } else {
         const err = await resp.json().catch(() => ({}));
         showToast(err.error || "Failed to send reply.", "error");
       }
-    } catch (e) {
+    } catch (err) {
       showToast("Network error. Please try again.", "error");
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Send Reply";
-      }
+      if (btn) { btn.disabled = false; btn.textContent = "Send Reply"; }
     }
+  }
+
+  function sanitizeAdminContent(html) {
+    // Strip scripts only — backend already sanitizes via ammonia before storing.
+    return (html || "").replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
   }
 
   async function reopenTicket(ticketId) {
@@ -545,6 +648,7 @@
         document.getElementById("ticket-subject").value = "";
         document.getElementById("ticket-message").value = "";
         clearLegacyDraft();
+        localStorage.removeItem(DRAFT_KEY);
         setDraftStatus("");
         updateCharacterCounts();
         const fileInput = document.getElementById("ticket-attachment");
@@ -643,6 +747,39 @@
     };
     return m[s] || s;
   }
+
+  function priorityIcon(p) {
+    switch (p) {
+      case 'urgent':
+        return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      case 'high':
+        return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><polyline points="18 15 12 9 6 15"/></svg>';
+      case 'low':
+        return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>';
+      default:
+        return '<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true" style="flex-shrink:0;border-radius:50%"><circle cx="4" cy="4" r="4"/></svg>';
+    }
+  }
+
+  function statusIcon(s) {
+    switch (s) {
+      case 'open':
+        return '<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true" style="flex-shrink:0"><circle cx="4" cy="4" r="4"/></svg>';
+      case 'in_progress':
+        return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>';
+      case 'waiting_on_customer':
+        return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+      case 'resolved':
+        return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>';
+      case 'closed':
+        return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      default:
+        return '';
+    }
+  }
+
+  var SVG_ADMIN_AVATAR = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+  var SVG_USER_AVATAR  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
   function formatDate(iso) {
     if (!iso) return "";

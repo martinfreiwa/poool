@@ -2024,6 +2024,72 @@ pub async fn api_admin_marketplace_create_fee(
     ))
 }
 
+/// DELETE /api/admin/marketplace/fees/:fee_id — Deactivate a fee configuration.
+pub async fn api_admin_marketplace_deactivate_fee(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(fee_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
+
+    let updated = sqlx::query(
+        "UPDATE fee_configurations SET is_active = false, updated_at = NOW() WHERE id = $1 AND is_active = true",
+    )
+    .bind(fee_id)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    if updated.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Fee configuration not found or already inactive".into()));
+    }
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.fee_config_deactivate', 'fee_configurations', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(fee_id)
+    .bind(serde_json::json!({"is_active": false}))
+    .execute(&state.db)
+    .await;
+
+    Ok(Json(serde_json::json!({ "status": "deactivated" })))
+}
+
+/// DELETE /api/admin/marketplace/promotions/:promo_id — Deactivate a fee promotion.
+pub async fn api_admin_marketplace_deactivate_promo(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(promo_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
+
+    let updated = sqlx::query(
+        "UPDATE fee_promotions SET is_active = false WHERE id = $1 AND is_active = true",
+    )
+    .bind(promo_id)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    if updated.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Promotion not found or already inactive".into()));
+    }
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.fee_promo_deactivate', 'fee_promotions', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(promo_id)
+    .bind(serde_json::json!({"is_active": false}))
+    .execute(&state.db)
+    .await;
+
+    Ok(Json(serde_json::json!({ "status": "deactivated" })))
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // ── 6A.9: P2P Offers ─────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════

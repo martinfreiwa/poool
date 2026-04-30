@@ -875,20 +875,44 @@ pub async fn create_email_verification_token(
 
     tx.commit().await?;
 
-    if let Err(error) = send_email_verification(email, base_url, &token).await {
-        let _ = sqlx::query("DELETE FROM email_verification_tokens WHERE token_hash = $1")
-            .bind(&token_hash)
-            .execute(pool)
-            .await;
-        return Err(error);
+    // Queue via durable outbox — token stays in DB regardless of email delivery
+    // outcome so the user can always request a resend or click a cached link.
+    let subject = "Verify your POOOL email";
+    let body = format!(
+        r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Welcome to POOOL!</h2>
+  <p>Please click the link below to verify your email address.</p>
+  <p><a href="{base_url}/auth/verify-email?token={token}" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Link expires in 24 hours. If you didn't create an account, ignore this email.</p>
+</div>"#
+    );
+
+    let outbox_id = sqlx::query_scalar::<_, uuid::Uuid>(
+        r#"INSERT INTO transactional_email_outbox
+               (user_id, event_type, recipient_email, subject, html_body)
+           VALUES ($1, 'verify_email', $2, $3, $4)
+           RETURNING id"#,
+    )
+    .bind(user_id)
+    .bind(email)
+    .bind(subject)
+    .bind(&body)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    if let Some(id) = outbox_id {
+        crate::common::email::send_transactional_outbox_item(pool, id).await;
     }
 
-    tracing::info!("Sent Email Verification link to {}", email);
+    tracing::info!("Queued email verification for {}", email);
 
     Ok(())
 }
 
 /// Send an email verification message for an already-persisted token.
+/// Kept for backwards-compat with resend flows; prefer the outbox path in `create_email_verification_token`.
 pub async fn send_email_verification(
     email: &str,
     base_url: &str,
@@ -896,12 +920,11 @@ pub async fn send_email_verification(
 ) -> Result<(), AppError> {
     let subject = "Verify your POOOL email";
     let body = format!(
-        r#"
-        <h2>Welcome to POOOL!</h2>
-        <p>Please click the link below to verify your email address:</p>
-        <p><a href="{}/auth/verify-email?token={}">Verify Email</a></p>
-        "#,
-        base_url, token
+        r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Welcome to POOOL!</h2>
+  <p>Please click the link below to verify your email address:</p>
+  <p><a href="{base_url}/auth/verify-email?token={token}" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a></p>
+</div>"#
     );
 
     crate::common::email::send_email(email, subject, &body).await?;

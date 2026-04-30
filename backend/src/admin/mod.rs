@@ -792,6 +792,14 @@ pub fn router() -> axum::Router<AppState> {
             get(marketplace::api_admin_marketplace_fees)
                 .post(marketplace::api_admin_marketplace_create_fee),
         )
+        .route(
+            "/api/admin/marketplace/fees/:fee_id",
+            delete(marketplace::api_admin_marketplace_deactivate_fee),
+        )
+        .route(
+            "/api/admin/marketplace/promotions/:promo_id",
+            delete(marketplace::api_admin_marketplace_deactivate_promo),
+        )
         // ── 6A.9: P2P Offers ─────────────────────────────────────
         .route(
             "/api/admin/marketplace/p2p",

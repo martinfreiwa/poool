@@ -309,6 +309,7 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 | 2.2-BUG-004 | 🔵 | Success page nav title "Submission Submitted" redundant with card "Submission successful!" | **fixed 2026-04-30** — nav title changed to "Submission Successful" | 2026-04-30 |
 | [PAGE-ISSUE-0484](docs/page-audits/) | 🟡 | Document upload hardcoded demo rows | **fixed** (not reproduced 2026-04-30) | 2026-04-25 |
 | [PAGE-ISSUE-0486](docs/page-audits/) | 🔵 | Submission success WhatsApp/Telegram links were placeholders | **fixed** (real contact links confirmed 2026-04-30) | 2026-04-25 |
+| 2.2-BUG-005 | 🟡 | `isStaleDraftResponse` ignores 403 — stale localStorage draft from another user causes permanent "Not authorized or asset deleted" error with no recovery path | **fixed 2026-04-30** — added 403 to `isStaleDraftResponse` in `developer-application-form.js:53`; form now falls back to POST (new draft) on 403 | 2026-04-30 |
 
 ---
 
@@ -416,28 +417,29 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 ### 3.3 Asset Review & Publishing
 
-**Last tested:** 2026-04-25 · **Environment:** staging · **Result:** partial pass
+**Last tested:** 2026-04-30 · **Environment:** local (localhost:8888) · **Result:** pass
 
 | # | Step | Actor | Page / Endpoint | Status | Notes |
 |---|------|-------|-----------------|--------|-------|
-| 1 | View assets under review | Admin | `/admin/assets` | ✅ | |
-| 2 | Review asset details, docs, financials | Admin | `/admin/assets/:id` | ✅ | |
-| 3 | Publish asset | Admin | `PUT /api/admin/assets/:id/status` → `published` | ✅ | |
-| 4 | Unpublish / suspend asset | Admin | `PUT /api/admin/assets/:id/status` → `suspended` | ✅ | |
-| 5 | Apply custom fee for asset or developer | Admin | `POST /api/admin/fees/asset/:id` | ⚠️ | Fee controls show success without persisting; permission gate missing |
+| 1 | View submissions under review | Admin | `/admin/developer-submissions.html` | ✅ | Tabs: pending / in_review / approved / rejected |
+| 2 | Review submission details, docs, financials | Admin | `/admin/developer-submission-review?id=UUID` | ✅ | Compliance checklist; doc viewer; decision panel |
+| 3 | Approve / request revision / reject submission | Admin | `POST /api/admin/developer/submissions/:id/review` | ✅ | Server enforces: all checklist items checked + ≥1 document uploaded before approve |
+| 4 | Publish / unpublish asset | Admin | `/admin/asset-details.html` → Settings tab → `PATCH /api/admin/assets/:id/publication` | ✅ | Toggle + danger-zone unpublish both call same endpoint |
+| 5 | Apply platform-level default fees | Admin | `/admin/marketplace/fees.html` → `POST /api/admin/marketplace/fees` | ✅ | Saves `taker_fee_bps` + `maker_fee_bps`; settlement/min-fee fields UI-only (no backend) |
 
-#### Open Bugs — Asset Review
+#### Bugs — Asset Review
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0205](docs/page-audits/) | 🔴 | Fee management routes do not enforce `marketplace.manage` permission | open | 2026-04-25 |
-| [PAGE-ISSUE-0206](docs/page-audits/) | 🔴 | Fee controls show success UI without actually persisting to DB | open | 2026-04-25 |
-| [PAGE-ISSUE-0207](docs/page-audits/) | 🔴 | Fee list API masks database failures as empty state | open | 2026-04-25 |
-| [PAGE-ISSUE-0208](docs/page-audits/) | 🔴 | Fee resolver ignores the accepted developer fee scope | open | 2026-04-25 |
-| [PAGE-ISSUE-0209](docs/page-audits/) | 🟡 | Active fee configuration validation is ambiguous | open | 2026-04-25 |
-| [PAGE-ISSUE-0210](docs/page-audits/) | 🟡 | Stored fee data renders through raw HTML (XSS risk) | open | 2026-04-25 |
-| [PAGE-ISSUE-0211](docs/page-audits/) | 🟡 | Fee mutations are not audit logged | open | 2026-04-25 |
-| [PAGE-ISSUE-0212](docs/page-audits/) | 🟡 | Settlement and minimum fee fields lack backend support | open | 2026-04-25 |
+| PAGE-ISSUE-0205 | 🔴 | Fee management routes do not enforce `marketplace.manage` permission | needs recheck | 2026-04-25 |
+| PAGE-ISSUE-0206 | ✅ | Fee controls show success UI without actually persisting to DB | **fixed** — `POST /api/admin/marketplace/fees` persists taker+maker correctly | 2026-04-25 |
+| PAGE-ISSUE-0207 | 🔴 | Fee list API masks database failures as empty state | needs recheck | 2026-04-25 |
+| PAGE-ISSUE-0208 | 🟡 | Asset-specific fee override not yet implemented (stub toast) | intentional stub — `POST /api/admin/fees/asset/:id` not wired | 2026-04-25 |
+| PAGE-ISSUE-0209 | 🟡 | Active fee configuration validation is ambiguous | needs recheck | 2026-04-25 |
+| PAGE-ISSUE-0210 | 🟡 | Stored fee data renders through raw HTML (XSS risk) | needs recheck | 2026-04-25 |
+| PAGE-ISSUE-0211 | 🟡 | Fee mutations are not audit logged | needs recheck | 2026-04-25 |
+| PAGE-ISSUE-0212 | 🟡 | Settlement and minimum fee fields have no backend support | confirmed open — fields present in UI; not included in POST body | 2026-04-25 |
+| PAGE-ISSUE-0594 | ✅ | Live Assets list had no link to asset detail / manage page | **fixed 2026-04-30** — gear-icon "Manage asset" link added to each row in `admin-assets.js` pointing to `/admin/asset-details.html?id=` | 2026-04-30 |
 
 ---
 
@@ -493,6 +495,284 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 | [PAGE-ISSUE-0286](docs/page-audits/) | 🔴 | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | open | 2026-04-25 |
 | [PAGE-ISSUE-0287](docs/page-audits/) | 🔴 | System maintenance and session operations lack granular authorization and audit | open | 2026-04-25 |
 | [PAGE-ISSUE-0282](docs/page-audits/) | 🟡 | Roles page falls back to demo data instead of showing authorization failure | open | 2026-04-25 |
+
+---
+
+### 3.6 Admin Dashboard
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | Load KPI cards | Admin | `/admin/` → `GET /api/admin/stats/overview` | 🚧 | Not tested |
+| 2 | Change date range (7d / 30d / 90d / 1y) | Admin | `GET /api/admin/stats/overview?range=<X>` | 🚧 | Not tested |
+| 3 | View activity feed | Admin | Rendered from stats response | 🚧 | Not tested |
+| 4 | View recent orders table | Admin | Rendered from stats response | 🚧 | Not tested |
+| 5 | View pending deposits table | Admin | Rendered from stats response | 🚧 | Not tested |
+| 6 | System health check on load | Admin | `GET /api/admin/system` | 🚧 | Not tested |
+| 7 | Retry button on error state | Admin | Re-fires `GET /api/admin/stats/overview` | 🚧 | Not tested |
+
+---
+
+### 3.7 Developer Submission Review
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View submission queue | Admin | `/admin/developer-submissions` → `GET /api/admin/developer-projects` | 🚧 | Not tested |
+| 2 | Search and filter by status | Admin | Client-side filter | 🚧 | Not tested |
+| 3 | Sort column headers | Admin | Client-side sort | 🚧 | Not tested |
+| 4 | Open review modal | Admin | Click Review → modal opens | 🚧 | Not tested |
+| 5 | Mark as In Review | Admin | `POST /api/admin/developer-projects/:id/review` `{"action":"in_review"}` | 🚧 | Not tested |
+| 6 | Request revision (with reason) | Admin | `POST /api/admin/developer-projects/:id/review` `{"action":"request_revision"}` | 🚧 | Not tested |
+| 7 | Approve submission | Admin | `POST /api/admin/developer-projects/:id/review` `{"action":"approve"}` | 🚧 | Not tested |
+| 8 | Reject submission (with reason) | Admin | `POST /api/admin/developer-projects/:id/review` `{"action":"reject"}` | 🚧 | Not tested |
+| 9 | Full review page — checklist persist | Admin | `/admin/developer-submission-review?id=X` → `PUT /api/admin/developer-projects/:id/checklist` | 🚧 | Not tested |
+| 10 | Full review page — notes autosave | Admin | `POST /api/admin/developer-projects/:id/notes` | 🚧 | Not tested |
+| 11 | Full review page — image set-cover | Admin | Image update endpoint | 🚧 | Not tested |
+| 12 | Full review page — image delete | Admin | `DELETE /api/admin/assets/:id/images/:imgId` | 🚧 | Not tested |
+| 13 | Full review page — document download | Admin | `GET /api/documents/:id/download` | 🚧 | Not tested |
+
+---
+
+### 3.8 Asset Management (Admin)
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View asset list | Admin | `/admin/assets` → `GET /api/admin/assets` | 🚧 | Not tested |
+| 2 | Search and filter by status | Admin | Client-side filter | 🚧 | Not tested |
+| 3 | Toggle asset featured | Admin | `POST /api/admin/assets/:id/toggle-featured` | 🚧 | Not tested |
+| 4 | Navigate to asset detail | Admin | `/admin/asset-details?id=X` → `GET /api/admin/assets/:id/detail` | 🚧 | Not tested |
+| 5 | Publish / Unpublish asset | Admin | `PUT /api/admin/assets/:id/publication` | 🚧 | Not tested |
+| 6 | Toggle featured from detail page | Admin | `POST /api/admin/assets/:id/toggle-featured` | 🚧 | Not tested |
+| 7 | View funding status | Admin | `GET /api/admin/assets/:id/funding-status` | 🚧 | Not tested |
+
+---
+
+### 3.9 Orders Management (Admin)
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View order list | Admin | `/admin/orders` → `GET /api/admin/orders` | 🚧 | Not tested |
+| 2 | Filter by status | Admin | Client-side filter | 🚧 | Not tested |
+| 3 | View order detail | Admin | `GET /api/admin/orders/:id` | 🚧 | Not tested |
+| 4 | Approve order | Admin | `POST /api/admin/orders/:id/approve` | 🚧 | Not tested |
+| 5 | Reject order | Admin | `POST /api/admin/orders/:id/reject` | 🚧 | Not tested |
+| 6 | View investments tab | Admin | `GET /api/admin/investments` | 🚧 | Not tested |
+
+---
+
+### 3.10 Deposits & Disputes (Admin)
+
+**Last tested:** 2026-04-25 · **Environment:** staging · **Result:** partial pass
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View pending deposits | Admin | `/admin/deposits` → `GET /api/admin/deposits` | ✅ | |
+| 2 | Filter by status | Admin | Client-side filter | 🚧 | Not tested |
+| 3 | Confirm deposit | Admin | `POST /api/admin/deposits/:id/confirm` | ✅ | ACID atomic |
+| 4 | Cancel deposit | Admin | `POST /api/admin/deposits/:id/cancel` | ✅ | |
+| 5 | Extend deposit deadline | Admin | `POST /api/admin/deposits/:id/extend` | 🚧 | Not tested |
+| 6 | View disputes tab | Admin | `GET /api/admin/disputes/` | 🚧 | Not tested |
+| 7 | View dispute evidence | Admin | `GET /api/admin/disputes/:id/evidence` | 🚧 | Not tested |
+| 8 | Update dispute status | Admin | `PUT /api/admin/disputes/:id/status` | 🚧 | Not tested |
+
+---
+
+### 3.11 Approvals
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View approval queue | Admin | `/admin/approvals` → `GET /api/admin/approvals` | 🚧 | Not tested |
+| 2 | Approve item | Admin | `POST /api/admin/approvals/:id/approve` | 🚧 | Not tested |
+| 3 | Reject item | Admin | `POST /api/admin/approvals/:id/reject` | 🚧 | Not tested |
+
+---
+
+### 3.12 Dividend Management
+
+**Last tested:** 2026-04-25 · **Environment:** staging · **Result:** partial pass (backend exists; frontend UI mostly untested)
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View distribution list | Admin | `/admin/dividends` → `GET /api/admin/dividends/distributions` | 🚧 | Not tested |
+| 2 | Calculate dividend for asset | Admin | `POST /api/admin/dividends/calculate` | 🚧 | Not tested |
+| 3 | Process dividend | Admin | `POST /api/admin/dividends/process` | 🚧 | Not tested |
+| 4 | Approve distribution | Superadmin | `POST /api/admin/dividends/distributions/:id/approve` | 🚧 | Not tested |
+| 5 | Execute batch payout | System | `POST /api/admin/dividends/distributions/:id/execute` | 🚧 | Not tested |
+| 6 | Cancel distribution | Admin | `POST /api/admin/dividends/distributions/:id/cancel` | 🚧 | Not tested |
+
+#### Open Bugs — Dividend Management
+
+| ID | Sev | Title | Status | Since |
+|----|-----|-------|--------|-------|
+| — | 🔴 | Full dividend calculate → approve → execute E2E not verified in any environment | open | — |
+
+---
+
+### 3.13 Rewards Management (Admin)
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View reward tiers | Admin | `/admin/rewards` → `GET /api/admin/rewards` | 🚧 | Not tested |
+| 2 | Edit tier threshold / benefits | Admin | `PUT /api/admin/rewards/tiers/:name` | 🚧 | Not tested |
+| 3 | Adjust user reward balance | Admin | `POST /api/admin/rewards/balances/:userId/adjust` | 🚧 | Not tested |
+| 4 | View affiliate payout queue | Admin | `GET /api/admin/rewards/affiliates/payouts/pending` | 🚧 | Not tested |
+| 5 | Approve affiliate | Admin | `POST /api/admin/affiliates/:userId/approve` | 🚧 | Not tested |
+| 6 | Trigger affiliate payout | Admin | `POST /api/admin/rewards/affiliates/:id/payout` | 🚧 | Not tested |
+
+---
+
+### 3.14 Notifications (Admin)
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View notification list | Admin | `/admin/notifications` → `GET /api/admin/notifications` | 🚧 | Not tested |
+| 2 | Broadcast to all / segment | Admin | `POST /api/admin/notifications/broadcast` | 🚧 | Not tested |
+
+---
+
+### 3.15 Support Ticket Management (Admin)
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View ticket list | Admin | `/admin/support` → `GET /api/admin/support` | 🚧 | Not tested |
+| 2 | Filter / search tickets | Admin | Client-side + query params | 🚧 | Not tested |
+| 3 | Bulk action on tickets | Admin | `POST /api/admin/support/bulk` | 🚧 | Not tested |
+| 4 | View ticket detail | Admin | `/admin/support-ticket?id=X` | 🚧 | Not tested |
+| 5 | Reply to ticket | Admin | Reply endpoint | 🚧 | Not tested |
+| 6 | Change ticket status (Resolve / Reopen) | Admin | Status update endpoint | 🚧 | Not tested |
+
+---
+
+### 3.16 Reports
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Report | Endpoint | Status |
+|---|--------|----------|--------|
+| 1 | Financial Summary | `GET /api/admin/reports/financial-summary` | 🚧 |
+| 2 | User Growth | `GET /api/admin/reports/user-growth` | 🚧 |
+| 3 | Investment Summary | `GET /api/admin/reports/investment-summary` | 🚧 |
+| 4 | Order Summary | `GET /api/admin/reports/order-summary` | 🚧 |
+| 5 | KYC Status | `GET /api/admin/reports/kyc-status` | 🚧 |
+| 6 | AML Compliance | `GET /api/admin/reports/aml-compliance` | 🚧 |
+| 7 | Asset Performance | `GET /api/admin/reports/asset-performance` | 🚧 |
+| 8 | Tax P&L | `GET /api/admin/reports/tax-pl` | 🚧 |
+| 9 | Tax Withholding | `GET /api/admin/reports/tax-withholding` | 🚧 |
+| 10 | Wallet Transactions | `GET /api/admin/reports/wallet-transactions` | 🚧 |
+| 11 | Rewards Liability | `GET /api/admin/reports/rewards-liability` | 🚧 |
+| 12 | Referral Effectiveness | `GET /api/admin/reports/referral-effectiveness` | 🚧 |
+| 13 | Support Summary | `GET /api/admin/reports/support-summary` | 🚧 |
+| 14 | Multi-currency | `GET /api/admin/reports/multi-currency` | 🚧 |
+| 15 | Invoice Summary | `GET /api/admin/reports/invoice-summary` | 🚧 |
+| 16 | Audit Summary | `GET /api/admin/reports/audit-summary` | 🚧 |
+| 17 | Export CSV / PDF | Client-side download | 🚧 |
+
+---
+
+### 3.17 Audit Logs
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View log list | Admin | `/admin/audit-logs` → `GET /api/admin/audit-logs` | 🚧 | Not tested |
+| 2 | Filter by action type | Admin | Client-side filter | 🚧 | Not tested |
+| 3 | Filter by date range | Admin | Query params | 🚧 | Not tested |
+| 4 | Search by user email | Admin | Client-side search | 🚧 | Not tested |
+| 5 | Pagination | Admin | Next / prev page | 🚧 | Not tested |
+
+---
+
+### 3.18 Blockchain Management
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View contract list | Admin | `/admin/blockchain-contracts` → `GET /api/admin/blockchain/treasury` | 🚧 | Not tested |
+| 2 | View contract detail | Admin | `/admin/blockchain-contract-detail?address=X` → `GET /api/admin/blockchain/contracts/:address/detail` | 🚧 | Not tested |
+| 3 | Pause contract | Admin | `POST /api/admin/blockchain/contracts/:address/pause` | 🚧 | Not tested |
+| 4 | Unpause contract | Admin | `POST /api/admin/blockchain/contracts/:address/unpause` | 🚧 | Not tested |
+| 5 | View sync status | Admin | `/admin/blockchain-sync` → `GET /api/admin/blockchain/sync` | 🚧 | Not tested |
+| 6 | Force KYC sync for user | Admin | `POST /api/admin/blockchain/force-kyc-sync/:userId` | 🚧 | Not tested |
+
+---
+
+### 3.19 Asset Change Requests
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View change request list | Admin | `/admin/asset-change-requests` → `GET /api/admin/change-requests` | 🚧 | Not tested |
+| 2 | View diff (old vs. new values) | Admin | `GET /api/admin/change-requests/:id` | 🚧 | Not tested |
+| 3 | Approve change | Admin | `POST /api/admin/change-requests/:id/approve` | 🚧 | Not tested |
+| 4 | Reject change | Admin | `POST /api/admin/change-requests/:id/reject` | 🚧 | Not tested |
+
+---
+
+### 3.20 Email Marketing
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View template list | Admin | `/admin/email-marketing` → `GET /api/admin/emails/templates` | 🚧 | Not tested |
+| 2 | View campaign list | Admin | `GET /api/admin/emails/campaigns` | 🚧 | Not tested |
+| 3 | Edit and save template | Admin | `PUT /api/admin/emails/templates/:id` | 🚧 | Not tested |
+| 4 | View email send history | Admin | `GET /api/admin/emails` | 🚧 | Not tested |
+
+---
+
+### 3.21 Roles & Permissions (Admin)
+
+**Last tested:** 2026-04-25 · **Environment:** staging · **Result:** partial pass
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View role list | Superadmin | `/admin/roles` → `GET /api/admin/roles` | ⚠️ | Falls back to demo data |
+| 2 | View permission matrix | Superadmin | `GET /api/admin/roles/permissions` | ⚠️ | Falls back to demo data |
+| 3 | Toggle permission | Superadmin | PUT/POST to roles endpoint | 🚧 | Not tested |
+
+#### Open Bugs — Roles
+
+| ID | Sev | Title | Status | Since |
+|----|-----|-------|--------|-------|
+| [PAGE-ISSUE-0282](docs/page-audits/) | 🟡 | Roles page falls back to demo data instead of showing authorization failure | open | 2026-04-25 |
+
+---
+
+### 3.22 System Health & Settings
+
+**Last tested:** not tested · **Environment:** — · **Result:** —
+
+| # | Step | Actor | Page / Endpoint | Status | Notes |
+|---|------|-------|-----------------|--------|-------|
+| 1 | View system health metrics | Admin | `/admin/system` → `GET /api/admin/system` | 🚧 | Not tested |
+| 2 | View platform settings | Superadmin | `/admin/settings` | 🚧 | Not tested |
+| 3 | Save platform config | Superadmin | `POST /api/admin/settings/*` | 🚧 | Not tested |
+
+#### Open Bugs — System
+
+| ID | Sev | Title | Status | Since |
+|----|-----|-------|--------|-------|
+| [PAGE-ISSUE-0286](docs/page-audits/) | 🔴 | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | open | 2026-04-25 |
+| [PAGE-ISSUE-0287](docs/page-audits/) | 🔴 | System maintenance and session operations lack granular authorization and audit | open | 2026-04-25 |
 
 ---
 
@@ -620,20 +900,22 @@ Bugs grouped by impact tier for sprint planning.
 
 ### 6.2 Portfolio Page
 
-**Page:** `/portfolio` · **JS:** `portfolio-service.js` · **Last tested:** not tested · **Result:** —
+**Page:** `/portfolio` · **JS:** `portfolio-service.js` · **Last tested:** 2026-04-30 · **Result:** partial pass
 
 | # | Step | Action | Endpoint | Status | Notes |
 |---|------|--------|----------|--------|-------|
 | 1 | Load portfolio overview | Navigate to `/portfolio` | `GET /api/portfolio` | ✅ | SSR-injected JSON with fetch fallback |
 | 2 | View per-investment card (asset name, token count, value) | Browse cards | Rendered from portfolio response | ✅ | |
 | 3 | View investment detail / milestones | Click investment card | `/portfolio/:investment_id` | 🚧 | Milestone detail view incomplete |
-| 4 | Cancel pending investment | Click "Cancel" on pending order | `POST /api/portfolio/cancel` | 🚧 | Exists in JS; UI trigger unverified |
-| 5 | View total value and return % | Page load | Calculated client-side from portfolio data | 🚧 | Accuracy unverified |
+| 4 | "Show more" toggle expands card | Click toggle | Alpine.js `x-show` | 🔁 | Was broken — Alpine CSP failure (PORTFOLIO-BUG-001, **fixed 2026-04-30**); needs runtime recheck |
+| 5 | Cancel pending investment | Click "Cancel" on pending order | `POST /api/portfolio/cancel` | 🚧 | Exists in JS; UI trigger unverified |
+| 6 | View total value and return % | Page load | Calculated client-side from portfolio data | 🚧 | Accuracy unverified |
 
 #### Open Bugs — Portfolio
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
+| PORTFOLIO-BUG-001 | 🟡 | Alpine.js CSP failure — all `x-show`/`x-data` bindings silently no-op; "Show more" toggle does nothing. Root cause: CSP blocked `unsafe-eval` required by Alpine's `Function()` expression parser. | **fixed 2026-04-30** — `'unsafe-eval'` added to `script-src` in both dev + prod CSP headers (`main.rs`) | 2026-04-30 |
 | — | 🟡 | Per-investment milestone detail page incomplete | open | — |
 | — | 🟡 | Cancel pending investment UI trigger not verified | open | — |
 | — | 🟡 | Return % calculation accuracy not tested | open | — |
@@ -642,41 +924,47 @@ Bugs grouped by impact tier for sprint planning.
 
 ### 6.3 Transactions Page
 
-**Page:** `/transactions` · **JS:** `transactions.js` · **Last tested:** not tested · **Result:** —
+**Page:** `/transactions` · **JS:** `transactions.js` · **Last tested:** 2026-04-30 · **Result:** partial pass
 
 | # | Step | Action | Endpoint | Status | Notes |
 |---|------|--------|----------|--------|-------|
-| 1 | Load transaction list | Navigate to `/transactions` | `GET /api/wallet/transactions` | ✅ | |
-| 2 | Filter by type (deposit / withdrawal / dividend / investment) | Use type filter | Client-side | 🚧 | Filter accuracy unverified |
-| 3 | Filter by date range | Set date range inputs | Client-side | 🚧 | Unverified |
+| 1 | Load transaction list | Navigate to `/transactions` | `GET /api/wallet/transactions` | ✅ | Rows render correctly |
+| 2 | Filter by type (deposit / withdrawal / dividend / investment) | Use type filter | Client-side | ❌ | No filter UI exists on page — `select`, `input[type="date"]`, `.filter` all return 0 elements (TRANSACTIONS-BUG-001) |
+| 3 | Filter by date range | Set date range inputs | Client-side | ❌ | No date range input exists (same as above) |
 | 4 | Error state shown on API failure | Simulate network error | `#transactions-fetch-error` element shown | ✅ | Element present in DOM |
-| 5 | Pagination / load more | Scroll or click next page | `GET /api/wallet/transactions?page=N` | 🚧 | Pagination not verified |
+| 5 | View transaction details | Click "View details" on row | Client-side expand panel | 🔁 | Fixed — event delegation now wired; click toggles inline detail panel (TRANSACTIONS-BUG-002, **fixed 2026-04-30**); needs runtime recheck |
+| 6 | Pagination / load more | Scroll or click next page | `GET /api/wallet/transactions?page=N` | 🚧 | Pagination not verified |
 
 #### Open Bugs — Transactions
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| — | 🟡 | Transaction filter and pagination not verified end-to-end | open | — |
+| TRANSACTIONS-BUG-001 | 🟡 | No filter UI on `/transactions` — type filter and date range controls not rendered; JS code references filter elements that do not exist in template | open | 2026-04-30 |
+| TRANSACTIONS-BUG-002 | 🟡 | "View details" button is dead UI — rendered in JS template string (`wallet-transaction-action-btn`) but no `addEventListener` is ever attached in `transactions.js`; click does nothing | **fixed 2026-04-30** — event delegation wired on `listBody`; click toggles inline detail panel showing transaction ID and full timestamp | 2026-04-30 |
+| — | 🟡 | Transaction pagination not verified end-to-end | open | — |
 
 ---
 
 ### 6.4 My Trading Page
 
-**Page:** `/my-trading` · **JS:** `my-trading.js` · **Last tested:** not tested · **Result:** —
+**Page:** `/my-trading` · **JS:** `my-trading.js` · **Last tested:** 2026-04-30 · **Result:** partial pass
 
 | # | Step | Action | Endpoint | Status | Notes |
 |---|------|--------|----------|--------|-------|
-| 1 | Load open orders | Navigate to `/my-trading` | `GET /api/marketplace/orders/mine` | ✅ | |
+| 1 | Load open orders | Navigate to `/my-trading` | `GET /api/marketplace/orders/mine` | ✅ | Page loads; route previously crashed (MYTRADING-BUG-001, **fixed**) |
 | 2 | Load trade history | Tab switch | `GET /api/marketplace/trades/mine` | ✅ | |
 | 3 | Load portfolio | On init | `GET /api/portfolio` | ✅ | |
-| 4 | Cancel open order | Click cancel button on order row | `DELETE /api/marketplace/orders/:id` | 🚧 | Error handling unverified |
-| 5 | Export tax report (CSV / PDF) | Click export | `GET /api/marketplace/tax-export?year=&format=` | 🚧 | Download verified in JS; backend response not tested |
-| 6 | View user profile/limits | On init | `GET /api/me` | ✅ | |
+| 4 | "Shares Owned" column header | View holdings table | Rendered in template | ✅ | Previously showed "Tokens Owned" — **fixed 2026-04-30** |
+| 5 | Cancel open order | Click cancel button on order row | `DELETE /api/marketplace/orders/:id` | 🚧 | Error handling unverified |
+| 6 | Export tax report (CSV / PDF) | Click export | `GET /api/marketplace/tax-export?year=&format=` | 🚧 | Download verified in JS; backend response not tested |
+| 7 | View user profile/limits | On init | `GET /api/me` | ✅ | |
 
 #### Open Bugs — My Trading
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
+| MYTRADING-BUG-001 | 🔴 | `/marketplace-trading-v3` crashed with Internal Server Error: `contact.html` uses `{{ asset.slug }}` but route context has no `asset` variable. Fix: changed to `{{ asset.slug \| default('') }}` in `components/property/contact.html`. | **fixed 2026-04-30** | 2026-04-30 |
+| — | 🟡 | "Tokens Owned" column header renamed to "Shares Owned" | **fixed 2026-04-30** — `my-trading.html:154` | 2026-04-30 |
 | — | 🟡 | Order cancel error handling not verified | open | — |
 | — | 🟡 | Tax export backend response not tested end-to-end | open | — |
 
@@ -703,7 +991,7 @@ Bugs grouped by impact tier for sprint planning.
 
 ### 6.6 Support Page
 
-**Page:** `/support` · **JS:** `support.js` · **Last tested:** not tested · **Result:** —
+**Page:** `/support` · **JS:** `support.js` · **Last tested:** 2026-04-30 · **Result:** pass
 
 | # | Step | Action | Endpoint | Status | Notes |
 |---|------|--------|----------|--------|-------|
@@ -725,7 +1013,7 @@ Bugs grouped by impact tier for sprint planning.
 
 ### 6.7 Rewards / Referrals Page
 
-**Page:** `/rewards` · **JS:** `rewards.js`, `rewards-service.js` · **Last tested:** not tested · **Result:** —
+**Page:** `/rewards` · **JS:** `rewards.js`, `rewards-service.js` · **Last tested:** 2026-04-30 · **Result:** partial pass
 
 | # | Step | Action | Endpoint | Status | Notes |
 |---|------|--------|----------|--------|-------|
@@ -741,6 +1029,7 @@ Bugs grouped by impact tier for sprint planning.
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
+| REWARDS-BUG-001 | 🟡 | Tier threshold amounts not displayed — tier cards show tier names and benefit text but the investment amount required to reach each tier was hidden because `x-show` bindings on `.tier-status-text.locked` blocks silently no-oped (Alpine CSP, root cause same as PORTFOLIO-BUG-001). | **fixed 2026-04-30** — resolved by PORTFOLIO-BUG-001 CSP fix; threshold amounts were already hardcoded in DOM (`rewards.html`) | 2026-04-30 |
 | — | 🟡 | Payout settings save/load not verified end-to-end | open | — |
 | — | 🟡 | Commission pagination unverified | open | — |
 
@@ -1013,22 +1302,22 @@ Use this table during QA to sign off each settings section.
 | Investor — Cart/Checkout | 2026-04-30 | pass | 2 | 0 | 2 |
 | Investor — Portfolio/Dividends | not tested | — | 0 | 2 | 0 |
 | Investor — Wallet | 2026-04-30 | partial pass | 0 | 3 | 0 |
-| Investor — Portfolio page | not tested | — | 0 | 3 | 0 |
-| Investor — Transactions | not tested | — | 0 | 1 | 0 |
-| Investor — My Trading | not tested | — | 0 | 2 | 0 |
+| Investor — Portfolio page | 2026-04-30 | partial pass | 0 | 4 | 0 |
+| Investor — Transactions | 2026-04-30 | partial pass | 0 | 3 | 0 |
+| Investor — My Trading | 2026-04-30 | partial pass | 0 | 2 | 0 |
 | Investor — Secondary Marketplace | 2026-04-24 | partial | 0 | 1 | 0 |
-| Investor — Support | not tested | — | 0 | 2 | 0 |
-| Investor — Rewards | not tested | — | 0 | 2 | 0 |
+| Investor — Support | 2026-04-30 | pass | 0 | 2 | 0 |
+| Investor — Rewards | 2026-04-30 | partial pass | 0 | 3 | 0 |
 | Investor — Leaderboard | 2026-04-28 | partial | 0 | 1 | 0 |
 | Investor — Community | 2026-04-28 | partial | 2 | 2 | 1 |
 | Investor — Settings (all fields) | 2026-04-30 | partial pass | 0 | 1 | 0 |
 | Developer — Onboarding | 2026-04-30 | pass | 1 | 1 | 0 |
-| Developer — Asset Submission | 2026-04-30 | pass | 0 | 1 | 0 |
+| Developer — Asset Submission | 2026-04-30 | pass | 0 | 2 | 0 |
 | Developer — Review Cycle | 2026-04-25 | partial | 1 | 1 | 0 |
 | Developer — Post-Launch | not tested | — | 0 | 3 | 0 |
 | Admin — User Management | 2026-04-25 | partial | 1 | 2 | 0 |
 | Admin — KYC Review | 2026-04-30 | pass | 0 | 0 | 0 |
-| Admin — Asset Review | 2026-04-25 | partial | 4 | 5 | 0 |
+| Admin — Asset Review | 2026-04-30 | pass | 0 | 1 | 0 |
 | Admin — Financial Ops | 2026-04-25 | partial | 5 | 2 | 0 |
 | Admin — Platform Config | 2026-04-25 | partial | 5 | 1 | 0 |
 

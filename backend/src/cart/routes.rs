@@ -14,6 +14,13 @@ use uuid::Uuid;
 use crate::auth::middleware;
 use crate::auth::routes::AppState;
 
+fn html_e(s: &str) -> String {
+    s.replace('&', "&amp;")
+     .replace('<', "&lt;")
+     .replace('>', "&gt;")
+     .replace('"', "&quot;")
+}
+
 // ─── Form data ──────────────────────────────────────────────────
 
 /// Submitted by `property-detail-cart.js` when clicking "Add to Cart".
@@ -381,6 +388,13 @@ pub async fn update_cart_item(
     };
 
     let tokens = match max_avail {
+        Some(avail) if avail <= 0 => {
+            let _ = tx.rollback().await;
+            return (
+                axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+                Json(serde_json::json!({"error": "Asset is sold out"})),
+            ).into_response();
+        }
         Some(avail) => std::cmp::min(requested_tokens, avail),
         None => {
             let _ = tx.rollback().await;
@@ -663,19 +677,15 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
 
         // Build per-item summary line for the Order Summary card
 
-        let truncated_title = if title.len() > 30 {
-            format!("{}…", &title[..29])
+        let truncated_title = if title.chars().count() > 30 {
+            format!("{}…", title.chars().take(29).collect::<String>())
         } else {
             title.clone()
         };
         let item_usd = format_cart_usd(item_total);
         let item_idr = format_idr(item_total);
         let token_price_usd = token_price_cents / 100;
-        let safe_title = truncated_title
-            .replace('&', "&amp;")
-            .replace('<', "&lt;")
-            .replace('>', "&gt;")
-            .replace('"', "&quot;");
+        let safe_title = html_e(&truncated_title);
         summary_items_html.push_str(&format!(
             r#"<div class="cart-summary-item">
                 <div class="cart-summary-item__row">
@@ -832,8 +842,8 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                         </div>
                         <form method="POST" action="/cart/remove" class="cart-item-card__remove-form">
                             <input type="hidden" name="cart_item_id" value="{cart_id}">
-                            <button type="submit" class="cart-item-card__remove-btn" title="Remove from cart">
-                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                            <button type="submit" class="cart-item-card__remove-btn" aria-label="Remove {title} from cart">
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                                     <path d="M2.5 5H17.5M6.66667 5V3.33333C6.66667 2.89131 6.84226 2.46738 7.15482 2.15482C7.46738 1.84226 7.89131 1.66667 8.33333 1.66667H11.6667C12.1087 1.66667 12.5326 1.84226 12.8452 2.15482C13.1577 2.46738 13.3333 2.89131 13.3333 3.33333V5M15.8333 5V16.6667C15.8333 17.1087 15.6577 17.5326 15.3452 17.8452C15.0326 18.1577 14.6087 18.3333 14.1667 18.3333H5.83333C5.39131 18.3333 4.96738 18.1577 4.65482 17.8452C4.34226 17.5326 4.16667 17.1087 4.16667 16.6667V5H15.8333Z" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </button>
@@ -879,7 +889,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                                 <input type="number"
                                        class="quantity-input"
                                        id="cart-item-{idx}-qty"
-                                       aria-label="Token quantity"
+                                       aria-label="Token quantity for {title}"
                                        value="{tokens_qty}"
                                        data-item-id="cart-item-{idx}"
                                        data-cart-id="{cart_id}"
@@ -915,9 +925,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             </div>"##,
             idx = idx,
             cart_id = ci_id,
-            slug = slug.replace('&', "&amp;").replace('<', "&lt;"),
-            title = title.replace('&', "&amp;").replace('<', "&lt;"),
-            location = location.replace('&', "&amp;").replace('<', "&lt;"),
+            slug = html_e(&slug),
+            title = html_e(&title),
+            location = html_e(&location),
             token_price = token_price_display,
             tokens_qty = tokens_qty,
             yield_display = yield_display,
@@ -1001,18 +1011,18 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     <div class="mobile-cart-actions">
                         <form method="POST" action="/cart/remove" style="width:100%;">
                             <input type="hidden" name="cart_item_id" value="{cart_id}">
-                            <button type="submit" class="mobile-cart-remove-btn" style="width:100%; display:flex; gap:8px;">
-                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2.5 5H17.5M6.66667 5V3.33333C6.66667 2.89131 6.84226 2.46738 7.15482 2.15482C7.46738 1.84226 7.89131 1.66667 8.33333 1.66667H11.6667C12.1087 1.66667 12.5326 1.84226 12.8452 2.15482C13.1577 2.46738 13.3333 2.89131 13.3333 3.33333V5M15.8333 5V16.6667C15.8333 17.1087 15.6577 17.5326 15.3452 17.8452C15.0326 18.1577 14.6087 18.3333 14.1667 18.3333H5.83333C5.39131 18.3333 4.96738 18.1577 4.65482 17.8452C4.34226 17.5326 4.16667 17.1087 4.16667 16.6667V5H15.8333Z" stroke="#F04438" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                <span class="mobile-cart-remove-text" style="color: #A4A7AE;">Remove</span>
+                            <button type="submit" class="mobile-cart-remove-btn" style="width:100%; display:flex; gap:8px;" aria-label="Remove {title} from cart">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2.5 5H17.5M6.66667 5V3.33333C6.66667 2.89131 6.84226 2.46738 7.15482 2.15482C7.46738 1.84226 7.89131 1.66667 8.33333 1.66667H11.6667C12.1087 1.66667 12.5326 1.84226 12.8452 2.15482C13.1577 2.46738 13.3333 2.89131 13.3333 3.33333V5M15.8333 5V16.6667C15.8333 17.1087 15.6577 17.5326 15.3452 17.8452C15.0326 18.1577 14.6087 18.3333 14.1667 18.3333H5.83333C5.39131 18.3333 4.96738 18.1577 4.65482 17.8452C4.34226 17.5326 4.16667 17.1087 4.16667 16.6667V5H15.8333Z" stroke="#F04438" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span class="mobile-cart-remove-text" style="color: #A4A7AE;" aria-hidden="true">Remove</span>
                             </button>
                         </form>
                     </div>
                 </div>
             </div>"##,
             idx = idx,
-            slug = slug.replace('&', "&amp;").replace('<', "&lt;"),
+            slug = html_e(&slug),
             cart_id = ci_id,
-            title = title.replace('&', "&amp;").replace('<', "&lt;"),
+            title = html_e(&title),
             token_price = token_price_display,
             tokens_qty = tokens_qty,
             yield_display = yield_display,

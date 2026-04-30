@@ -681,15 +681,40 @@ pub async fn signup_submit(
         Err(err) => return Ok(signup_error_response(err, &headers)),
     };
 
-    if let Err(err) =
-        service::send_email_verification(&user.email, &state.config.base_url, &verification_token)
-            .await
+    // Queue verification email via durable outbox so transient Resend failures
+    // are retried without losing the token or blocking signup completion.
     {
-        tracing::error!(
-            "Failed to send verification email for newly registered user {}: {}",
-            user.id,
-            err
-        );
+        let db = state.db.clone();
+        let email_addr = user.email.clone();
+        let base = state.config.base_url.clone();
+        let uid = user.id;
+        let tok = verification_token.clone();
+        tokio::spawn(async move {
+            let body = format!(
+                r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Welcome to POOOL!</h2>
+  <p>Please click the link below to verify your email address.</p>
+  <p><a href="{base}/auth/verify-email?token={tok}" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Link expires in 24 hours. If you didn't create an account, ignore this email.</p>
+</div>"#
+            );
+            let outbox_id = sqlx::query_scalar::<_, uuid::Uuid>(
+                r#"INSERT INTO transactional_email_outbox
+                       (user_id, event_type, recipient_email, subject, html_body)
+                   VALUES ($1, 'verify_email', $2, 'Verify your POOOL email', $3)
+                   RETURNING id"#,
+            )
+            .bind(uid)
+            .bind(&email_addr)
+            .bind(&body)
+            .fetch_optional(&db)
+            .await
+            .ok()
+            .flatten();
+            if let Some(id) = outbox_id {
+                crate::common::email::send_transactional_outbox_item(&db, id).await;
+            }
+        });
     }
 
     // ── Referral System Tracking ─────────────────────────────────

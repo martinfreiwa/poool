@@ -47,6 +47,60 @@ fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
   <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
 </div>"#.to_string(),
 
+        "support_ticket_reply" => {
+            let subject_line = metadata.get("ticket_subject").and_then(|v| v.as_str()).unwrap_or("your ticket");
+            let reply_preview = metadata.get("reply_preview").and_then(|v| v.as_str()).unwrap_or("");
+            let ticket_id = metadata.get("ticket_id").and_then(|v| v.as_str()).unwrap_or("");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">You have a new reply on your support ticket</h2>
+  <p style="color:#414651;">Our support team has replied to: <strong>{subject}</strong></p>
+  {preview_block}
+  <p><a href="https://platform.poool.app/support" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Conversation</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Reply directly in your support portal. Please do not reply to this email.</p>
+</div>"#,
+                subject = html_escape_email(subject_line),
+                preview_block = if !reply_preview.is_empty() {
+                    format!(r#"<div style="background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;margin:16px 0;color:#344054;font-size:14px;line-height:1.6;">{}</div>"#,
+                        html_escape_email(reply_preview))
+                } else { String::new() },
+            )
+        }
+
+        "support_ticket_new" => {
+            let subject_line = metadata.get("ticket_subject").and_then(|v| v.as_str()).unwrap_or("(no subject)");
+            let user_email = metadata.get("user_email").and_then(|v| v.as_str()).unwrap_or("unknown");
+            let priority = metadata.get("priority").and_then(|v| v.as_str()).unwrap_or("normal");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">New support ticket submitted</h2>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr><td style="padding:8px 0;color:#717680;width:120px;">From</td><td style="padding:8px 0;color:#101828;font-weight:500;">{user}</td></tr>
+    <tr><td style="padding:8px 0;color:#717680;">Subject</td><td style="padding:8px 0;color:#101828;font-weight:500;">{subject}</td></tr>
+    <tr><td style="padding:8px 0;color:#717680;">Priority</td><td style="padding:8px 0;color:#101828;font-weight:500;">{priority}</td></tr>
+  </table>
+  <p><a href="https://platform.poool.app/admin/support.html" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View in Admin Panel</a></p>
+</div>"#,
+                user = html_escape_email(user_email),
+                subject = html_escape_email(subject_line),
+                priority = html_escape_email(priority),
+            )
+        }
+
+        "support_ticket_resolved" => {
+            let subject_line = metadata.get("ticket_subject").and_then(|v| v.as_str()).unwrap_or("your ticket");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your support ticket has been resolved</h2>
+  <p style="color:#414651;">We've marked <strong>{subject}</strong> as resolved.</p>
+  <p style="color:#414651;">If your issue isn't fully sorted, you can reopen the ticket from your support portal at any time.</p>
+  <p><a href="https://platform.poool.app/support" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Ticket</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Thank you for using POOOL support.</p>
+</div>"#,
+                subject = html_escape_email(subject_line),
+            )
+        }
+
         _ => format!(
             r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;"><p>You have a new notification from POOOL.</p></div>"#
         ),
@@ -91,6 +145,10 @@ pub async fn trigger_transactional_email(
         "affiliate_suspended" => "Urgent: Your POOOL Affiliate Account Status",
         "affiliate_payout_released" => "Your POOOL Affiliate Payout Details",
         "affiliate_commission_earned" => "New Commission Tracked - POOOL Partner Syndicate",
+
+        "support_ticket_reply" => "New reply on your support ticket",
+        "support_ticket_new" => "New support ticket submitted",
+        "support_ticket_resolved" => "Your support ticket has been resolved",
 
         _ => "You Have a New Notification",
     };

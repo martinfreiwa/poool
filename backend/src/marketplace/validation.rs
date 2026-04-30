@@ -441,7 +441,41 @@ pub async fn resolve_fees(pool: &PgPool, asset_id: Uuid) -> Result<ResolvedFees,
         });
     }
 
-    // 2. Check for asset-specific fee config
+    // 2. Check for developer deal (fee negotiated per-developer for all their assets)
+    let developer_fee = sqlx::query_scalar!(
+        "SELECT developer_user_id FROM assets WHERE id = $1",
+        asset_id
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?
+    .flatten();
+
+    if let Some(dev_id) = developer_fee {
+        let dev_config = sqlx::query_as!(
+            super::models::FeeConfig,
+            r#"SELECT id, scope, asset_id, developer_id, taker_fee_bps, maker_fee_bps,
+                      is_active, reason, created_by, created_at, updated_at
+               FROM fee_configurations
+               WHERE is_active = true
+                 AND scope = 'developer'
+                 AND developer_id = $1
+               LIMIT 1"#,
+            dev_id
+        )
+        .fetch_optional(pool)
+        .await
+        .map_err(AppError::Database)?;
+
+        if let Some(f) = dev_config {
+            return Ok(ResolvedFees {
+                taker_fee_bps: f.taker_fee_bps,
+                maker_fee_bps: f.maker_fee_bps,
+            });
+        }
+    }
+
+    // 3. Check for asset-specific fee config
     let asset_fee = sqlx::query_as!(
         super::models::FeeConfig,
         r#"SELECT id, scope, asset_id, developer_id, taker_fee_bps, maker_fee_bps,
