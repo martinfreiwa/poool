@@ -69,7 +69,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
               <span class="checkout-summary-card__label">Platform Fee <svg  width="12" height="12" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px;margin-left:2px;cursor:help" title="Platform fee"><circle cx="12" cy="12" r="10" stroke="#a0a4ab" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="#a0a4ab" stroke-width="2" stroke-linecap="round"/></svg></span>
               <div class="checkout-summary-card__value-group">
                 <span class="checkout-summary-card__value" id="summary-fee">USD 0.00</span>
-                <span class="checkout-summary-card__value-idr">≈ Rp 0</span>
+                <span class="checkout-summary-card__value-idr" id="summary-fee-idr">= Rp 0</span>
               </div>
             </div>
             <div class="checkout-summary-card__row">
@@ -650,12 +650,26 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
 
 
         // Totals
+        var feeCents = cartData.fee_cents || 0;
+        var grandTotalCents = cartData.grand_total_cents || cartTotalCents;
+
         var totalStr = formatCurrency(cartTotalCents);
         var totalIdr = '≈ Rp ' + ((cartTotalCents / 100) * idrRate).toLocaleString('en-US', { maximumFractionDigits: 0 });
         setEl("summary-subtotal", totalStr);
         setEl("summary-subtotal-idr", totalIdr);
-        setEl("summary-total", "USD " + (cartTotalCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        setEl("summary-total-idr", totalIdr);
+
+        // Platform fee
+        var feeStr = "USD " + (feeCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        var feeIdr = '= Rp ' + ((feeCents / 100) * idrRate).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        setEl("summary-fee", feeStr);
+        var feeIdrEl = document.getElementById("summary-fee-idr");
+        if (feeIdrEl) feeIdrEl.textContent = feeIdr;
+
+        // Grand total
+        var grandTotalStr = "USD " + (grandTotalCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        var grandTotalIdr = '≈ Rp ' + ((grandTotalCents / 100) * idrRate).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        setEl("summary-total", grandTotalStr);
+        setEl("summary-total-idr", grandTotalIdr);
 
         // Start reserved timer
         startTimer();

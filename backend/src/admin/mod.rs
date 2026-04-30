@@ -392,6 +392,10 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/users/:user_id/roles",
             post(api_admin_user_update_roles),
         )
+        .route(
+            "/api/admin/users/:user_id/investment-limit",
+            post(api_admin_user_set_investment_limit),
+        )
         // Deposits
         .route("/api/admin/deposits", get(api_admin_deposits))
         .route(

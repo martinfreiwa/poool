@@ -401,10 +401,26 @@ pub async fn checkout_page(
         })
         .collect();
 
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(0.0);
+
+    let fee_cents = (cart_total_cents as f64 * platform_fee_pct / 100.0).ceil() as i64;
+    let grand_total_cents = cart_total_cents + fee_cents;
+
     let cart_json = serde_json::json!({
         "items": cart_items,
         "count": cart_items.len(),
-        "total_cents": cart_total_cents
+        "total_cents": cart_total_cents,
+        "fee_cents": fee_cents,
+        "fee_pct": platform_fee_pct,
+        "grand_total_cents": grand_total_cents
     })
     .to_string();
 

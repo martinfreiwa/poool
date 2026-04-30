@@ -5,6 +5,7 @@ use axum::{
     extract::{Json, State},
     response::IntoResponse,
 };
+use chrono::Datelike;
 
 /// GET /api/admin/users - List all users with roles, KYC, and balances.
 pub async fn api_admin_users(
@@ -481,6 +482,18 @@ pub async fn api_admin_user_detail(
         })
     });
 
+    //  Investment Limit (current year)
+    let current_year = chrono::Utc::now().year();
+    let investment_limit: Option<(i64, i64)> = sqlx::query_as(
+        "SELECT annual_limit_cents, invested_12m_cents FROM investment_limits WHERE user_id = $1 AND limit_year = $2",
+    )
+    .bind(uid)
+    .bind(current_year)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
     //  Payment Methods
     let payment_methods = sqlx::query_as::<
         _,
@@ -576,7 +589,9 @@ pub async fn api_admin_user_detail(
         "sessions": sessions_json,
         "oauth_accounts": oauth_json,
         "payment_methods": payment_methods_json,
-        "audit_logs": audit_json
+        "audit_logs": audit_json,
+        "annual_limit_cents": investment_limit.as_ref().map(|l| l.0),
+        "invested_12m_cents": investment_limit.as_ref().map(|l| l.1)
     }))
     .into_response())
 }
@@ -1197,4 +1212,60 @@ pub async fn api_admin_user_force_password_reset(
             Err(ApiError::Internal("Failed to update user".to_string()))
         }
     }
+}
+
+/// Payload for setting a user's annual investment limit.
+#[derive(serde::Deserialize)]
+pub struct AdminSetInvestmentLimitPayload {
+    /// Annual limit in USD cents. null or 0 removes the limit.
+    pub annual_limit_cents: Option<i64>,
+}
+
+/// POST /api/admin/users/:user_id/investment-limit
+///
+/// Sets or clears the annual investment limit for a user.
+/// If annual_limit_cents is null or 0, the limit is removed (row deleted).
+pub async fn api_admin_user_set_investment_limit(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(user_id): axum::extract::Path<String>,
+    Json(payload): Json<AdminSetInvestmentLimitPayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "users.edit").await?;
+    let uid = ApiError::parse_uuid(&user_id)?;
+    let current_year = chrono::Utc::now().year();
+
+    let limit_cents: i64 = match payload.annual_limit_cents {
+        None | Some(0) => 0, // 0 = no limit
+        Some(v) if v < 0 => {
+            return Err(ApiError::BadRequest("annual_limit_cents must be non-negative".to_string()));
+        }
+        Some(v) => v,
+    };
+
+    // Upsert: 0 means "no limit enforced"
+    sqlx::query(
+        r#"INSERT INTO investment_limits (user_id, limit_year, annual_limit_cents, invested_12m_cents, updated_at)
+           VALUES ($1, $2, $3, 0, NOW())
+           ON CONFLICT (user_id, limit_year)
+           DO UPDATE SET annual_limit_cents = EXCLUDED.annual_limit_cents, updated_at = NOW()"#
+    )
+    .bind(uid)
+    .bind(current_year)
+    .bind(limit_cents)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.investment_limit_set', 'users', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(uid)
+    .bind(serde_json::json!({"annual_limit_cents": payload.annual_limit_cents, "year": current_year}))
+    .execute(&state.db)
+    .await;
+
+    Ok(Json(serde_json::json!({"success": true})).into_response())
 }

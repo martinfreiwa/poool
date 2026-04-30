@@ -465,6 +465,57 @@ function setupModals() {
         }
       });
   }
+
+  // Investment Limit Save
+  const saveInvestmentLimitBtn = document.getElementById("btn-save-investment-limit");
+  if (saveInvestmentLimitBtn) {
+    saveInvestmentLimitBtn.addEventListener("click", async () => {
+      const input = document.getElementById("investment-limit-input");
+      const statusEl = document.getElementById("investment-limit-status");
+      const raw = input.value.trim();
+      const limitUsd = raw === "" ? 0 : parseFloat(raw);
+      if (isNaN(limitUsd) || limitUsd < 0) {
+        statusEl.textContent = "Enter a valid amount (or leave blank to remove limit).";
+        statusEl.style.color = "var(--admin-danger)";
+        statusEl.style.display = "";
+        return;
+      }
+      const limitCents = Math.round(limitUsd * 100);
+
+      saveInvestmentLimitBtn.textContent = "Saving…";
+      saveInvestmentLimitBtn.disabled = true;
+      statusEl.style.display = "none";
+
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/investment-limit`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
+          body: JSON.stringify({ annual_limit_cents: limitCents === 0 ? null : limitCents }),
+        });
+        if (res.ok) {
+          statusEl.textContent = limitCents === 0
+            ? "Investment limit removed. User can invest without restriction."
+            : `Annual limit set to $${(limitCents / 100).toLocaleString()}.`;
+          statusEl.style.color = "var(--admin-success, green)";
+          statusEl.style.display = "";
+          userData.annual_limit_cents = limitCents === 0 ? null : limitCents;
+        } else {
+          const err = await res.json().catch(() => ({}));
+          statusEl.textContent = err.error || "Failed to save limit.";
+          statusEl.style.color = "var(--admin-danger)";
+          statusEl.style.display = "";
+        }
+      } catch (e) {
+        statusEl.textContent = "Network error.";
+        statusEl.style.color = "var(--admin-danger)";
+        statusEl.style.display = "";
+      } finally {
+        saveInvestmentLimitBtn.textContent = "Save Limit";
+        saveInvestmentLimitBtn.disabled = false;
+      }
+    });
+  }
 }
 
 // ─── Main Data Load ─────────────────────────────────────────────
@@ -739,6 +790,15 @@ function renderKYC() {
 // ─── Render: Investments ────────────────────────────────────────
 
 function renderInvestments() {
+  // Populate investment limit input with current value
+  const limitInput = document.getElementById("investment-limit-input");
+  if (limitInput) {
+    const limitCents = userData.annual_limit_cents;
+    const hasLimit = limitCents && limitCents > 0;
+    limitInput.value = hasLimit ? (limitCents / 100).toFixed(0) : "";
+    limitInput.placeholder = hasLimit ? "" : "No limit";
+  }
+
   const investments = userData.investments || [];
   const tbody = document.getElementById("investments-body");
   if (investments.length === 0) {
