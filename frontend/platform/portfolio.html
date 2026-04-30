@@ -54,8 +54,7 @@ extra_js=['htmx-init',
 
         <!-- Portfolio Value Card with Chart -->
         <div id="portfolio-value-section" class="portfolio-value-section hidden">
-          <div id="portfolio-value-card" class="portfolio-value-card"
-            x-data="{ expanded: false, activeTab: 'twelveMonths' }">
+          <div id="portfolio-value-card" class="portfolio-value-card portfolio-expandable" data-expanded="false">
             <!-- Card Header - Always Visible -->
             <div id="portfolio-value-card-header" class="portfolio-value-card-header">
               <!-- Portfolio Value Info -->
@@ -81,9 +80,9 @@ extra_js=['htmx-init',
               </div>
               <!-- Actions -->
               <div id="portfolio-value-actions" class="portfolio-value-actions">
-                <button class="portfolio-show-more-btn ds-btn ds-btn--secondary" @click="expanded = !expanded">
-                  <span x-text="expanded ? 'Show less' : 'Show more'">Show more</span>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="transition-transform duration-200" :class="expanded ? 'rotate-180' : ''">
+                <button class="portfolio-show-more-btn ds-btn ds-btn--secondary" onclick="togglePortfolioExpand(this)">
+                  <span class="portfolio-show-more-label">Show more</span>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="portfolio-show-more-chevron">
                     <path d="M5 7.5L10 12.5L15 7.5" stroke="#414651" stroke-width="1.66667" stroke-linecap="round"
                       stroke-linejoin="round"></path>
                   </svg>
@@ -91,13 +90,7 @@ extra_js=['htmx-init',
               </div>
             </div>
             <!-- Expandable Chart Section -->
-            <div id="portfolio-chart-section" class="portfolio-chart-section" x-cloak x-show="expanded"
-              x-transition:enter="transition-all ease-out duration-500"
-              x-transition:enter-start="opacity-0 max-h-0 transform -translate-y-4"
-              x-transition:enter-end="opacity-100 max-h-96 transform translate-y-0"
-              x-transition:leave="transition-all ease-in duration-300"
-              x-transition:leave-start="opacity-100 max-h-96 transform translate-y-0"
-              x-transition:leave-end="opacity-0 max-h-0 transform -translate-y-4" style="overflow: visible">
+            <div id="portfolio-chart-section" class="portfolio-chart-section portfolio-expand-content" style="display:none;overflow: visible">
               <!-- Chart Header -->
               <div id="portfolio-chart-header" class="portfolio-chart-header">
                 <div id="portfolio-chart-title" class="portfolio-chart-title">
@@ -108,20 +101,20 @@ extra_js=['htmx-init',
                 <div id="portfolio-chart-controls" class="portfolio-chart-controls">
                   <!-- Time Period Tabs -->
                   <div id="portfolio-chart-tabs" class="portfolio-chart-tabs">
-                    <button class="chart-tab" :class="{ 'active': activeTab === 'twelveMonths' }"
-                      @click="activeTab = 'twelveMonths'">
+                    <button class="chart-tab active" data-tab="twelveMonths"
+                      onclick="setPortfolioTab(this, 'twelveMonths')">
                       12 months
                     </button>
-                    <button class="chart-tab" :class="{ 'active': activeTab === 'thirtyDays' }"
-                      @click="activeTab = 'thirtyDays'">
+                    <button class="chart-tab" data-tab="thirtyDays"
+                      onclick="setPortfolioTab(this, 'thirtyDays')">
                       30 days
                     </button>
-                    <button class="chart-tab" :class="{ 'active': activeTab === 'sevenDays' }"
-                      @click="activeTab = 'sevenDays'">
+                    <button class="chart-tab" data-tab="sevenDays"
+                      onclick="setPortfolioTab(this, 'sevenDays')">
                       7 days
                     </button>
-                    <button class="chart-tab" :class="{ 'active': activeTab === 'twentyFourHours' }"
-                      @click="activeTab = 'twentyFourHours'">
+                    <button class="chart-tab" data-tab="twentyFourHours"
+                      onclick="setPortfolioTab(this, 'twentyFourHours')">
                       24 hours
                     </button>
                   </div>
@@ -146,7 +139,7 @@ extra_js=['htmx-init',
                   <div class="grid-line grid-line-base"></div>
                 </div>
                 <!-- Chart Bars - 52 weeks -->
-                <div class="chart-bars" x-show="expanded">
+                <div class="chart-bars">
                   <div class="chart-bar-week" data-week="1" data-height="35" style="animation-delay: 0ms; height: 35px">
                   </div>
                   <div class="chart-bar-week" data-week="2" data-height="52"
@@ -771,8 +764,7 @@ extra_js=['htmx-init',
           <div class="mobile-portfolio-title">Portfolio</div>
         </div>
         <!-- Mobile Portfolio Value Card (Expandable) -->
-        <div class="mobile-portfolio-value-card" x-data="{ chartExpanded: false }"
-          :class="{ 'expanded': chartExpanded }">
+        <div class="mobile-portfolio-value-card portfolio-expandable" data-expanded="false" id="mobile-portfolio-value-card">
           <div class="mobile-portfolio-value-content">
             <!-- Portfolio value section (Always visible) -->
             <div class="mobile-portfolio-value-section">
@@ -795,11 +787,7 @@ extra_js=['htmx-init',
               </div>
             </div>
             <!-- Chart Section (Shows when expanded) -->
-            <div class="mobile-portfolio-chart-section" x-show="chartExpanded"
-              x-transition:enter="transition-all ease-out duration-300" x-transition:enter-start="opacity-0 max-h-0"
-              x-transition:enter-end="opacity-100 max-h-[300px]"
-              x-transition:leave="transition-all ease-in duration-200"
-              x-transition:leave-start="opacity-100 max-h-[300px]" x-transition:leave-end="opacity-0 max-h-0">
+            <div class="mobile-portfolio-chart-section portfolio-expand-content" style="display:none">
               <!-- Chart Container -->
               <div class="mobile-portfolio-chart">
                 <!-- Y-axis grid lines -->
@@ -880,14 +868,14 @@ extra_js=['htmx-init',
                 <span>Dec</span>
               </div>
             </div>
-            <!-- Action button (changes based on state) --><button class="mobile-portfolio-action-button ds-btn ds-btn--secondary"
-              @click="chartExpanded = !chartExpanded">
-              <span x-text="chartExpanded ? 'Show less' : 'Show more'">Show more</span>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" x-show="!chartExpanded">
+            <!-- Action button (changes based on state) --><button class="mobile-portfolio-action-button ds-btn ds-btn--secondary portfolio-show-more-btn"
+              onclick="togglePortfolioExpand(this)">
+              <span class="portfolio-show-more-label">Show more</span>
+              <svg class="portfolio-mobile-icon-expand" width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M10 7.5L10 17.5M5 12.5L10 17.5L15 12.5" stroke="white" stroke-width="1.66667"
                   stroke-linecap="round" stroke-linejoin="round"></path>
               </svg>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" x-show="chartExpanded">
+              <svg class="portfolio-mobile-icon-collapse" width="20" height="20" viewBox="0 0 20 20" fill="none" style="display:none">
                 <path d="M10 12.5L10 2.5M5 7.5L10 2.5L15 7.5" stroke="white" stroke-width="1.66667"
                   stroke-linecap="round" stroke-linejoin="round"></path>
               </svg>
@@ -1182,6 +1170,49 @@ extra_js=['htmx-init',
   <script src="/static/js/portfolio-service.js"></script>
   <script src="/static/js/currency-service.js"></script>
   <script src="/static/js/portfolio-data.js"></script>
+
+  <script>
+    // PORTFOLIO-BUG-001: Vanilla JS replacements for Alpine x-show/x-data toggles
+
+    function togglePortfolioExpand(btn) {
+      var container = btn.closest('.portfolio-expandable');
+      if (!container) return;
+      var content = container.querySelector('.portfolio-expand-content');
+      var expanded = container.dataset.expanded === 'true';
+
+      // Toggle content visibility
+      if (content) content.style.display = expanded ? 'none' : '';
+      container.dataset.expanded = expanded ? 'false' : 'true';
+
+      // Update button label
+      var label = btn.querySelector('.portfolio-show-more-label');
+      if (label) label.textContent = expanded ? 'Show more' : 'Show less';
+
+      // Update desktop chevron rotation
+      var chevron = btn.querySelector('.portfolio-show-more-chevron');
+      if (chevron) chevron.style.transform = expanded ? '' : 'rotate(180deg)';
+
+      // Update mobile expand/collapse icons
+      var iconExpand = btn.querySelector('.portfolio-mobile-icon-expand');
+      var iconCollapse = btn.querySelector('.portfolio-mobile-icon-collapse');
+      if (iconExpand) iconExpand.style.display = expanded ? '' : 'none';
+      if (iconCollapse) iconCollapse.style.display = expanded ? 'none' : '';
+
+      // Sync expanded class on mobile card (used for CSS styling)
+      if (container.classList.contains('mobile-portfolio-value-card') ||
+          container.id === 'mobile-portfolio-value-card') {
+        container.classList.toggle('expanded', !expanded);
+      }
+    }
+
+    function setPortfolioTab(btn, tabId) {
+      var tabs = document.querySelectorAll('#portfolio-chart-tabs .chart-tab');
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      btn.classList.add('active');
+      // Expose active tab for any chart rendering code that reads it
+      if (window.portfolioSetActiveTab) window.portfolioSetActiveTab(tabId);
+    }
+  </script>
 </body>
 
 </html>
