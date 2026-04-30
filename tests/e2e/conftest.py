@@ -764,6 +764,52 @@ def admin_mobile_page(playwright_session, request):
     cleanup_test_user(user["user_id"])
 
 
+@pytest.fixture(scope="function")
+def developer_page(playwright_session, request):
+    """
+    Creates a fresh user with the 'developer' role, opens a browser context,
+    and yields (page, tracker, user). Cleans up developer assets + user after.
+    """
+    context, page, tracker = _create_context_and_page(
+        playwright_session, request.node.name
+    )
+    user = create_e2e_user(
+        email_prefix="e2e-dev",
+        display_name="E2E Developer",
+        roles=("developer",),
+    )
+    attach_session_cookie(context, user["session_token"])
+
+    yield page, tracker, user
+
+    _teardown_context(context, page, tracker, request)
+    _cleanup_developer_assets(user["user_id"])
+    cleanup_test_user(user["user_id"])
+
+
+def _cleanup_developer_assets(user_id):
+    """Remove developer_projects + assets rows created during a test."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        uid = str(user_id)
+        cur.execute("DELETE FROM developer_projects WHERE developer_id = %s", (uid,))
+        cur.execute(
+            "DELETE FROM asset_documents WHERE asset_id IN "
+            "(SELECT id FROM assets WHERE developer_user_id = %s)", (uid,),
+        )
+        cur.execute(
+            "DELETE FROM asset_images WHERE asset_id IN "
+            "(SELECT id FROM assets WHERE developer_user_id = %s)", (uid,),
+        )
+        cur.execute("DELETE FROM assets WHERE developer_user_id = %s", (uid,))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # SECTION 5: REUSABLE HELPER FUNCTIONS (importable in any test)
 # ═══════════════════════════════════════════════════════════════════════════
