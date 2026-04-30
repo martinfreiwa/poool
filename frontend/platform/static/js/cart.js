@@ -1,5 +1,16 @@
 // Cart functionality for property item cards
 
+// XSS-safe HTML escaper
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Debounce function for API calls
 const debounce = (func, delay) => {
   let timeoutId;
@@ -51,13 +62,46 @@ const persistQuantityUpdate = debounce(async (cartId, newQuantity) => {
 
     const data = await response.json();
     if (!data.success) {
-      console.error("Cart update failed:", data.error || "Unknown error");
+      const errMsg = data.error || "Unknown error";
+      console.error("Cart update failed:", errMsg);
+      // Surface lock / availability failures to the user
+      if (
+        response.status === 409 ||
+        response.status === 423 ||
+        /lock|availability/i.test(errMsg)
+      ) {
+        showCartInlineError("This asset is temporarily unavailable. Please try again.");
+      }
     }
   } catch (e) {
     console.error("Error updating cart quantity:", e);
     if (typeof Sentry !== 'undefined') Sentry.captureException(e);
   }
 }, 500);
+
+// Show a temporary inline error banner at the top of the cart/checkout page
+function showCartInlineError(message) {
+  // Reuse the existing cart-page-alert mechanism if present
+  const wrapper = document.getElementById("cart-content-wrapper") ||
+                  document.getElementById("cart-page-content") ||
+                  document.querySelector(".checkout-payment-wrapper");
+  if (!wrapper) return;
+
+  // Remove any existing inline error so we don't stack duplicates
+  const existing = wrapper.querySelector(".cart-inline-error");
+  if (existing) existing.remove();
+
+  const alert = document.createElement("div");
+  alert.className = "cart-page-alert cart-inline-error";
+  alert.setAttribute("role", "alert");
+  alert.textContent = message;
+  wrapper.prepend(alert);
+
+  // Auto-dismiss after 5 s
+  setTimeout(() => {
+    if (alert.parentNode) alert.remove();
+  }, 5000);
+}
 
 // Handle quantity changes for property items
 function handleQuantityChange(button) {

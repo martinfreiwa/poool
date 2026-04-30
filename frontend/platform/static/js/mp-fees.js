@@ -1,7 +1,7 @@
 /**
  * Fee Management — mp-fees.js
  * Fetches fee configurations and promotions from backend API.
- * Falls back to mock data if the API is unavailable.
+ * Shows an error state if the API is unavailable.
  */
 (function () {
   'use strict';
@@ -12,28 +12,6 @@
   function esc(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-
-  // ── Mock Data ───────────────────────────────────────────────────
-  const MOCK_ASSET_FEES = [
-    { asset: 'Bali Villa Resort (BVRT)', taker: '0.30%', maker: '0.00%', settlement: '0.05%', reason: 'High liquidity asset — reduced fees' },
-    { asset: 'Jakarta Office Tower (JOTX)', taker: '0.50%', maker: '0.00%', settlement: '0.10%', reason: 'Standard' },
-    { asset: 'Surabaya Warehouse (SWHS)', taker: '0.75%', maker: '0.10%', settlement: '0.15%', reason: 'Low liquidity — higher spread compensation' },
-  ];
-  const MOCK_PROMOS = [
-    { name: 'Launch Special', desc: '0% trading fees for all assets', discount: '100%', badge: 'Active', validUntil: 'Apr 30, 2026', color: 'success' },
-    { name: 'BVRT Liquidity Boost', desc: 'Reduced taker fee to 0.1% for Bali Villa Resort', discount: '80%', badge: 'Active', validUntil: 'May 15, 2026', color: 'info' },
-    { name: 'New User Welcome', desc: 'First 3 trades free for new marketplace users', discount: 'First 3 free', badge: 'Active', validUntil: 'Jun 01, 2026', color: 'success' },
-  ];
-  const MOCK_TIERS = [
-    { name: 'Standard', min_invest: 0, cashback_pct: 0, badge_color: '#9ca3af' },
-    { name: 'Silver', min_invest: 500000, cashback_pct: 50, badge_color: '#94a3b8' },
-    { name: 'Gold', min_invest: 2500000, cashback_pct: 100, badge_color: '#fbbf24' },
-    { name: 'Platinum', min_invest: 10000000, cashback_pct: 150, badge_color: '#a78bfa' },
-    { name: 'Diamond', min_invest: 50000000, cashback_pct: 200, badge_color: '#38bdf8' },
-  ];
-
-  let usingMockData = false;
-  let usingMockTiers = false;
 
   // ── Tab Switching ───────────────────────────────────────────────
   function initTabs() {
@@ -216,11 +194,9 @@
       const res = await fetch(REWARDS_API, { credentials: 'same-origin' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      usingMockTiers = false;
       renderTiers(data.tiers || []);
     } catch (err) {
       console.warn('[mp-fees] Tiers API unavailable:', err);
-      usingMockTiers = true;
       const tbody = document.getElementById('tier-fees-body');
       if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#c00;">Failed to load tier data.</td></tr>`;
     }
@@ -231,12 +207,10 @@
       const res = await fetch(API, { credentials: 'same-origin' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      usingMockData = false;
       renderAssetFees(data.configurations);
       renderPromotions(data.promotions);
     } catch (err) {
       console.warn('[mp-fees] API unavailable:', err);
-      usingMockData = true;
       const tbody = document.getElementById('asset-fees-body');
       if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#c00;">Failed to load fee configurations.</td></tr>`;
       const grid = document.getElementById('promos-grid');
