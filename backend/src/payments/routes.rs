@@ -734,6 +734,16 @@ pub async fn handle_checkout(
         ).into_response();
     }
 
+    // Bank transfer orders require proof of transfer to prevent bypassing the UI requirement.
+    if payment_method == "bank_transfer" || payment_method == "bank" {
+        if proof_url.is_none() {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">Proof of transfer is required for bank transfer payments.</div>"#.to_string()),
+            ).into_response();
+        }
+    }
+
     match service::execute_checkout(
         &state.db,
         user.id,

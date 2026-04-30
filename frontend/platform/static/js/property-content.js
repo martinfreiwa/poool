@@ -354,11 +354,11 @@ function handleFileUploads(files) {
   if (!imageGallery) return;
 
   const validImageTypes = [
-    "image/webp",
+    "image/jpeg",
     "image/jpg",
+    "image/png",
     "image/webp",
     "image/gif",
-    "image/svg+xml",
   ];
 
   files.forEach((file, index) => {
