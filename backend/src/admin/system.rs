@@ -12,9 +12,11 @@ use sqlx::Row;
 
 /// GET /api/admin/system  DB size, table stats, environment
 pub async fn api_admin_system(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     // DB size
     let db_size_result: Result<(String, i64), sqlx::Error> = sqlx::query_as(
         "SELECT pg_size_pretty(pg_database_size(current_database())), pg_database_size(current_database())"
@@ -27,10 +29,10 @@ pub async fn api_admin_system(
     // Storage estimation for costs
     let storage_bytes_result: Result<i64, sqlx::Error> = sqlx::query_scalar(
         r#"
-        SELECT 
-            (SELECT COUNT(*) FROM kyc_documents) * 350000 + 
-            (SELECT COALESCE(SUM(file_size_bytes), 0) FROM asset_documents) + 
-            (SELECT COUNT(*) FROM asset_images) * 600000 + 
+        SELECT
+            (SELECT COUNT(*) FROM kyc_documents) * 350000 +
+            (SELECT COALESCE(SUM(file_size_bytes), 0) FROM asset_documents) +
+            (SELECT COUNT(*) FROM asset_images) * 600000 +
             (SELECT COUNT(*) FROM users WHERE avatar_url IS NOT NULL AND avatar_url <> '') * 80000
         "#,
     )
@@ -127,9 +129,11 @@ pub async fn api_admin_system(
 
 /// GET /api/admin/system/sessions — List all active user sessions.
 pub async fn api_admin_system_sessions(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let rows = sqlx::query(
         r#"SELECT s.id::text, s.user_id::text, COALESCE(u.email,'') AS email,
                   COALESCE(s.ip_address::text,'') AS ip_address,
@@ -177,10 +181,12 @@ pub async fn api_admin_system_sessions(
 
 /// DELETE /api/admin/system/sessions/:id — Revoke a specific session.
 pub async fn api_admin_system_session_revoke(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(session_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let result = sqlx::query("DELETE FROM user_sessions WHERE id::text = $1")
         .bind(&session_id)
         .execute(&state.db)
@@ -189,6 +195,15 @@ pub async fn api_admin_system_session_revoke(
     match result {
         Ok(r) => {
             if r.rows_affected() > 0 {
+                let _ = sqlx::query(
+                    r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+                       VALUES ($1, 'admin.session_revoke', 'user_sessions', $2)"#,
+                )
+                .bind(admin.user.id)
+                .bind(serde_json::json!({"session_id": &session_id}))
+                .execute(&state.db)
+                .await;
+
                 Ok(
                     Json(serde_json::json!({"status":"success","message":"Session revoked"}))
                         .into_response(),
@@ -206,10 +221,12 @@ pub async fn api_admin_system_session_revoke(
 
 /// POST /api/admin/system/sessions/bulk-revoke
 pub async fn api_admin_system_sessions_bulk_revoke(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let ip_pattern = body
         .get("ip_pattern")
         .and_then(|v| v.as_str())
@@ -220,15 +237,26 @@ pub async fn api_admin_system_sessions_bulk_revoke(
 
     let like_pattern = format!("{}%", ip_pattern);
     let result = sqlx::query("DELETE FROM user_sessions WHERE ip_address::text LIKE $1")
-        .bind(like_pattern)
+        .bind(&like_pattern)
         .execute(&state.db)
         .await;
 
     match result {
-        Ok(r) => Ok(
-            Json(serde_json::json!({"status":"success", "revoked": r.rows_affected()}))
-                .into_response(),
-        ),
+        Ok(r) => {
+            let _ = sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+                   VALUES ($1, 'admin.sessions_bulk_revoke', 'user_sessions', $2)"#,
+            )
+            .bind(admin.user.id)
+            .bind(serde_json::json!({"ip_pattern": ip_pattern, "revoked": r.rows_affected()}))
+            .execute(&state.db)
+            .await;
+
+            Ok(
+                Json(serde_json::json!({"status":"success", "revoked": r.rows_affected()}))
+                    .into_response(),
+            )
+        }
         Err(e) => {
             tracing::error!("Failed to bulk revoke sessions: {}", e);
             Err(ApiError::Internal(
@@ -240,9 +268,11 @@ pub async fn api_admin_system_sessions_bulk_revoke(
 
 /// GET /api/admin/system/jobs — List background jobs.
 pub async fn api_admin_system_jobs(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let rows = sqlx::query(
         r#"SELECT id::text, job_name as name, status, attempts,
                   COALESCE(payload::text, '') as payload,
@@ -275,43 +305,71 @@ pub async fn api_admin_system_jobs(
 
 /// DELETE /api/admin/system/jobs/:id — Cancel a background job.
 pub async fn api_admin_system_job_cancel(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(job_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let result = sqlx::query("UPDATE background_jobs SET status = 'cancelled' WHERE id::text = $1")
         .bind(&job_id)
         .execute(&state.db)
         .await;
 
     match result {
-        Ok(_) => Ok(Json(serde_json::json!({"status":"success"})).into_response()),
+        Ok(_) => {
+            let _ = sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+                   VALUES ($1, 'admin.job_cancel', 'background_jobs', $2)"#,
+            )
+            .bind(admin.user.id)
+            .bind(serde_json::json!({"job_id": &job_id}))
+            .execute(&state.db)
+            .await;
+
+            Ok(Json(serde_json::json!({"status":"success"})).into_response())
+        }
         Err(_) => Err(ApiError::Internal("Failed to cancel job".to_string())),
     }
 }
 
 /// POST /api/admin/system/jobs/:id/retry — Retry a background job.
 pub async fn api_admin_system_job_retry(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(job_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let result = sqlx::query("UPDATE background_jobs SET status = 'pending', attempts = 0, run_at = NOW() WHERE id::text = $1")
         .bind(&job_id)
         .execute(&state.db)
         .await;
 
     match result {
-        Ok(_) => Ok(Json(serde_json::json!({"status":"success"})).into_response()),
+        Ok(_) => {
+            let _ = sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+                   VALUES ($1, 'admin.job_retry', 'background_jobs', $2)"#,
+            )
+            .bind(admin.user.id)
+            .bind(serde_json::json!({"job_id": &job_id}))
+            .execute(&state.db)
+            .await;
+
+            Ok(Json(serde_json::json!({"status":"success"})).into_response())
+        }
         Err(_) => Err(ApiError::Internal("Failed to retry job".to_string())),
     }
 }
 
 /// GET /api/admin/system/webhooks — List webhook logs.
 pub async fn api_admin_system_webhooks(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let rows = sqlx::query(
         r#"SELECT id::text, provider, endpoint, http_status,
                   COALESCE(payload::text, '') as payload,
@@ -344,26 +402,41 @@ pub async fn api_admin_system_webhooks(
 
 /// POST /api/admin/system/webhooks/:id/replay — Replay a webhook log.
 pub async fn api_admin_system_webhook_replay(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(webhook_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     let result = sqlx::query("UPDATE webhook_logs SET processed = false WHERE id::text = $1")
         .bind(&webhook_id)
         .execute(&state.db)
         .await;
 
     match result {
-        Ok(_) => Ok(Json(serde_json::json!({"status":"success"})).into_response()),
+        Ok(_) => {
+            let _ = sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+                   VALUES ($1, 'admin.webhook_replay', 'webhook_logs', $2)"#,
+            )
+            .bind(admin.user.id)
+            .bind(serde_json::json!({"webhook_id": &webhook_id}))
+            .execute(&state.db)
+            .await;
+
+            Ok(Json(serde_json::json!({"status":"success"})).into_response())
+        }
         Err(_) => Err(ApiError::Internal("Failed to replay webhook".to_string())),
     }
 }
 
 /// GET /api/admin/system/password-resets — List recent password reset requests.
 pub async fn api_admin_system_password_resets(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
+
     // Fetch password reset audit entries from audit_logs
     let rows = sqlx::query(
         r#"SELECT al.id::text, al.actor_user_id::text AS user_id,

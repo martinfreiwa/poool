@@ -22,6 +22,8 @@ pub struct SupportTicket {
     pub created_at: String,
     /// ISO timestamp of the last update, if any.
     pub updated_at: Option<String>,
+    /// JSONB metadata (includes csat field after rating).
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Represents a single reply in a support ticket thread.

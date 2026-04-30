@@ -19,6 +19,7 @@ fn html_e(s: &str) -> String {
      .replace('<', "&lt;")
      .replace('>', "&gt;")
      .replace('"', "&quot;")
+     .replace('\'', "&#x27;")
 }
 
 // ─── Form data ──────────────────────────────────────────────────
@@ -936,7 +937,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             available_tokens = tokens_available,
             total_tokens = tokens_total,
             funded_pct = funded_pct,
-            image_url = crate::storage::service::rewrite_gcs_url(image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp")),
+            image_url = html_e(&crate::storage::service::rewrite_gcs_url(image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp"))),
             property_details = property_details_html,
         ));
 
@@ -1031,7 +1032,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             available_tokens = tokens_available,
             total_tokens = tokens_total,
             funded_pct = funded_pct,
-            image_url = crate::storage::service::rewrite_gcs_url(image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp")),
+            image_url = html_e(&crate::storage::service::rewrite_gcs_url(image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp"))),
             mobile_property_details = mobile_property_details,
         ));
     }
@@ -1079,15 +1080,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let mut kfs_modal_html = String::new();
 
     if !primary_items.is_empty() {
-        let html_escape = |s: &str| {
-            s.replace('&', "&amp;")
-             .replace('<', "&lt;")
-             .replace('>', "&gt;")
-             .replace('"', "&quot;")
-        };
         let mut primary_list_html = String::new();
         for (p_title, _price, _qty) in primary_items {
-            primary_list_html.push_str(&format!("<li><strong style=\"color:#101828;\">{}</strong><br/><span style=\"color:#475467; font-size:13px;\">Primary Offering — Subject to funding targets.</span></li>", html_escape(&p_title)));
+            primary_list_html.push_str(&format!("<li><strong style=\"color:#101828;\">{}</strong><br/><span style=\"color:#475467; font-size:13px;\">Primary Offering — Subject to funding targets.</span></li>", html_e(&p_title)));
         }
 
         kfs_checkbox_html = r#"

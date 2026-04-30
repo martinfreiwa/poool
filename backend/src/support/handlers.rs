@@ -328,6 +328,65 @@ pub async fn api_support_ticket_reopen(
     }
 }
 
+/// PATCH /api/support/tickets/:ticket_id/csat — Store user satisfaction rating.
+pub async fn api_support_ticket_csat(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(ticket_id): Path<String>,
+    Json(payload): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Unauthorized"})),
+            )
+                .into_response()
+        }
+    };
+
+    let rating = match payload.get("rating").and_then(|v| v.as_str()) {
+        Some(r) if r == "good" || r == "bad" => r.to_string(),
+        _ => {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "rating must be 'good' or 'bad'"})),
+            )
+                .into_response()
+        }
+    };
+
+    // Verify ownership and store rating in ticket metadata
+    let result = sqlx::query(
+        r#"UPDATE support_tickets
+           SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{csat}', $1::jsonb, true),
+               updated_at = NOW()
+           WHERE id = $2::uuid AND user_id = $3"#,
+    )
+    .bind(serde_json::json!(rating))
+    .bind(&ticket_id)
+    .bind(user.id)
+    .execute(&state.db)
+    .await;
+
+    match result {
+        Ok(r) if r.rows_affected() > 0 => {
+            Json(serde_json::json!({"status": "ok"})).into_response()
+        }
+        Ok(_) => (
+            axum::http::StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": "Ticket not found"})),
+        )
+            .into_response(),
+        Err(_) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "Database error"})),
+        )
+            .into_response(),
+    }
+}
+
 /// GET /support — Render the support dashboard page.
 pub async fn page_support(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "support.html").await

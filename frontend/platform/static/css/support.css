@@ -1338,3 +1338,86 @@ body#support-body {
     margin-right: 24px;
     width: calc(100% - 48px);
 }
+
+/* Ticket search */
+.tickets-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 8px;
+    padding: 0 2px;
+}
+
+.tickets-search-input {
+    flex: 1;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 13px;
+    color: #344054;
+    background: #ffffff;
+    border: 1px solid #E4E7EC;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.tickets-search-input:focus {
+    border-color: #3D00F5;
+    box-shadow: 0 0 0 3px rgba(61,0,245,0.08);
+}
+
+.tickets-search-input::placeholder { color: #9DA4AE; }
+
+/* Load-more button */
+.support-load-more {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 9px 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #3D00F5;
+    background: transparent;
+    border: 1px dashed #C8B5FF;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.support-load-more:hover {
+    background: #F4F0FF;
+    border-color: #3D00F5;
+}
+
+/* CSAT rating */
+.ticket-csat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 4px;
+    padding: 10px 12px;
+    background: #F9FAFB;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #717680;
+}
+
+.ticket-csat-label { flex: 1; }
+
+.csat-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid #E4E7EC;
+    background: #fff;
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s;
+}
+
+.csat-btn:hover { background: #F4F5FF; border-color: #C8B5FF; }
+.csat-btn--selected-good { background: #ECFDF3; border-color: #12B76A; color: #027A48; }
+.csat-btn--selected-bad  { background: #FEF3F2; border-color: #F97066; color: #B42318; }

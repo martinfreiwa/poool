@@ -1,6 +1,6 @@
 use crate::AppState;
 use axum::{
-    routing::{get, post, put},
+    routing::{get, patch, post, put},
     Router,
 };
 
@@ -36,6 +36,10 @@ pub fn router(state: AppState) -> Router<AppState> {
                 .route(
                     "/tickets/:ticket_id/reopen",
                     put(handlers::api_support_ticket_reopen),
+                )
+                .route(
+                    "/tickets/:ticket_id/csat",
+                    patch(handlers::api_support_ticket_csat),
                 ),
         )
         .with_state(state)

@@ -363,9 +363,10 @@
             window.history.replaceState({}, "", window.location.pathname);
         } else if (params.has("error")) {
             const errMap = {
-                insufficient_funds: "Insufficient funds in your wallet.",
-                deposit_failed: "We couldn't create the deposit request. Please try again.",
-                withdraw_failed: "We couldn't process your withdrawal. Please try again.",
+                insufficient_funds: "Insufficient funds. Please deposit before withdrawing.",
+                deposit_failed: "Deposit failed. Please try again.",
+                withdraw_failed: "Withdrawal failed. Please try again or contact support.",
+                amount_too_large: "Amount exceeds the maximum deposit limit of $1,000,000.",
                 "2fa_required": "Two-factor authentication required for withdrawals of $100 or more. Please enable 2FA in Settings first.",
                 withdrawal_cooldown: "You have reached the hourly withdrawal limit (3 requests). Please try again later.",
                 daily_limit_exceeded: "This withdrawal would exceed your daily limit of $250,000.",

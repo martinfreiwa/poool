@@ -56,9 +56,10 @@ fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
   <h2 style="color:#01011C;">You have a new reply on your support ticket</h2>
   <p style="color:#414651;">Our support team has replied to: <strong>{subject}</strong></p>
   {preview_block}
-  <p><a href="https://platform.poool.app/support" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Conversation</a></p>
+  <p><a href="https://platform.poool.app/support#{ticket_id}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Conversation</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Reply directly in your support portal. Please do not reply to this email.</p>
 </div>"#,
+                ticket_id = ticket_id,
                 subject = html_escape_email(subject_line),
                 preview_block = if !reply_preview.is_empty() {
                     format!(r#"<div style="background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;margin:16px 0;color:#344054;font-size:14px;line-height:1.6;">{}</div>"#,

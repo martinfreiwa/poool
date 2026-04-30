@@ -145,78 +145,57 @@
 
     const banner = document.createElement("div");
     banner.id = "cookie-consent-banner";
+    banner.className = "ds-card";
     banner.style.cssText = `
-            position:fixed; bottom:0; left:0; right:0; z-index:99999;
-            background:rgba(24,29,39,0.97); backdrop-filter:blur(12px);
-            color:#E9EAEB; padding:20px 24px;
-            font-family:'TT Norms Pro','Segoe UI',system-ui,sans-serif; font-size:14px; line-height:1.6;
-            display:flex; flex-wrap:wrap; align-items:center; gap:16px;
-            box-shadow:0 -4px 24px rgba(0,0,0,0.25);
-            animation:cookieSlideUp 0.4s ease-out;
+            position:fixed; bottom:24px; left:24px; z-index:99999;
+            max-width:440px; width:calc(100% - 48px);
+            padding:20px 24px; display:flex; flex-direction:column; gap:16px;
+            transform:translateY(calc(100% + 32px)); opacity:0;
+            transition:transform 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease;
         `;
 
     banner.innerHTML = `
             <style>
-                @keyframes cookieSlideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
-                #cookie-consent-banner a { color:#7BA3FF; text-decoration:underline; }
-                #cookie-consent-banner a:hover { color:#A3C0FF; }
-                .cookie-btn {
-                    padding:8px 20px; border-radius:8px; font-size:13px; font-weight:600;
-                    cursor:pointer; border:none; font-family:inherit; transition:all 0.2s;
+                @media(max-width:480px){
+                    #cookie-consent-banner { left:16px; right:16px; width:auto; max-width:none; }
+                    #cookie-consent-banner .cookie-actions { flex-direction:column; }
+                    #cookie-consent-banner .cookie-actions button { width:100%; }
                 }
-                .cookie-btn--accept { background:#4A7DFF; color:#fff; }
-                .cookie-btn--accept:hover { background:#3A6DE8; }
-                .cookie-btn--reject { background:transparent; color:#A4A7AE; border:1px solid #535862; }
-                .cookie-btn--reject:hover { background:rgba(255,255,255,0.05); color:#E9EAEB; }
-                .cookie-btn--customize { background:transparent; color:#A4A7AE; border:1px solid #535862; }
-                .cookie-btn--customize:hover { background:rgba(255,255,255,0.05); color:#E9EAEB; }
+                #cookie-consent-banner a { color:#0000FF; text-decoration:none; font-weight:500; }
+                #cookie-consent-banner a:hover { text-decoration:underline; }
             </style>
-            <div style="flex:1; min-width:280px;">
-                <strong style="color:#fff;">🍪 We use cookies</strong>
-                <p style="margin:4px 0 0; color:#A4A7AE; font-size:13px;">
+            <div>
+                <p style="margin:0 0 4px; font-family:'TT Norms Pro','Segoe UI',system-ui,sans-serif; font-size:14px; font-weight:700; color:#181D27; line-height:1.4;">We use cookies</p>
+                <p style="margin:0; font-family:'TT Norms Pro','Segoe UI',system-ui,sans-serif; font-size:13px; color:#535862; line-height:1.6;">
                     We use essential cookies for the platform to function and analytics cookies to understand how you use our services.
                     <a href="/cookies">Learn more</a>
                 </p>
             </div>
-            <div style="display:flex; gap:8px; flex-shrink:0;">
-                <button class="cookie-btn cookie-btn--reject" id="cookie-reject">Essential only</button>
-                <button class="cookie-btn cookie-btn--accept" id="cookie-accept">Accept all</button>
+            <div class="cookie-actions" style="display:flex; gap:8px; flex-shrink:0;">
+                <button class="ds-btn ds-btn--secondary ds-btn--sm" id="cookie-reject" style="flex:1;">Essential only</button>
+                <button class="ds-btn ds-btn--primary ds-btn--sm" id="cookie-accept" style="flex:1;">Accept all</button>
             </div>
         `;
     document.body.appendChild(banner);
 
-    document.getElementById("cookie-accept").addEventListener("click", () => {
-      localStorage.setItem(
-        consentKey,
-        JSON.stringify({
-          essential: true,
-          analytics: true,
-          marketing: false,
-          ts: Date.now(),
-        }),
-      );
-      banner.style.animation = "none";
-      banner.style.transform = "translateY(100%)";
+    requestAnimationFrame(() => {
+      banner.style.transform = "translateY(0)";
+      banner.style.opacity = "1";
+    });
+
+    function dismissBanner(preferences) {
+      localStorage.setItem(consentKey, JSON.stringify({ ...preferences, ts: Date.now() }));
+      banner.style.transform = "translateY(calc(100% + 32px))";
       banner.style.opacity = "0";
-      banner.style.transition = "transform 0.3s, opacity 0.3s";
-      setTimeout(() => banner.remove(), 300);
+      setTimeout(() => banner.remove(), 400);
+    }
+
+    document.getElementById("cookie-accept").addEventListener("click", () => {
+      dismissBanner({ essential: true, analytics: true, marketing: false });
     });
 
     document.getElementById("cookie-reject").addEventListener("click", () => {
-      localStorage.setItem(
-        consentKey,
-        JSON.stringify({
-          essential: true,
-          analytics: false,
-          marketing: false,
-          ts: Date.now(),
-        }),
-      );
-      banner.style.animation = "none";
-      banner.style.transform = "translateY(100%)";
-      banner.style.opacity = "0";
-      banner.style.transition = "transform 0.3s, opacity 0.3s";
-      setTimeout(() => banner.remove(), 300);
+      dismissBanner({ essential: true, analytics: false, marketing: false });
     });
   }
 

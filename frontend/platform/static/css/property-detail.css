@@ -1940,7 +1940,7 @@ body.lightbox-open {
   box-sizing: border-box;
   position: relative;
   flex: 1;
-  min-width: 0;
+  min-width: 160px;
   min-height: 180px;
   background: #ffffff;
   border: 1px solid var(--table-border-color);
@@ -1951,7 +1951,7 @@ body.lightbox-open {
   position: absolute;
   width: 40px;
   height: 40px;
-  left: 140px;
+  right: 12px;
   top: 16px;
   border-radius: 10px;
   overflow: hidden;

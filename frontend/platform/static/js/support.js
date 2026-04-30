@@ -312,6 +312,12 @@
         allTickets = data.tickets || data || [];
         updateTicketSummary();
         renderTickets();
+        // Auto-open ticket referenced in URL hash (e.g. from email deep-link)
+        const hash = window.location.hash.slice(1);
+        if (hash) {
+          const card = document.getElementById(`ticket-${hash}`);
+          if (card) { card.scrollIntoView({ behavior: "smooth", block: "start" }); card.click(); }
+        }
       } else if (resp.status === 401) {
         window.location.href = "/auth/login";
       } else {
@@ -818,5 +824,140 @@
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
+  }
+
+  // ── Clipboard paste (screenshots) ───────────────────────────────────────
+  function initClipboardPaste() {
+    document.addEventListener("paste", (e) => {
+      const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+      if (!items) return;
+
+      let imageItem = null;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) { imageItem = item; break; }
+      }
+      if (!imageItem) return;
+
+      const file = imageItem.getAsFile();
+      if (!file || !validateAttachment(file)) return;
+
+      // Determine which form is in context: focused reply form, or new ticket
+      const active = document.activeElement;
+      const replyForm = active?.closest(".ticket-reply-form");
+
+      if (replyForm) {
+        const fileInput = replyForm.querySelector(".reply-attach-input");
+        if (!fileInput) return;
+        injectFileIntoInput(fileInput, file);
+        const nameEl = replyForm.querySelector(".reply-attach-name");
+        if (nameEl) { nameEl.textContent = file.name || "pasted-image.png"; nameEl.title = nameEl.textContent; }
+        showToast("Screenshot attached.", "success");
+      } else {
+        // Fall back to the new-ticket attachment input
+        const fileInput = document.getElementById("ticket-attachment");
+        const dropZone = document.getElementById("drop-zone");
+        const fileInfo = document.getElementById("drop-zone-file-info");
+        if (!fileInput) return;
+        injectFileIntoInput(fileInput, file);
+        updateFileInfo(file, fileInfo, dropZone);
+        showToast("Screenshot attached to ticket.", "success");
+      }
+    });
+  }
+
+  function injectFileIntoInput(input, file) {
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+    } catch (_) {}
+  }
+
+  // ── Real-time polling ────────────────────────────────────────────────────
+  function initPolling() {
+    const INTERVAL = 10000;
+    let lastHash = "";
+
+    async function poll() {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const resp = await fetch("/api/support/tickets");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const tickets = data.tickets || data || [];
+        const hash = JSON.stringify(tickets.map(t => ({ id: t.id, status: t.status, updated_at: t.updated_at, replyCount: t.replies?.length })));
+        if (hash !== lastHash) {
+          lastHash = hash;
+          allTickets = tickets;
+          updateTicketSummary();
+          renderTickets();
+        }
+      } catch (_) {}
+    }
+
+    pollTimer = setInterval(poll, INTERVAL);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") poll();
+    });
+  }
+
+  // ── CSAT rating ──────────────────────────────────────────────────────────
+  function renderCsat(t) {
+    if (!isClosedStatus(t.status)) return "";
+    const existing = t.metadata?.csat;
+    if (existing === "good" || existing === "bad") {
+      return `<div class="ticket-csat">
+        <span class="ticket-csat-label">Thanks for your feedback!</span>
+        <span class="csat-btn ${existing === "good" ? "csat-btn--selected-good" : "csat-btn--selected-bad"}">
+          ${existing === "good" ? "👍 Helpful" : "👎 Not helpful"}
+        </span>
+      </div>`;
+    }
+    return `<div class="ticket-csat" id="csat-${esc(t.id)}">
+      <span class="ticket-csat-label">Was this resolved to your satisfaction?</span>
+      <button type="button" class="csat-btn" data-csat="good" data-ticket-id="${esc(t.id)}" title="Yes, resolved">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+        Yes
+      </button>
+      <button type="button" class="csat-btn" data-csat="bad" data-ticket-id="${esc(t.id)}" title="No, still unresolved">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+        No
+      </button>
+    </div>`;
+  }
+
+  // Bind CSAT button clicks (delegated from tickets-list)
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-csat]");
+    if (!btn) return;
+    const ticketId = btn.dataset.ticketId;
+    const rating = btn.dataset.csat;
+    if (!ticketId || !rating) return;
+    submitCsat(ticketId, rating, btn.closest(".ticket-csat"));
+  });
+
+  async function submitCsat(ticketId, rating, csatEl) {
+    try {
+      const resp = await fetch(`/api/support/tickets/${ticketId}/csat`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCookie("csrf_token") || "" },
+        body: JSON.stringify({ rating }),
+      });
+      if (resp.ok) {
+        // Update local cache
+        const t = allTickets.find(x => x.id === ticketId);
+        if (t) { t.metadata = t.metadata || {}; t.metadata.csat = rating; }
+        if (csatEl) {
+          csatEl.innerHTML = `<span class="ticket-csat-label">Thanks for your feedback!</span>
+            <span class="csat-btn ${rating === "good" ? "csat-btn--selected-good" : "csat-btn--selected-bad"}">
+              ${rating === "good" ? "👍 Helpful" : "👎 Not helpful"}
+            </span>`;
+        }
+      } else {
+        showToast("Could not save rating.", "error");
+      }
+    } catch (_) {
+      showToast("Network error.", "error");
+    }
   }
 })();

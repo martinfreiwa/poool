@@ -9,7 +9,7 @@ pub async fn list_user_tickets(
 ) -> Result<Vec<SupportTicket>, sqlx::Error> {
     sqlx::query_as::<_, SupportTicket>(
         r#"SELECT id::text, subject, message, priority, status, category,
-                  created_at::text, updated_at::text
+                  created_at::text, updated_at::text, metadata
            FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50"#,
     )
     .bind(user_id)
