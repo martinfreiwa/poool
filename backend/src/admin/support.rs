@@ -50,7 +50,7 @@ pub async fn api_admin_support_tickets(
     State(state): State<AppState>,
     axum::extract::Query(filters): axum::extract::Query<AdminSupportFilters>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "support.manage").await?;
+    admin.require_permission(&state.db, "support.view").await?;
     let mut query = String::from(
         r#"SELECT st.id::text, st.subject, st.message, st.status, st.priority,
                   st.category, st.metadata, st.sla_breach_at::text,
@@ -189,7 +189,7 @@ pub async fn api_admin_support_bulk(
     State(state): State<AppState>,
     Json(payload): Json<AdminSupportBulkPayload>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "support.manage").await?;
+    admin.require_permission(&state.db, "support.write").await?;
     if payload.ticket_ids.is_empty() {
         return Err(ApiError::BadRequest("No tickets selected".to_string()));
     }
@@ -284,7 +284,7 @@ pub async fn api_admin_support_update(
     axum::extract::Path(ticket_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "support.manage").await?;
+    admin.require_permission(&state.db, "support.write").await?;
     let uid = ApiError::parse_uuid(&ticket_id)?;
 
     let existing_res = sqlx::query_as::<_, (String, String)>(
@@ -372,7 +372,7 @@ pub async fn api_admin_support_ticket_detail(
     State(state): State<AppState>,
     axum::extract::Path(ticket_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "support.manage").await?;
+    admin.require_permission(&state.db, "support.view").await?;
     let uid = ApiError::parse_uuid(&ticket_id)?;
 
     let ticket_result = sqlx::query(
@@ -554,7 +554,7 @@ pub async fn api_admin_support_ticket_reply(
     axum::extract::Path(ticket_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "support.manage").await?;
+    admin.require_permission(&state.db, "support.write").await?;
     let current_user = admin.user.clone();
 
     let uid = ApiError::parse_uuid(&ticket_id)?;
@@ -575,23 +575,34 @@ pub async fn api_admin_support_ticket_reply(
 
     let sanitized_content = crate::common::sanitize::sanitize_html(content);
 
-    let inserted = sqlx::query(
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+    sqlx::query(
         "INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content) VALUES ($1, $2, $3, 'admin', $4, $5)"
     )
-    .bind(uid).bind(current_user.id).bind(&name).bind(mtype).bind(sanitized_content)
-    .execute(&state.db).await;
+    .bind(uid).bind(current_user.id).bind(&name).bind(mtype).bind(&sanitized_content)
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
 
-    match inserted {
-        Ok(_) => {
-            let _ = sqlx::query("UPDATE support_tickets SET updated_at = NOW() WHERE id = $1")
-                .bind(uid)
-                .execute(&state.db)
-                .await;
-            Ok(Json(serde_json::json!({"status":"reply_added"})).into_response())
-        }
-        Err(e) => {
-            tracing::error!("Failed to append reply {ticket_id}: {e}");
-            Err(ApiError::Internal("Database error".to_string()))
-        }
-    }
+    sqlx::query("UPDATE support_tickets SET updated_at = NOW() WHERE id = $1")
+        .bind(uid)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.support_ticket_reply', 'support_tickets', $2, $3)"#,
+    )
+    .bind(current_user.id)
+    .bind(uid)
+    .bind(serde_json::json!({"type": mtype, "author": &name}))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({"status":"reply_added"})).into_response())
 }
