@@ -328,9 +328,10 @@ pub async fn api_admin_update_admin_role(
 
 /// GET /api/admin/settings/roles  List available admin roles
 pub async fn api_admin_list_roles(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
     let rows = sqlx::query(
         "SELECT id::text, name, description FROM roles WHERE name IN ('admin', 'super_admin', 'compliance', 'support', 'finance') ORDER BY name"
     ).fetch_all(&state.db).await.unwrap_or_default();

@@ -11,10 +11,11 @@ use axum::{
 
 /// GET /api/admin/orders/:id — Full order detail (items + invoice + wallet tx).
 pub async fn api_admin_order_detail(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(order_id): Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
     use sqlx::Row;
 
     let order_uuid: uuid::Uuid = order_id
@@ -159,9 +160,10 @@ pub async fn api_admin_order_detail(
 
 /// GET /api/admin/orders  List all orders with user info + item count.
 pub async fn api_admin_orders(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
     let rows = sqlx::query_as::<
         _,
         (
@@ -194,7 +196,7 @@ pub async fn api_admin_orders(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::Database)?;
 
     let orders: Vec<serde_json::Value> = rows
         .iter()
@@ -226,9 +228,10 @@ pub async fn api_admin_orders(
 
 /// GET /api/admin/investments  List all investments with user/asset info.
 pub async fn api_admin_investments(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
     let rows = sqlx::query_as::<_, (
         String, String, // inv_id, user_id
         i32, i64, i64, i64, // tokens_owned, purchase, current, rental
