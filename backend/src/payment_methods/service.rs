@@ -75,7 +75,7 @@ pub async fn attach_card(
             user_id, method_type, processor_type, processor_token,
             brand, last_four, holder_name, label, is_default, status
         )
-        VALUES ($1, 'card', 'manual', $2, $3, $4, $5, $6, false, 'active')
+        VALUES ($1, 'card', 'stripe', $2, $3, $4, $5, $6, false, 'active')
         RETURNING *
         "#,
     )
@@ -98,16 +98,15 @@ pub async fn add_bank(
     form: AddBankForm,
 ) -> Result<PaymentMethod, sqlx::Error> {
     // For SEPA/SWIFT the "account_number" is the IBAN — mask everything except the last 4
-    let last_four = if form.account_number.len() >= 4 {
-        form.account_number[form.account_number.len() - 4..].to_string()
+    let chars: Vec<char> = form.account_number.chars().collect();
+    let last_four = if chars.len() >= 4 {
+        chars[chars.len() - 4..].iter().collect()
     } else {
         form.account_number.clone()
     };
 
-    let processor_token = format!(
-        "bank_{}",
-        &form.account_number[..form.account_number.len().min(8)]
-    );
+    // Use a non-sensitive token — just a UUID-like identifier, no account data
+    let processor_token = format!("bank_{}", uuid::Uuid::new_v4().simple());
 
     let bank_name = sanitize::sanitize_text(&form.bank_name);
     let holder_name = sanitize::sanitize_text(&form.account_holder_name);

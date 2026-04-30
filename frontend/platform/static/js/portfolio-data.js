@@ -143,8 +143,8 @@
 
     setText("portfolio-total-appreciation", data.totalAppreciation);
     
-    updateChange("portfolio-monthly-income-change", "+0.0%", true);
-    updateChange("portfolio-total-rental-change", "+0.0%", true);
+    updateChange("portfolio-monthly-income-change", "—", false);
+    updateChange("portfolio-total-rental-change", "—", false);
     updateChange("portfolio-total-appreciation-change", data.appreciation.display, data.appreciation.isPositive);
 
     const period = data.periodLabel;
@@ -159,8 +159,8 @@
 
     setText("mobile-portfolio-total-appreciation", data.totalAppreciation);
     
-    updateChange("mobile-portfolio-monthly-income-change", "+0.0%", true);
-    updateChange("mobile-portfolio-total-rental-change", "+0.0%", true);
+    updateChange("mobile-portfolio-monthly-income-change", "—", false);
+    updateChange("mobile-portfolio-total-rental-change", "—", false);
     updateChange("mobile-portfolio-total-appreciation-change", data.appreciation.display, data.appreciation.isPositive);
     
     setText("mobile-portfolio-monthly-income-period", period);

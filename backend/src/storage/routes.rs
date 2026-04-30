@@ -66,16 +66,7 @@ pub async fn upload_avatar(
         }
     };
 
-    let bucket = match &state.config.gcs_bucket {
-        Some(b) => b.clone(),
-        None => {
-            return (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(serde_json::json!({"error": "File storage is not configured"})),
-            )
-                .into_response()
-        }
-    };
+    let bucket = state.config.gcs_bucket.clone();
 
     // Read multipart field
     let (file_bytes, mime_type) = match read_multipart_file(&mut multipart, MAX_AVATAR_BYTES).await
@@ -98,15 +89,38 @@ pub async fn upload_avatar(
     let ext = service::extension_for_mime(&mime_type);
     let object_path = format!("avatars/{}/{}.{}", user.id, Uuid::new_v4(), ext);
 
-    // Upload to GCS (public – served directly)
-    let avatar_url =
-        match service::upload_public(&bucket, &object_path, file_bytes, &mime_type).await {
+    // Upload to GCS if configured, otherwise fall back to local filesystem.
+    let avatar_url = if let Some(ref b) = bucket {
+        let gcs_fut = service::upload_public(b, &object_path, file_bytes.clone(), &mime_type);
+        match tokio::time::timeout(std::time::Duration::from_secs(15), gcs_fut).await {
+            Ok(Ok(url)) => url,
+            Ok(Err(e)) => {
+                tracing::warn!("GCS avatar upload failed, falling back to local: {}", e);
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e2) => {
+                        tracing::error!("Local avatar fallback failed: {}", e2);
+                        return e2.into_response();
+                    }
+                }
+            }
+            Err(_) => {
+                tracing::warn!("GCS avatar upload timed out, falling back to local storage");
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e2) => return e2.into_response(),
+                }
+            }
+        }
+    } else {
+        match service::upload_local(&object_path, file_bytes).await {
             Ok(url) => url,
             Err(e) => {
-                tracing::error!("Avatar upload failed for {}: {}", user.id, e);
+                tracing::error!("Local avatar save failed: {}", e);
                 return e.into_response();
             }
-        };
+        }
+    };
 
     // Persist URL in users table
     let result = sqlx::query("UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2")
@@ -154,16 +168,7 @@ pub async fn upload_developer_logo(
         }
     };
 
-    let bucket = match &state.config.gcs_bucket {
-        Some(b) => b.clone(),
-        None => {
-            return (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(serde_json::json!({"error": "File storage is not configured"})),
-            )
-                .into_response()
-        }
-    };
+    let bucket = state.config.gcs_bucket.clone();
 
     let (file_bytes, mime_type) =
         match read_multipart_file(&mut multipart, MAX_DEVELOPER_LOGO_BYTES).await {
@@ -184,12 +189,31 @@ pub async fn upload_developer_logo(
     let ext = service::extension_for_mime(&mime_type);
     let object_path = format!("developer-logos/{}/{}.{}", user.id, Uuid::new_v4(), ext);
 
-    let logo_url = match service::upload_public(&bucket, &object_path, file_bytes, &mime_type).await
-    {
-        Ok(url) => url,
-        Err(e) => {
-            tracing::error!("Developer logo upload failed for {}: {}", user.id, e);
-            return e.into_response();
+    let logo_url = if let Some(ref b) = bucket {
+        let gcs_fut = service::upload_public(b, &object_path, file_bytes.clone(), &mime_type);
+        match tokio::time::timeout(std::time::Duration::from_secs(15), gcs_fut).await {
+            Ok(Ok(url)) => url,
+            Ok(Err(e)) => {
+                tracing::warn!("GCS logo upload failed, falling back to local: {}", e);
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e2) => return e2.into_response(),
+                }
+            }
+            Err(_) => {
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e2) => return e2.into_response(),
+                }
+            }
+        }
+    } else {
+        match service::upload_local(&object_path, file_bytes).await {
+            Ok(url) => url,
+            Err(e) => {
+                tracing::error!("Local logo save failed: {}", e);
+                return e.into_response();
+            }
         }
     };
 
@@ -241,16 +265,7 @@ pub async fn upload_post_image(
         }
     };
 
-    let bucket = match &state.config.gcs_bucket {
-        Some(b) => b.clone(),
-        None => {
-            return (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(serde_json::json!({"error": "File storage is not configured"})),
-            )
-                .into_response()
-        }
-    };
+    let bucket = state.config.gcs_bucket.clone();
 
     // Read multipart field
     let (file_bytes, mime_type) =
@@ -272,11 +287,11 @@ pub async fn upload_post_image(
     let ext = service::extension_for_mime(&mime_type);
     let object_path = format!("community/posts/{}/{}.{}", user.id, Uuid::new_v4(), ext);
 
-    // Try GCS first
-    let image_url = match tokio::time::timeout(
-        std::time::Duration::from_secs(15),
-        service::upload_public(&bucket, &object_path, file_bytes.clone(), &mime_type),
-    )
+    let image_url = if let Some(ref b) = bucket {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            service::upload_public(b, &object_path, file_bytes.clone(), &mime_type),
+        )
     .await
     {
         Ok(Ok(url)) => url,
@@ -298,6 +313,15 @@ pub async fn upload_post_image(
                     tracing::error!("Local post image save failed: {}", e);
                     return e.into_response();
                 }
+            }
+        }
+    }
+    } else {
+        match service::upload_local(&object_path, file_bytes).await {
+            Ok(url) => url,
+            Err(e) => {
+                tracing::error!("Local post image save failed: {}", e);
+                return e.into_response();
             }
         }
     };
@@ -344,16 +368,7 @@ pub async fn upload_kyc_document(
         }
     };
 
-    let bucket = match &state.config.gcs_bucket {
-        Some(b) => b.clone(),
-        None => {
-            return (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(serde_json::json!({"error": "File storage is not configured"})),
-            )
-                .into_response()
-        }
-    };
+    let bucket = state.config.gcs_bucket.clone();
 
     if let Err(retry_after) = state
         .auth_rate_limiter
@@ -460,15 +475,36 @@ pub async fn upload_kyc_document(
     let file_id = Uuid::new_v4();
     let object_path = format!("kyc/{}/{}.{}", user.id, file_id, ext);
 
-    // Upload to GCS (private)
-    let gcs_path =
-        match service::upload_private(&bucket, &object_path, file_bytes, &mime_type).await {
-            Ok(p) => p,
-            Err(e) => {
-                tracing::error!("KYC upload failed for {}: {}", user.id, e);
-                return e.into_response();
+    // Upload to GCS if configured, otherwise fall back to local filesystem.
+    let gcs_path = if let Some(ref b) = bucket {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            service::upload_private(b, &object_path, file_bytes.clone(), &mime_type),
+        )
+        .await
+        {
+            Ok(Ok(p)) => p,
+            Ok(Err(e)) => {
+                tracing::warn!("GCS KYC upload failed, falling back to local: {}", e);
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e2) => return e2.into_response(),
+                }
             }
-        };
+            Err(_) => {
+                tracing::warn!("GCS KYC upload timed out, falling back to local");
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e2) => return e2.into_response(),
+                }
+            }
+        }
+    } else {
+        match service::upload_local(&object_path, file_bytes).await {
+            Ok(url) => url,
+            Err(e) => return e.into_response(),
+        }
+    };
 
     let mut tx = match state.db.begin().await {
         Ok(tx) => tx,

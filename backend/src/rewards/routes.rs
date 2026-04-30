@@ -1555,14 +1555,7 @@ pub async fn api_affiliate_upload_tax_document(
         ));
     }
 
-    let bucket = match &state.config.gcs_bucket {
-        Some(b) => b.clone(),
-        None => {
-            return Err(crate::error::AppError::Internal(
-                "File storage not configured".into(),
-            ))
-        }
-    };
+    let bucket = state.config.gcs_bucket.clone();
 
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut original_filename = String::from("tax_document");
@@ -1599,22 +1592,22 @@ pub async fn api_affiliate_upload_tax_document(
         .collect::<String>();
     let gcs_path = format!("affiliates/{}/tax_docs/{}", user_id, safe_name);
 
-    // Upload to GCS (private bucket)
-    crate::storage::service::upload_private(
-        &bucket,
-        &gcs_path,
-        file_bytes,
-        "application/octet-stream",
-    )
-    .await
-    .map_err(|e| {
-        tracing::error!(
-            "Failed to upload tax document for affiliate {}: {}",
-            user_id,
-            e
-        );
-        crate::error::AppError::Internal("Upload failed".into())
-    })?;
+    // Upload to GCS if configured, otherwise fall back to local filesystem.
+    let gcs_path = if let Some(ref b) = bucket {
+        crate::storage::service::upload_private(b, &gcs_path, file_bytes, "application/octet-stream")
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to upload tax document for affiliate {}: {}", user_id, e);
+                crate::error::AppError::Internal("Upload failed".into())
+            })?
+    } else {
+        crate::storage::service::upload_local(&gcs_path, file_bytes)
+            .await
+            .map_err(|e| {
+                tracing::error!("Local tax doc save failed: {}", e);
+                crate::error::AppError::Internal("Upload failed".into())
+            })?
+    };
 
     // Store the path on the affiliate record (non-macro: column added in migration 076)
     sqlx::query(
@@ -1794,14 +1787,7 @@ pub async fn api_affiliate_upload_material(
 ) -> Result<axum::response::Response, crate::error::AppError> {
     let user_id = require_active_affiliate_user_id(&jar, &state).await?;
 
-    let bucket = match &state.config.gcs_bucket {
-        Some(b) => b.clone(),
-        None => {
-            return Err(crate::error::AppError::Internal(
-                "File storage not configured".into(),
-            ))
-        }
-    };
+    let bucket = state.config.gcs_bucket.clone();
 
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut original_filename = String::from("material");
@@ -1857,12 +1843,21 @@ pub async fn api_affiliate_upload_material(
         safe_name
     );
 
-    crate::storage::service::upload_private(&bucket, &gcs_path, file_bytes, content_type)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to upload affiliate material: {}", e);
-            crate::error::AppError::Internal("Upload failed".into())
-        })?;
+    let gcs_path = if let Some(ref b) = bucket {
+        crate::storage::service::upload_private(b, &gcs_path, file_bytes, content_type)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to upload affiliate material: {}", e);
+                crate::error::AppError::Internal("Upload failed".into())
+            })?
+    } else {
+        crate::storage::service::upload_local(&gcs_path, file_bytes)
+            .await
+            .map_err(|e| {
+                tracing::error!("Local affiliate material save failed: {}", e);
+                crate::error::AppError::Internal("Upload failed".into())
+            })?
+    };
 
     // Insert into affiliate_materials table (non-macro: table added in migration 076)
     let material_id: String = sqlx::query_scalar(

@@ -414,6 +414,43 @@ pub async fn handle_withdraw(
             return Redirect::to("/wallet?error=amount_too_large").into_response();
         }
 
+        // --- Security Checks (run before acquiring lock to avoid holding it during extra queries) ---
+        let now = Utc::now();
+
+        // 1. New Account Cooldown (72 hours from account creation)
+        if now.signed_duration_since(user.created_at) < chrono::Duration::hours(72) {
+            tracing::warn!("Withdrawal blocked: user {} in 72h cooldown", user.id);
+            return Redirect::to("/wallet?error=withdrawal_cooldown").into_response();
+        }
+
+        // 2. Velocity Check (Max 3 per hour)
+        let hourly_withdrawals: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM withdrawal_requests WHERE user_id = $1 AND created_at > NOW() - INTERVAL '1 hour'"
+        )
+        .bind(user.id)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+
+        if hourly_withdrawals >= 3 {
+            tracing::warn!("Withdrawal blocked: user {} hit velocity limits", user.id);
+            return Redirect::to("/wallet?error=velocity_exceeded").into_response();
+        }
+
+        // 3. Daily Limit Check (Max $25,000 / day)
+        let daily_withdrawn_sum: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(SUM(amount_cents), 0) FROM withdrawal_requests WHERE user_id = $1 AND created_at > NOW() - INTERVAL '24 hours' AND status != 'rejected'"
+        )
+        .bind(user.id)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+
+        if daily_withdrawn_sum + amount_cents > 25_000_000 {
+            tracing::warn!("Withdrawal blocked: user {} exceeded daily limit", user.id);
+            return Redirect::to("/wallet?error=daily_limit_exceeded").into_response();
+        }
+
         // --- Phase 1.4/1.6: Step-up 2FA for withdrawals over $100 ---
         if let Err(crate::error::AppError::TwoFactorRequired) =
             crate::auth::step_up::require_step_up_2fa(
@@ -427,6 +464,7 @@ pub async fn handle_withdraw(
         {
             return Redirect::to("/wallet?error=2fa_required").into_response();
         }
+
         // Use a transaction with FOR UPDATE lock to prevent TOCTOU double-spend race
         let mut tx = match state.db.begin().await {
             Ok(t) => t,
@@ -437,14 +475,14 @@ pub async fn handle_withdraw(
         };
 
         // Lock the wallet row and check balance atomically
-        let wallet_row = sqlx::query_as::<_, (Uuid, i64, DateTime<Utc>)>(
-            "SELECT id, balance_cents, created_at FROM wallets WHERE user_id = $1 AND wallet_type = 'cash' AND currency = 'USD' FOR UPDATE",
+        let wallet_row = sqlx::query_as::<_, (Uuid, i64)>(
+            "SELECT id, balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = 'cash' AND currency = 'USD' FOR UPDATE",
         )
         .bind(user.id)
         .fetch_optional(&mut *tx)
         .await;
 
-        let (wallet_id, current_balance, created_at) = match wallet_row {
+        let (wallet_id, current_balance) = match wallet_row {
             Ok(Some(row)) => row,
             Ok(None) => {
                 let _ = tx.rollback().await;
@@ -467,46 +505,6 @@ pub async fn handle_withdraw(
                 amount_cents
             );
             return Redirect::to("/wallet?error=insufficient_funds").into_response();
-        }
-
-        // --- Masterplan Priority 1: Security Checks ---
-        let now = Utc::now();
-
-        // 1. New Account Cooldown (72 hours)
-        if now.signed_duration_since(created_at) < chrono::Duration::hours(72) {
-            let _ = tx.rollback().await;
-            tracing::warn!("Withdrawal blocked: user {} in 72h cooldown", user.id);
-            return Redirect::to("/wallet?error=withdrawal_cooldown").into_response();
-        }
-
-        // 2. Velocity Check (Max 3 per hour)
-        let hourly_withdrawals: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM withdrawal_requests WHERE user_id = $1 AND created_at > NOW() - INTERVAL '1 hour'"
-        )
-        .bind(user.id)
-        .fetch_one(&mut *tx)
-        .await
-        .unwrap_or(0);
-
-        if hourly_withdrawals >= 3 {
-            let _ = tx.rollback().await;
-            tracing::warn!("Withdrawal blocked: user {} hit velocity limits", user.id);
-            return Redirect::to("/wallet?error=velocity_exceeded").into_response();
-        }
-
-        // 3. Daily Limit Check (Max $25,000 / day)
-        let daily_withdrawn_sum: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(SUM(amount_cents), 0) FROM withdrawal_requests WHERE user_id = $1 AND created_at > NOW() - INTERVAL '24 hours' AND status != 'rejected'"
-        )
-        .bind(user.id)
-        .fetch_one(&mut *tx)
-        .await
-        .unwrap_or(0);
-
-        if daily_withdrawn_sum + amount_cents > 25_000_000 {
-            let _ = tx.rollback().await;
-            tracing::warn!("Withdrawal blocked: user {} exceeded daily limit", user.id);
-            return Redirect::to("/wallet?error=daily_limit_exceeded").into_response();
         }
 
         let pm_uuid = if let Some(pm_id) = &form.payment_method_id {

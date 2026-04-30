@@ -172,7 +172,12 @@
   // ─── Small helpers ────────────────────────────────────────────
 
   function $(id) { return document.getElementById(id); }
-  function setVal(id, v) { const el = $(id); if (el) el.value = v == null ? "" : v; }
+  function setVal(id, v) {
+    const el = $(id);
+    if (!el) return;
+    el.value = v == null ? "" : v;
+    if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   function getVal(id) { const el = $(id); return el ? el.value.trim() : ""; }
 
   function toast(message, type) {

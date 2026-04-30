@@ -118,9 +118,9 @@ impl TransactionStatus {
     /// Emits both legacy class and new design-system class for gradual migration.
     pub fn css_class(&self) -> &'static str {
         match self {
-            Self::Pending | Self::Processing => "status-in-process ds-badge ds-badge--warning",
-            Self::Completed => "status-completed ds-badge ds-badge--success",
-            Self::Failed | Self::Cancelled => "status-declined ds-badge ds-badge--danger",
+            Self::Pending | Self::Processing => "ds-badge ds-badge--warning",
+            Self::Completed => "ds-badge ds-badge--success",
+            Self::Failed | Self::Cancelled => "ds-badge ds-badge--danger",
         }
     }
 }

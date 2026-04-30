@@ -276,12 +276,20 @@
     var titlePct  = document.querySelector(".chart-title-percentage");
     if (titleText) titleText.textContent = getPeriodDisplayName(periodKey);
     if (titlePct) {
-      titlePct.textContent = periodReturn.label;
-      if (periodReturn.pct < 0) {
-        titlePct.classList.add("chart-title-negative");
-      } else {
-        titlePct.classList.remove("chart-title-negative");
+      // Use real total appreciation from backend data — no real time-series exists
+      // so period-specific returns cannot be computed accurately.
+      var realLabel = "—";
+      if (portfolioData && portfolioData.total_purchase_cents > 0) {
+        var realPct = ((portfolioData.total_appreciation_cents || 0) / portfolioData.total_purchase_cents) * 100;
+        var sign = realPct >= 0 ? "+" : "";
+        realLabel = sign + realPct.toFixed(1) + "%";
+        if (realPct < 0) {
+          titlePct.classList.add("chart-title-negative");
+        } else {
+          titlePct.classList.remove("chart-title-negative");
+        }
       }
+      titlePct.textContent = realLabel;
     }
 
     // 2. Render bars

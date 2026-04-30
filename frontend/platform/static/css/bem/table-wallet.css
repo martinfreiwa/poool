@@ -48,7 +48,7 @@
 }
 
 /* Wallet-specific cell alignment */
-.table__wrapper--wallet .table__cell {
+.table__wrapper--wallet .ds-table-td {
   display: flex;
   align-items: center;
 }
@@ -90,65 +90,6 @@
   font-size: 14px;
   line-height: 20px;
   color: var(--page-title-color);
-}
-
-/* Status badge styling */
-.table__wrapper--wallet .wallet-transaction-status-badge {
-  box-sizing: border-box;
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 2px 6px;
-  gap: 4px;
-  height: 22px;
-  background: #ffffff;
-  border: 1px solid #d5d7da;
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-  border-radius: 6px;
-}
-
-.table__wrapper--wallet .wallet-transaction-status-dot {
-  width: 8px;
-  height: 8px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.table__wrapper--wallet .wallet-transaction-status-dot::after {
-  content: "";
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.table__wrapper--wallet .wallet-transaction-status-text {
-  font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-  color: #414651;
-}
-
-/* Status variants */
-.table__wrapper--wallet
-  .status-completed
-  .wallet-transaction-status-dot::after {
-  background: #17b26a;
-}
-
-.table__wrapper--wallet
-  .status-in-process
-  .wallet-transaction-status-dot::after {
-  background: #f79009;
-}
-
-.table__wrapper--wallet .status-declined .wallet-transaction-status-dot::after {
-  background: #f04438;
 }
 
 /* Date and wallet columns */

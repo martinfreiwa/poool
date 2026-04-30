@@ -237,48 +237,48 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             </h2>
           </div>
           <div id="wallet-transactions-section" class="wallet-transactions-section">
-            <div id="transactions-table" class="table__wrapper table__wrapper--wallet">
-              <div id="wallet-transactions-container" class="table__container">
-                <div id="wallet-transactions-header" class="table__header-row">
-                  <div class="table__header-cell table__header-cell--type">
+            <div id="transactions-table" class="ds-table-container table__wrapper--wallet">
+              <div id="wallet-transactions-container" class="ds-table-flex">
+                <div id="wallet-transactions-header" class="ds-table-flex__head">
+                  <div class="ds-table-th table__header-cell--type">
                     <div class="table__header-content"><span class="table__header-text">Type</span></div>
                   </div>
-                  <div class="table__header-cell table__header-cell--status">
+                  <div class="ds-table-th table__header-cell--status">
                     <div class="table__header-content">
                       <img src="/static/images/icons/bookmark-check.svg" alt="Status" width="16" height="16" /><span
                         class="table__header-text">Status</span>
                     </div>
                   </div>
-                  <div class="table__header-cell table__header-cell--date">
+                  <div class="ds-table-th table__header-cell--date">
                     <div class="table__header-content">
                       <img src="/static/images/icons/calendar-check-02.svg" alt="Date" width="16" height="16" /><span
                         class="table__header-text">Date</span>
                     </div>
                   </div>
-                  <div class="table__header-cell table__header-cell--wallet">
+                  <div class="ds-table-th table__header-cell--wallet">
                     <div class="table__header-content">
                       <img src="/static/images/icons/wallet-04.svg" alt="Wallet" width="16" height="16" /><span
                         class="table__header-text">Wallet</span>
                     </div>
                   </div>
-                  <div class="table__header-cell table__header-cell--amount">
+                  <div class="ds-table-th table__header-cell--amount">
                     <div class="table__header-content">
                       <img src="/static/images/icons/coins-stacked-03.svg" alt="Amount" width="16" height="16" /><span
                         class="table__header-text">Amount</span>
                     </div>
                   </div>
-                  <div class="table__header-cell table__header-cell--actions">
+                  <div class="ds-table-th table__header-cell--actions">
                     <div class="table__header-content">
                       <span class="table__header-text">Actions</span><img src="/static/images/icons/arrow-down.svg" alt="Sort"
                         width="12" height="12" />
                     </div>
                   </div>
                 </div>
-                <div id="wallet-transactions-body" class="table__body">
+                <div id="wallet-transactions-body" class="ds-table-flex__body">
                   {% if has_transactions %}
                   {% for tx in transactions %}
-                  <div id="wallet-transactions-row-{{ tx.index }}" class="table__row">
-                    <div class="table__cell table__cell--type">
+                  <div id="wallet-transactions-row-{{ tx.index }}" class="ds-table-flex__row">
+                    <div class="ds-table-td table__cell--type">
                       <div class="wallet-transaction-type-icon">
                         <div class="featured-icon">
                           {% if tx.tx_type_icon == "deposit" %}
@@ -315,22 +315,19 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                       </div>
                       <span class="wallet-transaction-type-text">{{ tx.tx_type_label }}</span>
                     </div>
-                    <div class="table__cell table__cell--status">
-                      <div class="wallet-transaction-status-badge {{ tx.status_css }}">
-                        <div class="wallet-transaction-status-dot"></div>
-                        <span class="wallet-transaction-status-text">{{ tx.status_label }}</span>
-                      </div>
+                    <div class="ds-table-td table__cell--status">
+                      <span class="{{ tx.status_css }}"><span class="ds-badge__dot"></span>{{ tx.status_label }}</span>
                     </div>
-                    <div class="table__cell table__cell--date">
+                    <div class="ds-table-td table__cell--date">
                       <span class="table__cell-text-value">{{ tx.date_display }}</span>
                     </div>
-                    <div class="table__cell table__cell--wallet">
+                    <div class="ds-table-td table__cell--wallet">
                       <span class="table__cell-text-value">{{ tx.wallet_label }}</span>
                     </div>
-                    <div class="table__cell table__cell--amount">
+                    <div class="ds-table-td table__cell--amount">
                       <span class="{{ tx.amount_css }}">{{ tx.amount_prefix }} {{ tx.amount_display }}</span>
                     </div>
-                    <div class="table__cell table__cell--actions">
+                    <div class="ds-table-td table__cell--actions">
                       <button class="ds-btn ds-btn--ghost">
                         View details
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -460,39 +457,39 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         <div class="mobile-transactions-section">
           <h2 class="mobile-transactions-title">Transactions</h2>
           <div class="mobile-transactions-table-wrapper">
-            <div id="wallet-transactions-wrapper" class="table__wrapper table__wrapper--wallet">
-              <div class="table__container">
-                <div class="table__header-row">
-                  <div class="table__header-cell table__header-cell--type" style="width: 182px">
+            <div id="wallet-transactions-wrapper" class="ds-table-container table__wrapper--wallet">
+              <div class="ds-table-flex">
+                <div class="ds-table-flex__head">
+                  <div class="ds-table-th table__header-cell--type" style="width: 182px">
                     <div class="table__header-content"><span class="table__header-text">Type</span></div>
                   </div>
-                  <div class="table__header-cell table__header-cell--status" style="width: 163px">
+                  <div class="ds-table-th table__header-cell--status" style="width: 163px">
                     <div class="table__header-content"><img src="/static/images/icons/bookmark-check.svg" alt="Status"
                         width="16" height="16" /><span class="table__header-text">Status</span></div>
                   </div>
-                  <div class="table__header-cell table__header-cell--date" style="width: 200px">
+                  <div class="ds-table-th table__header-cell--date" style="width: 200px">
                     <div class="table__header-content"><img src="/static/images/icons/calendar-check-02.svg" alt="Date"
                         width="16" height="16" /><span class="table__header-text">Date</span></div>
                   </div>
-                  <div class="table__header-cell table__header-cell--wallet" style="width: 180px">
+                  <div class="ds-table-th table__header-cell--wallet" style="width: 180px">
                     <div class="table__header-content"><img src="/static/images/icons/wallet-04.svg" alt="Wallet" width="16"
                         height="16" /><span class="table__header-text">Wallet</span></div>
                   </div>
-                  <div class="table__header-cell table__header-cell--amount" style="width: 183px">
+                  <div class="ds-table-th table__header-cell--amount" style="width: 183px">
                     <div class="table__header-content"><img src="/static/images/icons/coins-stacked-03.svg" alt="Amount"
                         width="16" height="16" /><span class="table__header-text">Amount</span></div>
                   </div>
-                  <div class="table__header-cell table__header-cell--actions" style="width: 188px">
+                  <div class="ds-table-th table__header-cell--actions" style="width: 188px">
                     <div class="table__header-content"><span class="table__header-text">Actions</span><img
                         src="/static/images/icons/arrow-down.svg" alt="Sort" width="12" height="12" />
                     </div>
                   </div>
                 </div>
-                <div id="mobile-wallet-transactions-body" class="table__body">
+                <div id="mobile-wallet-transactions-body" class="ds-table-flex__body">
                   {% if has_transactions %}
                   {% for tx in transactions %}
-                  <div class="table__row">
-                    <div class="table__cell table__cell--type" style="width: 182px">
+                  <div class="ds-table-flex__row">
+                    <div class="ds-table-td table__cell--type" style="width: 182px">
                       <div class="wallet-transaction-type-icon">
                         <div class="featured-icon">
                           {% if tx.tx_type_icon == "deposit" %}
@@ -525,22 +522,19 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                       </div>
                       <span class="wallet-transaction-type-text">{{ tx.tx_type_label }}</span>
                     </div>
-                    <div class="table__cell table__cell--status" style="width: 163px">
-                      <div class="wallet-transaction-status-badge {{ tx.status_css }}">
-                        <div class="wallet-transaction-status-dot"></div><span class="wallet-transaction-status-text">{{
-                          tx.status_label }}</span>
-                      </div>
+                    <div class="ds-table-td table__cell--status" style="width: 163px">
+                      <span class="{{ tx.status_css }}"><span class="ds-badge__dot"></span>{{ tx.status_label }}</span>
                     </div>
-                    <div class="table__cell table__cell--date" style="width: 200px"><span
+                    <div class="ds-table-td table__cell--date" style="width: 200px"><span
                         class="table__cell-text-value">{{
                         tx.date_display }}</span></div>
-                    <div class="table__cell table__cell--wallet" style="width: 180px"><span
+                    <div class="ds-table-td table__cell--wallet" style="width: 180px"><span
                         class="table__cell-text-value">{{
                         tx.wallet_label }}</span></div>
-                    <div class="table__cell table__cell--amount" style="width: 183px"><span
+                    <div class="ds-table-td table__cell--amount" style="width: 183px"><span
                         class="{{ tx.amount_css }}">{{
                         tx.amount_prefix }} {{ tx.amount_display }}</span></div>
-                    <div class="table__cell table__cell--actions" style="width: 188px">
+                    <div class="ds-table-td table__cell--actions" style="width: 188px">
                       <button class="ds-btn ds-btn--ghost">View details <svg width="16" height="16"
                           viewBox="0 0 16 16" fill="none">
                           <path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
@@ -609,30 +603,30 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   </div> <!-- end wallet-container -->
   </main> <!-- end wallet-main -->
 
-  <div id="deposit-modal" class="bank-modal-overlay" style="display: none">
-    <div class="bank-modal-container">
-      <div class="bank-modal-header">
-        <h2 class="bank-modal-title">Deposit Funds</h2>
-        <button class="bank-modal-close" onclick="closeDepositModal()">
+  <div id="deposit-modal" class="ds-modal-overlay">
+    <div class="ds-modal">
+      <div class="ds-modal__header">
+        <h2 class="ds-modal__title">Deposit Funds</h2>
+        <button class="ds-modal__close" onclick="closeDepositModal()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
         </button>
       </div>
-      <div class="bank-modal-body">
-        <form action="/wallet/deposit" method="POST" class="bank-modal-form"
+      <div class="ds-modal__body">
+        <form action="/wallet/deposit" method="POST"
           onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
-          <div class="form-group">
-            <label class="form-label">Payment Method</label>
-            <select name="payment_method_id" class="form-input" style="width: 100%; height: 44px">
+          <div class="ds-form-group">
+            <label class="ds-form-label">Payment Method</label>
+            <select name="payment_method_id" class="ds-select">
               {{ payment_method_options | safe }}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Amount (USD)</label>
-            <input type="number" name="amount" min="1" step="0.01" required class="form-input"
-              style="width: 100%; height: 44px" placeholder="e.g. 1000" />
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
+            <input type="number" name="amount" min="1" step="0.01" required class="ds-input"
+              placeholder="e.g. 1000" />
           </div>
           <button type="submit" class="ds-btn ds-btn--primary ds-btn--full">Confirm Deposit</button>
         </form>
@@ -640,30 +634,30 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     </div>
   </div>
 
-  <div id="withdraw-modal" class="bank-modal-overlay" style="display: none">
-    <div class="bank-modal-container">
-      <div class="bank-modal-header">
-        <h2 class="bank-modal-title">Withdraw Funds</h2>
-        <button class="bank-modal-close" onclick="closeWithdrawModal()">
+  <div id="withdraw-modal" class="ds-modal-overlay">
+    <div class="ds-modal">
+      <div class="ds-modal__header">
+        <h2 class="ds-modal__title">Withdraw Funds</h2>
+        <button class="ds-modal__close" onclick="closeWithdrawModal()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
         </button>
       </div>
-      <div class="bank-modal-body">
-        <form action="/wallet/withdraw" method="POST" class="bank-modal-form"
+      <div class="ds-modal__body">
+        <form action="/wallet/withdraw" method="POST"
           onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
-          <div class="form-group">
-            <label class="form-label">Withdraw to</label>
-            <select name="payment_method_id" class="form-input" style="width: 100%; height: 44px">
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required">Withdraw to</label>
+            <select name="payment_method_id" class="ds-select">
               {{ payment_method_options | safe }}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Amount (USD)</label>
-            <input type="number" name="amount" min="1" step="0.01" required class="form-input"
-              style="width: 100%; height: 44px" placeholder="e.g. 500" />
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
+            <input type="number" name="amount" min="1" step="0.01" required class="ds-input"
+              placeholder="e.g. 500" />
           </div>
           <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary ds-btn--full">Confirm
             Withdrawal</button>
@@ -673,42 +667,39 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   </div>
 
   <!-- Add Card Modal -->
-  <div id="add-card-modal" class="bank-modal-overlay" style="display: none">
-    <div class="bank-modal-container">
-      <div class="bank-modal-header">
-        <h2 class="bank-modal-title">Add Card</h2>
-        <button class="bank-modal-close" onclick="closeCardModal()">
+  <div id="add-card-modal" class="ds-modal-overlay">
+    <div class="ds-modal">
+      <div class="ds-modal__header">
+        <h2 class="ds-modal__title">Add Card</h2>
+        <button class="ds-modal__close" onclick="closeCardModal()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
         </button>
       </div>
-      <div class="bank-modal-body">
-        <p class="bank-modal-desc">Add your credit or debit card details.</p>
+      <div class="ds-modal__body">
+        <p class="ds-modal__subtitle">Add your credit or debit card details.</p>
 
         <!-- Warning alert if Stripe is missing -->
         {% if not stripe_publishable_key or stripe_publishable_key == "" %}
-        <div
-          style="background: #FFF4ED; border: 1px solid #F9DBAF; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #B54708;">
-          <strong>Card saving unavailable:</strong> Stripe publishable key is missing. Add a verified Stripe payment
-          method before saving cards.
+        <div class="ds-modal__error" style="display:block">
+          <strong>Card saving unavailable:</strong> Stripe is not configured. Contact support.
         </div>
         {% endif %}
 
-        <form id="add-card-form" class="bank-modal-form">
-          <div class="form-group">
-            <label class="form-label">Cardholder Name <span style="color:#d92d20">*</span></label>
-            <input type="text" id="card-holder-name" name="holder_name" placeholder="John Doe" class="form-input"
+        <form id="add-card-form">
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required">Cardholder Name</label>
+            <input type="text" id="card-holder-name" name="holder_name" placeholder="John Doe" class="ds-input"
               required />
           </div>
 
           <!-- Stripe Elements Container -->
           <div id="stripe-element-container" style="display: none;">
-            <div class="form-group">
-              <label class="form-label">Card Details <span style="color:#d92d20">*</span></label>
-              <div id="card-element" class="form-input"
-                style="padding: 12px; height: 44px; border: 1px solid #D0D5DD; border-radius: 8px; background: #fff;">
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">Card Details</label>
+              <div id="card-element" class="ds-input" style="height: 44px; padding: 10px 14px;">
               </div>
             </div>
 
@@ -720,11 +711,11 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
           <!-- Manual Fallback Container -->
           <div id="manual-card-container" style="display: none;">
-            <div class="form-group">
-              <label class="form-label">Card Number <span style="color:#d92d20">*</span></label>
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">Card Number</label>
               <div style="position: relative">
                 <input type="text" id="card-number" name="card_number" placeholder="4242 4242 4242 4242"
-                  class="form-input" maxlength="19" autocomplete="cc-number" inputmode="numeric"
+                  class="ds-input" maxlength="19" autocomplete="cc-number" inputmode="numeric"
                   style="padding-right: 56px" />
                 <div id="card-brand-icon"
                   style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); height: 24px; display: flex; align-items: center; opacity: 0; transition: opacity 0.2s ease;">
@@ -734,21 +725,20 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               </div>
             </div>
             <div style="display: flex; gap: 16px">
-              <div class="form-group" style="flex: 1">
-                <label class="form-label">Expiry Date <span style="color:#d92d20">*</span></label>
-                <input type="text" id="card-expiry" name="expiry" placeholder="MM / YY" class="form-input" maxlength="7"
+              <div class="ds-form-group" style="flex: 1">
+                <label class="ds-form-label ds-form-label--required">Expiry Date</label>
+                <input type="text" id="card-expiry" name="expiry" placeholder="MM / YY" class="ds-input" maxlength="7"
                   autocomplete="cc-exp" inputmode="numeric" />
               </div>
-              <div class="form-group" style="flex: 1">
-                <label class="form-label">CVV <span style="color:#d92d20">*</span></label>
-                <input type="password" id="card-cvv" name="cvv" placeholder="•••" class="form-input" maxlength="4"
+              <div class="ds-form-group" style="flex: 1">
+                <label class="ds-form-label ds-form-label--required">CVV</label>
+                <input type="password" id="card-cvv" name="cvv" placeholder="•••" class="ds-input" maxlength="4"
                   autocomplete="cc-csc" inputmode="numeric" />
               </div>
             </div>
           </div>
 
-          <div id="card-errors" role="alert" style="color: #F04438; font-size: 14px; margin-top: 4px; min-height: 20px">
-          </div>
+          <div id="card-errors" role="alert" class="ds-modal__error"></div>
           <div class="form-actions" style="margin-top: 24px">
             <button type="submit" id="submit-card-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Card</button>
           </div>
@@ -885,9 +875,11 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
             if (manualCardExp) {
               manualCardExp.addEventListener("input", function (e) {
-                var v = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-                if (v.length >= 2) {
+                var v = e.target.value.replace(/\D/g, "");
+                if (v.length > 2) {
                   e.target.value = v.substring(0, 2) + " / " + v.substring(2, 4);
+                } else {
+                  e.target.value = v;
                 }
               });
             }
@@ -953,9 +945,11 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                     closeCardModal();
                     window.location.reload();
                   } else {
-                    return res.text().then(function (t) { errEl.textContent = t || "Error saving card to server"; });
+                    return res.text().then(function (t) {
+                      errEl.textContent = t || "Error saving card to server";
+                      btn.disabled = false; btn.textContent = "Save Card";
+                    });
                   }
-                  btn.disabled = false; btn.textContent = "Save Card";
                 })
                 .catch(function () {
                   errEl.textContent = "A network error occurred. Please try again.";
@@ -969,34 +963,34 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   </div>
 
   <!-- Add Bank Details Modal -->
-  <div id="add-bank-modal" class="bank-modal-overlay" style="display: none">
-    <div class="bank-modal-container" style="max-width: 520px">
-      <div class="bank-modal-header">
-        <h2 class="bank-modal-title">Add Bank Account</h2>
-        <button class="bank-modal-close" onclick="closeBankModal()">
+  <div id="add-bank-modal" class="ds-modal-overlay">
+    <div class="ds-modal">
+      <div class="ds-modal__header">
+        <h2 class="ds-modal__title">Add Bank Account</h2>
+        <button class="ds-modal__close" onclick="closeBankModal()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
         </button>
       </div>
-      <div class="bank-modal-body">
-        <p class="bank-modal-desc">Your details are stored securely and used only for withdrawals.</p>
-        <form id="bank-modal-form" class="bank-modal-form">
+      <div class="ds-modal__body">
+        <p class="ds-modal__subtitle">Your details are stored securely and used only for withdrawals.</p>
+        <form id="bank-modal-form">
           <!-- Hidden system field set by JS -->
           <input type="hidden" id="bank-system-field" name="bank_system" value="swift" />
 
           <!-- Account Holder -->
-          <div class="form-group">
-            <label class="form-label">Account Holder Name <span style="color:#d92d20">*</span></label>
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required">Account Holder Name</label>
             <input type="text" name="account_holder_name" id="bank-holder-name" placeholder="Full legal name"
-              class="form-input" required />
+              class="ds-input" required />
           </div>
 
           <!-- Country -->
-          <div class="form-group">
-            <label class="form-label">Country <span style="color:#d92d20">*</span></label>
-            <select name="bank_country" id="bank-country-select" class="form-input" style="height:44px">
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required">Country</label>
+            <select name="bank_country" id="bank-country-select" class="ds-select">
               <optgroup label="── Common ──">
                 <option value="US">🇺🇸 United States (ACH)</option>
                 <option value="GB">🇬🇧 United Kingdom (BACS)</option>
@@ -1049,22 +1043,22 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
 
           <!-- Bank Name -->
-          <div class="form-group">
-            <label class="form-label">Bank Name <span style="color:#d92d20">*</span></label>
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required">Bank Name</label>
             <input type="text" name="bank_name" id="bank-name-input" placeholder="e.g. Chase, Barclays, Wise"
-              class="form-input" required />
+              class="ds-input" required />
           </div>
 
           <!-- Dynamic fields injected here -->
           <div id="bank-dynamic-fields"></div>
 
           <!-- Label (optional) -->
-          <div class="form-group">
-            <label class="form-label">Nickname <span style="color:#667085;font-weight:400">(optional)</span></label>
-            <input type="text" name="label" placeholder="e.g. My Savings Account" class="form-input" />
+          <div class="ds-form-group">
+            <label class="ds-form-label">Nickname (optional)</label>
+            <input type="text" name="label" placeholder="e.g. My Savings Account" class="ds-input" />
           </div>
 
-          <div id="bank-errors" role="alert" style="color:#F04438;font-size:14px;margin-top:4px;min-height:20px"></div>
+          <div id="bank-errors" role="alert" class="ds-modal__error"></div>
           <div class="form-actions" style="margin-top:24px">
             <button type="submit" id="submit-bank-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Bank
               Account</button>
@@ -1118,7 +1112,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             }
           };
 
-          var SEPA_COUNTRIES = ["DE", "FR", "IT", "ES", "NL", "BE", "AT", "PT", "IE", "FI", "SE", "DK", "NO", "CH", "PL", "CZ", "HU", "RO", "GR", "LU", "SG", "HK", "JP", "KR", "NZ", "CA", "BR", "MX", "AE", "SA", "ZA", "NG", "KE"];
+          var SEPA_COUNTRIES = ["DE", "FR", "IT", "ES", "NL", "BE", "AT", "PT", "IE", "FI", "SE", "DK", "NO", "CH", "PL", "CZ", "HU", "RO", "GR", "LU"];
 
           function getBankConfig(countryCode) {
             if (BANK_SYSTEMS[countryCode]) return BANK_SYSTEMS[countryCode];
@@ -1133,20 +1127,20 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             container.innerHTML = "";
             config.fields.forEach(function (f) {
               var grp = document.createElement("div");
-              grp.className = "form-group";
+              grp.className = "ds-form-group";
               var labelEl = document.createElement("label");
-              labelEl.className = "form-label";
-              labelEl.innerHTML = f.label + (f.optional ? ' <span style="color:#667085;font-weight:400">(optional)</span>' : ' <span style="color:#d92d20">*</span>');
+              labelEl.className = f.optional ? "ds-form-label" : "ds-form-label ds-form-label--required";
+              labelEl.textContent = f.label + (f.optional ? " (optional)" : "");
               var input = document.createElement("input");
               input.type = "text";
               input.name = f.name;
               input.placeholder = f.placeholder;
-              input.className = "form-input";
+              input.className = "ds-input";
               input.style.textTransform = "uppercase";
               if (!f.optional) input.required = true;
               if (f.maxlen) input.maxLength = f.maxlen;
               var hint = document.createElement("p");
-              hint.style.cssText = "font-size:12px;color:#667085;margin:4px 0 0 0";
+              hint.className = "ds-form-hint";
               hint.textContent = f.help;
               grp.appendChild(labelEl);
               grp.appendChild(input);
@@ -1154,8 +1148,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               container.appendChild(grp);
             });
             // Add system badge
-            var badge = document.createElement("div");
-            badge.style.cssText = "display:inline-flex;align-items:center;gap:6px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:6px;padding:4px 10px;font-size:12px;color:#0369A1;margin-bottom:8px;font-weight:500";
+            var badge = document.createElement("span");
+            badge.className = "ds-badge ds-badge--info";
             var systemLabel = { ach: "ACH Transfer", bacs: "BACS / Faster Payments", bsb: "BSB (Australia)", ifsc: "NEFT/RTGS (India)", sepa: "SEPA Transfer", swift: "SWIFT International Wire" };
             badge.textContent = "🏦 " + (systemLabel[config.system] || config.system.toUpperCase());
             container.insertBefore(badge, container.firstChild);
@@ -1205,20 +1199,20 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
   <!-- Wallet Actions & Initialization -->
   <script>
-    function openDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
-    function closeDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
-    function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
-    function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
-    function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
-    function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+    function openDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
+    function closeDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
+    function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
+    function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
+    function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
+    function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
     function openCardModal() {
       var m = document.getElementById("add-card-modal");
       if (m) {
-        m.style.display = "flex";
+        m.classList.add('active');
         document.body.style.overflow = "hidden";
       }
     }
-    function closeCardModal() { var m = document.getElementById("add-card-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+    function closeCardModal() { var m = document.getElementById("add-card-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
 
     document.addEventListener("DOMContentLoaded", () => {
       const depositBtn = document.getElementById("deposit-btn");
@@ -1227,14 +1221,14 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       if (emptyDepositBtn) { emptyDepositBtn.addEventListener("click", openDepositModal); }
       const withdrawBtn = document.getElementById("withdraw-btn");
       if (withdrawBtn) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
-      document.querySelectorAll(".ds-btn ds-btn--primary ds-btn--full").forEach(btn => btn.addEventListener("click", openDepositModal));
-      document.querySelectorAll(".ds-btn ds-btn--secondary ds-btn--full").forEach(btn => btn.addEventListener("click", openWithdrawModal));
+      document.querySelectorAll(".ds-btn.ds-btn--primary.ds-btn--full").forEach(btn => btn.addEventListener("click", openDepositModal));
+      document.querySelectorAll(".ds-btn.ds-btn--secondary.ds-btn--full").forEach(btn => btn.addEventListener("click", openWithdrawModal));
       document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
-      document.querySelectorAll("#ds-btn ds-btn--ghost").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
+      document.querySelectorAll(".ds-btn.ds-btn--ghost").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
 
       // "View details" on each transaction row → navigate to /transactions
       document.body.addEventListener("click", function (e) {
-        var actionBtn = e.target.closest(".ds-btn ds-btn--ghost");
+        var actionBtn = e.target.closest(".ds-btn.ds-btn--ghost");
         if (!actionBtn) return;
         var row = actionBtn.closest("[id^='wallet-transactions-row-']");
         var rowId = row && row.id ? row.id.replace("wallet-transactions-row-", "") : "";
@@ -1247,7 +1241,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         if (overlay) {
           overlay.addEventListener("click", function (e) {
             if (e.target === overlay) {
-              overlay.style.display = "none";
+              overlay.classList.remove('active');
               document.body.style.overflow = "";
             }
           });

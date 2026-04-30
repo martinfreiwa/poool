@@ -31,7 +31,7 @@ pub async fn list_payment_methods(jar: CookieJar, State(state): State<AppState>)
     };
 
     match sqlx::query_as::<_, PaymentMethod>(
-        "SELECT * FROM payment_methods WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC"
+        "SELECT * FROM payment_methods WHERE user_id = $1 AND status != 'failed' ORDER BY is_default DESC, created_at DESC"
     )
     .bind(user_id)
     .fetch_all(&state.db)
@@ -76,10 +76,10 @@ pub async fn handle_add_card(
     match service::attach_card(&state.db, &user_id, form).await {
         Ok(_) => Html("".to_string()).into_response(),
         Err(e) => {
-            tracing::error!("Error parsing card input: {}", e);
+            tracing::error!("Error saving card for user {}: {}", user_id, e);
             (
                 StatusCode::BAD_REQUEST,
-                Html(format!("<div class='error'>Error saving card: {}</div>", e)),
+                Html("Unable to save card. Please try again.".to_string()),
             )
                 .into_response()
         }
@@ -102,12 +102,9 @@ pub async fn handle_add_bank(
     match service::add_bank(&state.db, &user_id, form).await {
         Ok(_) => Html("".to_string()).into_response(),
         Err(e) => {
-            tracing::error!("Error parsing bank input: {}", e);
-            Html(format!(
-                "<div style='color:red;'>Error saving bank: {}</div>",
-                e
-            ))
-            .into_response()
+            tracing::error!("Error saving bank for user {}: {}", user_id, e);
+            Html("Unable to save bank account. Please try again.".to_string())
+                .into_response()
         }
     }
 }

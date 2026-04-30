@@ -91,7 +91,7 @@ extra_js=['htmx-init',
               </div>
             </div>
             <!-- Expandable Chart Section -->
-            <div id="portfolio-chart-section" class="portfolio-chart-section" x-show="expanded"
+            <div id="portfolio-chart-section" class="portfolio-chart-section" x-cloak x-show="expanded"
               x-transition:enter="transition-all ease-out duration-500"
               x-transition:enter-start="opacity-0 max-h-0 transform -translate-y-4"
               x-transition:enter-end="opacity-100 max-h-96 transform translate-y-0"
@@ -359,7 +359,7 @@ extra_js=['htmx-init',
                     <path d="M3.5 8.5L8.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
                     <path d="M8.5 8.5V3.5H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
                   </svg>
-                  <span id="portfolio-monthly-income-change" class="financials-percent" style="margin-left: 4px;">+0.0%</span>
+                  <span id="portfolio-monthly-income-change" class="financials-percent" style="margin-left: 4px;">—</span>
                 </div>
                 
                 <div id="portfolio-monthly-income-period" class="financials-period" style="display:none;"></div>
@@ -398,7 +398,7 @@ extra_js=['htmx-init',
                     <path d="M3.5 8.5L8.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
                     <path d="M8.5 8.5V3.5H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
                   </svg>
-                  <span id="portfolio-total-rental-change" class="financials-percent" style="margin-left: 4px;">+0.0%</span>
+                  <span id="portfolio-total-rental-change" class="financials-percent" style="margin-left: 4px;">—</span>
                 </div>
                 
                 <div id="portfolio-total-rental-period" class="financials-period" style="display:none;"></div>

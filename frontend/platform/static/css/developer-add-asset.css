@@ -36,14 +36,14 @@
 }
 
 /* ===========================
-   1.1 Asset Type Grid — flow-based, left-aligned
+   1.1 Asset Type Grid — 3-column equal grid
    =========================== */
 .asset-type-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
   width: 100%;
-  max-width: 760px;
+  max-width: 900px;
 }
 
 /* ===========================
@@ -52,35 +52,28 @@
 .asset-type-card {
   box-sizing: border-box;
   width: 100%;
-  min-height: 0;
   background: #ffffff;
   border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-  border-radius: 12px;
+  border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
 }
 
-.asset-type-card:hover {
-  box-shadow: 0 4px 12px rgba(10, 13, 18, 0.06);
-  transform: none;
+.asset-type-card:not(.coming-soon):hover {
+  box-shadow: 0 4px 16px rgba(10, 13, 18, 0.10);
+  transform: translateY(-2px);
 }
 
 .asset-type-card.selected,
 .asset-type-card.js-selected {
-  border: 1px solid var(--primary-color);
+  border: 2px solid var(--primary-color);
   box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08), 0px 1px 2px rgba(10, 13, 18, 0.05);
-}
-
-.asset-type-card--primary {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  min-height: 116px;
-  padding: 20px;
 }
 
 /* ===========================
@@ -88,14 +81,16 @@
    =========================== */
 .asset-type-image {
   position: relative;
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: rgba(0, 0, 255, 0.04) !important;
+  width: 100%;
+  height: 140px;
+  border-radius: 0;
+  background-size: cover !important;
+  background-position: center !important;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .asset-type-glass {
@@ -104,52 +99,58 @@
   height: 100%;
   left: 0;
   top: 0;
-  background: transparent;
-  backdrop-filter: none;
+  background: linear-gradient(135deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 100%);
+  backdrop-filter: blur(0px);
 }
 
 /* ===========================
    4. Icon Wrapper
    =========================== */
 .asset-type-icon-wrapper {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .asset-type-icon {
-  width: 28px;
-  height: 28px;
-}
-
-.asset-type-icon path,
-.asset-type-icon circle {
-  stroke: currentColor;
+  width: 26px;
+  height: 26px;
 }
 
 /* ===========================
    5. Card Content
    =========================== */
 .asset-type-content {
-  padding: 0;
+  padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
-  min-width: 0;
+  gap: 3px;
+  flex: 1;
 }
 
-.asset-type-eyebrow {
-  color: var(--text-secondary, #535862);
-  font-size: 12px;
+.asset-type-eyebrow-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  padding: 2px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 100px;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 600;
+  font-size: 11px;
   line-height: 18px;
+  color: var(--primary-color);
+  letter-spacing: 0;
 }
 
 .asset-type-title {
@@ -157,9 +158,14 @@
   margin: 0;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 700;
-  font-size: 18px;
-  line-height: 26px;
+  font-size: 15px;
+  line-height: 22px;
   text-align: left;
+  color: var(--page-title-color, #181D27);
+}
+
+.asset-type-card.selected .asset-type-title,
+.asset-type-card.js-selected .asset-type-title {
   color: var(--primary-color);
 }
 
@@ -168,78 +174,55 @@
   margin: 0;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 13px;
+  line-height: 19px;
   text-align: left;
   color: var(--text-secondary, #535862);
 }
 
 .asset-type-selected-indicator {
-  width: 32px;
-  height: 32px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
-  background: rgba(0, 0, 255, 0.08);
-  color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.asset-type-coming-row {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 2px;
 }
 
 /* ===========================
    6. Coming Soon State
    =========================== */
 .asset-type-card.coming-soon {
-  opacity: 1;
   pointer-events: none;
   cursor: default;
-  padding: 16px;
-  min-height: 132px;
-  background: #ffffff;
-}
-
-.asset-type-card.coming-soon:hover {
-  transform: none;
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
 }
 
 .asset-type-card.coming-soon .asset-type-image {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  color: #8b8fa3;
-}
-
-.asset-type-card.coming-soon .asset-type-icon {
-  width: 22px;
-  height: 22px;
+  filter: grayscale(40%);
+  opacity: 0.75;
 }
 
 .asset-type-card.coming-soon .asset-type-title {
   color: #717680;
-  font-size: 14px;
-  line-height: 20px;
 }
 
 .asset-type-card.coming-soon .asset-type-description {
-  font-size: 12px;
-  line-height: 18px;
+  color: #9AA0AC;
 }
 
 .coming-soon-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  left: 10px;
   z-index: 10;
-  padding: 2px 8px;
-  background: #f5f5f7;
+  padding: 2px 10px;
+  background: rgba(255, 255, 255, 0.88);
   border-radius: 100px;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 600;
@@ -250,28 +233,21 @@
 }
 
 .form-actions {
-  max-width: 760px !important;
+  max-width: 900px !important;
 }
 
-@media (max-width: 1100px) {
-  .asset-type-coming-row {
+@media (max-width: 860px) {
+  .asset-type-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 640px) {
-  .asset-type-card--primary {
+@media (max-width: 560px) {
+  .asset-type-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
   }
 
-  .asset-type-selected-indicator {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-  }
-
-  .asset-type-coming-row {
-    grid-template-columns: 1fr;
+  .asset-type-image {
+    height: 120px;
   }
 }
