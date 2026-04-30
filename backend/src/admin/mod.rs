@@ -597,6 +597,39 @@ pub fn router() -> axum::Router<AppState> {
         )
         // System
         .route("/api/admin/system", get(api_admin_system))
+        .route("/api/admin/system/jobs", get(api_admin_system_jobs))
+        .route(
+            "/api/admin/system/jobs/:id",
+            delete(api_admin_system_job_cancel),
+        )
+        .route(
+            "/api/admin/system/jobs/:id/retry",
+            post(api_admin_system_job_retry),
+        )
+        .route(
+            "/api/admin/system/webhooks",
+            get(api_admin_system_webhooks),
+        )
+        .route(
+            "/api/admin/system/webhooks/:id/replay",
+            post(api_admin_system_webhook_replay),
+        )
+        .route(
+            "/api/admin/system/sessions",
+            get(api_admin_system_sessions),
+        )
+        .route(
+            "/api/admin/system/sessions/bulk-revoke",
+            post(api_admin_system_sessions_bulk_revoke),
+        )
+        .route(
+            "/api/admin/system/sessions/:id",
+            delete(api_admin_system_session_revoke),
+        )
+        .route(
+            "/api/admin/system/password-resets",
+            get(api_admin_system_password_resets),
+        )
         // Dividends (legacy)
         .route(
             "/api/admin/dividends/calculate",

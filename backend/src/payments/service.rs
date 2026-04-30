@@ -24,7 +24,7 @@ pub const BANK_DETAILS_IDR: &str = r#"{
     "bank_address": "Menara BCA, Grand Indonesia, Jl. M.H. Thamrin No.1, Jakarta 10310, Indonesia",
     "account_name": "PT POOOL Indonesia",
     "company_address": "Jl. Sudirman Kav 1, Jakarta 10000, Indonesia",
-    "account_number": "0987654321"
+    "account_number": ""
 }"#;
 
 // ─── FX Rate Cache (Phase 1.10 — Decimal-based) ────────────────
