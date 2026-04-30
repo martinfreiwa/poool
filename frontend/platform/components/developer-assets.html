@@ -11,19 +11,19 @@
         class="table__tab {% if active_period == '30d' or (not active_period and '30d' == 'all') %}table__tab--active{% endif %}"
         hx-get="/developer/dashboard/fragments/assets?period=30d" hx-target="#developer-assets-wrapper"
         hx-swap="outerHTML">
-        30 Tage
+        30 days
       </button>
       <button id="developer-assets-tab-7d"
         class="table__tab {% if active_period == '7d' or (not active_period and '7d' == 'all') %}table__tab--active{% endif %}"
         hx-get="/developer/dashboard/fragments/assets?period=7d" hx-target="#developer-assets-wrapper"
         hx-swap="outerHTML">
-        7 Tage
+        7 days
       </button>
       <button id="developer-assets-tab-24h"
         class="table__tab {% if active_period == '24h' or (not active_period and '24h' == 'all') %}table__tab--active{% endif %}"
         hx-get="/developer/dashboard/fragments/assets?period=24h" hx-target="#developer-assets-wrapper"
         hx-swap="outerHTML">
-        24 Stunden
+        24 hours
       </button>
     </div>
   </div>
