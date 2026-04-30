@@ -77,12 +77,12 @@
                 <!-- Categories -->
                 <div id="property-categories" class="categories-section">
                   <div class="category-badge">
-                    <img src="/static/images/icons/Bed.svg" alt="Beds" class="badge-icon" width="16" height="16" />
+                    <img src="/static/images/icons/Bed.svg" alt="Beds" class="badge-icon" width="20" height="20" />
                     <span class="badge-text">{{ asset.bedrooms | default(4) }}</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <svg class="badge-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <svg class="badge-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"></path>
                       <path d="M7 17v2"></path>
                       <path d="M17 17v2"></path>
@@ -92,7 +92,7 @@
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <svg class="badge-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <svg class="badge-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M4 4h16v16H4z"></path>
                       <path d="M9 4v16"></path>
                       <path d="M4 9h16"></path>
@@ -105,7 +105,7 @@
                 <div id="property-info-div" class="info-div">
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img src="/static/images/prop-details/ID.webp" alt="Indonesia" width="36" height="36" />
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     </div>
                     <div class="info-badge-text">
                       <h4>{{ asset.location_country | default('Indonesia') }}, {{ asset.location_city | default('Bali') }}</h4>
@@ -114,7 +114,7 @@
                   </div>
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img loading="lazy" src="/static/images/prop-details/house.webp" alt="Rented" width="36" height="36" />
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     </div>
                     <div class="info-badge-text">
                       <h4>Rented</h4>
@@ -123,7 +123,7 @@
                   </div>
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img loading="lazy" src="/static/images/prop-details/coins-stacked-02.webp" alt="Rent" width="36" height="36" />
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="9" ry="3"/><path d="M3 6v4c0 1.66 4.03 3 9 3s9-1.34 9-3V6"/><path d="M3 10v4c0 1.66 4.03 3 9 3s9-1.34 9-3v-4"/><path d="M3 14v4c0 1.66 4.03 3 9 3s9-1.34 9-3v-4"/></svg>
                     </div>
                     <div class="info-badge-text">
                       <h4>{{ asset.annual_yield_percent }}% annual rental yield</h4>
@@ -132,7 +132,7 @@
                   </div>
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img loading="lazy" src="/static/images/prop-details/line-chart-up-02.webp" alt="Yield" width="36" height="36" />
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
                     </div>
                     <div class="info-badge-text">
                       <h4>{{ asset.annual_yield_percent }}% annual gross yield</h4>
@@ -417,7 +417,7 @@
                           <div class="funded-text">{% if asset.is_public_preview %}{% if asset.funded_percentage >= 100 %}Preview fully allocated{% else %}{{ asset.funded_percentage_display }}% preview interest{% endif %}{% elif asset.funded_percentage >= 100 %}Fully funded{% else %}{{ asset.funded_percentage_display }}% funded{% endif %}</div>
                           <div class="available-text-wrapper">
                             {% if asset.funded_percentage >= 100 %}
-                            <span class="available-text">{% if asset.is_public_preview %}Join waitlist{% else %}Sold out{% endif %}</span>
+                            {% if asset.is_public_preview %}<a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="available-text" style="color:var(--primary-color);font-weight:600;text-decoration:none;">Join waitlist</a>{% else %}<span class="available-text">Sold out</span>{% endif %}
                             {% else %}
                             <span class="available-text">{% if asset.is_public_preview %}Sign up for live availability{% else %}USD {{ asset.available_usd }} available{% endif %}</span>
                             {% endif %}
@@ -452,23 +452,12 @@
                     </div>
                   </div>
                   {% if asset.funded_percentage >= 100 %}
-                  <div class="price-card-investment">
-                    <div class="investment-input">
-                      <div class="input-dropdown"><span class="currency-label">USD</span></div>
-                      <div class="input-field">
-                        <input type="text" id="investment-amount-input" value="2,000" class="amount-input" disabled />
-                      </div>
-                    </div>
-                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="add-to-cart-btn" style="text-decoration:none;display:flex;align-items:center;justify-content:center;opacity:0.6;pointer-events:none;">
-                      <span class="btn-text">Fully funded · sold out</span>
+                  <div class="price-card-investment" style="flex-direction:column;">
+                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="add-to-cart-btn" style="text-decoration:none;display:flex;align-items:center;justify-content:center;width:100%;opacity:0.6;pointer-events:none;">
+                      <span class="btn-text">Sold out</span>
                     </a>
                   </div>
                   <div class="price-card-buttons">
-                    <div class="amount-buttons">
-                      <button class="amount-badge quick-add-btn" data-amount="500" disabled>+ USD 500</button>
-                      <button class="amount-badge quick-add-btn" data-amount="2000" disabled>+ USD 2000</button>
-                      <button class="amount-badge quick-add-btn" data-amount="5000" disabled>+ USD 5000</button>
-                    </div>
                     <div class="disclaimer-text">{% if asset.is_public_preview %}This preview is fully allocated. Sign up to see live opportunities.{% else %}This property has been fully funded. Sign up to be notified about new opportunities.{% endif %}</div>
                   </div>
                   {% else %}
@@ -609,7 +598,7 @@
               <div class="input-field"><input type="text" id="mobile-investment-amount" value="2,000" class="amount-input" disabled /></div>
             </div>
             <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="add-to-cart-btn" style="text-decoration:none;display:flex;align-items:center;justify-content:center;opacity:0.6;pointer-events:none;">
-              <span class="btn-text">Fully funded · sold out</span>
+              <span class="btn-text">Sold out</span>
             </a>
           </div>
           <div class="mobile-buttons">
@@ -749,13 +738,28 @@
 
       body.property-public-body .public-preview-notice {
         margin: 0 0 24px;
-        padding: 12px 14px;
+        padding: 12px 14px 12px 40px;
         border: 1px solid #D5D7DA;
         border-radius: 10px;
-        background: #FFFFFF;
+        background: #FFFFFF url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") no-repeat 14px 13px;
         color: #414651;
         font-size: 14px;
         line-height: 1.45;
+      }
+
+      /* Public page: stack investment input + CTA button vertically so button never clips */
+      body.property-public-body .price-card-investment {
+        flex-direction: column !important;
+        height: auto !important;
+        align-items: stretch !important;
+        width: 100% !important;
+      }
+      body.property-public-body .price-card-investment .investment-input {
+        width: 100% !important;
+      }
+      body.property-public-body .price-card-investment .add-to-cart-btn {
+        width: 100% !important;
+        min-width: unset !important;
       }
 
       /* Main region: no sidebar → full-width wrapper, no left offset */

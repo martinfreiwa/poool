@@ -820,8 +820,8 @@ body.lightbox-open {
 
 /* Match compact v19 card metadata icons */
 .badge-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex: none;
 }
 
@@ -1490,7 +1490,6 @@ body.lightbox-open {
   padding: 0px;
   gap: 4px;
   margin: 0;
-  width: 122px;
   height: 24px;
   flex: none;
   order: 0;
@@ -1521,15 +1520,14 @@ body.lightbox-open {
 }
 
 .investors-label {
-  width: 62px;
   height: 20px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  text-align: right;
   color: var(--text-secondary);
+  white-space: nowrap;
   flex: none;
   order: 2;
   flex-grow: 0;
@@ -1754,9 +1752,11 @@ body.lightbox-open {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 10px 14px;
+  padding: 10px 18px;
   gap: 4px;
-  width: 108px;
+  width: auto;
+  min-width: 108px;
+  white-space: nowrap;
   height: 44px;
   background: var(--primary-color);
   box-shadow: none;
@@ -1784,17 +1784,17 @@ body.lightbox-open {
 }
 
 .btn-text {
-  width: 76px;
   height: 20px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
-  color: #ffffff;
+  color: var(--btn-primary-color, #98FB96);
   flex: none;
   order: 0;
   flex-grow: 0;
+  white-space: nowrap;
 }
 
 /* Quick amount buttons */
@@ -1848,6 +1848,11 @@ body.lightbox-open {
   cursor: pointer;
   flex: none;
   flex-grow: 1;
+}
+
+.amount-badge:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .disclaimer-text {

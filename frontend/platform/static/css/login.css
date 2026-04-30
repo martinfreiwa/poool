@@ -514,3 +514,122 @@ input[type="checkbox"]:checked::after {
     display: none;
   }
 }
+
+/* Property panel (signup page with returnTo) */
+#property-panel {
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  background: #101828;
+}
+
+#property-panel-img {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 48px);
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+#property-panel-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.82) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 36px;
+  gap: 16px;
+}
+
+#property-panel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #03FF88;
+  border: 1px solid #03FF88;
+  color: #0a2e1a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 100px;
+  width: fit-content;
+}
+
+#property-panel-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+#property-panel-location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #D0D5DD;
+  font-size: 15px;
+}
+
+#property-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.property-stat {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.property-stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #98A2B3;
+}
+
+.property-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+#property-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#property-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+#property-progress-fill {
+  height: 100%;
+  background: #03FF88;
+  border-radius: 100px;
+}
+
+#property-progress-label {
+  font-size: 12px;
+  color: #98A2B3;
+}

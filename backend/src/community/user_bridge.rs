@@ -178,7 +178,7 @@ pub async fn get_users_info_batch(
                             r.display_name.clone(),
                             r.first_name.clone(),
                             r.last_name.clone(),
-                            r.email.clone(),
+                            Some(r.email.clone()),
                         ),
                         avatar_url: r
                             .avatar_url
@@ -200,7 +200,7 @@ pub async fn get_users_info_batch(
                             r.display_name,
                             r.first_name,
                             r.last_name,
-                            r.email,
+                            Some(r.email),
                         ),
                         avatar_url: r
                             .avatar_url
@@ -217,7 +217,7 @@ pub async fn get_users_info_batch(
                         r.display_name,
                         r.first_name,
                         r.last_name,
-                        r.email,
+                        Some(r.email),
                     ),
                     avatar_url: r
                         .avatar_url

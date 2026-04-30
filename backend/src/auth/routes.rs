@@ -99,7 +99,11 @@ pub async fn login_page(
     }
 
     let error = params.get("error").cloned();
-    render_login(&state, error, csrf_token.0)
+    let slug = params
+        .get("returnTo")
+        .and_then(|r| r.strip_prefix("/p/"))
+        .map(|s| s.to_string());
+    render_login(&state, error, csrf_token.0, slug).await
 }
 
 /// GET /auth/signup – Render the signup page.
@@ -109,7 +113,11 @@ pub async fn signup_page(
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
     let error = params.get("error").cloned();
-    render_signup(&state, &jar, error)
+    let slug = params
+        .get("returnTo")
+        .and_then(|r| r.strip_prefix("/p/"))
+        .map(|s| s.to_string());
+    render_signup(&state, &jar, error, slug).await
 }
 
 /// GET /auth/forgot-password – Render the forgot password page.
@@ -1604,7 +1612,12 @@ fn render_verify_email(state: &AppState, status: &str, title: &str, message: &st
     Html(html).into_response()
 }
 
-fn render_login(state: &AppState, error: Option<String>, csrf_token: String) -> Response {
+async fn render_login(
+    state: &AppState,
+    error: Option<String>,
+    csrf_token: String,
+    property_slug: Option<String>,
+) -> Response {
     let tmpl = match state.templates.get_template("login.html") {
         Ok(t) => t,
         Err(e) => {
@@ -1612,17 +1625,71 @@ fn render_login(state: &AppState, error: Option<String>, csrf_token: String) -> 
             return Html("<h1>Internal Server Error</h1>".to_string()).into_response();
         }
     };
+
+    let property = if let Some(ref slug) = property_slug {
+        sqlx::query_as!(
+            crate::assets::models::MarketplaceAsset,
+            r#"
+            SELECT
+                a.id, a.title, a.slug, a.short_description, a.description,
+                a.asset_type, a.location_city, a.location_country,
+                a.total_value_cents, a.token_price_cents, a.tokens_total,
+                a.tokens_available, a.annual_yield_bps, a.capital_appreciation_bps,
+                a.funding_status,
+                ARRAY(
+                    SELECT image_url FROM asset_images
+                    WHERE asset_id = a.id
+                    ORDER BY is_cover DESC, created_at ASC
+                ) AS "image_urls?",
+                a.bedrooms, a.bathrooms, a.building_size_sqm, a.lease_type,
+                a.term_months, a.area, a.land_size_sqm,
+                (
+                    SELECT COUNT(DISTINCT o.user_id)
+                    FROM order_items oi JOIN orders o ON oi.order_id = o.id
+                    WHERE oi.asset_id = a.id AND o.status = 'completed'
+                ) AS "investor_count?",
+                a.video_url, a.google_maps_url, a.location_description
+            FROM assets a
+            WHERE a.slug = $1 AND a.published = true AND a.asset_type != 'commodity'
+            "#,
+            slug.as_str()
+        )
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .map(|a| {
+            let share_price = format!("{:.0}", a.token_price_cents as f64 / 100.0);
+            let d = crate::assets::models::PropertyDisplayData::from_asset(&a);
+            (d, share_price)
+        })
+    } else {
+        None
+    };
+
+    let (prop_data, share_price) = match property {
+        Some((d, p)) => (Some(d), Some(p)),
+        None => (None, None),
+    };
+
     let html = tmpl
         .render(context! {
             error => error.unwrap_or_default(),
             csrf_token => csrf_token,
             google_enabled => state.config.google_oauth_enabled(),
+            property => prop_data,
+            share_price => share_price,
         })
         .unwrap_or_else(|e| format!("Template error: {}", e));
     Html(html).into_response()
 }
 
-fn render_signup(state: &AppState, jar: &CookieJar, error: Option<String>) -> Response {
+async fn render_signup(
+    state: &AppState,
+    jar: &CookieJar,
+    error: Option<String>,
+    property_slug: Option<String>,
+) -> Response {
     let tmpl = match state.templates.get_template("signup.html") {
         Ok(t) => t,
         Err(e) => {
@@ -1635,11 +1702,77 @@ fn render_signup(state: &AppState, jar: &CookieJar, error: Option<String>) -> Re
         .get(crate::auth::middleware::REFERRAL_COOKIE)
         .map(|c| c.value().split('|').next().unwrap_or("").to_string());
 
+    let property = if let Some(ref slug) = property_slug {
+        sqlx::query_as!(
+            crate::assets::models::MarketplaceAsset,
+            r#"
+            SELECT
+                a.id,
+                a.title,
+                a.slug,
+                a.short_description,
+                a.description,
+                a.asset_type,
+                a.location_city,
+                a.location_country,
+                a.total_value_cents,
+                a.token_price_cents,
+                a.tokens_total,
+                a.tokens_available,
+                a.annual_yield_bps,
+                a.capital_appreciation_bps,
+                a.funding_status,
+                ARRAY(
+                    SELECT image_url FROM asset_images
+                    WHERE asset_id = a.id
+                    ORDER BY is_cover DESC, created_at ASC
+                ) AS "image_urls?",
+                a.bedrooms,
+                a.bathrooms,
+                a.building_size_sqm,
+                a.lease_type,
+                a.term_months,
+                a.area,
+                a.land_size_sqm,
+                (
+                    SELECT COUNT(DISTINCT o.user_id)
+                    FROM order_items oi
+                    JOIN orders o ON oi.order_id = o.id
+                    WHERE oi.asset_id = a.id AND o.status = 'completed'
+                ) AS "investor_count?",
+                a.video_url,
+                a.google_maps_url,
+                a.location_description
+            FROM assets a
+            WHERE a.slug = $1 AND a.published = true AND a.asset_type != 'commodity'
+            "#,
+            slug.as_str()
+        )
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .map(|a| {
+            let share_price = format!("{:.0}", a.token_price_cents as f64 / 100.0);
+            let d = crate::assets::models::PropertyDisplayData::from_asset(&a);
+            (d, share_price)
+        })
+    } else {
+        None
+    };
+
+    let (prop_data, share_price) = match property {
+        Some((d, p)) => (Some(d), Some(p)),
+        None => (None, None),
+    };
+
     let html = tmpl
         .render(context! {
             error => error.unwrap_or_default(),
             google_enabled => state.config.google_oauth_enabled(),
             referral_code => referral_code,
+            property => prop_data,
+            share_price => share_price,
         })
         .unwrap_or_else(|e| format!("Template error: {}", e));
     Html(html).into_response()
