@@ -11,9 +11,11 @@ use axum::{
 
 /// GET /api/admin/kyc  List all KYC records with user info.
 pub async fn api_admin_kyc_records(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "kyc.view").await?;
+
     let rows = sqlx::query_as::<
         _,
         (
@@ -22,7 +24,7 @@ pub async fn api_admin_kyc_records(
             String,         // provider
             String,         // status
             Option<String>, // provider_ref_id
-            String,         // document_type
+            Option<String>, // document_type
             Option<bool>,   // pep_check_passed
             Option<bool>,   // sanctions_check
             Option<String>, // rejection_reason
@@ -52,12 +54,11 @@ pub async fn api_admin_kyc_records(
                   WHEN 'in_review' THEN 1
                   ELSE 2
               END,
-              k.created_at DESC
-           LIMIT 200"#,
+              k.created_at DESC"#,
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::Database)?;
 
     let records: Vec<serde_json::Value> = rows
         .iter()
@@ -95,9 +96,11 @@ pub async fn api_admin_kyc_documents(
     State(state): State<AppState>,
     axum::extract::Path(kyc_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "kyc.view").await?;
+
     // Audit the access — KYC documents are the most sensitive PII in the
     // system (passport, ID, selfie). Every signed-URL issuance is logged.
-    let _ = sqlx::query(
+    if let Err(e) = sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
            VALUES ($1, 'admin.kyc_documents_access', 'kyc_records', $2, $3)"#,
     )
@@ -105,7 +108,10 @@ pub async fn api_admin_kyc_documents(
     .bind(kyc_id)
     .bind(serde_json::json!({"endpoint": "GET /api/admin/kyc/:id/documents"}))
     .execute(&state.db)
-    .await;
+    .await
+    {
+        tracing::error!("Failed to write KYC documents access audit log for {kyc_id}: {e}");
+    }
 
     let docs = sqlx::query_as::<_, (String, String, String)>(
         "SELECT id::text, gcs_path, document_type FROM kyc_documents WHERE kyc_record_id = $1",
@@ -142,11 +148,15 @@ pub async fn api_admin_kyc_documents(
 
 /// POST /api/admin/kyc/:kyc_id/approve
 pub async fn api_admin_kyc_approve(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(kyc_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "kyc.write").await?;
+
     let uid = ApiError::parse_uuid(&kyc_id)?;
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
 
     let updated = sqlx::query(
         r#"UPDATE kyc_records SET status = 'approved', verified_at = NOW(),
@@ -154,14 +164,14 @@ pub async fn api_admin_kyc_approve(
            WHERE id = $1 AND status IN ('pending', 'in_review')"#,
     )
     .bind(uid)
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await;
 
     match updated {
         Ok(r) if r.rows_affected() > 0 => {
             // GAP-06: Affiliate referral state machine — advance any 'registered' referral to 'kyc_approved'
             // for this user so that the funnel stages are accurately tracked.
-            let _ = sqlx::query(
+            sqlx::query(
                 r#"UPDATE affiliate_referrals
                    SET status = 'kyc_approved', updated_at = NOW()
                    WHERE referred_user_id = (
@@ -170,8 +180,43 @@ pub async fn api_admin_kyc_approve(
                    AND status = 'registered'"#,
             )
             .bind(uid)
-            .execute(&state.db)
-            .await;
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+
+            sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+                   VALUES ($1, 'admin.kyc_approve', 'kyc_records', $2, $3)"#,
+            )
+            .bind(admin.user.id)
+            .bind(uid)
+            .bind(serde_json::json!({"status": "approved"}))
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+
+            tx.commit().await.map_err(ApiError::Database)?;
+
+            // Fire-and-forget — email goes into the durable outbox; the outbox
+            // worker retries on provider failure.
+            let db = state.db.clone();
+            tokio::spawn(async move {
+                if let Ok(Some(user_id)) = sqlx::query_scalar::<_, uuid::Uuid>(
+                    "SELECT user_id FROM kyc_records WHERE id = $1",
+                )
+                .bind(uid)
+                .fetch_optional(&db)
+                .await
+                {
+                    let _ = crate::email::trigger_transactional_email(
+                        &db,
+                        &user_id,
+                        "kyc_approved",
+                        serde_json::json!({}),
+                    )
+                    .await;
+                }
+            });
 
             Ok(Json(serde_json::json!({"status": "approved"})).into_response())
         }
@@ -187,17 +232,23 @@ pub async fn api_admin_kyc_approve(
 
 /// POST /api/admin/kyc/:kyc_id/reject
 pub async fn api_admin_kyc_reject(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(kyc_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "kyc.write").await?;
+
     let uid = ApiError::parse_uuid(&kyc_id)?;
 
     let reason = body
         .get("rejection_reason")
         .and_then(|v| v.as_str())
-        .unwrap_or("No reason provided");
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| ApiError::BadRequest("rejection_reason is required".to_string()))?;
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
 
     let updated = sqlx::query(
         r#"UPDATE kyc_records SET status = 'rejected', rejection_reason = $2, updated_at = NOW()
@@ -205,11 +256,44 @@ pub async fn api_admin_kyc_reject(
     )
     .bind(uid)
     .bind(reason)
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await;
 
     match updated {
         Ok(r) if r.rows_affected() > 0 => {
+            sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+                   VALUES ($1, 'admin.kyc_reject', 'kyc_records', $2, $3)"#,
+            )
+            .bind(admin.user.id)
+            .bind(uid)
+            .bind(serde_json::json!({"status": "rejected", "reason": reason}))
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+
+            tx.commit().await.map_err(ApiError::Database)?;
+
+            let db = state.db.clone();
+            let reason_owned = reason.to_string();
+            tokio::spawn(async move {
+                if let Ok(Some(user_id)) = sqlx::query_scalar::<_, uuid::Uuid>(
+                    "SELECT user_id FROM kyc_records WHERE id = $1",
+                )
+                .bind(uid)
+                .fetch_optional(&db)
+                .await
+                {
+                    let _ = crate::email::trigger_transactional_email(
+                        &db,
+                        &user_id,
+                        "kyc_rejected",
+                        serde_json::json!({"rejection_reason": reason_owned}),
+                    )
+                    .await;
+                }
+            });
+
             Ok(Json(serde_json::json!({"status": "rejected"})).into_response())
         }
         Ok(_) => Err(ApiError::NotFound(

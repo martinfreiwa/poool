@@ -9,6 +9,10 @@
   const API = '/api/admin/marketplace/fees';
   const REWARDS_API = '/api/admin/rewards';
 
+  function esc(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   // ── Mock Data ───────────────────────────────────────────────────
   const MOCK_ASSET_FEES = [
     { asset: 'Bali Villa Resort (BVRT)', taker: '0.30%', maker: '0.00%', settlement: '0.05%', reason: 'High liquidity asset — reduced fees' },
@@ -50,39 +54,24 @@
     const tbody = document.getElementById('asset-fees-body');
     if (!tbody) return;
 
-    if (usingMockData) {
-      tbody.innerHTML = MOCK_ASSET_FEES.map((f, i) => `
+    tbody.innerHTML = configs.map((c) => {
+      const takerPct = (c.taker_fee_bps / 100).toFixed(2) + '%';
+      const makerPct = (c.maker_fee_bps / 100).toFixed(2) + '%';
+      const scope = esc(c.scope.charAt(0).toUpperCase() + c.scope.slice(1));
+      const label = c.asset_id ? esc(c.asset_id.substring(0, 8)) : scope;
+      return `
         <tr>
-          <td style="font-weight:600; color:var(--admin-text-primary);">${f.asset}</td>
-          <td><span class="admin-badge admin-badge--info">${f.taker}</span></td>
-          <td><span class="admin-badge admin-badge--success">${f.maker}</span></td>
-          <td><span class="admin-badge admin-badge--neutral">${f.settlement}</span></td>
-          <td style="font-size:12px; color:var(--admin-text-muted);">${f.reason}</td>
+          <td style="font-weight:600; color:var(--admin-text-primary);">${label}</td>
+          <td><span class="admin-badge admin-badge--info">${takerPct}</span></td>
+          <td><span class="admin-badge admin-badge--success">${makerPct}</span></td>
+          <td><span class="admin-badge admin-badge--neutral">${scope}</span></td>
+          <td style="font-size:12px; color:var(--admin-text-muted);">${esc(c.reason || '—')}</td>
           <td style="text-align:center;">
-            <button class="admin-btn admin-btn--danger admin-btn--sm btn-remove-fee" data-idx="${i}">Remove</button>
+            <span class="admin-badge ${c.is_active ? 'admin-badge--success' : 'admin-badge--neutral'}">${c.is_active ? 'Active' : 'Inactive'}</span>
           </td>
         </tr>
-      `).join('');
-    } else {
-      tbody.innerHTML = configs.map((c, i) => {
-        const takerPct = (c.taker_fee_bps / 100).toFixed(2) + '%';
-        const makerPct = (c.maker_fee_bps / 100).toFixed(2) + '%';
-        const scope = c.scope.charAt(0).toUpperCase() + c.scope.slice(1);
-        const label = c.asset_id ? c.asset_id.substring(0, 8) : scope;
-        return `
-          <tr>
-            <td style="font-weight:600; color:var(--admin-text-primary);">${label}</td>
-            <td><span class="admin-badge admin-badge--info">${takerPct}</span></td>
-            <td><span class="admin-badge admin-badge--success">${makerPct}</span></td>
-            <td><span class="admin-badge admin-badge--neutral">${scope}</span></td>
-            <td style="font-size:12px; color:var(--admin-text-muted);">${c.reason || '—'}</td>
-            <td style="text-align:center;">
-              <span class="admin-badge ${c.is_active ? 'admin-badge--success' : 'admin-badge--neutral'}">${c.is_active ? 'Active' : 'Inactive'}</span>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
+      `;
+    }).join('');
 
     bindRemoveButtons();
   }
@@ -107,23 +96,7 @@
     const grid = document.getElementById('promos-grid');
     if (!grid) return;
 
-    if (usingMockData) {
-      grid.innerHTML = MOCK_PROMOS.map((p, i) => `
-        <div class="mp-promo-card" id="promo-${i}">
-          <div class="mp-promo-badge">● ${p.badge}</div>
-          <h4 style="font-size:16px; font-weight:700; color:var(--admin-text-primary); margin:0 0 6px;">${p.name}</h4>
-          <p style="font-size:13px; color:var(--admin-text-secondary); margin:0 0 12px;">${p.desc}</p>
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <div>
-              <span style="font-size:11px; color:var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Valid until</span>
-              <div style="font-size:13px; font-weight:600; color:var(--admin-text-primary);">${p.validUntil}</div>
-            </div>
-            <button class="admin-btn admin-btn--danger admin-btn--sm btn-deactivate-promo" data-idx="${i}">Deactivate</button>
-          </div>
-        </div>
-      `).join('');
-    } else {
-      grid.innerHTML = promos.map((p, i) => {
+    grid.innerHTML = promos.map((p, i) => {
         const takerPct = (p.taker_fee_bps / 100).toFixed(2) + '%';
         const makerPct = (p.maker_fee_bps / 100).toFixed(2) + '%';
         const endDate = new Date(p.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -131,7 +104,7 @@
         return `
           <div class="mp-promo-card" id="promo-${i}">
             <div class="mp-promo-badge">● ${isActive ? 'Active' : 'Expired'}</div>
-            <h4 style="font-size:16px; font-weight:700; color:var(--admin-text-primary); margin:0 0 6px;">${p.name}</h4>
+            <h4 style="font-size:16px; font-weight:700; color:var(--admin-text-primary); margin:0 0 6px;">${esc(p.name)}</h4>
             <p style="font-size:13px; color:var(--admin-text-secondary); margin:0 0 12px;">Taker: ${takerPct} · Maker: ${makerPct}</p>
             <div style="display:flex; align-items:center; justify-content:space-between;">
               <div>
@@ -142,8 +115,7 @@
             </div>
           </div>
         `;
-      }).join('');
-    }
+    }).join('');
 
     document.querySelectorAll('.btn-deactivate-promo').forEach(btn => {
       btn.addEventListener('click', function () {
@@ -168,10 +140,7 @@
     const tbody = document.getElementById('tier-fees-body');
     if (!tbody) return;
 
-    if (!tiers || tiers.length === 0) {
-      if (usingMockTiers) tiers = MOCK_TIERS;
-      else return;
-    }
+    if (!tiers || tiers.length === 0) return;
 
     const defaultTakerFee = 5.00; // From "Platform Default Fees"
 
@@ -179,14 +148,15 @@
       const minInvestStr = t.min_invest > 0 ? '$' + (t.min_invest / 100).toLocaleString('en-US') : '$0';
       const discountVal = (t.cashback_pct || 0) / 100;
       const effectiveFee = Math.max(0, defaultTakerFee - discountVal).toFixed(2);
-      const badgeColor = t.badge_color || '#9ca3af';
+      const rawColor = t.badge_color || '#9ca3af';
+      const badgeColor = /^#[0-9a-fA-F]{3,6}$/.test(rawColor) ? rawColor : '#9ca3af';
 
       return `
         <tr>
           <td>
             <span style="display:inline-flex;align-items:center;gap:6px;">
-              <span style="width:10px;height:10px;border-radius:50%;background:${badgeColor};display:inline-block;"></span> 
-              ${t.name}
+              <span style="width:10px;height:10px;border-radius:50%;background:${badgeColor};display:inline-block;"></span>
+              ${esc(t.name)}
             </span>
           </td>
           <td><input type="text" class="admin-input admin-input--sm" value="${minInvestStr}" style="width:100px;"></td>
@@ -207,9 +177,10 @@
       usingMockTiers = false;
       renderTiers(data.tiers || []);
     } catch (err) {
-      console.warn('[mp-fees] Tiers API unavailable, using mock data:', err);
+      console.warn('[mp-fees] Tiers API unavailable:', err);
       usingMockTiers = true;
-      renderTiers(MOCK_TIERS);
+      const tbody = document.getElementById('tier-fees-body');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#c00;">Failed to load tier data.</td></tr>`;
     }
   }
 
@@ -222,10 +193,12 @@
       renderAssetFees(data.configurations);
       renderPromotions(data.promotions);
     } catch (err) {
-      console.warn('[mp-fees] API unavailable, using mock data:', err);
+      console.warn('[mp-fees] API unavailable:', err);
       usingMockData = true;
-      renderAssetFees([]);
-      renderPromotions([]);
+      const tbody = document.getElementById('asset-fees-body');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#c00;">Failed to load fee configurations.</td></tr>`;
+      const grid = document.getElementById('promos-grid');
+      if (grid) grid.innerHTML = `<p style="color:#c00;">Failed to load promotions.</p>`;
     }
   }
 
@@ -234,14 +207,43 @@
     loadFees();
     loadTiers();
 
-    document.getElementById('btn-save-defaults')?.addEventListener('click', function () {
-      if (typeof mpButtonAction === 'function') {
-        mpButtonAction(this, 'Default fees saved successfully', 1000);
+    document.getElementById('btn-save-defaults')?.addEventListener('click', async function () {
+      const takerBps = Math.round(parseFloat(document.getElementById('fee-taker')?.value || '0') * 100);
+      const makerBps = Math.round(parseFloat(document.getElementById('fee-maker')?.value || '0') * 100);
+
+      if (isNaN(takerBps) || isNaN(makerBps)) {
+        if (typeof mpToast === 'function') mpToast('Invalid fee values.', 'error');
+        return;
+      }
+
+      this.disabled = true;
+      const label = this.textContent;
+      this.textContent = 'Saving…';
+
+      try {
+        const res = await fetch(API, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scope: 'platform', taker_fee_bps: takerBps, maker_fee_bps: makerBps }),
+        });
+        if (res.ok) {
+          if (typeof mpToast === 'function') mpToast('Default fees saved.', 'success');
+          loadFees();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          if (typeof mpToast === 'function') mpToast(err.error || `Save failed (${res.status}).`, 'error');
+        }
+      } catch (e) {
+        if (typeof mpToast === 'function') mpToast('Network error. Changes not saved.', 'error');
+      } finally {
+        this.disabled = false;
+        this.textContent = label;
       }
     });
 
     document.getElementById('btn-add-override')?.addEventListener('click', () => {
-      if (typeof mpToast === 'function') mpToast('Override form — connect to backend', 'info');
+      if (typeof mpToast === 'function') mpToast('Fee override creation is not yet available.', 'info');
     });
   });
 })();

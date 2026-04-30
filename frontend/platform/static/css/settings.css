@@ -545,6 +545,23 @@
     gap: 16px;
 }
 
+.developer-settings-main .action-grid-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 12px !important;
+    padding: 28px 20px !important;
+}
+
+.developer-settings-main .action-grid-card .action-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
 .developer-settings-main .action-grid-card,
 .developer-settings-main .learn-card {
     background: var(--card-bg, #FFFFFF) !important;

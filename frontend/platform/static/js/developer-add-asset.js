@@ -5,6 +5,7 @@ function selectAssetType(id) {
   allCards.forEach((card) => {
     card.classList.remove("selected");
     card.classList.remove("js-selected");
+    card.setAttribute("aria-checked", "false");
   });
 
   // Add selection to clicked card
@@ -12,6 +13,7 @@ function selectAssetType(id) {
   if (selectedCard) {
     selectedCard.classList.add("selected");
     selectedCard.classList.add("js-selected");
+    selectedCard.setAttribute("aria-checked", "true");
   }
 
   // Store selected asset type for next step

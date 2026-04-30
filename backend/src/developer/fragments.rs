@@ -22,7 +22,10 @@ pub async fn fragment_chart(
 ) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
-        None => return Html("Unauthorized".to_string()).into_response(),
+        None => return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            Html("<p>Unauthorized</p>".to_string()),
+        ).into_response(),
     };
     let is_developer = sqlx::query_scalar!(
         "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",
@@ -71,7 +74,10 @@ pub async fn fragment_assets(
 ) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
-        None => return Html("Unauthorized".to_string()).into_response(),
+        None => return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            Html("<p>Unauthorized</p>".to_string()),
+        ).into_response(),
     };
     let is_developer = sqlx::query_scalar!(
         "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",

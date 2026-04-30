@@ -255,7 +255,8 @@ document.addEventListener("DOMContentLoaded", function () {
         removeBtn.className = "image-remove-btn";
         removeBtn.dataset.id = img.id;
         removeBtn.style.cssText = "background:rgba(255,0,0,0.8);color:#fff;";
-        removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>';
+        removeBtn.setAttribute("aria-label", "Remove image");
+        removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>';
         item.appendChild(removeBtn);
         galleryEl.appendChild(item);
       });
@@ -296,15 +297,18 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateImageSubtitle() {
       if (!subtitle) return;
       const count = assetImages.length;
-      if (count < 8) {
+      if (count === 0) {
         subtitle.style.color = "#F04438";
-        subtitle.textContent = `Please upload 8-16 photos (Currently: ${count})`;
+        subtitle.textContent = `Please upload at least 1 photo (8–16 recommended)`;
       } else if (count > 16) {
         subtitle.style.color = "#F04438";
-        subtitle.textContent = `Please upload 8-16 photos (Currently: ${count} - Too many)`;
+        subtitle.textContent = `Too many photos — max 16 (Currently: ${count})`;
+      } else if (count < 8) {
+        subtitle.style.color = "#DC6803";
+        subtitle.textContent = `Currently: ${count} — 8–16 photos recommended`;
       } else {
-        subtitle.style.color = "#535862";
-        subtitle.textContent = `Please upload 8-16 photos (Currently: ${count})`;
+        subtitle.style.color = "#039855";
+        subtitle.textContent = `Currently: ${count} — looks good!`;
       }
     }
 

@@ -13,9 +13,10 @@ use sqlx::Row;
 
 /// GET /api/admin/settings  Load platform settings from DB + admin users list
 pub async fn api_admin_get_settings(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
     // 1. Load all platform_settings from DB
     let setting_rows =
         sqlx::query("SELECT key, value, value_type FROM platform_settings ORDER BY key")
@@ -111,12 +112,12 @@ pub async fn api_admin_get_settings(
 
 /// POST /api/admin/settings  Persist platform settings to DB
 pub async fn api_admin_update_settings(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    let user = Some(_admin.user.clone());
-    let user_id = user.map(|u| u.id);
+    admin.require_permission(&state.db, "platform.manage").await?;
+    let user_id = admin.user.id;
 
     // Upsert each submitted setting
     if let Some(settings_obj) = body.as_object() {
@@ -142,6 +143,15 @@ pub async fn api_admin_update_settings(
             .await;
         }
     }
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+           VALUES ($1, 'admin.platform_settings_update', 'platform_settings', $2)"#,
+    )
+    .bind(user_id)
+    .bind(&body)
+    .execute(&state.db)
+    .await;
 
     Ok(Json(serde_json::json!({"status": "updated"})).into_response())
 }
@@ -341,16 +351,20 @@ pub async fn api_admin_list_roles(
 
 /// POST /api/admin/settings/maintenance  Toggle maintenance mode
 pub async fn api_admin_toggle_maintenance(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    if !admin.is_super_admin(&state.db).await {
+        return Err(ApiError::Forbidden(
+            "Super admin required for maintenance mode".to_string(),
+        ));
+    }
     let enabled = body
         .get("enabled")
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
-    let user = Some(_admin.user.clone());
-    let user_id = user.map(|u| u.id.to_string());
+    let user_id = admin.user.id;
 
     let _ = sqlx::query(
         r#"INSERT INTO platform_settings (key, value, value_type, updated_at, updated_by)
@@ -359,7 +373,16 @@ pub async fn api_admin_toggle_maintenance(
            DO UPDATE SET value = $1, updated_at = NOW(), updated_by = $2"#,
     )
     .bind(if enabled { "true" } else { "false" })
-    .bind(user_id.as_deref())
+    .bind(user_id)
+    .execute(&state.db)
+    .await;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+           VALUES ($1, 'admin.maintenance_mode_toggle', 'platform_settings', $2)"#,
+    )
+    .bind(user_id)
+    .bind(serde_json::json!({ "enabled": enabled }))
     .execute(&state.db)
     .await;
 
@@ -371,9 +394,10 @@ pub async fn api_admin_toggle_maintenance(
 
 /// POST /api/admin/maintenance/clear-cache  Clear system cache
 pub async fn api_admin_clear_cache(
-    _admin: AdminUser,
-    State(_state): State<AppState>,
+    admin: AdminUser,
+    State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
     // Since we don't have a Redis instance in this mock, we just return success
     tracing::info!("Admin cleared system cache.");
     Ok(
@@ -384,9 +408,10 @@ pub async fn api_admin_clear_cache(
 
 /// POST /api/admin/maintenance/rotate-logs  Trigger log rotation
 pub async fn api_admin_rotate_logs(
-    _admin: AdminUser,
-    State(_state): State<AppState>,
+    admin: AdminUser,
+    State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "platform.manage").await?;
     // Manual log rotation trigger (stub)
     tracing::info!("Admin triggered log rotation.");
     Ok(Json(

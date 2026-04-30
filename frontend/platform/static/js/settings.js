@@ -250,6 +250,7 @@
       populateDeveloper(data);
       updateProfileCompleteness(data);
       applyRoleGate(data.role);
+      initBannerDismiss();
       showLayer("content");
     } catch (err) {
       console.error("Settings load failed:", err);
@@ -455,6 +456,23 @@
   }
 
   // ─── Profile Completeness ─────────────────────────────────────
+
+  function initBannerDismiss() {
+    const banner = $("completeness-banner");
+    const btn    = $("completeness-banner-dismiss");
+    if (!banner || !btn) return;
+
+    if (localStorage.getItem("profile_banner_dismissed") === "1") {
+      banner.classList.add("hidden");
+      return;
+    }
+
+    btn.addEventListener("click", () => {
+      localStorage.setItem("profile_banner_dismissed", "1");
+      banner.classList.add("banner-dismissing");
+      banner.addEventListener("animationend", () => { banner.classList.add("hidden"); }, { once: true });
+    });
+  }
 
   function updateProfileCompleteness(d) {
     const fields = [

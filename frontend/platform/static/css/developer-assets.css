@@ -206,136 +206,252 @@
 }
 
 /* ===========================
-   6. Empty State — Full page centered
+   6. Empty State — Split Hero (Option A)
    =========================== */
-.dev-empty-state {
+
+.dae-empty {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
+  gap: 24px;
+  padding: 8px 0 48px;
+}
+
+/* Hero row */
+.dae-empty__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 48px;
   align-items: center;
-  text-align: center;
-  padding: 80px 40px;
-  max-width: 520px;
-  margin: 40px auto 0;
-}
-
-.dev-empty-state__icon {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  margin-bottom: 24px;
-}
-
-.dev-empty-state__icon-bg {
-  position: absolute;
-  width: 76px;
-  height: 76px;
-  left: 4px;
-  top: -3px;
+  background: radial-gradient(ellipse at 70% 50%, #EEF4FF 0%, #F8FAFF 60%, #FFFFFF 100%);
+  border: 1px solid var(--card-border-color, #E5E7EB);
   border-radius: 20px;
-  transform: rotate(15deg);
-  opacity: 0.3;
-  background: linear-gradient(135deg, #0000FF 0%, #60A5FA 100%);
+  padding: 48px 56px;
 }
 
-.dev-empty-state__icon-front {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.dev-empty-state__title {
+.dae-empty__eyebrow {
+  display: block;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  font-size: 24px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--page-title-color);
-  margin: 0 0 12px;
-  line-height: 1.3;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0000FF;
+  margin-bottom: 16px;
 }
 
-.dev-empty-state__description {
+.dae-empty__title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--page-title-color, #0A0D12);
+  margin: 0 0 16px;
+}
+
+.dae-empty__lede {
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-size: 15px;
   font-weight: 400;
-  color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.65;
+  color: var(--text-secondary, #535862);
   margin: 0 0 32px;
-  max-width: 420px;
+  max-width: 440px;
 }
 
-.dev-empty-state__features {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 36px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.dev-empty-state__feature {
+.dae-empty__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary, #535862);
-  background: var(--card-bg, #FFFFFF);
-  padding: 8px 14px;
-  border-radius: 100px;
-  border: 1px solid var(--card-border-color, #E5E7EB);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.dev-empty-state__feature:hover {
-  border-color: rgba(0, 0, 255, 0.2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-}
-
-.dev-empty-state__feature svg {
-  flex-shrink: 0;
-}
-
-.dev-empty-state__cta {
+.dae-empty__cta-primary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 28px;
-  background: var(--primary-color, #0000FF);
-  color: #98FB96;
+}
+
+.dae-empty__cta-secondary {
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  color: var(--page-title-color, #0A0D12);
   text-decoration: none;
-  box-shadow:
-    0px 1px 2px rgba(16, 24, 40, 0.05),
-    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
-    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  padding: 10px 20px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 10px;
+  background: var(--card-bg, #FFFFFF);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.dae-empty__cta-secondary:hover {
+  border-color: rgba(0, 0, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 255, 0.08);
 }
 
-.dev-empty-state__cta:hover {
-  background: #0000CC;
-  transform: translateY(-1px);
-  box-shadow:
-    0px 4px 12px rgba(0, 0, 255, 0.25),
-    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
-    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+.dae-empty__hero-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dae-empty__hero-art svg {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 16px;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 255, 0.08));
 }
 
-.dev-empty-state__cta span {
-  color: #98FB96;
+/* Metrics row */
+.dae-empty__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.dae-empty__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #0000FF, #03FF88) 1;
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+
+.dae-empty__metric-label {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #717680);
+}
+
+.dae-empty__metric-value {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--page-title-color, #0A0D12);
+  line-height: 1;
+}
+
+.dae-empty__metric-hint {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+
+/* Steps row */
+.dae-empty__steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dae-empty__step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 16px;
+  padding: 24px;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.dae-empty__step:hover {
+  border-color: rgba(0, 0, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 255, 0.07);
+  transform: translateY(-2px);
+}
+
+.dae-empty__step-num {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: #0000FF;
+  letter-spacing: 0.05em;
+}
+
+.dae-empty__step-title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--page-title-color, #0A0D12);
+  margin: 0;
+}
+
+.dae-empty__step-desc {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 13px;
+  color: var(--text-secondary, #535862);
+  line-height: 1.55;
+  margin: 0;
+  flex: 1;
+}
+
+.dae-empty__step-link {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0000FF;
+  text-decoration: none;
+  align-self: flex-start;
+}
+.dae-empty__step-link:hover { text-decoration: underline; }
+
+/* Trust strip */
+.dae-empty__trust {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background: #EEF4FF;
+  border-radius: 16px;
+  padding: 20px 28px;
+}
+
+.dae-empty__trust-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary, #535862);
+}
+
+.dae-empty__trust-label {
+  display: block;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--page-title-color, #0A0D12);
+}
+
+.dae-empty__trust-sub {
+  display: block;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .dae-empty__hero {
+    grid-template-columns: 1fr;
+    padding: 36px 32px;
+  }
+  .dae-empty__hero-art { display: none; }
+}
+
+@media (max-width: 720px) {
+  .dae-empty__metrics,
+  .dae-empty__steps,
+  .dae-empty__trust {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===========================

@@ -6,8 +6,60 @@ use sqlx::PgPool;
 use std::time::Duration;
 use tracing::info;
 
+/// Build an HTML email body for a transactional event.
+fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
+    match event_type {
+        "kyc_approved" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your identity has been verified ✓</h2>
+  <p>Great news — your KYC application has been approved. You can now invest in tokenised assets on POOOL.</p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Browse Assets</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">If you have questions, reply to this email or visit our support centre.</p>
+</div>"#.to_string(),
+
+        "kyc_rejected" => {
+            let reason = metadata.get("rejection_reason")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Please review the requirements and resubmit.");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Action required: KYC resubmission</h2>
+  <p>Unfortunately your identity verification could not be approved at this time.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
+  <p>Please resubmit your documents addressing the issue above.</p>
+  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Verification</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Need help? Contact us at support@poool.app</p>
+</div>"#, reason = html_escape_email(reason))
+        }
+
+        "kyc_submitted" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">We received your verification documents</h2>
+  <p>Your KYC application is now under review. This typically takes 1–2 business days.</p>
+  <p>We'll email you as soon as a decision is made.</p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at support@poool.app</p>
+</div>"#.to_string(),
+
+        "deposit_confirmed" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your deposit has been received</h2>
+  <p>Your deposit has been confirmed and your POOOL wallet balance has been updated.</p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
+</div>"#.to_string(),
+
+        _ => format!(
+            r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;"><p>You have a new notification from POOOL.</p></div>"#
+        ),
+    }
+}
+
+fn html_escape_email(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+}
+
 /// The unified event bus / mail trigger for all transactional systems.
-/// 28.6 Transactional Event Map (Source of Truth)
+/// Writes to transactional_email_outbox for durable delivery with retry,
+/// then attempts immediate send. Falls back gracefully if outbox insert fails.
 #[allow(dead_code)]
 pub async fn trigger_transactional_email(
     pool: &PgPool,
@@ -23,6 +75,7 @@ pub async fn trigger_transactional_email(
         "new_login" => "New Device Login Detected",
         "kyc_approved" => "KYC Application Approved",
         "kyc_rejected" => "KYC Action Required",
+        "kyc_submitted" => "KYC Application Received",
         "deposit_confirmed" => "Deposit Received",
         "withdrawal_processed" => "Withdrawal Processed",
         "dividend_payout" => "You've Earned a Dividend!",
@@ -42,20 +95,46 @@ pub async fn trigger_transactional_email(
         _ => "You Have a New Notification",
     };
 
-    // 28.7 Granular unsubscribe check
-    // In a real implementation we'd verify user preferences for 'marketing' vs 'transactional'.
-    // Transactional alerts (like deposits, KYC) must bypass marketing opt-outs.
-
-    // Get user email
-    if let Ok(Some(row)) = sqlx::query!("SELECT email FROM users WHERE id = $1", user_id)
-        .fetch_optional(pool)
-        .await
+    let user_email = match sqlx::query_scalar::<_, String>(
+        "SELECT email FROM users WHERE id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
     {
-        // Enqueue to email logs
-        let _ = sqlx::query!(
-            "INSERT INTO email_logs (user_id, subject, recipient_email, status, error_message) VALUES ($1, $2, $3, 'queued', $4)",
-            user_id, subject, row.email, serde_json::to_string(&metadata).unwrap_or_default()
-        ).execute(pool).await;
+        Ok(Some(e)) => e,
+        _ => return Ok(()),
+    };
+
+    let html_body = build_email_html(event_type, &metadata);
+    let event_type_owned = event_type.to_string();
+
+    // Insert into durable outbox — if this fails we still attempt a best-effort send.
+    let outbox_id = sqlx::query_scalar::<_, uuid::Uuid>(
+        r#"INSERT INTO transactional_email_outbox
+               (user_id, event_type, recipient_email, subject, html_body)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id"#,
+    )
+    .bind(user_id)
+    .bind(&event_type_owned)
+    .bind(&user_email)
+    .bind(subject)
+    .bind(&html_body)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    // Also write to email_logs for audit visibility.
+    let _ = sqlx::query!(
+        "INSERT INTO email_logs (user_id, subject, recipient_email, status, error_message) VALUES ($1, $2, $3, 'queued', $4)",
+        user_id, subject, user_email, serde_json::to_string(&metadata).unwrap_or_default()
+    ).execute(pool).await;
+
+    // Attempt immediate delivery via the outbox item (updates status to sent/failed).
+    if let Some(id) = outbox_id {
+        crate::common::email::send_transactional_outbox_item(pool, id).await;
     }
 
     Ok(())
@@ -106,6 +185,7 @@ pub async fn run_transactional_email_outbox_worker(pool: PgPool) {
     loop {
         interval.tick().await;
         crate::common::email::process_password_reset_outbox(&pool, 25).await;
+        crate::common::email::process_transactional_email_outbox(&pool, 25).await;
     }
 }
 

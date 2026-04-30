@@ -113,6 +113,19 @@ function handleQuantityChange(button) {
     tokensLabel.textContent = newQty;
   }
 
+  // Update Order Summary panel line item (summary-item-{idx}-*)
+  const idxMatch = itemId.match(/(\d+)$/);
+  if (idxMatch) {
+    const idx = idxMatch[1];
+    const IDR_RATE = 15500;
+    const summaryQtyEl = document.getElementById(`summary-item-${idx}-qty`);
+    if (summaryQtyEl) summaryQtyEl.textContent = `${newQty} × $${unitPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+    const summaryUsdEl = document.getElementById(`summary-item-${idx}-usd`);
+    if (summaryUsdEl) summaryUsdEl.textContent = `USD ${newPrice.toLocaleString("en-US", formatOpts)}`;
+    const summaryIdrEl = document.getElementById(`summary-item-${idx}-idr`);
+    if (summaryIdrEl) summaryIdrEl.textContent = `≈ Rp ${Math.round(newPrice * IDR_RATE).toLocaleString("de-DE").replace(/,/g, ".")}`;
+  }
+
   // Update Progress Bar
   if (totalTokens > 0) {
     // Use full newQty (not diff) to match server-side formula:
@@ -188,6 +201,19 @@ function handleQuantityInput(input) {
 
   const tokensLabel = document.getElementById(`${itemId}-tokens-label`);
   if (tokensLabel) tokensLabel.textContent = newQty;
+
+  // Update Order Summary panel line item (summary-item-{idx}-*)
+  const idxMatchInput = itemId.match(/(\d+)$/);
+  if (idxMatchInput) {
+    const idx = idxMatchInput[1];
+    const IDR_RATE = 15500;
+    const summaryQtyEl = document.getElementById(`summary-item-${idx}-qty`);
+    if (summaryQtyEl) summaryQtyEl.textContent = `${newQty} × $${unitPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+    const summaryUsdEl = document.getElementById(`summary-item-${idx}-usd`);
+    if (summaryUsdEl) summaryUsdEl.textContent = `USD ${newPrice.toLocaleString("en-US", formatOpts)}`;
+    const summaryIdrEl = document.getElementById(`summary-item-${idx}-idr`);
+    if (summaryIdrEl) summaryIdrEl.textContent = `≈ Rp ${Math.round(newPrice * IDR_RATE).toLocaleString("de-DE").replace(/,/g, ".")}`;
+  }
 
   // Update Progress Bar
   if (totalTokens > 0) {

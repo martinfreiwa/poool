@@ -48,6 +48,9 @@
                     <p id="profile-completeness-hint">{% if is_developer %}Complete developer identity, links, and account details for review readiness.{% else %}Fill in all your details to complete your profile.{% endif %}</p>
                     </div>
                     <div id="profile-completeness-text" class="completion-percentage" aria-live="polite">0%</div>
+                    <button id="completeness-banner-dismiss" class="completion-dismiss" aria-label="Dismiss profile completion banner" title="Dismiss">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>
 
                 <div class="completion-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-labelledby="profile-completeness-text">
@@ -1110,8 +1113,8 @@
                         </div>
                         <div class="settings-logo-upload__body">
                             <div class="settings-logo-upload__title">Developer Logo</div>
-                            <div class="settings-logo-upload__hint">Square logo, min 400×400px. PNG, JPG, WebP or SVG · Max 2 MB</div>
-                            <input type="file" id="settings-dev-logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+                            <div class="settings-logo-upload__hint">Square logo, min 400×400px. PNG, JPG or WebP · Max 2 MB</div>
+                            <input type="file" id="settings-dev-logo-input" accept="image/png,image/jpeg,image/webp" hidden>
                             <button type="button" id="btn-upload-dev-logo" class="ds-btn ds-btn--ghost ds-btn--sm settings-upload-btn">
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

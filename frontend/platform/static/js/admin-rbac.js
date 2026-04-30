@@ -258,16 +258,16 @@
         state.roles = await rolesResp.json();
         state.isUsingFallback = false;
       } else {
-        state.roles = deepClone(fallbackRoles);
+        state.roles = [];
         state.isUsingFallback = true;
-        showToast("Using demo roles - Roles API is unavailable. Changes cannot be saved.", "error");
+        showToast(`Failed to load roles (${rolesResp.status}). Contact support if this persists.`, "error");
       }
     } catch (error) {
       console.error("Error loading rbac data", error);
       captureException(error);
-      state.roles = deepClone(fallbackRoles);
+      state.roles = [];
       state.isUsingFallback = true;
-      showToast("Failed to load roles. Changes cannot be saved.", "error");
+      showToast("Network error loading roles. Check your connection and reload.", "error");
     }
 
     normalizeRoles();

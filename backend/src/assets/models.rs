@@ -88,6 +88,7 @@ pub struct PropertyDisplayData {
     pub land_size_sqm: Option<String>,
     pub platform_fee_usd: String,          // 5% of total_value
     pub total_investment_cost_usd: String, // total_value + 5% fee
+    pub token_price_usd: i64,              // per-share price in whole dollars
     pub is_public_preview: bool,
     pub public_data_notice: Option<String>,
 }
@@ -206,6 +207,7 @@ impl PropertyDisplayData {
             land_size_sqm: asset.land_size_sqm.map(|d| format!("{}", d)),
             platform_fee_usd: format_number(total_value_dollars * 5 / 100),
             total_investment_cost_usd: format_number(total_value_dollars * 105 / 100),
+            token_price_usd: asset.token_price_cents / 100,
             is_public_preview: false,
             public_data_notice: None,
         }

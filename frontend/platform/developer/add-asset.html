@@ -25,7 +25,9 @@
           }
         </script>
         <div id="asset-type-card-real-estate" class="asset-type-card selected"
-          onclick="__templ_selectAssetTypeScript_6b97(&#34;real-estate&#34;)">
+          role="radio" aria-checked="true" tabindex="0"
+          onclick="__templ_selectAssetTypeScript_6b97(&#34;real-estate&#34;)"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();__templ_selectAssetTypeScript_6b97('real-estate');}">
           <span class="asset-type-eyebrow-badge">Currently supported</span>
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass1.webp">
             <div class="asset-type-glass"></div>
@@ -47,7 +49,8 @@
             </svg>
           </div>
         </div>
-        <div id="asset-type-card-commercial-property" class="asset-type-card coming-soon">
+        <div id="asset-type-card-commercial-property" class="asset-type-card coming-soon"
+          role="radio" aria-checked="false" aria-disabled="true">
           <span class="coming-soon-badge">Coming Soon</span>
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass2.webp">
             <div class="asset-type-glass"></div>
@@ -64,7 +67,8 @@
             <p class="asset-type-description">Offices, warehouses, retail spaces</p>
           </div>
         </div>
-        <div id="asset-type-card-commodities" class="asset-type-card coming-soon">
+        <div id="asset-type-card-commodities" class="asset-type-card coming-soon"
+          role="radio" aria-checked="false" aria-disabled="true">
           <span class="coming-soon-badge">Coming Soon</span>
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass3.webp">
             <div class="asset-type-glass"></div>
@@ -82,7 +86,8 @@
             <p class="asset-type-description">Investment in gold, silver, etc.</p>
           </div>
         </div>
-        <div id="asset-type-card-business" class="asset-type-card coming-soon">
+        <div id="asset-type-card-business" class="asset-type-card coming-soon"
+          role="radio" aria-checked="false" aria-disabled="true">
           <span class="coming-soon-badge">Coming Soon</span>
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass4.webp">
             <div class="asset-type-glass"></div>
@@ -99,7 +104,8 @@
             <p class="asset-type-description">Cafes, car washes, bars, etc.</p>
           </div>
         </div>
-        <div id="asset-type-card-startups" class="asset-type-card coming-soon">
+        <div id="asset-type-card-startups" class="asset-type-card coming-soon"
+          role="radio" aria-checked="false" aria-disabled="true">
           <span class="coming-soon-badge">Coming Soon</span>
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass5.webp">
             <div class="asset-type-glass"></div>
@@ -116,7 +122,8 @@
             <p class="asset-type-description">IT projects, products, MVPs</p>
           </div>
         </div>
-        <div id="asset-type-card-land-plots" class="asset-type-card coming-soon">
+        <div id="asset-type-card-land-plots" class="asset-type-card coming-soon"
+          role="radio" aria-checked="false" aria-disabled="true">
           <span class="coming-soon-badge">Coming Soon</span>
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass6.webp">
             <div class="asset-type-glass"></div>

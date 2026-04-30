@@ -87,6 +87,14 @@ document.addEventListener("DOMContentLoaded", function () {
       // Get the investment amount (remove commas for processing)
       const amount = amountInput ? amountInput.value.replace(/,/g, "") : "2000";
 
+      // Validate amount meets minimum share price
+      const tokenPriceUsd = parseInt(amountInput?.getAttribute("data-token-price") || "0", 10);
+      const amountNum = parseInt(amount, 10) || 0;
+      if (tokenPriceUsd > 0 && amountNum < tokenPriceUsd) {
+        showCartError(`Minimum investment is USD ${tokenPriceUsd.toLocaleString()} (1 share). Please enter a higher amount.`);
+        return;
+      }
+
       // Get property data from the page
       const propertyTitle =
         document.getElementById("property-title")?.textContent ||

@@ -21,7 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
 function setupSorting() {
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     th.style.cursor = "pointer";
-    th.addEventListener("click", () => {
+    th.setAttribute("tabindex", "0");
+    th.setAttribute("role", "columnheader");
+    const handler = () => {
       const field = th.dataset.sort;
       if (sortField === field) {
         sortOrder = sortOrder === "asc" ? "desc" : "asc";
@@ -29,7 +31,12 @@ function setupSorting() {
         sortField = field;
         sortOrder = "asc";
       }
+      th.setAttribute("aria-sort", sortOrder === "asc" ? "ascending" : "descending");
       applyFilters();
+    };
+    th.addEventListener("click", handler);
+    th.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handler(); }
     });
   });
 }
@@ -103,6 +110,11 @@ function setupModal() {
   document.getElementById("kyc-modal")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.getElementById("kyc-modal")?.style.display === "flex") {
+      closeModal();
+    }
+  });
 }
 
 async function loadKYCRecords() {
@@ -119,10 +131,17 @@ async function loadKYCRecords() {
         updateStats(data.stats);
       }
     } else {
+      const msg = resp.status === 403 ? "Access denied." : `Failed to load KYC records (${resp.status}).`;
+      const tbody = document.getElementById("kyc-queue-body");
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#c00;">${msg}</td></tr>`;
+      const tbody2 = document.getElementById("kyc-all-body");
+      if (tbody2) tbody2.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#c00;">${msg}</td></tr>`;
     }
   } catch (e) {
     console.error("Error loading kyc records", e);
     if (typeof Sentry !== 'undefined') Sentry.captureException(e);
+    const tbody = document.getElementById("kyc-queue-body");
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#c00;">Network error loading KYC records.</td></tr>`;
   }
 }
 
@@ -137,6 +156,8 @@ function applyFilters() {
     document.getElementById("kyc-search")?.value || ""
   ).toLowerCase();
   const statusDropdown = document.getElementById("kyc-filter-status");
+  // Use the PooolDropdown wrapper if present, otherwise the native select
+  const statusContainer = statusDropdown?.closest("[data-dropdown]") || statusDropdown;
   const statusFilter = statusDropdown ? statusDropdown.value : "";
 
   let filtered = [...allKYCRecords];
@@ -144,23 +165,23 @@ function applyFilters() {
   // Tab filtering
   if (currentTab === "approved") {
     filtered = filtered.filter((r) => r.status === "approved");
-    if (statusDropdown) statusDropdown.style.display = "none";
+    if (statusContainer) statusContainer.style.display = "none";
   } else if (currentTab === "rejected") {
     filtered = filtered.filter((r) => r.status === "rejected");
-    if (statusDropdown) statusDropdown.style.display = "none";
+    if (statusContainer) statusContainer.style.display = "none";
   } else if (currentTab === "pep") {
     filtered = filtered.filter((r) => r.pep_check_passed === false);
-    if (statusDropdown) statusDropdown.style.display = "";
+    if (statusContainer) statusContainer.style.display = "";
   } else if (currentTab === "expiring") {
     filtered = filtered.filter((r) => isExpiringSoon(r.expires_at));
-    if (statusDropdown) statusDropdown.style.display = "";
+    if (statusContainer) statusContainer.style.display = "";
   } else if (currentTab === "all" || currentTab === "queue") {
-    if (statusDropdown) statusDropdown.style.display = "";
+    if (statusContainer) statusContainer.style.display = "";
   }
 
   if (
     statusDropdown &&
-    statusDropdown.style.display !== "none" &&
+    statusContainer?.style.display !== "none" &&
     statusFilter
   ) {
     filtered = filtered.filter((r) => r.status === statusFilter);
@@ -353,13 +374,32 @@ function openReviewModal(kycId) {
 
   document.getElementById("kyc-modal-title").textContent =
     `Review KYC — ${record.user_name}`;
+
+  let providerLink = "";
+  if (record.provider === "sumsub" && record.provider_ref_id) {
+    providerLink = ` <a href="https://cockpit.sumsub.com/checkus#/applicant/${esc(record.provider_ref_id)}" target="_blank" rel="noopener" style="color:var(--admin-accent);font-size:12px;">↗ SumSub</a>`;
+  } else if (record.provider === "didit" && record.provider_ref_id) {
+    providerLink = ` <a href="https://business.didit.me/sessions/${esc(record.provider_ref_id)}" target="_blank" rel="noopener" style="color:var(--admin-accent);font-size:12px;">↗ Didit</a>`;
+  }
+
   document.getElementById("kyc-modal-text").innerHTML = `
         <strong>Email:</strong> ${esc(record.user_email)}<br>
-        <strong>Provider:</strong> ${esc(record.provider)}<br>
+        <strong>Provider:</strong> ${esc(record.provider)}${providerLink}<br>
         <strong>Document:</strong> ${esc(record.document_type || "Not specified")}<br>
         <strong>PEP Check:</strong> ${record.pep_check_passed === true ? "Passed" : record.pep_check_passed === false ? "Flagged" : "Pending"}<br>
         <strong>Sanctions:</strong> ${record.sanctions_check === true ? "Clear" : record.sanctions_check === false ? "Hit" : "Pending"}
     `;
+
+  const viewDocsBtn = document.getElementById("kyc-modal-view-docs");
+  if (viewDocsBtn) {
+    if (record.has_documents) {
+      viewDocsBtn.style.display = "";
+      viewDocsBtn.onclick = () => { closeModal(); viewKYCDocuments(kycId); };
+    } else {
+      viewDocsBtn.style.display = "none";
+    }
+  }
+
   document.getElementById("kyc-rejection-reason").value = "";
 
   document.getElementById("kyc-modal-approve").onclick = () =>
@@ -367,11 +407,17 @@ function openReviewModal(kycId) {
   document.getElementById("kyc-modal-reject").onclick = () =>
     handleKYCAction("reject");
 
-  document.getElementById("kyc-modal").style.display = "flex";
+  const modal = document.getElementById("kyc-modal");
+  modal.style.display = "flex";
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("role", "dialog");
+  setTimeout(() => document.getElementById("kyc-modal-cancel")?.focus(), 50);
 }
 
 function closeModal() {
-  document.getElementById("kyc-modal").style.display = "none";
+  const modal = document.getElementById("kyc-modal");
+  modal.style.display = "none";
+  modal.removeAttribute("aria-modal");
   reviewingKYCId = null;
 }
 
@@ -517,14 +563,38 @@ async function viewKYCDocuments(kycId) {
     const content = document.getElementById("kyc-doc-content");
     const footer = document.getElementById("kyc-doc-footer");
 
-    content.innerHTML = docs.map(d => {
-      if (d.url.toLowerCase().includes(".pdf") || d.document_type === "pdf") {
-        return `<embed src="${d.url}" type="application/pdf" width="800px" height="600px" />`;
+    content.textContent = "";
+    docs.forEach((d, i) => {
+      if (i > 0) {
+        const hr = document.createElement("hr");
+        hr.style.margin = "20px 0";
+        content.appendChild(hr);
       }
-      return `<img src="${d.url}" style="max-width:100%;display:block;margin:0 auto;" />`;
-    }).join("<hr style='margin:20px 0'>");
+      if (!d.url) {
+        const msg = document.createElement("p");
+        msg.style.cssText = "color:#888;text-align:center;padding:20px;";
+        msg.textContent = `Document file not available (${d.document_type || "unknown type"})`;
+        content.appendChild(msg);
+      } else {
+        const isPdf = d.url.toLowerCase().includes(".pdf") || d.document_type === "pdf";
+        if (isPdf) {
+          const embed = document.createElement("embed");
+          embed.src = d.url;
+          embed.type = "application/pdf";
+          embed.width = "800px";
+          embed.height = "600px";
+          content.appendChild(embed);
+        } else {
+          const img = document.createElement("img");
+          img.src = d.url;
+          img.style.cssText = "max-width:100%;display:block;margin:0 auto;";
+          img.alt = d.document_type || "KYC document";
+          content.appendChild(img);
+        }
+      }
+    });
 
-    footer.innerHTML = `Viewing ${docs.length} document(s) for KYC ${kycId}`;
+    footer.textContent = `Viewing ${docs.length} document(s) for KYC ${kycId}`;
     viewer.style.display = "flex";
 
   } catch (err) {

@@ -256,6 +256,8 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
       function hideError() {
         const errorEl = document.getElementById("checkout-error");
         if (errorEl) errorEl.classList.remove("visible");
+        const serverErrorEl = document.getElementById("checkout-server-error");
+        if (serverErrorEl) serverErrorEl.innerHTML = "";
       }
 
       // ── Init on DOMContentLoaded ────────────────────────────────
@@ -850,10 +852,20 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
               showError(err.error || "Checkout failed. Please try again.");
             } else {
               var html = await resp.text().catch(function () { return ""; });
-              // Backend returns HTML error snippets — extract text
-              var tmp = document.createElement("div");
-              tmp.innerHTML = html;
-              showError(tmp.textContent || "Checkout failed. Please try again.");
+              // Backend returns a styled HTML error box — insert it directly
+              var errorContainer = document.getElementById("checkout-error");
+              if (errorContainer && html.trim()) {
+                errorContainer.classList.remove("visible");
+                var serverErrorEl = document.getElementById("checkout-server-error");
+                if (!serverErrorEl) {
+                  serverErrorEl = document.createElement("div");
+                  serverErrorEl.id = "checkout-server-error";
+                  errorContainer.parentNode.insertBefore(serverErrorEl, errorContainer);
+                }
+                serverErrorEl.innerHTML = html;
+              } else {
+                showError("Checkout failed. Please try again.");
+              }
             }
           }
         } catch (e) {

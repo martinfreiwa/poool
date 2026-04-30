@@ -618,16 +618,11 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         <form action="/wallet/deposit" method="POST"
           onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
           <div class="ds-form-group">
-            <label class="ds-form-label">Payment Method</label>
-            <select name="payment_method_id" class="ds-select">
-              {{ payment_method_options | safe }}
-            </select>
-          </div>
-          <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
             <input type="number" name="amount" min="1" step="0.01" required class="ds-input"
               placeholder="e.g. 1000" />
           </div>
+          <p style="font-size:13px;color:#717680;margin:0 0 16px;">You will receive bank wire instructions after confirming.</p>
           <button type="submit" class="ds-btn ds-btn--primary ds-btn--full">Confirm Deposit</button>
         </form>
       </div>
@@ -650,7 +645,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
           <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required">Withdraw to</label>
-            <select name="payment_method_id" class="ds-select">
+            <select id="withdraw-payment-select" name="payment_method_id" class="ds-select" onchange="updateWithdrawBtn()">
               {{ payment_method_options | safe }}
             </select>
           </div>
@@ -765,7 +760,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               stripeElementContainer.style.display = "block";
               try {
                 stripe = Stripe(stripeKey);
-                elements = stripe.elements();
+                elements = stripe.elements({ locale: 'en' });
                 var style = {
                   base: {
                     color: '#101828',
@@ -1201,8 +1196,16 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   <script>
     function openDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
     function closeDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
-    function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
+    function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; updateWithdrawBtn(); } }
     function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
+    function updateWithdrawBtn() {
+      var sel = document.getElementById("withdraw-payment-select");
+      var btn = document.getElementById("withdraw-submit-btn");
+      if (!sel || !btn) return;
+      var hasMethod = sel.value && sel.value !== "";
+      btn.disabled = !hasMethod;
+      btn.title = hasMethod ? "" : "Add a bank account or card first";
+    }
     function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
     function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
     function openCardModal() {
@@ -1221,14 +1224,12 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       if (emptyDepositBtn) { emptyDepositBtn.addEventListener("click", openDepositModal); }
       const withdrawBtn = document.getElementById("withdraw-btn");
       if (withdrawBtn) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
-      document.querySelectorAll(".ds-btn.ds-btn--primary.ds-btn--full").forEach(btn => btn.addEventListener("click", openDepositModal));
-      document.querySelectorAll(".ds-btn.ds-btn--secondary.ds-btn--full").forEach(btn => btn.addEventListener("click", openWithdrawModal));
       document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
-      document.querySelectorAll(".ds-btn.ds-btn--ghost").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
+      document.querySelectorAll("#wallet-payment-cards-add-button, .mobile-add-card-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openCardModal(); }); });
 
       // "View details" on each transaction row → navigate to /transactions
       document.body.addEventListener("click", function (e) {
-        var actionBtn = e.target.closest(".ds-btn.ds-btn--ghost");
+        var actionBtn = e.target.closest(".ds-btn.ds-btn--ghost, .wallet-transaction-action-btn");
         if (!actionBtn) return;
         var row = actionBtn.closest("[id^='wallet-transactions-row-']");
         var rowId = row && row.id ? row.id.replace("wallet-transactions-row-", "") : "";
@@ -1256,7 +1257,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       var params = new URLSearchParams(window.location.search);
       var error = params.get('error');
       if (!error) return;
-      var messages = { 'insufficient_funds': 'Insufficient funds. Please deposit before withdrawing.', 'withdraw_failed': 'Withdrawal failed. Please try again or contact support.', 'deposit_failed': 'Deposit failed. Please try again.' };
+      var messages = { 'insufficient_funds': 'Insufficient funds. Please deposit before withdrawing.', 'withdraw_failed': 'Withdrawal failed. Please try again or contact support.', 'deposit_failed': 'Deposit failed. Please try again.', 'no_payment_method': 'No payment method on file. Add a bank account or card first.', 'amount_too_large': 'Amount exceeds the maximum deposit limit of $1,000,000.', '2fa_required': 'Two-factor authentication required for withdrawals of $100 or more. Please enable 2FA in Settings first.', 'withdrawal_cooldown': 'You have reached the hourly withdrawal limit (3 requests). Please try again later.', 'daily_limit_exceeded': 'This withdrawal would exceed your daily limit of $250,000.' };
       var msg = messages[error] || 'An error occurred. Please try again.';
       var toast = document.createElement('div');
       toast.setAttribute('role', 'alert');

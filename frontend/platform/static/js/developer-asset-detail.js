@@ -345,9 +345,7 @@ function renderCapTable(a) {
       (inv) => `
         <tr>
             <td>
-                <a href="/admin/user-details.html?id=${esc(inv.user_id)}" style="color:#0000FF;text-decoration:none;font-weight:600;">
-                    ${esc(inv.name)}
-                </a>
+                <span style="font-weight:600;">${esc(inv.name)}</span>
             </td>
             <td style="font-weight:600;font-variant-numeric:tabular-nums;">${inv.tokens_owned.toLocaleString()}</td>
             <td style="font-variant-numeric:tabular-nums;">${formatUSD(inv.purchase_value_cents)}</td>
@@ -409,18 +407,7 @@ async function dangerAction(action) {
     unpublish: "unpublish",
     archive: "archive",
   };
-  if (
-    !await pooolConfirm({
-      title: `${action.charAt(0).toUpperCase() + action.slice(1)} asset`,
-      message: `Are you sure you want to ${names[action]} "${assetData?.title}"? This action may be irreversible.`,
-      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
-      type: 'danger',
-    })
-  )
-    return;
-  showToast(
-    `${action.charAt(0).toUpperCase() + action.slice(1)} action triggered for ${assetData?.title}`,
-  );
+  showToast("This action is not yet available. Contact support to request changes.", "warning");
 }
 
 // ─── Helpers ──────────────────────────────────────────────────

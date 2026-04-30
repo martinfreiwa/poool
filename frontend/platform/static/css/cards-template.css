@@ -896,7 +896,7 @@
 }
 .completion-header {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     gap: 16px;
     align-items: center;
     margin-bottom: 20px;
@@ -930,6 +930,37 @@
     font-size: 20px;
     font-weight: 700;
     color: var(--btn-primary-bg, #0000FF);
+}
+.completion-dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #E4E7EC;
+    background: transparent;
+    color: #98A2B3;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.completion-dismiss:hover {
+    background: #F9FAFB;
+    border-color: #D0D5DD;
+    color: #475467;
+}
+.completion-dismiss svg {
+    width: 16px;
+    height: 16px;
+}
+#completeness-banner.banner-dismissing {
+    overflow: hidden;
+    animation: banner-collapse 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes banner-collapse {
+    from { opacity: 1; max-height: 300px; margin-bottom: 24px; padding-top: 24px; padding-bottom: 24px; }
+    to   { opacity: 0; max-height: 0;    margin-bottom: 0;    padding-top: 0;    padding-bottom: 0; }
 }
 .completion-track {
     height: 6px;

@@ -1928,9 +1928,10 @@ pub struct FeeManagementResponse {
 
 /// GET /api/admin/marketplace/fees — List all fee configurations and promotions.
 pub async fn api_admin_marketplace_fees(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<FeeManagementResponse>, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
     let db = &state.db;
 
     let configs: Vec<FeeConfig> = sqlx::query_as(
@@ -1938,14 +1939,14 @@ pub async fn api_admin_marketplace_fees(
     )
     .fetch_all(db)
     .await
-    .unwrap_or_default();
+    .map_err(|e| ApiError::Internal(format!("Failed to load fee configurations: {}", e)))?;
 
     let promos: Vec<FeePromotion> = sqlx::query_as(
         "SELECT id, name, scope, asset_id, taker_fee_bps, maker_fee_bps, starts_at, ends_at, is_active, created_at FROM fee_promotions ORDER BY starts_at DESC",
     )
     .fetch_all(db)
     .await
-    .unwrap_or_default();
+    .map_err(|e| ApiError::Internal(format!("Failed to load fee promotions: {}", e)))?;
 
     Ok(Json(FeeManagementResponse {
         configurations: configs,
@@ -1971,6 +1972,7 @@ pub async fn api_admin_marketplace_create_fee(
     State(state): State<AppState>,
     Json(body): Json<CreateFeeConfigRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
     let db = &state.db;
 
     if !["platform", "asset", "developer"].contains(&body.scope.as_str()) {
@@ -1999,6 +2001,22 @@ pub async fn api_admin_marketplace_create_fee(
     .fetch_one(db)
     .await
     .map_err(|e| ApiError::Internal(format!("Failed to create fee config: {}", e)))?;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.fee_config_create', 'fee_configurations', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(id)
+    .bind(serde_json::json!({
+        "scope": &body.scope,
+        "taker_fee_bps": body.taker_fee_bps,
+        "maker_fee_bps": body.maker_fee_bps,
+        "asset_id": body.asset_id,
+        "developer_id": body.developer_id
+    }))
+    .execute(db)
+    .await;
 
     tracing::info!(admin_id = %admin.user.id, fee_id = %id, "Admin created fee configuration");
     Ok(Json(

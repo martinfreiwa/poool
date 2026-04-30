@@ -178,6 +178,7 @@ function createFileItem(fileId, options) {
   deleteBtn.className = "file-delete-btn";
   deleteBtn.disabled = Boolean(options.disabled);
   deleteBtn.title = options.disabled ? "Uploading..." : "Delete";
+  deleteBtn.setAttribute("aria-label", options.disabled ? "Uploading, please wait" : "Delete file");
   deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4" stroke="#A4A7AE" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   if (typeof options.onDelete === "function") {
     deleteBtn.addEventListener("click", options.onDelete);

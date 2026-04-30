@@ -363,17 +363,32 @@ pub async fn update_cart_item(
     };
 
     // Fetch available tokens for this asset with row lock
-    let max_avail: Option<i32> = sqlx::query_scalar(
+    let max_avail: Option<i32> = match sqlx::query_scalar(
         "SELECT a.tokens_available FROM assets a JOIN cart_items ci ON ci.asset_id = a.id WHERE ci.id = $1 FOR UPDATE OF a"
     )
     .bind(cart_item_id)
     .fetch_optional(&mut *tx)
-    .await
-    .unwrap_or(None);
+    .await {
+        Ok(v) => v,
+        Err(e) => {
+            let _ = tx.rollback().await;
+            tracing::error!("Failed to lock asset row for cart update: {}", e);
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Server error checking availability"})),
+            ).into_response();
+        }
+    };
 
     let tokens = match max_avail {
         Some(avail) => std::cmp::min(requested_tokens, avail),
-        None => requested_tokens,
+        None => {
+            let _ = tx.rollback().await;
+            return (
+                axum::http::StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"error": "Cart item not found"})),
+            ).into_response();
+        }
     };
 
     let result =
@@ -656,18 +671,24 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let item_usd = format_cart_usd(item_total);
         let item_idr = format_idr(item_total);
         let token_price_usd = token_price_cents / 100;
+        let safe_title = truncated_title
+            .replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;");
         summary_items_html.push_str(&format!(
             r#"<div class="cart-summary-item">
                 <div class="cart-summary-item__row">
                     <span class="cart-summary-item__name">{title}</span>
-                    <span class="cart-summary-item__usd">{usd}</span>
+                    <span class="cart-summary-item__usd" id="summary-item-{idx}-usd">{usd}</span>
                 </div>
                 <div class="cart-summary-item__row cart-summary-item__row--sub">
-                    <span class="cart-summary-item__qty">{qty} × ${price}</span>
-                    <span class="cart-summary-item__idr">≈ {idr}</span>
+                    <span class="cart-summary-item__qty" id="summary-item-{idx}-qty">{qty} × ${price}</span>
+                    <span class="cart-summary-item__idr" id="summary-item-{idx}-idr">≈ {idr}</span>
                 </div>
             </div>"#,
-            title = truncated_title,
+            idx = idx,
+            title = safe_title,
             qty = tokens_qty,
             price = token_price_usd,
             usd = item_usd,
@@ -843,6 +864,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                             <span id="cart-item-{idx}-price" class="cart-item-card__price">{price}</span>
                             <div class="cart-item-card__quantity">
                                 <button class="quantity-btn quantity-btn--minus"
+                                        aria-label="Decrease quantity"
                                         data-item-id="cart-item-{idx}"
                                         data-cart-id="{cart_id}"
                                         data-unit-price="{unit_price}"
@@ -850,13 +872,14 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                                         data-total="{total_tokens}"
                                         data-change="-1"
                                         onclick="handleQuantityChange(this)">
-                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                                         <path d="M4 8H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                     </svg>
                                 </button>
                                 <input type="number"
                                        class="quantity-input"
                                        id="cart-item-{idx}-qty"
+                                       aria-label="Token quantity"
                                        value="{tokens_qty}"
                                        data-item-id="cart-item-{idx}"
                                        data-cart-id="{cart_id}"
@@ -866,6 +889,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                                        onchange="handleQuantityInput(this)"
                                        onblur="handleQuantityInput(this)" />
                                 <button class="quantity-btn quantity-btn--plus"
+                                        aria-label="Increase quantity"
                                         data-item-id="cart-item-{idx}"
                                         data-cart-id="{cart_id}"
                                         data-unit-price="{unit_price}"
@@ -873,7 +897,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                                         data-total="{total_tokens}"
                                         data-change="1"
                                         onclick="handleQuantityChange(this)">
-                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                                         <path d="M8 4V12M4 8H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                     </svg>
                                 </button>
@@ -949,23 +973,24 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
 
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
                         <div class="mobile-cart-quantity-controls" style="width:auto; height:36px; display:flex; gap:8px; align-items:center;">
-                            <button class="mobile-cart-minus-btn" data-item-id="cart-item-mobile-{idx}" data-cart-id="{cart_id}" data-unit-price="{unit_price}" data-available="{available_tokens}" data-total="{total_tokens}" data-change="-1" onclick="handleQuantityChange(this)">
-                                <div class="mobile-cart-minus-icon"></div>
+                            <button class="mobile-cart-minus-btn" aria-label="Decrease quantity" data-item-id="cart-item-mobile-{idx}" data-cart-id="{cart_id}" data-unit-price="{unit_price}" data-available="{available_tokens}" data-total="{total_tokens}" data-change="-1" onclick="handleQuantityChange(this)">
+                                <div class="mobile-cart-minus-icon" aria-hidden="true"></div>
                             </button>
-                            <input type="number" 
-                                   class="quantity-input" 
-                                   id="cart-item-mobile-{idx}-qty" 
-                                   value="{tokens_qty}" 
-                                   data-item-id="cart-item-mobile-{idx}" 
-                                   data-cart-id="{cart_id}" 
-                                   data-unit-price="{unit_price}" 
-                                   data-available="{available_tokens}" 
-                                   data-total="{total_tokens}" 
-                                   onchange="handleQuantityInput(this)" 
-                                   onblur="handleQuantityInput(this)" 
+                            <input type="number"
+                                   class="quantity-input"
+                                   id="cart-item-mobile-{idx}-qty"
+                                   aria-label="Token quantity"
+                                   value="{tokens_qty}"
+                                   data-item-id="cart-item-mobile-{idx}"
+                                   data-cart-id="{cart_id}"
+                                   data-unit-price="{unit_price}"
+                                   data-available="{available_tokens}"
+                                   data-total="{total_tokens}"
+                                   onchange="handleQuantityInput(this)"
+                                   onblur="handleQuantityInput(this)"
                                    style="margin:0 4px; padding:0; width:48px; height:32px; border:1px solid #e9eaeb; border-radius:6px; text-align:center; font-weight:600; appearance:textfield; -moz-appearance:textfield;" />
-                            <button class="mobile-cart-plus-btn" data-item-id="cart-item-mobile-{idx}" data-cart-id="{cart_id}" data-unit-price="{unit_price}" data-available="{available_tokens}" data-total="{total_tokens}" data-change="1" onclick="handleQuantityChange(this)">
-                                <div class="mobile-cart-plus-icon"></div>
+                            <button class="mobile-cart-plus-btn" aria-label="Increase quantity" data-item-id="cart-item-mobile-{idx}" data-cart-id="{cart_id}" data-unit-price="{unit_price}" data-available="{available_tokens}" data-total="{total_tokens}" data-change="1" onclick="handleQuantityChange(this)">
+                                <div class="mobile-cart-plus-icon" aria-hidden="true"></div>
                             </button>
                         </div>
                         <div class="mobile-cart-price-display" style="width:auto; padding:4px 16px;">
@@ -1044,9 +1069,15 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let mut kfs_modal_html = String::new();
 
     if !primary_items.is_empty() {
+        let html_escape = |s: &str| {
+            s.replace('&', "&amp;")
+             .replace('<', "&lt;")
+             .replace('>', "&gt;")
+             .replace('"', "&quot;")
+        };
         let mut primary_list_html = String::new();
         for (p_title, _price, _qty) in primary_items {
-            primary_list_html.push_str(&format!("<li><strong style=\"color:#101828;\">{}</strong><br/><span style=\"color:#475467; font-size:13px;\">Primary Offering — Subject to funding targets.</span></li>", p_title));
+            primary_list_html.push_str(&format!("<li><strong style=\"color:#101828;\">{}</strong><br/><span style=\"color:#475467; font-size:13px;\">Primary Offering — Subject to funding targets.</span></li>", html_escape(&p_title)));
         }
 
         kfs_checkbox_html = r#"

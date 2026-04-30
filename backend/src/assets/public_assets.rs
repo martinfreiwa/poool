@@ -78,6 +78,35 @@ pub fn lookup(slug: &str) -> Option<PropertyDisplayData> {
             google_maps_url: None,
         },
 
+        "ocean-breeze-penthouse-v2" => PublicPropertySpec {
+            slug: "ocean-breeze-penthouse-v2",
+            title: "Ocean Breeze Penthouse",
+            short_description: "Two-bedroom freehold penthouse in the heart of Seminyak with sweeping ocean views and rooftop terrace.",
+            long_description: "Ocean Breeze Penthouse occupies the top floor of a boutique building minutes from Seminyak's beach clubs and dining scene. Two spacious bedrooms, floor-to-ceiling windows, and a private rooftop terrace with plunge pool.\n\nSold as a full freehold — investors own a share of the underlying title. Managed by our partner on a flexible short- and mid-term rental basis.",
+            asset_type: "property",
+            location_city: "Seminyak",
+            location_country: "Indonesia",
+            location_description: "Seminyak is Bali's most established luxury destination. Known for premium villas, fashion boutiques and world-class restaurants. Freehold title here is rare and commands a strong resale premium.",
+            bedrooms: 2,
+            lease_type: "freehold",
+            term_months: 0,
+            total_value_cents: 380_000_00,
+            token_price_cents: 380_00,
+            tokens_total: 1000,
+            tokens_available: 90,
+            annual_yield_bps: 420,
+            capital_appreciation_bps: 700,
+            land_size_sqm: 95.0,
+            investor_count: 142,
+            image_urls: vec![
+                "/static/images/seed/villa4_1.webp",
+                "/static/images/seed/villa4_2.webp",
+                "/static/images/seed/villa2_1.webp",
+            ],
+            video_url: None,
+            google_maps_url: None,
+        },
+
         "echo-beach-loft" => PublicPropertySpec {
             slug: "echo-beach-loft",
             title: "Echo Beach Loft",
@@ -386,6 +415,7 @@ impl PublicPropertySpec {
             total_investment_cost_usd: super::models::format_number(
                 total_value_dollars * 105 / 100,
             ),
+            token_price_usd: self.token_price_cents / 100,
             is_public_preview: true,
             public_data_notice: Some(
                 "Public preview based on landing-page marketing data. Sign up to see live availability, documents, and final investment terms."
@@ -409,6 +439,7 @@ mod tests {
         for slug in [
             "sunset-luxury-villa",
             "ocean-breeze-penthouse",
+            "ocean-breeze-penthouse-v2",
             "echo-beach-loft",
             "rice-terrace-retreat",
             "tropical-garden-villa",

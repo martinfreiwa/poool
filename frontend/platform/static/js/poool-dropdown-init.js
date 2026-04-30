@@ -18,7 +18,7 @@
 
     // Convert all native <select> elements
     const selects = document.querySelectorAll(
-      "select.settings-select, select.dropdown-select, select.form-select, select.input-dropdown, select.admin-select",
+      "select.settings-select, select.dropdown-select, select.form-select, select.input-dropdown",
     );
 
     selects.forEach(function (selectEl) {
@@ -37,9 +37,7 @@
             : "Select...",
           noLabel: true,
           searchable: selectEl.hasAttribute('data-searchable'),
-          className: selectEl.classList.contains("admin-select")
-            ? "poool-dropdown--sm poool-dropdown--inline"
-            : "",
+          className: "",
         });
       } catch (e) {
         console.warn('Failed to init dropdown:', e);

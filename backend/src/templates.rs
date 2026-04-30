@@ -42,7 +42,7 @@ pub fn create_engine() -> Templates {
             .to_string()
     } else {
         // Use static version in production
-        "1.0.24".to_string()
+        "1.0.25".to_string()
     };
 
     env.add_global("asset_version", version.clone());

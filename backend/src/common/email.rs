@@ -212,3 +212,101 @@ fn retry_delay_seconds(attempts: i32) -> i64 {
     let capped = attempts.clamp(1, 6) as u32;
     (60_i64 * 2_i64.pow(capped - 1)).min(1_800)
 }
+
+/// Deliver one transactional_email_outbox row immediately.
+/// On provider failure, marks the row failed with a backoff timestamp for retry.
+pub async fn send_transactional_outbox_item(pool: &PgPool, outbox_id: Uuid) {
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(err) => {
+            tracing::error!("Transactional email outbox begin failed: {}", err);
+            return;
+        }
+    };
+
+    let row = match sqlx::query_as::<_, (Uuid, String, String, String, i32)>(
+        r#"UPDATE transactional_email_outbox
+              SET status = 'sending',
+                  attempts = attempts + 1,
+                  updated_at = NOW()
+            WHERE id = $1
+              AND status IN ('queued', 'failed')
+              AND next_attempt_at <= NOW()
+              AND attempts < 10
+           RETURNING id, recipient_email, subject, html_body, attempts"#,
+    )
+    .bind(outbox_id)
+    .fetch_optional(&mut *tx)
+    .await
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => { let _ = tx.rollback().await; return; }
+        Err(err) => {
+            let _ = tx.rollback().await;
+            tracing::error!("Transactional email outbox claim failed: {}", err);
+            return;
+        }
+    };
+
+    if let Err(err) = tx.commit().await {
+        tracing::error!("Transactional email outbox claim commit failed: {}", err);
+        return;
+    }
+
+    let (id, recipient_email, subject, html_body, attempts) = row;
+    match send_email(&recipient_email, &subject, &html_body).await {
+        Ok(()) => {
+            let _ = sqlx::query(
+                "UPDATE transactional_email_outbox SET status='sent', sent_at=NOW(), last_error=NULL, updated_at=NOW() WHERE id=$1",
+            )
+            .bind(id)
+            .execute(pool)
+            .await;
+        }
+        Err(err) => {
+            let delay = retry_delay_seconds(attempts);
+            tracing::error!(
+                "Transactional email outbox delivery failed; retry in {}s: {}",
+                delay, err.detail()
+            );
+            let _ = sqlx::query(
+                r#"UPDATE transactional_email_outbox
+                      SET status='failed', last_error=$2,
+                          next_attempt_at=NOW() + ($3::TEXT || ' seconds')::INTERVAL,
+                          updated_at=NOW()
+                    WHERE id=$1"#,
+            )
+            .bind(id)
+            .bind(err.detail())
+            .bind(delay.to_string())
+            .execute(pool)
+            .await;
+        }
+    }
+}
+
+/// Poll transactional_email_outbox for items that are ready to retry.
+pub async fn process_transactional_email_outbox(pool: &PgPool, batch_size: i64) {
+    let ids = match sqlx::query_scalar::<_, Uuid>(
+        r#"SELECT id FROM transactional_email_outbox
+            WHERE status IN ('queued', 'failed')
+              AND next_attempt_at <= NOW()
+              AND attempts < 10
+            ORDER BY next_attempt_at
+            LIMIT $1"#,
+    )
+    .bind(batch_size)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(ids) => ids,
+        Err(err) => {
+            tracing::error!("Transactional email outbox scan failed: {}", err);
+            return;
+        }
+    };
+
+    for id in ids {
+        send_transactional_outbox_item(pool, id).await;
+    }
+}

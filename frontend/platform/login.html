@@ -268,6 +268,11 @@
     });
 
     document.body.addEventListener('htmx:beforeRequest', function (evt) {
+      var csrfInput = document.getElementById('csrf-token-input');
+      if (csrfInput) {
+        var match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+        if (match) { csrfInput.value = decodeURIComponent(match[1]); }
+      }
       var btn = document.getElementById('login-button');
       var form = document.getElementById('login-form');
       if (form) {

@@ -506,6 +506,21 @@ pub async fn upload_kyc_document(
         }
     };
 
+    let used_gcs = bucket.is_some();
+
+    // Helper: best-effort cleanup of the uploaded file on DB failure.
+    let cleanup = |path: String, bucket_name: Option<String>| {
+        tokio::spawn(async move {
+            if let Some(b) = bucket_name {
+                if let Err(e) = service::delete_object(&b, &path).await {
+                    tracing::warn!("GCS cleanup after DB failure failed for {}: {}", path, e);
+                } else {
+                    tracing::info!("GCS cleanup after DB failure succeeded for {}", path);
+                }
+            }
+        });
+    };
+
     let mut tx = match state.db.begin().await {
         Ok(tx) => tx,
         Err(e) => {
@@ -514,6 +529,9 @@ pub async fn upload_kyc_document(
                 user.id,
                 e
             );
+            if used_gcs {
+                cleanup(object_path.clone(), bucket.clone());
+            }
             return crate::error::AppError::Database(e).into_response();
         }
     };
@@ -536,6 +554,10 @@ pub async fn upload_kyc_document(
         Ok(id) => id,
         Err(e) => {
             tracing::error!("Failed to insert kyc_document for {}: {}", user.id, e);
+            let _ = tx.rollback().await;
+            if used_gcs {
+                cleanup(object_path.clone(), bucket.clone());
+            }
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({"error": "Upload succeeded but failed to save record"})),
@@ -559,6 +581,10 @@ pub async fn upload_kyc_document(
     .await
     {
         tracing::error!("Failed to audit KYC document upload for {}: {}", user.id, e);
+        let _ = tx.rollback().await;
+        if used_gcs {
+            cleanup(object_path.clone(), bucket.clone());
+        }
         return crate::error::AppError::Database(e).into_response();
     }
 
@@ -568,6 +594,9 @@ pub async fn upload_kyc_document(
             user.id,
             e
         );
+        if used_gcs {
+            cleanup(object_path.clone(), bucket.clone());
+        }
         return crate::error::AppError::Database(e).into_response();
     }
 

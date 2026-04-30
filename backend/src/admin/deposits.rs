@@ -165,7 +165,30 @@ pub async fn api_admin_deposit_confirm(
     )
     .await
     {
-        Ok(_) => Ok(Json(serde_json::json!({"status": "confirmed"})).into_response()),
+        Ok(_) => {
+            // Fire deposit confirmation email (best-effort, non-blocking)
+            let db_clone = state.db.clone();
+            let uid_str = uid.to_string();
+            let admin_id_str = admin.id.to_string();
+            tokio::spawn(async move {
+                if let Ok(Some(user_id)) = sqlx::query_scalar::<_, uuid::Uuid>(
+                    "SELECT user_id FROM deposit_requests WHERE id = $1"
+                )
+                .bind(uid)
+                .fetch_optional(&db_clone)
+                .await
+                {
+                    let _ = crate::email::trigger_transactional_email(
+                        &db_clone,
+                        &user_id,
+                        "deposit_confirmed",
+                        serde_json::json!({"deposit_id": uid_str, "confirmed_by": admin_id_str}),
+                    )
+                    .await;
+                }
+            });
+            Ok(Json(serde_json::json!({"status": "confirmed"})).into_response())
+        }
         Err(e) => {
             tracing::error!("Failed to confirm deposit {tx_id}: {e}");
             Err(ApiError::Internal(format!(

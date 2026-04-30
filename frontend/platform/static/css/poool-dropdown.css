@@ -673,7 +673,11 @@
 .dropdown-wrapper:has(.poool-dropdown--open),
 .settings-form-row__content:has(.poool-dropdown--open),
 .filter-dropdown:has(.poool-dropdown--open),
-.settings-select-wrapper:has(.poool-dropdown--open) {
+.settings-select-wrapper:has(.poool-dropdown--open),
+.ds-card:has(.poool-dropdown--open),
+.settings-card:has(.poool-dropdown--open),
+.settings-form-row:has(.poool-dropdown--open),
+.settings-sections:has(.poool-dropdown--open) {
   overflow: visible !important;
   z-index: 1000000 !important;
 }

@@ -366,6 +366,10 @@
                 insufficient_funds: "Insufficient funds in your wallet.",
                 deposit_failed: "We couldn't create the deposit request. Please try again.",
                 withdraw_failed: "We couldn't process your withdrawal. Please try again.",
+                "2fa_required": "Two-factor authentication required for withdrawals of $100 or more. Please enable 2FA in Settings first.",
+                withdrawal_cooldown: "You have reached the hourly withdrawal limit (3 requests). Please try again later.",
+                daily_limit_exceeded: "This withdrawal would exceed your daily limit of $250,000.",
+                no_payment_method: "No payment method on file. Add a bank account or card first.",
             };
             const msg = errMap[params.get("error")] || "An error occurred. Please try again.";
             showToast("Error", msg, "error");

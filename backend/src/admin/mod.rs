@@ -105,6 +105,7 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/blog-editor.html", get(page_admin_blog_editor))
         .route("/admin/blog-editor", get(page_admin_blog_editor))
         .route("/admin/users.html", get(page_admin_generic))
+        .route("/admin/users", get(page_admin_generic))
         .route("/admin/user-details.html", get(page_admin_generic))
         .route("/admin/user-details", get(page_admin_generic))
         .route("/admin/kyc.html", get(page_admin_generic))

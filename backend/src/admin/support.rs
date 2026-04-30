@@ -46,10 +46,11 @@ pub struct AdminSupportBulkPayload {
 
 /// GET /api/admin/support  List all support tickets with pagination and filtering
 pub async fn api_admin_support_tickets(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Query(filters): axum::extract::Query<AdminSupportFilters>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "support.manage").await?;
     let mut query = String::from(
         r#"SELECT st.id::text, st.subject, st.message, st.status, st.priority,
                   st.category, st.metadata, st.sla_breach_at::text,
@@ -184,10 +185,11 @@ pub async fn api_admin_support_tickets(
 
 /// PATCH /api/admin/support/bulk - Bulk update multiple tickets
 pub async fn api_admin_support_bulk(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<AdminSupportBulkPayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "support.manage").await?;
     if payload.ticket_ids.is_empty() {
         return Err(ApiError::BadRequest("No tickets selected".to_string()));
     }
@@ -243,10 +245,29 @@ pub async fn api_admin_support_bulk(
     let result = sqlx::query_with(&query, args).execute(&state.db).await;
 
     match result {
-        Ok(r) => Ok(
-            Json(serde_json::json!({"status":"updated", "count": r.rows_affected()}))
-                .into_response(),
-        ),
+        Ok(r) => {
+            let count = r.rows_affected();
+            let _ = sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+                   VALUES ($1, 'admin.support_bulk_update', 'support_tickets', $2)"#,
+            )
+            .bind(admin.user.id)
+            .bind(serde_json::json!({
+                "count": count,
+                "changes": {
+                    "status": payload.status,
+                    "priority": payload.priority,
+                    "assigned_to": payload.assigned_to
+                }
+            }))
+            .execute(&state.db)
+            .await;
+
+            Ok(
+                Json(serde_json::json!({"status":"updated", "count": count}))
+                    .into_response(),
+            )
+        }
         Err(e) => {
             tracing::error!("Failed bulk update for support tickets: {:?}", e);
             Err(ApiError::Internal(
@@ -258,11 +279,12 @@ pub async fn api_admin_support_bulk(
 
 /// PATCH /api/admin/support/:ticket_id  Update ticket status/priority
 pub async fn api_admin_support_update(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(ticket_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "support.manage").await?;
     let uid = ApiError::parse_uuid(&ticket_id)?;
 
     let existing_res = sqlx::query_as::<_, (String, String)>(
@@ -320,6 +342,20 @@ pub async fn api_admin_support_update(
 
     match updated {
         Ok(r) if r.rows_affected() > 0 => {
+            let _ = sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+                   VALUES ($1, 'admin.support_ticket_update', 'support_tickets', $2, $3)"#,
+            )
+            .bind(admin.user.id)
+            .bind(uid)
+            .bind(serde_json::json!({
+                "status": new_status,
+                "priority": new_priority,
+                "assigned_to": new_assignee
+            }))
+            .execute(&state.db)
+            .await;
+
             Ok(Json(serde_json::json!({"status":"updated"})).into_response())
         }
         Ok(_) => Err(ApiError::NotFound("Ticket not found".to_string())),
@@ -332,10 +368,11 @@ pub async fn api_admin_support_update(
 
 /// GET /api/admin/support/:ticket_id  Get ticket details & replies
 pub async fn api_admin_support_ticket_detail(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(ticket_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "support.manage").await?;
     let uid = ApiError::parse_uuid(&ticket_id)?;
 
     let ticket_result = sqlx::query(
@@ -512,12 +549,13 @@ pub async fn api_admin_support_ticket_detail(
 
 /// POST /api/admin/support/:ticket_id/messages  Add a reply or internal note
 pub async fn api_admin_support_ticket_reply(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(ticket_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    let current_user = _admin.user.clone();
+    admin.require_permission(&state.db, "support.manage").await?;
+    let current_user = admin.user.clone();
 
     let uid = ApiError::parse_uuid(&ticket_id)?;
 
