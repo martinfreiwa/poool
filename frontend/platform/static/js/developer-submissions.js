@@ -688,7 +688,7 @@ function escapeHtml(text) {
 }
 
 function escapeAttr(text) {
-  return escapeHtml(text).replace(/'/g, "&#39;");
+  return escapeHtml(text).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function safeImageUrl(url) {
