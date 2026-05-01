@@ -2416,16 +2416,12 @@ body.youtube-modal-active {
 }
 
 .section-icon {
-  width: 36px;
-  height: 36px;
-  padding: 6px;
-  background: #F5F7FF;
-  border-radius: 8px;
-  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
-/* Shared icon-with-bg style for all section header icons */
+/* Shared icon style for all section header icons */
 .financial-icon,
 .location-icon,
 .developer-icon,
@@ -2434,12 +2430,8 @@ body.youtube-modal-active {
 .key-icon,
 .faq-icon,
 .investment-icon {
-  width: 36px;
-  height: 36px;
-  padding: 6px;
-  background: #F5F7FF;
-  border-radius: 8px;
-  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
