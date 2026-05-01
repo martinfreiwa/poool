@@ -265,10 +265,18 @@
     const tokenizeStep = document.getElementById('timeline-tokenize');
     if (tokenizeStep) {
       tokenizeStep.className = 'timeline-step timeline-step--done';
-      tokenizeStep.textContent = 'Tokenized';
+      tokenizeStep.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4"/></svg> Tokenized';
     }
     const liveStep = document.getElementById('timeline-live');
-    if (liveStep) liveStep.className = 'timeline-step timeline-step--active';
+    if (liveStep) {
+      if (data.published) {
+        liveStep.className = 'timeline-step timeline-step--done';
+        liveStep.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4"/></svg> Live on Marketplace';
+      } else {
+        liveStep.className = 'timeline-step timeline-step--active';
+        liveStep.textContent = 'Live on Marketplace';
+      }
+    }
   }
 
   function resultField(label, value, explorerUrl) {

@@ -116,6 +116,7 @@ pub struct TokenizeCheckResponse {
     pub explorer_url: String,
     pub metadata_uri: String,
     pub already_tokenized: bool,
+    pub published: bool,
     pub chain_token_id: Option<String>,
     pub chain_contract_address: Option<String>,
     /// Pre-flight check results
@@ -824,6 +825,7 @@ pub async fn api_admin_blockchain_tokenize_check(
         explorer_url: explorer_url_for_network(&network).to_string(),
         metadata_uri,
         already_tokenized,
+        published: row.9,
         chain_token_id: row.6,
         chain_contract_address: row.7,
         checks: TokenizeChecks {

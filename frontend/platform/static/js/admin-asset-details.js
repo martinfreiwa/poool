@@ -185,19 +185,50 @@ function renderOverview(a) {
     )
     .join("");
 
+  // Dividend warning banner — funded asset with zero dividends ever distributed
+  const existingBanner = document.getElementById("dividend-warning-banner");
+  if (existingBanner) existingBanner.remove();
+  const isFunded = ["funded", "rented"].includes(a.funding_status);
+  const totalDividends = (a.investors || []).reduce((sum, inv) => sum + (inv.total_rental_cents || 0), 0);
+  if (isFunded && totalDividends === 0 && (a.investors || []).length > 0) {
+    const banner = document.createElement("div");
+    banner.id = "dividend-warning-banner";
+    banner.style.cssText = "background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px;";
+    banner.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#f59e0b" stroke-width="2" style="flex-shrink:0;"><path d="M8 1l7 14H1L8 1z"/><path d="M8 6v4"/><circle cx="8" cy="12" r=".5" fill="#f59e0b"/></svg><span style="font-size:13px;color:#92400e;font-weight:500;">No dividends distributed yet — asset is funded with <strong>${bpsToPercent(a.annual_yield_bps)}</strong> annual yield.</span>`;
+    const overviewPanel = document.getElementById("panel-overview");
+    overviewPanel.insertBefore(banner, overviewPanel.firstChild);
+  }
+
+  // Milestones warning on overview when live + 0 milestones
+  const existingMilestoneBanner = document.getElementById("milestone-warning-banner");
+  if (existingMilestoneBanner) existingMilestoneBanner.remove();
+  if (a.published && (a.milestones || []).length === 0) {
+    const mb = document.createElement("div");
+    mb.id = "milestone-warning-banner";
+    mb.style.cssText = "background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px;";
+    mb.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--admin-accent)" stroke-width="2" style="flex-shrink:0;"><circle cx="8" cy="8" r="7"/><path d="M8 5v3l2 2"/></svg><span style="font-size:13px;color:var(--admin-text-secondary);font-weight:500;">No milestones added — investors cannot track property progress.</span>`;
+    const overviewPanel = document.getElementById("panel-overview");
+    overviewPanel.insertBefore(mb, overviewPanel.firstChild);
+  }
+
   // Financial Summary
-  document.getElementById("financial-summary").innerHTML = [
+  const resaleAvailable = a.resale_tokens_available || 0;
+  const summaryRows = [
     ["Total Valuation", formatUSD(a.total_value_cents)],
     ["Token Price", formatUSD(a.token_price_cents)],
     ["Tokens Total", (a.tokens_total || 0).toLocaleString()],
-    ["Tokens Available", (a.tokens_available || 0).toLocaleString()],
+    ["Primary Available", (a.tokens_available || 0).toLocaleString()],
+    ["Resale Available", resaleAvailable > 0
+      ? `<span style="color:var(--admin-success);font-weight:700;">${resaleAvailable.toLocaleString()}</span>`
+      : `<span style="color:var(--admin-text-muted);">0</span>`],
     ["Annual Yield", bpsToPercent(a.annual_yield_bps)],
-  ]
+  ];
+  document.getElementById("financial-summary").innerHTML = summaryRows
     .map(
       ([l, v]) => `
         <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:13px;color:var(--admin-text-muted);">${l}</span>
-            <span style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;">${esc(v)}</span>
+            <span style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;">${typeof v === "string" && v.startsWith("<") ? v : esc(String(v))}</span>
         </div>
     `,
     )
@@ -352,27 +383,64 @@ function renderMilestones(a) {
 }
 
 // ─── Tab: Cap Table ───────────────────────────────────────────
+function investorInitials(name) {
+  const parts = (name || "").trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (name || "?").substring(0, 2).toUpperCase();
+}
+
+function investorAvatarColor(userId) {
+  const colors = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#14b8a6"];
+  let hash = 0;
+  for (let i = 0; i < (userId || "").length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  return colors[hash % colors.length];
+}
+
 function renderCapTable(a) {
   const investors = a.investors || [];
+  const totalTokens = a.tokens_total || 0;
   if (investors.length === 0) return;
 
+  // Concentration warning: any investor > 50%
+  const existingConc = document.getElementById("concentration-warning");
+  if (existingConc) existingConc.remove();
+  const topHolder = investors[0];
+  const topPct = totalTokens > 0 ? (topHolder.tokens_owned / totalTokens) * 100 : 0;
+  if (topPct > 50) {
+    const warn = document.createElement("div");
+    warn.id = "concentration-warning";
+    warn.style.cssText = "background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px;";
+    warn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2" style="flex-shrink:0;"><path d="M8 1l7 14H1L8 1z"/><path d="M8 6v4"/><circle cx="8" cy="12" r=".5" fill="#ef4444"/></svg><span style="font-size:13px;color:#991b1b;font-weight:500;">Concentration risk: <strong>${topHolder.name}</strong> holds <strong>${topPct.toFixed(1)}%</strong> of total supply.</span>`;
+    document.getElementById("panel-captable").insertBefore(warn, document.getElementById("panel-captable").firstChild);
+  }
+
   document.getElementById("captable-tbody").innerHTML = investors
-    .map(
-      (inv) => `
+    .map((inv) => {
+      const pct = totalTokens > 0 ? ((inv.tokens_owned / totalTokens) * 100).toFixed(1) : "0.0";
+      const color = investorAvatarColor(inv.user_id);
+      const initials = investorInitials(inv.name);
+      const emailDomain = (inv.email || "").split("@")[1] || "";
+      const isExternalDomain = emailDomain && !["poool.app", "poool.com"].includes(emailDomain);
+      return `
         <tr>
             <td>
-                <a href="/admin/user-details?id=${esc(inv.user_id)}" style="color:var(--admin-accent);text-decoration:none;font-weight:600;">
-                    ${esc(inv.name)}
-                </a>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">${esc(initials)}</div>
+                    <div>
+                        <a href="/admin/user-details?id=${esc(inv.user_id)}" style="color:var(--admin-accent);text-decoration:none;font-weight:600;font-size:13px;display:block;">${esc(inv.name)}</a>
+                        <span style="font-size:11px;color:${isExternalDomain ? "#f59e0b" : "var(--admin-text-muted)"};">${esc(inv.email || "")}</span>
+                    </div>
+                </div>
             </td>
             <td style="font-weight:600;font-variant-numeric:tabular-nums;">${inv.tokens_owned.toLocaleString()}</td>
+            <td style="font-variant-numeric:tabular-nums;color:var(--admin-text-muted);font-size:13px;">${pct}%</td>
             <td style="font-variant-numeric:tabular-nums;">${formatUSD(inv.purchase_value_cents)}</td>
             <td style="font-variant-numeric:tabular-nums;">${formatUSD(inv.current_value_cents)}</td>
-            <td style="font-variant-numeric:tabular-nums;color:var(--admin-success);">${formatUSD(inv.total_rental_cents)}</td>
+            <td style="font-variant-numeric:tabular-nums;color:${inv.total_rental_cents > 0 ? "var(--admin-success)" : "var(--admin-text-muted)"};">${formatUSD(inv.total_rental_cents)}</td>
             <td><span class="admin-badge admin-badge--${inv.status === "active" ? "success" : "neutral"}"><span class="admin-badge-dot"></span>${inv.status}</span></td>
         </tr>
-    `,
-    )
+    `;
+    })
     .join("");
 }
 
@@ -381,19 +449,43 @@ function renderOrders(a) {
   const orders = a.orders || [];
   if (orders.length === 0) return;
 
+  const tokenPriceCents = a.token_price_cents || 0;
+  const totalTokens = a.tokens_total || 1;
+  const LARGE_ORDER_CENTS = 10_000_00; // $100k
+  const LARGE_PCT = 20; // >20% of supply
+
   document.getElementById("orders-tbody").innerHTML = orders
-    .map(
-      (o) => `
-        <tr>
-            <td style="font-weight:600;font-family:monospace;font-size:13px;">${esc(o.order_number)}</td>
-            <td>${esc(o.user_email)}</td>
-            <td style="font-variant-numeric:tabular-nums;">${o.tokens}</td>
+    .map((o) => {
+      const expectedCents = tokenPriceCents * o.tokens;
+      const mismatch = expectedCents > 0 && Math.abs(o.subtotal_cents - expectedCents) > 100;
+      const pctOfSupply = (o.tokens / totalTokens) * 100;
+      const isLarge = o.subtotal_cents >= LARGE_ORDER_CENTS || pctOfSupply >= LARGE_PCT;
+      const emailDomain = (o.user_email || "").split("@")[1] || "";
+      const isExternalDomain = emailDomain && !["poool.app", "poool.com"].includes(emailDomain);
+
+      const anomalyFlag = isLarge
+        ? `<span title="Large order: ${pctOfSupply.toFixed(1)}% of supply / ${formatUSD(o.subtotal_cents)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;margin-left:6px;">⚠ LARGE</span>`
+        : "";
+
+      const expectedCell = mismatch
+        ? `<td style="font-variant-numeric:tabular-nums;color:var(--admin-danger);font-weight:600;" title="Expected ${formatUSD(expectedCents)}">${formatUSD(expectedCents)} ⚠</td>`
+        : `<td style="font-variant-numeric:tabular-nums;color:var(--admin-text-muted);font-size:12px;">${formatUSD(expectedCents)}</td>`;
+
+      return `
+        <tr${isLarge ? ' style="background:rgba(245,158,11,0.04);"' : ""}>
+            <td style="font-weight:600;font-family:monospace;font-size:12px;">${esc(o.order_number)}${anomalyFlag}</td>
+            <td>
+                <span style="color:${isExternalDomain ? "#f59e0b" : "var(--admin-text-primary)"};">${esc(o.user_email)}</span>
+                ${isExternalDomain ? `<span style="font-size:10px;color:#92400e;background:rgba(245,158,11,0.1);border-radius:3px;padding:1px 4px;margin-left:4px;">external</span>` : ""}
+            </td>
+            <td style="font-variant-numeric:tabular-nums;">${o.tokens.toLocaleString()}</td>
             <td style="font-weight:600;font-variant-numeric:tabular-nums;">${formatUSD(o.subtotal_cents)}</td>
+            ${expectedCell}
             <td>${orderStatusBadge(o.status)}</td>
             <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${formatDate(o.created_at)}</td>
         </tr>
-    `,
-    )
+    `;
+    })
     .join("");
 }
 

@@ -138,14 +138,20 @@ pub async fn api_admin_asset_detail(
     .ok_or_else(|| ApiError::NotFound("Not found".to_string()))?;
 
     // Cap table
-    let investors: Vec<(String, String, i32, i64, i64, i64, String)> = sqlx::query_as(
-        "SELECT COALESCE(up.first_name || ' ' || up.last_name, u.email), u.id::text,
+    let investors: Vec<(String, String, String, i32, i64, i64, i64, String)> = sqlx::query_as(
+        "SELECT COALESCE(up.first_name || ' ' || up.last_name, u.email), u.email, u.id::text,
                 COALESCE(i.tokens_owned,0), COALESCE(i.purchase_value_cents,0),
                 COALESCE(i.current_value_cents,0), COALESCE(i.total_rental_cents,0),
                 COALESCE(i.status,'active')
 	         FROM investments i JOIN users u ON u.id = i.user_id LEFT JOIN user_profiles up ON up.user_id = u.id
 	         WHERE i.asset_id = $1 ORDER BY i.tokens_owned DESC"
     ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
+
+    // Resale liquidity: open sell orders on secondary market
+    let resale_available: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(quantity - quantity_filled), 0) FROM market_orders
+         WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')"
+    ).bind(aid).fetch_one(&state.db).await.map_err(ApiError::Database)?;
 
     // Financial records
     let financials: Vec<(i32, i32, i64, i64, i64, Option<i32>)> = sqlx::query_as(
@@ -210,10 +216,11 @@ pub async fn api_admin_asset_detail(
         "published": row.get::<bool, _>("published"),
         "construction_status": row.get::<Option<String>, _>("construction_status"),
         "investors": investors.iter().map(|i| serde_json::json!({
-            "name": i.0, "user_id": i.1, "tokens_owned": i.2,
-            "purchase_value_cents": i.3, "current_value_cents": i.4,
-            "total_rental_cents": i.5, "status": i.6
+            "name": i.0, "email": i.1, "user_id": i.2, "tokens_owned": i.3,
+            "purchase_value_cents": i.4, "current_value_cents": i.5,
+            "total_rental_cents": i.6, "status": i.7
         })).collect::<Vec<_>>(),
+        "resale_tokens_available": resale_available,
         "financials": financials.iter().map(|f| serde_json::json!({
             "period_month": f.0, "period_year": f.1,
             "rental_income_cents": f.2, "expenses_cents": f.3,
