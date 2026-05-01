@@ -382,7 +382,7 @@
                 {% include 'components/property/reviews.html' %}
 
                 <!-- 16. Contact -->
-                {% include 'components/property/contact.html' %}
+                {% with contact_asset_slug=asset.slug %}{% include 'components/property/contact.html' %}{% endwith %}
 
               </div>
               <!-- End of property-main-card -->

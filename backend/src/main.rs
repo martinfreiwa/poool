@@ -2800,6 +2800,7 @@ async fn page_marketplace_secondary(
 async fn page_marketplace_trading_v3(
     jar: CookieJar,
     State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
     let platform_fee_pct: f64 = sqlx::query_scalar(
         "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
@@ -2819,7 +2820,8 @@ async fn page_marketplace_trading_v3(
 
     let context = serde_json::json!({
         "fee_pct": platform_fee_pct,
-        "fee_pct_display": fee_pct_display
+        "fee_pct_display": fee_pct_display,
+        "contact_asset_slug": params.get("asset").cloned().unwrap_or_default()
     });
 
     common::routes_helper::serve_protected_with_context(
