@@ -90,6 +90,10 @@ use tower_http::services::{ServeDir, ServeFile};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Install rustls crypto provider before any TLS connections (required by rustls 0.23+).
+    // Must run before Sentry, Redis, reqwest, or any TLS-using library initializes.
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     // ── 1. Configuration ─────────────────────────────────────────
     let config = config::Config::from_env();
 
