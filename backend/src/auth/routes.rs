@@ -1239,9 +1239,15 @@ pub async fn google_callback(
         Err(e) => {
             tracing::error!("Google OAuth callback error: {}", e);
             let jar = clear_oauth_cookies(jar);
+            let error_msg = match &e {
+                crate::error::AppError::Unauthorized(msg) | crate::error::AppError::BadRequest(msg) => {
+                    urlencoding::encode(msg).replace("%20", "+")
+                }
+                _ => "Google+sign+in+failed.+Please+try+again.".to_string(),
+            };
             (
                 jar,
-                Redirect::to("/auth/login?error=Google+sign+in+failed.+Please+try+again."),
+                Redirect::to(&format!("/auth/login?error={}", error_msg)),
             )
                 .into_response()
         }
