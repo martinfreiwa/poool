@@ -205,10 +205,35 @@ async fn settle_trade(
     }
 
     // ── Step 2: Calculate fees ───────────────────────────────
-    let (taker_fee_cents, taker_fee_bps) =
-        service::calculate_trade_fee(pool, event.asset_id, total_cents, true).await?;
+    // Both sides pay fees per maker/taker designation from the matching
+    // engine. Maker = resting order, taker = order that crossed the spread.
+    let resolved = super::validation::resolve_fees(pool, event.asset_id).await?;
 
-    let seller_proceeds = total_cents.saturating_sub(taker_fee_cents);
+    let (buyer_fee_bps, seller_fee_bps, taker_side_str) = match event.maker_side {
+        super::models::MakerSide::Sell => {
+            // Seller was maker, buyer was taker
+            (resolved.taker_fee_bps, resolved.maker_fee_bps, "buy")
+        }
+        super::models::MakerSide::Buy => {
+            // Buyer was maker, seller was taker
+            (resolved.maker_fee_bps, resolved.taker_fee_bps, "sell")
+        }
+    };
+
+    let buyer_fee_cents = super::models::calculate_fee_cents(total_cents, buyer_fee_bps);
+    let seller_fee_cents = super::models::calculate_fee_cents(total_cents, seller_fee_bps);
+    let total_fee_cents = buyer_fee_cents
+        .checked_add(seller_fee_cents)
+        .ok_or_else(|| AppError::Internal("fee sum overflow".into()))?;
+
+    // Seller receives match value minus their fee
+    let seller_proceeds = total_cents
+        .checked_sub(seller_fee_cents)
+        .ok_or_else(|| AppError::Internal("seller_proceeds underflow".into()))?;
+    // Buyer pays match value PLUS their fee (deducted from their hold)
+    let buyer_total_pay = total_cents
+        .checked_add(buyer_fee_cents)
+        .ok_or_else(|| AppError::Internal("buyer_total_pay overflow".into()))?;
 
     // ── Step 3: Update sell order ────────────────────────────
     let new_sell_filled = sell_order.quantity_filled + event.match_quantity;
@@ -247,8 +272,9 @@ async fn settle_trade(
     .map_err(AppError::Database)?;
 
     // ── Step 5: Transfer balance ─────────────────────────────
-    // Seller receives proceeds (total - fee)
-    sqlx::query(
+    // Seller receives proceeds (total - fee). Lock seller wallet FOR UPDATE
+    // to ensure atomicity with concurrent settlements / withdrawals.
+    let seller_wallet_affected = sqlx::query(
         "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
          WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
     )
@@ -256,28 +282,74 @@ async fn settle_trade(
     .bind(event.seller_user_id)
     .execute(&mut *tx)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(AppError::Database)?
+    .rows_affected();
+    if seller_wallet_affected != 1 {
+        return Err(AppError::Internal(format!(
+            "Seller wallet not uniquely matched (user={}, affected={})",
+            event.seller_user_id, seller_wallet_affected
+        )));
+    }
 
     // Buyer's balance was already held at order creation.
     // The held amount is consumed — actual balance_cents doesn't change
     // (it was already reduced by the hold). We'll release the hold in Step 8.
 
     // ── Step 6: Transfer tokens ──────────────────────────────
-    // Seller: reduce tokens_owned
-    sqlx::query(
+    // Lock seller's investment row FOR UPDATE and target it by id, so that
+    // duplicate (user, asset) rows don't cause the deduction to apply
+    // multiple times (H5 — fixes multi-row UPDATE accounting bug).
+    // Schema guarantees UNIQUE (user_id, asset_id) — at most one row.
+    let seller_investment = sqlx::query!(
+        r#"SELECT id, tokens_owned, held_tokens
+           FROM investments
+           WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'
+           FOR UPDATE"#,
+        event.seller_user_id,
+        event.asset_id,
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(AppError::Database)?
+    .ok_or_else(|| {
+        AppError::Internal(format!(
+            "Seller investment row missing (user={}, asset={})",
+            event.seller_user_id, event.asset_id
+        ))
+    })?;
+
+    if seller_investment.tokens_owned < event.match_quantity
+        || seller_investment.held_tokens < event.match_quantity
+    {
+        return Err(AppError::Internal(format!(
+            "Seller token invariant violated (owned={}, held={}, match_qty={})",
+            seller_investment.tokens_owned, seller_investment.held_tokens, event.match_quantity
+        )));
+    }
+
+    let seller_token_affected = sqlx::query(
         "UPDATE investments SET tokens_owned = tokens_owned - $1, updated_at = NOW()
-         WHERE user_id = $2 AND asset_id = $3 AND status != 'exited'",
+         WHERE id = $2",
     )
     .bind(event.match_quantity)
-    .bind(event.seller_user_id)
-    .bind(event.asset_id)
+    .bind(seller_investment.id)
     .execute(&mut *tx)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(AppError::Database)?
+    .rows_affected();
+    if seller_token_affected != 1 {
+        return Err(AppError::Internal(format!(
+            "Seller investment update failed (id={}, affected={})",
+            seller_investment.id, seller_token_affected
+        )));
+    }
 
-    // Buyer: add tokens (upsert — buyer may not have an investment record yet)
-    let buyer_existing = sqlx::query_scalar::<_, i32>(
-        "SELECT tokens_owned FROM investments WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'",
+    // Buyer: add tokens (upsert — buyer may not have an investment record yet).
+    // Lock the row FOR UPDATE if it exists.
+    let buyer_existing = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM investments
+         WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'
+         FOR UPDATE",
     )
     .bind(event.buyer_user_id)
     .bind(event.asset_id)
@@ -286,18 +358,23 @@ async fn settle_trade(
     .map_err(AppError::Database)?;
 
     match buyer_existing {
-        Some(_) => {
-            // Buyer already has an investment — update tokens
-            sqlx::query(
+        Some(buyer_inv_id) => {
+            let buyer_token_affected = sqlx::query(
                 "UPDATE investments SET tokens_owned = tokens_owned + $1, updated_at = NOW()
-                 WHERE user_id = $2 AND asset_id = $3 AND status != 'exited'",
+                 WHERE id = $2",
             )
             .bind(event.match_quantity)
-            .bind(event.buyer_user_id)
-            .bind(event.asset_id)
+            .bind(buyer_inv_id)
             .execute(&mut *tx)
             .await
-            .map_err(AppError::Database)?;
+            .map_err(AppError::Database)?
+            .rows_affected();
+            if buyer_token_affected != 1 {
+                return Err(AppError::Internal(format!(
+                    "Buyer investment update failed (id={}, affected={})",
+                    buyer_inv_id, buyer_token_affected
+                )));
+            }
         }
         None => {
             // Buyer doesn't have an investment — create one
@@ -349,33 +426,55 @@ async fn settle_trade(
         .checked_mul(event.match_quantity as i64)
         .ok_or_else(|| AppError::Internal("Actual-paid overflow".to_string()))?;
 
-    sqlx::query(
+    // Strict update — fail tx if invariants don't hold (no silent clamps).
+    // Conditions guarantee: buyer has enough hold to release AND enough
+    // balance to pay AND held >= release post-update (i.e. no negative held).
+    let buyer_wallet_affected = sqlx::query(
         "UPDATE wallets SET
             balance_cents = balance_cents - $1,
-            held_balance_cents = GREATEST(held_balance_cents - $2, 0),
+            held_balance_cents = held_balance_cents - $2,
             updated_at = NOW()
-         WHERE user_id = $3 AND wallet_type = 'cash' AND currency = 'USD'",
+         WHERE user_id = $3
+           AND wallet_type = 'cash'
+           AND currency = 'USD'
+           AND held_balance_cents >= $2
+           AND balance_cents >= $1",
     )
     .bind(actual_paid)
     .bind(held_release)
     .bind(event.buyer_user_id)
     .execute(&mut *tx)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(AppError::Database)?
+    .rows_affected();
+    if buyer_wallet_affected != 1 {
+        return Err(AppError::Internal(format!(
+            "Buyer wallet invariant violated or row missing (user={}, actual_paid={}, held_release={}, affected={})",
+            event.buyer_user_id, actual_paid, held_release, buyer_wallet_affected
+        )));
+    }
 
-    // Seller: release held_tokens for the matched amount
-    sqlx::query(
+    // Seller: release held_tokens for the matched amount. Strict — must have
+    // enough held tokens; the seller_investment row was already FOR UPDATE'd
+    // and validated above, so this is a safety net.
+    let seller_release_affected = sqlx::query(
         "UPDATE investments SET
-            held_tokens = GREATEST(held_tokens - $1, 0),
+            held_tokens = held_tokens - $1,
             updated_at = NOW()
-         WHERE user_id = $2 AND asset_id = $3 AND status != 'exited'",
+         WHERE id = $2 AND held_tokens >= $1",
     )
     .bind(event.match_quantity)
-    .bind(event.seller_user_id)
-    .bind(event.asset_id)
+    .bind(seller_investment.id)
     .execute(&mut *tx)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(AppError::Database)?
+    .rows_affected();
+    if seller_release_affected != 1 {
+        return Err(AppError::Internal(format!(
+            "Seller held_tokens release failed (id={}, qty={}, affected={})",
+            seller_investment.id, event.match_quantity, seller_release_affected
+        )));
+    }
 
     // Collect platform fee into the singleton platform wallet. Require
     // rows_affected == 1 so an unseeded or accidentally duplicated

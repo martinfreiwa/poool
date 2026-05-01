@@ -263,18 +263,22 @@ pub async fn create_order(
             AppError::BadRequest("Order total exceeds maximum supported value".into())
         })?;
 
-    // ── Concentration limit check (buy side only) ────────────
-    if side == OrderSide::Buy {
-        validation::check_concentration_limit(
-            pool,
-            user_id,
-            asset_uuid,
-            req.quantity,
-            total_tokens,
+    // Resolve fees once for this asset so we can reserve the buyer's fee
+    // alongside the price hold. The buyer might end up as taker or maker —
+    // we conservatively reserve the TAKER fee (the larger of the two).
+    // Any unused portion is refunded at settlement.
+    let resolved_fees = validation::resolve_fees(pool, asset_uuid).await?;
+    let buyer_fee_reserve_cents: i64 = if side == OrderSide::Buy {
+        super::models::calculate_fee_cents(
+            order_total_cents,
+            resolved_fees.taker_fee_bps.max(resolved_fees.maker_fee_bps),
         )
-        .await
-        .map_err(|r| r.into_app_error())?;
-    }
+    } else {
+        0
+    };
+    let buyer_hold_total_cents = order_total_cents
+        .checked_add(buyer_fee_reserve_cents)
+        .ok_or_else(|| AppError::BadRequest("Order total + fee exceeds maximum".into()))?;
 
     // ── Check if admin review is needed ──────────────────────
     let requires_review =
@@ -289,12 +293,24 @@ pub async fn create_order(
     // ── ACID Transaction: create order + place hold ──────────
     let mut tx = pool.begin().await.map_err(AppError::Database)?;
 
-    // Balance/token check inside transaction with FOR UPDATE
+    // Balance/token check inside transaction with FOR UPDATE.
+    // Concentration check (buy side only) is also done inside the tx so the
+    // (current_owned + held) snapshot can't change between the check and
+    // the hold placement (H7 — closes concurrent-buy race window).
     match side {
         OrderSide::Buy => {
-            validation::check_buyer_balance(&mut tx, user_id, order_total_cents)
+            validation::check_buyer_balance(&mut tx, user_id, buyer_hold_total_cents)
                 .await
                 .map_err(|r| r.into_app_error())?;
+            validation::check_concentration_limit_tx(
+                &mut tx,
+                user_id,
+                asset_uuid,
+                req.quantity,
+                total_tokens,
+            )
+            .await
+            .map_err(|r| r.into_app_error())?;
         }
         OrderSide::Sell => {
             validation::check_seller_tokens(&mut tx, user_id, asset_uuid, req.quantity)
@@ -336,14 +352,16 @@ pub async fn create_order(
         AppError::Database(e)
     })?;
 
-    // Place hold on balance (buy) or tokens (sell)
+    // Place hold on balance (buy) or tokens (sell).
+    // Buyer hold includes the price total + reserved taker fee — settlement
+    // refunds any unused portion of the fee reserve back to free balance.
     match side {
         OrderSide::Buy => {
             sqlx::query(
                 "UPDATE wallets SET held_balance_cents = held_balance_cents + $1, updated_at = NOW()
                  WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
             )
-            .bind(order_total_cents)
+            .bind(buyer_hold_total_cents)
             .bind(user_id)
             .execute(&mut *tx)
             .await
@@ -475,28 +493,54 @@ pub async fn cancel_order(
     let side = OrderSide::parse(&order.side);
     match side {
         Some(OrderSide::Buy) => {
-            let held_release = order.price_cents.saturating_mul(remaining as i64);
-            sqlx::query(
-                "UPDATE wallets SET held_balance_cents = GREATEST(held_balance_cents - $1, 0), updated_at = NOW()
-                 WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
+            let held_release = order
+                .price_cents
+                .checked_mul(remaining as i64)
+                .ok_or_else(|| AppError::Internal("Hold-release overflow on cancel".into()))?;
+            let affected = sqlx::query(
+                "UPDATE wallets SET
+                    held_balance_cents = held_balance_cents - $1,
+                    updated_at = NOW()
+                 WHERE user_id = $2
+                   AND wallet_type = 'cash'
+                   AND currency = 'USD'
+                   AND held_balance_cents >= $1",
             )
             .bind(held_release)
             .bind(user_id)
             .execute(&mut *tx)
             .await
-            .map_err(AppError::Database)?;
+            .map_err(AppError::Database)?
+            .rows_affected();
+            if affected != 1 {
+                return Err(AppError::Internal(format!(
+                    "Buyer hold release invariant violated on cancel (user={}, release={})",
+                    user_id, held_release
+                )));
+            }
         }
         Some(OrderSide::Sell) => {
-            sqlx::query(
-                "UPDATE investments SET held_tokens = GREATEST(held_tokens - $1, 0), updated_at = NOW()
-                 WHERE user_id = $2 AND asset_id = $3 AND status != 'exited'",
+            let affected = sqlx::query(
+                "UPDATE investments SET
+                    held_tokens = held_tokens - $1,
+                    updated_at = NOW()
+                 WHERE user_id = $2 AND asset_id = $3
+                   AND status != 'exited'
+                   AND held_tokens >= $1",
             )
             .bind(remaining)
             .bind(user_id)
             .bind(order.asset_id)
             .execute(&mut *tx)
             .await
-            .map_err(AppError::Database)?;
+            .map_err(AppError::Database)?
+            .rows_affected();
+            if affected != 1 {
+                return Err(AppError::Internal(format!(
+                    "Seller held_tokens release invariant violated on cancel (user={}, asset={}, qty={})",
+                    user_id, order.asset_id, remaining
+                )));
+            }
         }
         None => {
             tracing::error!("Invalid side '{}' on order {}", order.side, order_id);

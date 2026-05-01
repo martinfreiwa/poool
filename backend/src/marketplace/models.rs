@@ -110,6 +110,10 @@ pub struct MarketOrder {
     pub cancel_reason: Option<String>,
     /// When this order expires (default: created_at + 90 days).
     pub expires_at: Option<DateTime<Utc>>,
+    /// Fee rate (basis points) reserved on hold at order creation.
+    /// Used to release the right amount on cancel / partial fill.
+    #[serde(default)]
+    pub fee_reserve_bps: i32,
     /// When the order was created.
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -477,6 +481,24 @@ pub struct MatchEvent {
     pub match_quantity: i32,
     /// When the match occurred.
     pub timestamp: DateTime<Utc>,
+    /// Which side was the MAKER (resting order). The other side is the taker.
+    /// Used by settlement to apply maker_fee_bps vs taker_fee_bps correctly.
+    /// Defaults to `Sell` for backwards compat with old queued events.
+    #[serde(default)]
+    pub maker_side: MakerSide,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum MakerSide {
+    Buy,
+    Sell,
+}
+
+impl Default for MakerSide {
+    fn default() -> Self {
+        MakerSide::Sell
+    }
 }
 
 /// Reasons an order can be rejected during validation.

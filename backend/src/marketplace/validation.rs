@@ -289,6 +289,51 @@ pub async fn check_seller_tokens(
     }
 }
 
+/// Transaction-safe variant of `check_concentration_limit`.
+///
+/// MUST be called inside a `sqlx::Transaction`. Locks the buyer's investment
+/// row with `FOR UPDATE` so concurrent buys can't both pass the 80% gate
+/// (H7 — closes the race window between read and hold placement).
+pub async fn check_concentration_limit_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: Uuid,
+    asset_id: Uuid,
+    additional_tokens: i32,
+    total_tokens: i32,
+) -> Result<(), OrderRejection> {
+    if total_tokens <= 0 {
+        return Err(OrderRejection::AssetNotTradable);
+    }
+
+    let current_owned: i32 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(tokens_owned), 0)::int4
+         FROM investments
+         WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'
+         FOR UPDATE",
+    )
+    .bind(user_id)
+    .bind(asset_id)
+    .fetch_one(&mut **tx)
+    .await
+    .ok()
+    .unwrap_or(0);
+
+    let new_total = current_owned + additional_tokens;
+    let new_pct = (new_total as f64 / total_tokens as f64) * 100.0;
+
+    if new_pct > MAX_CONCENTRATION_PCT {
+        let current_pct = (current_owned as f64 / total_tokens as f64) * 100.0;
+        let requested_pct = (additional_tokens as f64 / total_tokens as f64) * 100.0;
+        return Err(OrderRejection::ConcentrationLimit {
+            current_pct,
+            requested_pct,
+            max_pct: MAX_CONCENTRATION_PCT,
+        });
+    }
+
+    Ok(())
+}
+
 /// Check concentration limit: a single user cannot own more than 80% of an asset's tokens.
 pub async fn check_concentration_limit(
     pool: &PgPool,

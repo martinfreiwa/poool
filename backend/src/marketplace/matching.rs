@@ -79,7 +79,7 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
             let mut matched = false;
             // Try to match orders for this asset until no more matches are possible
             loop {
-                match try_match_once(redis, asset_id).await {
+                match try_match_once(redis, pool, asset_id).await {
                     Ok(Some(match_event)) => {
                         matched = true;
                         // Match found → push to settlement queue
@@ -151,7 +151,11 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
 /// 5. Compute match price (maker's price) and quantity (min of both sides).
 /// 6. Update Redis: remove fully-filled orders, re-insert partial-fills.
 /// 7. Return the MatchEvent for the settlement worker.
-async fn try_match_once(redis: &RedisPool, asset_id: Uuid) -> Result<Option<MatchEvent>, String> {
+async fn try_match_once(
+    redis: &RedisPool,
+    pool: &PgPool,
+    asset_id: Uuid,
+) -> Result<Option<MatchEvent>, String> {
     // 1. Get best ask and bid
     let best_ask = orderbook::best_ask(redis, asset_id)
         .await
@@ -182,17 +186,24 @@ async fn try_match_once(redis: &RedisPool, asset_id: Uuid) -> Result<Option<Matc
 
         // Cancel the NEWER order (lower priority in time).
         // The older order stays in the book.
-        if ask.timestamp > bid.timestamp {
-            // Ask is newer → remove it
-            orderbook::remove_member(redis, asset_id, "sell", &ask.raw_member)
-                .await
-                .map_err(|e| e.to_string())?;
-        } else {
-            // Bid is newer → remove it
-            orderbook::remove_member(redis, asset_id, "buy", &bid.raw_member)
-                .await
-                .map_err(|e| e.to_string())?;
-        }
+        // Atomically cancel in DB (releases hold) THEN remove from Redis.
+        // If DB fails, leave Redis alone — order remains in book and we'll
+        // retry next cycle. If DB succeeds but Redis remove fails, the
+        // 5-minute sync worker reconciles (DB is source of truth).
+        let (newer_order_id, newer_user_id, newer_side, newer_member) =
+            if ask.timestamp > bid.timestamp {
+                (ask.order_id, ask.user_id, "sell", &ask.raw_member)
+            } else {
+                (bid.order_id, bid.user_id, "buy", &bid.raw_member)
+            };
+
+        cancel_order_in_db(pool, newer_order_id, newer_user_id, "self_trade_blocked")
+            .await
+            .map_err(|e| format!("self-trade DB cancel failed: {}", e))?;
+
+        orderbook::remove_member(redis, asset_id, newer_side, newer_member)
+            .await
+            .map_err(|e| e.to_string())?;
 
         return Ok(None);
     }
@@ -211,10 +222,18 @@ async fn try_match_once(redis: &RedisPool, asset_id: Uuid) -> Result<Option<Matc
     }
 
     // 5. Compute match parameters
-    // Match price = maker's price (the resting order that was first).
-    // In a standard order book, the maker is the one who provided liquidity.
-    // Here we use the ask price (seller's limit) as the match price.
-    let match_price = ask.price_cents;
+    // Match price = MAKER's price (the order that was resting first).
+    // The maker provided liquidity; the taker crossed the spread to hit it.
+    // Standard exchange semantics: trade executes at the maker's quote.
+    //
+    // Earlier timestamp = maker. On exact-tie (same ms), prefer ask price
+    // (deterministic — favors buyer marginally, matches most CEX defaults).
+    let ask_is_maker = ask.timestamp <= bid.timestamp;
+    let match_price = if ask_is_maker {
+        ask.price_cents
+    } else {
+        bid.price_cents
+    };
     let match_qty = std::cmp::min(ask.quantity, bid.quantity);
 
     if match_qty <= 0 {
@@ -237,6 +256,11 @@ async fn try_match_once(redis: &RedisPool, asset_id: Uuid) -> Result<Option<Matc
         match_price_cents: match_price,
         match_quantity: match_qty,
         timestamp: chrono::Utc::now(),
+        maker_side: if ask_is_maker {
+            super::models::MakerSide::Sell
+        } else {
+            super::models::MakerSide::Buy
+        },
     };
 
     // 7. Update Redis orderbook (remove old members, re-insert partials)
@@ -315,6 +339,135 @@ async fn update_orders_after_match(
 // ═══════════════════════════════════════════════════════════════
 // ── HELPERS ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+
+/// Atomically cancel an order in the DB and release its hold.
+///
+/// Used by the self-trade prevention path to keep DB and Redis in sync —
+/// without this, a self-trade would only remove the order from Redis,
+/// leaving the DB row open and the user's funds/tokens frozen forever.
+///
+/// All work happens in a single transaction. If any step fails, nothing
+/// changes. The investment row is targeted by id (FOR UPDATE) to handle
+/// duplicate (user, asset) rows correctly.
+async fn cancel_order_in_db(
+    pool: &PgPool,
+    order_id: Uuid,
+    user_id: Uuid,
+    reason: &'static str,
+) -> Result<(), String> {
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let order = sqlx::query_as::<_, super::models::MarketOrder>(
+        "SELECT * FROM market_orders WHERE id = $1 AND user_id = $2 FOR UPDATE",
+    )
+    .bind(order_id)
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let order = match order {
+        Some(o) if o.is_active() => o,
+        // Order doesn't exist or already terminal — treat as no-op success.
+        _ => {
+            tx.rollback().await.ok();
+            return Ok(());
+        }
+    };
+
+    let remaining = order.remaining_quantity();
+
+    let cancel_affected = sqlx::query(
+        "UPDATE market_orders
+         SET status = 'cancelled', cancel_reason = $1, updated_at = NOW()
+         WHERE id = $2",
+    )
+    .bind(reason)
+    .bind(order_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?
+    .rows_affected();
+    if cancel_affected != 1 {
+        return Err(format!(
+            "order cancel update failed (id={}, affected={})",
+            order_id, cancel_affected
+        ));
+    }
+
+    match super::models::OrderSide::parse(&order.side) {
+        Some(super::models::OrderSide::Buy) => {
+            let held_release = order
+                .price_cents
+                .checked_mul(remaining as i64)
+                .ok_or_else(|| "hold-release overflow".to_string())?;
+            let affected = sqlx::query(
+                "UPDATE wallets SET
+                    held_balance_cents = held_balance_cents - $1,
+                    updated_at = NOW()
+                 WHERE user_id = $2
+                   AND wallet_type = 'cash'
+                   AND currency = 'USD'
+                   AND held_balance_cents >= $1",
+            )
+            .bind(held_release)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?
+            .rows_affected();
+            if affected != 1 {
+                return Err(format!(
+                    "buyer hold release invariant violated (user={}, release={})",
+                    user_id, held_release
+                ));
+            }
+        }
+        Some(super::models::OrderSide::Sell) => {
+            let inv_id = sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM investments
+                 WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'
+                 FOR UPDATE",
+            )
+            .bind(user_id)
+            .bind(order.asset_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| {
+                format!(
+                    "seller investment row missing (user={}, asset={})",
+                    user_id, order.asset_id
+                )
+            })?;
+
+            let affected = sqlx::query(
+                "UPDATE investments SET
+                    held_tokens = held_tokens - $1,
+                    updated_at = NOW()
+                 WHERE id = $2 AND held_tokens >= $1",
+            )
+            .bind(remaining)
+            .bind(inv_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?
+            .rows_affected();
+            if affected != 1 {
+                return Err(format!(
+                    "seller hold release invariant violated (inv={}, qty={})",
+                    inv_id, remaining
+                ));
+            }
+        }
+        None => {
+            return Err(format!("invalid order side: {}", order.side));
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(())
+}
 
 /// Get all asset IDs that have active orders (open or partially_filled).
 ///
