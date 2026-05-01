@@ -1,4 +1,5 @@
 pub mod event_indexer;
+pub mod gas_monitor;
 pub mod kyc_whitelist;
 pub mod reconciler;
 /// Blockchain integration module — on-chain settlement via POOOLProperty1155 contract.

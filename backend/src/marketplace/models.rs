@@ -114,9 +114,18 @@ pub struct MarketOrder {
     /// Used to release the right amount on cancel / partial fill.
     #[serde(default)]
     pub fee_reserve_bps: i32,
+    /// Time-in-force: "gtc" (default) or "ioc". GTC sits in the book until
+    /// filled / cancelled / expired; IOC matches what's possible immediately
+    /// then auto-cancels any unfilled remainder.
+    #[serde(default = "default_tif")]
+    pub time_in_force: String,
     /// When the order was created.
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+fn default_tif() -> String {
+    "gtc".to_string()
 }
 
 #[derive(Debug, Serialize)]
@@ -316,6 +325,10 @@ pub struct SubmitOrderRequest {
     pub quantity: i32,
     /// Client-generated idempotency key (UUID string).
     pub idempotency_key: String,
+    /// Time-in-force: "gtc" (default), "ioc" (immediate-or-cancel).
+    /// "fok" is reserved but not yet supported.
+    #[serde(default)]
+    pub time_in_force: Option<String>,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -856,6 +869,7 @@ mod tests {
             cancel_reason: None,
             expires_at: Some(Utc::now()),
             fee_reserve_bps: 0,
+            time_in_force: "gtc".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }

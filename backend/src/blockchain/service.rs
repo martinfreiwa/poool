@@ -258,7 +258,15 @@ async fn process_pending_settlements(
             .push(t);
     }
 
-    // Process each group (contract) as a separate transaction
+    // Process each group (contract) as a separate transaction. Each
+    // group goes through 4 phases:
+    //   1. Reserve  — atomic claim so concurrent workers can't double-pick.
+    //   2. Simulate — eth_call to catch reverts before burning a nonce.
+    //   3. Broadcast — sign + eth_sendRawTransaction; flip to 'submitted'
+    //                  ONLY after we have a tx_hash.
+    //   4. Confirm  — best-effort receipt poll. On timeout, hand off to
+    //                 the reconciler — never reset to 'pending' once a
+    //                 tx_hash exists, that risks a double-broadcast.
     for (contract_address, group) in groups {
         tracing::info!(
             "⛓️ Processing batch of {} trades for contract {}",
@@ -266,37 +274,112 @@ async fn process_pending_settlements(
             contract_address
         );
 
-        // 2a. Create a settlement batch record
+        let trade_ids: Vec<Uuid> = group.iter().map(|t| t.trade_id).collect();
         let batch_id = create_batch_record(pool, group.len() as i32).await?;
 
-        // 3a. Mark trades as 'submitted'
-        let trade_ids: Vec<Uuid> = group.iter().map(|t| t.trade_id).collect();
-        update_trades_status(pool, &trade_ids, "submitted", None, Some(batch_id)).await?;
+        // Phase 1 — Reserve.
+        match reserve_trades(pool, &trade_ids, batch_id).await {
+            Ok(true) => {}
+            Ok(false) => {
+                tracing::warn!(
+                    "⛓️ Reservation race lost for contract {} — another worker has these trades",
+                    contract_address
+                );
+                update_batch_status(
+                    pool,
+                    batch_id,
+                    "failed",
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some("reservation race lost"),
+                )
+                .await?;
+                continue;
+            }
+            Err(e) => {
+                update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e))
+                    .await?;
+                continue;
+            }
+        }
 
-        // 4a. Encode and send the settleBatch() transaction
-        let tx_result = send_settle_batch(config, client, &group, &contract_address).await;
+        // Phase 2 — Simulate via eth_call. Catches predictable reverts
+        // (KYC, 80% cap, insufficient on-chain balance) without nonce burn.
+        if let Err(e) = simulate_settle_batch(config, client, &group, &contract_address).await {
+            tracing::warn!(
+                "⛓️ Pre-broadcast simulation failed for contract {}: {} — releasing reservation",
+                contract_address,
+                e
+            );
+            update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e))
+                .await?;
+            reset_trades_to_pending(pool, &trade_ids).await?;
+            continue;
+        }
 
-        match tx_result {
+        // Phase 3 — Broadcast.
+        let tx_hash = match send_settle_batch_and_get_hash(
+            pool,
+            config,
+            client,
+            &group,
+            &contract_address,
+        )
+        .await
+        {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::error!(
+                    "⛓️ ❌ Broadcast failed for contract {}: {}",
+                    contract_address,
+                    e
+                );
+                update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e))
+                    .await?;
+                // Nothing on-chain → safe to release for clean retry.
+                reset_trades_to_pending(pool, &trade_ids).await?;
+                continue;
+            }
+        };
+
+        update_batch_status(
+            pool,
+            batch_id,
+            "submitted",
+            Some(&tx_hash),
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
+        update_trades_status(pool, &trade_ids, "submitted", Some(&tx_hash), Some(batch_id))
+            .await?;
+
+        // Phase 4 — Best-effort receipt poll. Timeout ≠ failure: leave
+        // 'submitted', the reconciler will resolve it. Real revert receipt
+        // means the TX is final (nonce burned) so we can safely reset.
+        match wait_for_receipt(client, &config.rpc_url, &tx_hash, 20, 3).await {
             Ok(receipt) => {
                 let block = u64::from_str_radix(receipt.block_number.trim_start_matches("0x"), 16)
                     .unwrap_or(0);
-                let gas =
-                    u64::from_str_radix(receipt.gas_used.trim_start_matches("0x"), 16).unwrap_or(0);
+                let gas = u64::from_str_radix(receipt.gas_used.trim_start_matches("0x"), 16)
+                    .unwrap_or(0);
                 let gas_price = receipt
                     .effective_gas_price
                     .as_deref()
                     .and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok())
-                    .map(|p| p / 1_000_000_000); // Convert wei to gwei
+                    .map(|p| p / 1_000_000_000);
 
                 if receipt.status == "0x1" {
-                    // ✅ SUCCESS
                     tracing::info!(
-                        "⛓️ ✅ Settlement batch confirmed: tx={}, contract={}, trades={}",
+                        "⛓️ ✅ Batch confirmed: tx={}, contract={}, trades={}",
                         receipt.transaction_hash,
                         contract_address,
                         group.len()
                     );
-
                     update_batch_status(
                         pool,
                         batch_id,
@@ -308,7 +391,6 @@ async fn process_pending_settlements(
                         None,
                     )
                     .await?;
-
                     update_trades_status(
                         pool,
                         &trade_ids,
@@ -318,10 +400,8 @@ async fn process_pending_settlements(
                     )
                     .await?;
                 } else {
-                    // ❌ REVERTED
                     let msg = format!("Transaction reverted: tx={}", receipt.transaction_hash);
                     tracing::error!("⛓️ ❌ {}", msg);
-
                     update_batch_status(
                         pool,
                         batch_id,
@@ -333,24 +413,15 @@ async fn process_pending_settlements(
                         Some(&msg),
                     )
                     .await?;
-
-                    // Reset trades to 'pending' so they can be retried
-                    update_trades_status(pool, &trade_ids, "pending", None, None).await?;
+                    reset_trades_to_pending(pool, &trade_ids).await?;
                 }
             }
             Err(e) => {
-                // ❌ TX FAILED (network/RPC error)
-                tracing::error!(
-                    "⛓️ ❌ Settlement TX failed for contract {}: {}",
-                    contract_address,
+                tracing::warn!(
+                    "⛓️ Receipt poll timed out for tx={}: {} — handing off to reconciler",
+                    tx_hash,
                     e
                 );
-
-                update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e))
-                    .await?;
-
-                // Reset trades to 'pending' so they can be retried
-                update_trades_status(pool, &trade_ids, "pending", None, None).await?;
             }
         }
     }
@@ -376,11 +447,13 @@ async fn fetch_pending_trades(pool: &PgPool, limit: usize) -> Result<Vec<Pending
         JOIN users buyer ON buyer.id = th.buyer_user_id
         JOIN assets a ON a.id = th.asset_id
         WHERE th.on_chain_status = 'pending'
+          AND th.on_chain_batch_id IS NULL
           AND seller.chain_wallet_address IS NOT NULL
           AND buyer.chain_wallet_address IS NOT NULL
           AND a.chain_contract_address IS NOT NULL
         ORDER BY th.executed_at ASC
-        LIMIT $1"#,
+        LIMIT $1
+        FOR UPDATE OF th SKIP LOCKED"#,
     )
     .bind(limit as i64)
     .fetch_all(pool)
@@ -488,74 +561,195 @@ async fn update_trades_status(
 // ── CONTRACT INTERACTION (Raw JSON-RPC + ABI Encoding) ────────
 // ═══════════════════════════════════════════════════════════════
 
-/// ABI-encode and send a `settleBatch()` call to the POOOLProperty1155 contract.
+/// Atomically reserve a slice of pending trades into a settlement batch.
 ///
-/// This uses raw JSON-RPC calls via reqwest — no ethers-rs dependency needed.
-/// The ABI encoding follows the Solidity spec for:
-/// ```solidity
-/// function settleBatch(
-///     address[] calldata froms,
-///     address[] calldata tos,
-///     uint256[] calldata amounts
-/// ) external
-/// ```
-///
-/// Function selector: keccak256("settleBatch(address[],address[],uint256[])") = first 4 bytes
-async fn send_settle_batch(
+/// Stamps `on_chain_batch_id` while keeping `on_chain_status='pending'`.
+/// `fetch_pending_trades` filters on `on_chain_batch_id IS NULL`, so this
+/// is the actual mutual-exclusion gate between concurrent workers.
+async fn reserve_trades(
+    pool: &PgPool,
+    trade_ids: &[Uuid],
+    batch_id: Uuid,
+) -> Result<bool, String> {
+    let affected = sqlx::query(
+        r#"UPDATE trade_history SET on_chain_batch_id = $1
+           WHERE id = ANY($2)
+             AND on_chain_status = 'pending'
+             AND on_chain_batch_id IS NULL"#,
+    )
+    .bind(batch_id)
+    .bind(trade_ids)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Failed to reserve trades: {}", e))?
+    .rows_affected();
+    Ok(affected as usize == trade_ids.len())
+}
+
+/// Reset trades back to clean 'pending'. Clears tx_hash + batch_id so the
+/// next worker cycle picks them up fresh. Only safe when the on-chain TX
+/// is final (reverted with receipt) or never broadcast.
+async fn reset_trades_to_pending(pool: &PgPool, trade_ids: &[Uuid]) -> Result<(), String> {
+    sqlx::query(
+        r#"UPDATE trade_history SET
+            on_chain_status = 'pending',
+            on_chain_tx_hash = NULL,
+            on_chain_batch_id = NULL
+        WHERE id = ANY($1)"#,
+    )
+    .bind(trade_ids)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Failed to reset trades: {}", e))?;
+    Ok(())
+}
+
+/// Reserve the next nonce for the signer. Uses SELECT … FOR UPDATE on a
+/// single row so concurrent broadcasters serialize. On first call for a
+/// signer, seeds from `eth_getTransactionCount("pending")`.
+async fn reserve_nonce(
+    pool: &PgPool,
+    client: &Client,
+    rpc_url: &str,
+    signer: &str,
+) -> Result<u64, String> {
+    let signer_lower = signer.to_lowercase();
+    let mut tx = pool.begin().await.map_err(|e| format!("nonce tx begin: {}", e))?;
+
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT next_nonce FROM chain_nonce_state WHERE signer_address = $1 FOR UPDATE",
+    )
+    .bind(&signer_lower)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("nonce select: {}", e))?;
+
+    let nonce = match row {
+        Some((n,)) => n as u64,
+        None => {
+            // Seed from chain. Use 'pending' so we account for in-flight TXs.
+            let on_chain = rpc_call(
+                client,
+                rpc_url,
+                "eth_getTransactionCount",
+                serde_json::json!([signer, "pending"]),
+            )
+            .await?;
+            let hex = on_chain.as_str().ok_or("nonce seed: bad RPC reply")?;
+            let n = u64::from_str_radix(hex.trim_start_matches("0x"), 16)
+                .map_err(|e| format!("nonce seed parse: {}", e))?;
+            sqlx::query(
+                "INSERT INTO chain_nonce_state (signer_address, next_nonce) VALUES ($1, $2)",
+            )
+            .bind(&signer_lower)
+            .bind(n as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| format!("nonce seed insert: {}", e))?;
+            n
+        }
+    };
+
+    sqlx::query(
+        "UPDATE chain_nonce_state SET next_nonce = $1, updated_at = NOW() WHERE signer_address = $2",
+    )
+    .bind((nonce + 1) as i64)
+    .bind(&signer_lower)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("nonce bump: {}", e))?;
+
+    tx.commit().await.map_err(|e| format!("nonce commit: {}", e))?;
+    Ok(nonce)
+}
+
+/// Roll a reserved-but-unused nonce back. Only safe to call if no TX with
+/// this nonce was actually broadcast — otherwise we'd reuse it and the
+/// later TX would replace the earlier one in the mempool.
+async fn release_nonce(pool: &PgPool, signer: &str, nonce: u64) -> Result<(), String> {
+    let signer_lower = signer.to_lowercase();
+    // Only roll back if the slot still points one past us. If something
+    // else already grabbed a higher nonce, leaving the gap is correct
+    // (the chain will not advance past it; operator must replace).
+    sqlx::query(
+        "UPDATE chain_nonce_state SET next_nonce = $1, updated_at = NOW()
+         WHERE signer_address = $2 AND next_nonce = $3",
+    )
+    .bind(nonce as i64)
+    .bind(&signer_lower)
+    .bind((nonce + 1) as i64)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("nonce release: {}", e))?;
+    Ok(())
+}
+
+/// Pre-broadcast simulation via `eth_call`. Returns Err if the contract
+/// would revert with current chain state — KYC, 80% cap, insufficient
+/// balance — so we don't burn a nonce on a doomed TX.
+async fn simulate_settle_batch(
     config: &ChainConfig,
     client: &Client,
     trades: &[PendingTrade],
     contract_address: &str,
-) -> Result<TxReceipt, String> {
-    // 1. Build the calldata
+) -> Result<(), String> {
     let calldata = encode_settle_batch_calldata(trades)?;
+    let sender = derive_address_from_private_key(&config.settlement_private_key)?;
+    let params = serde_json::json!([
+        { "from": sender, "to": contract_address, "data": calldata },
+        "latest"
+    ]);
+    rpc_call(client, &config.rpc_url, "eth_call", params).await?;
+    Ok(())
+}
 
-    // 2. Get the sender address from private key
+/// Build, sign, and broadcast settleBatch(). Returns the tx hash as soon
+/// as the chain accepts it; receipt polling is the caller's job. On RPC
+/// reject, rolls the nonce back to avoid leaving a permanent gap.
+///
+/// Function selector: keccak256("settleBatch(address[],address[],uint256[])")[..4]
+/// = 0xfc4b731c
+async fn send_settle_batch_and_get_hash(
+    pool: &PgPool,
+    config: &ChainConfig,
+    client: &Client,
+    trades: &[PendingTrade],
+    contract_address: &str,
+) -> Result<String, String> {
+    let calldata = encode_settle_batch_calldata(trades)?;
     let sender = derive_address_from_private_key(&config.settlement_private_key)?;
 
-    // 3. Get the nonce
-    let nonce = get_nonce(client, &config.rpc_url, &sender).await?;
-
-    // 4. Estimate gas
-    let gas_estimate = estimate_gas(
-        client,
-        &config.rpc_url,
-        &sender,
-        contract_address,
-        &calldata,
-    )
-    .await?;
-
-    // Add 20% buffer to gas estimate
-    let gas_limit = gas_estimate + (gas_estimate / 5);
-
-    // 5. Get current gas price
+    let gas_estimate =
+        estimate_gas(client, &config.rpc_url, &sender, contract_address, &calldata).await?;
+    let gas_limit = gas_estimate + (gas_estimate / 5); // +20% headroom
     let gas_price = get_gas_price(client, &config.rpc_url).await?;
 
-    // 6. Build, sign, and send the transaction
-    let signed_tx = sign_transaction(
+    let nonce = reserve_nonce(pool, client, &config.rpc_url, &sender).await?;
+
+    match sign_and_send_via_cast(
         config,
-        &sender,
         contract_address,
         &calldata,
         nonce,
         gas_limit,
         gas_price,
-    )?;
-
-    let tx_hash = send_raw_transaction(client, &config.rpc_url, &signed_tx).await?;
-
-    tracing::info!(
-        "⛓️ Settlement TX sent: hash={}, nonce={}, gas_limit={}",
-        tx_hash,
-        nonce,
-        gas_limit
-    );
-
-    // 7. Wait for confirmation (poll every 3 seconds, max 60 seconds)
-    let receipt = wait_for_receipt(client, &config.rpc_url, &tx_hash, 20, 3).await?;
-
-    Ok(receipt)
+    ) {
+        Ok(tx_hash) => {
+            tracing::info!(
+                "⛓️ Settlement TX broadcast: hash={}, nonce={}, gas_limit={}",
+                tx_hash,
+                nonce,
+                gas_limit
+            );
+            Ok(tx_hash)
+        }
+        Err(e) => {
+            if let Err(rb) = release_nonce(pool, &sender, nonce).await {
+                tracing::error!("⛓️ Failed to roll back nonce {}: {}", nonce, rb);
+            }
+            Err(e)
+        }
+    }
 }
 
 /// Encode the calldata for `settleBatch(address[], address[], uint256[])`.
@@ -782,6 +976,13 @@ async fn rpc_call(
 ///
 /// NOTE: This is a placeholder that uses `cast` CLI for signing.
 /// In production, we'd use the `k256` or `secp256k1` Rust crate directly.
+///
+/// Public wrapper used by the gas monitor / reconciler so they don't need
+/// to duplicate the derivation logic.
+pub fn derive_address_from_private_key_pub(private_key: &str) -> Result<String, String> {
+    derive_address_from_private_key(private_key)
+}
+
 fn derive_address_from_private_key(private_key: &str) -> Result<String, String> {
     // For now, use the known deployment address
     // TODO: Replace with proper key derivation using k256 crate
@@ -790,26 +991,25 @@ fn derive_address_from_private_key(private_key: &str) -> Result<String, String> 
         .unwrap_or_else(|_| "0x021F6B0029125B3924FF5Ba3e0FF59e1FA39B88a".to_string()))
 }
 
-/// Sign a transaction using the `cast` CLI tool (Foundry).
+/// Sign and broadcast a settleBatch() TX via the `cast` CLI (Foundry).
 ///
-/// This is a pragmatic approach that avoids pulling in heavy crypto dependencies.
-/// The `cast` tool handles:
-/// - RLP encoding
-/// - EIP-155 signing (chain ID included in signature)
-/// - Private key → signature
+/// `cast send --async` returns immediately with the tx hash after pushing
+/// the signed TX into the mempool — no waiting for confirmation. Receipt
+/// polling is done by the caller via `wait_for_receipt`. Output is the
+/// 0x-prefixed tx hash on stdout.
 ///
-/// In a future iteration, this should use the `alloy` crate for in-process signing.
-fn sign_transaction(
+/// 🔴 SECURITY: the private key is currently passed via `--private-key`
+/// which exposes it in `ps aux` / `/proc/<pid>/cmdline`. This needs to be
+/// migrated to in-process signing (alloy/k256) before mainnet — tracked
+/// as a follow-up.
+fn sign_and_send_via_cast(
     config: &ChainConfig,
-    _from: &str,
     target_contract: &str,
     data: &str,
     nonce: u64,
     gas_limit: u64,
     gas_price: u64,
 ) -> Result<String, String> {
-    // Use `cast` to send the transaction directly (it handles signing internally)
-    // We'll construct the command and parse the output
     let output = std::process::Command::new("cast")
         .args([
             "send",
@@ -818,37 +1018,47 @@ fn sign_transaction(
             &config.settlement_private_key,
             "--rpc-url",
             &config.rpc_url,
+            "--chain",
+            &config.chain_id.to_string(),
             "--gas-limit",
             &gas_limit.to_string(),
             "--gas-price",
             &gas_price.to_string(),
             "--nonce",
             &nonce.to_string(),
-            "--raw", // Output the signed transaction hex
+            "--async", // Return tx hash immediately, don't wait for receipt.
+            "--json",  // Stable output format we can parse.
             "--data",
             data,
         ])
         .output()
-        .map_err(|e| {
-            format!(
-                "Failed to execute `cast send`: {}. Is Foundry installed?",
-                e
-            )
-        })?;
+        .map_err(|e| format!("Failed to execute `cast send`: {}. Is Foundry installed?", e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("cast send failed: {}", stderr));
+        // Don't echo stdout — may include sender info.
+        return Err(format!("cast send failed: {}", stderr.trim()));
     }
 
-    let tx_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if tx_hash.is_empty() {
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let trimmed = stdout.trim();
+    if trimmed.is_empty() {
         return Err("cast send returned empty output".to_string());
     }
 
-    // `cast send` without --raw returns the tx hash directly (not raw tx)
-    // so we return the hash and skip send_raw_transaction
-    Ok(tx_hash)
+    // With --async --json, the output is JSON containing transactionHash.
+    // Older cast versions emit just the hex hash on its own line, so we
+    // accept either form.
+    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(trimmed) {
+        if let Some(h) = parsed.get("transactionHash").and_then(|v| v.as_str()) {
+            return Ok(h.to_string());
+        }
+    }
+    // Fallback: assume the whole stdout is the hash.
+    if trimmed.starts_with("0x") && trimmed.len() == 66 {
+        return Ok(trimmed.to_string());
+    }
+    Err(format!("cast send: unexpected output: {}", trimmed))
 }
 
 // ═══════════════════════════════════════════════════════════════

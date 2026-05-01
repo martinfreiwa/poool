@@ -86,6 +86,7 @@ fn validate_runtime_settings_for_order(
     settings: &MarketplaceRuntimeSettings,
     req: &SubmitOrderRequest,
     price_cents: i64,
+    asset_tick_size_override: Option<i64>,
 ) -> Result<(), AppError> {
     if !settings.trading_enabled || settings.maintenance_window {
         return Err(AppError::TradingDisabled);
@@ -112,14 +113,16 @@ fn validate_runtime_settings_for_order(
         )));
     }
 
-    if req.order_type == "limit"
-        && settings.tick_size_cents > 0
-        && price_cents % settings.tick_size_cents != 0
-    {
-        return Err(AppError::BadRequest(format!(
-            "Limit price must be a multiple of {} cents.",
-            settings.tick_size_cents
-        )));
+    // Tick size only enforced on LIMIT orders. Market orders use whatever
+    // best price exists in the orderbook — tick alignment isn't meaningful.
+    if req.order_type == "limit" {
+        let effective_tick = asset_tick_size_override.unwrap_or(settings.tick_size_cents);
+        if effective_tick > 0 && price_cents % effective_tick != 0 {
+            return Err(AppError::BadRequest(format!(
+                "Limit price must be a multiple of {} cents.",
+                effective_tick
+            )));
+        }
     }
 
     Ok(())
@@ -251,7 +254,22 @@ pub async fn create_order(
         }
     };
 
-    validate_runtime_settings_for_order(&runtime_settings, &req, price_cents)?;
+    // Per-asset tick size override (NULL = fall back to platform default).
+    let asset_tick_override: Option<i64> = sqlx::query_scalar(
+        "SELECT tick_size_cents::bigint FROM assets WHERE id = $1",
+    )
+    .bind(asset_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?
+    .flatten();
+
+    validate_runtime_settings_for_order(
+        &runtime_settings,
+        &req,
+        price_cents,
+        asset_tick_override,
+    )?;
 
     validation::check_no_opposing_orders(pool, user_id, asset_uuid, &req.side, price_cents)
         .await
@@ -331,12 +349,25 @@ pub async fn create_order(
     // Default expiry: 90 days from now
     let expires_at = Utc::now() + chrono::Duration::days(90);
 
+    // Validate + normalise time-in-force
+    let tif = req
+        .time_in_force
+        .as_deref()
+        .map(|s| s.to_lowercase())
+        .unwrap_or_else(|| "gtc".to_string());
+    if !matches!(tif.as_str(), "gtc" | "ioc") {
+        return Err(AppError::BadRequest(format!(
+            "Unsupported time_in_force: {} (allowed: gtc, ioc)",
+            tif
+        )));
+    }
+
     // Insert order
     let order = sqlx::query_as::<_, MarketOrder>(
         r#"INSERT INTO market_orders
            (user_id, asset_id, side, order_type, price_cents, quantity, status,
-            idempotency_key, expires_at, fee_reserve_bps)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            idempotency_key, expires_at, fee_reserve_bps, time_in_force)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
            RETURNING *"#,
     )
     .bind(user_id)
@@ -349,6 +380,7 @@ pub async fn create_order(
     .bind(idempotency_uuid)
     .bind(expires_at)
     .bind(fee_reserve_bps)
+    .bind(&tif)
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| {
@@ -594,30 +626,67 @@ pub async fn cancel_order(
 // ── READ OPERATIONS ───────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-/// Get the user's orders (most recent first, limit 100).
+/// Maximum page size for paginated user-facing lists. Higher values
+/// require more memory in the DB driver; lower values mean more API calls.
+pub const MAX_PAGE_SIZE: i64 = 200;
+pub const DEFAULT_PAGE_SIZE: i64 = 50;
+
+/// Clamp a user-supplied limit to a safe range.
+pub fn clamp_page_size(req: Option<i64>) -> i64 {
+    req.unwrap_or(DEFAULT_PAGE_SIZE)
+        .clamp(1, MAX_PAGE_SIZE)
+}
+
+/// Get the user's orders, paginated by `(created_at, id)` cursor.
+///
+/// Pass `before` to fetch the next page (orders strictly older than the
+/// cursor). `limit` is clamped to [1, MAX_PAGE_SIZE]. Pass `None`/`None` for
+/// the first page (most recent).
 pub async fn get_user_orders(
     pool: &PgPool,
     user_id: Uuid,
+    before: Option<chrono::DateTime<chrono::Utc>>,
+    limit: Option<i64>,
 ) -> Result<Vec<super::models::MyOrderResponse>, AppError> {
+    let limit = clamp_page_size(limit);
     let orders = sqlx::query!(
-        r#"SELECT 
+        r#"SELECT
             m.id, m.asset_id, a.title as asset_name, m.side, m.price_cents,
             m.quantity, m.quantity_filled, m.status, m.created_at
            FROM market_orders m
            JOIN assets a ON m.asset_id = a.id
-           WHERE m.user_id = $1 
-           ORDER BY m.created_at DESC 
-           LIMIT 100"#,
-        user_id
+           WHERE m.user_id = $1
+             AND ($2::timestamptz IS NULL OR m.created_at < $2)
+           ORDER BY m.created_at DESC
+           LIMIT $3"#,
+        user_id,
+        before,
+        limit
     )
     .fetch_all(pool)
     .await
     .map_err(AppError::Database)?;
 
+    // Cache resolved fees per asset so we don't call resolve_fees() once
+    // per order. Most users have orders concentrated in a few assets.
+    let mut fee_cache: std::collections::HashMap<Uuid, i32> =
+        std::collections::HashMap::new();
+
     let mut result = Vec::new();
     for o in orders {
         let total = o.price_cents.saturating_mul(o.quantity as i64);
-        let fee = super::models::calculate_fee_cents(total, 500); // 5% fee assumption for open orders
+        let bps = match fee_cache.get(&o.asset_id) {
+            Some(b) => *b,
+            None => {
+                let resolved = validation::resolve_fees(pool, o.asset_id)
+                    .await
+                    .map(|r| r.taker_fee_bps)
+                    .unwrap_or(500);
+                fee_cache.insert(o.asset_id, resolved);
+                resolved
+            }
+        };
+        let fee = super::models::calculate_fee_cents(total, bps);
         result.push(super::models::MyOrderResponse {
             id: o.id.to_string(),
             asset: o.asset_name,
@@ -684,11 +753,17 @@ pub struct MyTradeResponse {
     pub pl: Option<i64>,
 }
 
-/// Get trade history for a specific user.
+/// Get trade history for a specific user, paginated by `executed_at`.
+///
+/// Pass `before` for the next page (trades strictly older than the cursor).
+/// `limit` is clamped to [1, MAX_PAGE_SIZE].
 pub async fn get_user_trades_history(
     pool: &PgPool,
     user_id: Uuid,
+    before: Option<chrono::DateTime<chrono::Utc>>,
+    limit: Option<i64>,
 ) -> Result<Vec<MyTradeResponse>, AppError> {
+    let limit = clamp_page_size(limit);
     let raw = sqlx::query!(
         r#"
         SELECT
@@ -704,11 +779,14 @@ pub async fn get_user_trades_history(
             t.seller_fee_cents
         FROM trade_history t
         JOIN assets a ON t.asset_id = a.id
-        WHERE t.buyer_user_id = $1 OR t.seller_user_id = $1
+        WHERE (t.buyer_user_id = $1 OR t.seller_user_id = $1)
+          AND ($2::timestamptz IS NULL OR t.executed_at < $2)
         ORDER BY t.executed_at DESC
-        LIMIT 100
+        LIMIT $3
         "#,
-        user_id
+        user_id,
+        before,
+        limit
     )
     .fetch_all(pool)
     .await
@@ -887,7 +965,11 @@ pub async fn get_secondary_assets(
         FROM assets a
         WHERE a.published = true
           AND a.asset_type != 'commodity'
-          AND a.funding_status IN ('funded', 'funding_in_progress', 'funding_open')
+          -- Only include assets that are actually TRADABLE on the secondary
+          -- market. `funding_in_progress` / `funding_open` belong on the
+          -- PRIMARY listing pages — surfacing them here led to users
+          -- clicking "Trade" only to be rejected by `check_asset_tradable`.
+          AND a.funding_status = 'funded'
         "#
     )
     .fetch_all(pool)

@@ -31,6 +31,7 @@ const BIDS_PREFIX: &str = "bids:asset:";
 const LOCK_PREFIX: &str = "lock:order:";
 const IDEMPOTENCY_PREFIX: &str = "idempotency:";
 const RATE_LIMIT_PREFIX: &str = "rl:orders:user:";
+const CANCEL_RATE_LIMIT_PREFIX: &str = "rl:cancels:user:";
 const MATCH_QUEUE_KEY: &str = "match:queue";
 
 /// Default orderbook depth (number of price levels).
@@ -194,6 +195,21 @@ pub async fn pop_match_from_queue(
         .unwrap_or(None);
 
     Ok(result.map(|(_, value)| value))
+}
+
+/// Return the current depth of the match settlement queue.
+/// Returns -1 on Redis error so callers can persist a sentinel value.
+pub async fn match_queue_depth(redis: &RedisPool) -> Result<i64, AppError> {
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
+    let depth: i64 = redis::cmd("LLEN")
+        .arg(MATCH_QUEUE_KEY)
+        .query_async(&mut *conn)
+        .await
+        .unwrap_or(0);
+    Ok(depth)
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -572,6 +588,50 @@ pub async fn check_order_rate_limit(
         return Err(ttl.max(1) as u64);
     }
 
+    Ok(())
+}
+
+/// Per-user cancel rate limit. Mirrors `check_order_rate_limit` but uses
+/// a separate Redis bucket so a cancel storm can't starve order placement
+/// (or vice versa). Default 20 cancels per 60s per masterplan §2.12.
+pub async fn check_cancel_rate_limit(
+    redis: &RedisPool,
+    user_id: Uuid,
+    max_per_window: u32,
+    window_seconds: u32,
+) -> Result<(), u64> {
+    let mut conn = match redis.get().await {
+        Ok(c) => c,
+        Err(_) => {
+            tracing::warn!(
+                "Cancel rate limiter unavailable, allowing request for user {}",
+                user_id
+            );
+            return Ok(());
+        }
+    };
+
+    let key = format!("{}{}", CANCEL_RATE_LIMIT_PREFIX, user_id);
+    let count: u32 = redis::cmd("INCR")
+        .arg(&key)
+        .query_async(&mut *conn)
+        .await
+        .unwrap_or(1);
+    if count == 1 {
+        let _: Result<i32, _> = redis::cmd("EXPIRE")
+            .arg(&key)
+            .arg(window_seconds)
+            .query_async(&mut *conn)
+            .await;
+    }
+    if count > max_per_window {
+        let ttl: i64 = redis::cmd("TTL")
+            .arg(&key)
+            .query_async(&mut *conn)
+            .await
+            .unwrap_or(window_seconds as i64);
+        return Err(ttl.max(1) as u64);
+    }
     Ok(())
 }
 

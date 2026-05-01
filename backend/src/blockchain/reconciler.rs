@@ -23,6 +23,11 @@ use super::service::ChainConfig;
 /// How long a trade must be `submitted` before we treat it as stuck.
 const STUCK_THRESHOLD_SECS: i64 = 600; // 10 minutes
 
+/// How long a trade can be `submitted` with NO tx_hash before we treat it
+/// as an orphan (settlement worker crashed between status flip and broadcast).
+/// Shorter than STUCK_THRESHOLD because no TX was actually sent — safe to reset.
+const ORPHAN_THRESHOLD_SECS: i64 = 120; // 2 minutes
+
 /// How often the reconciler runs.
 const RECONCILER_INTERVAL_SECS: u64 = 120; // 2 minutes
 
@@ -68,7 +73,39 @@ async fn reconcile_once(
     config: &ChainConfig,
     client: &Client,
 ) -> Result<(), String> {
-    // Find trades stuck in `submitted` past the threshold.
+    // Pass A — orphans: trades that got marked `submitted` (with batch_id)
+    // but never received a tx_hash. This happens when the settlement worker
+    // crashes between the status flip and the broadcast call. They are
+    // safe to reset to `pending` because no TX was sent — the next worker
+    // run will re-batch them cleanly.
+    let orphans = sqlx::query_scalar::<_, Uuid>(
+        r#"SELECT id FROM trade_history
+           WHERE on_chain_status = 'submitted'
+             AND on_chain_tx_hash IS NULL
+             AND updated_at < NOW() - ($1 || ' seconds')::INTERVAL
+           LIMIT 200"#,
+    )
+    .bind(ORPHAN_THRESHOLD_SECS.to_string())
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("orphan query failed: {}", e))?;
+
+    if !orphans.is_empty() {
+        tracing::warn!(
+            "⛓️ Reconciler: {} orphan trades (submitted, no tx_hash) — resetting to pending",
+            orphans.len()
+        );
+        sentry::capture_message(
+            &format!(
+                "Reset {} orphan trades to pending (settlement worker crashed before broadcast)",
+                orphans.len()
+            ),
+            sentry::Level::Warning,
+        );
+        reset_to_pending(pool, &orphans).await?;
+    }
+
+    // Pass B — trades stuck in `submitted` past the threshold WITH a tx_hash.
     let stuck = sqlx::query_as::<_, (Uuid, String, i64)>(
         r#"SELECT id,
                   on_chain_tx_hash,
@@ -105,20 +142,24 @@ async fn reconcile_once(
 
     for (tx_hash, (trade_ids, oldest_age)) in by_hash {
         match check_receipt(client, &config.rpc_url, &tx_hash).await {
-            Ok(Some(success)) => {
-                let new_status = if success { "confirmed" } else { "failed" };
+            Ok(Some(true)) => {
                 tracing::info!(
-                    "⛓️ Reconciler: tx={} → {} ({} trades)",
+                    "⛓️ Reconciler: tx={} → confirmed ({} trades)",
                     tx_hash,
-                    new_status,
                     trade_ids.len()
                 );
-                update_status(pool, &trade_ids, new_status).await?;
-
-                if !success {
-                    // Reset failed trades back to pending so the main worker retries.
-                    reset_to_pending(pool, &trade_ids).await?;
-                }
+                update_status(pool, &trade_ids, "confirmed").await?;
+            }
+            Ok(Some(false)) => {
+                // Reverted on-chain. Single atomic update — clear tx_hash +
+                // batch_id and flip back to 'pending'. (Previously two
+                // separate UPDATEs caused a brief 'failed' flicker.)
+                tracing::info!(
+                    "⛓️ Reconciler: tx={} → reverted, resetting {} trades to pending",
+                    tx_hash,
+                    trade_ids.len()
+                );
+                reset_to_pending(pool, &trade_ids).await?;
             }
             Ok(None) => {
                 // Receipt not yet on-chain.
@@ -138,7 +179,6 @@ async fn reconcile_once(
                         ),
                         sentry::Level::Error,
                     );
-                    update_status(pool, &trade_ids, "failed").await?;
                     reset_to_pending(pool, &trade_ids).await?;
                 } else {
                     tracing::info!(

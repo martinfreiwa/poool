@@ -15,6 +15,7 @@
 /// - `charts.rs`      — Candlestick aggregation
 pub mod background;
 pub mod charts;
+pub mod invariants;
 pub mod matching;
 pub mod models;
 pub mod orderbook;

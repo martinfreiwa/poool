@@ -680,6 +680,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         blockchain::reconciler::run_reconciler(&reconciler_pool).await;
     });
 
+    // ── Blockchain: Gas-balance monitor ──────────────────────
+    // Polls the settlement wallet's MATIC balance every 5 min and alerts
+    // via Sentry when it drops below the low/critical thresholds. Prevents
+    // settlement failures due to out-of-gas before they happen.
+    let gas_pool = pool.clone();
+    tokio::spawn(async move {
+        blockchain::gas_monitor::run_gas_monitor(&gas_pool).await;
+    });
+
+    // ── Marketplace: Fund-conservation invariant worker ──────
+    // Hourly check that SUM(wallet balances) == SUM(deposits - withdrawals).
+    // Any drift = critical Sentry alert. Also asserts per-wallet
+    // (held <= balance) and per-asset (sum_owned <= tokens_total) bounds.
+    let invariant_pool = pool.clone();
+    tokio::spawn(async move {
+        marketplace::invariants::run_invariant_worker(&invariant_pool).await;
+    });
+
     //  3. Router configuration
 
     //

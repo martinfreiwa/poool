@@ -650,6 +650,7 @@ mod tests {
             price_cents: Some(10000),
             quantity: 5,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_ok());
     }
@@ -663,6 +664,7 @@ mod tests {
             price_cents: None,
             quantity: 10,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_ok());
     }
@@ -676,6 +678,7 @@ mod tests {
             price_cents: Some(10000),
             quantity: 5,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -689,6 +692,7 @@ mod tests {
             price_cents: Some(10000),
             quantity: 5,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -702,6 +706,7 @@ mod tests {
             price_cents: Some(10000),
             quantity: 0,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -715,6 +720,7 @@ mod tests {
             price_cents: Some(10000),
             quantity: -5,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -728,6 +734,7 @@ mod tests {
             price_cents: None,
             quantity: 5,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -741,6 +748,7 @@ mod tests {
             price_cents: Some(0),
             quantity: 5,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -754,6 +762,7 @@ mod tests {
             price_cents: Some(-100),
             quantity: 5,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -768,6 +777,7 @@ mod tests {
             price_cents: Some(5),
             quantity: 1,
             idempotency_key: Uuid::new_v4().to_string(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }
@@ -781,6 +791,7 @@ mod tests {
             price_cents: Some(10000),
             quantity: 5,
             idempotency_key: "not-a-uuid".into(),
+            time_in_force: None,
         };
         assert!(validate_order_fields(&req).is_err());
     }

@@ -50,6 +50,10 @@ pub enum AppError {
     WashTradingBlocked,
     /// Order was rejected for a business-logic reason (HTTP 400).
     OrderRejected(String),
+    /// Settlement encountered an order in a terminal state (cancelled,
+    /// expired, fully filled). Match must be DROPPED, not retried — internal
+    /// signal only, never returned to HTTP clients.
+    OrderTerminal { reason: String },
     /// A downstream service is unavailable (HTTP 503).
     ServiceUnavailable(String),
 }
@@ -97,6 +101,7 @@ impl std::fmt::Display for AppError {
             AppError::TradingDisabled => write!(f, "TradingDisabled"),
             AppError::WashTradingBlocked => write!(f, "WashTradingBlocked"),
             AppError::OrderRejected(reason) => write!(f, "OrderRejected: {}", reason),
+            AppError::OrderTerminal { reason } => write!(f, "OrderTerminal: {}", reason),
             AppError::ServiceUnavailable(_) => write!(f, "ServiceUnavailable"),
         }
     }
@@ -175,6 +180,12 @@ impl IntoResponse for AppError {
                 "Self-trading is not allowed.".to_string(),
             ),
             AppError::OrderRejected(reason) => (StatusCode::BAD_REQUEST, reason.clone()),
+            // Internal-only signal — should never reach HTTP. If it does,
+            // surface as 500 so it's noticed.
+            AppError::OrderTerminal { reason } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Order terminal: {}", reason),
+            ),
             AppError::ServiceUnavailable(msg) => {
                 tracing::error!("Service unavailable: {}", msg);
                 (

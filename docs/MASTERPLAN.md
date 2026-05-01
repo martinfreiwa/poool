@@ -225,7 +225,7 @@ Aktuell ist POOOL als reiner **Primärmarkt** (Over-The-Counter / B2C) konzipier
 | **CPU/RAM pro Container** | Cloud Run Default (1 vCPU, 512MB) | 2 vCPU, 1GB RAM pro Instanz (reicht für ~100 gleichzeitige User) | 🟡 Cloud Run Konfiguration anpassen |
 | **Min. Instanzen** | 0 (Cold Start möglich) | Mindestens 1 Instanz immer aktiv (kein Cold Start bei Trades) | 🟡 `--min-instances=1` setzen |
 | **Max. Instanzen** | Cloud Run Default | Max. 5 Instanzen (skaliert automatisch bei >100 gleichzeitigen Nutzern) | 🟡 `--max-instances=5` setzen |
-| **Smart Contracts** | Nicht vorhanden | ERC-3643 auf Base L2 (siehe Smart Contract Masterplan) | 🔴 Komplette Neuentwicklung |
+| **Smart Contracts** | ✅ ERC-1155 Clone-Factory auf Polygon (Amoy Testnet) implementiert (`POOOLAssetToken`, `IdentityRegistry`, `AssetFactory`) | siehe §2.11 (Implementiert) | 🟢 Live in Testnet — Mainnet-Deploy ausstehend |
 | **Direct Bank API (OCBC)** | Nicht integriert | Automatische Fiat-Erkennung für Settlement (Virtual Accounts / MT940) | 🔴 OCBC API-Account + Webhook-Integration |
 
 #### Bottleneck-Analyse (Wo bricht das System zuerst?)
@@ -2661,7 +2661,43 @@ GROSSORDER FLOW (>20% eines Assets):
 
 
 
-### 2.11. On-Chain Settlement (ERC-3643 / Smart Contract)
+### 2.11. On-Chain Settlement (ERC-1155 / Smart Contract)
+
+> **🟢 Implementierungsstatus (Stand 2026-05):** Diese Sektion wurde nach dem ursprünglichen Masterplan-Design (ERC-3643 auf Base L2 mit Merkle-Root + GCP KMS + täglichem Batch) verfasst. Die **tatsächlich gebaute Implementation** weicht aus pragmatischen Gründen ab. Der ursprüngliche Plan-Text steht unten zur Referenz; die folgende Tabelle dokumentiert die bewusst getroffenen Abweichungen.
+
+#### Tatsächlich implementierte Architektur
+
+| Aspekt | Ursprünglicher Masterplan | **Tatsächlich gebaut** | Begründung |
+|---|---|---|---|
+| **Chain** | Base L2 | **Polygon (Amoy Testnet)** | Schnellere Time-to-Market, niedrigere Gas-Kosten, vorhandenes Tooling. Mainnet-Migration nach Testnet-Stabilisierung. |
+| **Token-Standard** | ERC-3643 | **ERC-1155 Clone-Factory (EIP-1167)** mit eigenem `IdentityRegistry` für KYC-Whitelist | ERC-1155 erlaubt mehrere Asset-Tokens unter einer Implementation; Clone-Pattern reduziert Deploy-Kosten auf ~$0.01 pro Asset. KYC-Funktionen wurden separat im `IdentityRegistry` umgesetzt. |
+| **Signer-Infrastruktur** | Google Cloud KMS | **`CHAIN_SETTLEMENT_PRIVATE_KEY` (env, raw key)** | KMS-Setup wurde als Phase-2-Item zurückgestellt. Aktuelle Lösung: Settlement-Wallet als Hot-Wallet mit minimalem Balance, getrennt von Treasury. **Migration zu KMS bleibt offen vor Mainnet-Launch.** |
+| **Batch-Frequenz** | 1× täglich | **Alle 5 Minuten** (`run_settlement_worker`) | Bessere UX (User sehen On-Chain-Bestätigung schneller), akzeptable Gas-Kosten dank Polygon. Dynamisches Batching pro `chain_contract_address`. |
+| **Settlement-Methode** | `settleBatch(sellers, buyers, amounts, merkleRoot)` mit Merkle-Proof | **Direktes `settleBatch(sellers, buyers, amounts)`** (kein Merkle-Root) | Bei aktuellen Volumina (<5000 Trades/Batch) ist Direkt-Encoding einfacher und auditierbar. Merkle-Proof-Verfahren bleibt als Optimierung für hohe Volumina vorgesehen. |
+| **Concentration-Limit** | Nur in App (Validation) | **App + On-Chain** (`MAX_OWNERSHIP_BPS = 8000` im Token-Contract) | Doppelte Absicherung: Auch bei kompromittiertem Backend kann der Smart Contract keine Übertragung > 80% akzeptieren. |
+| **Worker** | 1× Settlement-Job | **3 Worker:** `run_settlement_worker` (5min), `run_event_indexer` (5sec, Chain→DB Balance-Sync), `run_kyc_whitelist_worker` (60sec, KYC-Approved → On-Chain Whitelist) | Event-Indexer ermöglicht schnelle Reads ohne RPC-Calls. KYC-Sync stellt sicher, dass Settlement nicht an unwhitelisted Empfängern scheitert. |
+| **Schema** | `trade_history.on_chain_status`, `settlement_batches` | ✅ Beide implementiert + `users.chain_wallet_address`, `assets.chain_contract_address` | — |
+
+**Statusfluss eines Trades:**
+```
+match (off-chain) → trade_history.on_chain_status='pending'
+                  → settlement worker (alle 5min)
+                  → status='submitted' + batch_id gesetzt
+                  → settleBatch() TX gesendet
+                  → status='confirmed' + tx_hash gespeichert
+                       ODER
+                  → status='failed' (revert/network) → reset auf 'pending', Retry
+```
+
+**Offene Punkte vor Mainnet:**
+- Migration `CHAIN_SETTLEMENT_PRIVATE_KEY` → GCP KMS (oder vergleichbarer HSM)
+- Reconciler für Trades, die >24h in `submitted` hängen (TX dropped/replaced)
+- Polygon → Base L2 Migration evaluieren (oder Polygon Mainnet beibehalten)
+- Admin-UI „Blockchain Treasury" unter `/admin/blockchain-treasury.html` zeigt Settlement-Wallet, Pending-Trades, Batch-History — bereits gebaut
+
+---
+
+#### Ursprünglicher Masterplan (Referenz)
 
 Trades passieren **Off-Chain** (Redis + PostgreSQL) für Geschwindigkeit. Aber die **Eigentumsübertragung auf der Blockchain** passiert asynchron in Batches:
 

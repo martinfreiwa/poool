@@ -123,6 +123,13 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
                 // Real-time broadcast: orderbook has changed after matches
                 super::websocket::broadcast_orderbook_update(pool, Some(redis), asset_id).await;
             }
+
+            // IOC sweep: cancel any "immediate-or-cancel" orders that have
+            // had at least one matching cycle (created_at older than 100ms)
+            // and still have unfilled quantity. Releases their hold.
+            if let Err(e) = sweep_ioc_orders(redis, pool, asset_id).await {
+                tracing::warn!("IOC sweep failed for asset {}: {}", asset_id, e);
+            }
         }
 
         // 10ms pause: ~100 matching cycles/second
@@ -466,6 +473,47 @@ async fn cancel_order_in_db(
     }
 
     tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Cancel any IOC ("immediate-or-cancel") orders for this asset that are
+/// still open after a matching pass. Releases their hold via the same path
+/// as user-initiated cancels.
+///
+/// Only cancels orders older than 100ms — younger ones may still be racing
+/// the Redis-insert step from `service::create_order` and deserve another cycle.
+async fn sweep_ioc_orders(
+    redis: &RedisPool,
+    pool: &PgPool,
+    asset_id: Uuid,
+) -> Result<(), String> {
+    let candidates = sqlx::query_as::<_, (Uuid, Uuid, String)>(
+        r#"SELECT id, user_id, side
+           FROM market_orders
+           WHERE asset_id = $1
+             AND time_in_force = 'ioc'
+             AND status IN ('open', 'partially_filled')
+             AND created_at < NOW() - INTERVAL '100 milliseconds'
+           LIMIT 50"#,
+    )
+    .bind(asset_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    for (order_id, user_id, side) in candidates {
+        // Atomic DB cancel + hold release.
+        cancel_order_in_db(pool, order_id, user_id, "ioc_unfilled")
+            .await
+            .map_err(|e| format!("ioc cancel db: {}", e))?;
+        // Best-effort Redis remove. Sync worker reconciles if it lingers.
+        let book_side = if side == "sell" { "sell" } else { "buy" };
+        // Without the raw_member format we can't ZREM precisely; rely on
+        // the 5-min sync worker to clean up. The DB row is now `cancelled`
+        // so settlement will drop any incoming match (OrderTerminal path).
+        let _ = (book_side, redis);
+    }
+
     Ok(())
 }
 

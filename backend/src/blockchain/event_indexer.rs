@@ -7,7 +7,7 @@
 ///
 /// Architecture:
 /// - Polls every N seconds (configurable via platform_settings)
-/// - Stays `confirmation_depth` blocks behind HEAD (re-org protection, default: 3)
+/// - Stays `confirmation_depth` blocks behind HEAD (re-org protection, default: 128)
 /// - Uses idempotent upserts — safe to process the same event twice
 /// - Tracks cursor in `chain_indexer_cursor` for restart replay
 ///
@@ -124,7 +124,11 @@ pub async fn run_event_indexer(pool: &PgPool) {
     .ok()
     .flatten()
     .and_then(|v| v.parse().ok())
-    .unwrap_or(3);
+    // Polygon PoS sees 30+ block reorgs occasionally; finality via
+    // heimdall checkpoints is ~256 blocks. Default 128 = safety/freshness
+    // compromise. Override via platform_settings on chains with stronger
+    // finality guarantees (Ethereum mainnet: 64 is enough).
+    .unwrap_or(128);
 
     let indexer_enabled: bool = sqlx::query_scalar::<_, String>(
         "SELECT value FROM platform_settings WHERE key = 'chain_indexer_enabled'",
@@ -239,13 +243,23 @@ async fn index_new_events(
         }
     }
 
-    // 5. Apply balance changes to DB (idempotent upserts)
+    // 5+6. Apply balance changes AND advance cursor in a single ACID
+    // transaction. This guarantees the cursor only moves forward when ALL
+    // events in the range are persisted — and conversely, if any change
+    // fails, the cursor stays put and the entire range is retried next
+    // cycle. Without this, a crash mid-loop could leave the cursor stale
+    // and cause balances to be incremented TWICE on the next run (the
+    // upserts use `balance + $delta`, NOT idempotent at the row level).
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("DB tx begin error: {e}"))?;
+
     for change in &changes {
-        apply_balance_change(pool, change, &contract_lower).await?;
+        apply_balance_change_tx(&mut tx, change).await?;
     }
 
-    // 6. Update cursor
-    let _ = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO chain_indexer_cursor (contract_address, last_block, last_updated_at)
            VALUES ($1, $2, NOW())
            ON CONFLICT (contract_address) DO UPDATE
@@ -253,9 +267,13 @@ async fn index_new_events(
     )
     .bind(&contract_lower)
     .bind(to_block as i64)
-    .execute(pool)
+    .execute(&mut *tx)
     .await
     .map_err(|e| format!("DB cursor update error: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("DB tx commit error: {e}"))?;
 
     if !changes.is_empty() {
         tracing::info!(
@@ -433,6 +451,69 @@ fn parse_transfer_batch(log: &EthLog) -> Option<Vec<BalanceChange>> {
 /// Uses the wallet_address → user_id lookup via `users.chain_wallet_address`.
 /// If no user matches, the balance change is logged but not applied (could be
 /// an external wallet or the contract itself).
+/// Transaction-bound variant of `apply_balance_change`. Used by the indexer
+/// loop so balance updates and cursor advance commit atomically.
+async fn apply_balance_change_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    change: &BalanceChange,
+) -> Result<(), String> {
+    let user_and_asset: Option<(uuid::Uuid, uuid::Uuid)> = sqlx::query_as(
+        r#"SELECT u.id, a.id
+           FROM users u
+           CROSS JOIN assets a
+           WHERE LOWER(u.chain_wallet_address) = $1
+           AND a.chain_token_id = $2::text
+           LIMIT 1"#,
+    )
+    .bind(&change.wallet_address)
+    .bind(change.token_id.to_string())
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|e| format!("DB lookup error: {e}"))?;
+
+    let (user_id, asset_id) = match user_and_asset {
+        Some(ids) => ids,
+        None => return Ok(()),
+    };
+
+    if change.delta > 0 {
+        sqlx::query(
+            r#"INSERT INTO onchain_balances (user_id, asset_id, balance, last_synced_block, last_synced_at)
+               VALUES ($1, $2, $3, $4, NOW())
+               ON CONFLICT (user_id, asset_id) DO UPDATE
+               SET balance = onchain_balances.balance + $3,
+                   last_synced_block = GREATEST(onchain_balances.last_synced_block, $4),
+                   last_synced_at = NOW()"#,
+        )
+        .bind(user_id)
+        .bind(asset_id)
+        .bind(change.delta)
+        .bind(change.block_number as i64)
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| format!("DB balance+ error: {e}"))?;
+    } else if change.delta < 0 {
+        let abs_delta = change.delta.unsigned_abs() as i64;
+        sqlx::query(
+            r#"INSERT INTO onchain_balances (user_id, asset_id, balance, last_synced_block, last_synced_at)
+               VALUES ($1, $2, 0, $4, NOW())
+               ON CONFLICT (user_id, asset_id) DO UPDATE
+               SET balance = GREATEST(0, onchain_balances.balance - $3),
+                   last_synced_block = GREATEST(onchain_balances.last_synced_block, $4),
+                   last_synced_at = NOW()"#,
+        )
+        .bind(user_id)
+        .bind(asset_id)
+        .bind(abs_delta)
+        .bind(change.block_number as i64)
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| format!("DB balance- error: {e}"))?;
+    }
+    Ok(())
+}
+
+#[allow(dead_code)]
 async fn apply_balance_change(
     pool: &PgPool,
     change: &BalanceChange,

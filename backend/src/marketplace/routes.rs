@@ -149,39 +149,69 @@ pub async fn api_submit_order(
     // 2. Validate request fields
     validation::validate_order_fields(&body)?;
 
-    // 3. Execute order creation (all business logic in service layer)
+    // 3. Step-up 2FA for trades >= TRADE_2FA_THRESHOLD_CENTS ($500).
+    //    Below threshold trades skip the prompt; above-threshold trades
+    //    require a recent TOTP-verified trading session in Redis.
+    //    Only check for limit orders here — market-order amounts depend on
+    //    the orderbook price and are checked again inside `create_order` via
+    //    a stricter call once the actual price is resolved.
+    if body.order_type == "limit" {
+        let estimated_cents = body
+            .price_cents
+            .unwrap_or(0)
+            .saturating_mul(body.quantity as i64);
+        crate::auth::step_up::require_step_up_2fa(
+            &state.db,
+            state.redis.as_ref(),
+            user.id,
+            crate::auth::step_up::FinancialAction::Trade,
+            estimated_cents,
+        )
+        .await?;
+    }
+
+    // 4. Execute order creation (all business logic in service layer)
     let response = service::create_order(&state.db, state.redis.as_ref(), user.id, body).await?;
 
     Ok(Json(response))
 }
 
-/// GET /api/marketplace/orders/mine
+#[derive(serde::Deserialize, Default)]
+pub struct PageQuery {
+    /// ISO-8601 timestamp — return rows strictly older than this.
+    pub before: Option<chrono::DateTime<chrono::Utc>>,
+    /// 1..=200, default 50.
+    pub limit: Option<i64>,
+}
+
+/// GET /api/marketplace/orders/mine?before=...&limit=...
 ///
-/// Get the authenticated user's orders (open and recent).
+/// Returns the authenticated user's orders, newest first. Cursor pagination
+/// — pass the last row's `created_at` as `before` to fetch the next page.
 pub async fn api_my_orders(
     State(state): State<AppState>,
     jar: CookieJar,
+    Query(q): Query<PageQuery>,
 ) -> Result<impl IntoResponse, AppError> {
     let user = crate::auth::middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
 
-    let orders = service::get_user_orders(&state.db, user.id).await?;
+    let orders = service::get_user_orders(&state.db, user.id, q.before, q.limit).await?;
     Ok(Json(orders))
 }
 
-/// GET /api/marketplace/trades/mine
-///
-/// Get the authenticated user's trade history.
+/// GET /api/marketplace/trades/mine?before=...&limit=...
 pub async fn api_my_trades(
     State(state): State<AppState>,
     jar: CookieJar,
+    Query(q): Query<PageQuery>,
 ) -> Result<impl IntoResponse, AppError> {
     let user = crate::auth::middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
 
-    let trades = service::get_user_trades_history(&state.db, user.id).await?;
+    let trades = service::get_user_trades_history(&state.db, user.id, q.before, q.limit).await?;
     Ok(Json(trades))
 }
 
@@ -459,6 +489,17 @@ pub async fn api_cancel_order(
     let user = crate::auth::middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    // Rate limit cancels at 20/min per user (masterplan §2.12). Uses a
+    // separate Redis bucket from order-create (10/min) so a cancel storm
+    // can't starve order placement.
+    if let Some(redis) = state.redis.as_ref() {
+        if let Err(retry_after) =
+            super::orderbook::check_cancel_rate_limit(redis, user.id, 20, 60).await
+        {
+            return Err(AppError::RateLimited(retry_after));
+        }
+    }
 
     service::cancel_order(&state.db, state.redis.as_ref(), user.id, order_id).await?;
 

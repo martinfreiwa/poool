@@ -101,40 +101,82 @@ async fn expire_single_order(
     // ACID transaction: cancel order + release hold
     let mut tx = pool.begin().await.map_err(AppError::Database)?;
 
-    // 1. Mark order as expired
-    sqlx::query(
-        "UPDATE market_orders SET status = 'expired', cancel_reason = 'order_expired', updated_at = NOW()
+    // 1. Mark order as expired (idempotent — only acts if still active)
+    let cancel_affected = sqlx::query(
+        "UPDATE market_orders
+         SET status = 'expired', cancel_reason = 'order_expired', updated_at = NOW()
          WHERE id = $1 AND status IN ('open', 'partially_filled')",
     )
     .bind(order.id)
     .execute(&mut *tx)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(AppError::Database)?
+    .rows_affected();
 
-    // 2. Release holds based on side
+    // Already terminal? Another worker / cancel path beat us — no-op success.
+    if cancel_affected == 0 {
+        tx.rollback().await.ok();
+        return Ok(());
+    }
+
+    // 2. Release holds based on side. Strict updates (no GREATEST clamps);
+    //    must match the formula used at order creation so released cents/tokens
+    //    line up exactly with what was held.
     if order.side == "buy" {
-        let held_release = order.price_cents.saturating_mul(remaining as i64);
-        sqlx::query(
-            "UPDATE wallets SET held_balance_cents = GREATEST(held_balance_cents - $1, 0), updated_at = NOW()
-             WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
+        // Hold = (price * qty) + fee_reserve_bps share of (price * qty)
+        let price_hold = order
+            .price_cents
+            .checked_mul(remaining as i64)
+            .ok_or_else(|| AppError::Internal("expiry: hold-release overflow".into()))?;
+        let fee_hold =
+            super::models::calculate_fee_cents(price_hold, order.fee_reserve_bps);
+        let held_release = price_hold
+            .checked_add(fee_hold)
+            .ok_or_else(|| AppError::Internal("expiry: hold-release sum overflow".into()))?;
+
+        let affected = sqlx::query(
+            "UPDATE wallets SET
+                held_balance_cents = held_balance_cents - $1,
+                updated_at = NOW()
+             WHERE user_id = $2
+               AND wallet_type = 'cash'
+               AND currency = 'USD'
+               AND held_balance_cents >= $1",
         )
         .bind(held_release)
         .bind(order.user_id)
         .execute(&mut *tx)
         .await
-        .map_err(AppError::Database)?;
+        .map_err(AppError::Database)?
+        .rows_affected();
+        if affected != 1 {
+            return Err(AppError::Internal(format!(
+                "expiry: buyer hold release invariant violated (order={}, user={}, release={})",
+                order.id, order.user_id, held_release
+            )));
+        }
     } else {
-        // sell side: release held tokens
-        sqlx::query(
-            "UPDATE investments SET held_tokens = GREATEST(held_tokens - $1, 0), updated_at = NOW()
-             WHERE user_id = $2 AND asset_id = $3 AND status != 'exited'",
+        let affected = sqlx::query(
+            "UPDATE investments SET
+                held_tokens = held_tokens - $1,
+                updated_at = NOW()
+             WHERE user_id = $2 AND asset_id = $3
+               AND status != 'exited'
+               AND held_tokens >= $1",
         )
         .bind(remaining)
         .bind(order.user_id)
         .bind(order.asset_id)
         .execute(&mut *tx)
         .await
-        .map_err(AppError::Database)?;
+        .map_err(AppError::Database)?
+        .rows_affected();
+        if affected != 1 {
+            return Err(AppError::Internal(format!(
+                "expiry: seller held_tokens release invariant violated (order={}, user={}, qty={})",
+                order.id, order.user_id, remaining
+            )));
+        }
     }
 
     tx.commit().await.map_err(AppError::Database)?;
@@ -182,36 +224,75 @@ pub async fn run_redis_sync_worker(redis: &RedisPool, pool: &PgPool) {
         interval.tick().await;
 
         // Part 1: Find orders missing from Redis and re-insert
-        match orderbook::sync_with_postgres(redis, pool).await {
-            Ok(fixed) if fixed > 0 => {
-                tracing::warn!("🔧 Redis sync: re-inserted {} missing orders", fixed);
-                sentry::capture_message(
-                    &format!("Redis sync fixed {} missing orders", fixed),
-                    sentry::Level::Warning,
-                );
-            }
-            Ok(_) => {
-                tracing::debug!("🔄 Redis sync: all orders in sync");
+        let missing_count = match orderbook::sync_with_postgres(redis, pool).await {
+            Ok(fixed) => {
+                if fixed > 0 {
+                    tracing::warn!("🔧 Redis sync: re-inserted {} missing orders", fixed);
+                    sentry::capture_message(
+                        &format!("Redis sync fixed {} missing orders", fixed),
+                        sentry::Level::Warning,
+                    );
+                } else {
+                    tracing::debug!("🔄 Redis sync: all orders in sync");
+                }
+                fixed as i64
             }
             Err(e) => {
                 tracing::error!("🔄 Redis sync failed: {}", e);
+                -1 // sentinel: cycle errored
             }
-        }
+        };
 
         // Part 2: Find stale orders in Redis (no longer active in DB) and clean up
-        match clean_stale_redis_orders(redis, pool).await {
-            Ok(cleaned) if cleaned > 0 => {
-                tracing::warn!(
-                    "🧹 Redis cleanup: removed {} stale orders from Redis",
-                    cleaned
-                );
+        let stale_count = match clean_stale_redis_orders(redis, pool).await {
+            Ok(cleaned) => {
+                if cleaned > 0 {
+                    tracing::warn!(
+                        "🧹 Redis cleanup: removed {} stale orders from Redis",
+                        cleaned
+                    );
+                }
+                cleaned as i64
             }
-            Ok(_) => {}
             Err(e) => {
                 tracing::error!("🧹 Redis stale order cleanup failed: {}", e);
+                -1
             }
+        };
+
+        // Part 3: Queue depth — pending matches waiting for settlement.
+        let queue_depth = orderbook::match_queue_depth(redis).await.unwrap_or(-1);
+
+        // Part 4: Persist metrics. Best-effort — never let metrics persist
+        // failure interfere with the actual sync work.
+        let _ = persist_drift_metric(pool, "missing_in_redis", missing_count).await;
+        let _ = persist_drift_metric(pool, "stale_in_redis", stale_count).await;
+        let _ = persist_drift_metric(pool, "match_queue_depth", queue_depth).await;
+
+        // Alert on queue depth backlog (settlement worker is wedged or
+        // throughput insufficient). 100 is arbitrary — tune from prod data.
+        if queue_depth > 100 {
+            sentry::capture_message(
+                &format!("Match queue depth high: {} events pending", queue_depth),
+                sentry::Level::Warning,
+            );
         }
     }
+}
+
+async fn persist_drift_metric(
+    pool: &PgPool,
+    metric_type: &str,
+    value: i64,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO marketplace_drift_metrics (metric_type, value) VALUES ($1, $2)",
+    )
+    .bind(metric_type)
+    .bind(value)
+    .execute(pool)
+    .await
+    .map(|_| ())
 }
 
 /// Remove orders from Redis that are no longer active in PostgreSQL.

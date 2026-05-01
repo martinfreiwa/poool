@@ -81,6 +81,27 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                     match_event.seller_user_id,
                 );
             }
+            // TERMINAL: order is no longer active (already cancelled, expired,
+            // or fully filled by an earlier match). Re-queueing creates an
+            // infinite death spiral — DROP the event and clean stale Redis
+            // entries. The order's Redis member is already gone in normal
+            // cancel paths; if it isn't, the 5-min sync worker will catch it.
+            Err(AppError::OrderTerminal { reason }) => {
+                tracing::warn!(
+                    "⚠️ Match dropped — order terminal ({}): asset={}, ask={}, bid={}",
+                    reason,
+                    match_event.asset_id,
+                    match_event.ask_order_id,
+                    match_event.bid_order_id,
+                );
+                sentry::capture_message(
+                    &format!(
+                        "Match dropped (terminal order): {}: asset={}, ask={}, bid={}",
+                        reason, match_event.asset_id, match_event.ask_order_id, match_event.bid_order_id
+                    ),
+                    sentry::Level::Warning,
+                );
+            }
             Err(e) => {
                 tracing::error!("❌ Settlement FAILED: {} — re-queuing event for retry", e);
                 sentry::capture_message(
@@ -165,10 +186,13 @@ async fn settle_trade(
     })?;
 
     if !sell_order.is_active() {
-        return Err(AppError::Internal(format!(
-            "Sell order {} is no longer active (status={})",
-            sell_order.id, sell_order.status
-        )));
+        // Terminal — drop the match, don't retry. (See worker loop dispatch.)
+        return Err(AppError::OrderTerminal {
+            reason: format!(
+                "sell order {} status={}",
+                sell_order.id, sell_order.status
+            ),
+        });
     }
 
     let buy_order = sqlx::query_as::<_, super::models::MarketOrder>(
@@ -186,10 +210,9 @@ async fn settle_trade(
     })?;
 
     if !buy_order.is_active() {
-        return Err(AppError::Internal(format!(
-            "Buy order {} is no longer active (status={})",
-            buy_order.id, buy_order.status
-        )));
+        return Err(AppError::OrderTerminal {
+            reason: format!("buy order {} status={}", buy_order.id, buy_order.status),
+        });
     }
 
     // Double-check: user IDs match the match event
@@ -516,6 +539,40 @@ async fn settle_trade(
             )));
         }
     }
+
+    // ── Step 9: Immutable audit log entries ───────────────────
+    // One row per fund movement, inside the same transaction so audit and
+    // accounting cannot diverge. `audit_logs` is append-only (no UPDATE/DELETE
+    // grants in prod) — required for OJK / financial-conduct compliance.
+    let audit_payload = serde_json::json!({
+        "trade_id": trade_id,
+        "asset_id": event.asset_id,
+        "match_price_cents": event.match_price_cents,
+        "match_quantity": event.match_quantity,
+        "total_cents": total_cents,
+        "buyer_fee_cents": buyer_fee_cents,
+        "seller_fee_cents": seller_fee_cents,
+        "buyer_fee_bps": buyer_fee_bps,
+        "seller_fee_bps": seller_fee_bps,
+        "taker_side": taker_side_str,
+        "buyer_user_id": event.buyer_user_id,
+        "seller_user_id": event.seller_user_id,
+    });
+
+    sqlx::query(
+        "INSERT INTO audit_logs
+             (actor_user_id, action, entity_type, entity_id, new_state)
+         VALUES
+             ($1, 'trade.settlement.buyer_debit', 'trade', $2, $3),
+             ($4, 'trade.settlement.seller_credit', 'trade', $2, $3)",
+    )
+    .bind(event.buyer_user_id)
+    .bind(trade_id)
+    .bind(&audit_payload)
+    .bind(event.seller_user_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
 
     // ── COMMIT ───────────────────────────────────────────────
     tx.commit().await.map_err(AppError::Database)?;
