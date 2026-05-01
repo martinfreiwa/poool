@@ -445,6 +445,18 @@
                       </div>
                     </div>
                   </div>
+                  {% if asset.funded_percentage >= 100 %}
+                  <div class="price-card-fully-funded">
+                    <div class="fully-funded-badge">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      Fully Funded
+                    </div>
+                    <p class="fully-funded-message">All shares in this property have been sold. You may find available shares on the secondary market.</p>
+                    <a href="/marketplace-secondary" class="ds-btn ds-btn--primary" style="width:100%;justify-content:center;text-decoration:none;">
+                      View Secondary Market
+                    </a>
+                  </div>
+                  {% else %}
                   <div class="price-card-investment">
                     <div class="investment-input">
                       <div class="input-dropdown"><span class="currency-label">USD</span></div>
@@ -464,6 +476,7 @@
                     </div>
                     <div class="disclaimer-text">You won't be charged yet</div>
                   </div>
+                  {% endif %}
                 </div>
               </div>
 
@@ -573,6 +586,18 @@
               <div class="returns-row"><span class="returns-label">Projected annualised net return</span><span class="returns-value">{{ asset.annualised_net_return_percent }}%</span></div>
             </div>
           </div>
+          {% if asset.funded_percentage >= 100 %}
+          <div class="mobile-investment price-card-fully-funded">
+            <div class="fully-funded-badge">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Fully Funded
+            </div>
+            <p class="fully-funded-message">All shares in this property have been sold. You may find available shares on the secondary market.</p>
+            <a href="/marketplace-secondary" class="ds-btn ds-btn--primary" style="width:100%;justify-content:center;text-decoration:none;">
+              View Secondary Market
+            </a>
+          </div>
+          {% else %}
           <div class="mobile-investment">
             <div class="investment-input">
               <div class="input-dropdown"><span class="currency-label">USD</span></div>
@@ -588,6 +613,7 @@
             </div>
             <div class="disclaimer-text">You won't be charged yet</div>
           </div>
+          {% endif %}
         </div>
       </div>
       <div class="mobile-property-details">

@@ -6711,3 +6711,32 @@ body.youtube-modal-active {
   align-self: stretch;
   flex-grow: 0;
 }
+
+/* ── Fully Funded State ─────────────────────────────────────── */
+.price-card-fully-funded {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0 0;
+}
+
+.fully-funded-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ECFDF3;
+  color: #027A48;
+  border: 1px solid #A9EFC5;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.fully-funded-message {
+  font-size: 13px;
+  color: #667085;
+  margin: 0;
+  line-height: 1.5;
+}
