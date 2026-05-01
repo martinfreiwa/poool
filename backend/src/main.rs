@@ -671,6 +671,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         blockchain::kyc_whitelist::run_kyc_whitelist_worker(&whitelist_pool).await;
     });
 
+    // ── Blockchain: Stuck-trade reconciler ───────────────────
+    // Recovers trades stuck in 'submitted' state (TX dropped, RPC timeout,
+    // worker crash mid-flight). Re-checks receipts and resets to 'pending'
+    // for retry if needed. Runs every 2 min, only if chain enabled.
+    let reconciler_pool = pool.clone();
+    tokio::spawn(async move {
+        blockchain::reconciler::run_reconciler(&reconciler_pool).await;
+    });
+
     //  3. Router configuration
 
     //

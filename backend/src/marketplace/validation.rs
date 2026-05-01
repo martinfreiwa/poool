@@ -138,22 +138,46 @@ pub async fn check_asset_tradable(
     .ok()
     .flatten();
 
-    let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await
-        .ok()
-        .flatten();
-
-    let is_super_admin = email.as_deref() == Some("support@traffic-creator.com");
+    // Super-admin / admin bypass via the RBAC `user_roles` + `roles` tables
+    // (replaces the previous hardcoded email comparison). Bypass is logged so
+    // every use is auditable.
+    let is_super_admin: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1 FROM user_roles ur
+            JOIN roles r ON r.id = ur.role_id
+            WHERE ur.user_id = $1
+              AND r.name IN ('admin', 'super_admin')
+              AND COALESCE(ur.is_active, TRUE) = TRUE
+        )",
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(false);
 
     match row {
         Some(r) => {
             let is_funded = r.funding_status == "funded";
             let is_published = r.published;
 
-            if (!is_funded || !is_published) && !is_super_admin {
-                return Err(OrderRejection::AssetNotTradable);
+            if !is_funded || !is_published {
+                if !is_super_admin {
+                    return Err(OrderRejection::AssetNotTradable);
+                }
+                tracing::warn!(
+                    "🛡️ Admin tradable bypass: user={} asset={} (funded={}, published={})",
+                    user_id,
+                    asset_id,
+                    is_funded,
+                    is_published
+                );
+                sentry::capture_message(
+                    &format!(
+                        "Admin tradable bypass: user={} asset={} (funded={}, published={})",
+                        user_id, asset_id, is_funded, is_published
+                    ),
+                    sentry::Level::Info,
+                );
             }
 
             Ok(r.tokens_total)
@@ -187,9 +211,14 @@ pub async fn check_open_order_count(
     Ok(())
 }
 
-/// Check that the idempotency key hasn't been used before.
+/// Check that the idempotency key hasn't been used by THIS user before.
+///
+/// Idempotency is scoped per-user (migration 097): two different users
+/// can use the same key without collision, and a leaked key cannot be
+/// weaponised to block another user's order submission.
 pub async fn check_idempotency_key(
     pool: &PgPool,
+    user_id: Uuid,
     idempotency_key: &str,
 ) -> Result<(), OrderRejection> {
     let key = match Uuid::parse_str(idempotency_key) {
@@ -197,12 +226,17 @@ pub async fn check_idempotency_key(
         Err(_) => return Ok(()), // Invalid UUID already caught in field validation
     };
 
-    let exists: bool =
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM market_orders WHERE idempotency_key = $1)")
-            .bind(key)
-            .fetch_one(pool)
-            .await
-            .unwrap_or(false);
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1 FROM market_orders
+            WHERE user_id = $1 AND idempotency_key = $2
+         )",
+    )
+    .bind(user_id)
+    .bind(key)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(false);
 
     if exists {
         return Err(OrderRejection::DuplicateIdempotencyKey);
@@ -383,8 +417,8 @@ pub fn check_admin_review_required(
     order_quantity: i32,
     total_tokens: i32,
 ) -> Option<OrderRejection> {
-    // Check value threshold
-    if order_value_cents > ADMIN_REVIEW_THRESHOLD_CENTS {
+    // Check value threshold (>=, so an exact $50,000 order also triggers review)
+    if order_value_cents >= ADMIN_REVIEW_THRESHOLD_CENTS {
         let order_pct = if total_tokens > 0 {
             (order_quantity as f64 / total_tokens as f64) * 100.0
         } else {
@@ -396,10 +430,10 @@ pub fn check_admin_review_required(
         });
     }
 
-    // Check supply percentage threshold
+    // Check supply percentage threshold (>=, so exactly 5.00% triggers review)
     if total_tokens > 0 {
         let order_pct = (order_quantity as f64 / total_tokens as f64) * 100.0;
-        if order_pct > ADMIN_REVIEW_SUPPLY_PCT {
+        if order_pct >= ADMIN_REVIEW_SUPPLY_PCT {
             return Some(OrderRejection::RequiresAdminReview {
                 order_pct,
                 order_value_cents,
@@ -410,29 +444,59 @@ pub fn check_admin_review_required(
     None
 }
 
-/// Check that the user doesn't already have opposing open orders on this asset
-/// (potential wash trade via separate orders).
+/// Check that the user doesn't have opposing open orders that would CROSS
+/// the new order's price (potential self-trade / wash trade).
 ///
-/// This is a soft check — the matching engine also prevents self-trades at match time.
+/// Non-crossing opposing orders are allowed — e.g. a user can hold a sell @
+/// $200 and place a buy @ $100 simultaneously (legitimate spread strategy).
+/// Only block if prices would actually meet at match time.
+///
+/// This is a soft check — the matching engine also prevents self-trades at
+/// match time and atomically cancels the newer crossing order.
 pub async fn check_no_opposing_orders(
     pool: &PgPool,
     user_id: Uuid,
     asset_id: Uuid,
     side: &str,
+    new_price_cents: i64,
 ) -> Result<(), OrderRejection> {
     let opposing_side = if side == "buy" { "sell" } else { "buy" };
 
-    let has_opposing: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM market_orders WHERE user_id = $1 AND asset_id = $2 AND side = $3 AND status IN ('open', 'partially_filled'))",
-    )
-    .bind(user_id)
-    .bind(asset_id)
-    .bind(opposing_side)
-    .fetch_one(pool)
-    .await
-    .unwrap_or(false);
+    // For a new BUY at price P: we cross any existing SELL with price <= P.
+    // For a new SELL at price P: we cross any existing BUY with price >= P.
+    let would_cross: bool = if side == "buy" {
+        sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM market_orders
+             WHERE user_id = $1 AND asset_id = $2
+               AND side = $3
+               AND status IN ('open', 'partially_filled')
+               AND price_cents <= $4)",
+        )
+        .bind(user_id)
+        .bind(asset_id)
+        .bind(opposing_side)
+        .bind(new_price_cents)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(false)
+    } else {
+        sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM market_orders
+             WHERE user_id = $1 AND asset_id = $2
+               AND side = $3
+               AND status IN ('open', 'partially_filled')
+               AND price_cents >= $4)",
+        )
+        .bind(user_id)
+        .bind(asset_id)
+        .bind(opposing_side)
+        .bind(new_price_cents)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(false)
+    };
 
-    if has_opposing {
+    if would_cross {
         return Err(OrderRejection::SelfTradeBlocked);
     }
 

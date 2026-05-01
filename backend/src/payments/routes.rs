@@ -681,7 +681,9 @@ pub async fn handle_checkout(
                                 )
                                 .await
                                 {
-                                    Ok(url) => { proof_url = Some(url); }
+                                    Ok(url) => {
+                                        proof_url = Some(url);
+                                    }
                                     Err(e) => {
                                         tracing::error!(
                                             user_id = %user.id,

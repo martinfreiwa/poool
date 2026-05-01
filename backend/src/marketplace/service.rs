@@ -186,13 +186,12 @@ pub async fn create_order(
         .await
         .map_err(|r| r.into_app_error())?;
 
-    validation::check_idempotency_key(pool, &req.idempotency_key)
+    validation::check_idempotency_key(pool, user_id, &req.idempotency_key)
         .await
         .map_err(|r| r.into_app_error())?;
 
-    validation::check_no_opposing_orders(pool, user_id, asset_uuid, &req.side)
-        .await
-        .map_err(|r| r.into_app_error())?;
+    // Self-trade-cross check happens AFTER price is resolved (below) so we
+    // know the actual price for market orders.
 
     // ── Rate limiting (Redis, non-fatal) ─────────────────────
     if let Some(redis) = redis {
@@ -254,6 +253,10 @@ pub async fn create_order(
 
     validate_runtime_settings_for_order(&runtime_settings, &req, price_cents)?;
 
+    validation::check_no_opposing_orders(pool, user_id, asset_uuid, &req.side, price_cents)
+        .await
+        .map_err(|r| r.into_app_error())?;
+
     // Use checked_mul — saturating_mul would silently clamp to i64::MAX on
     // overflow, giving an attacker a way to place an order whose stored
     // total is wildly smaller than the real amount owed.
@@ -268,14 +271,16 @@ pub async fn create_order(
     // we conservatively reserve the TAKER fee (the larger of the two).
     // Any unused portion is refunded at settlement.
     let resolved_fees = validation::resolve_fees(pool, asset_uuid).await?;
-    let buyer_fee_reserve_cents: i64 = if side == OrderSide::Buy {
-        super::models::calculate_fee_cents(
-            order_total_cents,
-            resolved_fees.taker_fee_bps.max(resolved_fees.maker_fee_bps),
-        )
+    let fee_reserve_bps: i32 = if side == OrderSide::Buy {
+        resolved_fees
+            .taker_fee_bps
+            .max(resolved_fees.maker_fee_bps)
+            .max(0)
     } else {
         0
     };
+    let buyer_fee_reserve_cents: i64 =
+        super::models::calculate_fee_cents(order_total_cents, fee_reserve_bps);
     let buyer_hold_total_cents = order_total_cents
         .checked_add(buyer_fee_reserve_cents)
         .ok_or_else(|| AppError::BadRequest("Order total + fee exceeds maximum".into()))?;
@@ -329,8 +334,9 @@ pub async fn create_order(
     // Insert order
     let order = sqlx::query_as::<_, MarketOrder>(
         r#"INSERT INTO market_orders
-           (user_id, asset_id, side, order_type, price_cents, quantity, status, idempotency_key, expires_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           (user_id, asset_id, side, order_type, price_cents, quantity, status,
+            idempotency_key, expires_at, fee_reserve_bps)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            RETURNING *"#,
     )
     .bind(user_id)
@@ -342,6 +348,7 @@ pub async fn create_order(
     .bind(initial_status)
     .bind(idempotency_uuid)
     .bind(expires_at)
+    .bind(fee_reserve_bps)
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| {
@@ -493,10 +500,17 @@ pub async fn cancel_order(
     let side = OrderSide::parse(&order.side);
     match side {
         Some(OrderSide::Buy) => {
-            let held_release = order
+            // Release price-hold + the unused fee reserve for the
+            // remaining quantity. Mirrors the formula used at creation:
+            //   hold = price*qty + fee_bps_share(price*qty)
+            let price_hold = order
                 .price_cents
                 .checked_mul(remaining as i64)
                 .ok_or_else(|| AppError::Internal("Hold-release overflow on cancel".into()))?;
+            let fee_hold = super::models::calculate_fee_cents(price_hold, order.fee_reserve_bps);
+            let held_release = price_hold
+                .checked_add(fee_hold)
+                .ok_or_else(|| AppError::Internal("Hold-release sum overflow on cancel".into()))?;
             let affected = sqlx::query(
                 "UPDATE wallets SET
                     held_balance_cents = held_balance_cents - $1,
@@ -677,15 +691,17 @@ pub async fn get_user_trades_history(
 ) -> Result<Vec<MyTradeResponse>, AppError> {
     let raw = sqlx::query!(
         r#"
-        SELECT 
-            t.id, 
-            t.executed_at, 
+        SELECT
+            t.id,
+            t.executed_at,
             a.title as asset_name,
             t.buyer_user_id,
             t.seller_user_id,
             t.price_cents,
             t.quantity,
-            t.fee_cents
+            t.fee_cents,
+            t.buyer_fee_cents,
+            t.seller_fee_cents
         FROM trade_history t
         JOIN assets a ON t.asset_id = a.id
         WHERE t.buyer_user_id = $1 OR t.seller_user_id = $1
@@ -704,19 +720,25 @@ pub async fn get_user_trades_history(
         let side = if is_buyer { "buy" } else { "sell" };
         let total = r.price_cents.saturating_mul(r.quantity as i64);
 
-        // Let's just assume the user paid the fee if they were the buyer for simplicity,
-        // or just show half.
-        let fee = r.fee_cents;
+        // Show the fee actually charged to THIS user (per-side after maker/taker
+        // split). Backfilled rows pre-migration-095 carry the legacy `fee_cents`
+        // on the seller side only; the new columns default to 0 for those, so
+        // we fall back to legacy when both sides are zero.
+        let user_fee = if is_buyer {
+            r.buyer_fee_cents
+        } else {
+            r.seller_fee_cents
+        };
+        let fee = if user_fee > 0 { user_fee } else { r.fee_cents };
 
+        // Buyer cash out = price × qty + buyer fee. Seller cash in = price × qty - seller fee.
         let net = if is_buyer { total + fee } else { total - fee };
 
-        // PL can be null for buys, and some positive/negative for sells
-        let pl = if !is_buyer {
-            // Mocking a PNL of 10% for sells
-            Some((total as f64 * 0.1) as i64)
-        } else {
-            None
-        };
+        // P&L requires the buyer's cost basis for the same asset, which we
+        // don't compute in this query. Return None instead of a fake value.
+        // TODO: implement real P&L using weighted-avg cost basis (see
+        // /Users/martin/Projects/poool/docs/MASTERPLAN.md §2.13 Steuer-Report).
+        let pl: Option<i64> = None;
 
         out.push(MyTradeResponse {
             id: r.id,

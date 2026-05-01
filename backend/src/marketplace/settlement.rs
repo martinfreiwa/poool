@@ -230,10 +230,8 @@ async fn settle_trade(
     let seller_proceeds = total_cents
         .checked_sub(seller_fee_cents)
         .ok_or_else(|| AppError::Internal("seller_proceeds underflow".into()))?;
-    // Buyer pays match value PLUS their fee (deducted from their hold)
-    let buyer_total_pay = total_cents
-        .checked_add(buyer_fee_cents)
-        .ok_or_else(|| AppError::Internal("buyer_total_pay overflow".into()))?;
+    // (Buyer's `total_cents + buyer_fee_cents` cash-out is computed in Step 8
+    // as `buyer_cash_out` — kept inline there to avoid double-arithmetic.)
 
     // ── Step 3: Update sell order ────────────────────────────
     let new_sell_filled = sell_order.quantity_filled + event.match_quantity;
@@ -393,11 +391,20 @@ async fn settle_trade(
     }
 
     // ── Step 7: Record trade in trade_history ─────────────────
+    // Legacy `fee_cents` / `fee_bps` columns are populated with the TAKER's
+    // fee for backward compat. New per-side columns are the source of truth.
+    let (legacy_fee_cents, legacy_fee_bps) = match event.maker_side {
+        super::models::MakerSide::Sell => (buyer_fee_cents, buyer_fee_bps),
+        super::models::MakerSide::Buy => (seller_fee_cents, seller_fee_bps),
+    };
     let trade_id = sqlx::query_scalar::<_, Uuid>(
         r#"INSERT INTO trade_history
            (asset_id, buy_order_id, sell_order_id, buyer_user_id, seller_user_id,
-            price_cents, quantity, fee_cents, fee_bps, on_chain_status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+            price_cents, quantity, fee_cents, fee_bps, on_chain_status,
+            taker_side, buyer_fee_cents, seller_fee_cents,
+            buyer_fee_bps, seller_fee_bps)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending',
+                   $10, $11, $12, $13, $14)
            RETURNING id"#,
     )
     .bind(event.asset_id)
@@ -407,28 +414,39 @@ async fn settle_trade(
     .bind(event.seller_user_id)
     .bind(event.match_price_cents)
     .bind(event.match_quantity)
-    .bind(taker_fee_cents)
-    .bind(taker_fee_bps)
+    .bind(legacy_fee_cents)
+    .bind(legacy_fee_bps)
+    .bind(taker_side_str)
+    .bind(buyer_fee_cents)
+    .bind(seller_fee_cents)
+    .bind(buyer_fee_bps)
+    .bind(seller_fee_bps)
     .fetch_one(&mut *tx)
     .await
     .map_err(AppError::Database)?;
 
     // ── Step 8: Release holds ────────────────────────────────
-    // Buyer: hold was placed at the bid's LIMIT price × qty at order creation.
-    // Trade executes at MATCH price (<= limit). Release hold at limit price,
-    // deduct balance at match price — the difference returns to free balance.
-    let held_release = buy_order
+    // Buyer's hold at order creation was:
+    //   limit_price × qty + fee_reserve_bps_share(limit_price × qty)
+    // We release that full slice (proportional to match qty), and debit
+    // the actual cash leaving the buyer (match_price × qty + buyer_fee).
+    // The difference (over-reserved fee + better-than-limit price) flows
+    // back to the buyer's free balance.
+    let price_hold_share = buy_order
         .price_cents
         .checked_mul(event.match_quantity as i64)
         .ok_or_else(|| AppError::Internal("Hold-release overflow".to_string()))?;
-    let actual_paid = event
-        .match_price_cents
-        .checked_mul(event.match_quantity as i64)
-        .ok_or_else(|| AppError::Internal("Actual-paid overflow".to_string()))?;
+    let fee_hold_share =
+        super::models::calculate_fee_cents(price_hold_share, buy_order.fee_reserve_bps);
+    let held_release = price_hold_share
+        .checked_add(fee_hold_share)
+        .ok_or_else(|| AppError::Internal("Hold-release sum overflow".into()))?;
+    // Cash leaving the buyer's wallet for this match:
+    let buyer_cash_out = total_cents
+        .checked_add(buyer_fee_cents)
+        .ok_or_else(|| AppError::Internal("Buyer cash-out overflow".into()))?;
 
     // Strict update — fail tx if invariants don't hold (no silent clamps).
-    // Conditions guarantee: buyer has enough hold to release AND enough
-    // balance to pay AND held >= release post-update (i.e. no negative held).
     let buyer_wallet_affected = sqlx::query(
         "UPDATE wallets SET
             balance_cents = balance_cents - $1,
@@ -440,7 +458,7 @@ async fn settle_trade(
            AND held_balance_cents >= $2
            AND balance_cents >= $1",
     )
-    .bind(actual_paid)
+    .bind(buyer_cash_out)
     .bind(held_release)
     .bind(event.buyer_user_id)
     .execute(&mut *tx)
@@ -449,8 +467,8 @@ async fn settle_trade(
     .rows_affected();
     if buyer_wallet_affected != 1 {
         return Err(AppError::Internal(format!(
-            "Buyer wallet invariant violated or row missing (user={}, actual_paid={}, held_release={}, affected={})",
-            event.buyer_user_id, actual_paid, held_release, buyer_wallet_affected
+            "Buyer wallet invariant violated or row missing (user={}, cash_out={}, held_release={}, affected={})",
+            event.buyer_user_id, buyer_cash_out, held_release, buyer_wallet_affected
         )));
     }
 
@@ -480,12 +498,13 @@ async fn settle_trade(
     // rows_affected == 1 so an unseeded or accidentally duplicated
     // platform_fee wallet row aborts the settlement instead of silently
     // losing or duplicating the fee credit.
-    if taker_fee_cents > 0 {
+    // Total platform fee = buyer_fee + seller_fee.
+    if total_fee_cents > 0 {
         let affected = sqlx::query(
             "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
              WHERE wallet_type = 'platform_fee' AND currency = 'USD'",
         )
-        .bind(taker_fee_cents)
+        .bind(total_fee_cents)
         .execute(&mut *tx)
         .await
         .map_err(AppError::Database)?
@@ -502,10 +521,12 @@ async fn settle_trade(
     tx.commit().await.map_err(AppError::Database)?;
 
     tracing::info!(
-        "💰 Settlement TX committed: trade={}, total={}, fee={}, seller_proceeds={}",
+        "💰 Settlement TX committed: trade={}, total={}, fee_total={} (buyer={}, seller={}), seller_proceeds={}",
         trade_id,
         total_cents,
-        taker_fee_cents,
+        total_fee_cents,
+        buyer_fee_cents,
+        seller_fee_cents,
         seller_proceeds,
     );
 

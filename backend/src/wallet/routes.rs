@@ -412,15 +412,20 @@ pub async fn handle_withdraw(
             }
         };
 
-        // Lock the wallet row and check balance atomically
-        let wallet_row = sqlx::query_as::<_, (Uuid, i64)>(
-            "SELECT id, balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = 'cash' AND currency = 'USD' FOR UPDATE",
+        // Lock the wallet row and check AVAILABLE balance atomically.
+        // Available = balance_cents - held_balance_cents. Held funds back
+        // open buy orders / pending settlements and must NOT be withdrawable.
+        let wallet_row = sqlx::query_as::<_, (Uuid, i64, i64)>(
+            "SELECT id, balance_cents, held_balance_cents
+             FROM wallets
+             WHERE user_id = $1 AND wallet_type = 'cash' AND currency = 'USD'
+             FOR UPDATE",
         )
         .bind(user.id)
         .fetch_optional(&mut *tx)
         .await;
 
-        let (wallet_id, current_balance) = match wallet_row {
+        let (wallet_id, current_balance, held_balance) = match wallet_row {
             Ok(Some(row)) => row,
             Ok(None) => {
                 let _ = tx.rollback().await;
@@ -434,12 +439,15 @@ pub async fn handle_withdraw(
             }
         };
 
-        if current_balance < amount_cents {
+        let available = current_balance - held_balance;
+        if available < amount_cents {
             let _ = tx.rollback().await;
             tracing::warn!(
-                "Insufficient funds: user {} has {} cents, tried to withdraw {} cents",
+                "Insufficient available funds: user {} balance={} held={} available={} requested={}",
                 user.id,
                 current_balance,
+                held_balance,
+                available,
                 amount_cents
             );
             return Redirect::to("/wallet?error=insufficient_funds").into_response();

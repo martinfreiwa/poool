@@ -855,6 +855,7 @@ mod tests {
             idempotency_key: None,
             cancel_reason: None,
             expires_at: Some(Utc::now()),
+            fee_reserve_bps: 0,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }

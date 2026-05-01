@@ -1,5 +1,6 @@
 pub mod event_indexer;
 pub mod kyc_whitelist;
+pub mod reconciler;
 /// Blockchain integration module — on-chain settlement via POOOLProperty1155 contract.
 ///
 /// This module is the bridge between the off-chain trading engine and the
@@ -17,6 +18,7 @@ pub mod kyc_whitelist;
 /// - `service::run_settlement_worker` — Batch settlement (every 5 min)
 /// - `event_indexer::run_event_indexer` — Balance sync (every 5 sec)
 /// - `kyc_whitelist::run_kyc_whitelist_worker` — KYC→Whitelist (every 60 sec)
+/// - `reconciler::run_reconciler` — Recovers trades stuck in 'submitted' (every 2 min)
 ///
 /// 🔴 FINANCIAL CODE — All monetary logic uses integer math (cents/wei).
 ///    No floating-point math anywhere in this module.

@@ -150,8 +150,12 @@ pub async fn api_admin_asset_detail(
     // Resale liquidity: open sell orders on secondary market
     let resale_available: i64 = sqlx::query_scalar(
         "SELECT COALESCE(SUM(quantity - quantity_filled), 0) FROM market_orders
-         WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')"
-    ).bind(aid).fetch_one(&state.db).await.map_err(ApiError::Database)?;
+         WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')",
+    )
+    .bind(aid)
+    .fetch_one(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
 
     // Financial records
     let financials: Vec<(i32, i32, i64, i64, i64, Option<i32>)> = sqlx::query_as(
