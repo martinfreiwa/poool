@@ -668,8 +668,7 @@
   function openModal(id) {
     const m = $(id);
     if (!m) return;
-    m.removeAttribute("hidden");
-    m.classList.add("is-open");
+    m.classList.add("active");
     const firstInput = m.querySelector("input, select, textarea, button");
     firstInput && firstInput.focus();
     document.body.classList.add("modal-open");
@@ -677,12 +676,11 @@
 
   function closeModal(m) {
     if (!m) return;
-    m.setAttribute("hidden", "");
-    m.classList.remove("is-open");
+    m.classList.remove("active");
     const form = m.querySelector("form");
     form && form.reset();
-    const err = m.querySelector("[id$=-error]");
-    if (err) { err.hidden = true; err.textContent = ""; }
+    const err = m.querySelector(".ds-modal__error");
+    if (err) { err.textContent = ""; }
     document.body.classList.remove("modal-open");
   }
 
@@ -690,7 +688,6 @@
     const el = $(id);
     if (!el) return;
     el.textContent = msg;
-    el.hidden = false;
   }
 
   function bindModals() {
@@ -704,12 +701,17 @@
       const closer = e.target.closest("[data-modal-close]");
       if (closer) {
         e.preventDefault();
-        closeModal(closer.closest(".settings-modal"));
+        closeModal(closer.closest(".ds-modal-overlay"));
+        return;
+      }
+      // Clicking the overlay backdrop closes the modal
+      if (e.target.classList.contains("ds-modal-overlay")) {
+        closeModal(e.target);
       }
     });
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
-      const open = document.querySelector(".settings-modal:not([hidden])");
+      const open = document.querySelector(".ds-modal-overlay.active");
       if (open) closeModal(open);
     });
   }

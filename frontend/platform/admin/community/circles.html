@@ -32,53 +32,6 @@
       color: #991b1b;
     }
 
-    .circle-delete-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .circle-delete-modal[hidden] {
-      display: none;
-    }
-
-    .circle-delete-modal__backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.46);
-    }
-
-    .circle-delete-modal__panel {
-      position: relative;
-      width: min(480px, 100%);
-      padding: 24px;
-      border-radius: 12px;
-      border: 1px solid var(--card-border-color, #e5e7eb);
-      background: var(--card-bg, #fff);
-      box-shadow: 0 24px 64px rgba(15, 23, 42, 0.24);
-      outline: none;
-    }
-
-    .circle-delete-modal__title {
-      margin: 0 0 10px;
-      font-family: var(--font-heading);
-      color: var(--text-primary);
-    }
-
-    .circle-delete-modal__body {
-      margin: 0 0 20px;
-      color: var(--text-secondary);
-    }
-
-    .circle-delete-modal__actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
   </style>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
@@ -200,15 +153,23 @@
     </main>
   </div>
 
-  <div id="circle-delete-modal" class="circle-delete-modal" hidden role="dialog" aria-modal="true" aria-labelledby="circle-delete-title">
-    <div class="circle-delete-modal__backdrop" data-circle-delete-cancel></div>
-    <div class="circle-delete-modal__panel" tabindex="-1">
-      <h2 id="circle-delete-title" class="circle-delete-modal__title">Disband circle?</h2>
-      <p id="circle-delete-message" class="circle-delete-modal__body"></p>
-      <div id="circle-delete-error" class="admin-alert admin-alert--error" role="alert" hidden style="margin-bottom: 16px;"></div>
-      <div class="circle-delete-modal__actions">
-        <button type="button" class="admin-btn admin-btn--secondary" data-circle-delete-cancel>Cancel</button>
-        <button type="button" class="admin-btn admin-btn--danger" id="circle-delete-confirm">Disband Circle</button>
+  <div id="circle-delete-modal" class="ds-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="circle-delete-title">
+    <div class="ds-modal ds-modal--sm" tabindex="-1">
+      <div class="ds-modal__header">
+        <div>
+          <h3 class="ds-modal__title" id="circle-delete-title">Disband circle?</h3>
+        </div>
+        <button type="button" class="ds-modal__close" data-circle-delete-cancel aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="ds-modal__body">
+        <div class="ds-modal__error" id="circle-delete-error" role="alert"></div>
+        <p id="circle-delete-message" style="margin:0;color:#475467;font-size:14px;line-height:1.6;"></p>
+      </div>
+      <div class="ds-modal__footer ds-modal__footer--bordered">
+        <button type="button" class="ds-btn ds-btn--secondary" data-circle-delete-cancel>Cancel</button>
+        <button type="button" class="ds-btn ds-btn--danger" id="circle-delete-confirm">Disband Circle</button>
       </div>
     </div>
   </div>

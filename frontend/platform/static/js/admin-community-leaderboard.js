@@ -162,7 +162,7 @@
     $("xp-action").value = "admin_grant";
     $("xp-description").value = "Manual XP adjustment by admin";
     setModalStatus("");
-    $("xp-modal-overlay").hidden = false;
+    $("xp-modal-overlay").classList.add("active");
     window.requestAnimationFrame(() => {
       ($("xp-user-id").value ? $("xp-amount") : $("xp-user-id")).focus();
     });
@@ -170,7 +170,7 @@
 
   function closeModal() {
     if (state.submitting) return;
-    $("xp-modal-overlay").hidden = true;
+    $("xp-modal-overlay").classList.remove("active");
     setModalStatus("");
     if (state.lastFocused && typeof state.lastFocused.focus === "function") {
       state.lastFocused.focus();
@@ -244,7 +244,7 @@
   }
 
   function handleModalKeydown(event) {
-    if ($("xp-modal-overlay").hidden) return;
+    if (!$("xp-modal-overlay").classList.contains("active")) return;
     if (event.key === "Escape") {
       event.preventDefault();
       closeModal();

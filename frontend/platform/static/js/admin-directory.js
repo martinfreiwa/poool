@@ -123,34 +123,30 @@
     if (els.inviteModal) {
       els.inviteModal.addEventListener("click", function (event) {
         if (event.target === els.inviteModal) closeInviteModal();
-        const button = event.target.closest("button");
-        if (!button) return;
-        const text = button.textContent.trim();
-        if (text === "Cancel" || text === "×") {
-          event.preventDefault();
-          closeInviteModal();
-        }
-        if (text === "Send Invitation") {
-          event.preventDefault();
-          sendInvite();
-        }
+      });
+      const inviteClose = document.getElementById("admin-invite-modal-close");
+      const inviteCancel = document.getElementById("admin-invite-modal-cancel");
+      const inviteSubmit = document.getElementById("admin-invite-modal-submit");
+      if (inviteClose) inviteClose.addEventListener("click", closeInviteModal);
+      if (inviteCancel) inviteCancel.addEventListener("click", closeInviteModal);
+      if (inviteSubmit) inviteSubmit.addEventListener("click", function (event) {
+        event.preventDefault();
+        sendInvite();
       });
     }
 
     if (els.editModal) {
       els.editModal.addEventListener("click", function (event) {
         if (event.target === els.editModal) closeEditModal();
-        const button = event.target.closest("button");
-        if (!button) return;
-        const text = button.textContent.trim();
-        if (text === "Cancel" || text === "×") {
-          event.preventDefault();
-          closeEditModal();
-        }
-        if (text === "Save Changes") {
-          event.preventDefault();
-          saveAdminEdit();
-        }
+      });
+      const editClose = document.getElementById("admin-edit-modal-close");
+      const editCancel = document.getElementById("admin-edit-modal-cancel");
+      const editSubmit = document.getElementById("admin-edit-modal-submit");
+      if (editClose) editClose.addEventListener("click", closeEditModal);
+      if (editCancel) editCancel.addEventListener("click", closeEditModal);
+      if (editSubmit) editSubmit.addEventListener("click", function (event) {
+        event.preventDefault();
+        saveAdminEdit();
       });
     }
 
@@ -433,11 +429,11 @@
     if (!els.inviteModal) return;
     if (els.inviteEmail) els.inviteEmail.value = "";
     renderInviteModal();
-    els.inviteModal.classList.add("is-open");
+    els.inviteModal.classList.add("active");
   }
 
   function closeInviteModal() {
-    if (els.inviteModal) els.inviteModal.classList.remove("is-open");
+    if (els.inviteModal) els.inviteModal.classList.remove("active");
   }
 
   async function sendInvite() {
@@ -518,18 +514,18 @@
     state.editTarget = admin;
     state.editRoles = Array.isArray(admin.roles) ? admin.roles.slice() : [];
     renderEditModal();
-    if (els.editModal) els.editModal.classList.add("is-open");
+    if (els.editModal) els.editModal.classList.add("active");
   }
 
   function closeEditModal() {
-    if (els.editModal) els.editModal.classList.remove("is-open");
+    if (els.editModal) els.editModal.classList.remove("active");
     state.editTarget = null;
     state.editRoles = [];
   }
 
   function renderEditModal() {
     if (!els.editModal || !state.editTarget) return;
-    const body = els.editModal.querySelector(".admin-modal-body");
+    const body = els.editModal.querySelector(".ds-modal__body");
     if (!body) return;
 
     body.hidden = false;

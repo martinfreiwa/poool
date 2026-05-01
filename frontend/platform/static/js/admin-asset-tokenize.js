@@ -341,41 +341,67 @@
   function confirmTokenize() {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.className = 'tokenize-modal-overlay';
-      overlay.setAttribute('role', 'presentation');
+      overlay.className = 'ds-modal-overlay active';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'tokenize-confirm-title');
 
       const dialog = document.createElement('div');
-      dialog.className = 'tokenize-modal';
-      dialog.setAttribute('role', 'dialog');
-      dialog.setAttribute('aria-modal', 'true');
-      dialog.setAttribute('aria-labelledby', 'tokenize-confirm-title');
+      dialog.className = 'ds-modal ds-modal--sm';
 
-      const title = document.createElement('h2');
-      title.id = 'tokenize-confirm-title';
-      title.textContent = 'Deploy Asset On-Chain';
-      const body = document.createElement('p');
-      body.textContent = 'This will submit a tokenization transaction for the selected asset. Continue only after reviewing every pre-flight check.';
+      // Header
+      const header = document.createElement('div');
+      header.className = 'ds-modal__header';
+      const headerText = document.createElement('div');
+      const titleEl = document.createElement('h3');
+      titleEl.id = 'tokenize-confirm-title';
+      titleEl.className = 'ds-modal__title';
+      titleEl.textContent = 'Deploy Asset On-Chain';
+      headerText.appendChild(titleEl);
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'ds-modal__close';
+      closeBtn.setAttribute('aria-label', 'Close');
+      closeBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      header.append(headerText, closeBtn);
+      dialog.appendChild(header);
 
-      const actions = document.createElement('div');
-      actions.className = 'tokenize-modal-actions';
+      // Body
+      const body = document.createElement('div');
+      body.className = 'ds-modal__body';
+      const bodyText = document.createElement('p');
+      bodyText.style.margin = '0';
+      bodyText.style.color = '#475467';
+      bodyText.style.fontSize = '14px';
+      bodyText.style.lineHeight = '1.6';
+      bodyText.textContent = 'This will submit a tokenization transaction for the selected asset. Continue only after reviewing every pre-flight check.';
+      body.appendChild(bodyText);
+      dialog.appendChild(body);
+
+      // Footer
+      const footer = document.createElement('div');
+      footer.className = 'ds-modal__footer ds-modal__footer--bordered';
       const cancel = document.createElement('button');
       cancel.type = 'button';
-      cancel.className = 'admin-btn admin-btn--secondary';
+      cancel.className = 'ds-btn ds-btn--secondary';
       cancel.textContent = 'Cancel';
       const confirm = document.createElement('button');
       confirm.type = 'button';
-      confirm.className = 'admin-btn admin-btn--primary';
+      confirm.className = 'ds-btn ds-btn--primary';
       confirm.textContent = 'Deploy Asset';
-      actions.append(cancel, confirm);
+      footer.append(cancel, confirm);
+      dialog.appendChild(footer);
 
       const onKeydown = (event) => {
         if (event.key === 'Escape' && document.body.contains(overlay)) close(false);
       };
       const close = (value) => {
         document.removeEventListener('keydown', onKeydown);
-        overlay.remove();
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.remove(), 200);
         resolve(value);
       };
+      closeBtn.addEventListener('click', () => close(false));
       cancel.addEventListener('click', () => close(false));
       confirm.addEventListener('click', () => close(true));
       overlay.addEventListener('click', (event) => {
@@ -383,7 +409,6 @@
       });
       document.addEventListener('keydown', onKeydown);
 
-      dialog.append(title, body, actions);
       overlay.appendChild(dialog);
       document.body.appendChild(overlay);
       confirm.focus();

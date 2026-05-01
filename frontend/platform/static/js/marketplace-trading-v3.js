@@ -48,97 +48,109 @@
     // ── Order Confirmation Modal ──
     function showOrderConfirmModal({ side, assetName, priceDisplay, quantity, orderType, totalValue, feeValue, grandTotal }) {
         return new Promise((resolve) => {
+            // Remove any existing modal
             const existing = document.getElementById('tv3-confirm-overlay');
             if (existing) existing.remove();
 
-            const isBuy     = side === 'buy';
-            const sideLabel = isBuy ? 'Buy' : 'Sell';
-            const fmt       = (v) => '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-            const iconBg        = isBuy ? '#EEF4FF' : '#FEF3F2';
-            const iconStroke    = isBuy ? '#0000FF'  : '#D92D20';
-            const iconPath      = isBuy
-                ? '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>'
-                : '<path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/>';
-            const sideBadge     = isBuy ? 'ds-badge ds-badge--success' : 'ds-badge ds-badge--danger';
-            const confirmBtnCls = isBuy ? 'ds-btn ds-btn--primary ds-btn--lg' : 'ds-btn ds-btn--danger ds-btn--lg';
+            const sideLabel = side === 'buy' ? 'Buy' : 'Sell';
+            const sideColor = side === 'buy' ? '#00c896' : '#ef4444';
+            const sideBg = side === 'buy' ? 'rgba(0,200,150,0.08)' : 'rgba(239,68,68,0.08)';
+            const fmt = (v) => '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
             const overlay = document.createElement('div');
             overlay.id = 'tv3-confirm-overlay';
             overlay.className = 'ds-modal-overlay active';
-            overlay.style.zIndex = '99995';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'tv3-confirm-title');
 
             overlay.innerHTML = `
-                <div class="ds-modal ds-modal--sm" role="dialog" aria-modal="true" aria-labelledby="tv3-modal-title">
-                    <div class="ds-modal__header ds-modal__header--bordered">
+                <div class="ds-modal ds-modal--sm">
+                    <div class="ds-modal__header">
                         <div style="display:flex; align-items:center; gap:12px;">
-                            <div style="width:40px; height:40px; border-radius:10px; background:${iconBg}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${iconStroke}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+                            <div style="
+                                width:40px; height:40px; border-radius:10px; flex-shrink:0;
+                                background:${sideBg}; display:flex; align-items:center; justify-content:center;
+                            ">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${sideColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    ${side === 'buy'
+                                        ? '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>'
+                                        : '<path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/>'
+                                    }
+                                </svg>
                             </div>
                             <div>
-                                <h3 class="ds-modal__title" id="tv3-modal-title">Confirm ${sideLabel} Order</h3>
-                                <p class="ds-modal__subtitle">Review your order details before confirming.</p>
+                                <h3 class="ds-modal__title" id="tv3-confirm-title">Confirm ${sideLabel} Order</h3>
+                                <p style="font-size:13px; color:#667085; margin:2px 0 0;">Please review your order details before confirming.</p>
                             </div>
                         </div>
-                        <button class="ds-modal__close" id="tv3-confirm-close" aria-label="Close dialog">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
+                        <button id="tv3-confirm-close" class="ds-modal__close" aria-label="Close">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                     </div>
 
                     <div class="ds-modal__body">
-                        <div style="background:#F9FAFB; border-radius:8px; border:1px solid #E5E7EB; margin-bottom:16px; overflow:hidden;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:14px;">
+                        <!-- Order Details -->
+                        <div style="
+                            background: #f9fafb; border-radius: 12px; padding: 16px 18px;
+                            border: 1px solid #eaecf0; margin-bottom: 16px;
+                        ">
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px;">
                                 <span style="color:#667085;">Asset</span>
-                                <span style="font-weight:600; color:#101828; max-width:200px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(assetName)}</span>
+                                <span style="font-weight:600; color:#101828; max-width:220px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(assetName)}</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:14px; border-top:1px solid #E5E7EB;">
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
                                 <span style="color:#667085;">Side</span>
-                                <span class="${sideBadge}">${sideLabel}</span>
+                                <span style="font-weight:700; color:${sideColor};">${sideLabel.toUpperCase()}</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:14px; border-top:1px solid #E5E7EB;">
-                                <span style="color:#667085;">Price <span style="color:#98A2B3; font-size:12px; font-weight:400;">(${orderType})</span></span>
-                                <span style="font-weight:600; color:#101828; font-variant-numeric:tabular-nums;">${fmt(priceDisplay)} / share</span>
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
+                                <span style="color:#667085;">Price (${orderType})</span>
+                                <span style="font-weight:600; color:#101828;">${fmt(priceDisplay)} / share</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:14px; border-top:1px solid #E5E7EB;">
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
                                 <span style="color:#667085;">Quantity</span>
                                 <span style="font-weight:600; color:#101828;">${quantity} share${quantity > 1 ? 's' : ''}</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:14px; border-top:1px solid #E5E7EB;">
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
                                 <span style="color:#667085;">Subtotal</span>
-                                <span style="font-weight:600; color:#101828; font-variant-numeric:tabular-nums;">${fmt(totalValue)}</span>
+                                <span style="font-weight:600; color:#101828;">${fmt(totalValue)}</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:14px; border-top:1px solid #E5E7EB;">
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
                                 <span style="color:#667085;">Platform Fee (${window.POOOL_FEE_DISPLAY || '5'}%)</span>
-                                <span style="font-weight:600; color:#667085; font-variant-numeric:tabular-nums;">${isBuy ? '+' : '−'}${fmt(feeValue)}</span>
+                                <span style="font-weight:600; color:#667085;">${side === 'buy' ? '+' : '−'}${fmt(feeValue)}</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-top:2px solid #D0D5DD;">
-                                <span style="font-size:15px; font-weight:700; color:#101828;">Total</span>
-                                <span style="font-size:17px; font-weight:800; color:#101828; font-variant-numeric:tabular-nums;">${fmt(grandTotal)}</span>
+                            <div style="display:flex; justify-content:space-between; padding:10px 0 4px; font-size:16px; border-top:2px solid #d0d5dd; margin-top:4px;">
+                                <span style="font-weight:700; color:#101828;">Total</span>
+                                <span style="font-weight:800; color:${sideColor}; font-size:18px;">${fmt(grandTotal)}</span>
                             </div>
                         </div>
 
-                        <div style="display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:#FFFAEB; border:1px solid #FEC84B; border-radius:8px; font-size:13px; color:#93370D; line-height:1.5;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;">
+                        <!-- Warning -->
+                        <div style="
+                            display:flex; align-items:flex-start; gap:10px; padding:12px 14px;
+                            background:#FFFAEB; border:1px solid #FEC84B; border-radius:10px;
+                            font-size:12px; color:#93370D; line-height:1.5;
+                        ">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="2" style="flex-shrink:0; margin-top:1px;">
                                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                             </svg>
-                            <span><strong>This action cannot be undone.</strong> Your ${isBuy ? 'balance' : 'shares'} will be ${isBuy ? 'debited' : 'transferred'} immediately.</span>
+                            <span>This action cannot be undone. Your ${side === 'buy' ? 'balance' : 'shares'} will be ${side === 'buy' ? 'debited' : 'listed for sale'} immediately.</span>
                         </div>
                     </div>
 
-                    <div class="ds-modal__footer ds-modal__footer--bordered" style="gap:10px;">
-                        <button class="ds-btn ds-btn--lg" id="tv3-confirm-cancel" style="flex:1; background:#fff; border:1px solid #D5D7DA; color:#414651;">Cancel</button>
-                        <button class="${confirmBtnCls}" id="tv3-confirm-ok" style="flex:1;">Confirm ${sideLabel}</button>
+                    <div class="ds-modal__footer ds-modal__footer--bordered">
+                        <button id="tv3-confirm-cancel" class="ds-btn ds-btn--secondary">Cancel</button>
+                        <button id="tv3-confirm-ok" class="ds-btn ds-btn--primary">Confirm ${sideLabel}</button>
                     </div>
                 </div>
             `;
 
             document.body.appendChild(overlay);
 
+            // Focus confirm button
             const confirmBtn = overlay.querySelector('#tv3-confirm-ok');
-            const cancelBtn  = overlay.querySelector('#tv3-confirm-cancel');
-            const closeBtn   = overlay.querySelector('#tv3-confirm-close');
+            const cancelBtn = overlay.querySelector('#tv3-confirm-cancel');
+            const closeBtn = overlay.querySelector('#tv3-confirm-close');
             setTimeout(() => confirmBtn.focus(), 30);
 
             function close(result) {
@@ -149,8 +161,8 @@
             }
 
             confirmBtn.addEventListener('click', () => close(true));
-            cancelBtn.addEventListener('click',  () => close(false));
-            closeBtn.addEventListener('click',   () => close(false));
+            cancelBtn.addEventListener('click', () => close(false));
+            closeBtn.addEventListener('click', () => close(false));
             overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
 
             function onKey(e) {
@@ -658,7 +670,8 @@
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    sessionStorage.setItem('trade_success', JSON.stringify({
+                    // Redirect to success page
+                    const params = new URLSearchParams({
                         side: currentSide,
                         asset: currentAsset?.title || currentAsset?.name || 'Asset',
                         qty: qty,
@@ -666,8 +679,8 @@
                         total: grandTotal.toFixed(2),
                         order_id: result.order_id || result.id || '',
                         slug: asset.slug || ''
-                    }));
-                    window.location.href = '/trade-success';
+                    });
+                    window.location.href = '/trade-success?' + params.toString();
                 } else {
                     showTradeToast(result.error || 'Order failed', 'error');
                     btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
@@ -774,7 +787,7 @@
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    sessionStorage.setItem('trade_success', JSON.stringify({
+                    const params = new URLSearchParams({
                         side: sheetSide,
                         asset: currentAsset?.title || currentAsset?.name || 'Asset',
                         qty: qty,
@@ -782,8 +795,8 @@
                         total: grandTotal.toFixed(2),
                         order_id: result.order_id || result.id || '',
                         slug: asset.slug || ''
-                    }));
-                    window.location.href = '/trade-success';
+                    });
+                    window.location.href = '/trade-success?' + params.toString();
                 } else {
                     showTradeToast(result.error || 'Order failed', 'error');
                     sheetSubmit.textContent = orig; sheetSubmit.disabled = false;

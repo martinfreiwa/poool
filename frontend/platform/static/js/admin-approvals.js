@@ -370,22 +370,32 @@
     return new Promise((resolve) => {
       const previousFocus = document.activeElement;
       const overlay = document.createElement("div");
-      overlay.className = "approval-reject-modal";
+      overlay.className = "ds-modal-overlay active";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-labelledby", "approval-reject-title");
       overlay.innerHTML = `
-        <div class="approval-reject-modal__panel" role="dialog" aria-modal="true" aria-labelledby="approval-reject-title">
-          <h2 id="approval-reject-title">Reject approval request</h2>
-          <label for="approval-reject-reason">Reason</label>
-          <textarea id="approval-reject-reason" rows="4" required></textarea>
-          <p class="approval-reject-modal__error" aria-live="polite"></p>
-          <div class="approval-reject-modal__actions">
-            <button type="button" class="approval-btn approval-btn--reject" data-action="cancel">Cancel</button>
-            <button type="button" class="approval-btn approval-btn--approve" data-action="confirm">Reject request</button>
+        <div class="ds-modal ds-modal--sm">
+          <div class="ds-modal__header">
+            <div><h3 class="ds-modal__title" id="approval-reject-title">Reject approval request</h3></div>
+            <button type="button" class="ds-modal__close" data-action="cancel" aria-label="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ds-modal__body">
+            <div class="ds-modal__error" id="approval-reject-error" aria-live="polite"></div>
+            <label for="approval-reject-reason" style="display:block;font-size:14px;font-weight:500;color:#344054;margin-bottom:6px;">Reason</label>
+            <textarea id="approval-reject-reason" rows="4" required style="width:100%;padding:10px 14px;border:1px solid #D0D5DD;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+          </div>
+          <div class="ds-modal__footer ds-modal__footer--bordered">
+            <button type="button" class="ds-btn ds-btn--secondary" data-action="cancel">Cancel</button>
+            <button type="button" class="ds-btn ds-btn--danger" data-action="confirm">Reject request</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
 
       const textarea = overlay.querySelector("#approval-reject-reason");
-      const error = overlay.querySelector(".approval-reject-modal__error");
+      const error = overlay.querySelector(".ds-modal__error");
       const confirm = overlay.querySelector('[data-action="confirm"]');
       const cancel = overlay.querySelector('[data-action="cancel"]');
 

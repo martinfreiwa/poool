@@ -1573,93 +1573,7 @@
     margin: 16px -16px 0;
 }
 
-/* ----- Modal -------------------------------------------------------------- */
-.settings-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-}
-.settings-modal[hidden] { display: none; }
-.settings-modal__backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(16, 24, 40, 0.5);
-    backdrop-filter: blur(2px);
-}
-.settings-modal__panel {
-    position: relative;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 20px 40px rgba(16, 24, 40, 0.18);
-    width: 100%;
-    max-width: 480px;
-    max-height: calc(100vh - 32px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.settings-modal__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 24px;
-    border-bottom: 1px solid #F2F4F7;
-}
-.settings-modal__header--danger { background: #FEF3F2; }
-.settings-modal--danger .settings-modal__panel { border-top: 3px solid #D92D20; }
-.settings-modal--danger .settings-modal__title { color: #B42318; }
-.settings-modal__title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--page-title-color);
-}
-.settings-modal__close {
-    background: transparent;
-    border: 0;
-    font-size: 24px;
-    line-height: 1;
-    cursor: pointer;
-    color: #667085;
-    padding: 0 4px;
-}
-.settings-modal__body {
-    padding: 20px 24px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.settings-modal__body .settings-label { margin-top: 4px; }
-.settings-modal__hint { font-size: 13px; color: #475467; line-height: 1.5; }
-.settings-modal__warning {
-    background: #FEF3F2;
-    border: 1px solid #FECDCA;
-    color: #B42318;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    line-height: 1.5;
-}
-.settings-modal__error {
-    background: #FEE4E2;
-    color: #B42318;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-}
-.settings-modal__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid #F2F4F7;
-    background: #FCFCFD;
-}
+/* ----- Modal — now handled by ds-modals.css ------------------------------- */
 body.modal-open { overflow: hidden; }
 
 /* ----- Learn grid dots ---------------------------------------------------- */
@@ -1683,7 +1597,6 @@ body.modal-open { overflow: hidden; }
     .settings-identity-header--row { flex-direction: column; align-items: flex-start; gap: 8px; }
     .settings-privacy-row { flex-direction: column; }
     .settings-edit-footer--flush { flex-wrap: wrap; }
-    .settings-modal__panel { max-width: 100%; }
     .settings-logo-upload { flex-direction: column; align-items: flex-start; }
     .settings-dev-description-grid { grid-template-columns: 1fr; }
     .settings-form-row--list > .settings-input,

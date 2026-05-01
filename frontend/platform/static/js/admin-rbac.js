@@ -198,17 +198,15 @@
     if (els.modal) {
       els.modal.addEventListener("click", function (event) {
         if (event.target === els.modal) closeCreateRoleModal();
-        const button = event.target.closest("button");
-        if (!button) return;
-        const text = button.textContent.trim();
-        if (text === "Cancel" || text === "×") {
-          event.preventDefault();
-          closeCreateRoleModal();
-        }
-        if (text === "Create Role") {
-          event.preventDefault();
-          createRole();
-        }
+      });
+      const modalClose = document.getElementById("rbac-create-modal-close");
+      const modalCancel = document.getElementById("rbac-create-modal-cancel");
+      const modalSubmit = document.getElementById("rbac-create-modal-submit");
+      if (modalClose) modalClose.addEventListener("click", closeCreateRoleModal);
+      if (modalCancel) modalCancel.addEventListener("click", closeCreateRoleModal);
+      if (modalSubmit) modalSubmit.addEventListener("click", function (event) {
+        event.preventDefault();
+        createRole();
       });
     }
   }
@@ -444,11 +442,11 @@
     if (els.roleName) els.roleName.value = "";
     if (els.roleDescription) els.roleDescription.value = "";
     if (els.roleClone) els.roleClone.value = "";
-    els.modal.classList.add("is-open");
+    els.modal.classList.add("active");
   }
 
   function closeCreateRoleModal() {
-    if (els.modal) els.modal.classList.remove("is-open");
+    if (els.modal) els.modal.classList.remove("active");
   }
 
   async function createRole() {

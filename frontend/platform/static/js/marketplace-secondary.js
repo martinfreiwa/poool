@@ -327,13 +327,13 @@
         }
         const priceInput = document.getElementById('interest-price');
         if (priceInput) priceInput.value = (asset.price / 100).toFixed(2);
-        modal.style.display = 'flex';
+        modal.classList.add('active');
         modal.dataset.assetSlug = asset.slug;
     }
 
     function closeBuyInterestModal() {
         const modal = document.getElementById('buy-interest-modal');
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     }
 
     function setInterestFeedback(message, type = 'info') {

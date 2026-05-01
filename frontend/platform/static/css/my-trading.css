@@ -458,65 +458,7 @@ body.my-trading-body {
 }
 
 
-/* === Modal === */
-.myt__modal {
-    background: var(--myt-surface);
-    border: 1px solid var(--myt-card-border);
-    border-radius: var(--myt-card-radius);
-    padding: 36px 32px 28px;
-    max-width: 440px;
-    width: 90%;
-    position: relative;
-    box-shadow: 0 24px 48px rgba(0,0,0,0.15);
-    animation: mytModalSlide 0.3s ease-out;
-}
-
-@keyframes mytModalSlide {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.myt__modal-close {
-    position: absolute;
-    top: 16px;
-    right: 20px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--myt-text-sec);
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-}
-
-.myt__modal-close:hover { color: var(--myt-text); }
-
-.myt__modal-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 10px;
-    background: #F9FAFB;
-    border: 1px solid var(--myt-card-border);
-    color: var(--myt-blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-}
-
-.myt__modal-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--myt-text-bright);
-    margin: 0 0 6px;
-}
-
-.myt__modal-sub {
-    font-size: 13px;
-    color: var(--myt-text-sec);
-    margin: 0 0 20px;
-    line-height: 1.5;
-}
+/* === Modal — now handled by ds-modals.css === */
 
 /* Tax preview */
 .myt__tax-preview {
@@ -545,57 +487,6 @@ body.my-trading-body {
     margin-top: 6px;
     padding-top: 10px;
     font-weight: 600;
-}
-
-/* Modal field overrides */
-.myt__modal .mkt-field {
-    margin-bottom: 14px;
-}
-
-.myt__modal .mkt-field label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--myt-text-sec);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    margin-bottom: 6px;
-}
-
-/* Shared button classes */
-.mkt-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: var(--myt-font);
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.mkt-btn--primary {
-    background: var(--btn-primary-bg, #0000FF);
-    color: var(--btn-primary-color, #03FF88);
-}
-
-.mkt-btn--primary:hover { background: var(--btn-primary-hover-bg, #0000CC); }
-.mkt-btn--wide { width: 100%; }
-
-/* overlay */
-.mkt-modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
 }
 
 /* === Responsive === */

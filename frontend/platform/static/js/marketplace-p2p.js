@@ -341,14 +341,21 @@ const MarketP2P = (function () {
     removeExistingModal();
 
     const overlay = document.createElement("div");
-    overlay.className = "p2p-modal-overlay";
+    overlay.className = "ds-modal-overlay active";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "p2p-create-title");
     overlay.innerHTML = `
-      <div class="p2p-modal">
-        <div class="p2p-modal-header">
-          <h3>Send P2P Offer</h3>
-          <button class="p2p-modal-close" title="Close">✕</button>
+      <div class="ds-modal">
+        <div class="ds-modal__header">
+          <div><h3 class="ds-modal__title" id="p2p-create-title">Send P2P Offer</h3></div>
+          <button class="ds-modal__close p2p-modal-close" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
-        <form id="p2p-create-form" class="p2p-modal-body">
+        <form id="p2p-create-form" class="ds-modal__body"
+          style="display:flex;flex-direction:column;gap:0;"
+          onsubmit="return false;">
           <div class="p2p-form-group">
             <label>Recipient User ID</label>
             <input type="text" id="p2p-taker-id" placeholder="Enter user UUID" required />
@@ -383,8 +390,11 @@ const MarketP2P = (function () {
           <div class="p2p-form-summary" id="p2p-form-summary">
             Total: $0.00
           </div>
-          <button type="submit" class="p2p-btn p2p-btn--submit">Send Offer</button>
         </form>
+        <div class="ds-modal__footer ds-modal__footer--bordered">
+          <button type="button" class="ds-btn ds-btn--ghost p2p-modal-cancel">Cancel</button>
+          <button type="submit" form="p2p-create-form" class="ds-btn ds-btn--primary p2p-btn--submit">Send Offer</button>
+        </div>
       </div>
     `;
 
@@ -393,6 +403,9 @@ const MarketP2P = (function () {
     // Close handlers
     overlay
       .querySelector(".p2p-modal-close")
+      .addEventListener("click", () => overlay.remove());
+    overlay
+      .querySelector(".p2p-modal-cancel")
       .addEventListener("click", () => overlay.remove());
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) overlay.remove();
@@ -450,14 +463,21 @@ const MarketP2P = (function () {
     removeExistingModal();
 
     const overlay = document.createElement("div");
-    overlay.className = "p2p-modal-overlay";
+    overlay.className = "ds-modal-overlay active";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "p2p-counter-title");
     overlay.innerHTML = `
-      <div class="p2p-modal p2p-modal--counter">
-        <div class="p2p-modal-header">
-          <h3>Counter Offer</h3>
-          <button class="p2p-modal-close" title="Close">✕</button>
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <div><h3 class="ds-modal__title" id="p2p-counter-title">Counter Offer</h3></div>
+          <button class="ds-modal__close p2p-modal-close" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
-        <form id="p2p-counter-form" class="p2p-modal-body">
+        <form id="p2p-counter-form" class="ds-modal__body"
+          style="display:flex;flex-direction:column;gap:0;"
+          onsubmit="return false;">
           <div class="p2p-form-row">
             <div class="p2p-form-group">
               <label>Counter Price (USD)</label>
@@ -472,8 +492,11 @@ const MarketP2P = (function () {
             <label>Message (optional)</label>
             <textarea id="p2p-counter-msg" rows="2" maxlength="500" placeholder="Add a message…"></textarea>
           </div>
-          <button type="submit" class="p2p-btn p2p-btn--submit">Send Counter Offer</button>
         </form>
+        <div class="ds-modal__footer ds-modal__footer--bordered">
+          <button type="button" class="ds-btn ds-btn--ghost p2p-modal-cancel">Cancel</button>
+          <button type="submit" form="p2p-counter-form" class="ds-btn ds-btn--primary p2p-btn--submit">Send Counter Offer</button>
+        </div>
       </div>
     `;
 
@@ -517,7 +540,7 @@ const MarketP2P = (function () {
   }
 
   function removeExistingModal() {
-    document.querySelector(".p2p-modal-overlay")?.remove();
+    document.querySelector(".ds-modal-overlay")?.remove();
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -762,39 +785,7 @@ const MarketP2P = (function () {
         font-size: 14px;
       }
 
-      /* ── Modal (following Wealth Terminal styles) ── */
-      .p2p-modal-overlay {
-        position: fixed; inset: 0; z-index: 10000; /* Over sidebar */
-        background: rgba(52, 64, 84, 0.6); backdrop-filter: blur(6px);
-        display: flex; align-items: center; justify-content: center;
-        animation: p2p-fade-in 0.2s ease-out;
-      }
-      @keyframes p2p-fade-in { from { opacity: 0; } to { opacity: 1; } }
-      .p2p-modal {
-        background: var(--card-bg, #FFFFFF); 
-        border: 1px solid var(--card-border-color, #E5E7EB);
-        border-radius: 16px; width: 420px; max-width: 95vw;
-        box-shadow: 0px 8px 8px -4px rgba(16, 24, 40, 0.03), 0px 20px 24px -4px rgba(16, 24, 40, 0.08); /* Wealth Terminal modal shadow */
-        animation: p2p-slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      @keyframes p2p-slide-up {
-        from { transform: translateY(-12px) scale(0.97); opacity: 0; }
-        to { transform: translateY(0) scale(1); opacity: 1; }
-      }
-      .p2p-modal-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 20px 24px; border-bottom: 1px solid var(--card-border-color, #E5E7EB);
-      }
-      .p2p-modal-header h3 {
-        font-size: 18px; font-weight: 700; color: var(--page-title-color, #181D27); margin: 0;
-      }
-      .p2p-modal-close {
-        background: none; border: none; color: var(--text-secondary, #535862);
-        font-size: 18px; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;
-        border-radius: 6px; transition: all 0.2s;
-      }
-      .p2p-modal-close:hover { background: var(--btn-ghost-hover-bg, #F2F4F7); color: var(--page-title-color, #181D27); }
-      .p2p-modal-body { padding: 24px; }
+      /* ── Modal — now handled by ds-modals.css ── */
       .p2p-form-group { margin-bottom: 16px; }
       .p2p-form-group label {
         display: block; font-size: 14px; color: var(--label-color, #475467);

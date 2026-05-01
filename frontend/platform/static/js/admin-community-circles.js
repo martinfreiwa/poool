@@ -37,7 +37,7 @@
     els.tbody = document.getElementById("circles-table-body");
     els.empty = document.getElementById("circles-empty");
     els.deleteModal = document.getElementById("circle-delete-modal");
-    els.deletePanel = els.deleteModal?.querySelector(".circle-delete-modal__panel");
+    els.deletePanel = els.deleteModal?.querySelector(".ds-modal");
     els.deleteMessage = document.getElementById("circle-delete-message");
     els.deleteError = document.getElementById("circle-delete-error");
     els.deleteConfirm = document.getElementById("circle-delete-confirm");
@@ -273,16 +273,15 @@
       els.deleteMessage.textContent = `Disband "${circle.name}" and unlink its members? This action cannot be undone.`;
     }
     if (els.deleteError) {
-      els.deleteError.hidden = true;
       els.deleteError.textContent = "";
     }
-    if (els.deleteModal) els.deleteModal.hidden = false;
+    if (els.deleteModal) els.deleteModal.classList.add("active");
     setTimeout(() => els.deletePanel?.focus(), 0);
   }
 
   function closeDeleteModal() {
     state.pendingDelete = null;
-    if (els.deleteModal) els.deleteModal.hidden = true;
+    if (els.deleteModal) els.deleteModal.classList.remove("active");
     if (state.lastFocused && typeof state.lastFocused.focus === "function") {
       state.lastFocused.focus();
     }
@@ -294,7 +293,7 @@
     if (!circle || !els.deleteConfirm) return;
 
     els.deleteConfirm.disabled = true;
-    if (els.deleteError) els.deleteError.hidden = true;
+    if (els.deleteError) els.deleteError.textContent = "";
     setStatus(`Disbanding ${circle.name}...`);
 
     try {
@@ -311,7 +310,6 @@
     } catch (err) {
       if (els.deleteError) {
         els.deleteError.textContent = err.message || "Unable to disband circle.";
-        els.deleteError.hidden = false;
       }
       setStatus("Unable to disband circle.");
     } finally {
@@ -340,7 +338,7 @@
     els.deleteConfirm?.addEventListener("click", confirmDelete);
     els.deleteCancel?.forEach((button) => button.addEventListener("click", closeDeleteModal));
     document.addEventListener("keydown", (event) => {
-      if (!els.deleteModal || els.deleteModal.hidden) return;
+      if (!els.deleteModal || !els.deleteModal.classList.contains("active")) return;
       if (event.key === "Escape") {
         closeDeleteModal();
         return;

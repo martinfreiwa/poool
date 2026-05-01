@@ -119,21 +119,6 @@
       color: var(--admin-danger);
     }
 
-    .admin-modal-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      background: rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(6px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .admin-modal-overlay.is-open {
-      display: flex;
-    }
-
     .admin-directory-toast {
       display: none;
     }
@@ -144,58 +129,6 @@
 
     [hidden] {
       display: none !important;
-    }
-
-    .admin-modal {
-      background: var(--admin-bg-card);
-      border: 1px solid var(--admin-border);
-      border-radius: var(--admin-radius-xl);
-      max-width: 520px;
-      width: 95%;
-      box-shadow: var(--admin-shadow-md);
-      animation: admin-fadeIn 0.2s ease-out;
-    }
-
-    .admin-modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--admin-border);
-    }
-
-    .admin-modal-header h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--admin-text-primary);
-    }
-
-    .admin-modal-close {
-      background: none;
-      border: none;
-      font-size: 20px;
-      color: var(--admin-text-muted);
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: var(--admin-radius-sm);
-    }
-
-    .admin-modal-close:hover {
-      background: var(--admin-hover-overlay);
-      color: var(--admin-text-primary);
-    }
-
-    .admin-modal-body {
-      padding: 24px;
-    }
-
-    .admin-modal-footer {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      padding: 16px 24px;
-      border-top: 1px solid var(--admin-border);
     }
 
     .admin-alert {
@@ -598,23 +531,24 @@
       </div>
 
       <!-- INVITE MODAL -->
-      <div id="admin-directory-invite-modal" class="admin-modal-overlay">
-        <div class="admin-modal" @click.away="showInviteModal = false">
-          <div class="admin-modal-header">
-            <h3>Invite New Admin</h3>
-            <button class="admin-modal-close" @click="showInviteModal = false">
-              &times;
+      <div id="admin-directory-invite-modal" class="ds-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="admin-invite-modal-title">
+        <div class="ds-modal ds-modal--lg">
+          <div class="ds-modal__header">
+            <div>
+              <h3 class="ds-modal__title" id="admin-invite-modal-title">Invite New Admin</h3>
+            </div>
+            <button class="ds-modal__close" id="admin-invite-modal-close" aria-label="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
-          <div class="admin-modal-body">
+          <div class="ds-modal__body">
             <div class="admin-form-group">
               <label class="admin-form-label">Email Address</label>
-              <input id="admin-directory-invite-email" type="email" class="admin-input" placeholder="e.g. recruit@poool.finance"
-                x-model="inviteForm.email" />
+              <input id="admin-directory-invite-email" type="email" class="admin-input" placeholder="e.g. recruit@poool.finance" />
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">Initial Role</label>
-              <select id="admin-directory-invite-role" class="admin-select" x-model="inviteForm.role" style="width: 100%">
+              <select id="admin-directory-invite-role" class="admin-select" style="width: 100%">
                 <template x-for="role in roles" :key="role.name">
                   <option :value="role.name" x-text="role.name"></option>
                 </template>
@@ -627,11 +561,11 @@
               </p>
             </div>
           </div>
-          <div class="admin-modal-footer">
-            <button class="admin-btn admin-btn--secondary" @click="showInviteModal = false">
+          <div class="ds-modal__footer ds-modal__footer--bordered">
+            <button class="ds-btn ds-btn--secondary" id="admin-invite-modal-cancel">
               Cancel
             </button>
-            <button class="admin-btn admin-btn--primary" @click="sendInvite()" :disabled="!inviteForm.email">
+            <button class="ds-btn ds-btn--primary" id="admin-invite-modal-submit">
               Send Invitation
             </button>
           </div>
@@ -639,15 +573,17 @@
       </div>
 
       <!-- EDIT ADMIN MODAL -->
-      <div id="admin-directory-edit-modal" class="admin-modal-overlay">
-        <div class="admin-modal" @click.away="showEditModal = false">
-          <div class="admin-modal-header">
-            <h3>Edit Admin</h3>
-            <button class="admin-modal-close" @click="showEditModal = false">
-              &times;
+      <div id="admin-directory-edit-modal" class="ds-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="admin-edit-modal-title">
+        <div class="ds-modal ds-modal--lg">
+          <div class="ds-modal__header">
+            <div>
+              <h3 class="ds-modal__title" id="admin-edit-modal-title">Edit Admin</h3>
+            </div>
+            <button class="ds-modal__close" id="admin-edit-modal-close" aria-label="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
-          <div class="admin-modal-body" x-show="editTarget">
+          <div class="ds-modal__body" x-show="editTarget">
             <div style="
                   display: flex;
                   align-items: center;
@@ -711,11 +647,11 @@
               </div>
             </div>
           </div>
-          <div class="admin-modal-footer">
-            <button class="admin-btn admin-btn--secondary" @click="showEditModal = false">
+          <div class="ds-modal__footer ds-modal__footer--bordered">
+            <button class="ds-btn ds-btn--secondary" id="admin-edit-modal-cancel">
               Cancel
             </button>
-            <button class="admin-btn admin-btn--primary" @click="saveAdminEdit()">
+            <button class="ds-btn ds-btn--primary" id="admin-edit-modal-submit">
               Save Changes
             </button>
           </div>

@@ -291,8 +291,8 @@
     if (!activeModal) return;
     const { overlay, returnFocus } = activeModal;
     activeModal = null;
-    overlay.classList.add("closing");
-    overlay.addEventListener("animationend", () => overlay.remove(), { once: true });
+    overlay.classList.remove("active");
+    setTimeout(() => overlay.remove(), 200);
     if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
   }
 
@@ -327,32 +327,40 @@
     const returnFocus = document.activeElement;
     const isReject = action === "reject";
     const overlay = el("div", {
-      className: "mp-modal-overlay",
-      attrs: { role: "presentation" },
-    });
-    const modal = el("div", {
-      className: "mp-modal",
+      className: "ds-modal-overlay active",
       attrs: {
         role: "dialog",
         "aria-modal": "true",
         "aria-labelledby": "approval-modal-title",
-        "aria-describedby": "approval-modal-subtitle",
       },
     });
-    modal.appendChild(el("h2", {
+    const modal = el("div", { className: "ds-modal" });
+
+    // Header
+    const header = el("div", { className: "ds-modal__header" });
+    const headerText = el("div", {});
+    headerText.appendChild(el("h3", {
       id: "approval-modal-title",
-      className: "mp-modal-title",
+      className: "ds-modal__title",
       text: isReject ? "Reject marketplace order" : "Approve marketplace order",
     }));
-    modal.appendChild(el("p", {
+    headerText.appendChild(el("p", {
       id: "approval-modal-subtitle",
-      className: "mp-modal-subtitle",
+      className: "ds-modal__subtitle",
       text: isReject
         ? "Rejecting releases the held balance or tokens and records the decision."
         : "Approving opens the order for matching and records the decision.",
     }));
+    const closeBtn = el("button", {
+      className: "ds-modal__close",
+      attrs: { type: "button", "aria-label": "Close" },
+    });
+    closeBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    closeBtn.addEventListener("click", closeModal);
+    header.append(headerText, closeBtn);
+    modal.appendChild(header);
 
-    const body = el("div", { className: "mp-modal-body" });
+    const body = el("div", { className: "ds-modal__body" });
     body.appendChild(el("p", {
       text: `${order.asset_name || shortId(order.asset_id)} • ${String(order.side || "").toUpperCase()} ${(Number(order.quantity) || 0).toLocaleString()} tokens • ${formatMoney(order.total_value_cents)}`,
       style: { marginTop: "0", color: "var(--admin-text-primary)", fontWeight: "600" },
@@ -375,20 +383,20 @@
     });
     if (isReject) reason.required = true;
     const status = el("div", {
+      className: "ds-modal__error",
       attrs: { role: "status", "aria-live": "polite" },
-      style: { minHeight: "20px", marginTop: "8px", color: "var(--admin-danger)", fontSize: "13px" },
     });
     body.append(label, reason, status);
     modal.appendChild(body);
 
-    const actions = el("div", { className: "mp-modal-actions" });
+    const footer = el("div", { className: "ds-modal__footer ds-modal__footer--bordered" });
     const cancel = el("button", {
-      className: "admin-btn admin-btn--secondary",
+      className: "ds-btn ds-btn--secondary",
       text: "Cancel",
       attrs: { type: "button" },
     });
     const confirm = el("button", {
-      className: `admin-btn ${isReject ? "admin-btn--danger" : "admin-btn--success"}`,
+      className: `ds-btn ${isReject ? "ds-btn--danger" : "ds-btn--primary"}`,
       text: isReject ? "Reject Order" : "Approve Order",
       attrs: { type: "button" },
     });
@@ -414,8 +422,8 @@
         status.textContent = error.message;
       }
     });
-    actions.append(cancel, confirm);
-    modal.appendChild(actions);
+    footer.append(cancel, confirm);
+    modal.appendChild(footer);
     overlay.appendChild(modal);
     overlay.addEventListener("click", (event) => {
       if (event.target === overlay) closeModal();

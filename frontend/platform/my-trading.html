@@ -209,56 +209,66 @@
     </div>
 
     <!-- Tax Export Modal -->
-    <div id="tax-export-modal" class="mkt-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="tax-modal-title">
-        <div class="myt__modal">
-            <button class="myt__modal-close" id="tax-modal-close" aria-label="Close">&times;</button>
-            <div class="myt__modal-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <div id="tax-export-modal" class="ds-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tax-modal-title">
+        <div class="ds-modal ds-modal--sm">
+            <div class="ds-modal__header">
+                <div>
+                    <h3 class="ds-modal__title" id="tax-modal-title">Export Tax Report</h3>
+                    <p class="ds-modal__subtitle">Download your trading history with profit/loss calculations for tax filing.</p>
+                </div>
+                <button class="ds-modal__close" id="tax-modal-close" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
-            <h2 id="tax-modal-title" class="myt__modal-title">Export Tax Report</h2>
-            <p class="myt__modal-sub">Download your trading history with profit/loss calculations for tax filing.</p>
-
-            <div class="mkt-field">
-                <label for="tax-year">Tax Year</label>
-                <select id="tax-year" class="myt__select" style="width:100%;">
-                    <option value="2026">2026</option>
-                    <option value="2025">2025</option>
-                </select>
+            <div class="ds-modal__body">
+                <div style="text-align:center;margin-bottom:16px;">
+                    <div style="display:inline-flex;width:56px;height:56px;border-radius:12px;background:#EEF4FF;align-items:center;justify-content:center;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    </div>
+                </div>
+                <div class="mkt-field">
+                    <label for="tax-year">Tax Year</label>
+                    <select id="tax-year" class="myt__select" style="width:100%;">
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div class="mkt-field">
+                    <label for="tax-format">Format</label>
+                    <select id="tax-format" class="myt__select" style="width:100%;">
+                        <option value="csv">CSV (Excel-compatible)</option>
+                        <option value="pdf">PDF Report</option>
+                    </select>
+                </div>
+                <div class="myt__tax-preview">
+                    <div class="myt__tax-row">
+                        <span>Total Trades</span>
+                        <strong>12</strong>
+                    </div>
+                    <div class="myt__tax-row">
+                        <span>Total Buy Volume</span>
+                        <strong>$8,450.00</strong>
+                    </div>
+                    <div class="myt__tax-row">
+                        <span>Total Sell Volume</span>
+                        <strong>$9,695.30</strong>
+                    </div>
+                    <div class="myt__tax-row myt__tax-row--highlight">
+                        <span>Realized Profit/Loss</span>
+                        <strong class="myt__pnl myt__pnl--positive">+$1,245.30</strong>
+                    </div>
+                    <div class="myt__tax-row">
+                        <span>Total Fees Paid</span>
+                        <strong>$342.50</strong>
+                    </div>
+                </div>
             </div>
-            <div class="mkt-field">
-                <label for="tax-format">Format</label>
-                <select id="tax-format" class="myt__select" style="width:100%;">
-                    <option value="csv">CSV (Excel-compatible)</option>
-                    <option value="pdf">PDF Report</option>
-                </select>
+            <div class="ds-modal__footer ds-modal__footer--bordered">
+                <button id="tax-download-btn" class="ds-btn ds-btn--primary ds-btn--full">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Report
+                </button>
             </div>
-            <div class="myt__tax-preview">
-                <div class="myt__tax-row">
-                    <span>Total Trades</span>
-                    <strong>12</strong>
-                </div>
-                <div class="myt__tax-row">
-                    <span>Total Buy Volume</span>
-                    <strong>$8,450.00</strong>
-                </div>
-                <div class="myt__tax-row">
-                    <span>Total Sell Volume</span>
-                    <strong>$9,695.30</strong>
-                </div>
-                <div class="myt__tax-row myt__tax-row--highlight">
-                    <span>Realized Profit/Loss</span>
-                    <strong class="myt__pnl myt__pnl--positive">+$1,245.30</strong>
-                </div>
-                <div class="myt__tax-row">
-                    <span>Total Fees Paid</span>
-                    <strong>$342.50</strong>
-                </div>
-            </div>
-
-            <button id="tax-download-btn" class="mkt-btn mkt-btn--primary mkt-btn--wide ds-btn ds-btn--primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download Report
-            </button>
         </div>
     </div>
 

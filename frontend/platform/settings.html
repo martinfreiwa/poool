@@ -1305,98 +1305,110 @@
 <!-- ───────── MODALS ───────── -->
 
 <!-- Change Password Modal -->
-<div class="settings-modal" id="modal-change-password" role="dialog" aria-modal="true" aria-labelledby="modal-change-password-title" hidden>
-    <div class="settings-modal__backdrop" data-modal-close></div>
-    <form class="settings-modal__panel" id="form-change-password" autocomplete="off" novalidate>
-        <header class="settings-modal__header">
-            <h3 class="settings-modal__title" id="modal-change-password-title">Change password</h3>
-            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
-        </header>
-        <div class="settings-modal__body">
+<div class="ds-modal-overlay" id="modal-change-password" role="dialog" aria-modal="true" aria-labelledby="modal-change-password-title">
+    <form class="ds-modal" id="form-change-password" autocomplete="off" novalidate>
+        <div class="ds-modal__header">
+            <div>
+                <h3 class="ds-modal__title" id="modal-change-password-title">Change password</h3>
+            </div>
+            <button type="button" class="ds-modal__close" aria-label="Close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ds-modal__body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="ds-modal__error" id="modal-password-error" role="alert" aria-live="polite"></div>
             <label for="modal-password-current" class="settings-label">Current password</label>
             <input type="password" id="modal-password-current" name="current_password" class="settings-input settings-input--rounded" required autocomplete="current-password">
             <label for="modal-password-new" class="settings-label">New password</label>
             <input type="password" id="modal-password-new" name="new_password" class="settings-input settings-input--rounded" required minlength="8" autocomplete="new-password" aria-describedby="modal-password-hint">
-            <div id="modal-password-hint" class="settings-modal__hint">At least 8 characters. Use a mix of letters, numbers, and symbols.</div>
+            <div id="modal-password-hint" style="font-size:13px;color:#475467;line-height:1.5;">At least 8 characters. Use a mix of letters, numbers, and symbols.</div>
             <label for="modal-password-confirm" class="settings-label">Confirm new password</label>
             <input type="password" id="modal-password-confirm" name="confirm_password" class="settings-input settings-input--rounded" required minlength="8" autocomplete="new-password">
-            <div class="settings-modal__error" id="modal-password-error" role="alert" aria-live="polite" hidden></div>
         </div>
-        <footer class="settings-modal__footer">
+        <div class="ds-modal__footer ds-modal__footer--bordered">
             <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="ds-btn ds-btn--primary settings-btn--primary">Change password</button>
-        </footer>
+            <button type="submit" class="ds-btn ds-btn--primary">Change password</button>
+        </div>
     </form>
 </div>
 
 <!-- Change Phone Modal -->
-<div class="settings-modal" id="modal-change-phone" role="dialog" aria-modal="true" aria-labelledby="modal-change-phone-title" hidden>
-    <div class="settings-modal__backdrop" data-modal-close></div>
-    <form class="settings-modal__panel" id="form-change-phone" autocomplete="off" novalidate>
-        <header class="settings-modal__header">
-            <h3 class="settings-modal__title" id="modal-change-phone-title">Change phone number</h3>
-            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
-        </header>
-        <div class="settings-modal__body">
-            <div class="settings-modal__hint">Enter your new phone number with country code.</div>
+<div class="ds-modal-overlay" id="modal-change-phone" role="dialog" aria-modal="true" aria-labelledby="modal-change-phone-title">
+    <form class="ds-modal" id="form-change-phone" autocomplete="off" novalidate>
+        <div class="ds-modal__header">
+            <div>
+                <h3 class="ds-modal__title" id="modal-change-phone-title">Change phone number</h3>
+                <p class="ds-modal__subtitle">Enter your new phone number with country code.</p>
+            </div>
+            <button type="button" class="ds-modal__close" aria-label="Close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ds-modal__body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="ds-modal__error" id="modal-phone-error" role="alert" aria-live="polite"></div>
             <label for="modal-phone-new" class="settings-label">New phone number</label>
             <input type="tel" id="modal-phone-new" name="new_phone" class="settings-input settings-input--rounded" required autocomplete="tel" inputmode="tel" placeholder="+1 555 123 4567">
-            <div class="settings-modal__error" id="modal-phone-error" role="alert" aria-live="polite" hidden></div>
         </div>
-        <footer class="settings-modal__footer">
+        <div class="ds-modal__footer ds-modal__footer--bordered">
             <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="ds-btn ds-btn--primary settings-btn--primary">Update phone</button>
-        </footer>
+            <button type="submit" class="ds-btn ds-btn--primary">Update phone</button>
+        </div>
     </form>
 </div>
 
 <!-- Disable 2FA Modal -->
-<div class="settings-modal settings-modal--danger" id="modal-disable-2fa" role="dialog" aria-modal="true" aria-labelledby="modal-disable-2fa-title" hidden>
-    <div class="settings-modal__backdrop" data-modal-close></div>
-    <form class="settings-modal__panel" id="form-disable-2fa" autocomplete="off" novalidate>
-        <header class="settings-modal__header settings-modal__header--danger">
-            <h3 class="settings-modal__title" id="modal-disable-2fa-title">Disable two-factor authentication?</h3>
-            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
-        </header>
-        <div class="settings-modal__body">
-            <div class="settings-modal__warning">
+<div class="ds-modal-overlay" id="modal-disable-2fa" role="dialog" aria-modal="true" aria-labelledby="modal-disable-2fa-title">
+    <form class="ds-modal" id="form-disable-2fa" autocomplete="off" novalidate>
+        <div class="ds-modal__header">
+            <div>
+                <h3 class="ds-modal__title" id="modal-disable-2fa-title">Disable two-factor authentication?</h3>
+            </div>
+            <button type="button" class="ds-modal__close" aria-label="Close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ds-modal__body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="ds-modal__error" id="modal-disable-2fa-error" role="alert" aria-live="polite"></div>
+            <div style="background:#FEF3F2;border:1px solid #FECDCA;color:#B42318;padding:12px;border-radius:8px;font-size:13px;line-height:1.5;">
                 This reduces account protection. Enter your password and a current authenticator code to continue.
             </div>
             <label for="modal-disable-2fa-password" class="settings-label">Current password</label>
             <input type="password" id="modal-disable-2fa-password" name="current_password" class="settings-input settings-input--rounded" required autocomplete="current-password">
             <label for="modal-disable-2fa-code" class="settings-label">Authenticator code</label>
             <input type="text" id="modal-disable-2fa-code" name="code" class="settings-input settings-input--rounded" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6">
-            <div class="settings-modal__error" id="modal-disable-2fa-error" role="alert" aria-live="polite" hidden></div>
         </div>
-        <footer class="settings-modal__footer">
+        <div class="ds-modal__footer ds-modal__footer--bordered">
             <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="ds-btn ds-btn--danger settings-btn--danger">Disable 2FA</button>
-        </footer>
+            <button type="submit" class="ds-btn ds-btn--danger">Disable 2FA</button>
+        </div>
     </form>
 </div>
 
 <!-- Delete Account Modal -->
-<div class="settings-modal settings-modal--danger" id="modal-delete-account" role="dialog" aria-modal="true" aria-labelledby="modal-delete-account-title" hidden>
-    <div class="settings-modal__backdrop" data-modal-close></div>
-    <form class="settings-modal__panel" id="form-delete-account" autocomplete="off" novalidate>
-        <header class="settings-modal__header settings-modal__header--danger">
-            <h3 class="settings-modal__title" id="modal-delete-account-title">Delete your account?</h3>
-            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
-        </header>
-        <div class="settings-modal__body">
-            <div class="settings-modal__warning">
+<div class="ds-modal-overlay" id="modal-delete-account" role="dialog" aria-modal="true" aria-labelledby="modal-delete-account-title">
+    <form class="ds-modal" id="form-delete-account" autocomplete="off" novalidate>
+        <div class="ds-modal__header">
+            <div>
+                <h3 class="ds-modal__title" id="modal-delete-account-title">Delete your account?</h3>
+            </div>
+            <button type="button" class="ds-modal__close" aria-label="Close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ds-modal__body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="ds-modal__error" id="modal-delete-error" role="alert" aria-live="polite"></div>
+            <div style="background:#FEF3F2;border:1px solid #FECDCA;color:#B42318;padding:12px;border-radius:8px;font-size:13px;line-height:1.5;">
                 <strong>This cannot be undone.</strong> All profile data, preferences, and non-regulatory records will be permanently removed. Pending trades and open positions must be settled first.
             </div>
             <label for="modal-delete-password" class="settings-label">Enter your password to confirm</label>
             <input type="password" id="modal-delete-password" name="password" class="settings-input settings-input--rounded" required autocomplete="current-password">
             <label for="modal-delete-confirm" class="settings-label">Type <code>DELETE</code> to confirm</label>
             <input type="text" id="modal-delete-confirm" name="confirm_phrase" class="settings-input settings-input--rounded" required autocomplete="off" pattern="DELETE" aria-describedby="modal-delete-hint">
-            <div id="modal-delete-hint" class="settings-modal__hint">Must match exactly.</div>
-            <div class="settings-modal__error" id="modal-delete-error" role="alert" aria-live="polite" hidden></div>
+            <div id="modal-delete-hint" style="font-size:13px;color:#475467;line-height:1.5;">Must match exactly.</div>
         </div>
-        <footer class="settings-modal__footer">
+        <div class="ds-modal__footer ds-modal__footer--bordered">
             <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="ds-btn ds-btn--danger settings-btn--danger" id="btn-confirm-delete-account">Delete account permanently</button>
-        </footer>
+            <button type="submit" class="ds-btn ds-btn--danger" id="btn-confirm-delete-account">Delete account permanently</button>
+        </div>
     </form>
 </div>
