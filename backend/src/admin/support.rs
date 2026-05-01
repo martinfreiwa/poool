@@ -263,10 +263,7 @@ pub async fn api_admin_support_bulk(
             .execute(&state.db)
             .await;
 
-            Ok(
-                Json(serde_json::json!({"status":"updated", "count": count}))
-                    .into_response(),
-            )
+            Ok(Json(serde_json::json!({"status":"updated", "count": count})).into_response())
         }
         Err(e) => {
             tracing::error!("Failed bulk update for support tickets: {:?}", e);

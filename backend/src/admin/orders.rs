@@ -15,7 +15,9 @@ pub async fn api_admin_order_detail(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     use sqlx::Row;
 
     let order_uuid: uuid::Uuid = order_id
@@ -163,7 +165,9 @@ pub async fn api_admin_orders(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     let rows = sqlx::query_as::<
         _,
         (
@@ -231,7 +235,9 @@ pub async fn api_admin_investments(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     let rows = sqlx::query_as::<_, (
         String, String, // inv_id, user_id
         i32, i64, i64, i64, // tokens_owned, purchase, current, rental

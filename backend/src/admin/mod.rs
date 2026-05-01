@@ -606,18 +606,12 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/system/jobs/:id/retry",
             post(api_admin_system_job_retry),
         )
-        .route(
-            "/api/admin/system/webhooks",
-            get(api_admin_system_webhooks),
-        )
+        .route("/api/admin/system/webhooks", get(api_admin_system_webhooks))
         .route(
             "/api/admin/system/webhooks/:id/replay",
             post(api_admin_system_webhook_replay),
         )
-        .route(
-            "/api/admin/system/sessions",
-            get(api_admin_system_sessions),
-        )
+        .route("/api/admin/system/sessions", get(api_admin_system_sessions))
         .route(
             "/api/admin/system/sessions/bulk-revoke",
             post(api_admin_system_sessions_bulk_revoke),

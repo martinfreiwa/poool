@@ -16,7 +16,9 @@ pub async fn api_admin_get_settings(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
     // 1. Load all platform_settings from DB
     let setting_rows =
         sqlx::query("SELECT key, value, value_type FROM platform_settings ORDER BY key")
@@ -116,7 +118,9 @@ pub async fn api_admin_update_settings(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
     let user_id = admin.user.id;
 
     // Upsert each submitted setting
@@ -331,7 +335,9 @@ pub async fn api_admin_list_roles(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
     let rows = sqlx::query(
         "SELECT id::text, name, description FROM roles WHERE name IN ('admin', 'super_admin', 'compliance', 'support', 'finance') ORDER BY name"
     ).fetch_all(&state.db).await.unwrap_or_default();
@@ -398,7 +404,9 @@ pub async fn api_admin_clear_cache(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
     // Since we don't have a Redis instance in this mock, we just return success
     tracing::info!("Admin cleared system cache.");
     Ok(
@@ -412,7 +420,9 @@ pub async fn api_admin_rotate_logs(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
     // Manual log rotation trigger (stub)
     tracing::info!("Admin triggered log rotation.");
     Ok(Json(

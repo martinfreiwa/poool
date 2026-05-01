@@ -1238,7 +1238,9 @@ pub async fn api_admin_user_set_investment_limit(
     let limit_cents: i64 = match payload.annual_limit_cents {
         None | Some(0) => 0, // 0 = no limit
         Some(v) if v < 0 => {
-            return Err(ApiError::BadRequest("annual_limit_cents must be non-negative".to_string()));
+            return Err(ApiError::BadRequest(
+                "annual_limit_cents must be non-negative".to_string(),
+            ));
         }
         Some(v) => v,
     };
@@ -1263,7 +1265,9 @@ pub async fn api_admin_user_set_investment_limit(
     )
     .bind(admin.user.id)
     .bind(uid)
-    .bind(serde_json::json!({"annual_limit_cents": payload.annual_limit_cents, "year": current_year}))
+    .bind(
+        serde_json::json!({"annual_limit_cents": payload.annual_limit_cents, "year": current_year}),
+    )
     .execute(&state.db)
     .await;
 

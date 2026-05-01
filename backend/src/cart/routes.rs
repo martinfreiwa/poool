@@ -16,10 +16,10 @@ use crate::auth::routes::AppState;
 
 fn html_e(s: &str) -> String {
     s.replace('&', "&amp;")
-     .replace('<', "&lt;")
-     .replace('>', "&gt;")
-     .replace('"', "&quot;")
-     .replace('\'', "&#x27;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
 }
 
 // ─── Form data ──────────────────────────────────────────────────
@@ -394,7 +394,8 @@ pub async fn update_cart_item(
             return (
                 axum::http::StatusCode::UNPROCESSABLE_ENTITY,
                 Json(serde_json::json!({"error": "Asset is sold out"})),
-            ).into_response();
+            )
+                .into_response();
         }
         Some(avail) => std::cmp::min(requested_tokens, avail),
         None => {
@@ -402,7 +403,8 @@ pub async fn update_cart_item(
             return (
                 axum::http::StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"error": "Cart item not found"})),
-            ).into_response();
+            )
+                .into_response();
         }
     };
 

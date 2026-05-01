@@ -109,7 +109,10 @@ fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
 }
 
 fn html_escape_email(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
 
 /// The unified event bus / mail trigger for all transactional systems.
@@ -154,12 +157,10 @@ pub async fn trigger_transactional_email(
         _ => "You Have a New Notification",
     };
 
-    let user_email = match sqlx::query_scalar::<_, String>(
-        "SELECT email FROM users WHERE id = $1",
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await
+    let user_email = match sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await
     {
         Ok(Some(e)) => e,
         _ => return Ok(()),

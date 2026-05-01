@@ -1594,12 +1594,21 @@ pub async fn api_affiliate_upload_tax_document(
 
     // Upload to GCS if configured, otherwise fall back to local filesystem.
     let gcs_path = if let Some(ref b) = bucket {
-        crate::storage::service::upload_private(b, &gcs_path, file_bytes, "application/octet-stream")
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to upload tax document for affiliate {}: {}", user_id, e);
-                crate::error::AppError::Internal("Upload failed".into())
-            })?
+        crate::storage::service::upload_private(
+            b,
+            &gcs_path,
+            file_bytes,
+            "application/octet-stream",
+        )
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to upload tax document for affiliate {}: {}",
+                user_id,
+                e
+            );
+            crate::error::AppError::Internal("Upload failed".into())
+        })?
     } else {
         crate::storage::service::upload_local(&gcs_path, file_bytes)
             .await

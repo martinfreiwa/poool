@@ -172,7 +172,7 @@ pub async fn api_admin_deposit_confirm(
             let admin_id_str = admin.id.to_string();
             tokio::spawn(async move {
                 if let Ok(Some(user_id)) = sqlx::query_scalar::<_, uuid::Uuid>(
-                    "SELECT user_id FROM deposit_requests WHERE id = $1"
+                    "SELECT user_id FROM deposit_requests WHERE id = $1",
                 )
                 .bind(uid)
                 .fetch_optional(&db_clone)

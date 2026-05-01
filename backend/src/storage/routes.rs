@@ -200,12 +200,10 @@ pub async fn upload_developer_logo(
                     Err(e2) => return e2.into_response(),
                 }
             }
-            Err(_) => {
-                match service::upload_local(&object_path, file_bytes).await {
-                    Ok(url) => url,
-                    Err(e2) => return e2.into_response(),
-                }
-            }
+            Err(_) => match service::upload_local(&object_path, file_bytes).await {
+                Ok(url) => url,
+                Err(e2) => return e2.into_response(),
+            },
         }
     } else {
         match service::upload_local(&object_path, file_bytes).await {
@@ -292,30 +290,30 @@ pub async fn upload_post_image(
             std::time::Duration::from_secs(15),
             service::upload_public(b, &object_path, file_bytes.clone(), &mime_type),
         )
-    .await
-    {
-        Ok(Ok(url)) => url,
-        Ok(Err(e)) => {
-            tracing::warn!("Post image upload failed: {}; falling back to local.", e);
-            match service::upload_local(&object_path, file_bytes).await {
-                Ok(url) => url,
-                Err(e) => {
-                    tracing::error!("Local post image save failed: {}", e);
-                    return e.into_response();
+        .await
+        {
+            Ok(Ok(url)) => url,
+            Ok(Err(e)) => {
+                tracing::warn!("Post image upload failed: {}; falling back to local.", e);
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e) => {
+                        tracing::error!("Local post image save failed: {}", e);
+                        return e.into_response();
+                    }
+                }
+            }
+            Err(_) => {
+                tracing::warn!("GCS asset image upload timed out. Falling back to local.");
+                match service::upload_local(&object_path, file_bytes).await {
+                    Ok(url) => url,
+                    Err(e) => {
+                        tracing::error!("Local post image save failed: {}", e);
+                        return e.into_response();
+                    }
                 }
             }
         }
-        Err(_) => {
-            tracing::warn!("GCS asset image upload timed out. Falling back to local.");
-            match service::upload_local(&object_path, file_bytes).await {
-                Ok(url) => url,
-                Err(e) => {
-                    tracing::error!("Local post image save failed: {}", e);
-                    return e.into_response();
-                }
-            }
-        }
-    }
     } else {
         match service::upload_local(&object_path, file_bytes).await {
             Ok(url) => url,

@@ -258,7 +258,10 @@ pub async fn api_support_ticket_reply(
             file_type = field.content_type().map(|s| s.to_string());
 
             if let Some(ref mime) = file_type {
-                if !matches!(mime.as_str(), "image/jpeg" | "image/png" | "application/pdf") {
+                if !matches!(
+                    mime.as_str(),
+                    "image/jpeg" | "image/png" | "application/pdf"
+                ) {
                     return (
                         StatusCode::BAD_REQUEST,
                         Json(serde_json::json!({"error": "Invalid file type. Allowed: JPG, PNG, PDF."})),
@@ -285,7 +288,11 @@ pub async fn api_support_ticket_reply(
         return resp;
     }
 
-    match service::reply_to_ticket(&state, user.id, &ticket_id, &message, file_bytes, file_name, file_type).await {
+    match service::reply_to_ticket(
+        &state, user.id, &ticket_id, &message, file_bytes, file_name, file_type,
+    )
+    .await
+    {
         Ok(_) => Json(serde_json::json!({ "status": "success", "message": "Reply added" }))
             .into_response(),
         Err(e) => (
@@ -371,9 +378,7 @@ pub async fn api_support_ticket_csat(
     .await;
 
     match result {
-        Ok(r) if r.rows_affected() > 0 => {
-            Json(serde_json::json!({"status": "ok"})).into_response()
-        }
+        Ok(r) if r.rows_affected() > 0 => Json(serde_json::json!({"status": "ok"})).into_response(),
         Ok(_) => (
             axum::http::StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "Ticket not found"})),

@@ -15,7 +15,9 @@ pub async fn api_admin_system(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     // DB size
     let db_size_result: Result<(String, i64), sqlx::Error> = sqlx::query_as(
@@ -132,7 +134,9 @@ pub async fn api_admin_system_sessions(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let rows = sqlx::query(
         r#"SELECT s.id::text, s.user_id::text, COALESCE(u.email,'') AS email,
@@ -185,7 +189,9 @@ pub async fn api_admin_system_session_revoke(
     State(state): State<AppState>,
     axum::extract::Path(session_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let result = sqlx::query("DELETE FROM user_sessions WHERE id::text = $1")
         .bind(&session_id)
@@ -225,7 +231,9 @@ pub async fn api_admin_system_sessions_bulk_revoke(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let ip_pattern = body
         .get("ip_pattern")
@@ -271,7 +279,9 @@ pub async fn api_admin_system_jobs(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let rows = sqlx::query(
         r#"SELECT id::text, job_name as name, status, attempts,
@@ -309,7 +319,9 @@ pub async fn api_admin_system_job_cancel(
     State(state): State<AppState>,
     axum::extract::Path(job_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let result = sqlx::query("UPDATE background_jobs SET status = 'cancelled' WHERE id::text = $1")
         .bind(&job_id)
@@ -339,7 +351,9 @@ pub async fn api_admin_system_job_retry(
     State(state): State<AppState>,
     axum::extract::Path(job_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let result = sqlx::query("UPDATE background_jobs SET status = 'pending', attempts = 0, run_at = NOW() WHERE id::text = $1")
         .bind(&job_id)
@@ -368,7 +382,9 @@ pub async fn api_admin_system_webhooks(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let rows = sqlx::query(
         r#"SELECT id::text, provider, endpoint, http_status,
@@ -406,7 +422,9 @@ pub async fn api_admin_system_webhook_replay(
     State(state): State<AppState>,
     axum::extract::Path(webhook_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     let result = sqlx::query("UPDATE webhook_logs SET processed = false WHERE id::text = $1")
         .bind(&webhook_id)
@@ -435,7 +453,9 @@ pub async fn api_admin_system_password_resets(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "platform.manage").await?;
+    admin
+        .require_permission(&state.db, "platform.manage")
+        .await?;
 
     // Fetch password reset audit entries from audit_logs
     let rows = sqlx::query(

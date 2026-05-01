@@ -103,8 +103,7 @@ pub async fn handle_add_bank(
         Ok(_) => Html("".to_string()).into_response(),
         Err(e) => {
             tracing::error!("Error saving bank for user {}: {}", user_id, e);
-            Html("Unable to save bank account. Please try again.".to_string())
-                .into_response()
+            Html("Unable to save bank account. Please try again.".to_string()).into_response()
         }
     }
 }

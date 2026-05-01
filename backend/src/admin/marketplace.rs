@@ -1931,7 +1931,9 @@ pub async fn api_admin_marketplace_fees(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<FeeManagementResponse>, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     let db = &state.db;
 
     let configs: Vec<FeeConfig> = sqlx::query_as(
@@ -1972,7 +1974,9 @@ pub async fn api_admin_marketplace_create_fee(
     State(state): State<AppState>,
     Json(body): Json<CreateFeeConfigRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     let db = &state.db;
 
     if !["platform", "asset", "developer"].contains(&body.scope.as_str()) {
@@ -2030,7 +2034,9 @@ pub async fn api_admin_marketplace_deactivate_fee(
     State(state): State<AppState>,
     Path(fee_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
 
     let updated = sqlx::query(
         "UPDATE fee_configurations SET is_active = false, updated_at = NOW() WHERE id = $1 AND is_active = true",
@@ -2041,7 +2047,9 @@ pub async fn api_admin_marketplace_deactivate_fee(
     .map_err(ApiError::Database)?;
 
     if updated.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Fee configuration not found or already inactive".into()));
+        return Err(ApiError::NotFound(
+            "Fee configuration not found or already inactive".into(),
+        ));
     }
 
     let _ = sqlx::query(
@@ -2063,7 +2071,9 @@ pub async fn api_admin_marketplace_deactivate_promo(
     State(state): State<AppState>,
     Path(promo_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
 
     let updated = sqlx::query(
         "UPDATE fee_promotions SET is_active = false WHERE id = $1 AND is_active = true",
@@ -2074,7 +2084,9 @@ pub async fn api_admin_marketplace_deactivate_promo(
     .map_err(ApiError::Database)?;
 
     if updated.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Promotion not found or already inactive".into()));
+        return Err(ApiError::NotFound(
+            "Promotion not found or already inactive".into(),
+        ));
     }
 
     let _ = sqlx::query(

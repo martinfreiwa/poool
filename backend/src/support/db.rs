@@ -109,10 +109,7 @@ pub async fn check_ticket_ownership(
 }
 
 /// Fetches the ticket subject and owner user_id for notification purposes.
-pub async fn get_ticket_owner(
-    pool: &PgPool,
-    ticket_id: &str,
-) -> Option<(Uuid, String, String)> {
+pub async fn get_ticket_owner(pool: &PgPool, ticket_id: &str) -> Option<(Uuid, String, String)> {
     sqlx::query(
         r#"SELECT st.user_id, st.subject, st.priority,
                   COALESCE(u.email, '') as user_email

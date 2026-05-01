@@ -214,4 +214,10 @@ pub const ELEVATED_ROLES: &[&str] = &["admin", "super_admin"];
 /// (`ELEVATED_ROLES`) are excluded — they require a separate super_admin gate.
 /// `developer` is included so super_admin can manually assign it via the API;
 /// it is also auto-assigned by `api_developer_create_draft` on first submission.
-pub const ASSIGNABLE_ROLES: &[&str] = &["compliance", "support", "finance", "kyc_reviewer", "developer"];
+pub const ASSIGNABLE_ROLES: &[&str] = &[
+    "compliance",
+    "support",
+    "finance",
+    "kyc_reviewer",
+    "developer",
+];

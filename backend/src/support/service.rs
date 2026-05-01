@@ -274,12 +274,20 @@ pub async fn reply_to_ticket(
                 .as_deref()
                 .unwrap_or("attachment")
                 .chars()
-                .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_') { c } else { '_' })
+                .map(|c| {
+                    if c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_') {
+                        c
+                    } else {
+                        '_'
+                    }
+                })
                 .collect::<String>();
             let object_path = format!("support/replies/{}_{}.{}", Uuid::new_v4(), fname, ext);
             match crate::storage::service::upload_private(bucket, &object_path, bytes, mime).await {
                 Ok(file_url) => {
-                    if let Err(e) = db::add_reply_attachment(&state.db, reply_id, &file_url, mime).await {
+                    if let Err(e) =
+                        db::add_reply_attachment(&state.db, reply_id, &file_url, mime).await
+                    {
                         tracing::warn!("Failed to save reply attachment record: {}", e);
                     }
                 }

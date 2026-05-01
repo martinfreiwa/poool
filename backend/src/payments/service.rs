@@ -448,9 +448,7 @@ pub async fn execute_checkout(
 
     if let Some(limit) = limit_info {
         // Only enforce if annual_limit_cents > 0 (0 means no limit, admin-controlled)
-        if limit.annual_limit_cents > 0
-            && limit.available_cents.unwrap_or(0) < subtotal_cents
-        {
+        if limit.annual_limit_cents > 0 && limit.available_cents.unwrap_or(0) < subtotal_cents {
             let available_usd =
                 crate::common::currency::format_usd(limit.available_cents.unwrap_or(0));
             return Err(format!(

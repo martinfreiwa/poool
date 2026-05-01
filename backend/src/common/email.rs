@@ -240,7 +240,10 @@ pub async fn send_transactional_outbox_item(pool: &PgPool, outbox_id: Uuid) {
     .await
     {
         Ok(Some(row)) => row,
-        Ok(None) => { let _ = tx.rollback().await; return; }
+        Ok(None) => {
+            let _ = tx.rollback().await;
+            return;
+        }
         Err(err) => {
             let _ = tx.rollback().await;
             tracing::error!("Transactional email outbox claim failed: {}", err);
@@ -267,7 +270,8 @@ pub async fn send_transactional_outbox_item(pool: &PgPool, outbox_id: Uuid) {
             let delay = retry_delay_seconds(attempts);
             tracing::error!(
                 "Transactional email outbox delivery failed; retry in {}s: {}",
-                delay, err.detail()
+                delay,
+                err.detail()
             );
             let _ = sqlx::query(
                 r#"UPDATE transactional_email_outbox
