@@ -865,7 +865,7 @@ body.lightbox-open {
 #property-overview-section {
   margin-top: 0;
   padding: 40px 28px 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1051,7 +1051,7 @@ body.lightbox-open {
 }
 
 .info-badge:first-child {
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 .info-badge-icon {
@@ -1891,7 +1891,7 @@ body.lightbox-open {
 #how-it-works-section {
   margin-top: 0;
   padding: 32px 28px 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
   width: 100%;
   box-sizing: border-box;
 }
@@ -2403,7 +2403,7 @@ body.youtube-modal-active {
   position: relative;
   margin-top: 0;
   padding: 40px 28px 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
   width: 100%;
   box-sizing: border-box;
 }
@@ -2692,7 +2692,7 @@ body.youtube-modal-active {
   min-height: 369px;
   margin-top: 0;
   margin-bottom: 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 #funding-heading {
@@ -2729,7 +2729,7 @@ body.youtube-modal-active {
   padding: 40px 28px 0;
   box-sizing: border-box;
   margin-top: 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* Calculator Header */
@@ -3875,7 +3875,7 @@ body.youtube-modal-active {
   box-sizing: border-box;
   margin-top: 0;
   margin-bottom: 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* Financial header */
@@ -4212,7 +4212,7 @@ body.youtube-modal-active {
   width: 100%;
   box-sizing: border-box;
   margin-top: 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* Location header with icon */
@@ -4316,7 +4316,7 @@ body.youtube-modal-active {
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* Developer Header */
@@ -4550,7 +4550,7 @@ body.youtube-modal-active {
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* Documents Header */
@@ -4801,7 +4801,7 @@ body.youtube-modal-active {
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* Risk Strategy Card - Warning Color Variant */
@@ -5017,7 +5017,7 @@ body.youtube-modal-active {
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* FAQ Heading */
@@ -5095,7 +5095,7 @@ body.youtube-modal-active {
   padding: 24px 0px 0px;
   width: 100%;
   min-width: 320px;
-  border-top: 1px solid var(--table-border-color);
+  border-top: none;
   flex: none;
   align-self: stretch;
   flex-grow: 0;
@@ -6538,7 +6538,7 @@ body.youtube-modal-active {
   width: 100%;
   box-sizing: border-box;
   margin-top: 0;
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: none;
 }
 
 /* Section Header */
