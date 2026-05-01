@@ -2332,7 +2332,7 @@ mod tests {
         .expect("postback URL should build");
 
         let rendered = url.as_str();
-        assert!(rendered.contains("click=email%20%3Cblast%3E%261"));
+        assert!(rendered.contains("click=email+%3Cblast%3E%261"));
         assert!(rendered.contains("amount=123.45"));
         assert!(rendered.contains("event=qualified+referral"));
         assert!(rendered.contains("currency=USD"));
