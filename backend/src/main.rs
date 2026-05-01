@@ -199,17 +199,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
 
-    let auth_rate_limiter = if let Some(ref rp) = redis_pool {
-        tracing::info!("Rate limiter: using Redis backend (shared across instances)");
-        auth::rate_limit::RateLimiter::new_redis(
-            rp.clone(),
-            5,
-            std::time::Duration::from_secs(15 * 60),
-        )
-    } else {
-        tracing::info!("Rate limiter: using in-memory backend (single instance only)");
-        auth::rate_limit::RateLimiter::new(5, std::time::Duration::from_secs(15 * 60))
-    };
+    let auth_rate_limiter = auth::rate_limit::RateLimiter::disabled();
+    tracing::info!("Rate limiter: disabled");
 
     let state = AppState {
         db: pool.clone(),

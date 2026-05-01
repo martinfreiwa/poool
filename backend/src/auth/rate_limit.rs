@@ -197,6 +197,18 @@ impl RateLimitBackend for RedisBackend {
     }
 }
 
+// ─── No-op Backend ──────────────────────────────────────────────
+
+struct NoopBackend;
+
+#[async_trait::async_trait]
+impl RateLimitBackend for NoopBackend {
+    async fn check(&self, _key: &str) -> Result<usize, u64> {
+        Ok(usize::MAX)
+    }
+    async fn cleanup(&self) {}
+}
+
 // ─── Unified RateLimiter Wrapper ────────────────────────────────
 
 /// Unified rate limiter that wraps either in-memory or Redis backend.
@@ -217,6 +229,13 @@ impl RateLimiter {
     pub fn new_redis(pool: deadpool_redis::Pool, max_requests: usize, window: Duration) -> Self {
         Self {
             backend: Arc::new(RedisBackend::new(pool, max_requests, window)),
+        }
+    }
+
+    /// Create a no-op rate limiter that always allows requests.
+    pub fn disabled() -> Self {
+        Self {
+            backend: Arc::new(NoopBackend),
         }
     }
 
