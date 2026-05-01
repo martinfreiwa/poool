@@ -335,24 +335,19 @@
   </style>
   <section class="hero-section" id="hero" style="min-height: calc(100vh - 80px); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
     <div class="hero-grain" style="position: absolute; inset: 0; pointer-events: none; z-index: 1;"></div>
-
-    <!-- Background video — slowly zooms, stays behind text. Hidden <1100px to avoid bleed behind headline. -->
-    <div class="hero-video-wrap" style="position: absolute; top: 0; right: 0; width: 60%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 0; pointer-events: none;">
-      <video autoplay loop muted playsinline class="hero-video-bg" aria-hidden="true" style="width: 100%; max-width: 900px; opacity: 1; animation: heroVideoZoom 20s ease-out forwards;">
-        <source src="/static/webm/webm_villa_no-bg.webm" type="video/webm">
-      </video>
-    </div>
     <style>
-      @media (max-width: 1100px) { .hero-video-wrap { display: none !important; } }
       @media (prefers-reduced-motion: reduce) {
         .hero-video-bg { animation: none !important; }
         .myCtaSwiper, .myCtaSwiper .swiper-slide { transition: none !important; }
         .anim-in, .anim-delay-2 { animation: none !important; opacity: 1 !important; transform: none !important; }
       }
+      .hero-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+      .hero-video-wrap { display: flex; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; }
+      @media (max-width: 1100px) { .hero-two-col { grid-template-columns: 1fr; } .hero-video-wrap { display: none !important; } }
     </style>
 
     <div class="container" style="position: relative; z-index: 2; width: 100%;">
-      
+      <div class="hero-two-col">
       <div class="hero-content-v2 anim-in" style="max-width: 620px; text-align: left;">
         <!-- Brand tagline eyebrow -->
         <div style="display: inline-flex; align-items: center; gap: 10px; margin-bottom: 20px; padding: 6px 14px 6px 10px; background: rgba(0,0,255,0.06); border: 1px solid rgba(0,0,255,0.12); border-radius: 100px;">
@@ -378,7 +373,15 @@
           <span style="color: #667085; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Takes 2 minutes · No obligation</span>
         </div>
       </div>
-      
+
+      <!-- Right column: villa video (hidden on Safari/no-webm via JS) -->
+      <div class="hero-video-wrap">
+        <video autoplay loop muted playsinline class="hero-video-bg" aria-hidden="true" style="width: 100%; max-width: 700px; animation: heroVideoZoom 20s ease-out forwards;" oncanplay="this.closest('.hero-video-wrap').style.visibility='visible'" onerror="this.closest('.hero-video-wrap').style.display='none'">
+          <source src="/static/webm/webm_villa_no-bg.webm" type="video/webm">
+        </video>
+      </div>
+      </div><!-- end hero-two-col -->
+
     </div>
   </section>
 
