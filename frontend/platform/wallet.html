@@ -619,7 +619,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
             <input type="text" inputmode="decimal" name="amount" required class="ds-input"
-              placeholder="e.g. 1,000" autocomplete="off" />
+              placeholder="e.g. 1,000" autocomplete="off" oninput="formatAmountInput(this)" />
           </div>
           <p class="ds-form-hint">You will receive bank wire instructions after confirming.</p>
           <p class="ds-form-required-legend">* Required field</p>
@@ -655,7 +655,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
             <input type="text" inputmode="decimal" id="withdraw-amount-input" name="amount" required class="ds-input"
-              placeholder="e.g. 500" autocomplete="off" />
+              placeholder="e.g. 500" autocomplete="off" oninput="formatAmountInput(this)" />
             <p class="ds-form-hint" id="withdraw-balance-hint">Available: <strong>{{ cash_balance }}</strong></p>
           </div>
           <p class="ds-form-required-legend">* Required field</p>
@@ -1220,6 +1220,15 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       if (!sel || !btn) return;
       var hasMethod = sel.value && sel.value !== "";
       btn.disabled = !hasMethod;
+    }
+
+    function formatAmountInput(input) {
+      var raw = input.value.replace(/[^0-9.]/g, "");
+      var parts = raw.split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      if (parts.length > 2) parts = [parts[0], parts[1]];
+      if (parts[1] !== undefined) parts[1] = parts[1].slice(0, 2);
+      input.value = parts.join(parts.length > 1 ? "." : "");
     }
 
     function onDepositSubmit(form) {

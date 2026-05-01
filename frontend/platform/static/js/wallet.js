@@ -368,6 +368,7 @@
                 withdraw_failed: "Withdrawal failed. Please try again or contact support.",
                 amount_too_large: "Amount is invalid. Please check the value and try again.",
                 no_payment_method: "No payment method on file. Add a bank account or card first.",
+                kyc_required: "Identity verification required before withdrawing. Please complete KYC in Settings.",
             };
             const msg = errMap[params.get("error")] || "An error occurred. Please try again.";
             showToast("Error", msg, "error");

@@ -396,6 +396,13 @@ pub async fn handle_withdraw(
     let amount_cents = parse_dollars_to_cents(&form.amount);
 
     if amount_cents > 0 {
+        // KYC gate — only approved users may withdraw
+        let kyc = crate::kyc::service::get_kyc_status(&state.db, user.id).await;
+        let kyc_ok = matches!(&kyc, Ok(r) if matches!(r.status.as_str(), "approved" | "verified" | "completed"));
+        if !kyc_ok {
+            return Redirect::to("/wallet?error=kyc_required").into_response();
+        }
+
         // Use a transaction with FOR UPDATE lock to prevent TOCTOU double-spend race
         let mut tx = match state.db.begin().await {
             Ok(t) => t,
