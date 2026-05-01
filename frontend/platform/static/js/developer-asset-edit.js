@@ -65,6 +65,15 @@
 
       // Check for pending changes
       loadPendingChanges();
+
+      // Auto-enter edit mode if navigated with ?edit=1
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("edit") === "1") {
+        enterEditMode();
+        const url = new URL(window.location.href);
+        url.searchParams.delete("edit");
+        history.replaceState(null, "", url.toString());
+      }
     }
   }
 

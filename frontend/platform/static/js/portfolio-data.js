@@ -256,14 +256,6 @@
           ${buildStatusBadgeHtml(statusCss, statusLabel)}
         </div>
         <div class="portfolio-assets-cell actions-col" onclick="event.stopPropagation();">
-          ${(inv.isWithin48h && inv.originalStatus === 'funding_in_progress') ? `
-          <button class="ds-btn ds-btn--ghost ds-btn--sm"
-            style="color: #D92D20; border: 1px solid #FDA29B; background: #FEF3F2; margin-right: 8px;"
-            onclick="window.cancelInvestment('${inv.id}')"
-            id="cancel-btn-${inv.id}">
-            Refund
-          </button>
-          ` : ''}
           <button class="ds-btn ds-btn--ghost ds-btn--sm"
             style="border: 1px solid #E9EAEB; border-radius: 8px; font-weight: 600; color: #475467; background:#FFFFFF;"
             onclick="window.location.href='/property/${slug}'">
@@ -318,14 +310,6 @@
                 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; display:inline-block;">
                 ${title}
               </span>
-              ${(inv.isWithin48h && inv.originalStatus === 'funding_in_progress') ? `
-              <button class="portfolio-assets-action-btn"
-                style="color: #D92D20; border: 1px solid #FDA29B; background: #FEF3F2; padding: 4px 8px; font-size: 11px; margin-top:4px;"
-                onclick="event.stopPropagation(); window.cancelInvestment('${inv.id}')"
-                id="cancel-btn-mobile-${inv.id}">
-                Cancel & Refund
-              </button>
-              ` : ''}
             </div>
 
           </div>

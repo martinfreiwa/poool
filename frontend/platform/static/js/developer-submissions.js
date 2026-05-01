@@ -239,7 +239,7 @@ function renderTable(items) {
   if (items.length === 0) {
     tbody.innerHTML = `
       <tr class="sub-empty-row">
-        <td colspan="8">
+        <td colspan="7">
           <div class="sub-empty-cell">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
@@ -257,12 +257,12 @@ function renderTable(items) {
     const jsId = escapeAttr(JSON.stringify(itemId));
     const safeTitle = escapeHtml(item.title || "Untitled asset");
     const jsTitle = escapeAttr(JSON.stringify(item.title || "Untitled asset"));
-    const step = item.submission_step || 1;
-    const stepLabel = STEP_LABELS[step] || `Step ${step}`;
-    const safeStepLabel = escapeHtml(stepLabel);
-    const progressPct = Math.min((step / 5) * 100, 100);
     const rawStatus = item.project_status || "draft";
     const status = STATUS_LABELS[rawStatus] ? rawStatus : "draft";
+    const step = normalizeSubmissionStep(item.submission_step || 1, status);
+    const stepLabel = getProgressLabel(step, status);
+    const safeStepLabel = escapeHtml(stepLabel);
+    const progressPct = Math.min((step / 5) * 100, 100);
     const statusLabel = STATUS_LABELS[status] || status;
     const safeStatusLabel = escapeHtml(statusLabel);
     const typeLabel = (item.asset_type || "real_estate")
@@ -298,8 +298,9 @@ function renderTable(items) {
     const jsAssetDetailUrl = escapeAttr(JSON.stringify(safeAssetDetailUrl));
 
     const coverHtml = item.cover_image_url
-      ? `<img class="submission-cover-thumb" src="${escapeAttr(safeImageUrl(item.cover_image_url))}" alt="" />`
-      : `<div class="submission-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4A7AE" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
+      ? `<img class="submission-cover-thumb sub-cover-fallback" src="${escapeAttr(safeImageUrl(item.cover_image_url))}" alt="" />
+         <div class="submission-cover-placeholder" style="display:none"><img src="/static/images/logos/logo-blue.svg" style="width:32px;opacity:0.35;" alt="POOOL" /></div>`
+      : `<div class="submission-cover-placeholder"><img src="/static/images/logos/logo-blue.svg" style="width:32px;opacity:0.35;" alt="POOOL" /></div>`;
 
     const canDelete = isDraftDeletable(status);
     const isSelected = canDelete && selectedIds.has(item.id);
@@ -376,7 +377,17 @@ function renderTable(items) {
                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                    Resubmit
                  </button>`
-                      : `<button class="sub-icon-btn" title="View details" onclick="window.location.href=${jsAssetDetailUrl}">
+                      : status === "approved"
+                      ? `<button class="sub-icon-btn sub-view-btn" title="View details" onclick="window.location.href=${jsAssetDetailUrl}">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                 </button>
+                         <button class="sub-icon-btn" title="Edit asset" onclick="window.location.href='/developer/asset-detail?id=${encodeURIComponent(itemId)}&edit=1'">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                 </button>
+                         <button class="sub-icon-btn" title="Duplicate" onclick="duplicateDraft(${jsId})">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                 </button>`
+                      : `<button class="sub-icon-btn sub-view-btn" title="View details" onclick="window.location.href=${jsAssetDetailUrl}">
                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                  </button>
                          <button class="sub-icon-btn" title="Duplicate" onclick="duplicateDraft(${jsId})">
@@ -388,13 +399,29 @@ function renderTable(items) {
     `;
     tbody.appendChild(tr);
 
+    // Wire up fallback for cover thumbnails: GCS proxy may return 1×1 pixel
+    const fallbackImg = tr.querySelector(".sub-cover-fallback");
+    if (fallbackImg) {
+      const placeholder = fallbackImg.nextElementSibling;
+      const showPlaceholder = () => {
+        fallbackImg.style.display = "none";
+        if (placeholder) placeholder.style.display = "";
+      };
+      fallbackImg.onerror = showPlaceholder;
+      fallbackImg.onload = () => { if (fallbackImg.naturalWidth <= 1) showPlaceholder(); };
+      if (fallbackImg.complete) {
+        if (fallbackImg.naturalWidth <= 1) showPlaceholder();
+      }
+    }
+
     // If revision_requested, add a notes banner row below
     if (status === "revision_requested" && item.revision_notes) {
       const notesTr = document.createElement("tr");
       notesTr.className = "revision-notes-row";
       notesTr.dataset.status = status;
       notesTr.innerHTML = `
-        <td colspan="8">
+        <td class="revision-notes-spacer" aria-hidden="true"></td>
+        <td colspan="6">
           <div class="revision-notes-banner">
             <svg class="revision-notes-banner__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -409,6 +436,19 @@ function renderTable(items) {
       tbody.appendChild(notesTr);
     }
   });
+}
+
+function normalizeSubmissionStep(step, status) {
+  if (status === "approved" || status === "live") return 5;
+  return Math.min(Math.max(Number(step) || 1, 1), 5);
+}
+
+function getProgressLabel(step, status) {
+  if (status === "approved") return "Approved";
+  if (status === "live") return "Live";
+  if (status === "rejected") return "Decision";
+  if (status === "revision_requested") return "Revision";
+  return STEP_LABELS[step] || `Step ${step}`;
 }
 
 // ─── Relative Time ────────────────────────────────────────

@@ -1055,16 +1055,14 @@ body.lightbox-open {
 }
 
 .info-badge-icon {
-  width: 40px;
-  height: 40px;
+  width: 24px;
+  height: 24px;
   flex: none;
   order: 0;
   flex-grow: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F7FF;
-  border-radius: 10px;
 }
 
 .flag-icon {
@@ -1698,6 +1696,11 @@ body.lightbox-open {
   flex-grow: 0;
 }
 
+.investment-input:focus-within {
+  border-color: var(--input-border-focus, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
 /* Dropdown */
 .input-dropdown {
   display: flex;
@@ -1762,22 +1765,9 @@ body.lightbox-open {
 
 /* Add to cart button */
 .add-to-cart-btn {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 10px 18px;
-  gap: 4px;
-  width: auto;
   min-width: 108px;
-  white-space: nowrap;
   height: 44px;
-  background: var(--primary-color);
-  box-shadow: none;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+  padding: 10px 18px;
   flex: none;
   order: 1;
   flex-grow: 0;
@@ -1799,16 +1789,6 @@ body.lightbox-open {
 }
 
 .btn-text {
-  height: 20px;
-  font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--btn-primary-color, #98FB96);
-  flex: none;
-  order: 0;
-  flex-grow: 0;
   white-space: nowrap;
 }
 
@@ -1841,28 +1821,20 @@ body.lightbox-open {
 }
 
 .amount-badge {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 12px 4px 10px;
-  gap: 4px;
-  width: 117.33px;
-  height: 28px;
-  background: #eafee9;
-  border: 1px solid #6ef96c;
-  border-radius: 16px;
-  font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
-  font-weight: 600;
+  background: #ffffff;
+  color: var(--body-color, #414651);
+  border: 1px solid var(--input-border-color, #D5D7DA);
+  border-radius: 8px;
+  height: 32px;
+  padding: 6px 12px;
   font-size: 13px;
-  line-height: 20px;
-  text-align: center;
-  color: var(--brand-dark-blue);
-  cursor: pointer;
-  flex: none;
+  font-weight: 600;
   flex-grow: 1;
+}
+
+.amount-badge:hover {
+  background: #ffffff;
+  color: var(--body-color, #414651);
 }
 
 .amount-badge:disabled {

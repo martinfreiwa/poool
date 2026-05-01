@@ -90,59 +90,67 @@ function renderAll(a) {
   document.getElementById("asset-location").textContent =
     [a.city, formatCountry(a.country)].filter(Boolean).join(", ") || "Location not specified";
 
-  // Status badges
+  // Status badge (LIVE/DRAFT only — no funding stage badge)
   const statusBadge = document.getElementById("asset-status-badge");
   statusBadge.textContent = a.published ? "LIVE" : "DRAFT";
   statusBadge.className = `ad-badge ${a.published ? "ad-badge--success" : "ad-badge--warning"}`;
-
   const fundingBadge = document.getElementById("asset-funding-badge");
-  const fundingMap = {
-    pre_funding: ["Pre-Funding", "ad-badge--neutral"],
-    funding_open: ["Funding Open", "ad-badge--info"],
-    fully_funded: ["Fully Funded", "ad-badge--success"],
-    closed: ["Closed", "ad-badge--danger"],
-    exited: ["Exited", "ad-badge--danger"],
-  };
-  const [fLabel, fClass] = fundingMap[a.funding_status] || [
-    a.funding_status || "Unknown",
-    "ad-badge--neutral",
-  ];
-  fundingBadge.textContent = fLabel;
-  fundingBadge.className = `ad-badge ${fClass}`;
+  fundingBadge.style.display = "none";
 
-  // Funding progress
-  const sold = (a.tokens_total || 0) - (a.tokens_available || 0);
-  const pct = a.tokens_total ? Math.round((sold / a.tokens_total) * 100) : 0;
-  document.getElementById("funding-label").textContent =
-    `${sold.toLocaleString()} of ${(a.tokens_total || 0).toLocaleString()} tokens sold`;
-  document.getElementById("funding-pct").textContent = `${pct}%`;
-  document.getElementById("funding-bar").style.width = `${pct}%`;
+  // Funding progress — only show when live/funded
+  const fundingEl = document.getElementById("asset-funding-section");
+  const isDraft = !a.published;
+  if (fundingEl) fundingEl.hidden = isDraft;
+  if (!isDraft) {
+    const sold = (a.tokens_total || 0) - (a.tokens_available || 0);
+    const pct = a.tokens_total ? Math.round((sold / a.tokens_total) * 100) : 0;
+    document.getElementById("funding-label").textContent =
+      `${sold.toLocaleString()} of ${(a.tokens_total || 0).toLocaleString()} tokens sold`;
+    document.getElementById("funding-pct").textContent = `${pct}%`;
+    document.getElementById("funding-bar").style.width = `${pct}%`;
+  }
 
   // Header stats
-  document.getElementById("asset-valuation").textContent = formatUSD(
-    a.total_value_cents,
-  );
-  document.getElementById("asset-token-price").textContent = formatUSD(
-    a.token_price_cents,
-  );
-  document.getElementById("asset-yield").textContent = bpsToPercent(
-    a.annual_yield_bps,
-  );
-  document.getElementById("asset-type").textContent = formatAssetType(
-    a.asset_type,
-  );
+  document.getElementById("asset-valuation").textContent = formatUSD(a.total_value_cents);
+  document.getElementById("asset-token-price").textContent = formatUSD(a.token_price_cents);
+  document.getElementById("asset-yield").textContent = bpsToPercent(a.annual_yield_bps);
+  document.getElementById("asset-type").textContent = formatAssetType(a.asset_type);
 
-  // Image
+  // Image — fallback to POOOL logo placeholder
+  const heroImg = document.getElementById("asset-image");
+  const heroWrap = document.getElementById("asset-image-wrap");
+
+  function showHeroFallback() {
+    heroImg.style.display = "none";
+    if (heroWrap) {
+      heroWrap.style.cssText = "background:#F5F7FF;display:flex;align-items:center;justify-content:center;";
+      const logo = document.createElement("img");
+      logo.src = "/static/images/logos/logo-blue.svg";
+      logo.style.cssText = "width:80px;opacity:0.3;pointer-events:none;";
+      heroWrap.appendChild(logo);
+    }
+  }
+
   if (a.images && a.images.length > 0) {
     const cover = a.images.find((i) => i.is_cover) || a.images[0];
-    if (cover.url) document.getElementById("asset-image").src = cover.url;
+    if (cover.url) {
+      heroImg.src = cover.url;
+      heroImg.onerror = showHeroFallback;
+      heroImg.onload = () => { if (heroImg.naturalWidth <= 1) showHeroFallback(); };
+    } else {
+      showHeroFallback();
+    }
+  } else {
+    showHeroFallback();
   }
 
   // Tab badges
+  const investorCount = (a.investors || []).length;
+  const orderCount = (a.orders || []).length;
   const badgeInvestors = document.getElementById("badge-investors");
-  if (badgeInvestors) badgeInvestors.textContent = (a.investors || []).length;
+  if (badgeInvestors) { badgeInvestors.textContent = investorCount; badgeInvestors.style.display = investorCount === 0 ? "none" : ""; }
   const badgeOrders = document.getElementById("badge-orders");
-  if (badgeOrders) badgeOrders.textContent = (a.orders || []).length;
+  if (badgeOrders) { badgeOrders.textContent = orderCount; badgeOrders.style.display = orderCount === 0 ? "none" : ""; }
 
   renderOverview(a);
   renderMedia(a);
@@ -217,8 +225,10 @@ function renderOverview(a) {
 }
 
 // ─── Tab: Media ───────────────────────────────────────────────
+const POOOL_LOGO_URL = "/static/images/logos/logo-blue.svg";
+
 function renderMedia(a) {
-  const images = a.images || [];
+  const images = (a.images || []).filter((i) => i.url);
   document.getElementById("media-count").textContent =
     `${images.length} image${images.length !== 1 ? "s" : ""}`;
 
@@ -226,7 +236,8 @@ function renderMedia(a) {
     document.getElementById("media-grid").innerHTML = images
       .map(
         (img) => `
-            <div class="media-item" style="background-image:url('${esc(img.url)}')">
+            <div class="media-item" style="background-image:url('${esc(img.url)}')"
+              onerror="this.style.backgroundImage='none';this.style.background='#F5F7FF';this.style.display='flex';this.style.alignItems='center';this.style.justifyContent='center';this.innerHTML='<img src=\\'${POOOL_LOGO_URL}\\' style=\\'width:48px;opacity:0.3;\\'>'">
                 ${img.is_cover ? '<span class="cover-badge">Cover</span>' : ""}
             </div>
         `,

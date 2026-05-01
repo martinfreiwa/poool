@@ -53,43 +53,6 @@ include
 
         <!-- 4. CONTENT STATE -->
         <div id="lb-content-layer" class="lb-content-layer hidden">
-          <div class="lb-summary-grid" id="lb-summary-grid">
-            <section class="lb-pulse-card" aria-labelledby="lb-search-title">
-              <p class="lb-pulse-eyebrow">Leaderboard Search</p>
-              <h2 class="lb-spotlight-title" id="lb-search-title">Find investors by public display name</h2>
-              <p class="lb-audit-desc">Search uses the same privacy-safe names shown in the rankings.</p>
-              <div class="lb-topbar-search lb-search-card-control">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <label class="sr-only" for="lb-search-input">Search leaderboard</label>
-                <input id="lb-search-input" type="search" placeholder="Search leaderboard..." autocomplete="off" oninput="debounceSearch(event)" />
-              </div>
-              <p class="lb-last-updated" id="lb-last-updated" aria-live="polite">Updated: --</p>
-            </section>
-
-            <div class="lb-summary-right">
-              <section class="lb-rank-mini-card" id="lb-my-rank-card" aria-labelledby="lb-my-rank-title">
-                <h2 class="lb-rank-mini-title" id="lb-my-rank-title">Your Rank</h2>
-                <div class="lb-rank-mini-value" id="lb-my-rank">#--</div>
-                <p class="lb-rank-mini-desc" id="lb-my-metric-label">Loading your rank...</p>
-              </section>
-
-              <section class="lb-audit-card" aria-labelledby="lb-visibility-title">
-                <h2 class="lb-audit-title" id="lb-visibility-title">Public Visibility</h2>
-                <p class="lb-audit-desc">Control whether your public leaderboard name appears in rankings.</p>
-                <label class="lb-visibility-row" for="lb-visibility-toggle">
-                  <span id="lb-visibility-label">Hidden from public rankings</span>
-                  <span class="lb-toggle-label">
-                    <input id="lb-visibility-toggle" type="checkbox" onchange="toggleVisibility(this)" aria-describedby="lb-preference-status" />
-                    <span class="lb-toggle-slider" aria-hidden="true"></span>
-                  </span>
-                </label>
-                <p class="lb-audit-status" id="lb-preference-status" aria-live="polite">Preference not loaded</p>
-              </section>
-            </div>
-          </div>
 
           <div class="lb-inline-status hidden" id="lb-inline-status" role="status" aria-live="polite"></div>
 

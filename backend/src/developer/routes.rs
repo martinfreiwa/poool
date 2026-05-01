@@ -891,7 +891,8 @@ pub async fn api_developer_update_draft(
         ));
     }
 
-    // Only allow edits on draft assets; approved/live assets must use change request flow
+    // Block edits only on live/active assets (already have investors); approved assets can be
+    // re-edited but will revert to draft for re-review.
     let project_status: Option<String> =
         sqlx::query_scalar("SELECT dp.status FROM developer_projects dp JOIN assets a ON a.id = dp.asset_id WHERE a.id = $1 LIMIT 1")
             .bind(id)
@@ -900,9 +901,9 @@ pub async fn api_developer_update_draft(
             .unwrap_or(None);
 
     if let Some(ref status) = project_status {
-        if status != "draft" && status != "revision_requested" {
+        if status != "draft" && status != "revision_requested" && status != "approved" {
             return Err(AppError::BadRequest(format!(
-                "Cannot edit asset in '{}' status. Only draft or revision-requested assets can be edited.",
+                "Cannot edit asset in '{}' status. Only draft, revision-requested, or approved assets can be edited.",
                 status
             )));
         }
@@ -1141,6 +1142,17 @@ pub async fn api_developer_update_draft(
             tracing::error!("Failed to update draft {}: {} — SQL: {}", id, e, sql);
             return Err(AppError::Internal(format!("Failed to update draft: {}", e)));
         }
+    }
+
+    // If asset was approved, revert to draft so it requires re-review
+    if project_status.as_deref() == Some("approved") {
+        sqlx::query(
+            "UPDATE developer_projects SET status = 'draft', updated_at = NOW() WHERE asset_id = $1",
+        )
+        .bind(id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to reset status: {}", e)))?;
     }
 
     Ok(Json(serde_json::json!({

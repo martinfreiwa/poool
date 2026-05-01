@@ -7,6 +7,10 @@ TEMPLATE = ROOT / "frontend/platform/developer/submissions.html"
 JS = ROOT / "frontend/platform/static/js/developer-submissions.js"
 
 
+def read(path: str) -> str:
+    return (ROOT / path).read_text()
+
+
 def _handler_body(source: str, name: str) -> str:
     marker = f"pub async fn {name}"
     start = source.index(marker)
@@ -63,3 +67,43 @@ def test_developer_submissions_uses_shared_accessible_confirmation():
     assert "async function confirmDelete(assetId, title)" in script
     assert "document.createElement(\"div\")" not in _js_function_body(script, "async function confirmDelete")
     assert "sub-modal-overlay" not in _js_function_body(script, "async function confirmBulkDelete")
+
+
+def test_developer_submissions_summary_includes_rejected_filter():
+    template = read("frontend/platform/developer/submissions.html")
+    js = read("frontend/platform/static/js/developer-submissions.js")
+
+    assert 'data-filter="rejected"' in template
+    assert 'id="stat-rejected"' in template
+    assert "rejected: 0" in js
+
+
+def test_developer_submissions_progress_states_match_decision_statuses():
+    js = read("frontend/platform/static/js/developer-submissions.js")
+
+    assert 'if (status === "approved" || status === "live") return 5;' in js
+    assert 'if (status === "approved") return "Approved";' in js
+    assert 'if (status === "rejected") return "Decision";' in js
+
+
+def test_developer_submissions_table_contract_stays_full_width_and_attached():
+    template = read("frontend/platform/developer/submissions.html")
+    js = read("frontend/platform/static/js/developer-submissions.js")
+    css = read("frontend/platform/static/css/developer-submissions.css")
+
+    assert 'aria-label="Select all draft submissions"' in template
+    assert 'td colspan="7"' in js
+    assert 'class="revision-notes-spacer"' in js
+    assert 'td colspan="6"' in js
+    assert "min-width: 1080px;" in css
+    assert "col-actions  { width: 190px; }" in css
+    assert "max-width: 780px;" in css
+
+
+def test_developer_submissions_design_alignment_overrides_are_present():
+    css = read("frontend/platform/static/css/developer-submissions.css")
+
+    assert "--sub-page-width: 1320px;" in css
+    assert "grid-template-columns: repeat(4, minmax(0, 1fr));" in css
+    assert "min-height: 86px;" in css
+    assert "background: #F5F5FF;" in css

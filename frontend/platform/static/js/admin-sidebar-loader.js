@@ -32,96 +32,12 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="admin-sidebar-nav">
+                <nav class="admin-sidebar-nav" aria-label="Admin navigation">
                     <!-- Overview -->
                     <div class="admin-nav-section">
                         <a href="/admin/" class="admin-nav-item ${isPathActive(["/admin/", "/admin/index.html"]) ? "active" : ""}" id="nav-dashboard">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></svg>
                             <span>Dashboard</span>
-                        </a>
-                    </div>
-
-                    <!-- Blog -->
-                    <div class="admin-nav-section">
-                        <span class="admin-nav-section-label">Blog</span>
-                        <a href="/admin/blog.html" class="admin-nav-item ${isPathActive(["/admin/blog.html", "/admin/blog-editor.html"]) ? "active" : ""}" id="nav-blog">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>
-                            <span>Blog</span>
-                        </a>
-                        <a href="/admin/blog-persona.html" class="admin-nav-item ${isPathActive(["/admin/blog-persona.html"]) ? "active" : ""}" id="nav-blog-persona">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/><path d="M15 11l2 2 4-4"/></svg>
-                            <span>Persona</span>
-                        </a>
-                        <a href="/admin/blog-strategy.html" class="admin-nav-item ${isPathActive(["/admin/blog-strategy.html"]) ? "active" : ""}" id="nav-blog-strategy">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/><path d="M17 7h2v2"/></svg>
-                            <span>Strategy</span>
-                        </a>
-                    </div>
-
-                    <!-- People -->
-                    <div class="admin-nav-section">
-                        <span class="admin-nav-section-label">People</span>
-                        <a href="/admin/users.html" class="admin-nav-item ${isPathActive(["/admin/users.html", "/admin/user-details.html"]) ? "active" : ""}" id="nav-users">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            <span>Users</span>
-                        </a>
-                        <a href="/admin/kyc.html" class="admin-nav-item ${isPathActive(["/admin/kyc.html"]) ? "active" : ""}" id="nav-kyc">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><rect x="2" y="4" width="14" height="16" rx="2"/></svg>
-                            <span>KYC & AML</span>
-                        </a>
-                        <a href="/admin/support.html" class="admin-nav-item ${isPathActive(["/admin/support.html", "/admin/support-ticket.html"]) ? "active" : ""}" id="nav-support">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10c0 4.418-3.582 8-8 8a8 8 0 110-16c4.418 0 8 3.582 8 8z"/><path d="M10 14v.01M10 6v6"/></svg>
-                            <span>Support</span>
-                        </a>
-                    </div>
-
-                    <!-- Community -->
-                    <div class="admin-nav-section">
-                        <span class="admin-nav-section-label">Community</span>
-                        <a href="/admin/community/" class="admin-nav-item ${isPathActive(["/admin/community/", "/admin/community/index.html"]) ? "active" : ""}" id="nav-com-overview">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                            <span>Overview</span>
-                        </a>
-                        <a href="/admin/community/announcements.html" class="admin-nav-item ${isPathActive(["/admin/community/announcements.html"]) ? "active" : ""}" id="nav-com-announcements">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            <span>Announcements</span>
-                        </a>
-                        <a href="/admin/community/posts.html" class="admin-nav-item ${isPathActive(["/admin/community/posts.html", "/admin/community/post-detail.html"]) ? "active" : ""}" id="nav-com-posts">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            <span>Posts</span>
-                        </a>
-                        <a href="/admin/community/comments.html" class="admin-nav-item ${isPathActive(["/admin/community/comments.html"]) ? "active" : ""}" id="nav-com-comments">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                            <span>Comments</span>
-                        </a>
-                        <a href="/admin/community/reports.html" class="admin-nav-item ${isPathActive(["/admin/community/reports.html"]) ? "active" : ""}" id="nav-com-reports">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                            <span>Moderation Queue</span>
-                            <span id="com-reports-badge" style="display:none;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 5px;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto;"></span>
-                        </a>
-                        <a href="/admin/community/users.html" class="admin-nav-item ${isPathActive(["/admin/community/users.html", "/admin/community/user-detail.html"]) ? "active" : ""}" id="nav-com-users">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                            <span>Community Users</span>
-                        </a>
-                        <a href="/admin/community/badges.html" class="admin-nav-item ${isPathActive(["/admin/community/badges.html"]) ? "active" : ""}" id="nav-com-badges">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
-                            <span>Badges</span>
-                        </a>
-                        <a href="/admin/community/amas.html" class="admin-nav-item ${isPathActive(["/admin/community/amas.html"]) ? "active" : ""}" id="nav-com-amas">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                            <span>Expert AMAs</span>
-                        </a>
-                        <a href="/admin/community/challenges.html" class="admin-nav-item ${isPathActive(["/admin/community/challenges.html"]) ? "active" : ""}" id="nav-com-challenges">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            <span>Challenges</span>
-                        </a>
-                        <a href="/admin/community/circles.html" class="admin-nav-item ${isPathActive(["/admin/community/circles.html", "/admin/community/circle-detail.html"]) ? "active" : ""}" id="nav-com-circles">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
-                            <span>Circles</span>
-                        </a>
-                        <a href="/admin/community/leaderboard.html" class="admin-nav-item ${isPathActive(["/admin/community/leaderboard.html"]) ? "active" : ""}" id="nav-com-leaderboard">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                            <span>Leaderboard</span>
                         </a>
                     </div>
 
@@ -135,7 +51,7 @@
                         <a href="/admin/asset-change-requests.html" class="admin-nav-item ${isPathActive(["/admin/asset-change-requests.html", "/admin/asset-change-review.html"]) ? "active" : ""}" id="nav-change-requests">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             <span>Change Requests</span>
-                            <span id="change-requests-badge" style="display:none;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 5px;background:#f59e0b;color:#fff;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto;"></span>
+                            <span id="change-requests-badge" class="admin-nav-badge admin-nav-badge--warning" style="display:none"></span>
                         </a>
                         <a href="/admin/assets.html" class="admin-nav-item ${isPathActive(["/admin/assets.html", "/admin/asset-details.html"]) ? "active" : ""}" id="nav-assets">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
@@ -189,7 +105,7 @@
                         <a href="/admin/affiliate-applications.html" class="admin-nav-item ${isPathActive(["/admin/affiliate-applications.html"]) ? "active" : ""}" id="nav-affiliate-apps">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                             <span>Affiliate Apps</span>
-                            <span id="affiliate-apps-badge" style="display:none;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 5px;background:#f59e0b;color:#fff;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto;"></span>
+                            <span id="affiliate-apps-badge" class="admin-nav-badge admin-nav-badge--warning" style="display:none"></span>
                         </a>
                         <a href="/admin/affiliate-finance.html" class="admin-nav-item ${isPathActive(["/admin/affiliate-finance.html"]) ? "active" : ""}" id="nav-affiliate-finance">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -258,6 +174,90 @@
                         </a>
                     </div>
 
+                    <!-- People -->
+                    <div class="admin-nav-section">
+                        <span class="admin-nav-section-label">People</span>
+                        <a href="/admin/users.html" class="admin-nav-item ${isPathActive(["/admin/users.html", "/admin/user-details.html"]) ? "active" : ""}" id="nav-users">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span>Users</span>
+                        </a>
+                        <a href="/admin/kyc.html" class="admin-nav-item ${isPathActive(["/admin/kyc.html"]) ? "active" : ""}" id="nav-kyc">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><rect x="2" y="4" width="14" height="16" rx="2"/></svg>
+                            <span>KYC & AML</span>
+                        </a>
+                        <a href="/admin/support.html" class="admin-nav-item ${isPathActive(["/admin/support.html", "/admin/support-ticket.html"]) ? "active" : ""}" id="nav-support">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10c0 4.418-3.582 8-8 8a8 8 0 110-16c4.418 0 8 3.582 8 8z"/><path d="M10 14v.01M10 6v6"/></svg>
+                            <span>Support</span>
+                        </a>
+                    </div>
+
+                    <!-- Community -->
+                    <div class="admin-nav-section">
+                        <span class="admin-nav-section-label">Community</span>
+                        <a href="/admin/community/" class="admin-nav-item ${isPathActive(["/admin/community/", "/admin/community/index.html"]) ? "active" : ""}" id="nav-com-overview">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                            <span>Overview</span>
+                        </a>
+                        <a href="/admin/community/announcements.html" class="admin-nav-item ${isPathActive(["/admin/community/announcements.html"]) ? "active" : ""}" id="nav-com-announcements">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            <span>Announcements</span>
+                        </a>
+                        <a href="/admin/community/posts.html" class="admin-nav-item ${isPathActive(["/admin/community/posts.html", "/admin/community/post-detail.html"]) ? "active" : ""}" id="nav-com-posts">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            <span>Posts</span>
+                        </a>
+                        <a href="/admin/community/comments.html" class="admin-nav-item ${isPathActive(["/admin/community/comments.html"]) ? "active" : ""}" id="nav-com-comments">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                            <span>Comments</span>
+                        </a>
+                        <a href="/admin/community/reports.html" class="admin-nav-item ${isPathActive(["/admin/community/reports.html"]) ? "active" : ""}" id="nav-com-reports">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            <span>Moderation Queue</span>
+                            <span id="com-reports-badge" class="admin-nav-badge admin-nav-badge--danger" style="display:none"></span>
+                        </a>
+                        <a href="/admin/community/users.html" class="admin-nav-item ${isPathActive(["/admin/community/users.html", "/admin/community/user-detail.html"]) ? "active" : ""}" id="nav-com-users">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            <span>Community Users</span>
+                        </a>
+                        <a href="/admin/community/badges.html" class="admin-nav-item ${isPathActive(["/admin/community/badges.html"]) ? "active" : ""}" id="nav-com-badges">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+                            <span>Badges</span>
+                        </a>
+                        <a href="/admin/community/amas.html" class="admin-nav-item ${isPathActive(["/admin/community/amas.html"]) ? "active" : ""}" id="nav-com-amas">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                            <span>Expert AMAs</span>
+                        </a>
+                        <a href="/admin/community/challenges.html" class="admin-nav-item ${isPathActive(["/admin/community/challenges.html"]) ? "active" : ""}" id="nav-com-challenges">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <span>Challenges</span>
+                        </a>
+                        <a href="/admin/community/circles.html" class="admin-nav-item ${isPathActive(["/admin/community/circles.html", "/admin/community/circle-detail.html"]) ? "active" : ""}" id="nav-com-circles">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                            <span>Circles</span>
+                        </a>
+                        <a href="/admin/community/leaderboard.html" class="admin-nav-item ${isPathActive(["/admin/community/leaderboard.html"]) ? "active" : ""}" id="nav-com-leaderboard">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+                            <span>Leaderboard</span>
+                        </a>
+                    </div>
+
+                    <!-- Blog -->
+                    <div class="admin-nav-section">
+                        <span class="admin-nav-section-label">Blog</span>
+                        <a href="/admin/blog.html" class="admin-nav-item ${isPathActive(["/admin/blog.html", "/admin/blog-editor.html"]) ? "active" : ""}" id="nav-blog">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>
+                            <span>Blog</span>
+                        </a>
+                        <a href="/admin/blog-persona.html" class="admin-nav-item ${isPathActive(["/admin/blog-persona.html"]) ? "active" : ""}" id="nav-blog-persona">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/><path d="M15 11l2 2 4-4"/></svg>
+                            <span>Persona</span>
+                        </a>
+                        <a href="/admin/blog-strategy.html" class="admin-nav-item ${isPathActive(["/admin/blog-strategy.html"]) ? "active" : ""}" id="nav-blog-strategy">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/><path d="M17 7h2v2"/></svg>
+                            <span>Strategy</span>
+                        </a>
+                    </div>
+
                     <!-- Security & Access -->
                     <div class="admin-nav-section">
                         <span class="admin-nav-section-label">Security & Access</span>
@@ -276,7 +276,7 @@
                         <a href="/admin/approvals.html" class="admin-nav-item ${isPathActive(["/admin/approvals.html"]) ? "active" : ""}" id="nav-approvals">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
                             <span>Approval Queue</span>
-                            <span id="approvals-badge" style="display:none;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 5px;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto;"></span>
+                            <span id="approvals-badge" class="admin-nav-badge admin-nav-badge--danger" style="display:none"></span>
                         </a>
                     </div>
 
@@ -348,7 +348,7 @@
                         <span id="theme-toggle-label">Light</span>
                     </button>
                     <div class="admin-sidebar-user">
-                        <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar">
+                        <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
                         <div class="admin-sidebar-user-info">
                             <div class="admin-sidebar-user-name" id="sidebar-user-name">Admin User</div>
                             <div class="admin-sidebar-user-role" id="sidebar-user-role">Super Admin</div>
@@ -360,6 +360,11 @@
 
         sidebarPlaceholder.innerHTML = sidebarHtml;
 
+        // Mark active nav item for screen readers
+        sidebarPlaceholder.querySelectorAll(".admin-nav-item.active").forEach(el => {
+            el.setAttribute("aria-current", "page");
+        });
+
         // Notify the permission guard (and any other listeners) that the
         // sidebar DOM is now available so they can apply visibility rules.
         document.dispatchEvent(new CustomEvent("admin:sidebar-ready"));
@@ -369,15 +374,19 @@
         const label = document.getElementById("theme-toggle-label");
         if (label) label.textContent = isDark ? "Dark" : "Light";
 
-        // Load user data if available
-        if (window.userData) {
+        // Update sidebar name/avatar from a user data object
+        function updateSidebarUser(userData) {
             const nameEl = document.getElementById("sidebar-user-name");
+            const roleEl = document.getElementById("sidebar-user-role");
             const avatarEl = document.getElementById("sidebar-user-avatar");
-            if (nameEl)
-                nameEl.textContent = window.userData.full_name || "Admin User";
-            if (avatarEl && window.userData.profile_image)
-                avatarEl.src = window.userData.profile_image;
+            if (nameEl) nameEl.textContent = userData.full_name || "Admin User";
+            if (roleEl && userData.role) roleEl.textContent = userData.role;
+            if (avatarEl && userData.profile_image) avatarEl.src = userData.profile_image;
         }
+
+        // Apply synchronously if already available, and listen for async load
+        if (window.userData) updateSidebarUser(window.userData);
+        document.addEventListener("admin:user-loaded", (e) => updateSidebarUser(e.detail));
     }
 
     // Dynamically update notification bell badge count across all admin pages
@@ -452,7 +461,9 @@
             const comReportsResp = await fetch("/api/admin/community/reports");
             if (comReportsResp.ok) {
                 const data = await comReportsResp.json();
-                const pending = data.length || 0;
+                const pending = Array.isArray(data)
+                    ? data.filter(r => r.status === "pending").length
+                    : 0;
                 const badge = document.getElementById("com-reports-badge");
                 if (badge) {
                     if (pending > 0) {
@@ -467,40 +478,28 @@
             // Silently fail
         }
 
-        try {
-            // Fetch pending affiliate applications count for sidebar badge
-            if (!canFetchBadge("affiliates.manage")) return;
-
-            const affResp = await fetch("/api/admin/rewards/affiliates/pending");
-            if (affResp.ok) {
-                const data = await affResp.json();
-                const pending = (data.pending || []).length;
-                const badge = document.getElementById("affiliate-apps-badge");
-                if (badge) {
-                    if (pending > 0) {
-                        badge.textContent = pending;
-                        badge.style.display = "";
-                    } else {
-                        badge.style.display = "none";
+        // Affiliate badge requires explicit permission — skip if not granted
+        if (canFetchBadge("affiliates.manage")) {
+            try {
+                const affResp = await fetch("/api/admin/rewards/affiliates/pending");
+                if (affResp.ok) {
+                    const data = await affResp.json();
+                    const pending = (data.pending || []).length;
+                    const badge = document.getElementById("affiliate-apps-badge");
+                    if (badge) {
+                        if (pending > 0) {
+                            badge.textContent = pending;
+                            badge.style.display = "";
+                        } else {
+                            badge.style.display = "none";
+                        }
                     }
                 }
+            } catch (e) {
+                // Silently fail
             }
-        } catch (e) {
-            // Silently fail
         }
     }
-
-    // Run on script load if placeholder exists, or on DOMContentLoaded
-    if (document.getElementById("admin-sidebar-placeholder")) {
-        loadSidebar();
-        setTimeout(updateNotificationBadges, 500);
-    } else {
-        document.addEventListener("DOMContentLoaded", () => {
-            loadSidebar();
-            setTimeout(updateNotificationBadges, 500);
-        });
-    }
-    document.addEventListener("admin:permissions-loaded", updateNotificationBadges);
 
     // ==== Sidebar Scroll Persistence ====
     // Save sidebar scroll position before navigating away
@@ -530,10 +529,18 @@
         });
     }
 
-    // Restore after a tiny delay to ensure sidebar is fully rendered
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => setTimeout(restoreSidebarScroll, 50));
+    // Restore once the sidebar HTML is injected (admin:sidebar-ready fires in loadSidebar)
+    document.addEventListener("admin:sidebar-ready", restoreSidebarScroll);
+
+    // Run on script load if placeholder exists, or on DOMContentLoaded
+    if (document.getElementById("admin-sidebar-placeholder")) {
+        loadSidebar();
+        updateNotificationBadges();
     } else {
-        setTimeout(restoreSidebarScroll, 50);
+        document.addEventListener("DOMContentLoaded", () => {
+            loadSidebar();
+            updateNotificationBadges();
+        });
     }
+    document.addEventListener("admin:permissions-loaded", updateNotificationBadges);
 })();

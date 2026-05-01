@@ -93,6 +93,19 @@
             <span class="sub-stat__label">Approved</span>
           </div>
         </div>
+        <div class="sub-stat" data-filter="rejected" onclick="filterByCard('rejected', this)">
+          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
+            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
+            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
+            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+          </div>
+          <div class="sub-stat__content">
+            <span class="sub-stat__count" id="stat-rejected">—</span>
+            <span class="sub-stat__label">Rejected</span>
+          </div>
+        </div>
       </div>
 
       <!-- Submissions Table -->
@@ -155,7 +168,7 @@
             <tr>
               <th class="col-checkbox">
                 <label class="sub-checkbox-label">
-                  <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)">
+                  <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)" aria-label="Select all draft submissions">
                   <span class="sub-checkbox-custom"></span>
                 </label>
               </th>

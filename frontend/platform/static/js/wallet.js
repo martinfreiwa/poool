@@ -382,30 +382,42 @@
         // Build modal using DOM construction to prevent XSS via ref/amount params
         const overlay = document.createElement("div");
         overlay.id = "deposit-instructions-modal";
-        overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;";
+        overlay.className = "ds-modal-overlay active";
 
         // Use static HTML for the structural shell only (no user data)
-        overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:90%;box-shadow:0 24px 48px rgba(0,0,0,0.18);font-family:inherit;">' +
-            '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">' +
-            '<div style="width:40px;height:40px;background:#F0FDF4;border-radius:50%;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
-            '<h2 style="margin:0;font-size:18px;font-weight:600;color:#101828;">Deposit Request Created</h2></div>' +
-            '<p style="color:#475467;font-size:14px;margin:0 0 20px;">Please wire <strong id="dim-amount"></strong> to the following account. Use the reference number below so we can match your transfer.</p>' +
-            '<div style="background:#F9FAFB;border:1px solid #EAECF0;border-radius:12px;padding:16px 20px;margin-bottom:20px;">' +
-            '<div style="display:Grid;gap:10px;">' +
-            row("Bank", "Deutsche Bank AG") +
-            row("Account Name", "POOOL GmbH") +
-            row("IBAN", "DE89 3704 0044 0532 0130 00") +
-            row("BIC / SWIFT", "DEUTDEDB") +
-            '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #EAECF0;font-size:13px;">' +
-            '<span style="color:#667085;">Reference</span>' +
-            '<strong id="dim-ref" style="color:#1570EF;font-family:monospace"></strong></div>' +
-            '</div></div>' +
-            '<div style="background:#FFFAEB;border:1px solid #FEF0C7;border-radius:8px;padding:12px 16px;margin-bottom:24px;font-size:13px;color:#B45309;">' +
-            '⚠️ Include the reference number in your transfer, otherwise we cannot match your deposit.' +
-            '</div>' +
-            '<button onclick="document.getElementById(\'deposit-instructions-modal\').remove()" ' +
-            'style="width:100%;padding:12px;background:#1570EF;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Got it – I\'ll wire the funds</button></div>';
+        overlay.innerHTML =
+            '<div class="ds-modal">' +
+              '<div class="ds-modal__header">' +
+                '<div style="display:flex;align-items:center;gap:12px;">' +
+                  '<div style="width:36px;height:36px;background:#F0FDF4;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                    '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                  '</div>' +
+                  '<h2 class="ds-modal__title">Deposit Request Created</h2>' +
+                '</div>' +
+                '<button class="ds-modal__close" id="dim-close-btn" aria-label="Close">' +
+                  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                '</button>' +
+              '</div>' +
+              '<div class="ds-modal__body">' +
+                '<p class="ds-modal__subtitle" style="margin-bottom:20px;">Please wire <strong id="dim-amount"></strong> to the following account. Use the reference number below so we can match your transfer.</p>' +
+                '<div style="background:#F9FAFB;border:1px solid #EAECF0;border-radius:12px;padding:4px 16px;margin-bottom:16px;">' +
+                  dimRow("Bank", "Deutsche Bank AG", false) +
+                  dimRow("Account Name", "POOOL GmbH", false) +
+                  dimRow("IBAN", "DE89 3704 0044 0532 0130 00", false) +
+                  dimRow("BIC / SWIFT", "DEUTDEDB", false) +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px;">' +
+                    '<span style="color:#667085;">Reference</span>' +
+                    '<strong id="dim-ref" style="color:#0000FF;font-family:monospace;font-size:12px;"></strong>' +
+                  '</div>' +
+                '</div>' +
+                '<div style="background:#FFFAEB;border:1px solid #FEF0C7;border-radius:8px;padding:10px 14px;font-size:13px;color:#B45309;line-height:1.4;">' +
+                  '⚠️ Include the reference number in your transfer, otherwise we cannot match your deposit.' +
+                '</div>' +
+              '</div>' +
+              '<div class="ds-modal__footer" style="padding-top:0;">' +
+                '<button id="dim-cta-btn" class="ds-btn ds-btn--primary ds-btn--full">Got it – I\'ll wire the funds</button>' +
+              '</div>' +
+            '</div>';
 
         document.body.appendChild(overlay);
 
@@ -415,14 +427,18 @@
         var refEl = document.getElementById("dim-ref");
         if (refEl) refEl.textContent = ref;
 
-        function row(label, value) {
-            return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #EAECF0;font-size:13px;">' +
+        function dimRow(label, value, last) {
+            var border = last ? "" : "border-bottom:1px solid #EAECF0;";
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;' + border + 'font-size:13px;">' +
                 '<span style="color:#667085;">' + label + '</span>' +
-                '<span style="color:#101828;">' + value + '</span></div>';
+                '<span style="color:#101828;font-weight:500;">' + value + '</span></div>';
         }
 
+        function closeModal() { overlay.remove(); }
+        document.getElementById("dim-close-btn").addEventListener("click", closeModal);
+        document.getElementById("dim-cta-btn").addEventListener("click", closeModal);
         overlay.addEventListener("click", function (e) {
-            if (e.target === overlay) overlay.remove();
+            if (e.target === overlay) closeModal();
         });
     }
 

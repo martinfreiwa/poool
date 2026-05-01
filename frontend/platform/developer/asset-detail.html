@@ -36,7 +36,7 @@ extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'mobile-navigation', '
         <nav class="admin-breadcrumbs">
           <a href="/developer/dashboard">Developer</a>
           <span class="separator">›</span>
-          <a href="/developer/assets">Assets</a>
+          <a href="/developer/submissions">My Submissions</a>
           <span class="separator">›</span>
           <span class="current" id="breadcrumb-asset-title">Asset Details</span>
         </nav>
@@ -71,8 +71,8 @@ extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'mobile-navigation', '
 
         <div id="asset-content" style="display: none">
           <div class="ad-hero">
-            <div class="ad-hero__image-wrap">
-              <img loading="lazy" id="asset-image" src="/static/images/portfolio_asset_details/Property%20image.webp" alt=""
+            <div class="ad-hero__image-wrap" id="asset-image-wrap">
+              <img loading="lazy" id="asset-image" src="" alt=""
                 class="ad-hero__image" />
               <div class="ad-hero__image-overlay"></div>
             </div>
@@ -86,7 +86,7 @@ extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'mobile-navigation', '
               </div>
               <p class="ad-hero__location" id="asset-location">—</p>
 
-              <div class="ad-hero__funding">
+              <div class="ad-hero__funding" id="asset-funding-section">
                 <div class="ad-hero__funding-meta">
                   <span id="funding-label">0 of 0 tokens sold</span>
                   <span class="ad-hero__funding-pct" id="funding-pct">0%</span>
