@@ -766,6 +766,30 @@
     if (window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED) return;
     window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED = true;
 
+    // Sign out handler
+    document.body.addEventListener("click", function (e) {
+      const signOut = e.target.closest("#menu-item-sign-out");
+      if (!signOut) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const token = typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+      if (!token) {
+        window.location.href = "/logout";
+        return;
+      }
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/auth/logout";
+      form.style.display = "none";
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "csrf_token";
+      input.value = token;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    });
+
     // Delegated toggle for account card (replaces inline onclick for CSP)
     document.body.addEventListener("click", function (e) {
       const card = e.target.closest("#nav-account-card");
