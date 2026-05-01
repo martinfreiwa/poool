@@ -151,9 +151,7 @@ pub async fn api_admin_primary_escrow_release_request(
     Json(payload): Json<ReleaseRequestPayload>,
 ) -> Result<axum::response::Response, ApiError> {
     let pool = &state.db;
-    if let Err(err) = admin.require_permission(pool, "marketplace.manage").await {
-        return Err(err);
-    }
+    admin.require_permission(pool, "marketplace.manage").await?;
     let asset_uuid = asset_id
         .parse::<Uuid>()
         .map_err(|_| ApiError::BadRequest(format!("Invalid ID format: {}", asset_id)))?;
