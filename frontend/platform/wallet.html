@@ -669,7 +669,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <p class="ds-modal__empty-text">No payment methods on file. Add a bank account or card before withdrawing.</p>
           <div class="ds-modal__footer-actions">
             <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal()">Cancel</button>
-            <button type="button" class="ds-btn ds-btn--primary" onclick="closeWithdrawModal(); openBankModal();">Add Bank Account</button>
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal(); openCardModal();">Add Card</button>
+            <button type="button" class="ds-btn ds-btn--primary" onclick="closeWithdrawModal(); openBankModal();">Add Bank</button>
           </div>
         </div>
         {% endif %}
