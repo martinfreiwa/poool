@@ -623,6 +623,7 @@ pub async fn handle_checkout(
     let mut payment_currency_opt: Option<String> = None;
     let mut payment_method_opt: Option<String> = None;
     let mut proof_url: Option<String> = None;
+    let mut proof_upload_failed = false;
     let mut disclosure_accepted = false;
 
     if content_type.contains("multipart/form-data") {
@@ -666,13 +667,13 @@ pub async fn handle_checkout(
                             .unwrap_or_else(|| "proof.bin".to_string());
                         if let Ok(data) = field.bytes().await {
                             if !data.is_empty() {
-                                let bucket = state
-                                    .config
-                                    .gcs_bucket
-                                    .clone()
-                                    .unwrap_or_else(|| "poool-storage".to_string());
+                                let Some(bucket) = state.config.gcs_bucket.clone() else {
+                                    tracing::error!("GCS_BUCKET_NAME not configured — cannot upload proof of transfer");
+                                    proof_upload_failed = true;
+                                    continue;
+                                };
                                 let object_path = format!("proofs/{}/{}", user.id, name);
-                                if let Ok(url) = crate::storage::service::upload_private(
+                                match crate::storage::service::upload_private(
                                     &bucket,
                                     &object_path,
                                     data.to_vec(),
@@ -680,12 +681,17 @@ pub async fn handle_checkout(
                                 )
                                 .await
                                 {
-                                    proof_url = Some(url);
-                                } else {
-                                    tracing::warn!(
-                                        "Failed to upload proof of transfer for user {}",
-                                        user.id
-                                    );
+                                    Ok(url) => { proof_url = Some(url); }
+                                    Err(e) => {
+                                        tracing::error!(
+                                            user_id = %user.id,
+                                            bucket = %bucket,
+                                            path = %object_path,
+                                            error = %e,
+                                            "GCS upload failed for proof of transfer"
+                                        );
+                                        proof_upload_failed = true;
+                                    }
                                 }
                             }
                         }
@@ -736,6 +742,12 @@ pub async fn handle_checkout(
 
     // Bank transfer orders require proof of transfer to prevent bypassing the UI requirement.
     if payment_method == "bank_transfer" || payment_method == "bank" {
+        if proof_upload_failed {
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">File upload failed. Please try again or contact support if the issue persists.</div>"#.to_string()),
+            ).into_response();
+        }
         if proof_url.is_none() {
             return (
                 axum::http::StatusCode::BAD_REQUEST,

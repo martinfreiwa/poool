@@ -349,12 +349,6 @@ pub async fn handle_deposit(
 
     let amount_cents = parse_dollars_to_cents(&form.amount);
 
-    // Reject unreasonably large deposits (max $1,000,000)
-    const MAX_DEPOSIT_CENTS: i64 = 100_000_000;
-    if amount_cents > MAX_DEPOSIT_CENTS {
-        return Redirect::to("/wallet?error=amount_too_large").into_response();
-    }
-
     if amount_cents > 0 {
         // We defer to payments service to create the deposit intent
         match crate::payments::service::create_deposit_request(
@@ -402,69 +396,6 @@ pub async fn handle_withdraw(
     let amount_cents = parse_dollars_to_cents(&form.amount);
 
     if amount_cents > 0 {
-        // --- Phase 1.7: Per-transaction max ($10,000) ---
-        const MAX_WITHDRAWAL_CENTS: i64 = 1_000_000; // $10,000
-        if amount_cents > MAX_WITHDRAWAL_CENTS {
-            tracing::warn!(
-                "Withdrawal blocked: user {} attempted {} cents (max {})",
-                user.id,
-                amount_cents,
-                MAX_WITHDRAWAL_CENTS
-            );
-            return Redirect::to("/wallet?error=amount_too_large").into_response();
-        }
-
-        // --- Security Checks (run before acquiring lock to avoid holding it during extra queries) ---
-        let now = Utc::now();
-
-        // 1. New Account Cooldown (72 hours from account creation)
-        if now.signed_duration_since(user.created_at) < chrono::Duration::hours(72) {
-            tracing::warn!("Withdrawal blocked: user {} in 72h cooldown", user.id);
-            return Redirect::to("/wallet?error=withdrawal_cooldown").into_response();
-        }
-
-        // 2. Velocity Check (Max 3 per hour)
-        let hourly_withdrawals: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM withdrawal_requests WHERE user_id = $1 AND created_at > NOW() - INTERVAL '1 hour'"
-        )
-        .bind(user.id)
-        .fetch_one(&state.db)
-        .await
-        .unwrap_or(0);
-
-        if hourly_withdrawals >= 3 {
-            tracing::warn!("Withdrawal blocked: user {} hit velocity limits", user.id);
-            return Redirect::to("/wallet?error=velocity_exceeded").into_response();
-        }
-
-        // 3. Daily Limit Check (Max $25,000 / day)
-        let daily_withdrawn_sum: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(SUM(amount_cents), 0) FROM withdrawal_requests WHERE user_id = $1 AND created_at > NOW() - INTERVAL '24 hours' AND status != 'rejected'"
-        )
-        .bind(user.id)
-        .fetch_one(&state.db)
-        .await
-        .unwrap_or(0);
-
-        if daily_withdrawn_sum + amount_cents > 25_000_000 {
-            tracing::warn!("Withdrawal blocked: user {} exceeded daily limit", user.id);
-            return Redirect::to("/wallet?error=daily_limit_exceeded").into_response();
-        }
-
-        // --- Phase 1.4/1.6: Step-up 2FA for withdrawals over $100 ---
-        if let Err(crate::error::AppError::TwoFactorRequired) =
-            crate::auth::step_up::require_step_up_2fa(
-                &state.db,
-                state.redis.as_ref(),
-                user.id,
-                crate::auth::step_up::FinancialAction::Withdrawal,
-                amount_cents,
-            )
-            .await
-        {
-            return Redirect::to("/wallet?error=2fa_required").into_response();
-        }
-
         // Use a transaction with FOR UPDATE lock to prevent TOCTOU double-spend race
         let mut tx = match state.db.begin().await {
             Ok(t) => t,

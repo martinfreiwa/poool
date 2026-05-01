@@ -349,7 +349,7 @@
             const ref = rawRef.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
             const amountCents = parseInt(params.get("amount") || "0", 10);
             const amountFmt = amountCents > 0
-                ? "$" + (amountCents / 100).toFixed(2)
+                ? (amountCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })
                 : "the requested amount";
             showDepositInstructionsModal(ref, amountFmt);
             // Clean up URL without reload
@@ -366,10 +366,7 @@
                 insufficient_funds: "Insufficient funds. Please deposit before withdrawing.",
                 deposit_failed: "Deposit failed. Please try again.",
                 withdraw_failed: "Withdrawal failed. Please try again or contact support.",
-                amount_too_large: "Amount exceeds the maximum deposit limit of $1,000,000.",
-                "2fa_required": "Two-factor authentication required for withdrawals of $100 or more. Please enable 2FA in Settings first.",
-                withdrawal_cooldown: "You have reached the hourly withdrawal limit (3 requests). Please try again later.",
-                daily_limit_exceeded: "This withdrawal would exceed your daily limit of $250,000.",
+                amount_too_large: "Amount is invalid. Please check the value and try again.",
                 no_payment_method: "No payment method on file. Add a bank account or card first.",
             };
             const msg = errMap[params.get("error")] || "An error occurred. Please try again.";
@@ -379,62 +376,61 @@
     }
 
     function showDepositInstructionsModal(ref, amountFmt) {
-        // Build modal using DOM construction to prevent XSS via ref/amount params
         const overlay = document.createElement("div");
         overlay.id = "deposit-instructions-modal";
         overlay.className = "ds-modal-overlay active";
 
-        // Use static HTML for the structural shell only (no user data)
         overlay.innerHTML =
             '<div class="ds-modal">' +
               '<div class="ds-modal__header">' +
-                '<div style="display:flex;align-items:center;gap:12px;">' +
-                  '<div style="width:36px;height:36px;background:#F0FDF4;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                    '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-                  '</div>' +
-                  '<h2 class="ds-modal__title">Deposit Request Created</h2>' +
-                '</div>' +
+                '<h2 class="ds-modal__title">Deposit Request Created</h2>' +
                 '<button class="ds-modal__close" id="dim-close-btn" aria-label="Close">' +
                   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
                 '</button>' +
               '</div>' +
               '<div class="ds-modal__body">' +
-                '<p class="ds-modal__subtitle" style="margin-bottom:20px;">Please wire <strong id="dim-amount"></strong> to the following account. Use the reference number below so we can match your transfer.</p>' +
-                '<div style="background:#F9FAFB;border:1px solid #EAECF0;border-radius:12px;padding:4px 16px;margin-bottom:16px;">' +
-                  dimRow("Bank", "Deutsche Bank AG", false) +
-                  dimRow("Account Name", "POOOL GmbH", false) +
-                  dimRow("IBAN", "DE89 3704 0044 0532 0130 00", false) +
-                  dimRow("BIC / SWIFT", "DEUTDEDB", false) +
-                  '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px;">' +
-                    '<span style="color:#667085;">Reference</span>' +
-                    '<strong id="dim-ref" style="color:#0000FF;font-family:monospace;font-size:12px;"></strong>' +
-                  '</div>' +
+                '<p class="ds-modal__subtitle dim-subtitle">Please wire <strong id="dim-amount"></strong> to the account below. Include the reference number so we can match your transfer.</p>' +
+                '<div class="dim-bank-table">' +
+                  '<div class="dim-bank-row"><span class="dim-bank-label">Bank</span><span class="dim-bank-value">Deutsche Bank AG</span></div>' +
+                  '<div class="dim-bank-row"><span class="dim-bank-label">Account Name</span><span class="dim-bank-value">POOOL GmbH</span></div>' +
+                  '<div class="dim-bank-row"><span class="dim-bank-label">IBAN</span><span class="dim-bank-value">DE89 3704 0044 0532 0130 00 <button class="dim-copy-btn" data-copy="DE89370400440532013000" title="Copy IBAN">Copy</button></span></div>' +
+                  '<div class="dim-bank-row"><span class="dim-bank-label">BIC / SWIFT</span><span class="dim-bank-value">DEUTDEDB</span></div>' +
+                  '<div class="dim-bank-row"><span class="dim-bank-label">Reference</span><span class="dim-bank-value dim-bank-value--ref"><span id="dim-ref" class="dim-ref-text"></span> <button class="dim-copy-btn" id="dim-ref-copy" title="Copy reference">Copy</button></span></div>' +
                 '</div>' +
-                '<div style="background:#FFFAEB;border:1px solid #FEF0C7;border-radius:8px;padding:10px 14px;font-size:13px;color:#B45309;line-height:1.4;">' +
-                  '⚠️ Include the reference number in your transfer, otherwise we cannot match your deposit.' +
-                '</div>' +
+                '<p class="dim-warning">⚠️ Include the reference number in your transfer, otherwise we cannot match your deposit.</p>' +
               '</div>' +
-              '<div class="ds-modal__footer" style="padding-top:0;">' +
+              '<div class="ds-modal__footer dim-footer">' +
                 '<button id="dim-cta-btn" class="ds-btn ds-btn--primary ds-btn--full">Got it – I\'ll wire the funds</button>' +
               '</div>' +
             '</div>';
 
         document.body.appendChild(overlay);
 
-        // Safely inject user-controlled values via textContent (prevents XSS)
         var amountEl = document.getElementById("dim-amount");
         if (amountEl) amountEl.textContent = amountFmt;
         var refEl = document.getElementById("dim-ref");
         if (refEl) refEl.textContent = ref;
+        var refCopyBtn = document.getElementById("dim-ref-copy");
+        if (refCopyBtn) refCopyBtn.setAttribute("data-copy", ref);
 
-        function dimRow(label, value, last) {
-            var border = last ? "" : "border-bottom:1px solid #EAECF0;";
-            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;' + border + 'font-size:13px;">' +
-                '<span style="color:#667085;">' + label + '</span>' +
-                '<span style="color:#101828;font-weight:500;">' + value + '</span></div>';
+        function dimCopy(text, btn) {
+            navigator.clipboard.writeText(text).then(function () {
+                var orig = btn.textContent;
+                btn.textContent = "Copied!";
+                setTimeout(function () { btn.textContent = orig; }, 1500);
+            });
         }
 
-        function closeModal() { overlay.remove(); }
+        overlay.querySelectorAll(".dim-copy-btn").forEach(function (btn) {
+            btn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                dimCopy(btn.getAttribute("data-copy"), btn);
+            });
+        });
+
+        function closeModal() { overlay.remove(); document.removeEventListener("keydown", onEsc); }
+        function onEsc(e) { if (e.key === "Escape") closeModal(); }
+        document.addEventListener("keydown", onEsc);
         document.getElementById("dim-close-btn").addEventListener("click", closeModal);
         document.getElementById("dim-cta-btn").addEventListener("click", closeModal);
         overlay.addEventListener("click", function (e) {

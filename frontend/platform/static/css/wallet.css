@@ -1924,3 +1924,117 @@ body.kyc-hidden .wallet-main {
   font-family: ui-monospace, "SF Mono", Consolas, monospace;
   word-break: break-all;
 }
+
+/* ── Modal helpers ──────────────────────────────────────────────── */
+.ds-modal__footer-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.ds-modal__footer-actions .ds-btn--secondary {
+  flex: 0 0 auto;
+}
+
+.ds-modal__footer-actions .ds-btn--primary {
+  flex: 1;
+}
+
+.ds-form-required-legend {
+  font-size: 12px;
+  color: #667085;
+  margin: 4px 0 0;
+}
+
+.ds-modal__empty-state {
+  padding: 8px 0;
+}
+
+.ds-modal__empty-text {
+  font-size: 14px;
+  color: #344054;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* ── Deposit instructions info card ────────────────────────────── */
+.dim-bank-table {
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  padding: 4px 16px;
+  margin-bottom: 16px;
+}
+
+.dim-bank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #EAECF0;
+}
+
+.dim-bank-row:last-child {
+  border-bottom: none;
+}
+
+.dim-bank-label {
+  color: #667085;
+}
+
+.dim-bank-value {
+  color: #101828;
+  font-weight: 500;
+}
+
+.dim-bank-value--ref {
+  color: var(--color-electric-blue, #1B4DFF);
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12px;
+}
+
+.dim-warning {
+  background: #FFFAEB;
+  border: 1px solid #FEF0C7;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #B45309;
+  line-height: 1.4;
+}
+
+.dim-subtitle {
+  margin-bottom: 16px;
+}
+
+.dim-footer {
+  padding-top: 16px;
+}
+
+.dim-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #344054;
+  background: #F2F4F7;
+  border: 1px solid #D0D5DD;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+
+.dim-copy-btn:hover {
+  background: #E4E7EC;
+}
+
+.dim-ref-text {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12px;
+  color: #344054;
+  word-break: break-all;
+}

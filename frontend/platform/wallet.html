@@ -607,7 +607,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     <div class="ds-modal">
       <div class="ds-modal__header">
         <h2 class="ds-modal__title">Deposit Funds</h2>
-        <button class="ds-modal__close" onclick="closeDepositModal()">
+        <button class="ds-modal__close" onclick="closeDepositModal()" aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
@@ -615,15 +615,18 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         </button>
       </div>
       <div class="ds-modal__body">
-        <form action="/wallet/deposit" method="POST"
-          onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
+        <form action="/wallet/deposit" method="POST" onsubmit="return onDepositSubmit(this)">
           <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
-            <input type="number" name="amount" min="1" step="0.01" required class="ds-input"
-              placeholder="e.g. 1000" />
+            <input type="text" inputmode="decimal" name="amount" required class="ds-input"
+              placeholder="e.g. 1,000" autocomplete="off" />
           </div>
-          <p style="font-size:13px;color:#717680;margin:0 0 16px;">You will receive bank wire instructions after confirming.</p>
-          <button type="submit" class="ds-btn ds-btn--primary ds-btn--full">Confirm Deposit</button>
+          <p class="ds-form-hint">You will receive bank wire instructions after confirming.</p>
+          <p class="ds-form-required-legend">* Required field</p>
+          <div class="ds-modal__footer-actions">
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="closeDepositModal()">Cancel</button>
+            <button type="submit" class="ds-btn ds-btn--primary ds-btn--full">Confirm Deposit</button>
+          </div>
         </form>
       </div>
     </div>
@@ -633,7 +636,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     <div class="ds-modal">
       <div class="ds-modal__header">
         <h2 class="ds-modal__title">Withdraw Funds</h2>
-        <button class="ds-modal__close" onclick="closeWithdrawModal()">
+        <button class="ds-modal__close" onclick="closeWithdrawModal()" aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
@@ -641,8 +644,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         </button>
       </div>
       <div class="ds-modal__body">
-        <form action="/wallet/withdraw" method="POST"
-          onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
+        {% if has_cards or has_banks %}
+        <form action="/wallet/withdraw" method="POST" onsubmit="return onWithdrawSubmit(this)">
           <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required">Withdraw to</label>
             <select id="withdraw-payment-select" name="payment_method_id" class="ds-select" onchange="updateWithdrawBtn()">
@@ -651,12 +654,25 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
           <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
-            <input type="number" name="amount" min="1" step="0.01" required class="ds-input"
-              placeholder="e.g. 500" />
+            <input type="text" inputmode="decimal" id="withdraw-amount-input" name="amount" required class="ds-input"
+              placeholder="e.g. 500" autocomplete="off" />
+            <p class="ds-form-hint" id="withdraw-balance-hint">Available: <strong>{{ cash_balance }}</strong></p>
           </div>
-          <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary ds-btn--full">Confirm
-            Withdrawal</button>
+          <p class="ds-form-required-legend">* Required field</p>
+          <div class="ds-modal__footer-actions">
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal()">Cancel</button>
+            <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary ds-btn--full">Confirm Withdrawal</button>
+          </div>
         </form>
+        {% else %}
+        <div class="ds-modal__empty-state">
+          <p class="ds-modal__empty-text">No payment methods on file. Add a bank account or card before withdrawing.</p>
+          <div class="ds-modal__footer-actions">
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal()">Cancel</button>
+            <button type="button" class="ds-btn ds-btn--primary" onclick="closeWithdrawModal(); openBankModal();">Add Bank Account</button>
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -1204,7 +1220,30 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       if (!sel || !btn) return;
       var hasMethod = sel.value && sel.value !== "";
       btn.disabled = !hasMethod;
-      btn.title = hasMethod ? "" : "Add a bank account or card first";
+    }
+
+    function onDepositSubmit(form) {
+      var btn = form.querySelector("button[type=submit]");
+      btn.disabled = true;
+      btn.textContent = "Processing...";
+      return true;
+    }
+
+    function onWithdrawSubmit(form) {
+      var amtInput = document.getElementById("withdraw-amount-input");
+      var rawVal = amtInput ? amtInput.value.replace(/,/g, "") : "";
+      var amt = parseFloat(rawVal);
+      var cashCents = {{ cash_cents }};
+      if (!isNaN(amt) && amt * 100 > cashCents) {
+        var hint = document.getElementById("withdraw-balance-hint");
+        if (hint) hint.style.color = "#F04438";
+        if (amtInput) amtInput.classList.add("ds-input--error");
+        return false;
+      }
+      var btn = form.querySelector("button[type=submit]");
+      btn.disabled = true;
+      btn.textContent = "Processing...";
+      return true;
     }
     function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
     function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
