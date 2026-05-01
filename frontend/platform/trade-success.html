@@ -81,8 +81,16 @@
             <span class="payment-success-order__label">Quantity</span>
             <span id="display-qty" class="payment-success-order__value"></span>
           </div>
+          <div id="display-subtotal-row" class="payment-success-order__row payment-success-order__row--border" style="display:none;">
+            <span class="payment-success-order__label">Subtotal</span>
+            <span id="display-subtotal" class="payment-success-order__value"></span>
+          </div>
+          <div id="display-fee-row" class="payment-success-order__row payment-success-order__row--border" style="display:none;">
+            <span class="payment-success-order__label">Platform Fee (5%)</span>
+            <span id="display-fee" class="payment-success-order__value"></span>
+          </div>
           <div class="payment-success-order__row payment-success-order__row--total">
-            <span class="payment-success-order__total-label">Total Amount</span>
+            <span id="display-total-label" class="payment-success-order__total-label">Total</span>
             <span id="display-total" class="payment-success-order__total-value">$0.00</span>
           </div>
         </div>
@@ -92,7 +100,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0369A1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          <span>Your order is now <strong>live on the marketplace</strong>. Once a matching buyer or seller is found, the trade will be executed automatically and you'll receive a notification.</span>
+          <span id="display-info-text">Your order is now <strong>live on the marketplace</strong>. Once a matching buyer is found, the trade will be executed automatically and you'll receive a notification.</span>
         </div>
 
         <!-- Action Buttons -->
@@ -103,6 +111,9 @@
           <button id="btn-trade-again" class="payment-success-btn payment-success-btn--secondary"
             onclick="window.location.href='/marketplace-secondary'">
             Continue Trading
+          </button>
+          <button id="btn-cancel-order" class="payment-success-btn payment-success-btn--secondary" style="display:none;color:#d92d20;border-color:#fda29b;">
+            Cancel Order
           </button>
         </div>
 
@@ -123,20 +134,21 @@
         data = { order_id: p.get('order_id') || '', side: p.get('side') || '', asset: p.get('asset') || '', qty: p.get('qty') || '0', price: p.get('price') || '0', total: p.get('total') || '0', slug: p.get('slug') || '' };
       }
 
-      var orderId = data.order_id || '';
-      var side    = data.side    || '';
-      var asset   = data.asset   || '';
-      var qty     = data.qty     || '0';
-      var price   = data.price   || '0';
-      var total   = data.total   || '0';
-      var slug    = data.slug    || '';
+      var orderId  = data.order_id || '';
+      var side     = data.side     || '';
+      var asset    = data.asset    || '';
+      var qty      = data.qty      || '0';
+      var price    = data.price    || '0';
+      var subtotal = data.subtotal || '';
+      var fee      = data.fee      || '';
+      var total    = data.total    || '0';
+      var slug     = data.slug     || '';
+      var isBuy    = side === 'buy';
 
-      // Order ID — show truncated, full value in title attr
+      // Order ID — full value in title, truncated display, copy button
       var orderIdEl = document.getElementById('display-order-id');
       orderIdEl.textContent = '#' + (orderId.length > 16 ? orderId.substring(0, 16) + '…' : orderId || '—');
       orderIdEl.title = orderId;
-
-      // Copy Order ID button
       var copyBtn = document.getElementById('btn-copy-order-id');
       if (copyBtn && orderId) {
         copyBtn.addEventListener('click', function() {
@@ -147,16 +159,27 @@
         });
       }
 
-      // Side badge — use ds-badge, not inline color
+      // Side badge
       var sideEl = document.getElementById('display-side');
-      var isBuy  = side === 'buy';
       sideEl.className = isBuy ? 'ds-badge ds-badge--success' : 'ds-badge ds-badge--danger';
       sideEl.textContent = isBuy ? 'Buy' : 'Sell';
 
       document.getElementById('display-asset').textContent = decodeURIComponent(asset);
       document.getElementById('display-price').textContent = '$' + parseFloat(price).toFixed(2);
       document.getElementById('display-qty').textContent   = qty + ' share' + (parseInt(qty) > 1 ? 's' : '');
-      document.getElementById('display-total').textContent = '$' + parseFloat(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // Fee breakdown rows — show when available (set by trading page)
+      function fmt(v) { return '$' + parseFloat(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      if (subtotal && fee) {
+        document.getElementById('display-subtotal-row').style.display = '';
+        document.getElementById('display-fee-row').style.display = '';
+        document.getElementById('display-subtotal').textContent = fmt(subtotal);
+        document.getElementById('display-fee').textContent = (isBuy ? '+' : '−') + fmt(fee);
+      }
+
+      // Total label: "Net Proceeds" for sell, "Total Cost" for buy
+      document.getElementById('display-total-label').textContent = isBuy ? 'Total Cost' : 'Net Proceeds';
+      document.getElementById('display-total').textContent = fmt(total);
 
       // Title and description
       var titleEl = document.getElementById('status-title');
@@ -164,9 +187,38 @@
       if (isBuy) {
         titleEl.textContent = 'Buy Order Placed';
         descEl.textContent  = 'Your buy order is live on the marketplace. Once a matching seller is found, the trade will be executed automatically.';
+        document.getElementById('display-info-text').innerHTML = 'Your order is now <strong>live on the marketplace</strong>. Once a matching seller is found, the trade will be executed automatically and you\'ll receive a notification.';
       } else {
         titleEl.textContent = 'Sell Order Placed';
-        descEl.textContent  = 'Your shares have been listed for sale. Once a matching buyer is found, the trade will be executed automatically.';
+        descEl.textContent  = 'Your shares have been listed for sale on the marketplace. Once a matching buyer is found, the trade will be executed automatically.';
+        // info box already correct for sell (default)
+      }
+
+      // Cancel Order button — visible when we have an order ID
+      if (orderId) {
+        var cancelBtn = document.getElementById('btn-cancel-order');
+        cancelBtn.style.display = '';
+        cancelBtn.addEventListener('click', function() {
+          if (!confirm('Cancel this order? Your shares will be unlocked and returned to your portfolio.')) return;
+          cancelBtn.disabled = true;
+          cancelBtn.textContent = 'Cancelling…';
+          fetch('/api/marketplace/orders/' + encodeURIComponent(orderId), {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: { 'X-CSRF-Token': (typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : '') }
+          }).then(function(r) {
+            if (r.ok) {
+              cancelBtn.textContent = 'Order Cancelled';
+              cancelBtn.style.opacity = '0.5';
+            } else {
+              return r.json().then(function(d) { throw new Error(d.error || 'Cancel failed'); });
+            }
+          }).catch(function(err) {
+            cancelBtn.disabled = false;
+            cancelBtn.textContent = 'Cancel Order';
+            alert(err.message || 'Could not cancel order. Go to My Trading to cancel manually.');
+          });
+        });
       }
 
       // "Continue Trading" links back to same asset if slug available

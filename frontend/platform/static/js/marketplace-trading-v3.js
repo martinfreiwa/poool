@@ -601,9 +601,18 @@
 
         // Submit — real API call with confirmation modal + double-click guard
         let isSubmitting = false;
+        // Idempotency key: one per page load, prevents duplicate orders on back-button resubmit
+        const _idemKey = crypto.randomUUID();
+        sessionStorage.setItem('tv3_idem_key', _idemKey);
         document.getElementById('tv3-order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (isSubmitting) return; // Prevent double-click
+            // Prevent back-button resubmit: key is cleared on success
+            const idemKey = sessionStorage.getItem('tv3_idem_key');
+            if (!idemKey) {
+                showTradeToast('Order already submitted. Go to My Trading to track it.', 'error');
+                return;
+            }
 
             const btn = document.getElementById('tv3-submit-btn');
             const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
@@ -665,22 +674,25 @@
                         order_type: orderType,
                         price_cents: priceCents,
                         quantity: qty,
-                        idempotency_key: crypto.randomUUID()
+                        idempotency_key: idemKey
                     })
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    // Redirect to success page
-                    const params = new URLSearchParams({
+                    // Clear idempotency key so back-button resubmit is blocked
+                    sessionStorage.removeItem('tv3_idem_key');
+                    sessionStorage.setItem('trade_success', JSON.stringify({
                         side: currentSide,
                         asset: currentAsset?.title || currentAsset?.name || 'Asset',
-                        qty: qty,
+                        qty: String(qty),
                         price: priceDisplay.toFixed(2),
+                        subtotal: totalValue.toFixed(2),
+                        fee: feeValue.toFixed(2),
                         total: grandTotal.toFixed(2),
                         order_id: result.order_id || result.id || '',
                         slug: asset.slug || ''
-                    });
-                    window.location.href = '/trade-success?' + params.toString();
+                    }));
+                    window.location.href = '/trade-success';
                 } else {
                     showTradeToast(result.error || 'Order failed', 'error');
                     btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
@@ -787,16 +799,16 @@
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    const params = new URLSearchParams({
+                    sessionStorage.setItem('trade_success', JSON.stringify({
                         side: sheetSide,
                         asset: currentAsset?.title || currentAsset?.name || 'Asset',
-                        qty: qty,
+                        qty: String(qty),
                         price: priceVal.toFixed(2),
                         total: grandTotal.toFixed(2),
                         order_id: result.order_id || result.id || '',
                         slug: asset.slug || ''
-                    });
-                    window.location.href = '/trade-success?' + params.toString();
+                    }));
+                    window.location.href = '/trade-success';
                 } else {
                     showTradeToast(result.error || 'Order failed', 'error');
                     sheetSubmit.textContent = orig; sheetSubmit.disabled = false;

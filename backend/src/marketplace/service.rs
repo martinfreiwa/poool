@@ -839,7 +839,7 @@ pub async fn get_secondary_assets(
         let volume24h = stats.as_ref().and_then(|s| s.volume_24h).unwrap_or(0);
 
         let sell_orders: i64 = sqlx::query_scalar!(
-            "SELECT COUNT(*)::bigint FROM market_orders WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')",
+            "SELECT COALESCE(SUM(quantity - quantity_filled), 0)::bigint FROM market_orders WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')",
             row.id
         )
         .fetch_one(pool)
@@ -848,7 +848,7 @@ pub async fn get_secondary_assets(
         .unwrap_or(0);
 
         let buy_interest: i64 = sqlx::query_scalar!(
-            "SELECT COUNT(*)::bigint FROM market_orders WHERE asset_id = $1 AND side = 'buy' AND status IN ('open', 'partially_filled')",
+            "SELECT COALESCE(SUM(quantity - quantity_filled), 0)::bigint FROM market_orders WHERE asset_id = $1 AND side = 'buy' AND status IN ('open', 'partially_filled')",
             row.id
         )
         .fetch_one(pool)
