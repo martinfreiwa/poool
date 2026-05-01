@@ -79,6 +79,8 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --set-env-vars "APP_ENV=production" \
+            --set-env-vars "BASE_URL=https://platform.poool.app" \
+            --set-env-vars "CORS_ALLOWED_ORIGINS=https://platform.poool.app" \
             --set-env-vars "SERVER_HOST=0.0.0.0" \
             --set-env-vars "SERVER_PORT=8080" \
             --set-env-vars "RUST_LOG=warn" \
