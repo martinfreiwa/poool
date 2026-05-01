@@ -9,8 +9,15 @@
   let pollInterval = null;
   let pollCount = 0;
   const MAX_POLLS = 180; // 30 minutes at 10-second intervals
+  let cachedBankDetails = null;
 
   document.addEventListener("DOMContentLoaded", async () => {
+    // Fetch bank details from backend config before rendering
+    try {
+      const r = await fetch('/api/payments/bank-details');
+      if (r.ok) cachedBankDetails = await r.json();
+    } catch (_) {}
+
     const params = new URLSearchParams(window.location.search);
     const depositId = params.get("deposit_id") || params.get("id");
 
@@ -375,19 +382,33 @@
 
     // Bank Transfer Details (if pending bank)
     if (isBankTransfer && (status === "pending" || status === "processing")) {
-      const bankDetails = currency === "IDR"
-        ? [
-            { label: "Bank", value: "BCA (Bank Central Asia)" },
-            { label: "Account Name", value: "PT POOOL Indonesia" },
-            { label: "Account Number", value: "0987654321" },
-          ]
-        : [
-            { label: "Bank", value: "Chase Bank" },
-            { label: "Account Name", value: "POOOL Inc." },
-            { label: "Account Number", value: "123456789" },
-            { label: "Routing", value: "987654321" },
-            { label: "SWIFT", value: "CHASUS33" },
-          ];
+      const apiData = cachedBankDetails?.[currency] || null;
+      let bankDetails;
+      if (currency === "IDR" && apiData) {
+        bankDetails = [
+          { label: "Bank", value: apiData.bank || "BCA (Bank Central Asia)" },
+          { label: "Account Name", value: apiData.account_name || "PT POOOL Indonesia" },
+          ...(apiData.account_number ? [{ label: "Account Number", value: apiData.account_number }] : []),
+        ];
+      } else if (currency !== "IDR" && apiData) {
+        bankDetails = [
+          { label: "Bank", value: apiData.bank || "Deutsche Bank AG" },
+          { label: "Account Name", value: apiData.account_name || "POOOL GmbH" },
+          ...(apiData.iban ? [{ label: "IBAN", value: apiData.iban }] : []),
+          ...(apiData.bic_swift ? [{ label: "BIC/SWIFT", value: apiData.bic_swift }] : []),
+        ];
+      } else {
+        // API unavailable — show name/bank only, no placeholder account numbers
+        bankDetails = currency === "IDR"
+          ? [
+              { label: "Bank", value: "BCA (Bank Central Asia)" },
+              { label: "Account Name", value: "PT POOOL Indonesia" },
+            ]
+          : [
+              { label: "Bank", value: "Deutsche Bank AG" },
+              { label: "Account Name", value: "POOOL GmbH" },
+            ];
+      }
 
       let bankRowsHTML = bankDetails.map(d => `
         <div class="pip-detail-row">

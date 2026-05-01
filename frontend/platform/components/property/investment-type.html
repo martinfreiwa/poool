@@ -1,13 +1,13 @@
 <!-- Investment Type Section -->
 <div id="investment-type-section">
   <div class="section-header">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
+    <svg class="investment-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
     <h2>Investment type</h2>
   </div>
   <div class="strategy-card">
     <div class="strategy-header">
       <div class="strategy-text">
-        <h3>{{ (asset.lease_type | default('Standard Leasehold')) | replace('leasehold', 'Leasehold') }}</h3>
+        <h3>{{ asset.lease_type | default('Standard Leasehold') | title }}</h3>
         <p>A safe strategy blending consistent income, strong appreciation, and capital protection.</p>
       </div>
     </div>

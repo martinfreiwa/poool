@@ -1889,18 +1889,21 @@ body.lightbox-open {
    How it Works Section
    =========================== */
 #how-it-works-section {
-  margin-top: 32px;
-  padding: 0 28px;
+  margin-top: 0;
+  padding: 32px 28px 0;
+  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 #how-it-works-heading {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0px;
+  padding: 0;
   gap: 7px;
-  width: 183px;
-  height: 32px;
+  width: auto;
+  height: auto;
   margin-bottom: 24px;
 }
 
@@ -1945,6 +1948,7 @@ body.lightbox-open {
   background: #ffffff;
   border: 1px solid var(--table-border-color);
   border-radius: 12px;
+  overflow: hidden;
 }
 
 .card-image {
@@ -1993,11 +1997,12 @@ body.lightbox-open {
 
 .card-action {
   position: absolute;
-  width: 165px;
+  width: calc(100% - 32px);
   height: 40px;
   left: 16px;
   top: 124px;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .action-icon {
@@ -2010,14 +2015,14 @@ body.lightbox-open {
 
 .action-text {
   position: absolute;
-  width: 110px !important;
+  width: calc(100% - 38px);
   left: 32px;
   top: 10px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 700;
-  font-size: 10px !important;
-  line-height: 14px !important;
+  font-size: 10px;
+  line-height: 14px;
   color: var(--primary-color);
 }
 
@@ -2426,7 +2431,9 @@ body.youtube-modal-active {
 .developer-icon,
 .documents-icon,
 .calendar-icon,
-.key-icon {
+.key-icon,
+.faq-icon,
+.investment-icon {
   width: 36px;
   height: 36px;
   padding: 6px;
@@ -5032,9 +5039,7 @@ body.youtube-modal-active {
 }
 
 .faq-icon {
-  width: 24px;
-  height: 24px;
-  filter: brightness(0);
+  filter: none;
 }
 
 /* FAQ Section */

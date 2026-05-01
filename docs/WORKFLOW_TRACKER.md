@@ -40,7 +40,7 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0460](docs/page-audits/) | 🟡 | Verification email delivery lacks outbox retry worker | open | 2026-04-25 |
+| [PAGE-ISSUE-0460](docs/page-audits/) | 🟡 | Verification email delivery lacks outbox retry worker | **fixed 2026-04-30** — `create_email_verification_token` and signup route both insert into `transactional_email_outbox`; 60s retry worker runs via `run_transactional_email_outbox_worker` | 2026-04-25 |
 
 ---
 
@@ -61,8 +61,8 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
 | [PAGE-ISSUE-0543](docs/page-audits/) | 🟡 | KYC mutation audit and email side effects are swallowed | partially fixed | 2026-04-25 |
-| [PAGE-ISSUE-0550](docs/page-audits/) | 🟡 | KYC email delivery still lacks durable outbox | open | 2026-04-25 |
-| [PAGE-ISSUE-0566](docs/page-audits/) | 🔵 | KYC upload can orphan private GCS object after DB failure | open | 2026-04-25 |
+| [PAGE-ISSUE-0550](docs/page-audits/) | 🟡 | KYC email delivery still lacks durable outbox | **fixed 2026-04-30** — approve/reject both use `trigger_transactional_email` which writes to outbox; 60s retry worker handles delivery failures | 2026-04-25 |
+| [PAGE-ISSUE-0566](docs/page-audits/) | 🔵 | KYC upload can orphan private GCS object after DB failure | **fixed** — `cleanup` closure + `tokio::spawn` GCS delete on all DB failure paths in `kyc/routes.rs` | 2026-04-25 |
 
 ---
 
@@ -106,14 +106,14 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0387](docs/page-audits/) | 🔴 | Cart HTML uses incomplete manual escaping for asset data (XSS risk) | open | 2026-04-25 |
-| [PAGE-ISSUE-0388](docs/page-audits/) | 🔴 | Cart quantity update fails open when availability lock cannot be read | open | 2026-04-25 |
-| [PAGE-ISSUE-0389](docs/page-audits/) | 🟡 | Cart item controls lack robust accessible labels | open | 2026-04-25 |
+| [PAGE-ISSUE-0387](docs/page-audits/) | 🔴 | Cart HTML uses incomplete manual escaping for asset data (XSS risk) | **fixed** (commit cf12981 — all dynamic cart DOM updates use `textContent`; `escapeHtml` helper present) | 2026-04-25 |
+| [PAGE-ISSUE-0388](docs/page-audits/) | 🔴 | Cart quantity update fails open when availability lock cannot be read | **fixed** (commit cf12981 — 409/423 responses now surface inline error via `showCartInlineError`) | 2026-04-25 |
+| [PAGE-ISSUE-0389](docs/page-audits/) | 🟡 | Cart item controls lack robust accessible labels | **fixed 2026-04-30** — desktop/mobile remove buttons have `aria-label="Remove {title} from cart"`; SVG has `aria-hidden="true"`; qty input has `aria-label="Token quantity for {title}"` | 2026-04-25 |
 | CART-BUG-001 | 🟡 | Amount below share price silently rounds up to 1 share — no user feedback | **fixed 2026-04-30** | 2026-04-30 |
 | CART-BUG-002 | 🟡 | Order Summary line item label stays "1 × $X" after quantity increase | **fixed 2026-04-30** | 2026-04-30 |
 | CHECKOUT-BUG-001 | 🟡 | Error message renders as "Payment FailedOrder exceeds..." — missing separator | **fixed 2026-04-30** | 2026-04-30 |
-| CHECKOUT-BUG-002 | 🔵 | Proof of transfer is frontend-required but backend-optional — bypassable | open | 2026-04-30 |
-| CHECKOUT-BUG-003 | 🔵 | IDR bank account number `0987654321` appears to be placeholder test data | open | 2026-04-30 |
+| CHECKOUT-BUG-002 | 🔵 | Proof of transfer is frontend-required but backend-optional — bypassable | **fixed 2026-04-30** — backend now rejects bank_transfer checkout if `proof_url` is None (`payments/routes.rs:738`) | 2026-04-30 |
+| CHECKOUT-BUG-003 | 🔵 | IDR bank account number `0987654321` appears to be placeholder test data | **fixed 2026-04-30** — `payment-in-progress.js` now fetches `/api/payments/bank-details`; fill in real account number at `payments/service.rs:27` | 2026-04-30 |
 | — | 🟡 | No investment confirmation email after checkout | open | — |
 
 ---
@@ -219,7 +219,7 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 | 1.5-BUG-001 | ❌ | `/portfolio/:investment_id` route missing — "See Details" goes to public property page, no investment context | open | 2026-04-30 |
 | 1.5-BUG-002 | 🟡 | Wallet "View details" buttons non-functional — JS-rendered rows use class `wallet-transaction-action-btn` but click handler only matches `.ds-btn.ds-btn--ghost`; all clicks silently no-op | **fixed 2026-04-30** | 2026-04-30 |
 | 1.5-BUG-003 | 🟡 | `2fa_required`, `withdrawal_cooldown`, `daily_limit_exceeded` error codes missing from both wallet error maps → generic "An error occurred" toast gives investor no actionable guidance | **fixed 2026-04-30** | 2026-04-30 |
-| 1.5-BUG-004 | 🔵 | Duplicate error handler scripts in wallet.html (inline) and wallet.js with differing error maps — creates maintenance risk | open | 2026-04-30 |
+| 1.5-BUG-004 | 🔵 | Duplicate error handler scripts in wallet.html (inline) and wallet.js with differing error maps — creates maintenance risk | **fixed** (not reproduced — inline script absent from wallet.html; wallet.js is sole handler) | 2026-04-30 |
 
 ### 1.5a Withdrawal 2FA Step-up
 
@@ -304,7 +304,7 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 | [PAGE-ISSUE-0483](docs/page-audits/) | 🟡 | Document upload file inputs lack `aria-label`/`aria-labelledby` | **fixed 2026-04-30** — all 6 file inputs given descriptive `aria-label` | 2026-04-25 |
 | [PAGE-ISSUE-0485](docs/page-audits/) | 🟡 | Media upload accept attr includes `.gif`; backend acceptance unverified | **closed — not a bug** — `validate_asset_image_mime` in `storage/service.rs:355` explicitly accepts `image/gif` | 2026-04-25 |
 | [PAGE-ISSUE-0488](docs/page-audits/) | 🟡 | Property image remove buttons have no accessible names | **closed — already fixed** — `setAttribute("aria-label", "Remove image")` at `developer-property-content.js:258` | 2026-04-25 |
-| [PAGE-ISSUE-0487](docs/page-audits/) | 🟡 | Developer logo upload UI advertises SVG files that the backend rejects | open | 2026-04-25 |
+| [PAGE-ISSUE-0487](docs/page-audits/) | 🟡 | Developer logo upload UI advertises SVG files that the backend rejects | **fixed** (commit 7c1808d — `settings.html` accept attr excludes SVG; hint text updated) | 2026-04-25 |
 | 2.2-BUG-003 | 🟡 | Photo subtitle said "8-16 required" but backend minimum is 1 | **fixed 2026-04-30** — JS + HTML updated; 0=red, 1-7=orange warning, 8-16=green, >16=red | 2026-04-30 |
 | 2.2-BUG-004 | 🔵 | Success page nav title "Submission Submitted" redundant with card "Submission successful!" | **fixed 2026-04-30** — nav title changed to "Submission Successful" | 2026-04-30 |
 | [PAGE-ISSUE-0484](docs/page-audits/) | 🟡 | Document upload hardcoded demo rows | **fixed** (not reproduced 2026-04-30) | 2026-04-25 |
@@ -329,7 +329,7 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0391](docs/page-audits/) | 🔴 | Asset detail destructive/publish controls are placeholders that imply success | open | 2026-04-25 |
+| [PAGE-ISSUE-0391](docs/page-audits/) | 🔴 | Asset detail destructive/publish controls are placeholders that imply success | **closed — not a bug** — `dangerAction` shows warning toast "This action is not yet available. Contact support to request changes." — no false success implied | 2026-04-25 |
 | — | 🟡 | No formal change-request / revision cycle between admin and developer | open | — |
 
 ---
@@ -350,7 +350,7 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0392](docs/page-audits/) | 🟡 | Developer cap table renders admin user-detail links (wrong audience) | open | 2026-04-25 |
+| [PAGE-ISSUE-0392](docs/page-audits/) | 🟡 | Developer cap table renders admin user-detail links (wrong audience) | **closed — not reproduced** — `renderCapTable` in `developer-asset-detail.js` renders investor name as plain `esc(inv.name)` text only; no links to admin pages | 2026-04-25 |
 | — | 🟡 | Developer cannot see their own fee structure | open | — |
 | — | 🟡 | No developer-initiated dividend request flow | open | — |
 
@@ -378,9 +378,9 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0291](docs/page-audits/) | 🔴 | User directory exposes PII and status mutation without granular user permissions | open | 2026-04-25 |
-| [PAGE-ISSUE-0290](docs/page-audits/) | 🟡 | Clean URL `/admin/users` returns 404 | open | 2026-04-25 |
-| [PAGE-ISSUE-0023](docs/page-audits/) | 🟡 | Admin directory staff PII and security posture reads are not audit logged | open | 2026-04-25 |
+| [PAGE-ISSUE-0291](docs/page-audits/) | 🔴 | User directory exposes PII and status mutation without granular user permissions | **fixed 2026-04-30** — list + detail require `users.view` + `pii.view`; mutations require `users.edit`; page-level gate in `pages.rs` blocks `/admin/users` without `users.view` | 2026-04-25 |
+| [PAGE-ISSUE-0290](docs/page-audits/) | 🟡 | Clean URL `/admin/users` returns 404 | **fixed** (commit 7c1808d — both `/admin/users` and `/admin/users.html` routes registered in `admin/mod.rs:107-108`) | 2026-04-25 |
+| [PAGE-ISSUE-0023](docs/page-audits/) | 🟡 | Admin directory staff PII and security posture reads are not audit logged | **fixed 2026-04-30** — list endpoint inserts `admin.pii_access` audit log; detail endpoint inserts per-user `admin.pii_access` audit log with entity_id | 2026-04-25 |
 
 ---
 
@@ -431,14 +431,14 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| PAGE-ISSUE-0205 | 🔴 | Fee management routes do not enforce `marketplace.manage` permission | needs recheck | 2026-04-25 |
+| PAGE-ISSUE-0205 | 🔴 | Fee management routes do not enforce `marketplace.manage` permission | **fixed** — `marketplace.manage` gates confirmed on all write endpoints in `marketplace.rs` | 2026-04-25 |
 | PAGE-ISSUE-0206 | ✅ | Fee controls show success UI without actually persisting to DB | **fixed** — `POST /api/admin/marketplace/fees` persists taker+maker correctly | 2026-04-25 |
-| PAGE-ISSUE-0207 | 🔴 | Fee list API masks database failures as empty state | needs recheck | 2026-04-25 |
+| PAGE-ISSUE-0207 | 🔴 | Fee list API masks database failures as empty state | **fixed** — fee list query uses `map_err(ApiError::Database)?`; no silent empty-state fallback | 2026-04-25 |
 | PAGE-ISSUE-0208 | 🟡 | Asset-specific fee override not yet implemented (stub toast) | intentional stub — `POST /api/admin/fees/asset/:id` not wired | 2026-04-25 |
-| PAGE-ISSUE-0209 | 🟡 | Active fee configuration validation is ambiguous | needs recheck | 2026-04-25 |
-| PAGE-ISSUE-0210 | 🟡 | Stored fee data renders through raw HTML (XSS risk) | needs recheck | 2026-04-25 |
-| PAGE-ISSUE-0211 | 🟡 | Fee mutations are not audit logged | needs recheck | 2026-04-25 |
-| PAGE-ISSUE-0212 | 🟡 | Settlement and minimum fee fields have no backend support | confirmed open — fields present in UI; not included in POST body | 2026-04-25 |
+| PAGE-ISSUE-0209 | 🟡 | Active fee configuration validation is ambiguous | **closed — not a bug** — backend only returns `is_active = true` rows; UI correctly shows "Deactivate" action only for active records | 2026-04-25 |
+| PAGE-ISSUE-0210 | 🟡 | Stored fee data renders through raw HTML (XSS risk) | **fixed 2026-04-30** — all dynamic data in `mp-fees.js` goes through `esc()` helper before `innerHTML` insertion | 2026-04-25 |
+| PAGE-ISSUE-0211 | 🟡 | Fee mutations are not audit logged | **fixed 2026-04-30** — create and deactivate endpoints both insert `admin.fee_config_create` / `admin.fee_config_deactivate` audit log entries | 2026-04-25 |
+| PAGE-ISSUE-0212 | 🟡 | Settlement and minimum fee fields have no backend support | **fixed 2026-04-30** — both inputs disabled in `mp-fees.js` with `opacity:0.5`; hint text explains backend limitation; not included in POST body | 2026-04-25 |
 | PAGE-ISSUE-0594 | ✅ | Live Assets list had no link to asset detail / manage page | **fixed 2026-04-30** — gear-icon "Manage asset" link added to each row in `admin-assets.js` pointing to `/admin/asset-details.html?id=` | 2026-04-30 |
 
 ---
@@ -489,12 +489,12 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0283](docs/page-audits/) | 🔴 | Platform settings and maintenance actions lack granular authorization | open | 2026-04-25 |
-| [PAGE-ISSUE-0284](docs/page-audits/) | 🔴 | Support ticket list and bulk update APIs lack support permissions and audit logs | open | 2026-04-25 |
-| [PAGE-ISSUE-0285](docs/page-audits/) | 🔴 | Support ticket detail and reply actions lack support permissions and durable audit | open | 2026-04-25 |
-| [PAGE-ISSUE-0286](docs/page-audits/) | 🔴 | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | open | 2026-04-25 |
-| [PAGE-ISSUE-0287](docs/page-audits/) | 🔴 | System maintenance and session operations lack granular authorization and audit | open | 2026-04-25 |
-| [PAGE-ISSUE-0282](docs/page-audits/) | 🟡 | Roles page falls back to demo data instead of showing authorization failure | open | 2026-04-25 |
+| [PAGE-ISSUE-0283](docs/page-audits/) | 🔴 | Platform settings and maintenance actions lack granular authorization | **fixed** — `settings.rs` all handlers gate on `platform.manage` | 2026-04-25 |
+| [PAGE-ISSUE-0284](docs/page-audits/) | 🔴 | Support ticket list and bulk update APIs lack support permissions and audit logs | **fixed** — `support.rs` uses `support.view`/`support.write` on all handlers + audit logs in tx | 2026-04-25 |
+| [PAGE-ISSUE-0285](docs/page-audits/) | 🔴 | Support ticket detail and reply actions lack support permissions and durable audit | **fixed** — same as 0284; reply handler uses tx with audit log inside before commit | 2026-04-25 |
+| [PAGE-ISSUE-0286](docs/page-audits/) | 🔴 | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | **fixed** — all routes registered in `admin/mod.rs:599-631`; confirmed 2026-04-30 | 2026-04-25 |
+| [PAGE-ISSUE-0287](docs/page-audits/) | 🔴 | System maintenance and session operations lack granular authorization and audit | **fixed 2026-04-30** — `system.rs` all 10 handlers gate on `platform.manage`; 5 destructive ops have audit log INSERT | 2026-04-25 |
+| [PAGE-ISSUE-0282](docs/page-audits/) | 🟡 | Roles page falls back to demo data instead of showing authorization failure | **fixed 2026-04-30** — `loadData` sets `state.roles = []` on failure + error toast; dead `fallbackRoles` constant removed from `admin-rbac.js` | 2026-04-25 |
 
 ---
 
@@ -753,7 +753,7 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0282](docs/page-audits/) | 🟡 | Roles page falls back to demo data instead of showing authorization failure | open | 2026-04-25 |
+| [PAGE-ISSUE-0282](docs/page-audits/) | 🟡 | Roles page falls back to demo data instead of showing authorization failure | **fixed 2026-04-30** — `loadData` sets `state.roles = []` on failure + error toast; dead `fallbackRoles` constant removed from `admin-rbac.js` | 2026-04-25 |
 
 ---
 
@@ -771,8 +771,8 @@ Tracks end-to-end workflows for investors, developers, and admins. Each workflow
 
 | ID | Sev | Title | Status | Since |
 |----|-----|-------|--------|-------|
-| [PAGE-ISSUE-0286](docs/page-audits/) | 🔴 | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | open | 2026-04-25 |
-| [PAGE-ISSUE-0287](docs/page-audits/) | 🔴 | System maintenance and session operations lack granular authorization and audit | open | 2026-04-25 |
+| [PAGE-ISSUE-0286](docs/page-audits/) | 🔴 | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | **fixed** — all routes registered in `admin/mod.rs:599-631`; confirmed 2026-04-30 | 2026-04-25 |
+| [PAGE-ISSUE-0287](docs/page-audits/) | 🔴 | System maintenance and session operations lack granular authorization and audit | **fixed 2026-04-30** — `system.rs` all 10 handlers gate on `platform.manage`; 5 destructive ops have audit log INSERT | 2026-04-25 |
 
 ---
 
@@ -804,18 +804,18 @@ Bugs grouped by impact tier for sprint planning.
 | ~~PAGE-ISSUE-0160~~ | Admin KYC | ~~KYC routes lack KYC-specific permission gates~~ — **closed — fixed** |
 | ~~PAGE-ISSUE-0161~~ | Admin KYC | ~~KYC document signed URLs audit log silently swallowed~~ — **fixed 2026-04-30** |
 | ~~PAGE-ISSUE-0162~~ | Admin KYC | ~~Approve audit post-commit gap; reject has no tx; both `let _ =`~~ — **fixed 2026-04-30** |
-| PAGE-ISSUE-0205 | Admin Fees | Fee routes do not enforce `marketplace.manage` |
-| PAGE-ISSUE-0206 | Admin Fees | Fee controls show success without DB persistence |
-| PAGE-ISSUE-0207 | Admin Fees | Fee list API masks DB failures as empty state |
+| ~~PAGE-ISSUE-0205~~ | Admin Fees | ~~Fee routes do not enforce `marketplace.manage`~~ — **fixed** (confirmed 2026-04-30) |
+| ~~PAGE-ISSUE-0206~~ | Admin Fees | ~~Fee controls show success without DB persistence~~ — **fixed** |
+| ~~PAGE-ISSUE-0207~~ | Admin Fees | ~~Fee list API masks DB failures as empty state~~ — **fixed** (confirmed 2026-04-30) |
 | PAGE-ISSUE-0208 | Admin Fees | Fee resolver ignores developer fee scope |
-| PAGE-ISSUE-0283 | Admin Config | Platform settings lack granular authorization |
-| PAGE-ISSUE-0284 | Admin Support | Support APIs lack permission gates + audit logs |
-| PAGE-ISSUE-0285 | Admin Support | Support ticket detail lacks permissions + audit |
-| PAGE-ISSUE-0286 | Admin System | System dashboard calls unregistered routes |
-| PAGE-ISSUE-0287 | Admin System | System maintenance lacks authorization + audit |
+| ~~PAGE-ISSUE-0283~~ | Admin Config | ~~Platform settings lack granular authorization~~ — **fixed** (confirmed 2026-04-30) |
+| ~~PAGE-ISSUE-0284~~ | Admin Support | ~~Support APIs lack permission gates + audit logs~~ — **fixed** (confirmed 2026-04-30) |
+| ~~PAGE-ISSUE-0285~~ | Admin Support | ~~Support ticket detail lacks permissions + audit~~ — **fixed** (confirmed 2026-04-30) |
+| ~~PAGE-ISSUE-0286~~ | Admin System | ~~System dashboard calls unregistered routes~~ — **fixed** (confirmed 2026-04-30) |
+| ~~PAGE-ISSUE-0287~~ | Admin System | ~~System maintenance lacks authorization + audit~~ — **fixed 2026-04-30** |
 | PAGE-ISSUE-0291 | Admin Users | User directory exposes PII without permission gate |
-| PAGE-ISSUE-0387 | Investor Cart | Cart HTML incomplete escaping (XSS risk) |
-| PAGE-ISSUE-0388 | Investor Cart | Cart update fails open on availability lock failure |
+| ~~PAGE-ISSUE-0387~~ | Investor Cart | ~~Cart HTML incomplete escaping (XSS risk)~~ — **fixed** (commit cf12981) |
+| ~~PAGE-ISSUE-0388~~ | Investor Cart | ~~Cart update fails open on availability lock failure~~ — **fixed** (commit cf12981) |
 | PAGE-ISSUE-0391 | Developer Asset | Asset publish/destroy controls are fake success placeholders |
 | PAGE-ISSUE-0528 | Admin Orders | Orders APIs lack granular permission checks |
 | PAGE-ISSUE-0529 | Admin Orders | Order cancel not locked or audited |
@@ -839,7 +839,7 @@ Bugs grouped by impact tier for sprint planning.
 | PAGE-ISSUE-0211 | Admin Fees | Fee mutations not audit logged |
 | PAGE-ISSUE-0212 | Admin Fees | Settlement and minimum fee fields lack backend |
 | PAGE-ISSUE-0282 | Admin Config | Roles page falls back to demo data |
-| PAGE-ISSUE-0290 | Admin Users | `/admin/users` clean URL returns 404 |
+| ~~PAGE-ISSUE-0290~~ | Admin Users | ~~`/admin/users` clean URL returns 404~~ — **fixed** (commit 7c1808d) |
 | PAGE-ISSUE-0389 | Investor Cart | Cart controls lack accessible labels |
 | ~~PAGE-ISSUE-0390~~ | Developer | ~~Asset type selection mouse-only~~ — **fixed 2026-04-30** |
 | PAGE-ISSUE-0392 | Developer | Cap table shows admin-audience links |
@@ -847,9 +847,9 @@ Bugs grouped by impact tier for sprint planning.
 | PAGE-ISSUE-0481 | Developer | Chart fragment unauthenticated HTTP 200 |
 | PAGE-ISSUE-0482 | Developer | Assets fragment unauthenticated HTTP 200 |
 | ~~PAGE-ISSUE-0483~~ | Developer | ~~Document upload controls no accessible names~~ — **fixed 2026-04-30** |
-| PAGE-ISSUE-0484 | Developer | Document upload shows hardcoded demo rows |
+| ~~PAGE-ISSUE-0484~~ | Developer | ~~Document upload shows hardcoded demo rows~~ — **fixed** (not reproduced 2026-04-30) |
 | ~~PAGE-ISSUE-0485~~ | Developer | ~~Media upload copy mismatches backend limits~~ — **closed, not a bug** |
-| PAGE-ISSUE-0487 | Developer | Logo upload UI accepts SVG, backend rejects it |
+| ~~PAGE-ISSUE-0487~~ | Developer | ~~Logo upload UI accepts SVG, backend rejects it~~ — **fixed** (commit 7c1808d) |
 | ~~PAGE-ISSUE-0488~~ | Developer | ~~Image remove buttons have no accessible names~~ — **closed, already fixed** |
 | PAGE-ISSUE-0543 | Investor KYC | KYC audit + email side effects swallowed |
 | PAGE-ISSUE-0550 | Investor KYC | KYC email delivery lacks durable outbox |
@@ -859,7 +859,7 @@ Bugs grouped by impact tier for sprint planning.
 
 | ID | Workflow | Title |
 |----|----------|-------|
-| PAGE-ISSUE-0486 | Developer | Submission success WhatsApp link is a placeholder |
+| ~~PAGE-ISSUE-0486~~ | Developer | ~~Submission success WhatsApp link is a placeholder~~ — **fixed** (confirmed 2026-04-30) |
 | PAGE-ISSUE-0566 | Investor KYC | KYC upload can orphan GCS object after DB failure |
 
 ---

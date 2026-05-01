@@ -144,44 +144,6 @@
     },
   ];
 
-  const fallbackRoles = [
-    {
-      id: "1",
-      name: "super_admin",
-      description: "Full system access",
-      admin_count: 1,
-      permissions: ["all"],
-    },
-    {
-      id: "2",
-      name: "compliance_officer",
-      description: "KYC/AML review and compliance operations",
-      admin_count: 0,
-      permissions: ["users.view", "pii.view", "kyc.read", "kyc.write", "kyc.override", "aml.read", "aml.escalate", "treasury.read", "audit.read"],
-    },
-    {
-      id: "3",
-      name: "support_agent",
-      description: "Support tickets and basic user lookup",
-      admin_count: 0,
-      permissions: ["users.view", "support.read", "support.write", "support.assign", "notifications.send"],
-    },
-    {
-      id: "4",
-      name: "finance_admin",
-      description: "Treasury read, draft payouts, manage invoices",
-      admin_count: 0,
-      permissions: ["treasury.read", "treasury.write", "deposits.confirm", "financials.payout.draft", "invoices.manage", "orders.view", "investments.view"],
-    },
-    {
-      id: "5",
-      name: "auditor_read_only",
-      description: "View-only access for external regulators/auditors",
-      admin_count: 0,
-      permissions: ["users.view", "kyc.read", "aml.read", "treasury.read", "orders.view", "investments.view", "audit.read", "reports.generate", "rewards.view", "assets.view"],
-    },
-  ];
-
   const state = {
     roles: [],
     originalRoles: [],
