@@ -35,10 +35,6 @@
       <!-- Main Card -->
       <div class="payment-success-card">
 
-        <!-- Gradient Blurs -->
-        <div class="payment-success-blur-1"></div>
-        <div class="payment-success-blur-2"></div>
-
         <!-- Status Icon -->
         <div id="status-icon" class="payment-success-icon payment-success-icon--success">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
@@ -60,11 +56,18 @@
         <div id="order-details" class="payment-success-order">
           <div class="payment-success-order__row payment-success-order__row--border">
             <span class="payment-success-order__label">Order ID</span>
-            <span id="display-order-id" class="payment-success-order__value" style="font-family:monospace; font-size:12px;">#...</span>
+            <span style="display:flex; align-items:center; gap:6px;">
+              <span id="display-order-id" class="payment-success-order__value" style="font-family:monospace; font-size:12px; color:#667085;">#...</span>
+              <button id="btn-copy-order-id" title="Copy Order ID" style="background:none; border:none; cursor:pointer; padding:2px; color:#98A2B3; display:flex; align-items:center;" aria-label="Copy order ID">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+              </button>
+            </span>
           </div>
           <div class="payment-success-order__row payment-success-order__row--border">
             <span class="payment-success-order__label">Side</span>
-            <span id="display-side" class="payment-success-order__value" style="font-weight:700;"></span>
+            <span id="display-side"></span>
           </div>
           <div class="payment-success-order__row payment-success-order__row--border">
             <span class="payment-success-order__label">Asset</span>
@@ -85,18 +88,11 @@
         </div>
 
         <!-- Info Notice -->
-        <div style="
-          display:flex; align-items:flex-start; gap:10px; padding:14px 16px;
-          background:rgba(46,46,249,0.04); border:1px solid rgba(46,46,249,0.12);
-          border-radius:12px; margin-top:16px; font-size:13px; color:#475467; line-height:1.6;
-        ">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E2EF9" stroke-width="2" style="flex-shrink:0; margin-top:2px;">
+        <div style="display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:#F0F9FF; border:1px solid #BAE6FD; border-radius:8px; margin-top:0; font-size:13px; color:#0C4A6E; line-height:1.6; text-align:left; position:relative; z-index:1;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0369A1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          <span>
-            Your order is now <strong>live on the marketplace</strong>. Once a matching buyer or seller is found,
-            the trade will be executed automatically and you'll receive a notification.
-          </span>
+          <span>Your order is now <strong>live on the marketplace</strong>. Once a matching buyer or seller is found, the trade will be executed automatically and you'll receive a notification.</span>
         </div>
 
         <!-- Action Buttons -->
@@ -116,69 +112,84 @@
 
   <script>
     (function() {
-      const params = new URLSearchParams(window.location.search);
+      // Read from sessionStorage (set by trading page), fall back to URL params for direct links
+      var data = {};
+      try {
+        var stored = sessionStorage.getItem('trade_success');
+        if (stored) { data = JSON.parse(stored); sessionStorage.removeItem('trade_success'); }
+      } catch(e) {}
+      if (!data.order_id) {
+        var p = new URLSearchParams(window.location.search);
+        data = { order_id: p.get('order_id') || '', side: p.get('side') || '', asset: p.get('asset') || '', qty: p.get('qty') || '0', price: p.get('price') || '0', total: p.get('total') || '0', slug: p.get('slug') || '' };
+      }
 
-      const orderId = params.get('order_id') || '—';
-      const side = params.get('side') || '';
-      const asset = params.get('asset') || '';
-      const qty = params.get('qty') || '0';
-      const price = params.get('price') || '0';
-      const total = params.get('total') || '0';
-      const slug = params.get('slug') || '';
+      var orderId = data.order_id || '';
+      var side    = data.side    || '';
+      var asset   = data.asset   || '';
+      var qty     = data.qty     || '0';
+      var price   = data.price   || '0';
+      var total   = data.total   || '0';
+      var slug    = data.slug    || '';
 
-      document.getElementById('display-order-id').textContent = '#' + (orderId.length > 12 ? orderId.substring(0, 12) + '…' : orderId);
-      document.getElementById('display-order-id').title = orderId;
+      // Order ID — show truncated, full value in title attr
+      var orderIdEl = document.getElementById('display-order-id');
+      orderIdEl.textContent = '#' + (orderId.length > 16 ? orderId.substring(0, 16) + '…' : orderId || '—');
+      orderIdEl.title = orderId;
 
-      const sideEl = document.getElementById('display-side');
-      sideEl.textContent = side.toUpperCase();
-      sideEl.style.color = side === 'buy' ? '#00c896' : '#ef4444';
+      // Copy Order ID button
+      var copyBtn = document.getElementById('btn-copy-order-id');
+      if (copyBtn && orderId) {
+        copyBtn.addEventListener('click', function() {
+          navigator.clipboard.writeText(orderId).then(function() {
+            copyBtn.style.color = '#027A48';
+            setTimeout(function() { copyBtn.style.color = ''; }, 1500);
+          });
+        });
+      }
+
+      // Side badge — use ds-badge, not inline color
+      var sideEl = document.getElementById('display-side');
+      var isBuy  = side === 'buy';
+      sideEl.className = isBuy ? 'ds-badge ds-badge--success' : 'ds-badge ds-badge--danger';
+      sideEl.textContent = isBuy ? 'Buy' : 'Sell';
 
       document.getElementById('display-asset').textContent = decodeURIComponent(asset);
       document.getElementById('display-price').textContent = '$' + parseFloat(price).toFixed(2);
-      document.getElementById('display-qty').textContent = qty + ' share' + (parseInt(qty) > 1 ? 's' : '');
-      document.getElementById('display-total').textContent = '$' + parseFloat(total).toFixed(2);
+      document.getElementById('display-qty').textContent   = qty + ' share' + (parseInt(qty) > 1 ? 's' : '');
+      document.getElementById('display-total').textContent = '$' + parseFloat(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-      // Update title based on side
-      const titleEl = document.getElementById('status-title');
-      if (side === 'sell') {
-        titleEl.textContent = 'Sell Order Placed';
-        document.getElementById('status-description').textContent =
-          'Your shares have been listed for sale on the marketplace. Once a matching buyer is found, the trade will be executed automatically.';
-      } else {
+      // Title and description
+      var titleEl = document.getElementById('status-title');
+      var descEl  = document.getElementById('status-description');
+      if (isBuy) {
         titleEl.textContent = 'Buy Order Placed';
-        document.getElementById('status-description').textContent =
-          'Your buy order has been placed on the marketplace. Once a matching seller is found, the trade will be executed automatically.';
+        descEl.textContent  = 'Your buy order is live on the marketplace. Once a matching seller is found, the trade will be executed automatically.';
+      } else {
+        titleEl.textContent = 'Sell Order Placed';
+        descEl.textContent  = 'Your shares have been listed for sale. Once a matching buyer is found, the trade will be executed automatically.';
       }
 
-      // "Trade Again" button links back to the same asset
+      // "Continue Trading" links back to same asset if slug available
       if (slug) {
         document.getElementById('btn-trade-again').onclick = function() {
           window.location.href = '/marketplace-trading-v3?asset=' + encodeURIComponent(slug);
         };
       }
 
-      // ── Confetti animation ──
-      const container = document.getElementById('confetti-container');
+      // Confetti — brand colors only
+      var container = document.getElementById('confetti-container');
       if (container) {
-        const colors = ['#00c896', '#2E2EF9', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-        for (let i = 0; i < 60; i++) {
-          const particle = document.createElement('div');
-          const color = colors[Math.floor(Math.random() * colors.length)];
-          const size = 6 + Math.random() * 6;
-          const left = Math.random() * 100;
-          const delay = Math.random() * 1.5;
-          const duration = 2 + Math.random() * 2;
+        var colors = ['#0000FF', '#98FB96', '#03FF88', '#DBE2E9', '#08232F'];
+        for (var i = 0; i < 60; i++) {
+          var particle = document.createElement('div');
+          var color    = colors[Math.floor(Math.random() * colors.length)];
+          var size     = 6 + Math.random() * 6;
           Object.assign(particle.style, {
-            position: 'absolute',
-            width: size + 'px',
-            height: size + 'px',
-            background: color,
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-            left: left + '%',
-            top: '-10px',
-            opacity: '0.9',
-            animation: `confetti-fall ${duration}s ease-out ${delay}s forwards`,
-            transform: `rotate(${Math.random() * 360}deg)`
+            position: 'absolute', width: size + 'px', height: size + 'px',
+            background: color, borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            left: (Math.random() * 100) + '%', top: '-10px', opacity: '0.85',
+            animation: 'confetti-fall ' + (2 + Math.random() * 2) + 's ease-out ' + (Math.random() * 1.5) + 's forwards',
+            transform: 'rotate(' + (Math.random() * 360) + 'deg)'
           });
           container.appendChild(particle);
         }

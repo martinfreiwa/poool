@@ -88,10 +88,10 @@
     max-width: 560px;
     margin: 0 auto;
     background: white;
-    border: 1px solid var(--table-border-color);
-    border-radius: 20px;
-    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
-    padding: 48px 40px 40px;
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+    padding: 40px 40px 36px;
     text-align: center;
     overflow: hidden;
 }
@@ -137,8 +137,7 @@
 }
 
 .payment-success-icon--success {
-    background: #ecfdf3;
-    box-shadow: 0 0 0 8px rgba(2, 122, 72, 0.08);
+    background: #ECFDF3;
 }
 
 .payment-success-icon--pending {
@@ -148,11 +147,10 @@
 
 /* ── Title ───────────────────────────────────────────────────── */
 .payment-success-title {
-    font-size: 26px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--page-title-color);
     margin: 0 0 12px;
-    letter-spacing: -0.3px;
     position: relative;
     z-index: 1;
 }
@@ -239,7 +237,8 @@
 .payment-success-order__total-value {
     font-size: 20px;
     font-weight: 800;
-    color: var(--primary-color);
+    color: #101828;
+    font-variant-numeric: tabular-nums;
 }
 
 /* ── Order Items ─────────────────────────────────────────────── */
