@@ -10,7 +10,6 @@
 
 
     let currentFilter = 'all';
-    let currentStatus = 'available';
 
     // Generate 12-month daily data points
     function generateSparkData(days, startPrice, endPrice, isPositive) {
@@ -260,15 +259,6 @@
 
         let assets = [...MOCK_ASSETS];
         
-        // Status Filter (Available / Funded)
-        if (currentStatus === 'available') {
-            // "Available" means either has secondary sell orders OR is still in primary funding
-            assets = assets.filter(a => a.sellOrders > 0 || a.rentStatus !== 'funded');
-        } else if (currentStatus === 'funded') {
-            // "Funded" means it is fully funded and has NO active sell orders (passive portfolio assets)
-            assets = assets.filter(a => a.sellOrders === 0 && a.rentStatus === 'funded');
-        }
-
         // Search filter
         if (query) {
             assets = assets.filter(a =>
@@ -406,16 +396,6 @@
         const sortSelect = document.getElementById('mp-sort');
         if (searchInput) searchInput.addEventListener('input', debounce(filterAndSort, 200));
         if (sortSelect) sortSelect.addEventListener('change', filterAndSort);
-
-        // Status tabs (Available / Funded)
-        document.querySelectorAll('.mp-sec__status-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.mp-sec__status-tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentStatus = btn.dataset.status;
-                filterAndSort();
-            });
-        });
 
         // Filter tabs
         document.querySelectorAll('.mp-sec__filter-btn').forEach(btn => {

@@ -293,53 +293,12 @@ body.mp-secondary-body {
     color: var(--mp-text-secondary);
 }
 
-/* === Status Tabs (Available / Funded) === */
-.mp-sec__status-tabs {
-    display: flex;
-    align-items: center;
-    padding: 4px;
-    gap: 0;
-    background: var(--mp-surface);
-    border: 1px solid var(--mp-border);
-    border-radius: 30px;
-    width: fit-content;
-}
-
 .mp-sec__controls {
     display: flex;
     align-items: center;
     gap: 16px;
     margin-bottom: 24px;
     flex-wrap: wrap;
-}
-
-.mp-sec__status-tab {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 32px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: var(--mp-font);
-    color: var(--mp-text-secondary);
-    background: transparent;
-    border: none;
-    border-radius: 26px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    white-space: nowrap;
-    line-height: 24px;
-}
-
-.mp-sec__status-tab:hover:not(.active) {
-    background: var(--mp-bg);
-    color: var(--mp-text-primary);
-}
-
-.mp-sec__status-tab.active {
-    background: var(--mp-green-light);
-    color: var(--mp-blue);
-    font-weight: 700;
 }
 
 /* === Asset Grid === */
