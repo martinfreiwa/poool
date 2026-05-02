@@ -316,8 +316,11 @@
                 : 'No shares currently for sale';
         }
         if (depthBuy) {
+            // The number is total SHARES wanted across all open buy bids,
+            // not the count of orders. Earlier label said "buy offers" which
+            // misled users into thinking it was order count.
             depthBuy.textContent = buyData.totalShares > 0
-                ? buyData.totalShares + ' buy offers from ' + fmt(buyData.bestPrice)
+                ? buyData.totalShares + ' shares wanted from ' + fmt(buyData.bestPrice)
                 : 'No buy offers placed';
         }
     }
@@ -432,9 +435,12 @@
         const customHint = document.getElementById('tv3-custom-hint');
 
         if (bestPriceEl) bestPriceEl.textContent = fmt(data.bestPrice);
-        if (availSharesEl) availSharesEl.textContent = data.totalShares + ' shares';
+        if (availSharesEl) {
+            availSharesEl.textContent = data.totalShares + (data.totalShares === 1 ? ' share' : ' shares');
+        }
         if (availSellersEl) {
-            const label = currentSide === 'buy' ? 'sellers' : 'buyers';
+            const noun = currentSide === 'buy' ? 'seller' : 'buyer';
+            const label = data.count === 1 ? noun : noun + 's';
             availSellersEl.textContent = data.count + ' ' + label;
         }
 
