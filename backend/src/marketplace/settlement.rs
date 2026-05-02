@@ -38,8 +38,33 @@ use crate::error::AppError;
 pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
     tracing::info!("💰 Settlement worker starting...");
 
+    // Recover any events stuck in the processing queue from a prior crash.
+    // BRPOPLPUSH atomically moves events from match:queue → match:processing,
+    // so anything still there means the previous worker died mid-settlement.
+    // Move them back to the main queue for retry.
+    match orderbook::recover_match_processing_queue(redis).await {
+        Ok(0) => {}
+        Ok(n) => {
+            tracing::warn!(
+                "💰 Recovered {} match events from processing queue (previous worker crashed)",
+                n
+            );
+            sentry::capture_message(
+                &format!("Settlement worker recovered {} stuck match events on startup", n),
+                sentry::Level::Warning,
+            );
+        }
+        Err(e) => {
+            tracing::error!(
+                "💰 Failed to recover processing queue on startup: {} — continuing anyway",
+                e
+            );
+        }
+    }
+
     loop {
-        // Block-wait for the next match event (1s timeout for heartbeat)
+        // Atomic move: pop from main queue → push to processing queue.
+        // If we crash before ack/requeue, recovery on next startup gets it.
         let event_json = match orderbook::pop_match_from_queue(redis, 1).await {
             Ok(Some(json)) => json,
             Ok(None) => continue, // Timeout — no events, loop back
@@ -59,11 +84,13 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                     e,
                     &event_json[..event_json.len().min(200)]
                 );
-                // Corrupt event — don't retry, log for investigation
                 sentry::capture_message(
                     &format!("Corrupt match event dropped: {}", e),
                     sentry::Level::Error,
                 );
+                // Drain corrupt event from the processing queue so it
+                // doesn't get recovered into the main queue forever.
+                let _ = orderbook::ack_match_processed(redis, &event_json).await;
                 continue;
             }
         };
@@ -80,6 +107,17 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                     match_event.buyer_user_id,
                     match_event.seller_user_id,
                 );
+                if let Err(e) = orderbook::ack_match_processed(redis, &event_json).await {
+                    // ACK failure means the event will be recovered next
+                    // startup and retried. Settlement was already committed,
+                    // so settle_trade will hit the OrderTerminal path and
+                    // drop it cleanly. Log loud but don't block.
+                    tracing::error!(
+                        "🔴 ACK failed for settled trade {}: {} — will be re-processed and dropped",
+                        trade_id,
+                        e
+                    );
+                }
             }
             // TERMINAL: order is no longer active (already cancelled, expired,
             // or fully filled by an earlier match). Re-queueing creates an
@@ -104,6 +142,8 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                     ),
                     sentry::Level::Warning,
                 );
+                // Drop from processing queue — event is dead.
+                let _ = orderbook::ack_match_processed(redis, &event_json).await;
             }
             Err(e) => {
                 tracing::error!("❌ Settlement FAILED: {} — re-queuing event for retry", e);
@@ -118,15 +158,19 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                     sentry::Level::Error,
                 );
 
-                // Re-queue the event for retry (push back to the queue)
-                if let Err(re_err) = orderbook::push_match_to_queue(redis, &event_json).await {
+                // Atomic LREM(processing) + RPUSH(queue) so the event ends
+                // up exactly once on the main queue regardless of failure
+                // mode. If this Redis call itself fails, the event sits in
+                // processing and gets recovered on the next startup —
+                // durable either way (fixes the BLPOP loss bug).
+                if let Err(re_err) = orderbook::requeue_match_failed(redis, &event_json).await {
                     tracing::error!(
-                        "🔴 CRITICAL: Failed to re-queue match event: {} — MATCH MAY BE LOST",
+                        "🔴 Requeue failed: {} — event remains in match:processing, will recover on restart",
                         re_err
                     );
                     sentry::capture_message(
-                        &format!("CRITICAL: Match event lost: {}", event_json),
-                        sentry::Level::Fatal,
+                        &format!("Settlement requeue failed (will recover on restart): {}", re_err),
+                        sentry::Level::Error,
                     );
                 }
 

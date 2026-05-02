@@ -315,8 +315,29 @@
         }
     }
 
+    // Cache resolved fee rate per asset slug. Server is source of truth —
+    // we fetch on modal open and fall back to 5% only if the call fails.
+    const feeRateCache = new Map();
+
+    async function fetchFeeRate(slug) {
+        if (feeRateCache.has(slug)) return feeRateCache.get(slug);
+        try {
+            const r = await fetch(`/api/marketplace/${encodeURIComponent(slug)}/fee-rate`, {
+                credentials: 'same-origin',
+            });
+            if (!r.ok) throw new Error(`fee-rate ${r.status}`);
+            const data = await r.json();
+            const pct = typeof data.taker_fee_pct === 'number' ? data.taker_fee_pct : 5;
+            feeRateCache.set(slug, pct);
+            return pct;
+        } catch (e) {
+            console.warn('Fee-rate fetch failed, using 5% fallback:', e);
+            return 5;
+        }
+    }
+
     // ── Buy Interest Modal ──
-    function openBuyInterestModal(asset) {
+    async function openBuyInterestModal(asset) {
         const modal = document.getElementById('buy-interest-modal');
         const assetLabel = document.getElementById('interest-modal-asset');
         if (assetLabel) {
@@ -329,6 +350,13 @@
         if (priceInput) priceInput.value = (asset.price / 100).toFixed(2);
         modal.classList.add('active');
         modal.dataset.assetSlug = asset.slug;
+        modal.dataset.assetName = asset.name || '';
+        // Pre-fetch the actual fee rate for THIS asset; updateInterestTotal
+        // reads it via the dataset to compute the displayed total. Pre-fetch
+        // ensures the first total render is already accurate.
+        const pct = await fetchFeeRate(asset.slug);
+        modal.dataset.feePct = String(pct);
+        updateInterestTotal();
     }
 
     function closeBuyInterestModal() {
@@ -355,13 +383,17 @@
     }
 
     function updateInterestTotal() {
+        const modal = document.getElementById('buy-interest-modal');
         const priceInput = document.getElementById('interest-price');
         const qtyInput = document.getElementById('interest-qty');
         const totalEl = document.getElementById('interest-total');
         const price = parseFloat(priceInput?.value) || 0;
         const qty = parseInt(qtyInput?.value) || 0;
         const subtotal = price * qty;
-        const fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
+        // Per-asset fee resolved from /fee-rate when modal opens. Falls back
+        // to window.POOOL_FEE_PCT (legacy global) and finally 5%.
+        const feePct = parseFloat(modal?.dataset.feePct) || window.POOOL_FEE_PCT || 5;
+        const fee = subtotal * (feePct / 100);
         const total = subtotal + fee;
         if (totalEl) totalEl.textContent = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         if (totalEl) totalEl.style.color = '';
@@ -477,7 +509,16 @@
                     setInterestFeedback('Buy order placed.', 'success');
                     setTimeout(() => {
                         closeBuyInterestModal();
-                        window.location.href = `/trade-success?side=buy&qty=${quantity}&price=${price.toFixed(2)}&order_id=${encodeURIComponent(data.order_id || '')}&slug=${encodeURIComponent(assetSlug)}`;
+                        sessionStorage.setItem('trade_success', JSON.stringify({
+                            side: 'buy',
+                            asset: modal?.dataset.assetName || assetSlug,
+                            qty: String(quantity),
+                            price: price.toFixed(2),
+                            total: (price * quantity).toFixed(2),
+                            order_id: data.order_id || '',
+                            slug: assetSlug
+                        }));
+                        window.location.href = '/trade-success';
                     }, 600);
                 } catch (err) {
                     setInterestFeedback(err.message || 'Failed to place buy order.', 'error');

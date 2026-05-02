@@ -184,6 +184,28 @@ pub struct PageQuery {
     pub limit: Option<i64>,
 }
 
+/// GET /api/marketplace/:asset_id/fee-rate
+///
+/// Returns the resolved taker / maker fee rates (in basis points) and the
+/// human-readable percentage strings for an asset. Used by the frontend to
+/// display the *actual* fee in the trade-confirm UI instead of a hardcoded
+/// 5%. Public — no auth required (fee rates are not sensitive and the same
+/// rate applies to every user; promotions are encoded into the rate).
+pub async fn api_fee_rate(
+    State(state): State<AppState>,
+    Path(asset_id_or_slug): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    let asset_id = service::resolve_asset_id(&state.db, &asset_id_or_slug).await?;
+    let fees = validation::resolve_fees(&state.db, asset_id).await?;
+    Ok(Json(serde_json::json!({
+        "asset_id": asset_id,
+        "taker_fee_bps": fees.taker_fee_bps,
+        "maker_fee_bps": fees.maker_fee_bps,
+        "taker_fee_pct": fees.taker_fee_bps as f64 / 100.0,
+        "maker_fee_pct": fees.maker_fee_bps as f64 / 100.0,
+    })))
+}
+
 /// GET /api/marketplace/orders/mine?before=...&limit=...
 ///
 /// Returns the authenticated user's orders, newest first. Cursor pagination

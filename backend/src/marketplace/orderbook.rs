@@ -33,6 +33,10 @@ const IDEMPOTENCY_PREFIX: &str = "idempotency:";
 const RATE_LIMIT_PREFIX: &str = "rl:orders:user:";
 const CANCEL_RATE_LIMIT_PREFIX: &str = "rl:cancels:user:";
 const MATCH_QUEUE_KEY: &str = "match:queue";
+/// Holding queue for events the settlement worker has popped but not yet
+/// committed. On worker crash, events stuck here get drained back to the
+/// main queue at next startup. See [`recover_match_processing_queue`].
+const MATCH_PROCESSING_KEY: &str = "match:processing";
 
 /// Default orderbook depth (number of price levels).
 const DEFAULT_DEPTH: usize = 20;
@@ -174,9 +178,17 @@ pub async fn push_match_to_queue(redis: &RedisPool, event_json: &str) -> Result<
     Ok(())
 }
 
-/// Pop a match event from the settlement queue (blocking, with timeout).
+/// Atomically move the next match event from the main queue to the
+/// processing queue and return its JSON. Blocks up to `timeout_seconds`.
 ///
-/// Returns `None` if no event is available within the timeout.
+/// Using `BRPOPLPUSH` instead of `BLPOP` is the durability fix: if the
+/// settlement worker crashes mid-settlement, the event is still in
+/// `match:processing` and gets recovered on next startup. With `BLPOP`
+/// the event would simply be lost.
+///
+/// Caller MUST eventually call either:
+/// - [`ack_match_processed`] on success (removes from processing queue), or
+/// - [`requeue_match_failed`] on failure (puts it back on main queue).
 pub async fn pop_match_from_queue(
     redis: &RedisPool,
     timeout_seconds: u64,
@@ -186,15 +198,103 @@ pub async fn pop_match_from_queue(
         .await
         .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
 
-    // BLPOP returns Vec<(key, value)> or empty if timeout
-    let result: Option<(String, String)> = redis::cmd("BLPOP")
+    // BRPOPLPUSH src dst timeout — atomic move, returns the value or nil.
+    // BLMOVE is the modern replacement (Redis 6.2+) but BRPOPLPUSH still
+    // works and matches the deadpool-redis API surface used elsewhere.
+    let result: Option<String> = redis::cmd("BRPOPLPUSH")
         .arg(MATCH_QUEUE_KEY)
+        .arg(MATCH_PROCESSING_KEY)
         .arg(timeout_seconds)
         .query_async(&mut *conn)
         .await
-        .unwrap_or(None);
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis BRPOPLPUSH failed: {}", e)))?;
 
-    Ok(result.map(|(_, value)| value))
+    Ok(result)
+}
+
+/// Remove a successfully-settled match event from the processing queue.
+/// Idempotent — if the event isn't there, LREM returns 0 and we still Ok.
+pub async fn ack_match_processed(redis: &RedisPool, event_json: &str) -> Result<(), AppError> {
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
+
+    // LREM count=1 — remove the first matching occurrence from the head.
+    let _: i64 = redis::cmd("LREM")
+        .arg(MATCH_PROCESSING_KEY)
+        .arg(1)
+        .arg(event_json)
+        .query_async(&mut *conn)
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis LREM failed: {}", e)))?;
+    Ok(())
+}
+
+/// Atomically move a failed event from processing back to the main queue
+/// for retry. If the LREM fails (event already removed), we still RPUSH
+/// because the previous code path also did so on settle failure — keeping
+/// behaviour identical.
+pub async fn requeue_match_failed(
+    redis: &RedisPool,
+    event_json: &str,
+) -> Result<(), AppError> {
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
+
+    let mut pipe = redis::pipe();
+    pipe.cmd("LREM")
+        .arg(MATCH_PROCESSING_KEY)
+        .arg(1)
+        .arg(event_json)
+        .ignore();
+    pipe.cmd("RPUSH")
+        .arg(MATCH_QUEUE_KEY)
+        .arg(event_json)
+        .ignore();
+    let _: () = pipe
+        .query_async(&mut *conn)
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis requeue failed: {}", e)))?;
+    Ok(())
+}
+
+/// On settlement-worker startup: drain anything stuck in the processing
+/// queue (left over from a previous crash) back to the main queue. Safe to
+/// call exactly once at boot before the worker starts consuming.
+pub async fn recover_match_processing_queue(redis: &RedisPool) -> Result<usize, AppError> {
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
+
+    let mut recovered = 0usize;
+    loop {
+        // Atomic move: tail of processing → tail of queue. Non-blocking.
+        // Returns nil when processing queue is empty.
+        let moved: Option<String> = redis::cmd("RPOPLPUSH")
+            .arg(MATCH_PROCESSING_KEY)
+            .arg(MATCH_QUEUE_KEY)
+            .query_async(&mut *conn)
+            .await
+            .map_err(|e| AppError::ServiceUnavailable(format!("Redis RPOPLPUSH failed: {}", e)))?;
+
+        if moved.is_none() {
+            break;
+        }
+        recovered += 1;
+        if recovered > 10_000 {
+            // Sanity bound — something's wrong if we have this many stuck.
+            tracing::error!(
+                "🔴 Recovered {} stuck match events; bailing out of recovery loop",
+                recovered
+            );
+            break;
+        }
+    }
+    Ok(recovered)
 }
 
 /// Return the current depth of the match settlement queue.

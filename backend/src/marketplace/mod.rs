@@ -44,6 +44,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/marketplace/:asset_id/orderbook", get(api_orderbook))
         .route("/api/marketplace/:asset_id/trades", get(api_recent_trades))
         .route("/api/marketplace/:asset_id/ticker", get(api_ticker))
+        .route("/api/marketplace/:asset_id/fee-rate", get(api_fee_rate))
         // ── Candlestick Chart API ────────────────────────────
         .route("/api/marketplace/:asset_id/candles", get(api_candles))
         .route(
