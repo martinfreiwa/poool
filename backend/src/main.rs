@@ -121,6 +121,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("Sentry initialised");
     }
 
+    // ── 2b. Critical-env preflight check ─────────────────────────
+    // Surfaces missing/misconfigured env vars LOUDLY at startup so they
+    // don't show up later as opaque "An unexpected error" responses to
+    // the user. Each entry is checked but the process keeps booting —
+    // we only log + Sentry. Fix the env, don't fix the symptom downstream.
+    {
+        struct Check {
+            key: &'static str,
+            why: &'static str,
+        }
+        let checks = [
+            Check {
+                key: "TOTP_SECRET_ENCRYPTION_KEY",
+                why: "TOTP setup + step-up 2FA will fail with 'An unexpected error'",
+            },
+            Check {
+                key: "DATABASE_URL",
+                why: "DB connection will fail",
+            },
+            Check {
+                key: "SESSION_SECRET",
+                why: "Session cookies will be unsignable",
+            },
+        ];
+        for c in checks {
+            match std::env::var(c.key) {
+                Ok(v) if !v.trim().is_empty() => {
+                    tracing::info!("✅ env {} present", c.key);
+                }
+                _ => {
+                    tracing::error!("🚨 env {} MISSING — {}", c.key, c.why);
+                    sentry::capture_message(
+                        &format!("Startup env check failed: {} missing — {}", c.key, c.why),
+                        sentry::Level::Error,
+                    );
+                }
+            }
+        }
+    }
+
     // ── 3. Tracing / Logging Setup ───────────────────────────────────
     // sentry_tracing integrates so that every `tracing::error!` call
     // is automatically forwarded to Sentry as a breadcrumb / event.
@@ -601,40 +641,77 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // These are the core trading engine tasks. They only start if Redis is
     // configured (the orderbook and match queue live in Redis).
     if let Some(ref redis) = state.redis {
-        // Matching Engine (Tokio Task #1): scans Redis orderbook for matches
+        // Matching Engine: leader-elected. Without this, every replica
+        // would push duplicate match events, poisoning settlement.
+        // Closures clone-capture so re-acquisition gets a fresh future.
         let match_redis = redis.clone();
         let match_pool = pool.clone();
-        tokio::spawn(async move {
-            marketplace::matching::run_matching_engine(&match_redis, &match_pool).await;
-        });
+        let match_lock_pool = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            match_lock_pool,
+            common::leader::LockKey::MarketplaceMatching,
+            move || {
+                let r = match_redis.clone();
+                let p = match_pool.clone();
+                async move { marketplace::matching::run_matching_engine(&r, &p).await }
+            },
+        ));
 
-        // Settlement Worker (Tokio Task #2): consumes match queue, executes ACID settlements
+        // Settlement Worker: leader-elected.
         let settle_redis = redis.clone();
         let settle_pool = pool.clone();
-        tokio::spawn(async move {
-            marketplace::settlement::run_settlement_worker(&settle_redis, &settle_pool).await;
-        });
+        let settle_lock_pool = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            settle_lock_pool,
+            common::leader::LockKey::MarketplaceSettlement,
+            move || {
+                let r = settle_redis.clone();
+                let p = settle_pool.clone();
+                async move { marketplace::settlement::run_settlement_worker(&r, &p).await }
+            },
+        ));
 
-        // Background Worker #1: Order Expiry (hourly cleanup of expired orders)
+        // Background Worker #1: Order Expiry
         let expiry_redis = redis.clone();
         let expiry_pool = pool.clone();
-        tokio::spawn(async move {
-            marketplace::background::run_order_expiry_worker(&expiry_redis, &expiry_pool).await;
-        });
+        let expiry_lock_pool = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            expiry_lock_pool,
+            common::leader::LockKey::MarketplaceOrderExpiry,
+            move || {
+                let r = expiry_redis.clone();
+                let p = expiry_pool.clone();
+                async move { marketplace::background::run_order_expiry_worker(&r, &p).await }
+            },
+        ));
 
-        // Background Worker #2: Redis Sync (every 5 min — detect & fix drift)
+        // Background Worker #2: Redis Sync
         let sync_redis = redis.clone();
         let sync_pool = pool.clone();
-        tokio::spawn(async move {
-            marketplace::background::run_redis_sync_worker(&sync_redis, &sync_pool).await;
-        });
+        let sync_lock_pool = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            sync_lock_pool,
+            common::leader::LockKey::MarketplaceRedisSync,
+            move || {
+                let r = sync_redis.clone();
+                let p = sync_pool.clone();
+                async move { marketplace::background::run_redis_sync_worker(&r, &p).await }
+            },
+        ));
 
-        // Background Worker #3: Price Snapshot (every 5 min — cache last trade prices)
+        // Background Worker #3: Price Snapshot
         let price_redis = redis.clone();
         let price_pool = pool.clone();
-        tokio::spawn(async move {
-            marketplace::background::run_price_snapshot_worker(&price_redis, &price_pool).await;
-        });
+        let price_lock_pool = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            price_lock_pool,
+            common::leader::LockKey::MarketplacePriceSnapshot,
+            move || {
+                let r = price_redis.clone();
+                let p = price_pool.clone();
+                async move { marketplace::background::run_price_snapshot_worker(&r, &p).await }
+            },
+        ));
 
         // WebSocket: Redis Pub/Sub subscriber (cross-instance message delivery)
         let pubsub_redis = redis.clone();
@@ -647,47 +724,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::warn!("⚠️ Redis not configured — Marketplace trading is DISABLED. Order submission still works but matching won't occur.");
     }
 
-    // ── Blockchain: On-chain settlement worker ────────────────
-    // Batches confirmed trades and calls settleBatch() on POOOLProperty1155.
-    // Only runs if CHAIN_SETTLEMENT_PRIVATE_KEY is set and CHAIN_SETTLEMENT_ENABLED=true.
+    // ── Blockchain workers — all leader-elected ──────────────
+    // The on-chain pipeline is especially sensitive to multi-replica
+    // duplication: two indexers would double-count balance deltas, two
+    // settlement workers would Sentry-spam reservation races, two
+    // reconcilers/KYC workers would waste gas on duplicate TXs.
     let chain_pool = pool.clone();
-    tokio::spawn(async move {
-        blockchain::service::run_settlement_worker(&chain_pool).await;
-    });
+    tokio::spawn(common::leader::run_as_leader(
+        pool.clone(),
+        common::leader::LockKey::BlockchainSettlement,
+        move || {
+            let p = chain_pool.clone();
+            async move { blockchain::service::run_settlement_worker(&p).await }
+        },
+    ));
 
-    // ── Blockchain: Event indexer worker ──────────────────────
-    // Polls Polygon for ERC-1155 TransferSingle/TransferBatch events
-    // and updates onchain_balances. Configurable via platform_settings.
     let indexer_pool = pool.clone();
-    tokio::spawn(async move {
-        blockchain::event_indexer::run_event_indexer(&indexer_pool).await;
-    });
+    tokio::spawn(common::leader::run_as_leader(
+        pool.clone(),
+        common::leader::LockKey::BlockchainEventIndexer,
+        move || {
+            let p = indexer_pool.clone();
+            async move { blockchain::event_indexer::run_event_indexer(&p).await }
+        },
+    ));
 
-    // ── Blockchain: KYC → Whitelist sync worker ──────────────
-    // Monitors for KYC-approved users and calls addToWhitelist() on-chain.
-    // Only runs if CHAIN_SETTLEMENT_ENABLED=true.
     let whitelist_pool = pool.clone();
-    tokio::spawn(async move {
-        blockchain::kyc_whitelist::run_kyc_whitelist_worker(&whitelist_pool).await;
-    });
+    tokio::spawn(common::leader::run_as_leader(
+        pool.clone(),
+        common::leader::LockKey::BlockchainKycWhitelist,
+        move || {
+            let p = whitelist_pool.clone();
+            async move { blockchain::kyc_whitelist::run_kyc_whitelist_worker(&p).await }
+        },
+    ));
 
-    // ── Blockchain: Stuck-trade reconciler ───────────────────
-    // Recovers trades stuck in 'submitted' state (TX dropped, RPC timeout,
-    // worker crash mid-flight). Re-checks receipts and resets to 'pending'
-    // for retry if needed. Runs every 2 min, only if chain enabled.
     let reconciler_pool = pool.clone();
-    tokio::spawn(async move {
-        blockchain::reconciler::run_reconciler(&reconciler_pool).await;
-    });
+    tokio::spawn(common::leader::run_as_leader(
+        pool.clone(),
+        common::leader::LockKey::BlockchainReconciler,
+        move || {
+            let p = reconciler_pool.clone();
+            async move { blockchain::reconciler::run_reconciler(&p).await }
+        },
+    ));
 
-    // ── Blockchain: Gas-balance monitor ──────────────────────
-    // Polls the settlement wallet's MATIC balance every 5 min and alerts
-    // via Sentry when it drops below the low/critical thresholds. Prevents
-    // settlement failures due to out-of-gas before they happen.
     let gas_pool = pool.clone();
-    tokio::spawn(async move {
-        blockchain::gas_monitor::run_gas_monitor(&gas_pool).await;
-    });
+    tokio::spawn(common::leader::run_as_leader(
+        pool.clone(),
+        common::leader::LockKey::BlockchainGasMonitor,
+        move || {
+            let p = gas_pool.clone();
+            async move { blockchain::gas_monitor::run_gas_monitor(&p).await }
+        },
+    ));
 
     // ── Marketplace: Fund-conservation invariant worker ──────
     // Hourly check that SUM(wallet balances) == SUM(deposits - withdrawals).
@@ -2361,7 +2451,20 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
         }
     }
 
-    let overall_status = if db_ok { "ok" } else { "degraded" };
+    // ── Critical-env presence (boolean only — never leak the value) ──
+    let env_present = |k: &str| {
+        std::env::var(k)
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false)
+    };
+    let totp_key_ok = env_present("TOTP_SECRET_ENCRYPTION_KEY");
+    let session_secret_ok = env_present("SESSION_SECRET");
+
+    let overall_status = if db_ok && totp_key_ok && session_secret_ok {
+        "ok"
+    } else {
+        "degraded"
+    };
 
     let body = serde_json::json!({
         "status": overall_status,
@@ -2369,6 +2472,10 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
         "components": {
             "database": if db_ok { "ok" } else { "error" },
             "redis": redis_status,
+            "env": {
+                "TOTP_SECRET_ENCRYPTION_KEY": if totp_key_ok { "ok" } else { "missing" },
+                "SESSION_SECRET": if session_secret_ok { "ok" } else { "missing" },
+            },
         }
     });
 
