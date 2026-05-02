@@ -20,6 +20,8 @@
   <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <script src="/static/js/admin-page-kit.js"></script>
+  <script defer src="/static/js/admin-command-palette.js"></script>
 </head>
 
 <body class="admin-body dom-ready">
@@ -43,7 +45,7 @@
               <circle cx="11" cy="11" r="6" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
-            <input type="text" placeholder="Search users, assets, orders…" id="admin-global-search"
+            <input type="text" placeholder="Search admin (Cmd/Ctrl+K)…" id="admin-global-search"
               aria-label="Global admin search" />
           </div>
           <button class="admin-notification-btn" title="Notifications" aria-label="View notifications">
@@ -67,9 +69,23 @@
           </p>
         </div>
 
+        <!-- Action Required Banner -->
+        <div id="action-required-banner" style="display:none;margin-bottom:16px"></div>
+
+        <!-- Toolbar -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--admin-text-muted);cursor:pointer;white-space:nowrap"><input type="checkbox" id="auto-refresh" style="accent-color:var(--admin-accent)" checked /> Auto 30s</label>
+          <span id="last-updated-label" style="font-size:11px;color:var(--admin-text-muted);white-space:nowrap" title="Last fetched">—</span>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="kyc-refresh-btn" title="Refresh now">Refresh</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="kyc-export-csv" title="Export filtered records as CSV" style="margin-left:auto">
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M8 1v9m0 0l-3-3m3 3l3-3M2 13v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
+            Export CSV
+          </button>
+        </div>
+
         <!-- KPI Cards -->
         <div class="admin-kpi-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 20px">
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="queue" title="Click to view review queue">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Pending Review</span>
               <div class="admin-kpi-icon">
@@ -84,7 +100,7 @@
               —
             </div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="approved" title="Click to view approved records">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Approved</span>
               <div class="admin-kpi-icon">
@@ -99,7 +115,7 @@
               —
             </div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="rejected" title="Click to view rejected records">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Rejected</span>
               <div class="admin-kpi-icon">
@@ -114,7 +130,7 @@
               —
             </div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="pep" title="Click to view PEP flags">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">PEP Flags</span>
               <div class="admin-kpi-icon">
@@ -129,7 +145,7 @@
               —
             </div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="expiring" title="Click to view records expiring soon">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Expiring Soon</span>
               <div class="admin-kpi-icon">

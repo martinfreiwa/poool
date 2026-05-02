@@ -8,7 +8,14 @@ let sortField = "created_at";
 let sortOrder = "desc";
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (window.AdminPageKit) AdminPageKit.injectScopedCss();
   loadTreasury();
+  if (window.AdminPageKit) {
+    AdminPageKit.setupAutoRefresh({
+      refreshFn: () => loadTreasury(),
+      intervalMs: 60000,
+    });
+  }
   document
     .getElementById("tx-type-filter")
     ?.addEventListener("change", applyFilters);

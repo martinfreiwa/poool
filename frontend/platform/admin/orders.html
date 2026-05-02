@@ -18,6 +18,8 @@
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
   <script src="/static/js/admin-global-search.js"></script>
+  <script src="/static/js/admin-page-kit.js"></script>
+  <script defer src="/static/js/admin-command-palette.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -43,7 +45,7 @@
               <circle cx="11" cy="11" r="6" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
-            <input type="text" placeholder="Search orders…" id="admin-global-search" aria-label="Global admin search" />
+            <input type="text" placeholder="Search admin (Cmd/Ctrl+K)…" id="admin-global-search" aria-label="Global admin search" />
           </div>
         </div>
       </header>
@@ -57,9 +59,12 @@
           </p>
         </div>
 
+        <!-- Action Required Banner -->
+        <div id="action-required-banner" style="display:none;margin-bottom:16px"></div>
+
         <!-- KPI Cards -->
         <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px">
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card" style="padding: 16px" title="All orders ever placed (lifetime)">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Total Orders</span>
               <div class="admin-kpi-icon">
@@ -70,11 +75,12 @@
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px" id="stat-total-orders">
+            <div class="admin-kpi-value" style="font-size: 28px; font-variant-numeric: tabular-nums" id="stat-total-orders">
               —
             </div>
+            <div style="font-size:11px;color:var(--admin-text-muted);margin-top:4px;" id="stat-total-orders-sub"></div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card" style="padding: 16px" title="Sum of completed-order totals in the last 30 days">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Revenue (30d)</span>
               <div class="admin-kpi-icon">
@@ -85,11 +91,12 @@
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-text-primary)" id="stat-revenue">
+            <div class="admin-kpi-value" style="font-size: 28px; font-variant-numeric: tabular-nums; color: var(--admin-text-primary)" id="stat-revenue">
               —
             </div>
+            <div style="font-size:11px;color:var(--admin-text-muted);margin-top:4px;" id="stat-revenue-sub"></div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card" style="padding: 16px" title="Investments with status = active or rented">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Active Investments</span>
               <div class="admin-kpi-icon">
@@ -100,11 +107,12 @@
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px" id="stat-investments">
+            <div class="admin-kpi-value" style="font-size: 28px; font-variant-numeric: tabular-nums" id="stat-investments">
               —
             </div>
+            <div style="font-size:11px;color:var(--admin-text-muted);margin-top:4px;" id="stat-investments-sub"></div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-filter-status="pending" title="Click to filter by Pending">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Pending Orders</span>
               <div class="admin-kpi-icon">
@@ -115,10 +123,38 @@
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-warning)" id="stat-pending-orders">
+            <div class="admin-kpi-value" style="font-size: 28px; font-variant-numeric: tabular-nums" id="stat-pending-orders">
               —
             </div>
+            <div style="font-size:11px;color:var(--admin-text-muted);margin-top:4px;" id="stat-pending-orders-sub"></div>
           </div>
+        </div>
+
+        <!-- Action Required Zone -->
+        <div id="action-required-zone" style="display:none;margin-bottom:20px;padding:14px 16px;border:1px solid var(--admin-warning);background:var(--admin-warning-bg);border-radius:var(--admin-radius-sm);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--admin-warning);flex-shrink:0;">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <strong style="font-size:13px;color:var(--admin-text-primary);">Action Required</strong>
+            <span style="font-size:11px;color:var(--admin-text-muted);margin-left:auto;" id="action-required-updated"></span>
+          </div>
+          <ul id="action-required-list" style="margin:0;padding-left:24px;font-size:13px;color:var(--admin-text-primary);line-height:1.7;"></ul>
+        </div>
+
+        <!-- Toolbar: Last-updated + Refresh + Export -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--admin-text-muted);" id="data-last-updated">—</span>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-refresh" title="Reload orders & investments" style="display:inline-flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Refresh
+          </button>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-export-csv" title="Export current filtered view as CSV" style="display:inline-flex;align-items:center;gap:6px;margin-left:auto;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
         </div>
 
         <!-- Tabs -->
@@ -157,11 +193,27 @@
                 <option value="cancelled">Cancelled</option>
                 <option value="refunded">Refunded</option>
               </select>
+              <select id="order-filter-range" class="admin-select" aria-label="Filter by date range">
+                <option value="">All time</option>
+                <option value="1">Today</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
               <span style="
                     margin-left: auto;
                     font-size: 12px;
                     color: var(--admin-text-muted);
                   " id="order-count-label">0 orders</span>
+            </div>
+            <!-- Quick filter chips -->
+            <div style="padding:0 20px 14px;display:flex;gap:6px;flex-wrap:wrap;" id="order-quick-chips">
+              <button type="button" class="admin-chip is-active" data-chip-status="">All</button>
+              <button type="button" class="admin-chip" data-chip-status="pending">Pending</button>
+              <button type="button" class="admin-chip" data-chip-status="failed">Failed</button>
+              <button type="button" class="admin-chip" data-chip-status="completed">Completed</button>
+              <button type="button" class="admin-chip" data-chip-status="refunded">Refunded</button>
+              <button type="button" class="admin-chip" data-chip-stale="1" title="Failed/Pending older than 7 days">Stale &gt;7d</button>
             </div>
           </div>
           <div class="admin-card">
@@ -175,14 +227,13 @@
                     <th data-sort="total_cents">Total</th>
                     <th data-sort="payment_method">Payment</th>
                     <th data-sort="status">Status</th>
-                    <th>Blockchain TX</th>
                     <th data-sort="created_at">Date</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="orders-table-body">
                   <tr>
-                    <td colspan="9" style="
+                    <td colspan="8" style="
                           text-align: center;
                           padding: 40px;
                           color: var(--admin-text-muted);

@@ -17,6 +17,8 @@
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
   <script src="/static/js/admin-global-search.js"></script>
+  <script src="/static/js/admin-page-kit.js"></script>
+  <script defer src="/static/js/admin-command-palette.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <style>
@@ -216,7 +218,7 @@
               <circle cx="11" cy="11" r="6" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
-            <input type="text" placeholder="Search settlements…" id="admin-global-search"
+            <input type="text" placeholder="Search admin (Cmd/Ctrl+K)…" id="admin-global-search"
               aria-label="Global admin search" />
           </div>
         </div>
@@ -255,6 +257,9 @@
             <em>or</em> two separate administrators have both confirmed the manual entry. This prevents unauthorized token transfers.
           </span>
         </div>
+
+        <!-- Action Required Banner -->
+        <div id="action-required-banner" style="display:none;margin-bottom:16px"></div>
 
         <!-- KPI Cards -->
         <div class="admin-kpi-grid settlements-kpi-grid">
@@ -585,6 +590,11 @@
       </div>
     </main>
   </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.AdminPageKit) AdminPageKit.injectScopedCss();
+    });
+  </script>
 </body>
 
 </html>

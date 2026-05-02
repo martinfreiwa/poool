@@ -9,14 +9,84 @@ let sortField = "created_at";
 let sortOrder = "desc";
 let currentTab = "queue";
 
+let kycAutoRefresh = null;
+
 document.addEventListener("DOMContentLoaded", () => {
+  if (window.AdminPageKit) AdminPageKit.injectScopedCss();
   loadKYCRecords();
   setupTabs();
   setupFilters();
   setupModal();
   setupSorting();
   setupPagination();
+  setupKitFeatures();
 });
+
+function setupKitFeatures() {
+  if (!window.AdminPageKit) return;
+  // KPI click-to-tab
+  AdminPageKit.wireKpiClicks((card) => {
+    const tabName = card.dataset.tab;
+    if (!tabName) return;
+    const tabBtn = document.querySelector(`.admin-tab[data-tab="${tabName}"]`);
+    tabBtn?.click();
+  });
+  // Manual refresh
+  document.getElementById("kyc-refresh-btn")?.addEventListener("click", () => loadKYCRecords());
+  // CSV export
+  document.getElementById("kyc-export-csv")?.addEventListener("click", () => {
+    const rows = currentTab === "queue" ? queueRecords : allRecords;
+    AdminPageKit.exportCsv(rows, [
+      [(r) => r.user_name || r.user_email, "User"],
+      ["user_email", "Email"],
+      ["status", "Status"],
+      ["provider", "Provider"],
+      ["doc_type", "Doc Type"],
+      ["pep_check", "PEP"],
+      ["sanctions_check", "Sanctions"],
+      ["submitted_at", "Submitted"],
+      ["expires_at", "Expires"],
+      [(r) => AdminPageKit.ageSeconds(r.submitted_at || r.created_at), "Age (sec)"],
+      ["id", "Record ID"],
+      ["user_id", "User ID"],
+    ], `kyc-${currentTab}.csv`);
+  });
+  // Auto-refresh
+  kycAutoRefresh = AdminPageKit.setupAutoRefresh({
+    refreshFn: () => loadKYCRecords(),
+    toggleSelector: "#auto-refresh",
+    lastUpdatedSelector: "#last-updated-label",
+    isBusy: () => document.getElementById("kyc-modal")?.style.display === "flex",
+  });
+}
+
+function renderKycActionRequired() {
+  if (!window.AdminPageKit) return;
+  const SLA_HOURS = 48;
+  const slaSec = SLA_HOURS * 3600;
+  const overSla = allKYCRecords.filter((r) =>
+    (r.status === "pending" || r.status === "in_review") &&
+    AdminPageKit.ageSeconds(r.submitted_at || r.created_at) > slaSec,
+  );
+  const pepFlagged = allKYCRecords.filter((r) =>
+    (r.status === "pending" || r.status === "in_review") && r.pep_check === false,
+  );
+  const sanctionsFlagged = allKYCRecords.filter((r) =>
+    (r.status === "pending" || r.status === "in_review") && r.sanctions_check === false,
+  );
+  const expiringSoon = allKYCRecords.filter((r) =>
+    r.status === "approved" && isExpiringSoon(r.expires_at),
+  );
+
+  const items = [];
+  const goToTab = (tab) => () => document.querySelector(`.admin-tab[data-tab="${tab}"]`)?.click();
+  if (overSla.length) items.push({ label: `Pending >${SLA_HOURS}h (SLA breach)`, count: overSla.length, color: "var(--admin-danger, #C2410C)", onClick: goToTab("queue") });
+  if (pepFlagged.length) items.push({ label: "PEP flagged in queue", count: pepFlagged.length, color: "var(--admin-danger, #C2410C)", onClick: goToTab("pep") });
+  if (sanctionsFlagged.length) items.push({ label: "Sanctions hit in queue", count: sanctionsFlagged.length, color: "var(--admin-danger, #C2410C)", onClick: goToTab("queue") });
+  if (expiringSoon.length) items.push({ label: "Approved expiring <30d", count: expiringSoon.length, color: "var(--admin-warning)", onClick: goToTab("expiring") });
+
+  AdminPageKit.renderActionRequired(items, "#action-required-banner");
+}
 
 function setupSorting() {
   document.querySelectorAll("th[data-sort]").forEach((th) => {
@@ -130,6 +200,8 @@ async function loadKYCRecords() {
         ).length;
         updateStats(data.stats);
       }
+      renderKycActionRequired();
+      if (kycAutoRefresh) kycAutoRefresh.markFetched();
     } else {
       const msg = resp.status === 403 ? "Access denied." : `Failed to load KYC records (${resp.status}).`;
       const tbody = document.getElementById("kyc-queue-body");

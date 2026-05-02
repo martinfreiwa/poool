@@ -18,6 +18,11 @@ let orderSortOrder = "desc";
 let invSortField = "purchased_at";
 let invSortOrder = "desc";
 
+let orderRangeDays = ""; // "", "1", "7", "30", "90"
+let orderStaleOnly = false;
+let lastLoadedAt = null;
+const STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 document.addEventListener("DOMContentLoaded", () => {
   // Check for ID parameter from global search
   const urlParams = new URLSearchParams(window.location.search);
@@ -40,15 +45,108 @@ document.addEventListener("DOMContentLoaded", () => {
   // Filter change listeners
   document
     .getElementById("order-filter-status")
-    ?.addEventListener("change", applyOrderFilters);
+    ?.addEventListener("change", (e) => {
+      syncChipsFromDropdown(e.target.value);
+      applyOrderFilters();
+    });
   document
     .getElementById("inv-filter-status")
     ?.addEventListener("change", applyInvFilters);
 
+  document
+    .getElementById("order-filter-range")
+    ?.addEventListener("change", (e) => {
+      orderRangeDays = e.target.value;
+      applyOrderFilters();
+    });
+
   setupTabSystem();
   setupSorting();
   setupPagination();
+  setupQuickChips();
+  setupToolbar();
+  setupOrdersKitFeatures();
 });
+
+let ordersAutoRefresh = null;
+function setupOrdersKitFeatures() {
+  if (!window.AdminPageKit) return;
+  AdminPageKit.injectScopedCss();
+  AdminPageKit.wireKpiClicks((card) => {
+    const status = card.dataset.filterStatus;
+    if (!status) return;
+    const sel = document.getElementById("order-filter-status");
+    if (sel) {
+      sel.value = status;
+      syncChipsFromDropdown(status);
+      applyOrderFilters();
+    }
+  });
+  ordersAutoRefresh = AdminPageKit.setupAutoRefresh({
+    refreshFn: () => loadData(),
+    intervalMs: 60000,
+  });
+}
+
+function renderOrdersActionRequired() {
+  if (!window.AdminPageKit) return;
+  const failed = allOrders.filter((o) => o.status === "failed");
+  const stalePending = allOrders.filter((o) => {
+    if (o.status !== "pending") return false;
+    return AdminPageKit.ageSeconds(o.created_at) > 86400;
+  });
+  const items = [];
+  const goToStatus = (status) => () => {
+    const sel = document.getElementById("order-filter-status");
+    if (sel) { sel.value = status; syncChipsFromDropdown(status); applyOrderFilters(); }
+  };
+  if (failed.length) items.push({ label: "Failed orders", count: failed.length, color: "var(--admin-danger, #C2410C)", onClick: goToStatus("failed") });
+  if (stalePending.length) items.push({ label: "Pending >24h", count: stalePending.length, color: "var(--admin-warning)", onClick: goToStatus("pending") });
+  AdminPageKit.renderActionRequired(items, "#action-required-banner");
+}
+
+function setupQuickChips() {
+  document.querySelectorAll("#order-quick-chips .admin-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const status = chip.dataset.chipStatus;
+      const stale = chip.dataset.chipStale;
+      // Reset all chip active states
+      document
+        .querySelectorAll("#order-quick-chips .admin-chip")
+        .forEach((c) => c.classList.remove("is-active"));
+      chip.classList.add("is-active");
+      if (stale) {
+        orderStaleOnly = true;
+        document.getElementById("order-filter-status").value = "";
+      } else {
+        orderStaleOnly = false;
+        document.getElementById("order-filter-status").value = status || "";
+      }
+      applyOrderFilters();
+    });
+  });
+}
+
+function syncChipsFromDropdown(status) {
+  orderStaleOnly = false;
+  document
+    .querySelectorAll("#order-quick-chips .admin-chip")
+    .forEach((c) => c.classList.remove("is-active"));
+  const match = document.querySelector(
+    `#order-quick-chips .admin-chip[data-chip-status="${status || ""}"]`,
+  );
+  (match || document.querySelector('#order-quick-chips .admin-chip[data-chip-status=""]'))
+    ?.classList.add("is-active");
+}
+
+function setupToolbar() {
+  document.getElementById("btn-refresh")?.addEventListener("click", () => {
+    loadData();
+  });
+  document.getElementById("btn-export-csv")?.addEventListener("click", () => {
+    exportOrdersCsv();
+  });
+}
 
 // ─── Tabs ───────────────────────────────────────────────────────
 
@@ -136,6 +234,14 @@ function setupPagination() {
 }
 
 async function loadData() {
+  const refreshBtn = document.getElementById("btn-refresh");
+  const lastUpdatedEl = document.getElementById("data-last-updated");
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.setAttribute("aria-busy", "true");
+  }
+  let ordersOk = false;
+  let invsOk = false;
   try {
     const orderResp = await fetch("/api/admin/orders");
     const invResp = await fetch("/api/admin/investments");
@@ -143,26 +249,65 @@ async function loadData() {
     if (orderResp.ok) {
       const data = await orderResp.json();
       allOrders = Array.isArray(data) ? data : data.orders || [];
+      ordersOk = true;
     }
     if (invResp.ok) {
       const data = await invResp.json();
       allInvestments = Array.isArray(data) ? data : data.investments || [];
+      invsOk = true;
+    }
+    if (ordersOk && invsOk) lastLoadedAt = new Date();
+    if (ordersOk) {
+      renderOrdersActionRequired();
+      if (ordersAutoRefresh) ordersAutoRefresh.markFetched();
     }
   } catch (e) {
     console.error('Failed to load orders/investments:', e);
     if (window.Sentry) Sentry.captureException(e);
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.removeAttribute("aria-busy");
+    }
   }
 
   applyOrderFilters(false);
   applyInvFilters(false);
   updateStats();
+  updateLastUpdated();
+  renderActionRequired();
+
+  // Surface load errors so KPIs aren't trusted blindly
+  if (!ordersOk || !invsOk) {
+    if (lastUpdatedEl) {
+      lastUpdatedEl.textContent = "Failed to refresh — showing last known data";
+      lastUpdatedEl.style.color = "var(--admin-danger)";
+    }
+  } else if (lastUpdatedEl) {
+    lastUpdatedEl.style.color = "var(--admin-text-muted)";
+  }
 }
+
+function updateLastUpdated() {
+  const el = document.getElementById("data-last-updated");
+  if (!el || !lastLoadedAt) return;
+  const t = lastLoadedAt;
+  el.textContent = `Updated ${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+  el.title = `Last loaded: ${t.toLocaleString()}`;
+}
+// Refresh the relative timestamp every 30s
+setInterval(updateLastUpdated, 30000);
 
 function applyOrderFilters(resetPage = true) {
   const search = (
     document.getElementById("order-search")?.value || ""
   ).toLowerCase();
   const status = document.getElementById("order-filter-status")?.value || "";
+  const rangeDays = orderRangeDays ? parseInt(orderRangeDays, 10) : null;
+  const rangeCutoff = rangeDays
+    ? Date.now() - rangeDays * 24 * 60 * 60 * 1000
+    : null;
+  const now = Date.now();
 
   let result = allOrders.filter((o) => {
     if (status && o.status !== status) return false;
@@ -173,6 +318,16 @@ function applyOrderFilters(resetPage = true) {
         .includes(search)
     )
       return false;
+    if (rangeCutoff && o.created_at) {
+      const t = Date.parse(o.created_at);
+      if (Number.isFinite(t) && t < rangeCutoff) return false;
+    }
+    if (orderStaleOnly) {
+      const t = Date.parse(o.created_at || "");
+      const age = Number.isFinite(t) ? now - t : 0;
+      const isStuck = o.status === "failed" || o.status === "pending";
+      if (!isStuck || age < STALE_THRESHOLD_MS) return false;
+    }
     return true;
   });
 
@@ -237,23 +392,232 @@ function applyInvFilters(resetPage = true) {
 }
 
 function updateStats() {
+  // Total Orders
   const elStatOrders = document.getElementById("stat-total-orders");
   if (elStatOrders) elStatOrders.textContent = allOrders.length;
-  const completedRevenue = allOrders
-    .filter((o) => o.status === "completed")
-    .reduce((s, o) => s + (o.total_cents || 0), 0);
+  const failedCount = allOrders.filter((o) => o.status === "failed").length;
+  const failRate = allOrders.length
+    ? ((failedCount / allOrders.length) * 100).toFixed(0)
+    : 0;
+  const elTotalSub = document.getElementById("stat-total-orders-sub");
+  if (elTotalSub) {
+    if (failedCount > 0) {
+      elTotalSub.textContent = `${failedCount} failed (${failRate}%)`;
+      elTotalSub.style.color =
+        failedCount / allOrders.length > 0.1
+          ? "var(--admin-danger)"
+          : "var(--admin-text-muted)";
+    } else {
+      elTotalSub.textContent = "0 failed";
+    }
+  }
+
+  // Revenue (30d) — use rolling 30d window of completed orders
+  const cutoff30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const completedIn30d = allOrders.filter(
+    (o) =>
+      o.status === "completed" &&
+      o.created_at &&
+      Date.parse(o.created_at) >= cutoff30d,
+  );
+  const completedRevenue30d = completedIn30d.reduce(
+    (s, o) => s + (o.total_cents || 0),
+    0,
+  );
   const elRevenue = document.getElementById("stat-revenue");
-  if (elRevenue) elRevenue.textContent = formatUSD(completedRevenue);
+  if (elRevenue) elRevenue.textContent = formatUSD(completedRevenue30d);
+  const elRevSub = document.getElementById("stat-revenue-sub");
+  if (elRevSub) {
+    elRevSub.textContent = `${completedIn30d.length} completed orders · ${concentrationLine(completedIn30d)}`;
+  }
+
+  // Active Investments
+  const activeInvs = allInvestments.filter(
+    (i) => i.status === "active" || i.status === "rented",
+  );
   const elInv = document.getElementById("stat-investments");
-  if (elInv)
-    elInv.textContent = allInvestments.filter(
-      (i) => i.status === "active" || i.status === "rented",
-    ).length;
+  if (elInv) elInv.textContent = activeInvs.length;
+  const elInvSub = document.getElementById("stat-investments-sub");
+  if (elInvSub) {
+    elInvSub.textContent = `Total ${allInvestments.length} (active+rented shown)`;
+  }
+
+  // Pending Orders — color only when > 0
+  const pendingCount = allOrders.filter((o) => o.status === "pending").length;
   const elPending = document.getElementById("stat-pending-orders");
-  if (elPending)
-    elPending.textContent = allOrders.filter(
-      (o) => o.status === "pending",
-    ).length;
+  if (elPending) {
+    elPending.textContent = pendingCount;
+    elPending.style.color =
+      pendingCount > 0 ? "var(--admin-warning)" : "var(--admin-text-primary)";
+  }
+  const elPendSub = document.getElementById("stat-pending-orders-sub");
+  if (elPendSub) {
+    if (pendingCount === 0) {
+      elPendSub.textContent = "Inbox empty";
+      elPendSub.style.color = "var(--admin-success)";
+    } else {
+      const pendingTimes = allOrders
+        .filter((o) => o.status === "pending")
+        .map((o) => Date.parse(o.created_at || ""))
+        .filter(Number.isFinite);
+      if (pendingTimes.length === 0) {
+        elPendSub.textContent = `${pendingCount} pending (age unknown)`;
+        elPendSub.style.color = "var(--admin-text-muted)";
+      } else {
+        const oldestPending = Math.min(...pendingTimes);
+        const ageDays = Math.floor((Date.now() - oldestPending) / 86400000);
+        elPendSub.textContent = `Oldest: ${ageDays}d`;
+        elPendSub.style.color =
+          ageDays > 7 ? "var(--admin-danger)" : "var(--admin-text-muted)";
+      }
+    }
+  }
+}
+
+function concentrationLine(orders) {
+  if (!orders.length) return "no data";
+  const total = orders.reduce((s, o) => s + (o.total_cents || 0), 0);
+  if (!total) return "no revenue";
+  const byUser = new Map();
+  for (const o of orders) {
+    const k = o.user_email || o.user_id || "?";
+    byUser.set(k, (byUser.get(k) || 0) + (o.total_cents || 0));
+  }
+  const sorted = Array.from(byUser.entries()).sort((a, b) => b[1] - a[1]);
+  const topPct = ((sorted[0][1] / total) * 100).toFixed(0);
+  return `top customer ${topPct}%`;
+}
+
+// ─── Action Required Zone ──────────────────────────────────────
+
+function renderActionRequired() {
+  const zone = document.getElementById("action-required-zone");
+  const list = document.getElementById("action-required-list");
+  const updated = document.getElementById("action-required-updated");
+  if (!zone || !list) return;
+
+  const now = Date.now();
+  const items = [];
+
+  const pending = allOrders.filter((o) => o.status === "pending");
+  if (pending.length > 0) {
+    const stalePending = pending.filter((o) => {
+      const t = Date.parse(o.created_at || "");
+      return Number.isFinite(t) && now - t > STALE_THRESHOLD_MS;
+    }).length;
+    items.push(
+      `${pending.length} pending order${pending.length === 1 ? "" : "s"} awaiting approval` +
+        (stalePending > 0
+          ? ` <span style="color:var(--admin-danger);font-weight:600;">(${stalePending} stale &gt;7d)</span>`
+          : "") +
+        ` · <a href="#" class="admin-link" data-action-jump="pending">Review</a>`,
+    );
+  }
+
+  const failed = allOrders.filter((o) => o.status === "failed");
+  if (failed.length > 0) {
+    const staleFailed = failed.filter((o) => {
+      const t = Date.parse(o.created_at || "");
+      return Number.isFinite(t) && now - t > STALE_THRESHOLD_MS;
+    }).length;
+    const failTotal = failed.reduce((s, o) => s + (o.total_cents || 0), 0);
+    items.push(
+      `${failed.length} failed order${failed.length === 1 ? "" : "s"} (${formatUSD(failTotal)})` +
+        (staleFailed > 0
+          ? ` <span style="color:var(--admin-danger);font-weight:600;">(${staleFailed} unresolved &gt;7d)</span>`
+          : "") +
+        ` · <a href="#" class="admin-link" data-action-jump="failed">Investigate</a>`,
+    );
+  }
+
+  // Repeat-fail user clusters (≥3 fails by same user in last 7d)
+  const recentFails = failed.filter((o) => {
+    const t = Date.parse(o.created_at || "");
+    return Number.isFinite(t) && now - t < 7 * 86400000;
+  });
+  const failsByUser = new Map();
+  for (const o of recentFails) {
+    const k = o.user_email || o.user_id || "?";
+    failsByUser.set(k, (failsByUser.get(k) || 0) + 1);
+  }
+  for (const [user, count] of failsByUser.entries()) {
+    if (count >= 3) {
+      items.push(
+        `<strong>${esc(user)}</strong> has ${count} failures in 7d — review for fraud or KYC issue`,
+      );
+    }
+  }
+
+  // Concentration risk on completed-in-30d
+  const cutoff30d = now - 30 * 86400000;
+  const completed30d = allOrders.filter(
+    (o) =>
+      o.status === "completed" &&
+      o.created_at &&
+      Date.parse(o.created_at) >= cutoff30d,
+  );
+  if (completed30d.length >= 3) {
+    const total = completed30d.reduce((s, o) => s + (o.total_cents || 0), 0);
+    const byUser = new Map();
+    for (const o of completed30d) {
+      const k = o.user_email || o.user_id || "?";
+      byUser.set(k, (byUser.get(k) || 0) + (o.total_cents || 0));
+    }
+    const top = Array.from(byUser.entries()).sort((a, b) => b[1] - a[1])[0];
+    if (top && total > 0 && top[1] / total > 0.5) {
+      const pct = ((top[1] / total) * 100).toFixed(0);
+      items.push(
+        `Concentration risk: <strong>${esc(top[0])}</strong> = ${pct}% of 30d revenue`,
+      );
+    }
+  }
+
+  if (items.length === 0) {
+    zone.style.display = "none";
+    return;
+  }
+  zone.style.display = "block";
+  list.innerHTML = items.map((i) => `<li>${i}</li>`).join("");
+  if (updated && lastLoadedAt) {
+    updated.textContent = `as of ${lastLoadedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  }
+
+  // Wire jump-links (re-applies filter chip)
+  list.querySelectorAll("[data-action-jump]").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = a.dataset.actionJump;
+      // Ensure the Orders tab is active before applying filter chip
+      const ordersTab = document.querySelector('.admin-tab[data-tab="orders"]');
+      if (ordersTab && !ordersTab.classList.contains("active")) {
+        ordersTab.click();
+      }
+      const chip = document.querySelector(
+        `#order-quick-chips .admin-chip[data-chip-status="${target}"]`,
+      );
+      chip?.click();
+      document
+        .getElementById("tab-orders")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+function getAgingBadge(o) {
+  if (o.status !== "failed" && o.status !== "pending") return "";
+  const t = Date.parse(o.created_at || "");
+  if (!Number.isFinite(t)) return "";
+  const days = Math.floor((Date.now() - t) / 86400000);
+  if (days < 1) return "";
+  let cls = "admin-badge--neutral";
+  let prefix = "";
+  if (days >= 7) {
+    cls = "admin-badge--danger";
+    prefix = "Stale ";
+  } else if (days >= 3) {
+    cls = "admin-badge--warning";
+  }
+  return `<span class="admin-badge ${cls}" style="margin-left:6px;font-size:10px;" title="Order is ${days} day${days === 1 ? "" : "s"} old">${prefix}${days}d</span>`;
 }
 
 // ─── Render: Orders ─────────────────────────────────────────────
@@ -269,7 +633,13 @@ function renderOrders() {
 
   if (slice.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No orders found.</td></tr>';
+      '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No orders match the current filters. <a href="#" class="admin-link" id="orders-clear-filters">Clear filters</a></td></tr>';
+    document
+      .getElementById("orders-clear-filters")
+      ?.addEventListener("click", (e) => {
+        e.preventDefault();
+        clearOrderFilters();
+      });
     return;
   }
 
@@ -298,8 +668,7 @@ function renderOrders() {
             <td style="font-size:12px;color:var(--admin-text-muted);">${o.item_count} item${o.item_count !== 1 ? "s" : ""}</td>
             <td style="font-weight:700;font-variant-numeric:tabular-nums;">${formatUSD(o.total_cents)}</td>
             <td>${getPaymentBadge(o.payment_method)}</td>
-            <td>${getOrderStatusBadge(o.status)}</td>
-            <td style="font-size:12px;font-family:monospace;color:var(--admin-text-muted);">${o.chain_tx_hash ? `<a href="https://amoy.polygonscan.com/tx/${esc(o.chain_tx_hash)}" target="_blank" class="admin-link">${esc(o.chain_tx_hash.substring(0, 10))}...</a>` : '—'}</td>
+            <td style="white-space:nowrap;">${getOrderStatusBadge(o.status)}${getAgingBadge(o)}</td>
             <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${formatDate(o.created_at)}</td>
             <td>
                 <div style="display:flex;gap:6px;">
@@ -525,6 +894,57 @@ function getInvStatusBadge(status) {
   };
   const [cls, label] = map[status] || ["admin-badge--neutral", status];
   return `<span class="admin-badge ${cls}">${label}</span>`;
+}
+
+function clearOrderFilters() {
+  document.getElementById("order-search").value = "";
+  document.getElementById("order-filter-status").value = "";
+  document.getElementById("order-filter-range").value = "";
+  orderRangeDays = "";
+  orderStaleOnly = false;
+  syncChipsFromDropdown("");
+  applyOrderFilters();
+}
+
+function exportOrdersCsv() {
+  if (!filteredOrders.length) {
+    alert("No orders to export. Adjust filters.");
+    return;
+  }
+  const cols = [
+    "order_number",
+    "user_name",
+    "user_email",
+    "item_count",
+    "total_usd",
+    "payment_method",
+    "status",
+    "created_at",
+    "completed_at",
+  ];
+  const header = cols.join(",");
+  const rows = filteredOrders.map((o) =>
+    cols
+      .map((c) => {
+        // total_usd is derived from total_cents; everything else maps 1:1
+        let v = c === "total_usd" ? (o.total_cents || 0) / 100 : o[c];
+        if (v === null || v === undefined) v = "";
+        const s = String(v).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? `"${s}"` : s;
+      })
+      .join(","),
+  );
+  const csv = [header, ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  a.href = url;
+  a.download = `orders-${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function debounce(fn, ms) {
