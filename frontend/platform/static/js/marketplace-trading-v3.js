@@ -212,44 +212,141 @@
         mainImg.src = asset.images[0];
         mainImg.alt = asset.name;
 
-        // Fill 4 mosaic grid thumbnails
-        const mosaicThumbs = document.querySelectorAll('.tv3-mosaic-thumb > img:not(.tv3-loader-logo)');
-        mosaicThumbs.forEach((img, i) => {
+        // Fill 4 mosaic grid thumbnails. Each thumb shows a UNIQUE image
+        // (no duplicate-fill), and thumbs without a matching image are
+        // hidden so the click → lightbox opens the correct index.
+        const mosaicThumbs = document.querySelectorAll('.tv3-mosaic-thumb');
+        mosaicThumbs.forEach((thumb, i) => {
+            const img = thumb.querySelector('img:not(.tv3-loader-logo)');
+            if (!img) return;
             img.classList.remove('loaded');
             img.parentElement.classList.remove('img-loading-complete');
             const imgIdx = i + 1;
             if (asset.images[imgIdx]) {
+                thumb.style.display = '';
                 img.src = asset.images[imgIdx];
                 img.alt = asset.name + ' ' + (imgIdx + 1);
             } else {
-                img.src = asset.images[imgIdx % asset.images.length];
-                img.alt = asset.name;
+                // No image at this slot — hide the entire cell instead of
+                // rendering a duplicate that misleads the click-handler
+                // into opening the wrong index in the lightbox.
+                thumb.style.display = 'none';
+                img.removeAttribute('src');
             }
         });
 
-        // Click on mosaic thumb → swap with main
-        document.querySelectorAll('.tv3-mosaic-thumb').forEach((thumb) => {
-            thumb.addEventListener('click', () => {
-                const thumbImg = thumb.querySelector('img');
-                if (!thumbImg || !mainImg) return;
-                
-                // Track swap
-                const oldMainSrc = mainImg.src;
-                const newMainSrc = thumbImg.src;
-                
-                if (oldMainSrc === newMainSrc) return;
-
-                // Reset loading state for both to trigger fade-in again
-                mainImg.classList.remove('loaded');
-                mainImg.parentElement.classList.remove('img-loading-complete');
-                thumbImg.classList.remove('loaded');
-                thumbImg.parentElement.classList.remove('img-loading-complete');
-
-                // Perform swap — the 'onload' attribute in HTML will trigger the fade-back-in
-                mainImg.src = newMainSrc;
-                thumbImg.src = oldMainSrc;
-            });
+        // Click on ANY gallery image (main or thumb) → open lightbox at that index
+        const galleryImages = asset.images.filter(Boolean);
+        const mainEl = document.getElementById('tv3-gallery-main');
+        if (mainEl) {
+            mainEl.style.cursor = 'zoom-in';
+            mainEl.onclick = () => openLightbox(galleryImages, 0, asset.name);
+        }
+        document.querySelectorAll('.tv3-mosaic-thumb').forEach((thumb, i) => {
+            thumb.style.cursor = 'zoom-in';
+            // Index in gallery: thumb 0 → image 1, thumb 1 → image 2, etc.
+            // (main image already takes index 0)
+            const idx = Math.min(i + 1, galleryImages.length - 1);
+            thumb.onclick = () => openLightbox(galleryImages, idx, asset.name);
         });
+    }
+
+    // ── Lightbox / Fullscreen Image Viewer ──
+    function openLightbox(images, startIndex, alt) {
+        if (!images || images.length === 0) return;
+
+        // Remove any existing lightbox first (idempotent)
+        document.getElementById('tv3-lightbox')?.remove();
+
+        let idx = Math.max(0, Math.min(startIndex, images.length - 1));
+
+        const overlay = document.createElement('div');
+        overlay.id = 'tv3-lightbox';
+        overlay.style.cssText = `
+            position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999;
+            display:flex; align-items:center; justify-content:center;
+            padding:40px; cursor:zoom-out;
+        `;
+
+        const img = document.createElement('img');
+        img.style.cssText = `
+            max-width:100%; max-height:100%; object-fit:contain;
+            border-radius:8px; box-shadow:0 25px 80px rgba(0,0,0,0.5);
+            cursor:default; user-select:none;
+        `;
+        img.alt = alt || '';
+        img.src = images[idx];
+        img.onclick = (e) => e.stopPropagation();
+
+        const close = document.createElement('button');
+        close.setAttribute('aria-label', 'Close');
+        close.style.cssText = `
+            position:absolute; top:20px; right:24px; width:44px; height:44px;
+            border:none; border-radius:50%; background:rgba(255,255,255,0.12);
+            color:#fff; font-size:24px; cursor:pointer; display:flex;
+            align-items:center; justify-content:center;
+        `;
+        close.textContent = '×';
+
+        const counter = document.createElement('div');
+        counter.style.cssText = `
+            position:absolute; top:28px; left:50%; transform:translateX(-50%);
+            color:#fff; font-size:14px; opacity:0.8;
+        `;
+
+        const renderCounter = () => {
+            counter.textContent = images.length > 1
+                ? `${idx + 1} / ${images.length}` : '';
+        };
+        renderCounter();
+
+        const navBtn = (label, onClick) => {
+            const b = document.createElement('button');
+            b.setAttribute('aria-label', label);
+            b.style.cssText = `
+                position:absolute; top:50%; transform:translateY(-50%);
+                width:48px; height:48px; border:none; border-radius:50%;
+                background:rgba(255,255,255,0.12); color:#fff; font-size:28px;
+                cursor:pointer; display:flex; align-items:center;
+                justify-content:center;
+            `;
+            b.onclick = (e) => { e.stopPropagation(); onClick(); };
+            return b;
+        };
+
+        const goPrev = () => { idx = (idx - 1 + images.length) % images.length; img.src = images[idx]; renderCounter(); };
+        const goNext = () => { idx = (idx + 1) % images.length; img.src = images[idx]; renderCounter(); };
+
+        const prev = navBtn('Previous', goPrev);
+        prev.style.left = '24px';
+        prev.textContent = '‹';
+        const next = navBtn('Next', goNext);
+        next.style.right = '24px';
+        next.textContent = '›';
+
+        overlay.appendChild(img);
+        overlay.appendChild(close);
+        overlay.appendChild(counter);
+        if (images.length > 1) {
+            overlay.appendChild(prev);
+            overlay.appendChild(next);
+        }
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        const closeLightbox = () => {
+            overlay.remove();
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', onKey);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') closeLightbox();
+            else if (e.key === 'ArrowLeft' && images.length > 1) goPrev();
+            else if (e.key === 'ArrowRight' && images.length > 1) goNext();
+        };
+        overlay.onclick = closeLightbox;
+        close.onclick = closeLightbox;
+        document.addEventListener('keydown', onKey);
     }
 
     // ── Populate Property Details ──
