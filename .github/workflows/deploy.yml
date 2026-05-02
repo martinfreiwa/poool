@@ -90,7 +90,8 @@ jobs:
             --set-secrets "ENCRYPTION_KEY=poool-encryption-key:latest" \
             --set-secrets "TOTP_SECRET_ENCRYPTION_KEY=poool-encryption-key:latest" \
             --set-secrets "GOOGLE_CLIENT_ID=poool-google-client-id:latest" \
-            --set-secrets "GOOGLE_CLIENT_SECRET=poool-google-client-secret:latest"
+            --set-secrets "GOOGLE_CLIENT_SECRET=poool-google-client-secret:latest" \
+            --set-secrets "REDIS_URL=poool-redis-url:latest"
 
       - name: Verify deployment
         run: |
