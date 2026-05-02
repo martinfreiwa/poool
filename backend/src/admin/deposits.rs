@@ -46,14 +46,16 @@ pub async fn api_admin_deposits(
             Option<String>,
             String,
             String,
-            Option<String>,
-            Option<String>,
+            String,
+            String,
+            String,
         ),
     >(
         r#"SELECT d.id::text, d.status, d.amount_cents, d.currency, d.provider_reference,
-                  d.provider, d.expires_at::text, d.created_at::text,
+                  d.provider, d.expires_at::text, d.created_at::text, d.updated_at::text,
+                  d.user_id::text,
                   COALESCE(u.email, ''),
-                  COALESCE(up.first_name, ''), COALESCE(up.last_name, '')
+                  COALESCE(up.first_name, '') || ' ' || COALESCE(up.last_name, '')
            FROM deposit_requests d
            JOIN users u ON u.id = d.user_id
            LEFT JOIN user_profiles up ON up.user_id = u.id
@@ -67,19 +69,19 @@ pub async fn api_admin_deposits(
     let deposits: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {
-            let name = format!(
-                "{} {}",
-                r.9.clone().unwrap_or_default(),
-                r.10.clone().unwrap_or_default()
-            )
-            .trim()
-            .to_string();
+            let email = r.10.clone();
+            let display_name = {
+                let n = r.11.trim();
+                if n.is_empty() { email.clone() } else { n.to_string() }
+            };
             serde_json::json!({
                 "id": r.0, "type": "deposit", "status": r.1, "amount_cents": r.2,
                 "currency": r.3, "external_ref_id": r.4,
                 "provider": r.5, "expires_at": r.6, "created_at": r.7,
-                "user_email": r.8,
-                "user_name": if name.is_empty() { r.8.clone() } else { name }
+                "updated_at": r.8,
+                "user_id": r.9,
+                "user_email": email,
+                "user_name": display_name
             })
         })
         .collect();
@@ -100,6 +102,14 @@ pub async fn api_admin_deposits(
         .filter_map(|d| d["amount_cents"].as_i64())
         .sum();
 
+    let oldest_pending_age_seconds: Option<f64> = sqlx::query_scalar(
+        "SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM deposit_requests WHERE status = 'pending'",
+    )
+    .fetch_one(&state.db)
+    .await
+    .ok()
+    .flatten();
+
     Ok(Json(serde_json::json!({
         "deposits": deposits,
         "stats": {
@@ -112,7 +122,8 @@ pub async fn api_admin_deposits(
                 .sum::<i64>(),
             "volume_30d_count": deposits.iter().filter(|d| d["status"] == "paid").count(),
             "pending_value_cents": pending_value_cents,
-            "confirmed_24h_value_cents": confirmed_value_cents
+            "confirmed_24h_value_cents": confirmed_value_cents,
+            "oldest_pending_age_seconds": oldest_pending_age_seconds
         }
     }))
     .into_response())
