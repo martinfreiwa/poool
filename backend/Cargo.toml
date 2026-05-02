@@ -43,11 +43,19 @@ time = "0.3"
 async-trait = "0.1"
 hmac = "0.12"
 sha2 = "0.10"
+sha3 = "0.10"
 hex = "0.4"
+
+# Ethereum signing & wallet operations.
+# k256: secp256k1 curve for key derivation + EIP-191 / EIP-712 message
+# verification (used by SIWE wallet-binding endpoint and the settlement
+# signer). rlp: transaction encoding for in-process signing.
+k256 = { version = "0.13", features = ["ecdsa", "sha256"] }
+rlp = "0.5"
 
 # Templating (for HTML responses to HTMX)
 minijinja = { version = "2.0", features = ["loader"] }
-redis = { version = "1.2.0", default-features = false, features = ["tokio-comp", "tls-rustls", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
+redis = { version = "1.2.0", default-features = false, features = ["tokio-comp", "tls-rustls", "tokio-rustls-comp", "tls-rustls-webpki-roots", "tls-rustls-insecure"] }
 deadpool-redis = { version = "0.23.0", features = ["tokio-comp", "tls-rustls", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
 rustls = { version = "0.23", features = ["aws-lc-rs"] }
 # Error handling
