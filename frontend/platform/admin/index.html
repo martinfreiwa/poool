@@ -20,6 +20,8 @@
   <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/admin-dashboard-extras.css?v=1" />
+  <script src="/static/js/admin-command-palette.js" defer></script>
 </head>
 
 <body class="admin-body dom-ready">
@@ -82,15 +84,32 @@
           </div>
 
           <!-- Notifications -->
-          <button type="button" class="admin-notification-btn" id="admin-notification-button" title="Notifications"
-            aria-label="View notifications">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
-              <path d="M13.73 21a2 2 0 01-3.46 0" />
-            </svg>
-            <span class="admin-notification-badge" id="notification-count" style="display:none"></span>
-          </button>
+          <div class="admin-notification-wrap">
+            <button type="button" class="admin-notification-btn" id="admin-notification-button" title="Notifications"
+              aria-label="View notifications" aria-haspopup="dialog" aria-expanded="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
+                <path d="M13.73 21a2 2 0 01-3.46 0" />
+              </svg>
+              <span class="admin-notification-badge" id="notification-count" style="display:none"></span>
+            </button>
+            <div id="notification-panel" class="admin-notif-panel" hidden role="dialog" aria-label="Notifications">
+              <div class="admin-notif-panel-header">
+                <strong>Notifications</strong>
+                <div class="admin-notif-panel-tabs" role="tablist">
+                  <button type="button" class="admin-notif-tab admin-notif-tab--active" data-filter="all" role="tab" aria-selected="true">All</button>
+                  <button type="button" class="admin-notif-tab" data-filter="unread" role="tab" aria-selected="false">Unread</button>
+                </div>
+              </div>
+              <div class="admin-notif-panel-body" id="notification-panel-body">
+                <div class="admin-notif-empty">Loading…</div>
+              </div>
+              <div class="admin-notif-panel-footer">
+                <a href="/admin/notifications.html" class="admin-link--view-all">Open inbox →</a>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -98,52 +117,134 @@
       <div class="admin-content">
         <!-- Page Header -->
         <div class="admin-page-header">
-          <h1 class="admin-page-title">Dashboard</h1>
-          <p class="admin-page-subtitle">
-            Platform overview and operational KPIs —
-            <span id="dashboard-date"></span>
-          </p>
+          <div class="admin-page-header-left">
+            <h1 class="admin-page-title">Dashboard</h1>
+            <p class="admin-page-subtitle">
+              Platform overview and operational KPIs —
+              <span id="dashboard-date"></span>
+              <span class="admin-meta-sep">·</span>
+              <span class="admin-last-updated" id="dashboard-last-updated" title="Auto-refresh every 30s">Updated just now</span>
+              <button type="button" id="dashboard-refresh" class="admin-refresh-btn" title="Refresh now" aria-label="Refresh dashboard">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0115.5-6.36L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15.5 6.36L3 16"/><path d="M3 21v-5h5"/></svg>
+              </button>
+              <span id="env-badge" class="admin-env-badge" hidden></span>
+            </p>
+          </div>
+          <button type="button" id="open-command-palette" class="admin-cmdk-trigger" aria-label="Open command palette (Cmd+K)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.35-4.35"/></svg>
+            <span>Quick jump</span>
+            <kbd>⌘K</kbd>
+          </button>
         </div>
 
-        <!-- KPI Cards Row 1: Core Metrics -->
+        <!-- Weekend Banner -->
+        <div id="weekend-banner" class="admin-weekend-banner" hidden role="note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span>Weekend — bank settlements pause. Pending fiat deposits typically resume processing Monday.</span>
+        </div>
+
+        <!-- Action Required Zone -->
+        <section id="action-required" class="admin-action-required" hidden aria-live="polite">
+          <div class="admin-action-required-header">
+            <span class="admin-action-required-pulse" aria-hidden="true"></span>
+            <h2 class="admin-action-required-title">Action required</h2>
+            <span class="admin-action-required-count" id="action-required-count"></span>
+          </div>
+          <div class="admin-action-required-grid" id="action-required-grid"></div>
+        </section>
+
+        <!-- KPI Cards: Operational priorities first, then growth metrics -->
         <div class="admin-kpi-grid" id="kpi-grid">
-          <!-- Total Users -->
-          <div class="admin-kpi-card">
+          <!-- Pending Deposits -->
+          <a href="/admin/deposits.html?status=pending" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="pending-deposits">
             <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Total Users</span>
-              <div class="admin-kpi-icon admin-kpi-icon--blue">
+              <span class="admin-kpi-label">Pending Deposits <span class="admin-kpi-info" tabindex="0" role="img" aria-label="Fiat deposit requests submitted but not yet confirmed by an admin or PSP webhook.">i</span></span>
+              <div class="admin-kpi-icon admin-kpi-icon--warning">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
+                  <path d="M12 2v20M8 6l4-4 4 4" />
+                  <rect x="3" y="10" width="18" height="10" rx="3" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-total-users">—</div>
-            <div class="admin-kpi-trend" id="trend-users" style="height: 30px; margin-top: 8px"></div>
-            <span class="admin-kpi-change admin-kpi-change--up" id="kpi-new-users">+0 today</span>
-          </div>
+            <div class="admin-kpi-value" id="kpi-pending-deposits">—</div>
+            <span class="admin-kpi-subtext" id="kpi-pending-deposits-aging">Awaiting confirmation</span>
+          </a>
 
-          <!-- Total AUM -->
-          <div class="admin-kpi-card">
+          <!-- Pending KYC -->
+          <a href="/admin/kyc.html?status=pending" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="pending-kyc">
             <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Assets Under Mgmt</span>
-              <div class="admin-kpi-icon admin-kpi-icon--green">
+              <span class="admin-kpi-label">Pending KYC <span class="admin-kpi-info" tabindex="0" role="img" aria-label="KYC submissions awaiting human review or provider verification.">i</span></span>
+              <div class="admin-kpi-icon admin-kpi-icon--warning">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2" />
-                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+                  <path d="M9 11l3 3L22 4" />
+                  <rect x="2" y="4" width="14" height="16" rx="2" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-aum">—</div>
-            <span class="admin-kpi-subtext">Across all live assets</span>
+            <div class="admin-kpi-value" id="kpi-pending-kyc">—</div>
+            <span class="admin-kpi-subtext" id="kpi-pending-kyc-aging">Awaiting review</span>
+          </a>
+
+          <!-- Open Support Tickets -->
+          <a href="/admin/support-tickets.html" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="open-tickets">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Open Tickets <span class="admin-kpi-info" tabindex="0" role="img" aria-label="Support tickets in open status. Click the card to triage the queue.">i</span></span>
+              <div class="admin-kpi-icon admin-kpi-icon--danger">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 10c0 4.418-3.582 8-8 8a8 8 0 110-16c4.418 0 8 3.582 8 8z" />
+                  <path d="M10 14v.01M10 6v6" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" id="kpi-open-tickets">—</div>
+            <span class="admin-kpi-subtext" id="kpi-open-tickets-aging">Active support requests</span>
+          </a>
+
+          <!-- Rewards Liability -->
+          <a href="/admin/rewards.html" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="rewards-liability">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">
+                Rewards Liability
+                <button type="button" class="admin-kpi-info" id="rewards-info-trigger" aria-label="Show rewards liability breakdown" aria-haspopup="dialog">i</button>
+              </span>
+              <div class="admin-kpi-icon admin-kpi-icon--purple">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" id="kpi-rewards-liability">—</div>
+            <span class="admin-kpi-subtext" id="kpi-rewards-subtext">Total outstanding rewards</span>
+          </a>
+
+          <!-- Rewards breakdown popover -->
+          <div class="admin-popover" id="rewards-popover" hidden role="dialog" aria-label="Rewards liability breakdown">
+            <div class="admin-popover-header">
+              <strong>Rewards Liability</strong>
+              <button type="button" class="admin-popover-close" id="rewards-popover-close" aria-label="Close">×</button>
+            </div>
+            <div class="admin-popover-body">
+              <p class="admin-popover-desc">Sum of unpaid balances on <code>rewards_balances</code>. Drill into the rewards module for the source ledgers.</p>
+              <dl class="admin-popover-list">
+                <div class="admin-popover-row"><dt>Cashback</dt><dd id="rewards-bd-cashback">—</dd></div>
+                <div class="admin-popover-row"><dt>Referrals</dt><dd id="rewards-bd-referrals">—</dd></div>
+                <div class="admin-popover-row"><dt>Promotions</dt><dd id="rewards-bd-promotions">—</dd></div>
+                <div class="admin-popover-row admin-popover-row--total"><dt>Total</dt><dd id="rewards-bd-total">—</dd></div>
+                <div class="admin-popover-row"><dt>Users with balance</dt><dd id="rewards-bd-users">—</dd></div>
+              </dl>
+              <a href="/admin/rewards.html" class="admin-btn admin-btn--primary admin-btn--sm">Open Rewards Module</a>
+            </div>
           </div>
 
-          <!-- Deposits (24h) -->
-          <div class="admin-kpi-card">
+          <!-- Deposits (range) -->
+          <a href="/admin/deposits.html" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="deposits-range" data-range-aware="true">
             <div class="admin-kpi-header">
-              <span class="admin-kpi-label" id="kpi-deposits-label">Deposits</span>
+              <span class="admin-kpi-label" id="kpi-deposits-label">Deposits <span class="admin-kpi-range-tag" id="kpi-deposits-range-tag">30d</span></span>
               <div class="admin-kpi-icon admin-kpi-icon--green">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
@@ -154,27 +255,33 @@
             </div>
             <div class="admin-kpi-value" id="kpi-deposits-24h">—</div>
             <div class="admin-kpi-trend" id="trend-deposits" style="height: 30px; margin-top: 8px"></div>
-            <span class="admin-kpi-subtext" id="kpi-deposits-count">0 transactions</span>
-          </div>
+            <div class="admin-kpi-meta">
+              <span class="admin-kpi-change" id="kpi-deposits-delta"></span>
+              <span class="admin-kpi-subtext" id="kpi-deposits-count">0 transactions</span>
+            </div>
+          </a>
 
-          <!-- Pending KYC -->
-          <div class="admin-kpi-card">
+          <!-- Total AUM -->
+          <a href="/admin/assets.html" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="aum">
             <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Pending KYC</span>
-              <div class="admin-kpi-icon admin-kpi-icon--warning">
+              <span class="admin-kpi-label">
+                Assets Under Mgmt
+                <span class="admin-kpi-info" tabindex="0" role="button" aria-label="Sum of investor purchase value across all non-exited investments.">i</span>
+              </span>
+              <div class="admin-kpi-icon admin-kpi-icon--green">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 11l3 3L22 4" />
-                  <rect x="2" y="4" width="14" height="16" rx="2" />
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-pending-kyc">—</div>
-            <span class="admin-kpi-subtext">Awaiting review</span>
-          </div>
+            <div class="admin-kpi-value" id="kpi-aum">—</div>
+            <span class="admin-kpi-subtext">Across all live assets</span>
+          </a>
 
           <!-- Live Assets -->
-          <div class="admin-kpi-card">
+          <a href="/admin/assets.html?published=true" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="live-assets">
             <div class="admin-kpi-header">
               <span class="admin-kpi-label">Live Assets</span>
               <div class="admin-kpi-icon admin-kpi-icon--blue">
@@ -187,54 +294,66 @@
             </div>
             <div class="admin-kpi-value" id="kpi-live-assets">—</div>
             <span class="admin-kpi-subtext" id="kpi-funded-assets">0 fully funded</span>
-          </div>
+          </a>
 
-          <!-- Pending Deposits -->
-          <div class="admin-kpi-card">
+          <!-- Total Users -->
+          <a href="/admin/admins.html" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="users" data-range-aware="true">
             <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Pending Deposits</span>
-              <div class="admin-kpi-icon admin-kpi-icon--warning">
+              <span class="admin-kpi-label">Total Users <span class="admin-kpi-range-tag" id="kpi-users-range-tag">30d</span></span>
+              <div class="admin-kpi-icon admin-kpi-icon--blue">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2v20M8 6l4-4 4 4" />
-                  <rect x="3" y="10" width="18" height="10" rx="3" />
+                  <path d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-pending-deposits">—</div>
-            <span class="admin-kpi-subtext">Awaiting confirmation</span>
-          </div>
+            <div class="admin-kpi-value" id="kpi-total-users">—</div>
+            <div class="admin-kpi-trend" id="trend-users" style="height: 30px; margin-top: 8px"></div>
+            <div class="admin-kpi-meta">
+              <span class="admin-kpi-change" id="kpi-users-delta"></span>
+              <span class="admin-kpi-subtext" id="kpi-new-users">+0 new</span>
+            </div>
+          </a>
+        </div>
 
-          <!-- Open Support Tickets -->
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Open Tickets</span>
-              <div class="admin-kpi-icon admin-kpi-icon--danger">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 10c0 4.418-3.582 8-8 8a8 8 0 110-16c4.418 0 8 3.582 8 8z" />
-                  <path d="M10 14v.01M10 6v6" />
-                </svg>
+        <!-- System Health Card (named tiles, not anonymous dots) -->
+        <div class="admin-card admin-system-health-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">System Health</h3>
+            <a href="/admin/blockchain-sync.html" class="admin-link admin-link--view-all">View all →</a>
+          </div>
+          <div class="admin-card-body">
+            <div class="admin-health-grid" id="health-grid">
+              <div class="admin-health-tile" data-service="db">
+                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <div class="admin-health-tile-body">
+                  <div class="admin-health-tile-name">Database</div>
+                  <div class="admin-health-tile-status" id="health-tile-db">Checking…</div>
+                </div>
+              </div>
+              <div class="admin-health-tile" data-service="psp">
+                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <div class="admin-health-tile-body">
+                  <div class="admin-health-tile-name">Payments (Stripe)</div>
+                  <div class="admin-health-tile-status" id="health-tile-psp">Checking…</div>
+                </div>
+              </div>
+              <div class="admin-health-tile" data-service="kyc">
+                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <div class="admin-health-tile-body">
+                  <div class="admin-health-tile-name">KYC Provider</div>
+                  <div class="admin-health-tile-status" id="health-tile-kyc">Checking…</div>
+                </div>
+              </div>
+              <div class="admin-health-tile" data-service="email">
+                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <div class="admin-health-tile-body">
+                  <div class="admin-health-tile-name">Email Service</div>
+                  <div class="admin-health-tile-status" id="health-tile-email">Checking…</div>
+                </div>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-open-tickets">—</div>
-            <span class="admin-kpi-subtext">Active support requests</span>
-          </div>
-
-          <!-- Rewards Liability -->
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Rewards Liability</span>
-              <div class="admin-kpi-icon admin-kpi-icon--purple">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <path
-                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              </div>
-            </div>
-            <div class="admin-kpi-value" id="kpi-rewards-liability">—</div>
-            <span class="admin-kpi-subtext">Total outstanding rewards</span>
           </div>
         </div>
 
@@ -244,14 +363,22 @@
           <div class="admin-card">
             <div class="admin-card-header">
               <h3 class="admin-card-title">Recent Activity</h3>
-              <a href="/admin/audit-logs.html" class="admin-btn admin-btn--secondary admin-btn--sm">View All</a>
+              <div class="admin-card-actions">
+                <button type="button" class="admin-icon-btn" id="export-activity" title="Export visible activity to CSV" aria-label="Export activity to CSV">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                </button>
+                <a href="/admin/audit-logs.html" class="admin-link admin-link--view-all">View all →</a>
+              </div>
+            </div>
+            <div class="admin-activity-tabs" id="activity-tabs" role="tablist">
+              <button type="button" class="admin-activity-tab admin-activity-tab--active" data-filter="all" role="tab" aria-selected="true">All</button>
+              <button type="button" class="admin-activity-tab" data-filter="user" role="tab" aria-selected="false">User</button>
+              <button type="button" class="admin-activity-tab" data-filter="compliance" role="tab" aria-selected="false">Compliance</button>
+              <button type="button" class="admin-activity-tab" data-filter="marketplace" role="tab" aria-selected="false">Marketplace</button>
+              <button type="button" class="admin-activity-tab" data-filter="system" role="tab" aria-selected="false">System</button>
             </div>
             <div class="admin-card-body" id="activity-feed">
-              <div style="
-                    text-align: center;
-                    padding: 20px;
-                    color: var(--admin-text-muted);
-                  ">
+              <div style="text-align:center;padding:20px;color:var(--admin-text-muted);">
                 Loading activity...
               </div>
             </div>
@@ -261,18 +388,33 @@
           <div class="admin-card">
             <div class="admin-card-header">
               <h3 class="admin-card-title">Quick Actions</h3>
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="open-command-palette-2">⌘K All</button>
             </div>
             <div class="admin-card-body">
-              <div class="admin-quick-actions">
+              <div class="admin-quick-actions admin-quick-actions--grid">
+                <a href="/admin/kyc.html?status=pending" class="admin-quick-action">
+                  <div class="admin-quick-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><rect x="2" y="4" width="14" height="16" rx="2"/></svg></div>
+                  <span>Review KYC</span>
+                </a>
+                <a href="/admin/deposits.html?status=pending" class="admin-quick-action">
+                  <div class="admin-quick-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M8 6l4-4 4 4"/><rect x="3" y="10" width="18" height="10" rx="3"/></svg></div>
+                  <span>Confirm Deposits</span>
+                </a>
+                <a href="/admin/asset-tokenize.html" class="admin-quick-action">
+                  <div class="admin-quick-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg></div>
+                  <span>Tokenize Asset</span>
+                </a>
                 <a href="/admin/notifications.html" class="admin-quick-action">
-                  <div class="admin-quick-action-icon">
-                    <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" />
-                      <path d="M13.73 21a2 2 0 01-3.46 0" />
-                    </svg>
-                  </div>
+                  <div class="admin-quick-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
                   <span>Send Notification</span>
+                </a>
+                <a href="/admin/admin-affiliate-fraud.html" class="admin-quick-action">
+                  <div class="admin-quick-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v6c0 5 4 9 9 11 5-2 9-6 9-11V7l-9-5z"/></svg></div>
+                  <span>Fraud Scan</span>
+                </a>
+                <a href="/admin/audit-logs.html" class="admin-quick-action">
+                  <div class="admin-quick-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></div>
+                  <span>Audit Logs</span>
                 </a>
               </div>
             </div>
@@ -285,7 +427,12 @@
           <div class="admin-card">
             <div class="admin-card-header">
               <h3 class="admin-card-title">Recent Orders</h3>
-              <a href="/admin/orders.html" class="admin-btn admin-btn--secondary admin-btn--sm">View All</a>
+              <div class="admin-card-actions">
+                <button type="button" class="admin-icon-btn" id="export-orders" title="Export orders to CSV" aria-label="Export orders to CSV">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                </button>
+                <a href="/admin/orders.html" class="admin-link admin-link--view-all">View all →</a>
+              </div>
             </div>
             <div class="admin-card-body admin-card-body--flush">
               <table class="admin-table">
@@ -316,15 +463,29 @@
           <div class="admin-card">
             <div class="admin-card-header">
               <h3 class="admin-card-title">Pending Deposits</h3>
-              <a href="/admin/deposits.html" class="admin-btn admin-btn--secondary admin-btn--sm">View All</a>
+              <div class="admin-card-actions">
+                <button type="button" class="admin-icon-btn" id="export-deposits" title="Export pending deposits to CSV" aria-label="Export pending deposits to CSV">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                </button>
+                <a href="/admin/deposits.html" class="admin-link admin-link--view-all">View all →</a>
+              </div>
+            </div>
+            <div id="bulk-bar-deposits" class="admin-bulk-bar" hidden>
+              <span class="admin-bulk-bar-count" id="bulk-bar-count">0 selected</span>
+              <div class="admin-bulk-bar-actions">
+                <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" id="bulk-confirm-deposits">Confirm</button>
+                <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-cancel-deposits">Cancel</button>
+              </div>
             </div>
             <div class="admin-card-body admin-card-body--flush">
               <table class="admin-table">
                 <thead>
                   <tr>
+                    <th class="admin-table-check"><input type="checkbox" id="pending-deposits-checkall" aria-label="Select all pending deposits" /></th>
                     <th>User</th>
                     <th>Amount</th>
                     <th>Provider</th>
+                    <th>Age</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -345,6 +506,23 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Command Palette -->
+  <div class="admin-cmdk-overlay" id="cmdk-overlay" hidden role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="admin-cmdk-modal">
+      <div class="admin-cmdk-input-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="cmdk-input" placeholder="Jump to page or run action…" autocomplete="off" />
+        <kbd class="admin-cmdk-hint">Esc</kbd>
+      </div>
+      <div class="admin-cmdk-results" id="cmdk-results" role="listbox"></div>
+      <div class="admin-cmdk-footer">
+        <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+        <span><kbd>↵</kbd> open</span>
+        <span><kbd>Esc</kbd> close</span>
+      </div>
+    </div>
   </div>
 
   <script src="/static/js/admin-dashboard.js"></script>

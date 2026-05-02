@@ -310,6 +310,41 @@ pub async fn create_order(
     // ── ACID Transaction: create order + place hold ──────────
     let mut tx = pool.begin().await.map_err(AppError::Database)?;
 
+    // Tx-scoped advisory lock keyed on (user_id, asset_id). Serialises
+    // concurrent order placements by the same user on the same asset, so
+    // the open-orders cap below can't be checked-then-fillable. The two
+    // i32 args produce a 64-bit lock key; collisions across (user,asset)
+    // pairs are rare and only cause brief serialisation, not correctness
+    // issues. The lock auto-releases at tx commit/rollback.
+    let user_lo = (user_id.as_u128() as u32) as i32;
+    let asset_lo = (asset_uuid.as_u128() as u32) as i32;
+    sqlx::query("SELECT pg_advisory_xact_lock($1, $2)")
+        .bind(user_lo)
+        .bind(asset_lo)
+        .execute(&mut *tx)
+        .await
+        .map_err(AppError::Database)?;
+
+    // Re-check the open-orders cap inside the lock. The earlier
+    // `check_open_order_count` was best-effort; this one is the real gate.
+    let open_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM market_orders
+         WHERE user_id = $1 AND asset_id = $2
+           AND status IN ('open', 'partially_filled')",
+    )
+    .bind(user_id)
+    .bind(asset_uuid)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
+    if open_count >= validation::max_open_orders_per_asset() as i64 {
+        return Err(super::models::OrderRejection::TooManyOpenOrders {
+            max: validation::max_open_orders_per_asset(),
+            current: open_count as i32,
+        }
+        .into_app_error());
+    }
+
     // Balance/token check inside transaction with FOR UPDATE.
     // Concentration check (buy side only) is also done inside the tx so the
     // (current_owned + held) snapshot can't change between the check and
@@ -484,20 +519,28 @@ pub async fn cancel_order(
         }
     }
 
-    // 2. Fetch the order and verify ownership
+    // 2. Open the cancellation tx FIRST, then re-fetch the order with
+    //    `FOR UPDATE` so we read the latest filled-quantity even if a
+    //    settlement is racing us. The previous version fetched outside
+    //    the tx (autocommit, no row lock) and computed `remaining` from
+    //    a stale snapshot — when settlement filled some quantity in the
+    //    race window, the hold-release amount drifted from reality and
+    //    the entire cancel would error out.
+    let mut tx = pool.begin().await.map_err(AppError::Database)?;
+
     let order = sqlx::query_as::<_, MarketOrder>(
-        "SELECT * FROM market_orders WHERE id = $1 AND user_id = $2",
+        "SELECT * FROM market_orders WHERE id = $1 AND user_id = $2 FOR UPDATE",
     )
     .bind(order_id)
     .bind(user_id)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(AppError::Database)?
     .ok_or_else(|| AppError::NotFound("Order not found.".into()))?;
 
-    // 3. Check order is cancellable
+    // 3. Re-check cancellability inside the lock. Tx auto-rolls back when
+    //    `tx` drops below.
     if !order.is_active() {
-        // Release lock before returning error
         if let Some(redis) = redis {
             let _ = orderbook::release_lock(redis, order_id).await;
         }
@@ -507,20 +550,25 @@ pub async fn cancel_order(
         )));
     }
 
-    // 4. ACID transaction: cancel order + release hold
-    let mut tx = pool.begin().await.map_err(AppError::Database)?;
-
     let remaining = order.remaining_quantity();
 
-    // Cancel the order
-    sqlx::query(
+    // Cancel the order. Strict status guard: rules out flipping a row
+    // that's already been finalised by another path (defence in depth —
+    // FOR UPDATE above should make this impossible).
+    let cancel_affected = sqlx::query(
         "UPDATE market_orders SET status = 'cancelled', cancel_reason = 'user_cancelled', updated_at = NOW()
-         WHERE id = $1",
+         WHERE id = $1 AND status IN ('open', 'partially_filled')",
     )
     .bind(order_id)
     .execute(&mut *tx)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(AppError::Database)?
+    .rows_affected();
+    if cancel_affected != 1 {
+        return Err(AppError::Conflict(
+            "Order was modified during cancellation; please retry.".into(),
+        ));
+    }
 
     // Release the hold
     let side = OrderSide::parse(&order.side);

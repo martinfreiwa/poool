@@ -1167,6 +1167,192 @@ body.kyc-hidden .wallet-main {
 }
 
 /* ── Wallet Modals ───────────────────────────────────────────── */
+.wallet-bank-modal {
+  max-width: 560px;
+  border: 1px solid rgba(229, 231, 235, 0.95);
+}
+
+.wallet-bank-modal__header {
+  align-items: center;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid #EAECF0;
+}
+
+.wallet-bank-modal__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.wallet-bank-modal__logo {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #F4F7FF 0%, #FFFFFF 100%);
+  border: 1px solid #DDE4FF;
+  box-shadow: 0 8px 18px rgba(43, 50, 249, 0.08);
+}
+
+.wallet-bank-modal__logo img {
+  width: 31px;
+  height: 31px;
+  display: block;
+}
+
+.wallet-bank-modal__eyebrow {
+  margin: 0 0 2px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.wallet-bank-modal__body {
+  padding: 22px 28px 0;
+}
+
+.wallet-bank-modal__intro {
+  margin-bottom: 18px;
+}
+
+.wallet-bank-modal__intro p {
+  margin: 0;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.wallet-bank-modal__trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.wallet-bank-modal__trust-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #EFFDF4;
+  color: #067647;
+  border: 1px solid #ABEFC6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wallet-bank-modal__trust-row svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+}
+
+.wallet-bank-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wallet-bank-form__section {
+  border: 1px solid #EAECF0;
+  border-radius: 12px;
+  background: #FFFFFF;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.wallet-bank-form__section .ds-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.wallet-bank-form__section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.wallet-bank-form__section-header h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.wallet-bank-form__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 999px;
+  background: #0000FF;
+  color: #98FB96;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.wallet-bank-form__dynamic {
+  display: contents;
+}
+
+.wallet-bank-form__actions {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -28px;
+  padding: 16px 28px 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, #FFFFFF 32%);
+  border-top: 1px solid #EAECF0;
+}
+
+#add-bank-modal .ds-form-group {
+  margin-bottom: 14px;
+}
+
+#add-bank-modal .ds-form-label {
+  color: #344054;
+  font-weight: 700;
+}
+
+#add-bank-modal .ds-input,
+#add-bank-modal .ds-select {
+  min-height: 46px;
+}
+
+#add-bank-modal .ds-form-hint {
+  margin-top: 6px;
+  color: #667085;
+}
+
+@media (max-width: 640px) {
+  .wallet-bank-modal {
+    max-width: min(100%, 520px);
+  }
+
+  .wallet-bank-modal__header,
+  .wallet-bank-modal__body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .wallet-bank-form__actions {
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
 .bank-modal-overlay {
   position: fixed;
   top: 0;
@@ -1958,20 +2144,67 @@ body.kyc-hidden .wallet-main {
 }
 
 /* ── Deposit instructions info card ────────────────────────────── */
+.dim-modal {
+  max-width: 520px;
+  border: 1px solid rgba(229, 231, 235, 0.95);
+}
+
+.dim-header {
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #EAECF0;
+}
+
+.dim-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.dim-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 12px;
+  background: #F4F7FF;
+  border: 1px solid #DDE4FF;
+}
+
+.dim-logo-mark img {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.dim-kicker {
+  margin: 0 0 2px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .dim-bank-table {
   background: var(--card-bg, #FFFFFF);
   border: 1px solid var(--card-border-color, #E5E7EB);
   border-radius: 12px;
-  padding: 4px 16px;
+  padding: 6px 18px;
   margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
 .dim-bank-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  font-size: 13px;
+  gap: 18px;
+  padding: 12px 0;
+  font-size: 14px;
   border-bottom: 1px solid #EAECF0;
 }
 
@@ -1985,7 +2218,8 @@ body.kyc-hidden .wallet-main {
 
 .dim-bank-value {
   color: #101828;
-  font-weight: 500;
+  font-weight: 700;
+  text-align: right;
 }
 
 .dim-bank-value--ref {
@@ -1995,21 +2229,41 @@ body.kyc-hidden .wallet-main {
 }
 
 .dim-warning {
-  background: #FFFAEB;
-  border: 1px solid #FEF0C7;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #B45309;
-  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #FFF8E6;
+  border: 1px solid #F7D38A;
+  border-left: 4px solid #D97706;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #7C2D12;
+  line-height: 1.45;
+}
+
+.dim-warning__icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin-top: 1px;
+}
+
+.dim-warning__icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .dim-subtitle {
-  margin-bottom: 16px;
+  margin: 0 0 18px;
+  font-size: 15px;
 }
 
 .dim-footer {
-  padding-top: 16px;
+  padding-top: 18px;
+  border-top: 1px solid #EAECF0;
 }
 
 .dim-copy-btn {

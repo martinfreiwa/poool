@@ -18,8 +18,39 @@
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
   <script src="/static/js/admin-global-search.js"></script>
+  <script defer src="/static/js/admin-command-palette.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    /* Scoped accessibility/clarity boost for Live Assets page */
+    .admin-table .admin-badge { font-weight: 700; letter-spacing: 0.01em; }
+    .admin-table .admin-badge--success { color: #065f46; background: #d1fae5; }
+    .admin-table .admin-badge--info    { color: #1e3a8a; background: #dbeafe; }
+    .admin-table .admin-badge--warning { color: #92400e; background: #fef3c7; }
+    .admin-table .admin-badge--danger  { color: #7f1d1d; background: #fee2e2; }
+    .admin-table .admin-badge--exited  { color: #4b5563; background: #e5e7eb; }
+    .admin-kpi-card--clickable:hover { box-shadow: 0 1px 8px rgba(0,0,0,0.08); transform: translateY(-1px); transition: all 0.15s; }
+    .admin-action-chip:hover { background: var(--admin-hover-overlay, #f1f5f9); }
+    /* Sticky first two columns (checkbox + Asset) for horizontal scroll */
+    @media (max-width: 1280px) {
+      .admin-card-body--flush { overflow-x: auto; }
+      .admin-table { min-width: 1180px; }
+      .admin-table th:nth-child(1), .admin-table td:nth-child(1) { position: sticky; left: 0; background: var(--admin-card-bg, #fff); z-index: 2; }
+      .admin-table th:nth-child(2), .admin-table td:nth-child(2) { position: sticky; left: 36px; background: var(--admin-card-bg, #fff); z-index: 2; box-shadow: 1px 0 0 var(--admin-border); }
+    }
+    .admin-trend-up { color: var(--admin-success); }
+    .admin-trend-down { color: var(--admin-danger, #C2410C); }
+    .admin-trend-flat { color: var(--admin-text-muted); }
+    .admin-filter-panel { display: none; padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-subtle, #f8fafc); gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+    .admin-filter-panel.open { display: flex; }
+    .admin-filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+    .admin-filter-group > label { font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .admin-filter-group input[type="number"] { padding: 4px 6px; border: 1px solid var(--admin-border); border-radius: 4px; font-size: 12px; width: 80px; }
+    .admin-filter-range { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--admin-text-muted); }
+    .admin-location-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid var(--admin-border); border-radius: 12px; font-size: 11px; cursor: pointer; background: transparent; user-select: none; }
+    .admin-location-chip.active { background: var(--admin-info-bg, #dbeafe); border-color: var(--admin-info, #1e3a8a); color: var(--admin-info, #1e3a8a); font-weight: 600; }
+    .admin-anomaly-yield td { background: rgba(254, 243, 199, 0.4); }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -41,7 +72,7 @@
               <circle cx="11" cy="11" r="6" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
-            <input type="text" placeholder="Search assets…" id="admin-global-search" aria-label="Search" />
+            <input type="text" placeholder="Search admin (Cmd/Ctrl+K)…" id="admin-global-search" aria-label="Global admin search" />
           </div>
         </div>
       </header>
@@ -69,7 +100,38 @@
             </div>
             <div class="admin-kpi-value" style="font-size: 26px" id="stat-total">—</div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card" style="padding: 16px" title="Assets Under Management — sum of total_value across all published assets.">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label" style="display:flex;align-items:center;gap:4px">
+                Total AUM
+                <span aria-label="Info" style="display:inline-flex;width:13px;height:13px;border-radius:50%;border:1px solid var(--admin-text-muted);color:var(--admin-text-muted);font-size:9px;font-weight:700;align-items:center;justify-content:center;cursor:help" title="Assets Under Management = sum of total_value across all published assets, including exited.">i</span>
+              </span>
+              <div class="admin-kpi-icon admin-kpi-icon--blue">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 26px; color: var(--admin-text-primary)" id="stat-aum">—</div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px" title="Lifetime tokens sold across all published assets, including funded and exited.">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label" style="display:flex;align-items:center;gap:4px">
+                Tokens Sold
+                <span aria-label="Info" style="display:inline-flex;width:13px;height:13px;border-radius:50%;border:1px solid var(--admin-text-muted);color:var(--admin-text-muted);font-size:9px;font-weight:700;align-items:center;justify-content:center;cursor:help" title="Lifetime tokens distributed (active + exited). For currently locked tokens see Active.">i</span>
+              </span>
+              <div class="admin-kpi-icon admin-kpi-icon--purple">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M9.5 9.5c.5-1.5 2.5-2 4 0s0 3.5-2 4v1"/><circle cx="12" cy="17.5" r=".5" fill="currentColor"/>
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 26px" id="stat-tokens-sold" title="—">—</div>
+            <div style="font-size:10px;color:var(--admin-text-muted);margin-top:2px" id="stat-tokens-sold-sub"></div>
+          </div>
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px;cursor:pointer" data-filter-status="funding_open" title="Click to filter by Funding Open">
             <div class="admin-kpi-header" style="margin-bottom: 6px">
               <span class="admin-kpi-label">Funding Open</span>
               <div class="admin-kpi-icon admin-kpi-icon--green">
@@ -82,7 +144,7 @@
             </div>
             <div class="admin-kpi-value" style="font-size: 26px; color: var(--admin-success)" id="stat-funding">—</div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+          <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px;cursor:pointer" data-filter-status="funded" title="Click to filter by Funded">
             <div class="admin-kpi-header" style="margin-bottom: 6px">
               <span class="admin-kpi-label">Fully Funded</span>
               <div class="admin-kpi-icon admin-kpi-icon--green">
@@ -94,31 +156,10 @@
             </div>
             <div class="admin-kpi-value" style="font-size: 26px" id="stat-funded">—</div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
-            <div class="admin-kpi-header" style="margin-bottom: 6px">
-              <span class="admin-kpi-label">Total AUM</span>
-              <div class="admin-kpi-icon admin-kpi-icon--blue">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-                </svg>
-              </div>
-            </div>
-            <div class="admin-kpi-value" style="font-size: 26px; color: var(--admin-text-primary)" id="stat-aum">—</div>
-          </div>
-          <div class="admin-kpi-card" style="padding: 16px">
-            <div class="admin-kpi-header" style="margin-bottom: 6px">
-              <span class="admin-kpi-label">Tokens Sold</span>
-              <div class="admin-kpi-icon admin-kpi-icon--purple">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/><path d="M9.5 9.5c.5-1.5 2.5-2 4 0s0 3.5-2 4v1"/><circle cx="12" cy="17.5" r=".5" fill="currentColor"/>
-                </svg>
-              </div>
-            </div>
-            <div class="admin-kpi-value" style="font-size: 26px" id="stat-tokens-sold">—</div>
-          </div>
         </div>
+
+        <!-- Action Required Banner -->
+        <div id="action-required-banner" style="display:none;margin-bottom:16px"></div>
 
         <!-- Filters -->
         <div class="admin-card" style="margin-bottom: 16px">
@@ -135,7 +176,7 @@
                 <circle cx="11" cy="11" r="6" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              <input type="text" placeholder="Search assets…" id="asset-search" aria-label="Search assets" />
+              <input type="text" placeholder="Filter assets in list…" id="asset-search" aria-label="Filter assets in list" />
             </div>
             <select id="filter-type" class="admin-select">
               <option value="">All Types</option>
@@ -156,21 +197,60 @@
               <option value="payout_pending">Payout Pending</option>
               <option value="exited">Exited</option>
             </select>
-            <label style="
-                  display: flex;
-                  align-items: center;
-                  gap: 6px;
-                  font-size: 12px;
-                  color: var(--admin-text-secondary);
-                  cursor: pointer;
-                  margin-left: 8px;
-                "><input type="checkbox" id="filter-featured" style="accent-color: var(--admin-accent)" />
-              Featured only</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--admin-text-secondary);cursor:pointer;margin-left:8px;white-space:nowrap"><input type="checkbox" id="filter-featured" style="accent-color: var(--admin-accent)" /> Featured only <span id="featured-count" style="color:var(--admin-text-muted);font-size:11px"></span></label>
             <span style="
                   margin-left: auto;
                   font-size: 12px;
                   color: var(--admin-text-muted);
                 " id="asset-count-label">0 assets</span>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="toggle-filters-btn" title="Show advanced filters" aria-expanded="false" aria-controls="advanced-filter-panel">
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+              Filters
+            </button>
+            <select id="saved-views" class="admin-select" title="Saved filter views" style="max-width:160px"><option value="">— Saved views —</option></select>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="save-view-btn" title="Save current filters as view">Save view</button>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="refresh-btn" title="Refresh now">
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v4h-4M2 14v-4h4"/><path d="M13.5 6a6 6 0 00-11 1.5M2.5 10a6 6 0 0011-1.5"/></svg>
+            </button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--admin-text-muted);cursor:pointer;white-space:nowrap"><input type="checkbox" id="auto-refresh" style="accent-color: var(--admin-accent)" checked /> Auto 30s</label>
+            <span id="last-updated-label" style="font-size:11px;color:var(--admin-text-muted);white-space:nowrap" title="Last fetched">—</span>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="export-csv-btn" title="Export filtered assets as CSV">
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M8 1v9m0 0l-3-3m3 3l3-3M2 13v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
+              Export CSV
+            </button>
+          </div>
+          <div class="admin-filter-panel" id="advanced-filter-panel" role="region" aria-label="Advanced filters">
+            <div class="admin-filter-group">
+              <label for="filter-value-min">Value (USD)</label>
+              <div class="admin-filter-range">
+                <input type="number" id="filter-value-min" placeholder="Min" min="0" step="1000" />
+                <span>–</span>
+                <input type="number" id="filter-value-max" placeholder="Max" min="0" step="1000" />
+              </div>
+            </div>
+            <div class="admin-filter-group">
+              <label for="filter-yield-min">Yield (%)</label>
+              <div class="admin-filter-range">
+                <input type="number" id="filter-yield-min" placeholder="Min" min="0" max="100" step="0.1" />
+                <span>–</span>
+                <input type="number" id="filter-yield-max" placeholder="Max" min="0" max="100" step="0.1" />
+              </div>
+            </div>
+            <div class="admin-filter-group" style="flex:1;min-width:240px">
+              <label>Locations</label>
+              <div id="filter-locations" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+            </div>
+            <div class="admin-filter-group">
+              <label>&nbsp;</label>
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="filters-clear-btn">Clear advanced</button>
+            </div>
+          </div>
+          <div id="bulk-action-bar" style="display:none;padding:10px 20px;border-top:1px solid var(--admin-border);background:var(--admin-bg-subtle, #f8fafc);align-items:center;gap:10px;font-size:13px">
+            <span id="bulk-count" style="font-weight:600;color:var(--admin-text-primary)">0 selected</span>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-feature">Feature</button>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-unfeature">Unfeature</button>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-export">Export selected</button>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-clear" style="margin-left:auto">Clear</button>
           </div>
         </div>
 
@@ -180,14 +260,15 @@
             <table class="admin-table">
               <thead>
                 <tr>
+                  <th style="width:36px;text-align:center"><input type="checkbox" id="select-all" aria-label="Select all on page" style="accent-color:var(--admin-accent);cursor:pointer" /></th>
                   <th data-sort="title">Asset</th>
                   <th data-sort="asset_type">Type</th>
                   <th data-sort="total_value_cents">Value</th>
                   <th data-sort="funding_progress">Funding Progress</th>
+                  <th data-sort="age_days" title="Days since asset was published">Age</th>
                   <th data-sort="annual_yield_bps">Yield</th>
                   <th data-sort="location_city">Location</th>
                   <th data-sort="funding_status">Status</th>
-                  <th data-sort="featured">Featured</th>
                   <th style="width: 120px">Actions</th>
                 </tr>
               </thead>
@@ -221,7 +302,18 @@
               align-items: center;
               margin-top: 16px;
             ">
-          <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info">Page 1 of 1</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info">Page 1 of 1</span>
+            <label style="font-size:12px;color:var(--admin-text-muted);display:flex;align-items:center;gap:6px">
+              Rows
+              <select id="page-size" class="admin-select" style="padding:4px 6px;font-size:12px">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+          </div>
           <div style="display: flex; gap: 6px">
             <button class="admin-btn admin-btn--secondary admin-btn--sm" id="prev-page" disabled>
               ← Previous

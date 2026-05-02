@@ -24,8 +24,8 @@
   --admin-border: #e5e7eb;
   --admin-border-hover: #d1d5db;
   --admin-text-primary: #111827;
-  --admin-text-secondary: #4b5563;
-  --admin-text-muted: #9ca3af;
+  --admin-text-secondary: #374151;
+  --admin-text-muted: #6b7280;
   /* Brand accent — POOOL blue */
   --admin-accent: #2E2EF9;
   --admin-accent-hover: #0015a3;
@@ -167,15 +167,17 @@
 .admin-sidebar-logo-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  height: 20px;
+  padding: 0 8px;
   background: var(--admin-accent-bg);
   border: 1px solid rgba(0, 29, 202, 0.18);
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--admin-accent);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 /* Sidebar Navigation */
@@ -591,6 +593,26 @@
   border-color: var(--admin-border-hover);
 }
 
+/* Clickable KPI cards (used as filter buttons) */
+.admin-kpi-card--clickable {
+  font: inherit;
+  width: 100%;
+  display: block;
+  transition: transform 0.08s ease, border-color var(--admin-transition), box-shadow 0.12s ease;
+}
+.admin-kpi-card--clickable:hover {
+  border-color: var(--admin-primary, #4f46e5);
+  transform: translateY(-1px);
+}
+.admin-kpi-card--clickable:focus-visible {
+  outline: 2px solid var(--admin-primary, #4f46e5);
+  outline-offset: 2px;
+}
+.admin-kpi-card--clickable[aria-pressed="true"] {
+  border-color: var(--admin-primary, #4f46e5);
+  background: var(--admin-primary-soft, rgba(79, 70, 229, 0.06));
+}
+
 .admin-kpi-header {
   display: flex;
   align-items: center;
@@ -791,6 +813,24 @@
   background: var(--admin-success-bg);
 }
 
+/* Outline variant — used to differentiate Approved (decision made) from Live (trading) */
+.admin-badge--success-outline {
+  color: var(--admin-success);
+  background: transparent;
+  border: 1px solid var(--admin-success);
+}
+
+/* Live badge: solid fill + animated dot */
+.admin-badge--live {
+  color: #fff;
+  background: var(--admin-success);
+}
+
+@keyframes admin-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 .admin-badge--warning {
   color: var(--admin-warning);
   background: var(--admin-warning-bg);
@@ -861,6 +901,19 @@
 .admin-btn--sm {
   padding: 4px 10px;
   font-size: 12px;
+  min-height: 32px;
+  min-width: 32px;
+}
+
+/* Ghost variant — minimal styling for tertiary actions like "Clear" */
+.admin-btn--ghost {
+  background: transparent;
+  color: var(--admin-text-secondary);
+  border: 1px solid transparent;
+}
+.admin-btn--ghost:hover {
+  background: var(--admin-bg-hover, rgba(0, 0, 0, 0.04));
+  color: var(--admin-text-primary);
 }
 
 .admin-btn--icon {
@@ -1481,15 +1534,16 @@
 .admin-theme-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 14px;
   margin: 0 8px 12px;
   border-radius: var(--admin-radius-sm);
   border: 1px solid var(--admin-border);
   background: transparent;
   cursor: pointer;
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--admin-text-secondary);
   transition: all var(--admin-transition);
 }

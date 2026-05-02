@@ -146,13 +146,24 @@ pub struct TokenizeCandidate {
     pub funding_status: String,
     pub tokens_total: i32,
     pub token_price_cents: i64,
+    pub total_value_cents: i64,
     pub already_tokenized: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 /// Response for tokenizable asset candidates.
 #[derive(Serialize)]
 pub struct TokenizeCandidatesResponse {
     pub assets: Vec<TokenizeCandidate>,
+    pub wallet_address: String,
+    pub contract_address: String,
+    pub network: String,
+    pub explorer_url: String,
+    /// Settlement-wallet gas balance in wei (string, may exceed i64). None if never sampled.
+    pub deployer_balance_wei: Option<String>,
+    /// When the balance was last read by the gas-monitor worker.
+    pub deployer_balance_checked_at: Option<String>,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -715,19 +726,66 @@ pub async fn api_admin_blockchain_tokenize_candidates(
     State(state): State<AppState>,
 ) -> Result<Json<TokenizeCandidatesResponse>, ApiError> {
     require_blockchain_tokenize_permission(&admin, &state.db).await?;
+    let pool = &state.db;
 
-    let rows = sqlx::query_as::<_, (uuid::Uuid, String, String, i32, i64, Option<String>)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            uuid::Uuid,
+            String,
+            String,
+            i32,
+            i64,
+            i64,
+            Option<String>,
+            chrono::DateTime<chrono::Utc>,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(
         r#"
-        SELECT id, title, funding_status, tokens_total, token_price_cents, chain_token_id
+        SELECT id, title, funding_status, tokens_total, token_price_cents,
+               total_value_cents, chain_token_id, created_at, updated_at
         FROM assets
         WHERE published = TRUE
         ORDER BY chain_token_id IS NOT NULL, updated_at DESC, created_at DESC
         LIMIT 100
         "#,
     )
-    .fetch_all(&state.db)
+    .fetch_all(pool)
     .await
     .map_err(ApiError::from)?;
+
+    let wallet_address =
+        std::env::var("CHAIN_SETTLEMENT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
+    let contract_address =
+        std::env::var("CHAIN_CONTRACT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
+    let network = std::env::var("CHAIN_NETWORK")
+        .or_else(|_| {
+            get_platform_setting(pool, "chain_network")
+                .ok()
+                .flatten()
+                .ok_or(std::env::VarError::NotPresent)
+        })
+        .unwrap_or_else(|_| "polygon_amoy".to_string());
+    let explorer_url = match network.as_str() {
+        "polygon" | "polygon_mainnet" => "https://polygonscan.com".to_string(),
+        _ => "https://amoy.polygonscan.com".to_string(),
+    };
+
+    // Look up cached deployer-wallet gas balance (gas_monitor worker writes this every 5 min).
+    let (deployer_balance_wei, deployer_balance_checked_at) = if isaddr(&wallet_address) {
+        sqlx::query_as::<_, (String, chrono::DateTime<chrono::Utc>)>(
+            "SELECT balance_wei, checked_at FROM chain_wallet_balance WHERE address = $1",
+        )
+        .bind(wallet_address.to_lowercase())
+        .fetch_optional(pool)
+        .await
+        .map_err(ApiError::from)?
+        .map(|(bal, ts)| (Some(bal), Some(ts.to_rfc3339())))
+        .unwrap_or((None, None))
+    } else {
+        (None, None)
+    };
 
     Ok(Json(TokenizeCandidatesResponse {
         assets: rows
@@ -738,10 +796,24 @@ pub async fn api_admin_blockchain_tokenize_candidates(
                 funding_status: row.2,
                 tokens_total: row.3,
                 token_price_cents: row.4,
-                already_tokenized: row.5.is_some(),
+                total_value_cents: row.5,
+                already_tokenized: row.6.is_some(),
+                created_at: row.7.to_rfc3339(),
+                updated_at: row.8.to_rfc3339(),
             })
             .collect(),
+        wallet_address,
+        contract_address,
+        network,
+        explorer_url,
+        deployer_balance_wei,
+        deployer_balance_checked_at,
     }))
+}
+
+fn isaddr(s: &str) -> bool {
+    let t = s.trim();
+    t.len() == 42 && t.starts_with("0x") && t[2..].chars().all(|c| c.is_ascii_hexdigit())
 }
 
 // ═══════════════════════════════════════════════════════════════

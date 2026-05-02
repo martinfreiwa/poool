@@ -2,6 +2,8 @@ pub mod event_indexer;
 pub mod gas_monitor;
 pub mod kyc_whitelist;
 pub mod reconciler;
+/// In-process Ethereum signing + EIP-191 verification (replaces `cast` subprocess).
+pub mod signing;
 /// Blockchain integration module — on-chain settlement via POOOLProperty1155 contract.
 ///
 /// This module is the bridge between the off-chain trading engine and the

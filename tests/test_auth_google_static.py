@@ -59,7 +59,21 @@ def test_google_callback_clears_transient_oauth_cookies_on_error():
     assert 'remove(Cookie::from("oauth_state"))' in routes
     assert 'remove(Cookie::from("oauth_pkce"))' in routes
     assert 'remove(Cookie::from("oauth_link"))' in routes
+    assert 'remove(Cookie::from("oauth_redirect_uri"))' in routes
     assert "let jar = clear_oauth_cookies(jar);" in routes
+
+
+def test_google_oauth_redirect_uses_request_host_when_base_url_is_localhost():
+    routes = read("backend/src/auth/routes.rs")
+
+    assert "fn google_oauth_redirect_uri" in routes
+    assert "fn effective_public_base_url" in routes
+    assert "fn request_base_url" in routes
+    assert 'Cookie::build(("oauth_redirect_uri", redirect_uri.clone()))' in routes
+    assert 'jar.get("oauth_redirect_uri")' in routes
+    assert '.get("x-forwarded-host")' in routes
+    assert "headers.get(axum::http::header::HOST)" in routes
+    assert '.get("x-forwarded-proto")' in routes
 
 
 def test_oauth_registration_log_omits_raw_email():

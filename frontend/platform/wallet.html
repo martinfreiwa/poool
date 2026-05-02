@@ -976,9 +976,17 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
   <!-- Add Bank Details Modal -->
   <div id="add-bank-modal" class="ds-modal-overlay">
-    <div class="ds-modal">
-      <div class="ds-modal__header">
-        <h2 class="ds-modal__title">Add Bank Account</h2>
+    <div class="ds-modal wallet-bank-modal">
+      <div class="ds-modal__header wallet-bank-modal__header">
+        <div class="wallet-bank-modal__brand">
+          <span class="wallet-bank-modal__logo" aria-hidden="true">
+            <img src="/static/images/logos/poool-icon.svg" alt="">
+          </span>
+          <div>
+            <p class="wallet-bank-modal__eyebrow">POOOL withdrawals</p>
+            <h2 class="ds-modal__title">Add bank account</h2>
+          </div>
+        </div>
         <button class="ds-modal__close" onclick="closeBankModal()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
@@ -986,92 +994,119 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </svg>
         </button>
       </div>
-      <div class="ds-modal__body">
-        <p class="ds-modal__subtitle">Your details are stored securely and used only for withdrawals.</p>
-        <form id="bank-modal-form">
+      <div class="ds-modal__body wallet-bank-modal__body">
+        <div class="wallet-bank-modal__intro">
+          <p>Connect a bank account for withdrawals. The account holder name must match your verified POOOL profile.</p>
+          <div class="wallet-bank-modal__trust-row" aria-label="Bank account security">
+            <span>
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 8V6.5a3.5 3.5 0 1 1 7 0V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4.5" y="8" width="11" height="8.5" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 11.25v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Encrypted
+            </span>
+            <span>
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5 8 14.5 16 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Withdrawal only
+            </span>
+          </div>
+        </div>
+
+        <form id="bank-modal-form" class="wallet-bank-form">
           <!-- Hidden system field set by JS -->
           <input type="hidden" id="bank-system-field" name="bank_system" value="swift" />
 
-          <!-- Account Holder -->
-          <div class="ds-form-group">
-            <label class="ds-form-label ds-form-label--required">Account Holder Name</label>
-            <input type="text" name="account_holder_name" id="bank-holder-name" placeholder="Full legal name"
-              class="ds-input" required />
+          <div class="wallet-bank-form__section">
+            <div class="wallet-bank-form__section-header">
+              <span class="wallet-bank-form__step">1</span>
+              <h3>Account details</h3>
+            </div>
+
+            <!-- Account Holder -->
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">Account Holder Name</label>
+              <input type="text" name="account_holder_name" id="bank-holder-name" placeholder="Full legal name"
+                class="ds-input" required />
+            </div>
           </div>
 
-          <!-- Country -->
-          <div class="ds-form-group">
-            <label class="ds-form-label ds-form-label--required">Country</label>
-            <select name="bank_country" id="bank-country-select" class="ds-select">
-              <optgroup label="── Common ──">
-                <option value="US">🇺🇸 United States (ACH)</option>
-                <option value="GB">🇬🇧 United Kingdom (BACS)</option>
-                <option value="AU">🇦🇺 Australia (BSB)</option>
-                <option value="IN">🇮🇳 India (IFSC)</option>
-              </optgroup>
-              <optgroup label="── SEPA Zone ──">
-                <option value="DE">🇩🇪 Germany</option>
-                <option value="FR">🇫🇷 France</option>
-                <option value="IT">🇮🇹 Italy</option>
-                <option value="ES">🇪🇸 Spain</option>
-                <option value="NL">🇳🇱 Netherlands</option>
-                <option value="BE">🇧🇪 Belgium</option>
-                <option value="AT">🇦🇹 Austria</option>
-                <option value="PT">🇵🇹 Portugal</option>
-                <option value="IE">🇮🇪 Ireland</option>
-                <option value="FI">🇫🇮 Finland</option>
-                <option value="SE">🇸🇪 Sweden</option>
-                <option value="DK">🇩🇰 Denmark</option>
-                <option value="NO">🇳🇴 Norway</option>
-                <option value="CH">🇨🇭 Switzerland</option>
-                <option value="PL">🇵🇱 Poland</option>
-                <option value="CZ">🇨🇿 Czech Republic</option>
-                <option value="HU">🇭🇺 Hungary</option>
-                <option value="RO">🇷🇴 Romania</option>
-                <option value="GR">🇬🇷 Greece</option>
-                <option value="LU">🇱🇺 Luxembourg</option>
-              </optgroup>
-              <optgroup label="── Asia-Pacific ──">
-                <option value="SG">🇸🇬 Singapore</option>
-                <option value="HK">🇭🇰 Hong Kong</option>
-                <option value="JP">🇯🇵 Japan</option>
-                <option value="KR">🇰🇷 South Korea</option>
-                <option value="NZ">🇳🇿 New Zealand</option>
-              </optgroup>
-              <optgroup label="── Americas ──">
-                <option value="CA">🇨🇦 Canada</option>
-                <option value="BR">🇧🇷 Brazil</option>
-                <option value="MX">🇲🇽 Mexico</option>
-              </optgroup>
-              <optgroup label="── Middle East & Africa ──">
-                <option value="AE">🇦🇪 UAE</option>
-                <option value="SA">🇸🇦 Saudi Arabia</option>
-                <option value="ZA">🇿🇦 South Africa</option>
-                <option value="NG">🇳🇬 Nigeria</option>
-                <option value="KE">🇰🇪 Kenya</option>
-              </optgroup>
-              <option value="OTHER">🌍 Other country (SWIFT/BIC)</option>
-            </select>
-          </div>
+          <div class="wallet-bank-form__section">
+            <div class="wallet-bank-form__section-header">
+              <span class="wallet-bank-form__step">2</span>
+              <h3>Bank details</h3>
+            </div>
 
-          <!-- Bank Name -->
-          <div class="ds-form-group">
-            <label class="ds-form-label ds-form-label--required">Bank Name</label>
-            <input type="text" name="bank_name" id="bank-name-input" placeholder="e.g. Chase, Barclays, Wise"
-              class="ds-input" required />
-          </div>
+            <!-- Country -->
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">Country</label>
+              <select name="bank_country" id="bank-country-select" class="ds-select">
+                <optgroup label="── Common ──">
+                  <option value="US">🇺🇸 United States (ACH)</option>
+                  <option value="GB">🇬🇧 United Kingdom (BACS)</option>
+                  <option value="AU">🇦🇺 Australia (BSB)</option>
+                  <option value="IN">🇮🇳 India (IFSC)</option>
+                </optgroup>
+                <optgroup label="── SEPA Zone ──">
+                  <option value="DE">🇩🇪 Germany</option>
+                  <option value="FR">🇫🇷 France</option>
+                  <option value="IT">🇮🇹 Italy</option>
+                  <option value="ES">🇪🇸 Spain</option>
+                  <option value="NL">🇳🇱 Netherlands</option>
+                  <option value="BE">🇧🇪 Belgium</option>
+                  <option value="AT">🇦🇹 Austria</option>
+                  <option value="PT">🇵🇹 Portugal</option>
+                  <option value="IE">🇮🇪 Ireland</option>
+                  <option value="FI">🇫🇮 Finland</option>
+                  <option value="SE">🇸🇪 Sweden</option>
+                  <option value="DK">🇩🇰 Denmark</option>
+                  <option value="NO">🇳🇴 Norway</option>
+                  <option value="CH">🇨🇭 Switzerland</option>
+                  <option value="PL">🇵🇱 Poland</option>
+                  <option value="CZ">🇨🇿 Czech Republic</option>
+                  <option value="HU">🇭🇺 Hungary</option>
+                  <option value="RO">🇷🇴 Romania</option>
+                  <option value="GR">🇬🇷 Greece</option>
+                  <option value="LU">🇱🇺 Luxembourg</option>
+                </optgroup>
+                <optgroup label="── Asia-Pacific ──">
+                  <option value="SG">🇸🇬 Singapore</option>
+                  <option value="HK">🇭🇰 Hong Kong</option>
+                  <option value="JP">🇯🇵 Japan</option>
+                  <option value="KR">🇰🇷 South Korea</option>
+                  <option value="NZ">🇳🇿 New Zealand</option>
+                </optgroup>
+                <optgroup label="── Americas ──">
+                  <option value="CA">🇨🇦 Canada</option>
+                  <option value="BR">🇧🇷 Brazil</option>
+                  <option value="MX">🇲🇽 Mexico</option>
+                </optgroup>
+                <optgroup label="── Middle East & Africa ──">
+                  <option value="AE">🇦🇪 UAE</option>
+                  <option value="SA">🇸🇦 Saudi Arabia</option>
+                  <option value="ZA">🇿🇦 South Africa</option>
+                  <option value="NG">🇳🇬 Nigeria</option>
+                  <option value="KE">🇰🇪 Kenya</option>
+                </optgroup>
+                <option value="OTHER">🌍 Other country (SWIFT/BIC)</option>
+              </select>
+            </div>
 
-          <!-- Dynamic fields injected here -->
-          <div id="bank-dynamic-fields"></div>
+            <!-- Bank Name -->
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">Bank Name</label>
+              <input type="text" name="bank_name" id="bank-name-input" placeholder="e.g. Chase, Barclays, Wise"
+                class="ds-input" required />
+            </div>
 
-          <!-- Label (optional) -->
-          <div class="ds-form-group">
-            <label class="ds-form-label">Nickname (optional)</label>
-            <input type="text" name="label" placeholder="e.g. My Savings Account" class="ds-input" />
+            <!-- Dynamic fields injected here -->
+            <div id="bank-dynamic-fields" class="wallet-bank-form__dynamic"></div>
+
+            <!-- Label (optional) -->
+            <div class="ds-form-group">
+              <label class="ds-form-label">Nickname (optional)</label>
+              <input type="text" name="label" placeholder="e.g. My Savings Account" class="ds-input" />
+            </div>
           </div>
 
           <div id="bank-errors" role="alert" class="ds-modal__error"></div>
-          <div class="form-actions" style="margin-top:24px">
+          <div class="wallet-bank-form__actions">
             <button type="submit" id="submit-bank-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Bank
               Account</button>
           </div>
@@ -1159,12 +1194,6 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               grp.appendChild(hint);
               container.appendChild(grp);
             });
-            // Add system badge
-            var badge = document.createElement("span");
-            badge.className = "ds-badge ds-badge--info";
-            var systemLabel = { ach: "ACH Transfer", bacs: "BACS / Faster Payments", bsb: "BSB (Australia)", ifsc: "NEFT/RTGS (India)", sepa: "SEPA Transfer", swift: "SWIFT International Wire" };
-            badge.textContent = "🏦 " + (systemLabel[config.system] || config.system.toUpperCase());
-            container.insertBefore(badge, container.firstChild);
           }
 
           document.addEventListener("DOMContentLoaded", function () {

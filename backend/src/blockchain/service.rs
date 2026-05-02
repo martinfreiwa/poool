@@ -733,14 +733,17 @@ async fn send_settle_batch_and_get_hash(
 
     let nonce = reserve_nonce(pool, client, &config.rpc_url, &sender).await?;
 
-    match sign_and_send_via_cast(
+    match sign_and_send_in_process(
         config,
+        client,
         contract_address,
         &calldata,
         nonce,
         gas_limit,
         gas_price,
-    ) {
+    )
+    .await
+    {
         Ok(tx_hash) => {
             tracing::info!(
                 "⛓️ Settlement TX broadcast: hash={}, nonce={}, gas_limit={}",
@@ -991,86 +994,43 @@ pub fn derive_address_from_private_key_pub(private_key: &str) -> Result<String, 
 }
 
 fn derive_address_from_private_key(private_key: &str) -> Result<String, String> {
-    // For now, use the known deployment address
-    // TODO: Replace with proper key derivation using k256 crate
-    let _ = private_key;
-    Ok(std::env::var("CHAIN_SETTLEMENT_ADDRESS")
-        .unwrap_or_else(|_| "0x021F6B0029125B3924FF5Ba3e0FF59e1FA39B88a".to_string()))
+    // Real secp256k1 derivation via the `k256` crate. The previous stub
+    // returned an env var and ignored the key — which silently desynced
+    // the nonce manager, simulation, and gas estimation from the actual
+    // signer whenever the env var didn't match.
+    super::signing::address_from_private_key(private_key)
 }
 
-/// Sign and broadcast a settleBatch() TX via the `cast` CLI (Foundry).
+/// Sign a transaction in-process and broadcast it via JSON-RPC. Returns
+/// the tx hash from the chain.
 ///
-/// `cast send --async` returns immediately with the tx hash after pushing
-/// the signed TX into the mempool — no waiting for confirmation. Receipt
-/// polling is done by the caller via `wait_for_receipt`. Output is the
-/// 0x-prefixed tx hash on stdout.
-///
-/// 🔴 SECURITY: the private key is currently passed via `--private-key`
-/// which exposes it in `ps aux` / `/proc/<pid>/cmdline`. This needs to be
-/// migrated to in-process signing (alloy/k256) before mainnet — tracked
-/// as a follow-up.
-fn sign_and_send_via_cast(
+/// In-process signing means:
+/// - Private key never leaves this address space (no `ps aux` leak via
+///   subprocess args).
+/// - No Foundry / `cast` binary dependency.
+/// - ~10x faster than spawning a subprocess.
+/// - Address derivation actually matches the key (the old `cast` path
+///   relied on an env var being correct; this one can't lie).
+async fn sign_and_send_in_process(
     config: &ChainConfig,
+    client: &Client,
     target_contract: &str,
     data: &str,
     nonce: u64,
     gas_limit: u64,
     gas_price: u64,
 ) -> Result<String, String> {
-    let output = std::process::Command::new("cast")
-        .args([
-            "send",
-            target_contract,
-            "--private-key",
-            &config.settlement_private_key,
-            "--rpc-url",
-            &config.rpc_url,
-            "--chain",
-            &config.chain_id.to_string(),
-            "--gas-limit",
-            &gas_limit.to_string(),
-            "--gas-price",
-            &gas_price.to_string(),
-            "--nonce",
-            &nonce.to_string(),
-            "--async", // Return tx hash immediately, don't wait for receipt.
-            "--json",  // Stable output format we can parse.
-            "--data",
-            data,
-        ])
-        .output()
-        .map_err(|e| {
-            format!(
-                "Failed to execute `cast send`: {}. Is Foundry installed?",
-                e
-            )
-        })?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        // Don't echo stdout — may include sender info.
-        return Err(format!("cast send failed: {}", stderr.trim()));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let trimmed = stdout.trim();
-    if trimmed.is_empty() {
-        return Err("cast send returned empty output".to_string());
-    }
-
-    // With --async --json, the output is JSON containing transactionHash.
-    // Older cast versions emit just the hex hash on its own line, so we
-    // accept either form.
-    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(trimmed) {
-        if let Some(h) = parsed.get("transactionHash").and_then(|v| v.as_str()) {
-            return Ok(h.to_string());
-        }
-    }
-    // Fallback: assume the whole stdout is the hash.
-    if trimmed.starts_with("0x") && trimmed.len() == 66 {
-        return Ok(trimmed.to_string());
-    }
-    Err(format!("cast send: unexpected output: {}", trimmed))
+    let signed_hex = super::signing::sign_legacy_transaction(
+        &config.settlement_private_key,
+        config.chain_id,
+        nonce,
+        gas_price,
+        gas_limit,
+        target_contract,
+        0u128, // settleBatch is non-payable
+        data,
+    )?;
+    send_raw_transaction(client, &config.rpc_url, &signed_hex).await
 }
 
 // ═══════════════════════════════════════════════════════════════

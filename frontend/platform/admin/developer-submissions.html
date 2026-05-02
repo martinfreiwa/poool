@@ -58,16 +58,26 @@
             ">
           <div>
             <h1 class="admin-page-title">Developer Submissions</h1>
-            <p class="admin-page-subtitle">
-              Review, approve, or reject asset submissions from property
-              developers
+            <p class="admin-page-subtitle" id="page-subtitle">
+              Loading queue status…
             </p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span id="last-updated-indicator" style="font-size: 12px; color: var(--admin-text-muted); white-space: nowrap;" title="Auto-refreshes every 60 seconds"></span>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-refresh" title="Refresh now (auto-refresh runs every 60s)" aria-label="Refresh submissions">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8a6 6 0 11-1.76-4.24L14 5"/><path d="M14 2v3h-3"/></svg>
+              <span class="visually-hidden-on-narrow">Refresh</span>
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-export-csv" title="Export filtered list as CSV">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1v10M4 7l4 4 4-4M2 13h12"/></svg>
+              Export CSV
+            </button>
           </div>
         </div>
 
-        <!-- KPI Cards -->
+        <!-- KPI Cards (clickable filters) -->
         <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px">
-          <div class="admin-kpi-card" style="padding: 16px">
+          <button type="button" class="admin-kpi-card admin-kpi-card--clickable" data-kpi-filter="pending" style="padding: 16px; text-align: left; cursor: pointer; border: 1px solid var(--admin-border); background: var(--admin-bg-card);" aria-label="Filter to pending submissions">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Pending Review</span>
               <div class="admin-kpi-icon admin-kpi-icon--warning">
@@ -79,8 +89,9 @@
               </div>
             </div>
             <div class="admin-kpi-value" style="font-size: 28px" id="stat-pending">—</div>
-          </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;" id="stat-pending-sub">Submitted + In Review</div>
+          </button>
+          <button type="button" class="admin-kpi-card admin-kpi-card--clickable" data-kpi-filter="approved" style="padding: 16px; text-align: left; cursor: pointer; border: 1px solid var(--admin-border); background: var(--admin-bg-card);" aria-label="Filter to approved submissions">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Approved</span>
               <div class="admin-kpi-icon admin-kpi-icon--green">
@@ -92,8 +103,9 @@
               </div>
             </div>
             <div class="admin-kpi-value" style="font-size: 28px" id="stat-approved">—</div>
-          </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;" id="stat-approved-sub">Approved + Live</div>
+          </button>
+          <button type="button" class="admin-kpi-card admin-kpi-card--clickable" data-kpi-filter="rejected" style="padding: 16px; text-align: left; cursor: pointer; border: 1px solid var(--admin-border); background: var(--admin-bg-card);" aria-label="Filter to rejected submissions">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
               <span class="admin-kpi-label">Rejected</span>
               <div class="admin-kpi-icon admin-kpi-icon--danger">
@@ -105,10 +117,11 @@
               </div>
             </div>
             <div class="admin-kpi-value" style="font-size: 28px" id="stat-rejected">—</div>
-          </div>
-          <div class="admin-kpi-card" style="padding: 16px">
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;" id="stat-rejected-sub">&nbsp;</div>
+          </button>
+          <div class="admin-kpi-card" style="padding: 16px" title="Aggregate asset valuation across all submissions (USD). Not the same as capital raised.">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
-              <span class="admin-kpi-label">Total Value</span>
+              <span class="admin-kpi-label">Asset Valuation (USD)</span>
               <div class="admin-kpi-icon admin-kpi-icon--blue">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
@@ -117,12 +130,13 @@
               </div>
             </div>
             <div class="admin-kpi-value" style="font-size: 28px" id="stat-total-value">—</div>
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;" id="stat-total-value-sub">&nbsp;</div>
           </div>
         </div>
 
         <!-- Filters -->
         <div class="admin-card" style="margin-bottom: 16px">
-          <div style="padding: 14px 20px; display: flex; align-items: center; gap: 12px;">
+          <div style="padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div class="admin-search" style="width: 220px; flex-shrink: 0;">
               <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
@@ -151,8 +165,28 @@
               <option value="startup">Startup</option>
               <option value="land_plot">Land Plot</option>
             </select>
+            <select id="filter-age" class="admin-select" style="width: 140px; flex-shrink: 0;" aria-label="Filter by age">
+              <option value="">All Ages</option>
+              <option value="overdue">SLA Overdue (&gt;3d)</option>
+              <option value="aging">Aging (1–3d)</option>
+              <option value="fresh">Fresh (&lt;1d)</option>
+            </select>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--admin-text-secondary); cursor: pointer; user-select: none;" title="Show only submissions you've pinned to yourself">
+              <input type="checkbox" id="filter-mine" style="margin: 0;" />
+              <span>Mine only</span>
+            </label>
             <span style="margin-left: auto; font-size: 12px; color: var(--admin-text-muted); white-space: nowrap;" id="sub-count-label">Showing 0 submissions</span>
           </div>
+        </div>
+
+        <!-- Bulk Action Bar (hidden until selection) -->
+        <div id="bulk-action-bar" style="display: none; margin-bottom: 12px; padding: 10px 16px; background: var(--admin-primary-soft, #eef2ff); border: 1px solid var(--admin-primary, #4f46e5); border-radius: 8px; align-items: center; gap: 12px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--admin-text-primary);" id="bulk-count">0 selected</span>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-mark-review">Mark In Review</button>
+          <button type="button" class="admin-btn admin-btn--danger admin-btn--sm" id="bulk-reject">Reject</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-pin-mine">Assign to Me</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="bulk-export">Export Selected</button>
+          <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="bulk-clear" style="margin-left: auto;">Clear</button>
         </div>
 
         <!-- Submissions Table -->
@@ -161,21 +195,24 @@
             <table class="admin-table" id="submissions-table">
               <thead>
                 <tr>
-                  <th data-sort="project_name">Project</th>
-                  <th data-sort="asset_type">Type</th>
-                  <th data-sort="developer_name">Developer</th>
-                  <th>Linked Asset</th>
-                  <th data-sort="status">Status</th>
-                  <th data-sort="total_raised_cents">Total Raised</th>
-                  <th data-sort="investors_count">Investors</th>
-                  <th data-sort="funding_progress_bps">Progress</th>
-                  <th data-sort="created_at">Submitted</th>
+                  <th style="width: 36px; padding-right: 0;">
+                    <input type="checkbox" id="bulk-select-all" aria-label="Select all visible submissions" />
+                  </th>
+                  <th data-sort="project_name" style="min-width: 220px;" title="Project title and submission ID. Click to sort.">Project</th>
+                  <th data-sort="asset_type" style="width: 110px;" title="Asset class. Click to sort.">Type</th>
+                  <th data-sort="developer_name" style="min-width: 180px;" title="Submitting developer. Click name to view profile.">Developer</th>
+                  <th data-sort="status" style="width: 110px;" title="Pipeline status: Draft → Submitted → In Review → Approved/Rejected → Live. Click to sort.">Status</th>
+                  <th data-sort="age_hours" style="width: 90px;" title="Hours since submission. Color: green &lt;24h, amber 1–3d, red &gt;3d (SLA overdue). Click to sort.">Age</th>
+                  <th data-sort="total_value_cents" style="width: 120px;" title="Asset valuation in USD (developer-declared). Click to sort.">Valuation</th>
+                  <th data-sort="total_raised_cents" style="width: 130px;" title="Capital raised by investors. Only meaningful for live/approved submissions. Click to sort.">Raised</th>
+                  <th data-sort="funding_progress_bps" style="width: 130px;" title="Funding progress (% of target raised). Click to sort.">Progress</th>
+                  <th data-sort="created_at" style="width: 130px;" title="Submission date. Hover row date for exact timestamp. Click to sort.">Submitted</th>
                   <th style="width: 140px">Actions</th>
                 </tr>
               </thead>
               <tbody id="submissions-table-body">
                 <tr>
-                  <td colspan="10" style="
+                  <td colspan="11" style="
                         text-align: center;
                         padding: 40px;
                         color: var(--admin-text-muted);

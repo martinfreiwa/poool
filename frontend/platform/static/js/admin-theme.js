@@ -18,6 +18,8 @@
   function updateToggleLabel(theme) {
     const label = document.getElementById("theme-toggle-label");
     if (label) label.textContent = theme === "dark" ? "Dark" : "Light";
+    const btn = document.getElementById("admin-theme-toggle");
+    if (btn) btn.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
   }
 
   function toggle() {

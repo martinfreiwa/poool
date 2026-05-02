@@ -50,6 +50,7 @@
     }
     .deploy-btn-main {
       display: inline-flex; align-items: center; gap: 10px;
+      min-height: 48px;
       padding: 16px 40px; font-size: 16px; font-weight: 700; color: #fff;
       background: linear-gradient(135deg, var(--admin-accent), #6366f1);
       border: none; border-radius: var(--admin-radius-lg); cursor: pointer;
@@ -82,6 +83,14 @@
     .asset-summary-item .label {
       font-size: 11px; font-weight: 600; color: var(--admin-text-muted);
       text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+      display: inline-flex; align-items: center; gap: 6px; cursor: help;
+    }
+    .kpi-help {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--admin-border); color: var(--admin-text-muted);
+      font-size: 9px; font-weight: 700; line-height: 1;
+      text-transform: none; letter-spacing: 0;
     }
     .asset-summary-item .value { font-size: 18px; font-weight: 700; color: var(--admin-text-primary); }
     .status-timeline { display: flex; align-items: center; gap: 0; margin-bottom: 24px; }
@@ -117,9 +126,250 @@
     .tokenize-modal h2 { margin: 0 0 8px; font-size: 18px; color: var(--admin-text-primary); }
     .tokenize-modal p { margin: 0; color: var(--admin-text-secondary); font-size: 14px; }
     .tokenize-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+    /* Deployer wallet strip */
+    .deployer-strip {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 12px 16px; margin-bottom: 16px;
+      background: var(--admin-bg); border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md); font-size: 12px;
+    }
+    .deployer-strip__field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .deployer-strip__label {
+      font-size: 10px; font-weight: 600; color: var(--admin-text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .deployer-strip__value {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+      color: var(--admin-text-primary); display: inline-flex; align-items: center; gap: 6px;
+    }
+    .deployer-strip__value a { color: var(--admin-accent); text-decoration: none; }
+    .deployer-strip__value a:hover { text-decoration: underline; }
+    .deployer-strip__copy {
+      background: none; border: none; cursor: pointer; color: var(--admin-text-muted);
+      padding: 2px; border-radius: 4px;
+    }
+    .deployer-strip__copy:hover { color: var(--admin-accent); background: rgba(99,102,241,0.08); }
+    .deployer-strip__net-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 999px; font-weight: 600;
+    }
+    .deployer-strip__net-badge--mainnet { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
+    .deployer-strip__net-badge--testnet { background: rgba(245, 158, 11, 0.12); color: #b45309; }
+
+    /* Picker controls */
+    .picker-controls {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      margin: 14px 0 16px;
+    }
+    .picker-search {
+      flex: 1; min-width: 220px;
+      padding: 8px 12px; border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md); font-size: 13px;
+      background: #fff;
+    }
+    .picker-search:focus { outline: none; border-color: var(--admin-accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+    .picker-select {
+      padding: 8px 12px; border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md); font-size: 13px;
+      background: #fff; cursor: pointer;
+    }
+    .picker-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .picker-chip {
+      padding: 6px 12px; border: 1px solid var(--admin-border);
+      border-radius: 999px; background: #fff; font-size: 12px; font-weight: 600;
+      color: var(--admin-text-secondary); cursor: pointer; transition: all .15s;
+    }
+    .picker-chip:hover { border-color: var(--admin-accent); color: var(--admin-accent); }
+    .picker-chip--active {
+      background: var(--admin-accent); border-color: var(--admin-accent); color: #fff;
+    }
+    .picker-count { font-size: 12px; color: var(--admin-text-muted); margin-left: auto; }
+
+    /* Candidate row enhancements */
+    .tokenize-candidate {
+      cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .tokenize-candidate--selected {
+      border-color: var(--admin-accent) !important;
+      background: rgba(99,102,241,0.04) !important;
+      box-shadow: 0 0 0 1px var(--admin-accent);
+    }
+    .candidate-meta-row {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      font-size: 12px; color: var(--admin-text-muted); margin-top: 4px;
+    }
+    .candidate-meta-row > * { white-space: nowrap; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 600; text-transform: capitalize;
+    }
+    .status-badge--funded { background: rgba(16,185,129,0.12); color: #047857; }
+    .status-badge--funding_open { background: rgba(59,130,246,0.12); color: #1d4ed8; }
+    .status-badge--funding_in_progress { background: rgba(245,158,11,0.12); color: #b45309; }
+    .status-badge--upcoming { background: rgba(99,102,241,0.10); color: #4338ca; }
+    .status-badge--exited { background: rgba(107,114,128,0.14); color: #4b5563; }
+    .status-badge--rented,
+    .status-badge--payout_pending { background: rgba(20,184,166,0.12); color: #0f766e; }
+    .aging-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    }
+    .aging-tag--fresh { background: rgba(16,185,129,0.10); color: #047857; }
+    .aging-tag--watch { background: rgba(245,158,11,0.12); color: #b45309; }
+    .aging-tag--breach { background: rgba(239,68,68,0.12); color: #b91c1c; }
+    .candidate-right {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .net-pill {
+      font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+      background: rgba(124,58,237,0.10); color: #7c3aed;
+    }
+    .net-pill--testnet { background: rgba(245,158,11,0.12); color: #b45309; }
+
+    /* Refresh strip */
+    .refresh-strip {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 6px 0; margin-bottom: 8px;
+      font-size: 12px; color: var(--admin-text-muted);
+    }
+    .refresh-strip__pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981; box-shadow: 0 0 0 0 rgba(16,185,129,0.5);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+      100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+    }
+    .refresh-strip__pulse--paused { background: var(--admin-text-muted); animation: none; }
+    .refresh-strip__btn {
+      background: none; border: 1px solid var(--admin-border);
+      border-radius: 6px; padding: 4px 10px; font-size: 11px;
+      color: var(--admin-text-secondary); cursor: pointer;
+    }
+    .refresh-strip__btn:hover { border-color: var(--admin-accent); color: var(--admin-accent); }
+    .refresh-strip__shortcut {
+      margin-left: auto; font-size: 11px;
+    }
+    .kbd {
+      display: inline-block; padding: 1px 6px; font-family: 'SF Mono', monospace;
+      font-size: 10px; background: var(--admin-bg);
+      border: 1px solid var(--admin-border); border-radius: 4px;
+      color: var(--admin-text-secondary);
+    }
+
+    /* Sticky action bar */
+    .sticky-action-bar {
+      position: sticky; bottom: 16px; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      margin-top: 16px; padding: 12px 18px;
+      background: #0f172a; color: #fff;
+      border-radius: var(--admin-radius-lg);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.3);
+    }
+    .sticky-action-bar__info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .sticky-action-bar__title {
+      font-weight: 700; font-size: 14px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px;
+    }
+    .sticky-action-bar__sub { font-size: 12px; opacity: 0.7; }
+    .sticky-action-bar__actions { display: flex; gap: 8px; align-items: center; }
+    .sticky-action-bar__btn {
+      padding: 8px 16px; min-height: 32px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+    }
+    .sticky-action-bar__btn--primary { background: var(--admin-accent); color: #fff; }
+    .sticky-action-bar__btn--primary:hover { filter: brightness(1.1); }
+    .sticky-action-bar__btn--ghost {
+      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.25);
+    }
+    .sticky-action-bar__btn--ghost:hover { background: rgba(255,255,255,0.08); }
+
+    /* Risk banner */
+    .risk-banner {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; margin: 8px 0;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 8px; font-size: 12px;
+    }
+    .risk-banner--danger {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .risk-banner__icon { flex-shrink: 0; color: #b45309; }
+    .risk-banner--danger .risk-banner__icon { color: #b91c1c; }
+    .risk-banner__title { font-weight: 700; color: var(--admin-text-primary); margin-bottom: 2px; }
+    .risk-banner__list { margin: 0; padding-left: 16px; color: var(--admin-text-secondary); }
+
+    /* Hover preview popover */
+    .hover-preview {
+      position: absolute; z-index: 200;
+      width: 280px; padding: 12px 14px;
+      background: #fff; border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+      font-size: 12px; pointer-events: none;
+    }
+    .hover-preview__title { font-weight: 700; font-size: 13px; margin-bottom: 6px; color: var(--admin-text-primary); }
+    .hover-preview__row {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 3px 0; color: var(--admin-text-secondary);
+    }
+    .hover-preview__row strong { color: var(--admin-text-primary); font-weight: 600; }
+
+    /* Keyboard help modal */
+    .kb-help-overlay {
+      position: fixed; inset: 0; z-index: 9999; display: flex;
+      align-items: center; justify-content: center;
+      background: rgba(15,23,42,0.5); padding: 20px;
+    }
+    .kb-help-modal {
+      width: min(440px, 100%); background: #fff;
+      border-radius: var(--admin-radius-lg); padding: 24px;
+      box-shadow: 0 20px 48px rgba(15,23,42,0.24);
+    }
+    .kb-help-modal h3 { margin: 0 0 16px; font-size: 16px; }
+    .kb-help-modal__row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid var(--admin-border); font-size: 13px;
+    }
+    .kb-help-modal__row:last-child { border-bottom: none; }
+
+    /* Skeleton loaders */
+    @keyframes skel-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    .skel-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 14px 16px; border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md); background: var(--admin-bg);
+      margin-bottom: 10px;
+    }
+    .skel-bar {
+      background: linear-gradient(90deg, var(--admin-border), rgba(0,0,0,0.04), var(--admin-border));
+      border-radius: 6px; animation: skel-pulse 1.4s ease-in-out infinite;
+    }
+    .skel-bar--title { height: 14px; width: 220px; margin-bottom: 8px; }
+    .skel-bar--meta { height: 10px; width: 320px; }
+    .skel-bar--badge { height: 22px; width: 70px; border-radius: 999px; }
+
+    /* Inline detail panel */
+    .candidate-detail {
+      margin-top: 8px; padding: 16px;
+      border: 1px solid var(--admin-accent);
+      border-radius: var(--admin-radius-md);
+      background: rgba(99,102,241,0.03);
+    }
+    .candidate-detail__loading {
+      padding: 24px; text-align: center; color: var(--admin-text-muted); font-size: 13px;
+    }
+
     @media (max-width: 820px) {
       .asset-summary-grid { grid-template-columns: 1fr 1fr; }
       .deploy-result-grid { grid-template-columns: 1fr; }
+      .deployer-strip { font-size: 11px; }
     }
   </style>
 </head>
@@ -131,22 +381,22 @@
     <main class="admin-main">
       <header class="admin-topbar">
         <div class="admin-topbar-left">
-          <nav class="admin-breadcrumbs">
+          <nav class="admin-breadcrumbs" id="breadcrumbs">
             <a href="/admin/">Admin</a>
             <span class="separator">›</span>
             <a href="/admin/assets">Assets</a>
-            <span class="separator">›</span>
+            <span class="separator" id="breadcrumb-asset-sep">›</span>
             <a id="breadcrumb-asset-name" href="#">Loading…</a>
-            <span class="separator">›</span>
+            <span class="separator" id="breadcrumb-tokenize-sep">›</span>
             <span class="current">Tokenize</span>
           </nav>
         </div>
-        <div class="admin-topbar-right">
-          <button class="admin-btn admin-btn--secondary" onclick="history.back()">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+        <div class="admin-topbar-right" id="topbar-actions">
+          <button class="admin-btn admin-btn--secondary" id="btn-back" onclick="history.back()" style="min-height: 32px;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
               <path d="M10 2L4 8l6 6" />
             </svg>
-            Back to Asset
+            <span id="btn-back-label">Back to Asset</span>
           </button>
         </div>
       </header>
@@ -161,19 +411,19 @@
         </div>
 
         <!-- Status Timeline -->
-        <div class="status-timeline">
+        <div class="status-timeline" id="status-timeline">
           <div class="timeline-step timeline-step--done">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8l3.5 3.5L13 4" /></svg>
             Submitted
           </div>
           <span class="timeline-arrow">→</span>
           <div class="timeline-step timeline-step--done">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8l3.5 3.5L13 4" /></svg>
             Approved
           </div>
           <span class="timeline-arrow">→</span>
           <div class="timeline-step timeline-step--active" id="timeline-tokenize">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6" /><path d="M8 5v3l2 2" /></svg>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8" cy="8" r="6" /><path d="M8 5v3l2 2" /></svg>
             Tokenize & Deploy
           </div>
           <span class="timeline-arrow">→</span>
@@ -185,19 +435,27 @@
         <!-- Asset Summary -->
         <div class="asset-summary-grid">
           <div class="asset-summary-item">
-            <div class="label">Asset Valuation</div>
+            <div class="label" title="Total off-chain valuation of the asset, used to anchor token price × supply.">Asset Valuation
+              <span class="kpi-help" aria-hidden="true">?</span>
+            </div>
             <div class="value" id="summary-valuation">—</div>
           </div>
           <div class="asset-summary-item">
-            <div class="label">Token Price</div>
+            <div class="label" title="Sale price per ERC-1155 token in USD.">Token Price
+              <span class="kpi-help" aria-hidden="true">?</span>
+            </div>
             <div class="value" id="summary-price">—</div>
           </div>
           <div class="asset-summary-item">
-            <div class="label">Total Token Supply</div>
+            <div class="label" title="Total ERC-1155 tokens that will be minted at deployment.">Total Token Supply
+              <span class="kpi-help" aria-hidden="true">?</span>
+            </div>
             <div class="value" id="summary-supply">—</div>
           </div>
           <div class="asset-summary-item">
-            <div class="label">Network</div>
+            <div class="label" title="Target chain for tokenization. Mainnet = production, Amoy = test.">Network
+              <span class="kpi-help" aria-hidden="true">?</span>
+            </div>
             <div class="value" id="summary-network" style="display: flex; align-items: center; gap: 8px;">—</div>
           </div>
         </div>
@@ -224,7 +482,7 @@
       </div>
     </main>
   </div>
-  <script src="/static/js/admin-asset-tokenize.js"></script>
+  <script src="/static/js/admin-asset-tokenize.js?v=5"></script>
 </body>
 
 </html>

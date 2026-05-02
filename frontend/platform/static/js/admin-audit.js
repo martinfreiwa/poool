@@ -13,6 +13,13 @@ let loadError = "";
 let lastFocusedBeforeModal = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Prefill from URL query params (?search=, ?entity=)
+  const params = new URLSearchParams(window.location.search);
+  const searchEl = document.getElementById("audit-search");
+  const entityEl = document.getElementById("filter-entity");
+  if (searchEl && params.get("search")) searchEl.value = params.get("search");
+  if (entityEl && params.get("entity")) entityEl.value = params.get("entity");
+
   loadLogs();
 
   // Filters

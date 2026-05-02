@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asset Change Requests — Admin | POOOL</title>
     <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/admin-dashboard-extras.css">
+    <link rel="stylesheet" href="/static/css/admin-change-requests.css">
     <link rel="stylesheet" href="/static/css/fonts.css">
     <script src="/static/js/admin-theme.js"></script>
 </head>
@@ -23,74 +25,233 @@
                         <span class="current">Asset Change Requests</span>
                     </nav>
                 </div>
+                <div class="admin-topbar-right" style="display:flex;align-items:center;gap:10px;">
+                    <button type="button" id="open-command-palette" class="admin-cmdk-trigger" aria-label="Open command palette (Cmd+K)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.35-4.35"/></svg>
+                        Search
+                        <kbd>⌘K</kbd>
+                    </button>
+                </div>
             </header>
 
             <div class="admin-content">
                 <!-- Header -->
-                <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="admin-page-header" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;">
                     <div>
-                        <h1 class="admin-page-title">Asset Change Requests</h1>
+                        <h1 class="admin-page-title">
+                            Asset Change Requests
+                            <span class="cr-help-icon" data-tooltip="Developer-submitted edits to live assets. Review and approve before changes apply.">?</span>
+                        </h1>
                         <p class="admin-page-subtitle">Review and approve developer edits to approved assets</p>
+                    </div>
+                    <div class="cr-toolbar" role="group" aria-label="Page actions">
+                        <span class="cr-last-updated" id="last-updated" aria-live="polite">Loading…</span>
+                        <button type="button" id="refresh-btn" class="admin-btn admin-btn--secondary admin-btn--sm" title="Refresh (R)">
+                            <span aria-hidden="true">↻</span> Refresh
+                        </button>
+                        <button type="button" id="export-btn" class="admin-btn admin-btn--secondary admin-btn--sm" title="Export CSV">Export</button>
+                        <label class="cr-autorefresh">
+                            <input type="checkbox" id="autorefresh-toggle" checked />
+                            Auto
+                        </label>
                     </div>
                 </div>
 
-                <!-- KPI Cards -->
-                <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px" id="kpi-row">
-                    <div class="admin-kpi-card" style="padding: 16px">
-                        <div class="admin-kpi-label" style="margin-bottom: 8px">Pending</div>
-                        <div class="admin-kpi-value" id="kpi-pending" style="font-size: 28px; color: var(--admin-warning, #f59e0b);">0</div>
-                    </div>
-                    <div class="admin-kpi-card" style="padding: 16px">
-                        <div class="admin-kpi-label" style="margin-bottom: 8px">Approved</div>
-                        <div class="admin-kpi-value" id="kpi-approved" style="font-size: 28px; color: var(--admin-success, #10b981);">0</div>
-                    </div>
-                    <div class="admin-kpi-card" style="padding: 16px">
-                        <div class="admin-kpi-label" style="margin-bottom: 8px">Rejected</div>
-                        <div class="admin-kpi-value" id="kpi-rejected" style="font-size: 28px; color: var(--admin-danger, #ef4444);">0</div>
-                    </div>
+                <!-- KPI Cards (clickable filters) -->
+                <div class="admin-kpi-grid cr-kpi-grid" id="kpi-row">
+                    <button type="button" class="admin-kpi-card cr-kpi-card cr-kpi-card--pending" data-filter="pending" aria-pressed="false">
+                        <div class="cr-kpi-row">
+                            <div class="admin-kpi-label">Pending</div>
+                            <span class="cr-sla-pill" id="sla-pill" hidden></span>
+                        </div>
+                        <div class="admin-kpi-value cr-kpi-value" id="kpi-pending">0</div>
+                        <div class="cr-kpi-sub" id="kpi-pending-sub">No pending requests</div>
+                    </button>
+                    <button type="button" class="admin-kpi-card cr-kpi-card cr-kpi-card--approved" data-filter="approved" aria-pressed="false">
+                        <div class="cr-kpi-row">
+                            <div class="admin-kpi-label">Approved</div>
+                        </div>
+                        <div class="admin-kpi-value cr-kpi-value" id="kpi-approved">0</div>
+                        <div class="cr-kpi-sub" id="kpi-approved-sub">All time</div>
+                    </button>
+                    <button type="button" class="admin-kpi-card cr-kpi-card cr-kpi-card--rejected" data-filter="rejected" aria-pressed="false">
+                        <div class="cr-kpi-row">
+                            <div class="admin-kpi-label">Rejected</div>
+                        </div>
+                        <div class="admin-kpi-value cr-kpi-value" id="kpi-rejected">0</div>
+                        <div class="cr-kpi-sub" id="kpi-rejected-sub">All time</div>
+                    </button>
+                    <button type="button" class="admin-kpi-card cr-kpi-card cr-kpi-card--all" data-filter="all" aria-pressed="true">
+                        <div class="cr-kpi-row">
+                            <div class="admin-kpi-label">Total</div>
+                        </div>
+                        <div class="admin-kpi-value cr-kpi-value" id="kpi-total">0</div>
+                        <div class="cr-kpi-sub">Showing all</div>
+                    </button>
+                </div>
+
+                <!-- Anomaly banner -->
+                <div id="anomaly-banner" class="cr-anomaly-banner" hidden role="status">
+                    <span class="cr-anomaly-icon" aria-hidden="true">⚠</span>
+                    <span id="anomaly-text"></span>
+                    <button type="button" class="cr-anomaly-dismiss" aria-label="Dismiss" id="anomaly-dismiss">×</button>
                 </div>
 
                 <!-- Filters -->
-                <div class="admin-card" style="margin-bottom: 16px;">
-                    <div style="padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                        <div class="admin-search" style="width: 320px">
+                <div class="admin-card cr-filterbar" role="search" aria-label="Filters">
+                    <div class="cr-filterbar-inner">
+                        <div class="admin-search cr-filter-search">
                             <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input type="text" id="search-input" placeholder="Search by asset or developer...">
+                            <label for="search-input" class="visually-hidden">Search by asset or developer</label>
+                            <input type="text" id="search-input" placeholder="Search asset or developer…  (press / to focus)">
                         </div>
-                        <select id="filter-status" class="admin-select" style="min-width:150px;">
+                        <label class="visually-hidden" for="filter-status">Status</label>
+                        <select id="filter-status" class="admin-select">
                             <option value="all" selected>All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
                         </select>
+                        <label class="visually-hidden" for="filter-developer">Developer</label>
+                        <select id="filter-developer" class="admin-select">
+                            <option value="all" selected>All developers</option>
+                        </select>
+                        <label class="visually-hidden" for="filter-range">Date range</label>
+                        <select id="filter-range" class="admin-select">
+                            <option value="all" selected>All time</option>
+                            <option value="24h">Last 24h</option>
+                            <option value="7d">Last 7 days</option>
+                            <option value="30d">Last 30 days</option>
+                        </select>
+                        <button type="button" id="filter-reset" class="admin-btn admin-btn--ghost admin-btn--sm">Reset</button>
                     </div>
+                </div>
+
+                <!-- Bulk action bar -->
+                <div id="bulk-bar" class="cr-bulk-bar" hidden>
+                    <span id="bulk-count" class="cr-bulk-count">0 selected</span>
+                    <button type="button" id="bulk-approve-btn" class="admin-btn admin-btn--success admin-btn--sm">Approve selected</button>
+                    <button type="button" id="bulk-reject-btn" class="admin-btn admin-btn--danger admin-btn--sm">Reject selected</button>
+                    <button type="button" id="bulk-clear-btn" class="admin-btn admin-btn--ghost admin-btn--sm">Clear</button>
                 </div>
 
                 <!-- Table -->
                 <div class="admin-card">
                     <div class="admin-card-body admin-card-body--flush">
-                        <table class="admin-table" id="change-requests-table">
+                        <table class="admin-table cr-table" id="change-requests-table" aria-label="Change requests">
                             <thead>
                                 <tr>
-                                    <th>Asset</th>
-                                    <th>Developer</th>
-                                    <th>Fields Changed</th>
-                                    <th>Status</th>
-                                    <th>Submitted</th>
-                                    <th>Actions</th>
+                                    <th class="cr-col-check">
+                                        <input type="checkbox" id="select-all" aria-label="Select all on page">
+                                    </th>
+                                    <th class="cr-sort" data-sort="asset_title">Asset <span class="cr-sort-ind"></span></th>
+                                    <th class="cr-sort" data-sort="developer_name">Developer <span class="cr-sort-ind"></span></th>
+                                    <th class="cr-sort" data-sort="fields_changed">Fields <span class="cr-sort-ind"></span></th>
+                                    <th class="cr-sort" data-sort="status">Status <span class="cr-sort-ind"></span></th>
+                                    <th class="cr-sort cr-sort--active cr-sort--desc" data-sort="created_at">Submitted <span class="cr-sort-ind">↓</span></th>
+                                    <th class="cr-col-age">Age</th>
+                                    <th class="cr-col-actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="table-body">
-                                <tr><td colspan="6" style="text-align:center; padding:40px; color: var(--admin-text-muted, #888);">Loading...</td></tr>
+                                <tr><td colspan="8" class="cr-state cr-state--loading">Loading…</td></tr>
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Keyboard shortcut hint -->
+                <div class="cr-kb-hint" aria-hidden="true">
+                    <kbd>j</kbd>/<kbd>k</kbd> navigate · <kbd>x</kbd> select · <kbd>↵</kbd> open · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>?</kbd> help
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Diff Side-Panel -->
+    <div class="cr-drawer" id="diff-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="diff-drawer-title">
+        <div class="cr-drawer-backdrop" data-drawer-close></div>
+        <aside class="cr-drawer-panel" role="document">
+            <header class="cr-drawer-header">
+                <div>
+                    <h2 id="diff-drawer-title" class="cr-drawer-title">Change Request</h2>
+                    <p class="cr-drawer-sub" id="diff-drawer-sub"></p>
+                </div>
+                <button type="button" class="cr-drawer-close" data-drawer-close aria-label="Close">×</button>
+            </header>
+            <div class="cr-drawer-body" id="diff-drawer-body">
+                <div class="cr-state cr-state--loading">Loading…</div>
+            </div>
+            <footer class="cr-drawer-footer">
+                <button type="button" id="drawer-prev" class="admin-btn admin-btn--ghost admin-btn--sm" title="Previous (k)">← Prev</button>
+                <button type="button" id="drawer-next" class="admin-btn admin-btn--ghost admin-btn--sm" title="Next (j)">Next →</button>
+                <span style="flex:1"></span>
+                <a id="drawer-history" href="#" class="admin-btn admin-btn--ghost admin-btn--sm" title="Audit history">History</a>
+                <button type="button" id="drawer-reject" class="admin-btn admin-btn--danger admin-btn--sm">Reject (r)</button>
+                <button type="button" id="drawer-approve" class="admin-btn admin-btn--success admin-btn--sm">Approve (a)</button>
+                <a id="drawer-fullview" href="#" class="admin-btn admin-btn--secondary admin-btn--sm">Full review →</a>
+            </footer>
+        </aside>
+    </div>
+
+    <!-- Bulk reject reason modal -->
+    <div class="cr-modal" id="reject-modal" hidden role="dialog" aria-modal="true" aria-labelledby="reject-modal-title">
+        <div class="cr-modal-backdrop" data-modal-close></div>
+        <div class="cr-modal-panel">
+            <h3 id="reject-modal-title">Reject reason</h3>
+            <p class="cr-modal-sub" id="reject-modal-sub">Provide a reason. The developer will see this.</p>
+            <textarea id="reject-reason" rows="4" placeholder="e.g. financial figures need re-verification"></textarea>
+            <div class="cr-modal-actions">
+                <button type="button" class="admin-btn admin-btn--ghost" data-modal-close>Cancel</button>
+                <button type="button" id="reject-confirm" class="admin-btn admin-btn--danger">Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help modal -->
+    <div class="cr-modal" id="help-modal" hidden role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+        <div class="cr-modal-backdrop" data-modal-close></div>
+        <div class="cr-modal-panel">
+            <h3 id="help-modal-title">Keyboard shortcuts</h3>
+            <ul class="cr-help-list">
+                <li><kbd>⌘K</kbd> / <kbd>/</kbd> — Command palette / focus search</li>
+                <li><kbd>j</kbd> / <kbd>k</kbd> — Next / previous row</li>
+                <li><kbd>↵</kbd> — Open diff panel</li>
+                <li><kbd>x</kbd> — Toggle row selection</li>
+                <li><kbd>a</kbd> — Approve focused / open</li>
+                <li><kbd>r</kbd> — Reject focused / open</li>
+                <li><kbd>R</kbd> — Refresh list</li>
+                <li><kbd>Esc</kbd> — Close panel/modal</li>
+                <li><kbd>?</kbd> — Show this help</li>
+            </ul>
+            <div class="cr-modal-actions">
+                <button type="button" class="admin-btn admin-btn--secondary" data-modal-close>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast region -->
+    <div class="cr-toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Command Palette (shared markup) -->
+    <div class="admin-cmdk-overlay" id="cmdk-overlay" hidden role="dialog" aria-modal="true" aria-label="Command palette">
+        <div class="admin-cmdk-modal">
+            <div class="admin-cmdk-input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" id="cmdk-input" placeholder="Jump to page or run action…" autocomplete="off" />
+                <kbd class="admin-cmdk-hint">Esc</kbd>
+            </div>
+            <div class="admin-cmdk-results" id="cmdk-results" role="listbox"></div>
+            <div class="admin-cmdk-footer">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> open</span>
+                <span><kbd>Esc</kbd> close</span>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/admin-sidebar-loader.js"></script>
-    <script src="/static/js/admin-change-requests.js"></script>
+    <script src="/static/js/admin-command-palette.js" defer></script>
+    <script src="/static/js/admin-change-requests.js" defer></script>
 </body>
 </html>

@@ -382,15 +382,21 @@
         overlay.className = "ds-modal-overlay active";
 
         overlay.innerHTML =
-            '<div class="ds-modal">' +
-              '<div class="ds-modal__header">' +
-                '<h2 class="ds-modal__title">Deposit Request Created</h2>' +
+            '<div class="ds-modal dim-modal">' +
+              '<div class="ds-modal__header dim-header">' +
+                '<div class="dim-title-wrap">' +
+                  '<span class="dim-logo-mark" aria-hidden="true"><img src="/static/images/logos/poool-icon.svg" alt=""></span>' +
+                  '<div>' +
+                    '<p class="dim-kicker">Bank transfer</p>' +
+                    '<h2 class="ds-modal__title">Deposit request created</h2>' +
+                  '</div>' +
+                '</div>' +
                 '<button class="ds-modal__close" id="dim-close-btn" aria-label="Close">' +
                   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
                 '</button>' +
               '</div>' +
               '<div class="ds-modal__body">' +
-                '<p class="ds-modal__subtitle dim-subtitle">Please wire <strong id="dim-amount"></strong> to the account below. Include the reference number so we can match your transfer.</p>' +
+                '<p class="ds-modal__subtitle dim-subtitle">Wire <strong id="dim-amount"></strong> to the account below. Use the exact reference so your deposit can be matched automatically.</p>' +
                 '<div class="dim-bank-table">' +
                   '<div class="dim-bank-row"><span class="dim-bank-label">Bank</span><span class="dim-bank-value">Deutsche Bank AG</span></div>' +
                   '<div class="dim-bank-row"><span class="dim-bank-label">Account Name</span><span class="dim-bank-value">POOOL GmbH</span></div>' +
@@ -398,10 +404,15 @@
                   '<div class="dim-bank-row"><span class="dim-bank-label">BIC / SWIFT</span><span class="dim-bank-value">DEUTDEDB</span></div>' +
                   '<div class="dim-bank-row"><span class="dim-bank-label">Reference</span><span class="dim-bank-value dim-bank-value--ref"><span id="dim-ref" class="dim-ref-text"></span> <button class="dim-copy-btn" id="dim-ref-copy" title="Copy reference">Copy</button></span></div>' +
                 '</div>' +
-                '<p class="dim-warning">⚠️ Include the reference number in your transfer, otherwise we cannot match your deposit.</p>' +
+                '<div class="dim-warning" role="note">' +
+                  '<span class="dim-warning__icon" aria-hidden="true">' +
+                    '<svg viewBox="0 0 20 20" fill="none"><path d="M10 2.5 18 16.5H2L10 2.5Z" fill="#FFF4D6" stroke="#D97706" stroke-width="1.4"/><path d="M10 7.25v4.25" stroke="#B45309" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14" r="1" fill="#B45309"/></svg>' +
+                  '</span>' +
+                  '<span><strong>Reference required.</strong> Include it in your transfer, otherwise we cannot match your deposit.</span>' +
+                '</div>' +
               '</div>' +
               '<div class="ds-modal__footer dim-footer">' +
-                '<button id="dim-cta-btn" class="ds-btn ds-btn--primary ds-btn--full">Got it – I\'ll wire the funds</button>' +
+                '<button id="dim-cta-btn" class="ds-btn ds-btn--primary ds-btn--full">Got it - I\'ll wire the funds</button>' +
               '</div>' +
             '</div>';
 
@@ -451,4 +462,3 @@
         handleUrlParams();
     }
 })();
-

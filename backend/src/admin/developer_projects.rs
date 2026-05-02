@@ -25,13 +25,22 @@ const REQUIRED_APPROVAL_CHECKS: &[&str] = &[
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// GET /api/admin/developer-projects  Full list of all developer_projects with linked asset + developer info.
+///
+/// Query params:
+///   include_test=1  → include rows flagged is_test (excluded by default)
 pub async fn api_admin_developer_projects(
     admin: AdminUser,
     State(state): State<AppState>,
+    axum::extract::Query(qs): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<axum::response::Response, ApiError> {
     admin
         .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
         .await?;
+
+    let include_test = matches!(
+        qs.get("include_test").map(|s| s.as_str()),
+        Some("1") | Some("true")
+    );
 
     // Use UNION ALL: first assets WITH developer_projects rows, then orphaned assets WITHOUT.
     // This ensures all assets are visible in the submissions list.
@@ -47,6 +56,11 @@ pub async fn api_admin_developer_projects(
                dp.funding_progress_bps,
                dp.created_at::text     AS project_created_at,
                dp.updated_at::text     AS project_updated_at,
+               COALESCE(dp.is_test, false)         AS is_test,
+               dp.assigned_admin_id::text          AS assigned_admin_id,
+               (SELECT COALESCE(up2.first_name || ' ' || up2.last_name, u2.email)
+                FROM users u2 LEFT JOIN user_profiles up2 ON up2.user_id = u2.id
+                WHERE u2.id = dp.assigned_admin_id)  AS assigned_admin_name,
                a.id::text              AS asset_id,
                COALESCE(a.title,'')    AS asset_title,
                COALESCE(a.asset_type,'') AS asset_type,
@@ -70,6 +84,7 @@ pub async fn api_admin_developer_projects(
            LEFT JOIN assets a ON a.id = dp.asset_id
            LEFT JOIN users u ON u.id = dp.developer_id
            LEFT JOIN user_profiles up ON up.user_id = dp.developer_id
+           WHERE ($1::boolean OR COALESCE(dp.is_test, false) = false)
 
             UNION ALL
 
@@ -90,6 +105,9 @@ pub async fn api_admin_developer_projects(
                END                     AS funding_progress_bps,
                a.created_at::text      AS project_created_at,
                a.updated_at::text      AS project_updated_at,
+               false                   AS is_test,
+               NULL::text              AS assigned_admin_id,
+               NULL::text              AS assigned_admin_name,
                a.id::text              AS asset_id,
                COALESCE(a.title,'')    AS asset_title,
                COALESCE(a.asset_type,'') AS asset_type,
@@ -117,6 +135,7 @@ pub async fn api_admin_developer_projects(
         ORDER BY project_created_at DESC
         LIMIT 500"#,
     )
+    .bind(include_test)
     .fetch_all(&state.db)
     .await
     .map_err(|e| {
@@ -159,6 +178,10 @@ pub async fn api_admin_developer_projects(
                 "developer_name": if dev_name.is_empty() { dev_email.clone() } else { dev_name },
                 "kyc_status": r.get::<Option<String>, _>("kyc_status"),
                 "other_projects_count": r.get::<i64, _>("other_projects_count"),
+                // Admin workflow fields (migration 102)
+                "is_test": r.try_get::<bool, _>("is_test").unwrap_or(false),
+                "assigned_admin_id": r.try_get::<Option<String>, _>("assigned_admin_id").unwrap_or(None),
+                "assigned_admin_name": r.try_get::<Option<String>, _>("assigned_admin_name").unwrap_or(None),
             })
         })
         .collect();
@@ -1234,4 +1257,129 @@ async fn validate_project_ready_for_approval(
     }
 
     Ok(())
+}
+
+// ==============================================================================
+// Admin workflow: assignment + test-flag (migration 102)
+// ==============================================================================
+
+/// POST /api/admin/developer-projects/:id/assign
+/// Body: { "admin_id": "<uuid>" | null }  (null = unassign; omit admin_id = self-assign)
+pub async fn api_admin_developer_project_assign(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(project_id): axum::extract::Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+
+    let pid = ApiError::parse_uuid(&project_id)?;
+
+    // Three modes:
+    //   { "admin_id": "<uuid>" }  → assign to that admin
+    //   { "admin_id": null }      → unassign
+    //   {}                         → self-assign (current admin)
+    let target: Option<uuid::Uuid> = match body.get("admin_id") {
+        Some(serde_json::Value::Null) => None,
+        Some(serde_json::Value::String(s)) => Some(ApiError::parse_uuid(s)?),
+        Some(_) => {
+            return Err(ApiError::BadRequest(
+                "admin_id must be a UUID string or null".to_string(),
+            ));
+        }
+        None => Some(admin.user.id),
+    };
+
+    let prev_assignee: Option<uuid::Uuid> = sqlx::query_scalar(
+        "SELECT assigned_admin_id FROM developer_projects WHERE id = $1",
+    )
+    .bind(pid)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Project not found".to_string()))?;
+
+    sqlx::query(
+        r#"UPDATE developer_projects
+              SET assigned_admin_id = $1,
+                  assigned_at       = CASE WHEN $1 IS NULL THEN NULL ELSE NOW() END,
+                  updated_at        = NOW()
+            WHERE id = $2"#,
+    )
+    .bind(target)
+    .bind(pid)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'developer_project.assign', 'developer_projects', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(pid)
+    .bind(serde_json::json!({ "assigned_admin_id": prev_assignee }))
+    .bind(serde_json::json!({ "assigned_admin_id": target }))
+    .execute(&state.db)
+    .await;
+
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "assigned_admin_id": target,
+    }))
+    .into_response())
+}
+
+/// PATCH /api/admin/developer-projects/:id/test-flag
+/// Body: { "is_test": true|false }
+pub async fn api_admin_developer_project_test_flag(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(project_id): axum::extract::Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<axum::response::Response, ApiError> {
+    // Only users who can approve should be able to mark something as test
+    // (it hides items from the default review queue).
+    admin
+        .require_permission(&state.db, SUBMISSIONS_APPROVE_PERMISSION)
+        .await?;
+
+    let pid = ApiError::parse_uuid(&project_id)?;
+    let is_test = body
+        .get("is_test")
+        .and_then(|v| v.as_bool())
+        .ok_or_else(|| ApiError::BadRequest("is_test (boolean) is required".to_string()))?;
+
+    let prev: Option<bool> = sqlx::query_scalar(
+        "SELECT is_test FROM developer_projects WHERE id = $1",
+    )
+    .bind(pid)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Project not found".to_string()))?;
+
+    sqlx::query(
+        "UPDATE developer_projects SET is_test = $1, updated_at = NOW() WHERE id = $2",
+    )
+    .bind(is_test)
+    .bind(pid)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'developer_project.test_flag', 'developer_projects', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(pid)
+    .bind(serde_json::json!({ "is_test": prev }))
+    .bind(serde_json::json!({ "is_test": is_test }))
+    .execute(&state.db)
+    .await;
+
+    Ok(Json(serde_json::json!({ "ok": true, "is_test": is_test })).into_response())
 }

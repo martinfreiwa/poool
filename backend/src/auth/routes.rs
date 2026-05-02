@@ -1037,7 +1037,7 @@ pub async fn resend_verification_submit(
                 ),
                 &headers,
                 "/auth/verify-email",
-            ))
+            ));
         }
     };
 
@@ -1159,6 +1159,7 @@ pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoR
 pub async fn google_redirect(
     State(state): State<AppState>,
     jar: CookieJar,
+    headers: HeaderMap,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
     use base64::Engine;
@@ -1178,7 +1179,7 @@ pub async fn google_redirect(
         Some(id) => id,
         None => return Redirect::to("/auth/login?error=oauth_not_configured").into_response(),
     };
-    let redirect_uri = format!("{}/auth/google/callback", state.config.base_url);
+    let redirect_uri = google_oauth_redirect_uri(&state.config, &headers);
 
     // CSRF state — 32 random bytes, base64url
     let mut state_bytes = [0u8; 32];
@@ -1213,8 +1214,17 @@ pub async fn google_redirect(
         .secure(cookie_is_secure())
         .same_site(axum_extra::extract::cookie::SameSite::Lax)
         .max_age(time::Duration::minutes(10));
+    let redirect_cookie = Cookie::build(("oauth_redirect_uri", redirect_uri.clone()))
+        .path("/")
+        .http_only(true)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .max_age(time::Duration::minutes(10));
 
-    let jar = jar.add(state_cookie).add(verifier_cookie);
+    let jar = jar
+        .add(state_cookie)
+        .add(verifier_cookie)
+        .add(redirect_cookie);
     let jar = if is_link_flow {
         jar.add(
             Cookie::build(("oauth_link", "1"))
@@ -1234,9 +1244,15 @@ pub async fn google_redirect(
 pub async fn google_callback(
     State(state): State<AppState>,
     jar: CookieJar,
+    headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Response {
-    match google_callback_inner(&state, jar.clone(), params).await {
+    let redirect_uri = jar
+        .get("oauth_redirect_uri")
+        .map(|cookie| cookie.value().to_string())
+        .unwrap_or_else(|| google_oauth_redirect_uri(&state.config, &headers));
+
+    match google_callback_inner(&state, jar.clone(), params, redirect_uri).await {
         Ok(response) => response,
         Err(e) => {
             tracing::error!("Google OAuth callback error: {}", e);
@@ -1261,12 +1277,14 @@ fn clear_oauth_cookies(jar: CookieJar) -> CookieJar {
     jar.remove(Cookie::from("oauth_state"))
         .remove(Cookie::from("oauth_pkce"))
         .remove(Cookie::from("oauth_link"))
+        .remove(Cookie::from("oauth_redirect_uri"))
 }
 
 async fn google_callback_inner(
     state: &AppState,
     jar: CookieJar,
     params: std::collections::HashMap<String, String>,
+    redirect_uri: String,
 ) -> Result<Response, AppError> {
     let code = params
         .get("code")
@@ -1301,8 +1319,6 @@ async fn google_callback_inner(
         .google_client_secret
         .as_ref()
         .ok_or_else(|| AppError::Internal("Google OAuth not configured".to_string()))?;
-    let redirect_uri = format!("{}/auth/google/callback", state.config.base_url);
-
     // Exchange code for access token (with PKCE verifier)
     let client = reqwest::Client::new();
     let token_response = client
@@ -1452,6 +1468,57 @@ async fn google_callback_inner(
     let jar = jar.add(cookie);
 
     Ok((jar, Redirect::to(redirect_to)).into_response())
+}
+
+fn google_oauth_redirect_uri(config: &crate::config::Config, headers: &HeaderMap) -> String {
+    format!(
+        "{}/auth/google/callback",
+        effective_public_base_url(config, headers)
+    )
+}
+
+fn effective_public_base_url(config: &crate::config::Config, headers: &HeaderMap) -> String {
+    let configured = config.base_url.trim_end_matches('/').to_string();
+    if !is_loopback_base_url(&configured) {
+        return configured;
+    }
+
+    request_base_url(headers).unwrap_or(configured)
+}
+
+fn is_loopback_base_url(url: &str) -> bool {
+    url.contains("://localhost")
+        || url.contains("://127.0.0.1")
+        || url.contains("://[::1]")
+        || url.contains("://0.0.0.0")
+}
+
+fn request_base_url(headers: &HeaderMap) -> Option<String> {
+    let host = headers
+        .get("x-forwarded-host")
+        .or_else(|| headers.get(axum::http::header::HOST))
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .map(str::trim)
+        .filter(|value| valid_host(value))?;
+
+    let proto = headers
+        .get("x-forwarded-proto")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .map(str::trim)
+        .filter(|value| *value == "http" || *value == "https")
+        .unwrap_or("https");
+
+    Some(format!("{proto}://{host}"))
+}
+
+fn valid_host(host: &str) -> bool {
+    !host.is_empty()
+        && host.len() <= 255
+        && !host
+            .bytes()
+            .any(|byte| byte.is_ascii_whitespace() || matches!(byte, b'/' | b'\\' | b'@' | b';'))
 }
 
 // ─── Template helpers ──────────────────────────────────────────
@@ -1925,9 +1992,14 @@ mod google_oauth_tests {
         let token_url = one_shot_json_server(r#"{"id_token":"redacted-test-token"}"#).await;
         let state = test_app_state(token_url, "http://127.0.0.1:9/userinfo".to_string());
 
-        let err = google_callback_inner(&state, oauth_jar(), oauth_params())
-            .await
-            .expect_err("missing access_token must fail before userinfo or DB access");
+        let err = google_callback_inner(
+            &state,
+            oauth_jar(),
+            oauth_params(),
+            "http://localhost:8888/auth/google/callback".to_string(),
+        )
+        .await
+        .expect_err("missing access_token must fail before userinfo or DB access");
 
         assert!(
             matches!(err, AppError::Internal(message) if message == "No access token in Google response")
@@ -1943,9 +2015,14 @@ mod google_oauth_tests {
         .await;
         let state = test_app_state(token_url, userinfo_url);
 
-        let err = google_callback_inner(&state, oauth_jar(), oauth_params())
-            .await
-            .expect_err("unverified Google email must fail before DB access");
+        let err = google_callback_inner(
+            &state,
+            oauth_jar(),
+            oauth_params(),
+            "http://localhost:8888/auth/google/callback".to_string(),
+        )
+        .await
+        .expect_err("unverified Google email must fail before DB access");
 
         assert!(
             matches!(err, AppError::Unauthorized(message) if message == "Google account email is not verified")
@@ -1954,12 +2031,60 @@ mod google_oauth_tests {
 
     #[test]
     fn callback_error_cleanup_removes_all_transient_oauth_cookies() {
-        let jar = oauth_jar().add(Cookie::build(("oauth_link", "1")).path("/auth"));
+        let jar = oauth_jar()
+            .add(Cookie::build(("oauth_link", "1")).path("/auth"))
+            .add(
+                Cookie::build((
+                    "oauth_redirect_uri",
+                    "https://app.poool.finance/auth/google/callback",
+                ))
+                .path("/auth"),
+            );
         let jar = clear_oauth_cookies(jar);
 
         assert!(jar.get("oauth_state").is_none());
         assert!(jar.get("oauth_pkce").is_none());
         assert!(jar.get("oauth_link").is_none());
+        assert!(jar.get("oauth_redirect_uri").is_none());
+    }
+
+    #[tokio::test]
+    async fn oauth_redirect_uri_uses_forwarded_host_when_config_is_localhost() {
+        let state = test_app_state(
+            "http://127.0.0.1:9/token".to_string(),
+            "http://127.0.0.1:9/userinfo".to_string(),
+        );
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
+        headers.insert(
+            "x-forwarded-host",
+            HeaderValue::from_static("app.poool.finance"),
+        );
+
+        assert_eq!(
+            google_oauth_redirect_uri(&state.config, &headers),
+            "https://app.poool.finance/auth/google/callback"
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_redirect_uri_keeps_configured_public_base_url() {
+        let mut state = test_app_state(
+            "http://127.0.0.1:9/token".to_string(),
+            "http://127.0.0.1:9/userinfo".to_string(),
+        );
+        state.config.base_url = "https://poool.finance/".to_string();
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
+        headers.insert(
+            "x-forwarded-host",
+            HeaderValue::from_static("attacker.example"),
+        );
+
+        assert_eq!(
+            google_oauth_redirect_uri(&state.config, &headers),
+            "https://poool.finance/auth/google/callback"
+        );
     }
 }
 

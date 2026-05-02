@@ -24,6 +24,13 @@ const MIN_ORDER_VALUE_CENTS: i64 = 1_000;
 /// Maximum open orders per user per asset.
 const MAX_OPEN_ORDERS_PER_ASSET: i32 = 50;
 
+/// Public accessor for callers that need to re-check the cap inside
+/// their own transaction (the in-tx check is the authoritative one;
+/// `check_open_order_count` is best-effort).
+pub fn max_open_orders_per_asset() -> i32 {
+    MAX_OPEN_ORDERS_PER_ASSET
+}
+
 /// Maximum ownership concentration (80% of total tokens).
 const MAX_CONCENTRATION_PCT: f64 = 80.0;
 

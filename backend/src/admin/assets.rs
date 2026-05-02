@@ -25,8 +25,18 @@ pub async fn api_admin_assets(
                   a.location_city, a.total_value_cents, a.token_price_cents,
                   a.tokens_total, a.tokens_available, a.annual_yield_bps,
                   a.funding_status, a.featured, a.published,
-                  a.created_at::text
+                  a.created_at::text, a.updated_at::text,
+                  a.chain_contract_address, a.chain_token_id, a.chain_tx_hash,
+                  COALESCE(t.holders_count, 0)::bigint AS holders_count,
+                  COALESCE(t.pending_settlements, 0)::bigint AS pending_settlements
            FROM assets a
+           LEFT JOIN (
+             SELECT asset_id,
+                    COUNT(DISTINCT buyer_user_id) AS holders_count,
+                    COUNT(*) FILTER (WHERE on_chain_status IN ('pending', 'submitted')) AS pending_settlements
+             FROM trade_history
+             GROUP BY asset_id
+           ) t ON t.asset_id = a.id
            WHERE a.published = TRUE
            ORDER BY a.featured DESC, a.created_at DESC
            LIMIT 200"#,
@@ -52,7 +62,13 @@ pub async fn api_admin_assets(
                 "funding_status": r.get::<String, _>("funding_status"),
                 "featured": r.get::<bool, _>("featured"),
                 "published": r.get::<bool, _>("published"),
-                "created_at": r.get::<String, _>("created_at")
+                "created_at": r.get::<String, _>("created_at"),
+                "updated_at": r.get::<String, _>("updated_at"),
+                "chain_contract_address": r.get::<Option<String>, _>("chain_contract_address"),
+                "chain_token_id": r.get::<Option<String>, _>("chain_token_id"),
+                "chain_tx_hash": r.get::<Option<String>, _>("chain_tx_hash"),
+                "holders_count": r.get::<i64, _>("holders_count"),
+                "pending_settlements": r.get::<i64, _>("pending_settlements")
             })
         })
         .collect();

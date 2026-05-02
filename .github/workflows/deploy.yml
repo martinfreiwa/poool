@@ -86,7 +86,9 @@ jobs:
             --set-env-vars "RUST_LOG=warn" \
             --set-secrets "DATABASE_URL=poool-database-url:latest" \
             --set-secrets "JWT_SECRET=poool-jwt-secret:latest" \
+            --set-secrets "SESSION_SECRET=poool-jwt-secret:latest" \
             --set-secrets "ENCRYPTION_KEY=poool-encryption-key:latest" \
+            --set-secrets "TOTP_SECRET_ENCRYPTION_KEY=poool-encryption-key:latest" \
             --set-secrets "GOOGLE_CLIENT_ID=poool-google-client-id:latest" \
             --set-secrets "GOOGLE_CLIENT_SECRET=poool-google-client-secret:latest"
 

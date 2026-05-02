@@ -24,6 +24,9 @@ pub fn router() -> Router<AppState> {
         .route("/api/kyc/submit", post(submit))
         .route("/api/kyc/initiate", post(initiate))
         .route("/api/kyc/provider", get(get_provider_info))
+        // SIWE wallet binding — sovereign-wallet onboarding flow.
+        .route("/api/kyc/wallet/challenge", post(wallet_challenge))
+        .route("/api/kyc/wallet/bind", post(wallet_bind))
         // Webhook (unauthenticated – signature-verified internally)
         .route("/api/webhooks/kyc/didit", post(didit_webhook))
 }

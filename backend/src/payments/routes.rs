@@ -232,6 +232,36 @@ pub async fn payment_webhook(
             .into_response();
     }
 
+    // Replay defence: a valid signature is reusable for ±300s. Without a
+    // nonce store, an attacker who captures one webhook can flood the
+    // endpoint with replays. confirm_deposit is idempotent so balances
+    // are safe, but each replay still opens a Postgres tx → easy DoS.
+    // SET NX with TTL > the freshness window rejects replays cheaply.
+    // Fail-open if Redis is unavailable — the HMAC + 5min freshness +
+    // confirm_deposit's idempotency still protect correctness.
+    if let Some(redis) = &state.redis {
+        if let Ok(mut conn) = redis.get().await {
+            let key = format!("webhook:nonce:{}", sig_header);
+            let acquired: Option<String> = deadpool_redis::redis::cmd("SET")
+                .arg(&key)
+                .arg("1")
+                .arg("NX")
+                .arg("EX")
+                .arg(360i64) // a hair over the 300s freshness window
+                .query_async(&mut *conn)
+                .await
+                .unwrap_or(Some("ok".to_string())); // on RPC error, fail-open
+            if acquired.is_none() {
+                tracing::warn!("Webhook rejected: replay detected (nonce already consumed)");
+                return (
+                    axum::http::StatusCode::OK,
+                    Json(serde_json::json!({"ok": true, "deduped": true})),
+                )
+                    .into_response();
+            }
+        }
+    }
+
     let payload: WebhookPayload = match serde_json::from_slice(&body) {
         Ok(p) => p,
         Err(e) => {

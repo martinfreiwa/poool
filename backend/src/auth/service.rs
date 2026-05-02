@@ -1013,15 +1013,26 @@ const TOTP_SECRET_PREFIX: &str = "enc:v1";
 const TOTP_SETUP_PREFIX: &str = "totp_setup:v1";
 
 fn totp_encryption_key() -> Result<[u8; 32], AppError> {
-    let raw = std::env::var("TOTP_SECRET_ENCRYPTION_KEY").map_err(|_| {
-        AppError::Internal("TOTP_SECRET_ENCRYPTION_KEY is not configured.".to_string())
-    })?;
+    let (key_name, raw) = std::env::var("TOTP_SECRET_ENCRYPTION_KEY")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .map(|value| ("TOTP_SECRET_ENCRYPTION_KEY", value))
+        .or_else(|| {
+            std::env::var("ENCRYPTION_KEY")
+                .ok()
+                .filter(|value| !value.trim().is_empty())
+                .map(|value| ("ENCRYPTION_KEY", value))
+        })
+        .ok_or_else(|| {
+            AppError::Internal(
+                "TOTP_SECRET_ENCRYPTION_KEY or ENCRYPTION_KEY is not configured.".to_string(),
+            )
+        })?;
 
     let trimmed = raw.trim();
     let bytes = if trimmed.len() == 64 && trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
-        hex::decode(trimmed).map_err(|_| {
-            AppError::Internal("TOTP_SECRET_ENCRYPTION_KEY is not valid hex.".to_string())
-        })?
+        hex::decode(trimmed)
+            .map_err(|_| AppError::Internal(format!("{} is not valid hex.", key_name)))?
     } else {
         base64::engine::general_purpose::STANDARD
             .decode(trimmed)
@@ -1029,9 +1040,9 @@ fn totp_encryption_key() -> Result<[u8; 32], AppError> {
             .unwrap_or_else(|_| trimmed.as_bytes().to_vec())
     };
 
-    bytes.try_into().map_err(|_| {
-        AppError::Internal("TOTP_SECRET_ENCRYPTION_KEY must decode to 32 bytes.".to_string())
-    })
+    bytes
+        .try_into()
+        .map_err(|_| AppError::Internal(format!("{} must decode to 32 bytes.", key_name)))
 }
 
 fn encrypt_secret_payload(prefix: &str, plaintext: &str) -> Result<String, AppError> {

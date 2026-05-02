@@ -93,10 +93,66 @@ pub async fn api_admin_stats_overview(
     .fetch_one(&state.db)
     .await?;
 
+    let rewards_breakdown: (i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT \
+            COALESCE(SUM(cashback), 0)::bigint, \
+            COALESCE(SUM(referrals), 0)::bigint, \
+            COALESCE(SUM(promotions), 0)::bigint, \
+            COUNT(*) FILTER (WHERE (cashback + referrals + promotions) > 0)::bigint \
+         FROM rewards_balances",
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or((0, 0, 0, 0));
+
     let unread_notifications: i64 =
         sqlx::query_scalar("SELECT COUNT(*) FROM notifications WHERE is_read = false")
             .fetch_one(&state.db)
             .await?;
+
+    // Previous-period deltas (range applies to flow metrics only)
+    let new_users_prev: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM users WHERE created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval"
+    )
+    .bind(interval)
+    .fetch_one(&state.db)
+    .await?;
+
+    let deposits_prev_cents: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM wallet_transactions WHERE type = 'deposit' AND status = 'completed' AND created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval"
+    )
+    .bind(interval)
+    .fetch_one(&state.db)
+    .await?;
+
+    let deposits_prev_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM wallet_transactions WHERE type = 'deposit' AND status = 'completed' AND created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval"
+    )
+    .bind(interval)
+    .fetch_one(&state.db)
+    .await?;
+
+    // Oldest pending ages (seconds) — drives SLA badges
+    let oldest_pending_deposit_secs: Option<f64> = sqlx::query_scalar(
+        "SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM deposit_requests WHERE status = 'pending'"
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(None);
+
+    let oldest_pending_kyc_secs: Option<f64> = sqlx::query_scalar(
+        "SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM kyc_records WHERE status = 'pending'"
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(None);
+
+    let oldest_open_ticket_secs: Option<f64> = sqlx::query_scalar(
+        "SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM support_tickets WHERE status = 'open'"
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(None);
 
     // Fetch recent activity from audit logs
     let activity_rows = sqlx::query_as::<_, (String, String, String, Option<String>, String)>(
@@ -208,7 +264,19 @@ pub async fn api_admin_stats_overview(
         "pending_deposits": pending_deposits,
         "open_tickets": open_tickets,
         "rewards_liability_cents": rewards_liability_cents,
+        "rewards_liability_breakdown": {
+            "cashback_cents": rewards_breakdown.0,
+            "referrals_cents": rewards_breakdown.1,
+            "promotions_cents": rewards_breakdown.2,
+            "users_with_balance": rewards_breakdown.3,
+        },
         "unread_notifications": unread_notifications,
+        "new_users_prev": new_users_prev,
+        "deposits_prev_cents": deposits_prev_cents,
+        "deposits_prev_count": deposits_prev_count,
+        "oldest_pending_deposit_secs": oldest_pending_deposit_secs,
+        "oldest_pending_kyc_secs": oldest_pending_kyc_secs,
+        "oldest_open_ticket_secs": oldest_open_ticket_secs,
         "recent_activity": activity_json,
         "recent_orders": orders_json,
         "pending_deposits_list": deposits_json,

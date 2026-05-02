@@ -56,6 +56,13 @@ pub struct ApprovePayload {
     pub notes: Option<String>,
 }
 
+/// Body for bulk approve/reject.
+#[derive(Debug, Deserialize)]
+pub struct BulkPayload {
+    pub ids: Vec<Uuid>,
+    pub notes: Option<String>,
+}
+
 // ── Developer Routes ──────────────────────────────────────────────────────────
 
 /// PUT /api/developer/assets/:id — Submit an edit.
@@ -606,6 +613,158 @@ pub async fn admin_reject(
     Json(serde_json::json!({
         "status": "success",
         "message": "Change request rejected"
+    }))
+    .into_response()
+}
+
+/// POST /api/admin/change-requests/bulk-approve — approve many at once.
+pub async fn admin_bulk_approve(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(body): Json<BulkPayload>,
+) -> axum::response::Response {
+    let admin = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Please log in"})),
+            )
+                .into_response();
+        }
+    };
+    if !auth::middleware::is_admin(&jar, &state.db).await {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({"error": "Admin access required"})),
+        )
+            .into_response();
+    }
+
+    let mut approved = 0usize;
+    let mut failed: Vec<String> = Vec::new();
+
+    for id in &body.ids {
+        let cr = match sqlx::query(
+            "SELECT asset_id, original_values, proposed_values, status \
+             FROM asset_change_requests WHERE id = $1",
+        )
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await
+        {
+            Ok(Some(r)) => r,
+            _ => {
+                failed.push(id.to_string());
+                continue;
+            }
+        };
+        let status: String = cr.get("status");
+        if status != "pending" {
+            failed.push(id.to_string());
+            continue;
+        }
+        let asset_id: Uuid = cr.get("asset_id");
+        let original_values: serde_json::Value = cr.get("original_values");
+        let proposed_values: serde_json::Value = cr.get("proposed_values");
+
+        let mut tx = match state.db.begin().await {
+            Ok(t) => t,
+            Err(_) => {
+                failed.push(id.to_string());
+                continue;
+            }
+        };
+        apply_changes_to_asset_tx(&mut tx, asset_id, &proposed_values).await;
+        let _ = sqlx::query(
+            "UPDATE asset_change_requests \
+             SET status = 'approved', reviewed_by = $1, reviewed_at = NOW(), \
+                 admin_notes = $2, updated_at = NOW() \
+             WHERE id = $3",
+        )
+        .bind(admin.id)
+        .bind(body.notes.as_deref())
+        .bind(id)
+        .execute(&mut *tx)
+        .await;
+        let _ = sqlx::query(
+            "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state) \
+             VALUES ($1, 'asset.change_request.approved', 'asset', $2, $3, $4)",
+        )
+        .bind(admin.id)
+        .bind(asset_id)
+        .bind(&original_values)
+        .bind(&proposed_values)
+        .execute(&mut *tx)
+        .await;
+        if tx.commit().await.is_ok() {
+            approved += 1;
+        } else {
+            failed.push(id.to_string());
+        }
+    }
+
+    Json(serde_json::json!({
+        "status": "success",
+        "approved": approved,
+        "failed": failed,
+    }))
+    .into_response()
+}
+
+/// POST /api/admin/change-requests/bulk-reject — reject many at once.
+pub async fn admin_bulk_reject(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(body): Json<BulkPayload>,
+) -> axum::response::Response {
+    let admin = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Please log in"})),
+            )
+                .into_response();
+        }
+    };
+    if !auth::middleware::is_admin(&jar, &state.db).await {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({"error": "Admin access required"})),
+        )
+            .into_response();
+    }
+
+    let res = sqlx::query(
+        "UPDATE asset_change_requests \
+         SET status = 'rejected', admin_notes = $1, reviewed_by = $2, \
+             reviewed_at = NOW(), updated_at = NOW() \
+         WHERE id = ANY($3) AND status = 'pending'",
+    )
+    .bind(body.notes.as_deref())
+    .bind(admin.id)
+    .bind(&body.ids)
+    .execute(&state.db)
+    .await;
+
+    let rejected = res.as_ref().map(|r| r.rows_affected()).unwrap_or(0);
+
+    for id in &body.ids {
+        let _ = sqlx::query(
+            "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata) \
+             VALUES ($1, 'asset.change_request.rejected', 'asset_change_request', $2, $3)",
+        )
+        .bind(admin.id)
+        .bind(id)
+        .bind(serde_json::json!({"reason": body.notes, "bulk": true}))
+        .execute(&state.db)
+        .await;
+    }
+
+    Json(serde_json::json!({
+        "status": "success",
+        "rejected": rejected,
     }))
     .into_response()
 }

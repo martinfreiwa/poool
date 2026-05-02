@@ -79,184 +79,264 @@ pub async fn run_kyc_whitelist_worker(pool: &PgPool) {
 // ── CORE LOGIC ────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-/// Find KYC-approved users without a chain_wallet_address and whitelist them.
+/// Find KYC-approved users with a sovereign wallet bound but not yet
+/// whitelisted on-chain, and whitelist them in a single batch TX.
+///
+/// Sovereign-wallet model: `chain_wallet_address` is set via the SIWE
+/// wallet-binding endpoint (user proves ownership by signing a nonce).
+/// This worker just lifts that already-verified address onto the
+/// on-chain whitelist. No fake addresses, no derivations.
 async fn process_pending_whitelists(
     pool: &PgPool,
     config: &ChainConfig,
     client: &Client,
 ) -> Result<(), String> {
-    // Find users who are KYC-approved but don't have a wallet address yet
-    let pending: Vec<PendingWhitelist> = sqlx::query_as::<_, (Uuid, String)>(
-        r#"SELECT u.id, u.email
+    let pending: Vec<(Uuid, String, String)> = sqlx::query_as::<_, (Uuid, String, String)>(
+        r#"SELECT u.id, u.email, u.chain_wallet_address
            FROM users u
            JOIN kyc_records k ON k.user_id = u.id
            WHERE k.status = 'approved'
-           AND (u.chain_wallet_address IS NULL OR u.chain_wallet_address = '')
-           AND u.status = 'active'
+             AND u.chain_wallet_address IS NOT NULL
+             AND u.chain_wallet_address <> ''
+             AND u.chain_whitelisted_at IS NULL
+             AND u.status = 'active'
            ORDER BY k.verified_at ASC
-           LIMIT 10"#, // Process max 10 per cycle to avoid gas spikes
+           LIMIT 50"#,
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| format!("DB query error: {e}"))?
-    .into_iter()
-    .map(|(user_id, email)| PendingWhitelist { user_id, email })
-    .collect();
+    .map_err(|e| format!("DB query error: {e}"))?;
 
     if pending.is_empty() {
         return Ok(());
     }
 
     tracing::info!(
-        "🔑 Found {} KYC-approved users pending whitelist",
+        "🔑 Found {} KYC-approved users with bound wallets pending whitelist",
         pending.len()
     );
 
-    for user in &pending {
-        match whitelist_user(pool, config, client, user).await {
-            Ok(address) => {
-                tracing::info!("🔑 ✅ Whitelisted user {} → {}", user.email, address);
+    // Use the user-supplied (and SIWE-verified) addresses directly.
+    let entries: Vec<(String, Uuid, String)> = pending
+        .iter()
+        .map(|(uid, email, addr)| (addr.clone(), *uid, email.clone()))
+        .collect();
+    let addresses: Vec<String> = entries.iter().map(|(a, _, _)| a.clone()).collect();
+
+    let registry_address = std::env::var("CHAIN_IDENTITY_REGISTRY_ADDRESS")
+        .unwrap_or_else(|_| config.contract_address.clone());
+
+    match send_batch_whitelist_tx(config, client, &registry_address, &addresses).await {
+        Ok(tx_hash) => {
+            tracing::info!(
+                "🔑 ✅ batchSetWhitelisted ({} users) tx={}",
+                addresses.len(),
+                tx_hash
+            );
+            // Stamp `chain_whitelisted_at` so the next cycle skips these
+            // rows. If any DB write fails, the user gets re-whitelisted
+            // next cycle — the contract is idempotent on bool=true.
+            for (address, user_id, _email) in &entries {
+                let _ = sqlx::query(
+                    "UPDATE users SET chain_whitelisted_at = NOW() WHERE id = $1",
+                )
+                .bind(user_id)
+                .execute(pool)
+                .await;
+                let _ = sqlx::query(
+                    r#"INSERT INTO audit_logs (user_id, action, details, ip_address, created_at)
+                       VALUES ($1, 'kyc_whitelist_sync', $2, '0.0.0.0', NOW())"#,
+                )
+                .bind(user_id)
+                .bind(
+                    serde_json::json!({
+                        "wallet_address": address,
+                        "tx_hash": &tx_hash,
+                        "contract": &registry_address,
+                        "batch": true,
+                        "batch_size": addresses.len(),
+                    })
+                    .to_string(),
+                )
+                .execute(pool)
+                .await;
             }
-            Err(e) => {
-                tracing::error!("🔑 ❌ Failed to whitelist user {}: {}", user.email, e);
-                // Continue with next user — don't block the batch
-            }
+        }
+        Err(e) => {
+            tracing::error!(
+                "🔑 ❌ batchSetWhitelisted failed for {} users: {}",
+                addresses.len(),
+                e
+            );
+            sentry::capture_message(
+                &format!(
+                    "KYC batch whitelist failed for {} users: {}",
+                    addresses.len(),
+                    e
+                ),
+                sentry::Level::Error,
+            );
         }
     }
 
     Ok(())
 }
 
-/// Generate a deterministic address for a user and call setWhitelisted on-chain.
-async fn whitelist_user(
-    pool: &PgPool,
+/// Build and broadcast a single `batchSetWhitelisted(addresses, statuses)`
+/// transaction in-process. All addresses get `true`. Returns the tx hash.
+///
+/// In-process (k256) — no `cast` subprocess, no key leak via process args.
+async fn send_batch_whitelist_tx(
     config: &ChainConfig,
     client: &Client,
-    user: &PendingWhitelist,
-) -> Result<String, String> {
-    // Generate a deterministic wallet address from user_id
-    // In production, this would use GCP KMS to derive a real key pair.
-    // For now, we generate a placeholder address from the user UUID.
-    let wallet_address = derive_wallet_address(&user.user_id);
-
-    let registry_address = std::env::var("CHAIN_IDENTITY_REGISTRY_ADDRESS")
-        .unwrap_or_else(|_| config.contract_address.clone());
-
-    // Send the transaction using cast (same pattern as settlement worker)
-    let result = send_whitelist_tx(config, client, &registry_address, &wallet_address).await;
-
-    match result {
-        Ok(tx_hash) => {
-            // Update the user's chain_wallet_address in DB
-            let _ = sqlx::query("UPDATE users SET chain_wallet_address = $1 WHERE id = $2")
-                .bind(&wallet_address)
-                .bind(user.user_id)
-                .execute(pool)
-                .await
-                .map_err(|e| format!("DB update error: {e}"))?;
-
-            // Log to audit
-            let _ = sqlx::query(
-                r#"INSERT INTO audit_logs (user_id, action, details, ip_address, created_at)
-                   VALUES ($1, 'kyc_whitelist_sync', $2, '0.0.0.0', NOW())"#,
-            )
-            .bind(user.user_id)
-            .bind(
-                serde_json::json!({
-                    "wallet_address": wallet_address,
-                    "tx_hash": tx_hash,
-                    "contract": registry_address,
-                })
-                .to_string(),
-            )
-            .execute(pool)
-            .await;
-
-            Ok(wallet_address)
-        }
-        Err(e) => {
-            // Log the failure but don't stop processing
-            tracing::error!("🔑 setWhitelisted TX failed for {}: {}", wallet_address, e);
-            Err(e)
-        }
-    }
-}
-
-/// Send a setWhitelisted transaction via JSON-RPC.
-///
-/// Uses the same signing approach as the settlement worker (via `cast` CLI).
-async fn send_whitelist_tx(
-    config: &ChainConfig,
-    _client: &Client,
     registry_address: &str,
-    target_wallet: &str,
+    addresses: &[String],
 ) -> Result<String, String> {
-    // Use `cast send` to sign and broadcast the transaction
-    // This is the same approach used in the settlement worker
-    let output = tokio::process::Command::new("cast")
-        .args([
-            "send",
-            registry_address,
-            "setWhitelisted(address,bool)",
-            target_wallet,
-            "true",
-            "--rpc-url",
-            &config.rpc_url,
-            "--private-key",
-            &config.settlement_private_key,
-            "--chain-id",
-            &config.chain_id.to_string(),
-            "--json",
-        ])
-        .output()
-        .await
-        .map_err(|e| format!("cast command failed: {e}"))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("cast send failed: {}", stderr));
+    if addresses.is_empty() {
+        return Err("empty address batch".to_string());
     }
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    // ABI-encode batchSetWhitelisted(address[], bool[]).
+    // selector = keccak256("batchSetWhitelisted(address[],bool[])")[..4]
+    // = 0x9beb20f8 (verified via `cast sig`).
+    let calldata = encode_batch_set_whitelisted_calldata(addresses)?;
 
-    // Parse the JSON response to get the tx hash
-    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&stdout) {
-        if let Some(hash) = json.get("transactionHash").and_then(|v| v.as_str()) {
-            return Ok(hash.to_string());
+    let sender = super::signing::address_from_private_key(&config.settlement_private_key)?;
+
+    // RPC params — same shape as the settlement worker.
+    let nonce_resp = rpc_call(
+        client,
+        &config.rpc_url,
+        "eth_getTransactionCount",
+        serde_json::json!([sender, "pending"]),
+    )
+    .await?;
+    let nonce_hex = nonce_resp.as_str().ok_or("nonce: bad RPC reply")?;
+    let nonce = u64::from_str_radix(nonce_hex.trim_start_matches("0x"), 16)
+        .map_err(|e| format!("nonce parse: {}", e))?;
+
+    let gas_price_resp = rpc_call(
+        client,
+        &config.rpc_url,
+        "eth_gasPrice",
+        serde_json::json!([]),
+    )
+    .await?;
+    let gas_price_hex = gas_price_resp.as_str().ok_or("gas_price: bad RPC reply")?;
+    let gas_price = u64::from_str_radix(gas_price_hex.trim_start_matches("0x"), 16)
+        .map_err(|e| format!("gas_price parse: {}", e))?;
+
+    let gas_estimate_resp = rpc_call(
+        client,
+        &config.rpc_url,
+        "eth_estimateGas",
+        serde_json::json!([{
+            "from": sender,
+            "to": registry_address,
+            "data": calldata,
+        }]),
+    )
+    .await?;
+    let gas_est_hex = gas_estimate_resp
+        .as_str()
+        .ok_or("gas_estimate: bad RPC reply")?;
+    let gas_estimate = u64::from_str_radix(gas_est_hex.trim_start_matches("0x"), 16)
+        .map_err(|e| format!("gas_estimate parse: {}", e))?;
+    let gas_limit = gas_estimate + (gas_estimate / 5);
+
+    let signed = super::signing::sign_legacy_transaction(
+        &config.settlement_private_key,
+        config.chain_id,
+        nonce,
+        gas_price,
+        gas_limit,
+        registry_address,
+        0,
+        &calldata,
+    )?;
+
+    let tx_hash_resp = rpc_call(
+        client,
+        &config.rpc_url,
+        "eth_sendRawTransaction",
+        serde_json::json!([signed]),
+    )
+    .await?;
+    tx_hash_resp
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| "send_raw: bad RPC reply".to_string())
+}
+
+/// ABI-encode batchSetWhitelisted(address[],bool[]) calldata.
+fn encode_batch_set_whitelisted_calldata(addresses: &[String]) -> Result<String, String> {
+    let selector = "9beb20f8"; // keccak256("batchSetWhitelisted(address[],bool[])")[..4]
+    let n = addresses.len();
+
+    let mut padded_addrs: Vec<String> = Vec::with_capacity(n);
+    for a in addresses {
+        let clean = a.strip_prefix("0x").unwrap_or(a).to_lowercase();
+        if clean.len() != 40 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(format!("invalid address: {}", a));
         }
+        padded_addrs.push(format!("{:0>64}", clean));
     }
 
-    // Fallback: return the raw output as the hash
-    Ok(stdout.trim().to_string())
+    // Two dynamic arrays: head = 2 offsets (64 bytes total).
+    let array_size = 32 + n * 32;
+    let off_addrs = 2 * 32;
+    let off_bools = off_addrs + array_size;
+
+    let pad = |hex_value: String| format!("{:0>64}", hex_value);
+    let mut data = String::from(selector);
+    data.push_str(&pad(format!("{:x}", off_addrs)));
+    data.push_str(&pad(format!("{:x}", off_bools)));
+    // addresses array
+    data.push_str(&pad(format!("{:x}", n)));
+    for a in &padded_addrs {
+        data.push_str(a);
+    }
+    // bools array (all true = 1)
+    data.push_str(&pad(format!("{:x}", n)));
+    for _ in 0..n {
+        data.push_str(&pad("1".to_string()));
+    }
+    Ok(format!("0x{}", data))
 }
 
-/// Derive a deterministic wallet address from a user UUID.
-///
-/// This is a placeholder implementation. In production, this would:
-/// 1. Call GCP KMS to generate/derive a key pair for the user
-/// 2. Return the derived Ethereum address
-///
-/// For now, we create a deterministic address by hashing the UUID.
-/// This address won't have a real private key — it's only used for
-/// on-chain whitelist tracking. The actual token transfers happen via
-/// the settlement wallet's `settleBatch()` which uses `forcedTransfer()`.
-fn derive_wallet_address(user_id: &Uuid) -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
-    let mut hasher = DefaultHasher::new();
-    user_id.hash(&mut hasher);
-    let hash1 = hasher.finish();
-
-    let mut hasher2 = DefaultHasher::new();
-    hash1.hash(&mut hasher2);
-    let hash2 = hasher2.finish();
-
-    // Combine two 64-bit hashes into a 160-bit (20-byte) address
-    // Combine two 64-bit hashes into a 160-bit (20-byte) address
-    // This is deterministic: same UUID -> same address
-    let h1 = format!("{:016x}", hash1);
-    let h2 = format!("{:016x}", hash2);
-    // 8 + 16 + 16 = 40 hex chars = 160 bits
-    format!("0x{}{}{}", &h1[..8], h1, h2)
+/// Generic JSON-RPC call helper (mirrors service.rs::rpc_call).
+async fn rpc_call(
+    client: &Client,
+    rpc_url: &str,
+    method: &str,
+    params: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": params,
+        "id": 1,
+    });
+    let resp = client
+        .post(rpc_url)
+        .json(&request)
+        .timeout(std::time::Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("RPC request failed: {}", e))?;
+    let body: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("RPC parse failed: {}", e))?;
+    if let Some(err) = body.get("error") {
+        return Err(format!("RPC error: {}", err));
+    }
+    body.get("result")
+        .cloned()
+        .ok_or_else(|| "Empty RPC response".to_string())
 }
+
+// Removed: derive_wallet_address (fake-hash placeholder), whitelist_user
+// (per-user TX path), send_whitelist_tx (cast subprocess). Sovereign-wallet
+// model uses user-supplied addresses verified via SIWE; whitelisting is
+// always batched.

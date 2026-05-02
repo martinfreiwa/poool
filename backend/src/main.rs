@@ -128,35 +128,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // we only log + Sentry. Fix the env, don't fix the symptom downstream.
     {
         struct Check {
-            key: &'static str,
+            keys: &'static [&'static str],
             why: &'static str,
         }
         let checks = [
             Check {
-                key: "TOTP_SECRET_ENCRYPTION_KEY",
+                keys: &["TOTP_SECRET_ENCRYPTION_KEY", "ENCRYPTION_KEY"],
                 why: "TOTP setup + step-up 2FA will fail with 'An unexpected error'",
             },
             Check {
-                key: "DATABASE_URL",
+                keys: &["DATABASE_URL"],
                 why: "DB connection will fail",
             },
             Check {
-                key: "SESSION_SECRET",
+                keys: &["SESSION_SECRET", "JWT_SECRET"],
                 why: "Session cookies will be unsignable",
             },
         ];
         for c in checks {
-            match std::env::var(c.key) {
-                Ok(v) if !v.trim().is_empty() => {
-                    tracing::info!("✅ env {} present", c.key);
-                }
-                _ => {
-                    tracing::error!("🚨 env {} MISSING — {}", c.key, c.why);
-                    sentry::capture_message(
-                        &format!("Startup env check failed: {} missing — {}", c.key, c.why),
-                        sentry::Level::Error,
-                    );
-                }
+            let present_key = c.keys.iter().find(|key| {
+                std::env::var(key)
+                    .map(|value| !value.trim().is_empty())
+                    .unwrap_or(false)
+            });
+            if let Some(key) = present_key {
+                tracing::info!("✅ env {} present", key);
+            } else {
+                let key_list = c.keys.join(" or ");
+                tracing::error!("🚨 env {} MISSING — {}", key_list, c.why);
+                sentry::capture_message(
+                    &format!("Startup env check failed: {} missing — {}", key_list, c.why),
+                    sentry::Level::Error,
+                );
             }
         }
     }
@@ -2457,8 +2460,8 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
             .map(|v| !v.trim().is_empty())
             .unwrap_or(false)
     };
-    let totp_key_ok = env_present("TOTP_SECRET_ENCRYPTION_KEY");
-    let session_secret_ok = env_present("SESSION_SECRET");
+    let totp_key_ok = env_present("TOTP_SECRET_ENCRYPTION_KEY") || env_present("ENCRYPTION_KEY");
+    let session_secret_ok = env_present("SESSION_SECRET") || env_present("JWT_SECRET");
 
     let overall_status = if db_ok && totp_key_ok && session_secret_ok {
         "ok"
@@ -2473,8 +2476,8 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
             "database": if db_ok { "ok" } else { "error" },
             "redis": redis_status,
             "env": {
-                "TOTP_SECRET_ENCRYPTION_KEY": if totp_key_ok { "ok" } else { "missing" },
-                "SESSION_SECRET": if session_secret_ok { "ok" } else { "missing" },
+                "TOTP_SECRET_ENCRYPTION_KEY_OR_ENCRYPTION_KEY": if totp_key_ok { "ok" } else { "missing" },
+                "SESSION_SECRET_OR_JWT_SECRET": if session_secret_ok { "ok" } else { "missing" },
             },
         }
     });

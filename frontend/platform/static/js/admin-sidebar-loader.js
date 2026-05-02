@@ -59,7 +59,7 @@
                         </a>
                         <a href="/admin/asset-tokenize.html" class="admin-nav-item ${isPathActive(["/admin/asset-tokenize.html"]) ? "active" : ""}" id="nav-asset-tokenize">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M7.5 4.21l4.5 2.6 4.5-2.6M7.5 19.79V14.6L3 12M21 12l-4.5 2.6v5.19M12 6.81v5.2"/></svg>
-                            <span>Asset Tokenize</span>
+                            <span>Tokenize Asset</span>
                         </a>
                     </div>
 
@@ -341,11 +341,14 @@
 
                 <!-- Footer -->
                 <div class="admin-sidebar-footer">
-                    <button type="button" class="admin-theme-toggle" id="admin-theme-toggle" title="Toggle dark/light mode">
-                        <div class="admin-theme-toggle-track">
-                            <div class="admin-theme-toggle-thumb"></div>
-                        </div>
-                        <span id="theme-toggle-label">Light</span>
+                    <button type="button" class="admin-theme-toggle" id="admin-theme-toggle" role="switch" aria-checked="false" aria-label="Toggle dark mode">
+                        <span class="admin-theme-toggle-icon admin-theme-toggle-icon--sun" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                        </span>
+                        <span class="admin-theme-toggle-icon admin-theme-toggle-icon--moon" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                        </span>
+                        <span id="theme-toggle-label" class="admin-theme-toggle-label">Light</span>
                     </button>
                     <div class="admin-sidebar-user">
                         <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
@@ -369,10 +372,24 @@
         // sidebar DOM is now available so they can apply visibility rules.
         document.dispatchEvent(new CustomEvent("admin:sidebar-ready"));
 
-        // Sync theme label immediately
-        const isDark = document.documentElement.classList.contains("admin-dark");
-        const label = document.getElementById("theme-toggle-label");
-        if (label) label.textContent = isDark ? "Dark" : "Light";
+        // Sync theme label immediately. Label is the action ("Switch to X")
+        // so it's unambiguous what clicking will do.
+        const syncThemeLabel = () => {
+            const isDark = document.documentElement.classList.contains("admin-dark");
+            const label = document.getElementById("theme-toggle-label");
+            const btn = document.getElementById("admin-theme-toggle");
+            if (label) label.textContent = isDark ? "Switch to Light" : "Switch to Dark";
+            if (btn) {
+                btn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+                btn.setAttribute("aria-checked", isDark ? "true" : "false");
+            }
+        };
+        syncThemeLabel();
+        const themeToggle = document.getElementById("admin-theme-toggle");
+        if (themeToggle) {
+            // Defer to next tick so admin-theme.js has flipped the class first
+            themeToggle.addEventListener("click", () => setTimeout(syncThemeLabel, 0));
+        }
 
         // Update sidebar name/avatar from a user data object
         function updateSidebarUser(userData) {
