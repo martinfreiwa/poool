@@ -165,9 +165,6 @@ struct State {
     seller_balance: i64,
     seller_held: i64,
     seller_tokens: i32,
-    buyer_tokens: i32,
-    platform_fee: i64,
-    trade_count: i64,
 }
 
 async fn snapshot(
@@ -203,39 +200,12 @@ async fn snapshot(
     .ok()
     .flatten()
     .unwrap_or(0);
-    let buyer_tokens: i32 = sqlx::query_scalar(
-        "SELECT tokens_owned FROM investments
-         WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'",
-    )
-    .bind(buyer)
-    .bind(asset)
-    .fetch_optional(&mut **tx)
-    .await
-    .ok()
-    .flatten()
-    .unwrap_or(0);
-    let platform_fee: i64 = sqlx::query_scalar(
-        "SELECT balance_cents FROM wallets
-         WHERE wallet_type='platform_fee' AND currency='USD'",
-    )
-    .fetch_one(&mut **tx)
-    .await
-    .unwrap_or(0);
-    let trade_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM trade_history WHERE asset_id = $1")
-            .bind(asset)
-            .fetch_one(&mut **tx)
-            .await
-            .unwrap_or(0);
     State {
         buyer_balance,
         buyer_held,
         seller_balance,
         seller_held,
         seller_tokens,
-        buyer_tokens,
-        platform_fee,
-        trade_count,
     }
 }
 

@@ -1,3 +1,5 @@
+#![allow(clippy::items_after_test_module)]
+
 use axum::{
     extract::{Multipart, Path, State},
     http::{header::CONTENT_TYPE, HeaderMap, StatusCode},

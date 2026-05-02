@@ -1,3 +1,5 @@
+#![allow(clippy::items_after_test_module)]
+
 /// Auth HTTP routes – thin handlers that delegate to the service layer.
 ///
 /// Each handler is responsible ONLY for:
