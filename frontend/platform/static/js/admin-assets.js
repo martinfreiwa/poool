@@ -325,6 +325,10 @@ function exportCsv(rows, filename) {
     ["featured", "Featured"],
     ["age_days", "Age (days)"],
     ["created_at", "Created"],
+    ["holders_count", "Holders"],
+    ["pending_settlements", "Pending Settlements"],
+    ["chain_tx_hash", "Chain TX"],
+    ["chain_contract_address", "Contract"],
   ];
   const escCsv = (v) => {
     if (v == null) return "";
@@ -584,8 +588,17 @@ function renderActionRequired() {
   );
   const fundedReady = allAssets.filter((a) => a.funding_status === "funded");
   const payoutPending = allAssets.filter((a) => a.funding_status === "payout_pending");
+  const mintPending = allAssets.filter(
+    (a) => ["funded", "rented", "payout_pending"].includes(a.funding_status) && !a.chain_tx_hash,
+  );
+  const settlementsPending = allAssets.filter((a) => (a.pending_settlements || 0) > 0);
 
   const items = [];
+  if (mintPending.length) items.push({ label: "Mint pending (funded, no on-chain tx)", count: mintPending.length, status: "funded", color: "var(--admin-warning)" });
+  if (settlementsPending.length) {
+    const total = settlementsPending.reduce((s, a) => s + (a.pending_settlements || 0), 0);
+    items.push({ label: `Trade settlements pending on-chain (${total})`, count: settlementsPending.length, status: "", color: "var(--admin-danger, #C2410C)" });
+  }
   if (fundedReady.length) items.push({ label: "Funded · ready for distribution", count: fundedReady.length, status: "funded", color: "var(--admin-info)" });
   if (payoutPending.length) items.push({ label: "Payout pending", count: payoutPending.length, status: "payout_pending", color: "var(--admin-warning)" });
   if (stalled.length) items.push({ label: "Stalled funding (>30d, <50%)", count: stalled.length, status: "funding_in_progress", color: "var(--admin-danger, #C2410C)" });
