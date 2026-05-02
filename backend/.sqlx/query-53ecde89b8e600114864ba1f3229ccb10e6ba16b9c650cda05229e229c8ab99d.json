@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            t.id, \n            t.executed_at, \n            a.title as asset_name,\n            t.buyer_user_id,\n            t.seller_user_id,\n            t.price_cents,\n            t.quantity,\n            t.fee_cents\n        FROM trade_history t\n        JOIN assets a ON t.asset_id = a.id\n        WHERE t.buyer_user_id = $1 OR t.seller_user_id = $1\n        ORDER BY t.executed_at DESC\n        LIMIT 100\n        ",
+  "query": "\n        SELECT\n            t.id,\n            t.executed_at,\n            a.title as asset_name,\n            t.buyer_user_id,\n            t.seller_user_id,\n            t.price_cents,\n            t.quantity,\n            t.fee_cents,\n            t.buyer_fee_cents,\n            t.seller_fee_cents\n        FROM trade_history t\n        JOIN assets a ON t.asset_id = a.id\n        WHERE (t.buyer_user_id = $1 OR t.seller_user_id = $1)\n          AND ($2::timestamptz IS NULL OR t.executed_at < $2)\n        ORDER BY t.executed_at DESC\n        LIMIT $3\n        ",
   "describe": {
     "columns": [
       {
@@ -42,11 +42,23 @@
         "ordinal": 7,
         "name": "fee_cents",
         "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "buyer_fee_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "seller_fee_cents",
+        "type_info": "Int8"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Timestamptz",
+        "Int8"
       ]
     },
     "nullable": [
@@ -57,8 +69,10 @@
       false,
       false,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "dde5ba757cf7591a0125516e6bc97d32477f0e28a734dd06273ae5d0b203f0ec"
+  "hash": "53ecde89b8e600114864ba1f3229ccb10e6ba16b9c650cda05229e229c8ab99d"
 }

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(SUM(quantity - quantity_filled), 0)::bigint FROM market_orders WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "coalesce",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "77d124fb0c4c803ea1731d866c55a67255b497165d5f2f93b921938d3fa5e8d2"
+}

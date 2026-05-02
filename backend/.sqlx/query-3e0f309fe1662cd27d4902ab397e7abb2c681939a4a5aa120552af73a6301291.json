@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT \n            m.id, m.asset_id, a.title as asset_name, m.side, m.price_cents,\n            m.quantity, m.quantity_filled, m.status, m.created_at\n           FROM market_orders m\n           JOIN assets a ON m.asset_id = a.id\n           WHERE m.user_id = $1 \n           ORDER BY m.created_at DESC \n           LIMIT 100",
+  "query": "SELECT\n            m.id, m.asset_id, a.title as asset_name, m.side, m.price_cents,\n            m.quantity, m.quantity_filled, m.status, m.created_at\n           FROM market_orders m\n           JOIN assets a ON m.asset_id = a.id\n           WHERE m.user_id = $1\n             AND ($2::timestamptz IS NULL OR m.created_at < $2)\n           ORDER BY m.created_at DESC\n           LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -51,7 +51,9 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Timestamptz",
+        "Int8"
       ]
     },
     "nullable": [
@@ -66,5 +68,5 @@
       false
     ]
   },
-  "hash": "a0cb3d7829d0155d3752fe87617b03d384c30d9efcf703feed54998a64017d10"
+  "hash": "3e0f309fe1662cd27d4902ab397e7abb2c681939a4a5aa120552af73a6301291"
 }

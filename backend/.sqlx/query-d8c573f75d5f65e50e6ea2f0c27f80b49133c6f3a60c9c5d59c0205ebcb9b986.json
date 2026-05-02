@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, tokens_owned, held_tokens\n           FROM investments\n           WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'\n           FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "tokens_owned",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "held_tokens",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d8c573f75d5f65e50e6ea2f0c27f80b49133c6f3a60c9c5d59c0205ebcb9b986"
+}
