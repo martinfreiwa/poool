@@ -37,9 +37,15 @@ pub async fn api_admin_stats_overview(
     // Run all dashboard queries concurrently. Sequential await of 23 queries
     // dominated page load time; tokio::try_join! lets the pool dispatch them
     // in parallel against separate connections.
-    let f_total_users = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users").fetch_one(db);
-    let f_new_users_range = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM users WHERE created_at > NOW() - $1::interval",
+    // Conditional aggregation collapses three scans of `users` into one,
+    // and likewise for `wallet_transactions`. Each pending-status table
+    // combines its COUNT and oldest-age into a single scan.
+    let f_users_counts = sqlx::query_as::<_, (i64, i64, i64)>(
+        "SELECT \
+            COUNT(*)::bigint, \
+            COUNT(*) FILTER (WHERE created_at > NOW() - $1::interval)::bigint, \
+            COUNT(*) FILTER (WHERE created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval)::bigint \
+         FROM users",
     )
     .bind(interval)
     .fetch_one(db);
@@ -47,40 +53,54 @@ pub async fn api_admin_stats_overview(
         "SELECT COALESCE(SUM(purchase_value_cents), 0)::bigint FROM investments WHERE status NOT IN ('exited', 'cancelled')"
     )
     .fetch_one(db);
-    let f_deposits_range_cents = sqlx::query_scalar::<_, i64>(
-        "SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM wallet_transactions WHERE type = 'deposit' AND status = 'completed' AND created_at > NOW() - $1::interval"
+    let f_deposits_agg = sqlx::query_as::<_, (i64, i64, i64, i64)>(
+        "SELECT \
+            COALESCE(SUM(amount_cents) FILTER (WHERE created_at > NOW() - $1::interval), 0)::bigint, \
+            COUNT(*) FILTER (WHERE created_at > NOW() - $1::interval)::bigint, \
+            COALESCE(SUM(amount_cents) FILTER (WHERE created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval), 0)::bigint, \
+            COUNT(*) FILTER (WHERE created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval)::bigint \
+         FROM wallet_transactions \
+         WHERE type = 'deposit' AND status = 'completed' AND created_at > NOW() - ($1::interval * 2)",
     )
     .bind(interval)
     .fetch_one(db);
-    let f_deposits_range_count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM wallet_transactions WHERE type = 'deposit' AND status = 'completed' AND created_at > NOW() - $1::interval"
-    )
-    .bind(interval)
-    .fetch_one(db);
-    let f_pending_kyc = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM kyc_records WHERE status = 'pending'",
+    let f_assets_counts = sqlx::query_as::<_, (i64, i64)>(
+        "SELECT \
+            COUNT(*) FILTER (WHERE published = true)::bigint, \
+            COUNT(*) FILTER (WHERE published = true AND tokens_available = 0)::bigint \
+         FROM assets",
     )
     .fetch_one(db);
-    let f_live_assets = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM assets WHERE published = true",
-    )
-    .fetch_one(db);
-    let f_funded_assets = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM assets WHERE published = true AND tokens_available = 0",
-    )
-    .fetch_one(db);
-    let f_pending_deposits = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM deposit_requests WHERE status = 'pending'",
-    )
-    .fetch_one(db);
-    let f_open_tickets = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM support_tickets WHERE status = 'open'",
-    )
-    .fetch_one(db);
-    let f_rewards_liability_cents = sqlx::query_scalar::<_, i64>(
-        "SELECT COALESCE(SUM(cashback + referrals + promotions), 0)::bigint FROM rewards_balances",
-    )
-    .fetch_one(db);
+    let f_pending_deposits_agg = async {
+        Ok::<(i64, Option<f64>), sqlx::Error>(
+            sqlx::query_as::<_, (i64, Option<f64>)>(
+                "SELECT COUNT(*)::bigint, EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM deposit_requests WHERE status = 'pending'"
+            )
+            .fetch_one(db)
+            .await
+            .unwrap_or((0, None)),
+        )
+    };
+    let f_pending_kyc_agg = async {
+        Ok::<(i64, Option<f64>), sqlx::Error>(
+            sqlx::query_as::<_, (i64, Option<f64>)>(
+                "SELECT COUNT(*)::bigint, EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM kyc_records WHERE status = 'pending'"
+            )
+            .fetch_one(db)
+            .await
+            .unwrap_or((0, None)),
+        )
+    };
+    let f_open_tickets_agg = async {
+        Ok::<(i64, Option<f64>), sqlx::Error>(
+            sqlx::query_as::<_, (i64, Option<f64>)>(
+                "SELECT COUNT(*)::bigint, EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM support_tickets WHERE status = 'open'"
+            )
+            .fetch_one(db)
+            .await
+            .unwrap_or((0, None)),
+        )
+    };
     let f_rewards_breakdown = async {
         Ok::<(i64, i64, i64, i64), sqlx::Error>(
             sqlx::query_as::<_, (i64, i64, i64, i64)>(
@@ -100,51 +120,6 @@ pub async fn api_admin_stats_overview(
         "SELECT COUNT(*) FROM notifications WHERE is_read = false",
     )
     .fetch_one(db);
-    let f_new_users_prev = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM users WHERE created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval"
-    )
-    .bind(interval)
-    .fetch_one(db);
-    let f_deposits_prev_cents = sqlx::query_scalar::<_, i64>(
-        "SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM wallet_transactions WHERE type = 'deposit' AND status = 'completed' AND created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval"
-    )
-    .bind(interval)
-    .fetch_one(db);
-    let f_deposits_prev_count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM wallet_transactions WHERE type = 'deposit' AND status = 'completed' AND created_at > NOW() - ($1::interval * 2) AND created_at <= NOW() - $1::interval"
-    )
-    .bind(interval)
-    .fetch_one(db);
-    let f_oldest_pending_deposit_secs = async {
-        Ok::<Option<f64>, sqlx::Error>(
-            sqlx::query_scalar::<_, Option<f64>>(
-                "SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM deposit_requests WHERE status = 'pending'"
-            )
-            .fetch_one(db)
-            .await
-            .unwrap_or(None),
-        )
-    };
-    let f_oldest_pending_kyc_secs = async {
-        Ok::<Option<f64>, sqlx::Error>(
-            sqlx::query_scalar::<_, Option<f64>>(
-                "SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM kyc_records WHERE status = 'pending'"
-            )
-            .fetch_one(db)
-            .await
-            .unwrap_or(None),
-        )
-    };
-    let f_oldest_open_ticket_secs = async {
-        Ok::<Option<f64>, sqlx::Error>(
-            sqlx::query_scalar::<_, Option<f64>>(
-                "SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::float8 FROM support_tickets WHERE status = 'open'"
-            )
-            .fetch_one(db)
-            .await
-            .unwrap_or(None),
-        )
-    };
     let f_activity_rows = sqlx::query_as::<_, (String, String, String, Option<String>, String)>(
         "SELECT id::text, action, entity_type, entity_id::text, created_at::text FROM audit_logs ORDER BY created_at DESC LIMIT 10"
     )
@@ -179,56 +154,46 @@ pub async fn api_admin_stats_overview(
     .fetch_all(db);
 
     let (
-        total_users,
-        new_users_range,
+        users_counts,
         aum_cents,
-        deposits_range_cents,
-        deposits_range_count,
-        pending_kyc,
-        live_assets,
-        funded_assets,
-        pending_deposits,
-        open_tickets,
-        rewards_liability_cents,
+        deposits_agg,
+        assets_counts,
+        pending_deposits_agg,
+        pending_kyc_agg,
+        open_tickets_agg,
         rewards_breakdown,
         unread_notifications,
-        new_users_prev,
-        deposits_prev_cents,
-        deposits_prev_count,
-        oldest_pending_deposit_secs,
-        oldest_pending_kyc_secs,
-        oldest_open_ticket_secs,
         activity_rows,
         order_rows,
         deposit_rows,
         user_trend_rows,
         deposit_trend_rows,
     ) = tokio::try_join!(
-        f_total_users,
-        f_new_users_range,
+        f_users_counts,
         f_aum_cents,
-        f_deposits_range_cents,
-        f_deposits_range_count,
-        f_pending_kyc,
-        f_live_assets,
-        f_funded_assets,
-        f_pending_deposits,
-        f_open_tickets,
-        f_rewards_liability_cents,
+        f_deposits_agg,
+        f_assets_counts,
+        f_pending_deposits_agg,
+        f_pending_kyc_agg,
+        f_open_tickets_agg,
         f_rewards_breakdown,
         f_unread_notifications,
-        f_new_users_prev,
-        f_deposits_prev_cents,
-        f_deposits_prev_count,
-        f_oldest_pending_deposit_secs,
-        f_oldest_pending_kyc_secs,
-        f_oldest_open_ticket_secs,
         f_activity_rows,
         f_order_rows,
         f_deposit_rows,
         f_user_trend_rows,
         f_deposit_trend_rows,
     )?;
+
+    let (total_users, new_users_range, new_users_prev) = users_counts;
+    let (deposits_range_cents, deposits_range_count, deposits_prev_cents, deposits_prev_count) =
+        deposits_agg;
+    let (live_assets, funded_assets) = assets_counts;
+    let (pending_deposits, oldest_pending_deposit_secs) = pending_deposits_agg;
+    let (pending_kyc, oldest_pending_kyc_secs) = pending_kyc_agg;
+    let (open_tickets, oldest_open_ticket_secs) = open_tickets_agg;
+    let rewards_liability_cents =
+        rewards_breakdown.0 + rewards_breakdown.1 + rewards_breakdown.2;
 
     let activity_json: Vec<serde_json::Value> = activity_rows
         .iter()
