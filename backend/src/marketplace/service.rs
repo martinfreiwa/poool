@@ -8,7 +8,7 @@
 /// - All balance reads before writes use `SELECT ... FOR UPDATE`.
 /// - All monetary values are `i64` cents.
 /// - No `unwrap()` in production paths.
-use chrono::{Datelike, Utc};
+use chrono::Utc;
 use deadpool_redis::Pool as RedisPool;
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -28,7 +28,6 @@ struct MarketplaceRuntimeSettings {
     max_order_size: i32,
     trading_enabled: bool,
     maintenance_window: bool,
-    weekend_trading: bool,
 }
 
 impl Default for MarketplaceRuntimeSettings {
@@ -39,7 +38,6 @@ impl Default for MarketplaceRuntimeSettings {
             max_order_size: 10000,
             trading_enabled: true,
             maintenance_window: false,
-            weekend_trading: false,
         }
     }
 }
@@ -90,13 +88,6 @@ fn validate_runtime_settings_for_order(
 ) -> Result<(), AppError> {
     if !settings.trading_enabled || settings.maintenance_window {
         return Err(AppError::TradingDisabled);
-    }
-
-    if !settings.weekend_trading {
-        let weekday = Utc::now().weekday();
-        if weekday == chrono::Weekday::Sat || weekday == chrono::Weekday::Sun {
-            return Err(AppError::TradingDisabled);
-        }
     }
 
     if req.quantity < settings.min_order_size {
