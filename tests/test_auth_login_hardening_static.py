@@ -43,3 +43,36 @@ def test_auth_htmx_csrf_failures_return_login_error_fragment():
     assert '"HX-Request"' in csrf
     assert "Security check failed. Please refresh the page and try again." in csrf
     assert 'class="auth-error-message"' in csrf
+
+
+def test_successful_login_path_does_not_block_on_noncritical_side_effects():
+    routes = (ROOT / "backend/src/auth/routes.rs").read_text()
+    login_body = routes.split("pub async fn login_submit(", 1)[1].split(
+        "fn spawn_login_side_effects(", 1
+    )[0]
+
+    assert "service::is_admin" not in login_body
+    assert "Login settings lookup timed out." in login_body
+    assert "Login session creation timed out." in login_body
+    assert "spawn_login_side_effects(" in login_body
+
+    side_effects = routes.split("fn spawn_login_side_effects(", 1)[1].split(
+        "// ─── 2FA Routes", 1
+    )[0]
+    assert "tokio::spawn" in side_effects
+    assert 'Duration::from_secs(2)' in side_effects
+    assert "crate::common::audit::log" in side_effects
+    assert "crate::community::xp::track_login_streak" in side_effects
+
+
+def test_totp_verify_errors_return_auth_html_fragments_not_json_bubbles():
+    routes = (ROOT / "backend/src/auth/routes.rs").read_text()
+    handler = routes.split("pub async fn totp_verify_submit(", 1)[1].split(
+        "/// GET /auth/2fa/setup", 1
+    )[0]
+
+    assert "auth_form_error_response" in handler
+    assert "login_error_response" not in handler
+    assert '"/auth/2fa"' in handler
+    assert "decrypt_stored_totp_secret(&secret)?" not in handler
+    assert "rotate_session_token(&state.db, &session_token).await?" not in handler

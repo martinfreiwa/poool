@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "lighthouse": "^12.8.2",
+    "playwright-lighthouse": "^4.0.0"
+  }
+}

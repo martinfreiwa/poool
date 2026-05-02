@@ -18,7 +18,7 @@ use axum::{
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use minijinja::context;
 use std::time::Duration;
-use tokio::time::{sleep, Instant};
+use tokio::time::{sleep, timeout, Instant};
 
 use super::middleware;
 use super::middleware::SESSION_COOKIE;
@@ -233,9 +233,14 @@ pub async fn login_submit(
         Err(err) => return Ok(login_error_response(err, &headers)),
     };
 
-    // 2. Check 2FA settings
-    let settings = service::get_user_settings(&state.db, user.id).await?;
-    let _is_admin = service::is_admin(&state.db, user.id).await?;
+    // 2. Check 2FA settings. Keep this on the critical path because it
+    // determines whether the new session may be fully verified.
+    let settings = timeout(
+        Duration::from_secs(5),
+        service::get_user_settings(&state.db, user.id),
+    )
+    .await
+    .map_err(|_| AppError::Internal("Login settings lookup timed out.".to_string()))??;
 
     // 3. Determine 2FA requirements
     let (is_2fa_verified, redirect_to) = if settings.totp_enabled {
@@ -256,33 +261,27 @@ pub async fn login_submit(
         .map(|s| s.to_string());
 
     // 4. Create session (starts as unverified if 2FA is needed)
-    let session_token = service::create_session(
-        &state.db,
-        user.id,
-        form.remember_me(),
-        is_2fa_verified,
-        ip.as_deref(),
-        user_agent.as_deref(),
-    )
-    .await?;
-
-    // Audit log
-    crate::common::audit::log(
-        &state.db,
-        Some(user.id),
-        "user.login",
-        "user",
-        Some(user.id),
-        ip.as_deref(),
-        user_agent.as_deref(),
+    let session_token = timeout(
+        Duration::from_secs(5),
+        service::create_session(
+            &state.db,
+            user.id,
+            form.remember_me(),
+            is_2fa_verified,
+            ip.as_deref(),
+            user_agent.as_deref(),
+        ),
     )
     .await
-    .ok();
+    .map_err(|_| AppError::Internal("Login session creation timed out.".to_string()))??;
 
-    // Track login streak for XP (M4-BE.9)
-    if let Some(c_pool) = &state.community_db {
-        let _ = crate::community::xp::track_login_streak(c_pool, user.id).await;
-    }
+    spawn_login_side_effects(
+        state.db.clone(),
+        state.community_db.clone(),
+        user.id,
+        ip.clone(),
+        user_agent.clone(),
+    );
 
     // Set session cookie
     let max_age_secs = if form.remember_me() {
@@ -309,6 +308,52 @@ pub async fn login_submit(
     } else {
         Ok((jar, Redirect::to(redirect_to)).into_response())
     }
+}
+
+fn spawn_login_side_effects(
+    db: sqlx::PgPool,
+    community_db: Option<sqlx::PgPool>,
+    user_id: uuid::Uuid,
+    ip: Option<String>,
+    user_agent: Option<String>,
+) {
+    tokio::spawn(async move {
+        match timeout(
+            Duration::from_secs(2),
+            crate::common::audit::log(
+                &db,
+                Some(user_id),
+                "user.login",
+                "user",
+                Some(user_id),
+                ip.as_deref(),
+                user_agent.as_deref(),
+            ),
+        )
+        .await
+        {
+            Ok(Ok(())) => {}
+            Ok(Err(err)) => {
+                tracing::warn!(user_id = %user_id, error = %err, "Login audit log failed")
+            }
+            Err(_) => tracing::warn!(user_id = %user_id, "Login audit log timed out"),
+        }
+
+        if let Some(c_pool) = community_db {
+            match timeout(
+                Duration::from_secs(2),
+                crate::community::xp::track_login_streak(&c_pool, user_id),
+            )
+            .await
+            {
+                Ok(Ok(_)) => {}
+                Ok(Err(err)) => {
+                    tracing::warn!(user_id = %user_id, error = %err, "Login XP streak update failed")
+                }
+                Err(_) => tracing::warn!(user_id = %user_id, "Login XP streak update timed out"),
+            }
+        }
+    });
 }
 
 // ─── 2FA Routes ───────────────────────────────────────────────
@@ -346,15 +391,28 @@ pub async fn totp_verify_submit(
     headers: HeaderMap,
     Form(form): Form<super::models::TotpForm>,
 ) -> Result<Response, AppError> {
-    let session_token = jar
-        .get(SESSION_COOKIE)
-        .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?
-        .value()
-        .to_string();
+    let session_token = match jar.get(SESSION_COOKIE) {
+        Some(cookie) => cookie.value().to_string(),
+        None => {
+            return Ok(auth_form_error_response(
+                AppError::Unauthorized("Session expired. Please log in again.".to_string()),
+                &headers,
+                "/auth/login",
+            ));
+        }
+    };
 
-    let user = service::get_user_by_session_unverified(&state.db, &session_token)
-        .await?
-        .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
+    let user = match service::get_user_by_session_unverified(&state.db, &session_token).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            return Ok(auth_form_error_response(
+                AppError::Unauthorized("Session expired. Please log in again.".to_string()),
+                &headers,
+                "/auth/login",
+            ));
+        }
+        Err(error) => return Ok(auth_form_error_response(error, &headers, "/auth/2fa")),
+    };
 
     let client_ip = crate::common::net::client_ip(&headers);
     if let Err(retry_after) = state
@@ -366,9 +424,10 @@ pub async fn totp_verify_submit(
             "Rate limit exceeded for 2FA verification from IP: {}",
             client_ip
         );
-        return Ok(login_error_response(
+        return Ok(auth_form_error_response(
             AppError::RateLimited(retry_after),
             &headers,
+            "/auth/2fa",
         ));
     }
 
@@ -381,17 +440,34 @@ pub async fn totp_verify_submit(
             "Rate limit exceeded for 2FA verification for user: {}",
             user.id
         );
-        return Ok(login_error_response(
+        return Ok(auth_form_error_response(
             AppError::RateLimited(retry_after),
             &headers,
+            "/auth/2fa",
         ));
     }
 
-    let settings = service::get_user_settings(&state.db, user.id).await?;
-    let secret = settings
-        .totp_secret
-        .ok_or_else(|| AppError::Internal("2FA not configured.".to_string()))?;
-    let secret = service::decrypt_stored_totp_secret(&secret)?;
+    let settings = match service::get_user_settings(&state.db, user.id).await {
+        Ok(settings) => settings,
+        Err(error) => return Ok(auth_form_error_response(error, &headers, "/auth/2fa")),
+    };
+    let Some(secret) = settings.totp_secret else {
+        tracing::warn!(user_id = %user.id, "2FA verification attempted without configured TOTP secret");
+        return Ok(auth_form_error_response(
+            AppError::BadRequest(
+                "Two-factor authentication is not configured for this account.".to_string(),
+            ),
+            &headers,
+            "/auth/2fa",
+        ));
+    };
+    let secret = match service::decrypt_stored_totp_secret(&secret) {
+        Ok(secret) => secret,
+        Err(error) => {
+            tracing::error!(user_id = %user.id, error = %error, "Failed to decrypt TOTP secret during 2FA verification");
+            return Ok(auth_form_error_response(error, &headers, "/auth/2fa"));
+        }
+    };
 
     if !service::verify_totp_code_with_replay_guard(
         state.redis.as_ref(),
@@ -402,15 +478,19 @@ pub async fn totp_verify_submit(
     .await
     {
         tracing::warn!("Invalid 2FA code submitted for user {}", user.id);
-        return Ok(login_error_response(
+        return Ok(auth_form_error_response(
             AppError::Unauthorized("Invalid authentication code.".to_string()),
             &headers,
+            "/auth/2fa",
         ));
     }
 
     // Rotate the session token on privilege elevation — a token captured
     // before 2FA cannot be replayed post-verification.
-    let new_token = service::rotate_session_token(&state.db, &session_token).await?;
+    let new_token = match service::rotate_session_token(&state.db, &session_token).await {
+        Ok(token) => token,
+        Err(error) => return Ok(auth_form_error_response(error, &headers, "/auth/2fa")),
+    };
 
     let cookie = Cookie::build((SESSION_COOKIE, new_token))
         .path("/")
