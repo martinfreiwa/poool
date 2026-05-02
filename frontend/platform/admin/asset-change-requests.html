@@ -42,7 +42,15 @@
                             Asset Change Requests
                             <span class="cr-help-icon" data-tooltip="Developer-submitted edits to live assets. Review and approve before changes apply.">?</span>
                         </h1>
-                        <p class="admin-page-subtitle">Review and approve developer edits to approved assets</p>
+                        <p class="admin-page-subtitle">
+                            Review and approve developer edits to approved assets
+                            <span class="cr-related" aria-label="Related pages">
+                                · Related:
+                                <a href="/admin/developer-submissions.html">Submissions</a>
+                                <a href="/admin/assets.html">Live Assets</a>
+                                <a href="/admin/audit-logs.html?entity=asset">Audit Log</a>
+                            </span>
+                        </p>
                     </div>
                     <div class="cr-toolbar" role="group" aria-label="Page actions">
                         <span class="cr-last-updated" id="last-updated" aria-live="polite">Loading…</span>
@@ -97,6 +105,9 @@
                     <button type="button" class="cr-anomaly-dismiss" aria-label="Dismiss" id="anomaly-dismiss">×</button>
                 </div>
 
+                <!-- Saved views -->
+                <div id="cr-views" class="cr-views" role="toolbar" aria-label="Saved views"></div>
+
                 <!-- Filters -->
                 <div class="admin-card cr-filterbar" role="search" aria-label="Filters">
                     <div class="cr-filterbar-inner">
@@ -123,6 +134,13 @@
                             <option value="7d">Last 7 days</option>
                             <option value="30d">Last 30 days</option>
                         </select>
+                        <label class="visually-hidden" for="filter-assignment">Assignment</label>
+                        <select id="filter-assignment" class="admin-select">
+                            <option value="all" selected>Any assignment</option>
+                            <option value="me">Assigned to me</option>
+                            <option value="unassigned">Unassigned</option>
+                            <option value="assigned">Any reviewer</option>
+                        </select>
                         <button type="button" id="filter-reset" class="admin-btn admin-btn--ghost admin-btn--sm">Reset</button>
                     </div>
                 </div>
@@ -148,13 +166,14 @@
                                     <th class="cr-sort" data-sort="developer_name">Developer <span class="cr-sort-ind"></span></th>
                                     <th class="cr-sort" data-sort="fields_changed">Fields <span class="cr-sort-ind"></span></th>
                                     <th class="cr-sort" data-sort="status">Status <span class="cr-sort-ind"></span></th>
+                                    <th class="cr-sort" data-sort="assigned_to_name">Assigned <span class="cr-sort-ind"></span></th>
                                     <th class="cr-sort cr-sort--active cr-sort--desc" data-sort="created_at">Submitted <span class="cr-sort-ind">↓</span></th>
                                     <th class="cr-col-age">Age</th>
                                     <th class="cr-col-actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="table-body">
-                                <tr><td colspan="8" class="cr-state cr-state--loading">Loading…</td></tr>
+                                <tr><td colspan="9" class="cr-state cr-state--loading">Loading…</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -187,6 +206,7 @@
                 <button type="button" id="drawer-next" class="admin-btn admin-btn--ghost admin-btn--sm" title="Next (j)">Next →</button>
                 <span style="flex:1"></span>
                 <a id="drawer-history" href="#" class="admin-btn admin-btn--ghost admin-btn--sm" title="Audit history">History</a>
+                <button type="button" id="drawer-claim" class="admin-btn admin-btn--ghost admin-btn--sm" title="Claim review (c)" hidden>Claim</button>
                 <button type="button" id="drawer-reject" class="admin-btn admin-btn--danger admin-btn--sm">Reject (r)</button>
                 <button type="button" id="drawer-approve" class="admin-btn admin-btn--success admin-btn--sm">Approve (a)</button>
                 <a id="drawer-fullview" href="#" class="admin-btn admin-btn--secondary admin-btn--sm">Full review →</a>
@@ -220,6 +240,7 @@
                 <li><kbd>x</kbd> — Toggle row selection</li>
                 <li><kbd>a</kbd> — Approve focused / open</li>
                 <li><kbd>r</kbd> — Reject focused / open</li>
+                <li><kbd>c</kbd> — Claim / release (in drawer)</li>
                 <li><kbd>R</kbd> — Refresh list</li>
                 <li><kbd>Esc</kbd> — Close panel/modal</li>
                 <li><kbd>?</kbd> — Show this help</li>

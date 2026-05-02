@@ -150,6 +150,16 @@ pub struct TokenizeCandidate {
     pub already_tokenized: bool,
     pub created_at: String,
     pub updated_at: String,
+    pub document_count: i64,
+    pub risk_flags: Vec<RiskFlag>,
+}
+
+/// A risk signal for an asset, computed server-side from authoritative state.
+#[derive(Serialize)]
+pub struct RiskFlag {
+    pub code: String,
+    pub severity: String, // "warn" | "danger"
+    pub message: String,
 }
 
 /// Response for tokenizable asset candidates.
@@ -738,16 +748,20 @@ pub async fn api_admin_blockchain_tokenize_candidates(
             i64,
             i64,
             Option<String>,
+            Option<String>,
             chrono::DateTime<chrono::Utc>,
             chrono::DateTime<chrono::Utc>,
+            i64,
         ),
     >(
         r#"
-        SELECT id, title, funding_status, tokens_total, token_price_cents,
-               total_value_cents, chain_token_id, created_at, updated_at
-        FROM assets
-        WHERE published = TRUE
-        ORDER BY chain_token_id IS NOT NULL, updated_at DESC, created_at DESC
+        SELECT a.id, a.title, a.funding_status, a.tokens_total, a.token_price_cents,
+               a.total_value_cents, a.chain_token_id, a.chain_contract_address,
+               a.created_at, a.updated_at,
+               (SELECT COUNT(*) FROM asset_documents ad WHERE ad.asset_id = a.id) AS document_count
+        FROM assets a
+        WHERE a.published = TRUE
+        ORDER BY a.chain_token_id IS NOT NULL, a.updated_at DESC, a.created_at DESC
         LIMIT 100
         "#,
     )
@@ -790,16 +804,31 @@ pub async fn api_admin_blockchain_tokenize_candidates(
     Ok(Json(TokenizeCandidatesResponse {
         assets: rows
             .into_iter()
-            .map(|row| TokenizeCandidate {
-                asset_id: row.0.to_string(),
-                title: row.1,
-                funding_status: row.2,
-                tokens_total: row.3,
-                token_price_cents: row.4,
-                total_value_cents: row.5,
-                already_tokenized: row.6.is_some(),
-                created_at: row.7.to_rfc3339(),
-                updated_at: row.8.to_rfc3339(),
+            .map(|row| {
+                let already_tokenized = row.6.is_some();
+                let has_chain_contract = row.7.is_some();
+                let risk_flags = compute_risk_flags(
+                    &row.2,
+                    row.3,
+                    row.4,
+                    already_tokenized,
+                    has_chain_contract,
+                    row.9,
+                    row.10,
+                );
+                TokenizeCandidate {
+                    asset_id: row.0.to_string(),
+                    title: row.1,
+                    funding_status: row.2,
+                    tokens_total: row.3,
+                    token_price_cents: row.4,
+                    total_value_cents: row.5,
+                    already_tokenized,
+                    created_at: row.8.to_rfc3339(),
+                    updated_at: row.9.to_rfc3339(),
+                    document_count: row.10,
+                    risk_flags,
+                }
             })
             .collect(),
         wallet_address,
@@ -809,6 +838,81 @@ pub async fn api_admin_blockchain_tokenize_candidates(
         deployer_balance_wei,
         deployer_balance_checked_at,
     }))
+}
+
+fn compute_risk_flags(
+    funding_status: &str,
+    tokens_total: i32,
+    token_price_cents: i64,
+    already_tokenized: bool,
+    has_chain_contract: bool,
+    updated_at: chrono::DateTime<chrono::Utc>,
+    document_count: i64,
+) -> Vec<RiskFlag> {
+    let mut flags = Vec::new();
+
+    let age_days = (chrono::Utc::now() - updated_at).num_days();
+    if age_days > 30 && !already_tokenized {
+        flags.push(RiskFlag {
+            code: "stale".into(),
+            severity: "danger".into(),
+            message: format!(
+                "Stale: no admin update for {} days. Re-verify before deploying.",
+                age_days
+            ),
+        });
+    }
+
+    if funding_status == "exited" && !already_tokenized {
+        flags.push(RiskFlag {
+            code: "exited_without_token".into(),
+            severity: "danger".into(),
+            message: "Asset marked exited but never tokenized — likely shouldn't deploy.".into(),
+        });
+    }
+
+    if funding_status == "funded" && !already_tokenized {
+        flags.push(RiskFlag {
+            code: "funded_without_token".into(),
+            severity: "warn".into(),
+            message: "Funded off-chain without tokenization — confirm operator intent.".into(),
+        });
+    }
+
+    if tokens_total <= 0 {
+        flags.push(RiskFlag {
+            code: "zero_supply".into(),
+            severity: "danger".into(),
+            message: "Token supply is zero or missing.".into(),
+        });
+    }
+
+    if token_price_cents <= 0 {
+        flags.push(RiskFlag {
+            code: "zero_price".into(),
+            severity: "danger".into(),
+            message: "Token price is zero or missing.".into(),
+        });
+    }
+
+    if document_count == 0 && !already_tokenized {
+        flags.push(RiskFlag {
+            code: "no_documents".into(),
+            severity: "warn".into(),
+            message: "No legal documents attached. Pre-flight check will fail.".into(),
+        });
+    }
+
+    if already_tokenized && !has_chain_contract {
+        flags.push(RiskFlag {
+            code: "broken_chain_state".into(),
+            severity: "danger".into(),
+            message: "Token ID stored but contract address missing — inconsistent on-chain state."
+                .into(),
+        });
+    }
+
+    flags
 }
 
 fn isaddr(s: &str) -> bool {

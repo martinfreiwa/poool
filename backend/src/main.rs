@@ -2472,6 +2472,7 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
     let body = serde_json::json!({
         "status": overall_status,
         "version": env!("CARGO_PKG_VERSION"),
+        "app_env": std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()),
         "components": {
             "database": if db_ok { "ok" } else { "error" },
             "redis": redis_status,

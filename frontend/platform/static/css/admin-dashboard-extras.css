@@ -259,10 +259,10 @@
   flex: none;
   background: var(--admin-text-muted);
 }
-.admin-health-tile-dot.admin-health-dot--ok { background: var(--admin-success, #10b981); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
-.admin-health-tile-dot.admin-health-dot--warn { background: var(--admin-warning, #f59e0b); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
-.admin-health-tile-dot.admin-health-dot--error { background: var(--admin-danger, #dc2626); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18); }
-.admin-health-tile-dot.admin-health-dot--unknown { background: #9ca3af; }
+.admin-health-tile-dot--ok { background: var(--admin-success, #10b981); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+.admin-health-tile-dot--warn { background: var(--admin-warning, #f59e0b); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
+.admin-health-tile-dot--error { background: var(--admin-danger, #dc2626); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18); }
+.admin-health-tile-dot--unknown { background: #9ca3af; }
 .admin-health-tile-body { min-width: 0; }
 .admin-health-tile-name {
   font-size: 13px;
@@ -946,3 +946,266 @@
   .admin-action-required-grid { grid-template-columns: 1fr; }
   .admin-quick-actions--grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   System Health Pill (global topbar)
+   ============================================================ */
+.admin-health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+.admin-health-pill:hover { border-color: var(--admin-primary, #4f46e5); }
+.admin-health-pill:focus-visible {
+  outline: 2px solid var(--admin-accent, #4f46e5);
+  outline-offset: 2px;
+}
+.admin-health-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+  flex-shrink: 0;
+}
+.admin-health-pill--ok .admin-health-dot { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.18); }
+.admin-health-pill--ok .admin-health-label { color: #065f46; }
+.admin-health-pill--degraded .admin-health-dot { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.18); animation: admin-health-pulse 2s infinite; }
+.admin-health-pill--degraded .admin-health-label { color: #92400e; }
+.admin-health-pill--down .admin-health-dot { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.2); animation: admin-health-pulse 1s infinite; }
+.admin-health-pill--down .admin-health-label { color: #991b1b; }
+.admin-health-pill--unknown .admin-health-label { color: var(--admin-text-muted, #6b7280); }
+
+@keyframes admin-health-pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.admin-health-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 280px;
+  padding: 14px;
+  background: var(--admin-surface, #fff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  font-size: 13px;
+}
+.admin-health-popover-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--admin-text, #111827);
+}
+.admin-health-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-health-items li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-text, #374151);
+}
+.admin-health-item-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+  flex-shrink: 0;
+}
+.admin-health-item-dot--ok { background: #10b981; }
+.admin-health-item-dot--warn { background: #f59e0b; }
+.admin-health-item-dot--down { background: #ef4444; }
+.admin-health-item-val {
+  margin-left: auto;
+  color: var(--admin-text-muted, #6b7280);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-health-version {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+  font-size: 11px;
+  color: var(--admin-text-muted, #6b7280);
+  font-family: ui-monospace, monospace;
+}
+.admin-health-error { color: #ef4444; font-size: 12px; }
+
+/* ============================================================
+   Collapsible Sidebar Sections
+   ============================================================ */
+.admin-nav-section-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted, #6b7280);
+  text-align: left;
+  user-select: none;
+}
+.admin-nav-section-toggle:hover { color: var(--admin-text, #111827); }
+.admin-nav-section-toggle:focus-visible {
+  outline: 2px solid var(--admin-accent, #4f46e5);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.admin-nav-section-caret {
+  font-size: 10px;
+  transition: transform 0.18s ease;
+  opacity: 0.7;
+}
+.admin-nav-section--collapsed .admin-nav-section-caret { transform: rotate(-90deg); }
+.admin-nav-section--collapsed .admin-nav-item {
+  display: none !important;
+}
+
+/* ============================================================
+   Sidebar Avatar Status Dot
+   ============================================================ */
+.admin-sidebar-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.admin-sidebar-avatar-status {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #9ca3af;
+  border: 2px solid var(--admin-sidebar-bg, #fff);
+  box-sizing: border-box;
+}
+.admin-sidebar-avatar-status--online  { background: #10b981; }
+.admin-sidebar-avatar-status--away    { background: #f59e0b; }
+.admin-sidebar-avatar-status--offline { background: #9ca3af; }
+
+/* ============================================================
+   Reusable: Help icon tooltip + Related links (page header)
+   ============================================================ */
+.cr-help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--admin-bg-card-hover, #f3f4f6);
+  color: var(--admin-text-muted, #6b7280);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  cursor: help;
+  position: relative;
+}
+.cr-help-icon[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 8px 10px;
+  border-radius: 6px;
+  white-space: normal;
+  width: max-content;
+  max-width: 280px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+.cr-related {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--admin-text-muted, #6b7280);
+}
+.cr-related a {
+  color: var(--admin-accent, #4f46e5);
+  text-decoration: none;
+  font-weight: 500;
+}
+.cr-related a:hover { text-decoration: underline; }
+
+/* ============================================================
+   Reusable SLA pill (KPI inline indicator)
+   ============================================================ */
+.admin-sla-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+.admin-sla-pill--ok   { background: rgba(16,185,129,0.12); color: #047857; }
+.admin-sla-pill--warn { background: rgba(245,158,11,0.14); color: #92400e; }
+.admin-sla-pill--crit { background: rgba(239,68,68,0.14); color: #991b1b; animation: admin-sla-pulse 2s ease-in-out infinite; }
+@keyframes admin-sla-pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* Reusable anomaly banner */
+.admin-anomaly-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.4);
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 13px;
+}
+.admin-anomaly-banner-icon { font-size: 16px; }
+.admin-anomaly-banner-dismiss {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.admin-anomaly-banner-dismiss:hover { background: rgba(0,0,0,0.05); }

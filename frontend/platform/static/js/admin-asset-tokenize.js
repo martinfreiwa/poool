@@ -26,6 +26,9 @@
     focusedIndex: -1,
     hoverEl: null,
     hoverTimer: null,
+    bulkSelected: new Set(),
+    bulkRunning: false,
+    bulkAborted: false,
   };
 
   const REFRESH_INTERVAL_MS = 30000;
@@ -59,8 +62,14 @@
     setEl('page-title', 'Select Asset to Tokenize');
     renderPickerSkeleton();
     try {
+      const previous = pickerState.assets || [];
       const data = await fetchJSON(CANDIDATES_API);
-      pickerState.assets = data.assets || [];
+      const next = data.assets || [];
+
+      // Diff for live-update toast (only when refreshing existing data, not on first load).
+      if (previous.length) detectAndAnnounceChanges(previous, next);
+
+      pickerState.assets = next;
       pickerState.deployer = {
         wallet_address: data.wallet_address,
         contract_address: data.contract_address,
@@ -79,7 +88,34 @@
     }
   }
 
+  function fixDetailModeBackButton() {
+    // Only rewrite the back button if we're in detail mode (assetId present).
+    const backBtn = document.getElementById('btn-back');
+    const backLabel = document.getElementById('btn-back-label');
+    if (!backBtn) return;
+
+    // Determine safe destination: prefer same-origin referrer if it's an admin asset/details page,
+    // else fall back to /admin/assets. Avoids history.back() landing on login/email/etc.
+    const ref = document.referrer || '';
+    let target = '/admin/assets';
+    let label = 'Back to Assets';
+    try {
+      const u = new URL(ref);
+      if (u.origin === window.location.origin && u.pathname.startsWith('/admin/')) {
+        // Don't loop back to ourselves
+        if (!u.pathname.includes('asset-tokenize')) {
+          target = u.pathname + u.search;
+          if (u.pathname.includes('asset-details')) label = 'Back to Asset';
+        }
+      }
+    } catch { /* keep defaults */ }
+
+    backBtn.onclick = () => { window.location.href = target; };
+    if (backLabel) backLabel.textContent = label;
+  }
+
   async function loadTokenizeCheck() {
+    fixDetailModeBackButton();
     try {
       const data = await fetchJSON(TOKENIZE_API_BASE + encodeURIComponent(assetId));
       renderTokenizePage(data);
@@ -228,6 +264,52 @@
     return strip;
   }
 
+  function detectAndAnnounceChanges(prev, next) {
+    const byId = new Map(prev.map((a) => [a.asset_id, a]));
+    const changes = [];
+    next.forEach((a) => {
+      const before = byId.get(a.asset_id);
+      if (!before) {
+        changes.push({ type: 'added', title: a.title });
+      } else if (!before.already_tokenized && a.already_tokenized) {
+        changes.push({ type: 'tokenized', title: a.title });
+      } else if (before.funding_status !== a.funding_status) {
+        changes.push({ type: 'status', title: a.title, from: before.funding_status, to: a.funding_status });
+      } else if (before.updated_at !== a.updated_at) {
+        changes.push({ type: 'updated', title: a.title });
+      }
+    });
+    if (!changes.length) return;
+    showLiveToast(changes);
+  }
+
+  function showLiveToast(changes) {
+    // Replace any existing toast
+    document.querySelectorAll('.live-toast').forEach((t) => t.remove());
+    const toast = document.createElement('div');
+    toast.className = 'live-toast';
+    const dot = document.createElement('span');
+    dot.className = 'live-toast__dot';
+    const text = document.createElement('span');
+    const counts = changes.reduce((m, c) => { m[c.type] = (m[c.type] || 0) + 1; return m; }, {});
+    const parts = [];
+    if (counts.added) parts.push(`${counts.added} new`);
+    if (counts.tokenized) parts.push(`${counts.tokenized} tokenized`);
+    if (counts.status) parts.push(`${counts.status} status changed`);
+    if (counts.updated) parts.push(`${counts.updated} updated`);
+    text.textContent = `Live: ${parts.join(' · ')}`;
+    text.title = changes.map((c) => `${c.type}: ${c.title}`).join('\n');
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'live-toast__close';
+    close.textContent = '×';
+    close.setAttribute('aria-label', 'Dismiss');
+    close.addEventListener('click', () => toast.remove());
+    toast.append(dot, text, close);
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.isConnected) toast.remove(); }, 6000);
+  }
+
   function formatRefreshLabel() {
     if (!pickerState.lastLoadedAt) return 'Loading…';
     const secs = Math.round((Date.now() - pickerState.lastLoadedAt) / 1000);
@@ -320,6 +402,243 @@
     actions.append(dismiss, open);
     bar.append(info, actions);
     mount.appendChild(bar);
+  }
+
+  function buildBulkBar(filtered) {
+    const eligible = filtered.filter((a) => !a.already_tokenized);
+    if (!eligible.length) return null;
+
+    const selectedHere = eligible.filter((a) => pickerState.bulkSelected.has(a.asset_id));
+    const allSelected = selectedHere.length === eligible.length && eligible.length > 0;
+    const someSelected = selectedHere.length > 0 && !allSelected;
+
+    const bar = document.createElement('div');
+    bar.className = 'bulk-bar';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'bulk-checkbox';
+    cb.style.marginRight = '4px';
+    cb.checked = allSelected;
+    cb.indeterminate = someSelected;
+    cb.setAttribute('aria-label', 'Select all visible tokenizable assets');
+    cb.addEventListener('change', () => {
+      if (cb.checked) eligible.forEach((a) => pickerState.bulkSelected.add(a.asset_id));
+      else eligible.forEach((a) => pickerState.bulkSelected.delete(a.asset_id));
+      renderCandidateList();
+    });
+
+    const count = document.createElement('span');
+    count.className = 'bulk-bar__count';
+    count.textContent = pickerState.bulkSelected.size
+      ? `${pickerState.bulkSelected.size} selected`
+      : 'Select assets to bulk-tokenize';
+
+    const spacer = document.createElement('span');
+    spacer.className = 'bulk-bar__spacer';
+
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'bulk-bar__btn';
+    clear.textContent = 'Clear';
+    clear.disabled = pickerState.bulkSelected.size === 0;
+    clear.addEventListener('click', () => {
+      pickerState.bulkSelected.clear();
+      renderCandidateList();
+    });
+
+    const run = document.createElement('button');
+    run.type = 'button';
+    run.className = 'bulk-bar__btn bulk-bar__btn--solid';
+    run.textContent = `Tokenize ${pickerState.bulkSelected.size || ''} selected`.trim();
+    run.disabled = pickerState.bulkSelected.size === 0;
+    run.addEventListener('click', startBulkTokenization);
+
+    bar.append(cb, count, spacer, clear, run);
+    return bar;
+  }
+
+  async function startBulkTokenization() {
+    if (pickerState.bulkRunning) return;
+    const ids = Array.from(pickerState.bulkSelected);
+    if (!ids.length) return;
+
+    const items = ids
+      .map((id) => pickerState.assets.find((a) => a.asset_id === id))
+      .filter(Boolean);
+    if (!items.length) return;
+
+    const ok = await confirmBulk(items);
+    if (!ok) return;
+
+    pickerState.bulkRunning = true;
+    pickerState.bulkAborted = false;
+    const progress = openBulkProgressModal(items);
+
+    const results = [];
+    for (let i = 0; i < items.length; i += 1) {
+      if (pickerState.bulkAborted) {
+        progress.markRemainingSkipped(i);
+        break;
+      }
+      const asset = items[i];
+      progress.markRunning(asset.asset_id);
+      try {
+        const data = await fetchJSON(TOKENIZE_API_BASE + encodeURIComponent(asset.asset_id), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+        });
+        progress.markSuccess(asset.asset_id, data);
+        results.push({ id: asset.asset_id, ok: true, data });
+      } catch (err) {
+        progress.markFailure(asset.asset_id, err.message);
+        results.push({ id: asset.asset_id, ok: false, error: err.message });
+        if (!progress.continueOnFailure()) {
+          pickerState.bulkAborted = true;
+        }
+      }
+    }
+    pickerState.bulkRunning = false;
+    progress.markComplete(results);
+
+    // Refresh data so newly tokenized assets reflect updated state.
+    pickerState.bulkSelected.clear();
+    pickerState.detailCache = {};
+    await loadTokenizeCandidates();
+  }
+
+  function confirmBulk(items) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'kb-help-overlay';
+      const modal = document.createElement('div');
+      modal.className = 'kb-help-modal';
+      modal.style.maxWidth = '480px';
+      modal.innerHTML = `
+        <h3>Deploy ${items.length} asset${items.length === 1 ? '' : 's'} on-chain</h3>
+        <p style="font-size:13px;color:var(--admin-text-secondary);margin:0 0 12px">
+          Each asset will be deployed sequentially via <code style="font-family:'SF Mono',monospace">deployAsset()</code>.
+          Failures pause the queue — you can choose to continue or abort.
+        </p>
+        <ul style="margin:0 0 16px;padding-left:20px;max-height:160px;overflow:auto;font-size:12px;color:var(--admin-text-secondary)">
+          ${items.map((a) => `<li>${escapeHtml(a.title)}</li>`).join('')}
+        </ul>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button type="button" class="admin-btn admin-btn--secondary" id="bulk-cancel">Cancel</button>
+          <button type="button" class="admin-btn admin-btn--primary" id="bulk-go">Deploy ${items.length} now</button>
+        </div>`;
+      overlay.appendChild(modal);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+      const close = (val) => { overlay.remove(); resolve(val); };
+      document.body.appendChild(overlay);
+      document.getElementById('bulk-cancel').addEventListener('click', () => close(false));
+      document.getElementById('bulk-go').addEventListener('click', () => close(true));
+    });
+  }
+
+  function openBulkProgressModal(items) {
+    const overlay = document.createElement('div');
+    overlay.className = 'bulk-progress-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'bulk-progress-modal';
+
+    const total = items.length;
+    let done = 0;
+    let abortedFlag = false;
+
+    modal.innerHTML = `
+      <h3>Bulk tokenization</h3>
+      <p class="bulk-progress-modal__sub" id="bulk-sub">0 of ${total} complete · running sequentially</p>
+      <div class="bulk-progress-modal__bar"><div class="bulk-progress-modal__fill" id="bulk-fill" style="width:0%"></div></div>
+      <div class="bulk-progress-modal__list" id="bulk-list"></div>
+      <div class="bulk-progress-modal__actions">
+        <button type="button" class="admin-btn admin-btn--secondary" id="bulk-abort">Abort after current</button>
+        <button type="button" class="admin-btn admin-btn--primary" id="bulk-close" disabled>Close</button>
+      </div>`;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const list = modal.querySelector('#bulk-list');
+    const rowMap = {};
+    items.forEach((a) => {
+      const r = document.createElement('div');
+      r.className = 'bulk-progress-modal__row bulk-progress-modal__row--pending';
+      r.innerHTML = `
+        <span class="bulk-progress-modal__title">${escapeHtml(a.title)}</span>
+        <span class="bulk-progress-modal__status" style="background:var(--admin-border);color:var(--admin-text-muted)">Pending</span>`;
+      list.appendChild(r);
+      rowMap[a.asset_id] = r;
+    });
+
+    const updateProgress = () => {
+      modal.querySelector('#bulk-fill').style.width = `${Math.round((done / total) * 100)}%`;
+      modal.querySelector('#bulk-sub').textContent = `${done} of ${total} complete${abortedFlag ? ' · aborting' : ''}`;
+    };
+
+    modal.querySelector('#bulk-abort').addEventListener('click', () => {
+      abortedFlag = true;
+      pickerState.bulkAborted = true;
+      modal.querySelector('#bulk-abort').disabled = true;
+      modal.querySelector('#bulk-abort').textContent = 'Aborting…';
+    });
+
+    return {
+      markRunning(id) {
+        const r = rowMap[id];
+        if (!r) return;
+        r.className = 'bulk-progress-modal__row bulk-progress-modal__row--running';
+        r.querySelector('.bulk-progress-modal__status').textContent = 'Running…';
+        r.querySelector('.bulk-progress-modal__status').style.background = 'rgba(99,102,241,0.15)';
+        r.querySelector('.bulk-progress-modal__status').style.color = '#4338ca';
+      },
+      markSuccess(id, data) {
+        const r = rowMap[id];
+        if (!r) return;
+        done += 1;
+        r.className = 'bulk-progress-modal__row bulk-progress-modal__row--success';
+        const s = r.querySelector('.bulk-progress-modal__status');
+        s.textContent = `OK · token #${data.chain_token_id}`;
+        s.style.background = 'rgba(16,185,129,0.12)';
+        s.style.color = '#047857';
+        updateProgress();
+      },
+      markFailure(id, msg) {
+        const r = rowMap[id];
+        if (!r) return;
+        done += 1;
+        r.className = 'bulk-progress-modal__row bulk-progress-modal__row--failed';
+        const s = r.querySelector('.bulk-progress-modal__status');
+        s.textContent = 'Failed';
+        s.style.background = 'rgba(239,68,68,0.12)';
+        s.style.color = '#b91c1c';
+        s.title = msg;
+        updateProgress();
+      },
+      markRemainingSkipped(fromIndex) {
+        for (let i = fromIndex; i < items.length; i += 1) {
+          const r = rowMap[items[i].asset_id];
+          if (!r) continue;
+          const s = r.querySelector('.bulk-progress-modal__status');
+          s.textContent = 'Skipped';
+          s.style.background = 'rgba(107,114,128,0.18)';
+          s.style.color = '#4b5563';
+        }
+      },
+      markComplete(results) {
+        const sub = modal.querySelector('#bulk-sub');
+        const failed = results.filter((r) => !r.ok).length;
+        sub.textContent = `Done. ${results.length - failed} succeeded, ${failed} failed${abortedFlag ? ' (aborted)' : ''}.`;
+        modal.querySelector('#bulk-abort').disabled = true;
+        const closeBtn = modal.querySelector('#bulk-close');
+        closeBtn.disabled = false;
+        closeBtn.addEventListener('click', () => overlay.remove());
+      },
+      continueOnFailure() {
+        // For now: stop on first failure unless user already chose to continue via abort logic.
+        // Returning false here means runner sets abort flag.
+        return false;
+      },
+    };
   }
 
   function countFailedChecks(checks) {
@@ -562,6 +881,16 @@
     const countEl = document.getElementById('picker-count');
     if (countEl) countEl.textContent = `${filtered.length} of ${pickerState.assets.length} shown`;
 
+    // Drop selection entries that are no longer eligible (already tokenized) so the bar count stays correct.
+    pickerState.bulkSelected.forEach((id) => {
+      const a = pickerState.assets.find((x) => x.asset_id === id);
+      if (!a || a.already_tokenized) pickerState.bulkSelected.delete(id);
+    });
+
+    // Bulk action bar
+    const bulkBar = buildBulkBar(filtered);
+    if (bulkBar) wrap.appendChild(bulkBar);
+
     if (!filtered.length) {
       const empty = document.createElement('p');
       empty.className = 'tokenize-status tokenize-status--muted';
@@ -612,6 +941,28 @@
     top.style.justifyContent = 'space-between';
     top.style.gap = '12px';
     top.style.width = '100%';
+
+    // Bulk-select checkbox (only for tokenizable rows)
+    if (!asset.already_tokenized) {
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'bulk-checkbox';
+      cb.checked = pickerState.bulkSelected.has(asset.asset_id);
+      cb.setAttribute('aria-label', `Select ${asset.title} for bulk tokenization`);
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        if (cb.checked) pickerState.bulkSelected.add(asset.asset_id);
+        else pickerState.bulkSelected.delete(asset.asset_id);
+        renderCandidateList();
+      });
+      top.appendChild(cb);
+    } else {
+      const spacer = document.createElement('span');
+      spacer.style.width = '18px';
+      spacer.style.marginRight = '12px';
+      spacer.style.flexShrink = '0';
+      top.appendChild(spacer);
+    }
 
     const main = document.createElement('div');
     main.style.minWidth = '0';
@@ -698,8 +1049,8 @@
       row.appendChild(detail);
     }
 
-    // Per-row risk banner
-    const risks = computeRowRisks(asset);
+    // Per-row risk banner — sourced from backend `risk_flags`
+    const risks = asset.risk_flags || [];
     if (risks.length) {
       const banner = document.createElement('div');
       banner.className = `risk-banner ${risks.some((r) => r.severity === 'danger') ? 'risk-banner--danger' : ''}`;
@@ -709,8 +1060,8 @@
           <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
         <div>
-          <div class="risk-banner__title">${risks.length === 1 ? 'Review needed' : 'Multiple flags'}</div>
-          <ul class="risk-banner__list">${risks.map((r) => `<li>${r.message}</li>`).join('')}</ul>
+          <div class="risk-banner__title">${risks.length === 1 ? 'Review needed' : `${risks.length} flags`}</div>
+          <ul class="risk-banner__list">${risks.map((r) => `<li><strong style="text-transform:uppercase;font-size:10px;letter-spacing:.04em;${r.severity === 'danger' ? 'color:#b91c1c' : 'color:#b45309'}">${r.severity}</strong> · ${escapeHtml(r.message)}</li>`).join('')}</ul>
         </div>`;
       row.appendChild(banner);
     }
@@ -732,27 +1083,13 @@
     return row;
   }
 
-  function computeRowRisks(asset) {
-    const risks = [];
-    const days = asset.updated_at
-      ? Math.floor((Date.now() - new Date(asset.updated_at).getTime()) / 86400000)
-      : null;
-    if (days !== null && days > 30 && !asset.already_tokenized) {
-      risks.push({ severity: 'danger', message: `Stale: no admin update for ${days} days. Re-verify before deploying.` });
-    }
-    if (asset.funding_status === 'exited' && !asset.already_tokenized) {
-      risks.push({ severity: 'danger', message: 'Asset marked exited but never tokenized — likely shouldn\'t deploy.' });
-    }
-    if (asset.funding_status === 'funded' && !asset.already_tokenized) {
-      risks.push({ severity: 'warn', message: 'Funded off-chain without tokenization — confirm operator intent.' });
-    }
-    if ((asset.tokens_total || 0) <= 0) {
-      risks.push({ severity: 'danger', message: 'Token supply is zero or missing.' });
-    }
-    if ((asset.token_price_cents || 0) <= 0) {
-      risks.push({ severity: 'danger', message: 'Token price is zero or missing.' });
-    }
-    return risks;
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function scheduleHoverPreview(rowEl, asset) {
@@ -770,14 +1107,15 @@
     const created = asset.created_at ? new Date(asset.created_at).toLocaleDateString() : '—';
     const updated = asset.updated_at ? new Date(asset.updated_at).toLocaleString() : '—';
     popover.innerHTML = `
-      <div class="hover-preview__title">${asset.title}</div>
-      <div class="hover-preview__row"><span>Status</span><strong>${formatStatus(asset.funding_status)}</strong></div>
-      <div class="hover-preview__row"><span>Total value</span><strong>${formatCurrency(asset.total_value_cents)}</strong></div>
-      <div class="hover-preview__row"><span>Token price</span><strong>${formatCurrency(asset.token_price_cents)}</strong></div>
+      <div class="hover-preview__title">${escapeHtml(asset.title)}</div>
+      <div class="hover-preview__row"><span>Status</span><strong>${escapeHtml(formatStatus(asset.funding_status))}</strong></div>
+      <div class="hover-preview__row"><span>Total value</span><strong>${escapeHtml(formatCurrency(asset.total_value_cents))}</strong></div>
+      <div class="hover-preview__row"><span>Token price</span><strong>${escapeHtml(formatCurrency(asset.token_price_cents))}</strong></div>
       <div class="hover-preview__row"><span>Tokens</span><strong>${Number(asset.tokens_total || 0).toLocaleString()}</strong></div>
-      <div class="hover-preview__row"><span>Created</span><strong>${created}</strong></div>
-      <div class="hover-preview__row"><span>Updated</span><strong>${updated}</strong></div>
-      <div class="hover-preview__row"><span>Asset ID</span><strong style="font-family:'SF Mono',monospace;font-size:10px">${asset.asset_id.slice(0, 8)}…</strong></div>`;
+      <div class="hover-preview__row"><span>Created</span><strong>${escapeHtml(created)}</strong></div>
+      <div class="hover-preview__row"><span>Updated</span><strong>${escapeHtml(updated)}</strong></div>
+      <div class="hover-preview__row"><span>Documents</span><strong>${asset.document_count ?? '—'}</strong></div>
+      <div class="hover-preview__row"><span>Asset ID</span><strong style="font-family:'SF Mono',monospace;font-size:10px">${escapeHtml(String(asset.asset_id).slice(0, 8))}…</strong></div>`;
     document.body.appendChild(popover);
     pickerState.hoverEl = popover;
     // Reposition if overflows

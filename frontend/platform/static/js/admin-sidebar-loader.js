@@ -27,7 +27,7 @@
                 <div class="admin-sidebar-header">
                     <a href="/admin/" class="admin-sidebar-logo">
                         <img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL">
-                        <span class="admin-sidebar-logo-badge">Admin</span>
+                        <span class="admin-sidebar-logo-badge" id="admin-sidebar-env-pill" data-env="loading">Admin</span>
                     </a>
                 </div>
 
@@ -351,7 +351,10 @@
                         <span id="theme-toggle-label" class="admin-theme-toggle-label">Light</span>
                     </button>
                     <div class="admin-sidebar-user">
-                        <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
+                        <span class="admin-sidebar-avatar-wrap">
+                            <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
+                            <span class="admin-sidebar-avatar-status admin-sidebar-avatar-status--online" id="sidebar-user-status" aria-label="Online" title="Online"></span>
+                        </span>
                         <div class="admin-sidebar-user-info">
                             <div class="admin-sidebar-user-name" id="sidebar-user-name">Admin User</div>
                             <div class="admin-sidebar-user-role" id="sidebar-user-role">Super Admin</div>
@@ -413,13 +416,29 @@
             return !!(perms && perms.loaded && perms.has(permission));
         };
 
-        try {
-            // Fetch unread notification count
-            const notifResp = await fetch("/api/admin/notifications");
-            if (notifResp.ok) {
-                const data = await notifResp.json();
+        const setBadge = (id, n) => {
+            const badge = document.getElementById(id);
+            if (!badge) return;
+            if (n > 0) {
+                badge.textContent = n > 99 ? "99+" : n;
+                badge.style.display = "";
+            } else {
+                badge.style.display = "none";
+            }
+        };
+        const fetchJson = async (url) => {
+            try {
+                const r = await fetch(url);
+                return r.ok ? await r.json() : null;
+            } catch (e) {
+                return null;
+            }
+        };
+
+        const tasks = [
+            fetchJson("/api/admin/notifications").then(data => {
+                if (!data) return;
                 const unread = (data.notifications || []).filter(n => !n.is_read).length;
-                // Update all notification badge elements on the page
                 document.querySelectorAll(".admin-notification-badge").forEach(badge => {
                     if (unread > 0) {
                         badge.textContent = unread > 99 ? "99+" : unread;
@@ -428,94 +447,34 @@
                         badge.style.display = "none";
                     }
                 });
-            }
-        } catch (e) {
-            // Silently fail — notification badges stay hidden
-        }
-
-        try {
-            // Fetch pending approval count for the sidebar badge
-            const approvalResp = await fetch("/api/admin/approvals");
-            if (approvalResp.ok) {
-                const data = await approvalResp.json();
-                const pending = data.pending_count || 0;
-                const badge = document.getElementById("approvals-badge");
-                if (badge) {
-                    if (pending > 0) {
-                        badge.textContent = pending;
-                        badge.style.display = "";
-                    } else {
-                        badge.style.display = "none";
-                    }
-                }
-            }
-        } catch (e) {
-            // Silently fail
-        }
-
-        try {
-            // Fetch pending change requests count for sidebar badge
-            const crResp = await fetch("/api/admin/change-requests");
-            if (crResp.ok) {
-                const data = await crResp.json();
-                const pending = data.pending_count || 0;
-                const badge = document.getElementById("change-requests-badge");
-                if (badge) {
-                    if (pending > 0) {
-                        badge.textContent = pending;
-                        badge.style.display = "";
-                    } else {
-                        badge.style.display = "none";
-                    }
-                }
-            }
-        } catch (e) {
-            // Silently fail
-        }
-
-        try {
-            // Fetch pending content reports count for sidebar badge
-            const comReportsResp = await fetch("/api/admin/community/reports");
-            if (comReportsResp.ok) {
-                const data = await comReportsResp.json();
+            }),
+            fetchJson("/api/admin/approvals").then(data => {
+                if (!data) return;
+                setBadge("approvals-badge", data.pending_count || 0);
+            }),
+            fetchJson("/api/admin/change-requests").then(data => {
+                if (!data) return;
+                setBadge("change-requests-badge", data.pending_count || 0);
+            }),
+            fetchJson("/api/admin/community/reports").then(data => {
+                if (!data) return;
                 const pending = Array.isArray(data)
                     ? data.filter(r => r.status === "pending").length
                     : 0;
-                const badge = document.getElementById("com-reports-badge");
-                if (badge) {
-                    if (pending > 0) {
-                        badge.textContent = pending;
-                        badge.style.display = "";
-                    } else {
-                        badge.style.display = "none";
-                    }
-                }
-            }
-        } catch (e) {
-            // Silently fail
+                setBadge("com-reports-badge", pending);
+            }),
+        ];
+
+        if (canFetchBadge("affiliates.manage")) {
+            tasks.push(
+                fetchJson("/api/admin/rewards/affiliates/pending").then(data => {
+                    if (!data) return;
+                    setBadge("affiliate-apps-badge", (data.pending || []).length);
+                })
+            );
         }
 
-        // Affiliate badge requires explicit permission — skip if not granted
-        if (canFetchBadge("affiliates.manage")) {
-            try {
-                const affResp = await fetch("/api/admin/rewards/affiliates/pending");
-                if (affResp.ok) {
-                    const data = await affResp.json();
-                    const pending = (data.pending || []).length;
-                    const badge = document.getElementById("affiliate-apps-badge");
-                    if (badge) {
-                        if (pending > 0) {
-                            badge.textContent = pending;
-                            badge.style.display = "";
-                        } else {
-                            badge.style.display = "none";
-                        }
-                    }
-                }
-            } catch (e) {
-                // Silently fail
-            }
-        }
+        await Promise.all(tasks);
     }
 
     // ==== Sidebar Scroll Persistence ====
@@ -550,14 +509,212 @@
     document.addEventListener("admin:sidebar-ready", restoreSidebarScroll);
 
     // Run on script load if placeholder exists, or on DOMContentLoaded
-    if (document.getElementById("admin-sidebar-placeholder")) {
+    function bootstrap() {
         loadSidebar();
         updateNotificationBadges();
-    } else {
-        document.addEventListener("DOMContentLoaded", () => {
-            loadSidebar();
-            updateNotificationBadges();
+        injectHealthPill();
+        wireSidebarCollapse();
+        wireAvatarStatus();
+    }
+
+    // ── Avatar online/away status (heuristic) ────────────────────────────
+    function wireAvatarStatus() {
+        let lastActivity = Date.now();
+        const bump = () => { lastActivity = Date.now(); };
+        ["mousemove", "keydown", "touchstart", "scroll"].forEach((ev) =>
+            window.addEventListener(ev, bump, { passive: true }));
+        document.addEventListener("visibilitychange", bump);
+
+        function tick() {
+            const dot = document.getElementById("sidebar-user-status");
+            if (!dot) return;
+            const idle = Date.now() - lastActivity;
+            const hidden = document.visibilityState === "hidden";
+            let cls = "online", label = "Online";
+            if (hidden || idle > 30 * 60_000) { cls = "offline"; label = "Away >30m"; }
+            else if (idle > 5 * 60_000) { cls = "away"; label = "Idle"; }
+            dot.classList.remove(
+                "admin-sidebar-avatar-status--online",
+                "admin-sidebar-avatar-status--away",
+                "admin-sidebar-avatar-status--offline"
+            );
+            dot.classList.add(`admin-sidebar-avatar-status--${cls}`);
+            dot.setAttribute("aria-label", label);
+            dot.setAttribute("title", label);
+        }
+        // Avatar status / badge ticker — paused when tab hidden.
+        let tickTimer = setInterval(tick, 15_000);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+                if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+            } else if (!tickTimer) {
+                tick();
+                tickTimer = setInterval(tick, 15_000);
+            }
         });
+        tick();
+    }
+    if (document.getElementById("admin-sidebar-placeholder")) {
+        bootstrap();
+    } else {
+        document.addEventListener("DOMContentLoaded", bootstrap);
     }
     document.addEventListener("admin:permissions-loaded", updateNotificationBadges);
+
+    // ── Global System Health Pill ────────────────────────────────────────
+    async function injectHealthPill() {
+        const topbar = document.querySelector(".admin-topbar");
+        if (!topbar) return;
+        let right = topbar.querySelector(".admin-topbar-right");
+        if (!right) {
+            right = document.createElement("div");
+            right.className = "admin-topbar-right";
+            topbar.appendChild(right);
+        }
+        if (right.querySelector(".admin-health-pill")) return;
+
+        const pill = document.createElement("button");
+        pill.type = "button";
+        pill.className = "admin-health-pill admin-health-pill--unknown";
+        pill.setAttribute("aria-label", "System health");
+        pill.setAttribute("title", "System health (click for details)");
+        pill.innerHTML = `<span class="admin-health-dot" aria-hidden="true"></span><span class="admin-health-label">Health</span>`;
+        right.insertBefore(pill, right.firstChild);
+
+        const popover = document.createElement("div");
+        popover.className = "admin-health-popover";
+        popover.hidden = true;
+        popover.setAttribute("role", "dialog");
+        popover.innerHTML = `<div class="admin-health-popover-title">System Health</div><div class="admin-health-popover-body">Checking…</div>`;
+        right.appendChild(popover);
+
+        pill.addEventListener("click", (e) => {
+            e.stopPropagation();
+            popover.hidden = !popover.hidden;
+        });
+        document.addEventListener("click", (e) => {
+            if (!popover.hidden && !popover.contains(e.target) && e.target !== pill) {
+                popover.hidden = true;
+            }
+        });
+
+        async function probe() {
+            try {
+                const r = await fetch("/health", { cache: "no-store" });
+                const data = await r.json().catch(() => ({}));
+                const ok = r.ok && data.status === "ok";
+                const degraded = r.ok && data.status === "degraded";
+                pill.classList.remove(
+                    "admin-health-pill--ok",
+                    "admin-health-pill--degraded",
+                    "admin-health-pill--down",
+                    "admin-health-pill--unknown"
+                );
+                pill.classList.add(
+                    ok ? "admin-health-pill--ok" :
+                    degraded ? "admin-health-pill--degraded" :
+                    "admin-health-pill--down"
+                );
+
+                // Env-aware logo pill (PROD red, STAGING amber, DEV neutral)
+                paintEnvPill(data.app_env || "development");
+                const lab = pill.querySelector(".admin-health-label");
+                lab.textContent = ok ? "OK" : degraded ? "Degraded" : "Down";
+
+                const c = data.components || {};
+                const env = c.env || {};
+                const item = (label, val) => {
+                    const cls =
+                        val === "ok" ? "ok" :
+                        val === "not_configured" ? "warn" :
+                        val === "missing" || val === "error" ? "down" : "unknown";
+                    return `<li><span class="admin-health-item-dot admin-health-item-dot--${cls}"></span>${label}<span class="admin-health-item-val">${val || "—"}</span></li>`;
+                };
+                popover.querySelector(".admin-health-popover-body").innerHTML = `
+                    <ul class="admin-health-items">
+                        ${item("Database", c.database || (r.ok ? "ok" : "error"))}
+                        ${item("Redis", c.redis)}
+                        ${item("Encryption key", env.TOTP_SECRET_ENCRYPTION_KEY_OR_ENCRYPTION_KEY)}
+                        ${item("Session secret", env.SESSION_SECRET_OR_JWT_SECRET)}
+                    </ul>
+                    <div class="admin-health-version">v${data.version || "?"} · ${new Date().toLocaleTimeString()}</div>`;
+            } catch (e) {
+                pill.classList.add("admin-health-pill--down");
+                pill.querySelector(".admin-health-label").textContent = "Down";
+                popover.querySelector(".admin-health-popover-body").innerHTML =
+                    `<div class="admin-health-error">Probe failed: ${e.message}</div>`;
+            }
+        }
+        probe();
+        let probeTimer = setInterval(probe, 60_000);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+                if (probeTimer) { clearInterval(probeTimer); probeTimer = null; }
+            } else if (!probeTimer) {
+                probe();
+                probeTimer = setInterval(probe, 60_000);
+            }
+        });
+    }
+
+    // ── Env-aware logo pill ───────────────────────────────────────────────
+    function paintEnvPill(env) {
+        const pill = document.getElementById("admin-sidebar-env-pill");
+        if (!pill) return;
+        const e = String(env).toLowerCase();
+        let label = "Admin";
+        let bg = "";
+        let color = "";
+        let title = `Environment: ${env}`;
+        if (e === "production" || e === "prod") {
+            label = "PROD";
+            bg = "#dc2626"; color = "#fff";
+            title = "PRODUCTION — actions affect live users. Tread carefully.";
+        } else if (e === "staging" || e === "stage") {
+            label = "STAGING";
+            bg = "#d97706"; color = "#fff";
+        } else if (e === "development" || e === "dev" || e === "local") {
+            label = "DEV";
+            bg = "#3b82f6"; color = "#fff";
+        } else {
+            label = String(env).toUpperCase().slice(0, 8);
+        }
+        pill.textContent = label;
+        pill.dataset.env = e;
+        pill.title = title;
+        if (bg) {
+            pill.style.background = bg;
+            pill.style.color = color;
+            pill.style.fontWeight = "700";
+            pill.style.letterSpacing = "0.05em";
+        }
+    }
+
+    // ── Collapsible sidebar sections (persists open/closed in localStorage) ──
+    function wireSidebarCollapse() {
+        const sidebar = document.getElementById("main-admin-sidebar");
+        if (!sidebar) return;
+        const KEY = "admin_sidebar_collapsed_sections";
+        const collapsed = new Set(JSON.parse(localStorage.getItem(KEY) || "[]"));
+
+        sidebar.querySelectorAll(".admin-nav-section").forEach((sec) => {
+            const label = sec.querySelector(".admin-nav-section-label");
+            if (!label) return;
+            const id = label.textContent.trim();
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "admin-nav-section-toggle";
+            btn.setAttribute("aria-expanded", String(!collapsed.has(id)));
+            btn.innerHTML = `<span>${id}</span><span class="admin-nav-section-caret" aria-hidden="true">▾</span>`;
+            label.replaceWith(btn);
+            if (collapsed.has(id)) sec.classList.add("admin-nav-section--collapsed");
+            btn.addEventListener("click", () => {
+                const isCollapsed = sec.classList.toggle("admin-nav-section--collapsed");
+                btn.setAttribute("aria-expanded", String(!isCollapsed));
+                if (isCollapsed) collapsed.add(id);
+                else collapsed.delete(id);
+                localStorage.setItem(KEY, JSON.stringify([...collapsed]));
+            });
+        });
+    }
 })();

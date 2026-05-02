@@ -116,10 +116,9 @@ pub async fn api_admin_stats_overview(
             .unwrap_or((0, 0, 0, 0)),
         )
     };
-    let f_unread_notifications = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM notifications WHERE is_read = false",
-    )
-    .fetch_one(db);
+    let f_unread_notifications =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM notifications WHERE is_read = false")
+            .fetch_one(db);
     let f_activity_rows = sqlx::query_as::<_, (String, String, String, Option<String>, String)>(
         "SELECT id::text, action, entity_type, entity_id::text, created_at::text FROM audit_logs ORDER BY created_at DESC LIMIT 10"
     )
@@ -130,8 +129,8 @@ pub async fn api_admin_stats_overview(
          ORDER BY o.created_at DESC LIMIT 5",
     )
     .fetch_all(db);
-    let f_deposit_rows = sqlx::query_as::<_, (String, i64, String, String, String)>(
-        "SELECT u.email, d.amount_cents, d.provider, d.status, d.created_at::text \
+    let f_deposit_rows = sqlx::query_as::<_, (String, String, i64, String, String, String)>(
+        "SELECT d.id::text, u.email, d.amount_cents, d.provider, d.status, d.created_at::text \
          FROM deposit_requests d JOIN users u ON u.id = d.user_id \
          WHERE d.status = 'pending' \
          ORDER BY d.created_at DESC LIMIT 10",
@@ -192,8 +191,7 @@ pub async fn api_admin_stats_overview(
     let (pending_deposits, oldest_pending_deposit_secs) = pending_deposits_agg;
     let (pending_kyc, oldest_pending_kyc_secs) = pending_kyc_agg;
     let (open_tickets, oldest_open_ticket_secs) = open_tickets_agg;
-    let rewards_liability_cents =
-        rewards_breakdown.0 + rewards_breakdown.1 + rewards_breakdown.2;
+    let rewards_liability_cents = rewards_breakdown.0 + rewards_breakdown.1 + rewards_breakdown.2;
 
     let activity_json: Vec<serde_json::Value> = activity_rows
         .iter()
@@ -223,8 +221,9 @@ pub async fn api_admin_stats_overview(
 
     let deposits_json: Vec<serde_json::Value> = deposit_rows
         .iter()
-        .map(|(email, amount, provider, status, created_at)| {
+        .map(|(id, email, amount, provider, status, created_at)| {
             serde_json::json!({
+                "id": id,
                 "user_email": email,
                 "amount_cents": amount,
                 "provider": provider,

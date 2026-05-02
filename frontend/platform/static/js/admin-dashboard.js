@@ -34,8 +34,28 @@ document.addEventListener("DOMContentLoaded", () => {
     rangeSelector.addEventListener("change", loadDashboardStats);
   }
 
-  setInterval(loadDashboardStats, 30000);
-  setInterval(loadSystemHealth, 60000);
+  // Auto-refresh, paused when tab is hidden so a backgrounded admin
+  // tab doesn't keep hammering the API.
+  let statsTimer = null;
+  let healthTimer = null;
+  function startTimers() {
+    if (statsTimer == null) statsTimer = setInterval(loadDashboardStats, 30000);
+    if (healthTimer == null) healthTimer = setInterval(loadSystemHealth, 60000);
+  }
+  function stopTimers() {
+    if (statsTimer != null) { clearInterval(statsTimer); statsTimer = null; }
+    if (healthTimer != null) { clearInterval(healthTimer); healthTimer = null; }
+  }
+  startTimers();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      stopTimers();
+    } else {
+      loadDashboardStats();
+      loadSystemHealth();
+      startTimers();
+    }
+  });
 });
 
 async function loadDashboardStats() {
@@ -64,7 +84,6 @@ function populateKPIs(data) {
   setTextById("kpi-new-users", `+${formatNumber(data.new_users_range)} new`);
   renderDelta("kpi-users-delta", data.new_users_range, data.new_users_prev);
   setTextById("kpi-aum", formatUSD(data.aum_cents));
-  setTextById("kpi-deposits-label", `Deposits`);
   setTextById("kpi-deposits-24h", formatUSD(data.deposits_range_cents));
   setTextById("kpi-deposits-count", `${formatNumber(data.deposits_range_count)} txns ${label}`);
   renderDelta("kpi-deposits-delta", data.deposits_range_cents, data.deposits_prev_cents);
@@ -659,10 +678,10 @@ function setHealthDot(id, status, tooltip) {
     const dot = tile.querySelector(".admin-health-tile-dot");
     if (dot) {
       dot.className = "admin-health-tile-dot";
-      if (status === "ok") dot.classList.add("admin-health-dot--ok");
-      else if (status === "warn") dot.classList.add("admin-health-dot--warn");
-      else if (status === "error") dot.classList.add("admin-health-dot--error");
-      else dot.classList.add("admin-health-dot--unknown");
+      if (status === "ok") dot.classList.add("admin-health-tile-dot--ok");
+      else if (status === "warn") dot.classList.add("admin-health-tile-dot--warn");
+      else if (status === "error") dot.classList.add("admin-health-tile-dot--error");
+      else dot.classList.add("admin-health-tile-dot--unknown");
     }
     const statusEl = document.getElementById(`health-tile-${service}`);
     if (statusEl) {
@@ -706,7 +725,7 @@ function renderActionRequired(data) {
       sev: agingSeverity(data.oldest_open_ticket_secs, 12, 48),
       label: `${data.open_tickets} open ticket${data.open_tickets === 1 ? "" : "s"}`,
       sub: agingSubtitle(data.oldest_open_ticket_secs, "Oldest"),
-      href: "/admin/support-tickets.html",
+      href: "/admin/support.html",
       cta: "Open",
     });
   }
@@ -947,7 +966,7 @@ function activityCategory(act) {
     return "marketplace";
   if (action.includes("system") || action.includes("orderbook_rebuilt") || action.includes("scheduler") || action.includes("worker") || action.includes("sync"))
     return "system";
-  return "user";
+  return "other";
 }
 
 // ---- CSV export (#19) ------------------------------------------------------

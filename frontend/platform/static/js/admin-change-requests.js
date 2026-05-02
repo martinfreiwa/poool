@@ -16,7 +16,7 @@
     items: [],
     selected: new Set(),
     sort: { key: "created_at", dir: "desc" },
-    filters: { status: "all", developer: "all", range: "all", q: "" },
+    filters: { status: "all", developer: "all", range: "all", q: "", assignment: "all" },
     focusIdx: -1,
     lastFetched: null,
     autoRefresh: true,
@@ -24,15 +24,109 @@
     anomalyDismissed: false,
     page: 1,
     pageSize: parseInt(localStorage.getItem("cr_page_size") || "25", 10),
+    currentAdminId: null,
+    currentAdminName: null,
   };
 
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
     bindUi();
+    renderViews();
+    fetchMe();
     load();
     startTimer();
     bindKeyboard();
+  }
+
+  async function fetchMe() {
+    try {
+      const r = await fetch("/api/me", { credentials: "same-origin" });
+      if (!r.ok) return;
+      const me = await r.json();
+      state.currentAdminId = me.id;
+      state.currentAdminName = me.full_name || me.first_name || me.email;
+      // re-render to update "Me" labels
+      if (state.items.length) render();
+    } catch (e) { /* silent */ }
+  }
+
+  // ── Saved views ───────────────────────────────────────────────────────────
+  const VIEWS_KEY = "cr_saved_views";
+  const BUILTIN_VIEWS = [
+    { id: "_pending_all", name: "All pending", builtin: true,
+      filters: { status: "pending", developer: "all", range: "all", q: "", assignment: "all" }, sort: { key: "created_at", dir: "asc" } },
+    { id: "_assigned_me", name: "Assigned to me", builtin: true,
+      filters: { status: "pending", developer: "all", range: "all", q: "", assignment: "me" }, sort: { key: "created_at", dir: "asc" } },
+    { id: "_unassigned", name: "Unassigned", builtin: true,
+      filters: { status: "pending", developer: "all", range: "all", q: "", assignment: "unassigned" }, sort: { key: "created_at", dir: "asc" } },
+    { id: "_old_pending", name: "Pending >24h", builtin: true,
+      filters: { status: "pending", developer: "all", range: "all", q: "", assignment: "all" }, sort: { key: "created_at", dir: "asc" } },
+    { id: "_recent_rejected", name: "Recent rejected (7d)", builtin: true,
+      filters: { status: "rejected", developer: "all", range: "7d", q: "", assignment: "all" }, sort: { key: "created_at", dir: "desc" } },
+  ];
+  function readViews() {
+    try { return JSON.parse(localStorage.getItem(VIEWS_KEY) || "[]"); }
+    catch { return []; }
+  }
+  function writeViews(v) {
+    localStorage.setItem(VIEWS_KEY, JSON.stringify(v));
+  }
+  function renderViews() {
+    const wrap = $("cr-views");
+    if (!wrap) return;
+    const custom = readViews();
+    const all = [...BUILTIN_VIEWS, ...custom];
+    wrap.innerHTML = all.map((v) => `
+      <button type="button" class="cr-view-chip${v.builtin ? " cr-view-chip--builtin" : ""}" data-view-id="${esc(v.id)}">
+        ${esc(v.name)}
+        ${v.builtin ? "" : `<span class="cr-view-chip-x" data-del="${esc(v.id)}" aria-label="Delete view">×</span>`}
+      </button>`).join("") +
+      `<button type="button" id="cr-view-save" class="cr-view-chip cr-view-chip--add" title="Save current filters as view">+ Save view</button>`;
+    wrap.querySelectorAll(".cr-view-chip").forEach((b) => {
+      const id = b.dataset.viewId;
+      if (!id) return;
+      b.addEventListener("click", (e) => {
+        if (e.target.dataset.del) {
+          e.stopPropagation();
+          const cur = readViews().filter((v) => v.id !== e.target.dataset.del);
+          writeViews(cur);
+          renderViews();
+          return;
+        }
+        applyView(id);
+      });
+    });
+    $("cr-view-save")?.addEventListener("click", saveCurrentView);
+  }
+  function applyView(id) {
+    const v = [...BUILTIN_VIEWS, ...readViews()].find((x) => x.id === id);
+    if (!v) return;
+    state.filters = { ...v.filters };
+    if (v.sort) state.sort = { ...v.sort };
+    state.appliedView = v;
+    state.page = 1;
+    $("search-input").value = state.filters.q || "";
+    $("filter-status").value = state.filters.status;
+    $("filter-range").value = state.filters.range;
+    if ($("filter-assignment")) $("filter-assignment").value = state.filters.assignment || "all";
+    if ([...$("filter-developer").options].some((o) => o.value === state.filters.developer)) {
+      $("filter-developer").value = state.filters.developer;
+    }
+    syncKpiPressed();
+    document.querySelectorAll(".cr-view-chip").forEach((c) =>
+      c.classList.toggle("cr-view-chip--active", c.dataset.viewId === id));
+    render();
+  }
+  function saveCurrentView() {
+    const name = prompt("View name:");
+    if (!name) return;
+    const cur = readViews();
+    const id = `v_${Date.now()}`;
+    cur.push({ id, name, filters: { ...state.filters }, sort: { ...state.sort } });
+    writeViews(cur);
+    renderViews();
+    toast("View saved", "success");
   }
 
   // ── DOM helpers ───────────────────────────────────────────────────────────
@@ -65,6 +159,11 @@
     });
     $("filter-range").addEventListener("change", () => {
       state.filters.range = $("filter-range").value;
+      state.page = 1;
+      render();
+    });
+    $("filter-assignment")?.addEventListener("change", () => {
+      state.filters.assignment = $("filter-assignment").value;
       state.page = 1;
       render();
     });
@@ -130,6 +229,7 @@
     $("drawer-next").addEventListener("click", () => navDrawer(1));
     $("drawer-approve").addEventListener("click", () => drawerAct("approve"));
     $("drawer-reject").addEventListener("click", () => openRejectModal("drawer"));
+    $("drawer-claim")?.addEventListener("click", drawerClaim);
 
     // Reject modal
     document.querySelectorAll("[data-modal-close]").forEach((el) =>
@@ -139,12 +239,13 @@
   }
 
   function resetFilters() {
-    state.filters = { status: "all", developer: "all", range: "all", q: "" };
+    state.filters = { status: "all", developer: "all", range: "all", q: "", assignment: "all" };
     state.page = 1;
     $("search-input").value = "";
     $("filter-status").value = "all";
     $("filter-developer").value = "all";
     $("filter-range").value = "all";
+    if ($("filter-assignment")) $("filter-assignment").value = "all";
     syncKpiPressed();
     render();
   }
@@ -170,7 +271,7 @@
       updateLastUpdated();
     } catch (err) {
       $("table-body").innerHTML =
-        `<tr><td colspan="8" class="cr-state cr-state--error">Failed to load: ${esc(err.message)} <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="window.location.reload()">Retry</button></td></tr>`;
+        `<tr><td colspan="9" class="cr-state cr-state--error">Failed to load: ${esc(err.message)} <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="window.location.reload()">Retry</button></td></tr>`;
     }
   }
 
@@ -202,6 +303,7 @@
     $("kpi-approved").textContent = data.approved_count ?? 0;
     $("kpi-rejected").textContent = data.rejected_count ?? 0;
     $("kpi-total").textContent = state.items.length;
+    renderDeltas();
 
     const pending = state.items.filter((i) => i.status === "pending");
     if (pending.length === 0) {
@@ -222,6 +324,37 @@
       pill.className = `cr-sla-pill cr-sla-pill--${tier}`;
       $("kpi-pending-sub").textContent = `${pending.length} awaiting review`;
     }
+  }
+
+  function renderDeltas() {
+    const now = Date.now();
+    const w = 7 * 86_400_000;
+    const last7 = (st) => state.items.filter((i) =>
+      i.status === st && now - new Date(i.created_at).getTime() <= w).length;
+    const prev7 = (st) => state.items.filter((i) => {
+      const t = new Date(i.created_at).getTime();
+      return i.status === st && now - t > w && now - t <= 2 * w;
+    }).length;
+    setDelta("kpi-approved-sub", last7("approved"), prev7("approved"), "approved");
+    setDelta("kpi-rejected-sub", last7("rejected"), prev7("rejected"), "rejected");
+  }
+  function setDelta(elId, cur, prev, label) {
+    const el = $(elId);
+    if (!el) return;
+    if (cur === 0 && prev === 0) {
+      el.innerHTML = `No ${label} in 14d`;
+      return;
+    }
+    let arrow = "→", cls = "neutral", pct = "";
+    if (prev === 0) {
+      arrow = "↑"; cls = "up"; pct = "new";
+    } else {
+      const d = ((cur - prev) / prev) * 100;
+      if (Math.abs(d) < 1) { arrow = "→"; cls = "neutral"; pct = "0%"; }
+      else if (d > 0) { arrow = "↑"; cls = "up"; pct = `${Math.round(d)}%`; }
+      else { arrow = "↓"; cls = "down"; pct = `${Math.abs(Math.round(d))}%`; }
+    }
+    el.innerHTML = `<span class="cr-delta cr-delta--${cls}">${arrow} ${pct}</span> <span class="cr-delta-sub">${cur} in 7d vs ${prev}</span>`;
   }
 
   function fmtAge(ms) {
@@ -265,13 +398,16 @@
 
   // ── Filtering / sorting ───────────────────────────────────────────────────
   function filteredItems() {
-    const { status, developer, range, q } = state.filters;
+    const { status, developer, range, q, assignment } = state.filters;
     const cutoff = rangeCutoff(range);
     return state.items
       .filter((i) => {
         if (status !== "all" && i.status !== status) return false;
         if (developer !== "all" && i.developer_name !== developer) return false;
         if (cutoff && new Date(i.created_at).getTime() < cutoff) return false;
+        if (assignment === "me" && i.assigned_to !== state.currentAdminId) return false;
+        if (assignment === "unassigned" && i.assigned_to) return false;
+        if (assignment === "assigned" && !i.assigned_to) return false;
         if (q) {
           const hay = `${i.asset_title || ""} ${i.developer_name || ""}`.toLowerCase();
           if (!hay.includes(q)) return false;
@@ -340,6 +476,7 @@
           <td>${esc(it.developer_name || "Unknown")}</td>
           <td><span class="admin-badge admin-badge--info">${it.fields_changed} field${it.fields_changed !== 1 ? "s" : ""}</span></td>
           <td><span class="admin-badge ${statusClass}">${statusLabel}</span></td>
+          <td class="cr-col-assigned">${renderAssignedCell(it)}</td>
           <td class="cr-col-date">${esc(dateStr)}</td>
           <td>${ageTier ? `<span class="cr-age-pill cr-age-pill--${ageTier}">${ageText}</span>` : `<span class="cr-muted">${ageText}</span>`}</td>
           <td class="cr-col-actions">
@@ -349,6 +486,14 @@
           </td>
         </tr>`;
     }).join("");
+
+    // wire assignment actions
+    tbody.querySelectorAll(".cr-act-claim").forEach((b) => {
+      b.addEventListener("click", (e) => { e.stopPropagation(); assign(b.dataset.id); });
+    });
+    tbody.querySelectorAll(".cr-act-unclaim").forEach((b) => {
+      b.addEventListener("click", (e) => { e.stopPropagation(); unassign(b.dataset.id); });
+    });
 
     // wire row events
     tbody.querySelectorAll(".cr-row-check").forEach((cb) => {
@@ -425,20 +570,50 @@
     const filtered = state.filters.status !== "all" || state.filters.developer !== "all" ||
       state.filters.range !== "all" || state.filters.q !== "";
     if (filtered) {
-      return `<tr><td colspan="8" class="cr-state">
+      return `<tr><td colspan="9" class="cr-state">
         <div class="cr-empty">
           <div class="cr-empty-title">No matches</div>
           <div class="cr-empty-sub">Try resetting filters.</div>
           <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" onclick="document.getElementById('filter-reset').click()">Reset filters</button>
         </div></td></tr>`;
     }
-    return `<tr><td colspan="8" class="cr-state">
+    return `<tr><td colspan="9" class="cr-state">
       <div class="cr-empty">
         <div class="cr-empty-icon" aria-hidden="true">📭</div>
         <div class="cr-empty-title">No change requests</div>
         <div class="cr-empty-sub">Developers' edits to live assets appear here for review.</div>
         <a href="/admin/developer-submissions.html" class="admin-btn admin-btn--ghost admin-btn--sm">View submissions →</a>
       </div></td></tr>`;
+  }
+
+  function renderAssignedCell(it) {
+    if (it.status !== "pending") {
+      return `<span class="cr-muted">—</span>`;
+    }
+    if (!it.assigned_to) {
+      return `<button type="button" class="cr-act-claim cr-assign-claim" data-id="${esc(it.id)}" title="Claim review">Claim</button>`;
+    }
+    const isMe = state.currentAdminId && it.assigned_to === state.currentAdminId;
+    const label = isMe ? "Me" : (it.assigned_to_name || "Assigned");
+    return `<span class="cr-assigned-chip ${isMe ? "cr-assigned-chip--me" : ""}">${esc(label)}</span>` +
+      (isMe ? ` <button type="button" class="cr-act-unclaim cr-assign-x" data-id="${esc(it.id)}" title="Release">×</button>` : "");
+  }
+
+  async function assign(id) {
+    try {
+      const r = await fetch(`/api/admin/change-requests/${id}/assign`, { method: "POST" });
+      if (!r.ok) throw new Error((await r.json()).error || "Assign failed");
+      toast("Claimed", "success");
+      await load();
+    } catch (e) { toast(e.message, "error"); }
+  }
+  async function unassign(id) {
+    try {
+      const r = await fetch(`/api/admin/change-requests/${id}/unassign`, { method: "POST" });
+      if (!r.ok) throw new Error((await r.json()).error || "Unassign failed");
+      toast("Released", "success");
+      await load();
+    } catch (e) { toast(e.message, "error"); }
   }
 
   function updateSortIndicators() {
@@ -548,6 +723,25 @@
       const isPending = d.status === "pending";
       $("drawer-approve").disabled = !isPending;
       $("drawer-reject").disabled = !isPending;
+      // Claim button reflects current assignment
+      const meta = state.items.find((i) => i.id === id);
+      const claimBtn = $("drawer-claim");
+      if (claimBtn) {
+        if (!isPending) { claimBtn.hidden = true; }
+        else if (meta && meta.assigned_to === state.currentAdminId) {
+          claimBtn.hidden = false;
+          claimBtn.textContent = "Release";
+          claimBtn.dataset.mode = "release";
+        } else if (meta && meta.assigned_to) {
+          claimBtn.hidden = false;
+          claimBtn.textContent = `Take over from ${meta.assigned_to_name || "reviewer"}`;
+          claimBtn.dataset.mode = "claim";
+        } else {
+          claimBtn.hidden = false;
+          claimBtn.textContent = "Claim";
+          claimBtn.dataset.mode = "claim";
+        }
+      }
     } catch (e) {
       $("diff-drawer-body").innerHTML = `<div class="cr-state cr-state--error">Failed: ${esc(e.message)}</div>`;
     }
@@ -586,6 +780,14 @@
     const next = items[idx + delta];
     if (next) openDrawer(next.id);
   }
+  async function drawerClaim() {
+    if (!drawerCurrentId) return;
+    const mode = $("drawer-claim").dataset.mode;
+    if (mode === "release") await unassign(drawerCurrentId);
+    else await assign(drawerCurrentId);
+    if (!$("diff-drawer").hidden) await openDrawer(drawerCurrentId);
+  }
+
   async function drawerAct(action) {
     if (!drawerCurrentId) return;
     if (action === "approve") {
@@ -633,6 +835,10 @@
         }
         case "r": {
           if (!$("diff-drawer").hidden) { e.preventDefault(); openRejectModal("drawer"); }
+          break;
+        }
+        case "c": {
+          if (!$("diff-drawer").hidden) { e.preventDefault(); drawerClaim(); }
           break;
         }
         case "R": e.preventDefault(); load(); break;

@@ -10,6 +10,21 @@
   border: 0;
 }
 
+/* ── Related links (inline subtitle) ──────────────────────────────────── */
+.cr-related {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--admin-text-muted, #6b7280);
+}
+.cr-related a {
+  color: var(--admin-primary, #4f46e5);
+  text-decoration: none;
+  font-weight: 500;
+}
+.cr-related a:hover { text-decoration: underline; }
+
 /* ── Toolbar / last updated ───────────────────────────────────────────── */
 .cr-toolbar {
   display: flex;
@@ -114,6 +129,22 @@
   color: var(--admin-text-muted, #6b7280);
 }
 
+/* Delta arrows on KPI sub-text */
+.cr-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+.cr-delta--up   { color: #065f46; background: #d1fae5; }
+.cr-delta--down { color: #991b1b; background: #fee2e2; }
+.cr-delta--neutral { color: var(--admin-text-muted, #6b7280); background: var(--admin-surface-2, #f3f4f6); }
+.cr-delta-sub { color: var(--admin-text-muted, #6b7280); margin-left: 4px; }
+
 /* SLA pill on Pending card */
 .cr-sla-pill {
   display: inline-block;
@@ -157,6 +188,60 @@
   border-radius: 4px;
 }
 .cr-anomaly-dismiss:hover { background: rgba(0,0,0,0.05); }
+
+/* ── Saved views ─────────────────────────────────────────────────────── */
+.cr-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.cr-view-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text, #374151);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cr-view-chip:hover {
+  border-color: var(--admin-primary, #4f46e5);
+  background: var(--admin-primary-subtle, #eef2ff);
+}
+.cr-view-chip--active {
+  border-color: var(--admin-primary, #4f46e5);
+  background: var(--admin-primary-subtle, #eef2ff);
+  color: var(--admin-primary, #4f46e5);
+  font-weight: 600;
+}
+.cr-view-chip--builtin { color: var(--admin-text-muted, #6b7280); }
+.cr-view-chip--add {
+  border-style: dashed;
+  color: var(--admin-text-muted, #6b7280);
+}
+.cr-view-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--admin-text-muted, #9ca3af);
+}
+.cr-view-chip-x:hover {
+  background: var(--admin-danger, #ef4444);
+  color: #fff;
+}
 
 /* ── Filter bar ───────────────────────────────────────────────────────── */
 .cr-filterbar { margin-bottom: 12px; }
@@ -225,6 +310,55 @@
 .cr-age-pill--ok   { background: #d1fae5; color: #065f46; }
 .cr-age-pill--warn { background: #fef3c7; color: #92400e; }
 .cr-age-pill--crit { background: #fee2e2; color: #991b1b; }
+
+/* ── Assigned column ──────────────────────────────────────────────────── */
+.cr-col-assigned { white-space: nowrap; }
+.cr-assign-claim {
+  background: transparent;
+  border: 1px dashed var(--admin-border, #d1d5db);
+  color: var(--admin-text-muted, #6b7280);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.cr-assign-claim:hover {
+  border-style: solid;
+  border-color: var(--admin-primary, #4f46e5);
+  color: var(--admin-primary, #4f46e5);
+}
+.cr-assigned-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--admin-surface-2, #f3f4f6);
+  color: var(--admin-text, #374151);
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.cr-assigned-chip--me {
+  background: rgba(79,70,229,0.1);
+  color: var(--admin-primary, #4f46e5);
+}
+.cr-assign-x {
+  background: transparent;
+  border: none;
+  color: var(--admin-text-muted, #9ca3af);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+.cr-assign-x:hover {
+  background: var(--admin-danger, #ef4444);
+  color: #fff;
+}
 
 /* ── Empty / loading / error states ───────────────────────────────────── */
 .cr-state {

@@ -473,7 +473,11 @@ pub fn router() -> axum::Router<AppState> {
         )
         .route(
             "/api/admin/developer-projects/:id/test-flag",
-            axum::routing::patch(api_admin_developer_project_test_flag),
+            patch(api_admin_developer_project_test_flag),
+        )
+        .route(
+            "/api/admin/developer-projects/:id/history",
+            get(api_admin_developer_project_history),
         )
         // Orders (read only; approve/reject are in payments::router())
         .route("/api/admin/orders", get(api_admin_orders))
@@ -592,6 +596,14 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/change-requests/:id/reject",
             post(crate::developer::change_requests::admin_reject),
+        )
+        .route(
+            "/api/admin/change-requests/:id/assign",
+            post(crate::developer::change_requests::admin_assign_self),
+        )
+        .route(
+            "/api/admin/change-requests/:id/unassign",
+            post(crate::developer::change_requests::admin_unassign),
         )
         // Support
         .route("/api/admin/support", get(api_admin_support_tickets))

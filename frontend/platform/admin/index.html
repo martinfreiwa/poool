@@ -10,17 +10,16 @@
   <meta name="description" content="POOOL Admin Dashboard — Platform overview, KPIs, and operational control center." />
   <!-- Admin CSS -->
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
-  <!-- User data -->
-  <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
-  <script src="/static/js/poool-dropdown.js"></script>
-  <script src="/static/js/poool-dropdown-init.js"></script>
-  <script src="/static/js/admin-theme.js"></script>
-  <script src="/static/js/admin-permission-guard.js"></script>
-  <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <link rel="stylesheet" href="/static/css/admin-dashboard-extras.css?v=1" />
+  <script src="/static/js/user-data.js" defer></script>
+  <script src="/static/js/poool-dropdown.js" defer></script>
+  <script src="/static/js/poool-dropdown-init.js" defer></script>
+  <script src="/static/js/admin-theme.js" defer></script>
+  <script src="/static/js/admin-permission-guard.js" defer></script>
+  <script src="/static/js/admin-global-search.js" defer></script>
   <script src="/static/js/admin-command-palette.js" defer></script>
 </head>
 
@@ -188,7 +187,7 @@
           </a>
 
           <!-- Open Support Tickets -->
-          <a href="/admin/support-tickets.html" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="open-tickets">
+          <a href="/admin/support.html" class="admin-kpi-card admin-kpi-card--actionable" data-kpi="open-tickets">
             <div class="admin-kpi-header">
               <span class="admin-kpi-label">Open Tickets <span class="admin-kpi-info" tabindex="0" role="img" aria-label="Support tickets in open status. Click the card to triage the queue.">i</span></span>
               <div class="admin-kpi-icon admin-kpi-icon--danger">
@@ -326,28 +325,28 @@
           <div class="admin-card-body">
             <div class="admin-health-grid" id="health-grid">
               <div class="admin-health-tile" data-service="db">
-                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <span class="admin-health-tile-dot admin-health-tile-dot--ok"></span>
                 <div class="admin-health-tile-body">
                   <div class="admin-health-tile-name">Database</div>
                   <div class="admin-health-tile-status" id="health-tile-db">Checking…</div>
                 </div>
               </div>
               <div class="admin-health-tile" data-service="psp">
-                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <span class="admin-health-tile-dot admin-health-tile-dot--ok"></span>
                 <div class="admin-health-tile-body">
                   <div class="admin-health-tile-name">Payments (Stripe)</div>
                   <div class="admin-health-tile-status" id="health-tile-psp">Checking…</div>
                 </div>
               </div>
               <div class="admin-health-tile" data-service="kyc">
-                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <span class="admin-health-tile-dot admin-health-tile-dot--ok"></span>
                 <div class="admin-health-tile-body">
                   <div class="admin-health-tile-name">KYC Provider</div>
                   <div class="admin-health-tile-status" id="health-tile-kyc">Checking…</div>
                 </div>
               </div>
               <div class="admin-health-tile" data-service="email">
-                <span class="admin-health-tile-dot admin-health-dot--ok"></span>
+                <span class="admin-health-tile-dot admin-health-tile-dot--ok"></span>
                 <div class="admin-health-tile-body">
                   <div class="admin-health-tile-name">Email Service</div>
                   <div class="admin-health-tile-status" id="health-tile-email">Checking…</div>
@@ -491,7 +490,7 @@
                 </thead>
                 <tbody id="pending-deposits-table">
                   <tr>
-                    <td colspan="4" style="
+                    <td colspan="6" style="
                           text-align: center;
                           padding: 20px;
                           color: var(--admin-text-muted);
@@ -525,7 +524,7 @@
     </div>
   </div>
 
-  <script src="/static/js/admin-dashboard.js"></script>
+  <script src="/static/js/admin-dashboard.js" defer></script>
 </body>
 
 </html>

@@ -317,13 +317,16 @@ pub async fn admin_list(jar: CookieJar, State(state): State<AppState>) -> axum::
 
     let rows = sqlx::query(
         "SELECT cr.id, cr.asset_id, cr.developer_id, cr.original_values, cr.proposed_values, \
-                cr.status, cr.admin_notes, cr.reviewed_at, cr.created_at, \
+                cr.status, cr.admin_notes, cr.reviewed_at, cr.created_at, cr.assigned_to, \
                 a.title AS asset_title, \
-                COALESCE(up.first_name || ' ' || up.last_name, u.email) AS developer_name \
+                COALESCE(up.first_name || ' ' || up.last_name, u.email) AS developer_name, \
+                COALESCE(aup.first_name || ' ' || aup.last_name, au.email) AS assigned_to_name \
          FROM asset_change_requests cr \
          JOIN assets a ON cr.asset_id = a.id \
          JOIN users u ON cr.developer_id = u.id \
          LEFT JOIN user_profiles up ON cr.developer_id = up.user_id \
+         LEFT JOIN users au ON cr.assigned_to = au.id \
+         LEFT JOIN user_profiles aup ON cr.assigned_to = aup.user_id \
          ORDER BY cr.created_at DESC \
          LIMIT 100",
     )
@@ -349,6 +352,8 @@ pub async fn admin_list(jar: CookieJar, State(state): State<AppState>) -> axum::
                 "fields_changed": fields_changed,
                 "admin_notes": row.get::<Option<String>, _>("admin_notes"),
                 "created_at": row.get::<chrono::DateTime<chrono::Utc>, _>("created_at").to_rfc3339(),
+                "assigned_to": row.get::<Option<Uuid>, _>("assigned_to").map(|u| u.to_string()),
+                "assigned_to_name": row.get::<Option<String>, _>("assigned_to_name"),
             })
         })
         .collect();
@@ -736,28 +741,37 @@ pub async fn admin_bulk_reject(
             .into_response();
     }
 
-    let res = sqlx::query(
+    // Update + return ids actually rejected (so audit log only logs real rejections).
+    let rows = sqlx::query(
         "UPDATE asset_change_requests \
          SET status = 'rejected', admin_notes = $1, reviewed_by = $2, \
              reviewed_at = NOW(), updated_at = NOW() \
-         WHERE id = ANY($3) AND status = 'pending'",
+         WHERE id = ANY($3) AND status = 'pending' \
+         RETURNING id, asset_id",
     )
     .bind(body.notes.as_deref())
     .bind(admin.id)
     .bind(&body.ids)
-    .execute(&state.db)
-    .await;
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
 
-    let rejected = res.as_ref().map(|r| r.rows_affected()).unwrap_or(0);
+    let rejected = rows.len() as u64;
 
-    for id in &body.ids {
+    for row in &rows {
+        let cr_id: Uuid = row.get("id");
+        let asset_id: Uuid = row.get("asset_id");
         let _ = sqlx::query(
             "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata) \
-             VALUES ($1, 'asset.change_request.rejected', 'asset_change_request', $2, $3)",
+             VALUES ($1, 'asset.change_request.rejected', 'asset', $2, $3)",
         )
         .bind(admin.id)
-        .bind(id)
-        .bind(serde_json::json!({"reason": body.notes, "bulk": true}))
+        .bind(asset_id)
+        .bind(serde_json::json!({
+            "change_request_id": cr_id.to_string(),
+            "reason": body.notes,
+            "bulk": true,
+        }))
         .execute(&state.db)
         .await;
     }
@@ -767,6 +781,88 @@ pub async fn admin_bulk_reject(
         "rejected": rejected,
     }))
     .into_response()
+}
+
+/// POST /api/admin/change-requests/:id/assign — claim review (assigns to caller).
+pub async fn admin_assign_self(
+    jar: CookieJar,
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let admin = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Please log in"})),
+            )
+                .into_response();
+        }
+    };
+    if !auth::middleware::is_admin(&jar, &state.db).await {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({"error": "Admin access required"})),
+        )
+            .into_response();
+    }
+    let res = sqlx::query(
+        "UPDATE asset_change_requests SET assigned_to = $1, updated_at = NOW() \
+         WHERE id = $2 AND status = 'pending'",
+    )
+    .bind(admin.id)
+    .bind(id)
+    .execute(&state.db)
+    .await;
+    match res {
+        Ok(r) if r.rows_affected() == 1 => Json(serde_json::json!({
+            "status": "success",
+            "assigned_to": admin.id.to_string(),
+        }))
+        .into_response(),
+        Ok(_) => (
+            axum::http::StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Request not pending or not found"})),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("Failed to assign change request: {e}");
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Failed to assign"})),
+            )
+                .into_response()
+        }
+    }
+}
+
+/// POST /api/admin/change-requests/:id/unassign — release review.
+pub async fn admin_unassign(
+    jar: CookieJar,
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    if !auth::middleware::is_admin(&jar, &state.db).await {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({"error": "Admin access required"})),
+        )
+            .into_response();
+    }
+    let res = sqlx::query(
+        "UPDATE asset_change_requests SET assigned_to = NULL, updated_at = NOW() WHERE id = $1",
+    )
+    .bind(id)
+    .execute(&state.db)
+    .await;
+    match res {
+        Ok(_) => Json(serde_json::json!({"status": "success"})).into_response(),
+        Err(_) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "Failed to unassign"})),
+        )
+            .into_response(),
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

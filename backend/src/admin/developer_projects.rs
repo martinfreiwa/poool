@@ -1332,6 +1332,65 @@ pub async fn api_admin_developer_project_assign(
     .into_response())
 }
 
+/// GET /api/admin/developer-projects/:id/history
+/// Returns audit_logs entries for this project, newest first.
+/// Captures: status transitions, notes, assignment changes, test-flag toggles.
+pub async fn api_admin_developer_project_history(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(project_id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, SUBMISSIONS_REVIEW_PERMISSION)
+        .await?;
+
+    let pid = ApiError::parse_uuid(&project_id)?;
+
+    let rows = sqlx::query(
+        r#"SELECT
+              al.id,
+              al.action,
+              al.previous_state,
+              al.new_state,
+              al.created_at::text AS created_at,
+              al.actor_user_id::text AS actor_user_id,
+              COALESCE(up.first_name || ' ' || up.last_name, u.email) AS actor_name,
+              u.email AS actor_email
+           FROM audit_logs al
+           LEFT JOIN users u ON u.id = al.actor_user_id
+           LEFT JOIN user_profiles up ON up.user_id = al.actor_user_id
+           WHERE al.entity_type = 'developer_projects'
+             AND al.entity_id = $1
+           ORDER BY al.created_at DESC
+           LIMIT 200"#,
+    )
+    .bind(pid)
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to fetch project history for {project_id}: {e}");
+        ApiError::Database(e)
+    })?;
+
+    let entries: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.get::<i64, _>("id"),
+                "action": r.get::<String, _>("action"),
+                "previous_state": r.try_get::<serde_json::Value, _>("previous_state").unwrap_or(serde_json::Value::Null),
+                "new_state": r.try_get::<serde_json::Value, _>("new_state").unwrap_or(serde_json::Value::Null),
+                "created_at": r.get::<String, _>("created_at"),
+                "actor_user_id": r.try_get::<Option<String>, _>("actor_user_id").unwrap_or(None),
+                "actor_name": r.try_get::<Option<String>, _>("actor_name").unwrap_or(None),
+                "actor_email": r.try_get::<Option<String>, _>("actor_email").unwrap_or(None),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "history": entries })).into_response())
+}
+
 /// PATCH /api/admin/developer-projects/:id/test-flag
 /// Body: { "is_test": true|false }
 pub async fn api_admin_developer_project_test_flag(
