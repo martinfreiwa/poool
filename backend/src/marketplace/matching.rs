@@ -43,7 +43,18 @@ use super::orderbook;
 pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
     tracing::info!("⚡ Matching engine starting...");
 
-    // ── Startup: rebuild orderbook if Redis is empty ─────────
+    // ── Startup: ensure Redis orderbook matches DB ──────────
+    // Two scenarios:
+    //   (a) Redis fully empty (cold boot, eviction, flush) → rebuild from DB
+    //   (b) Redis has SOME keys (rate-limit, settings, partial orderbook)
+    //       but DB has open orders missing from Redis (e.g. because Redis
+    //       was unreachable when orders were placed) → run sync to re-insert
+    //
+    // Previously we only handled (a) by checking DBSIZE==0. After Redis
+    // comes back from an outage with leftover non-orderbook keys, scenario
+    // (b) was silently skipped — orders in DB never reappeared in the book
+    // until the 5-min sync worker fired, leaving market orders to fail
+    // with "No sell orders available" despite UI showing sellers.
     match redis.get().await {
         Ok(mut conn) => {
             let key_count: i64 = redis::cmd("DBSIZE")
@@ -59,7 +70,15 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
                     Err(e) => tracing::error!("❌ Orderbook rebuild failed: {}", e),
                 }
             } else {
-                tracing::info!("Redis has {} keys — skipping rebuild", key_count);
+                tracing::info!(
+                    "Redis has {} keys — running sync to re-insert any orders missing from book",
+                    key_count
+                );
+                match orderbook::sync_with_postgres(redis, pool).await {
+                    Ok(n) if n > 0 => tracing::warn!("🔧 Startup sync: re-inserted {} missing orders into Redis", n),
+                    Ok(_) => tracing::info!("✅ Startup sync: orderbook in sync with DB"),
+                    Err(e) => tracing::error!("❌ Startup sync failed: {}", e),
+                }
             }
         }
         Err(e) => {
