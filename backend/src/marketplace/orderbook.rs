@@ -235,10 +235,7 @@ pub async fn ack_match_processed(redis: &RedisPool, event_json: &str) -> Result<
 /// for retry. If the LREM fails (event already removed), we still RPUSH
 /// because the previous code path also did so on settle failure — keeping
 /// behaviour identical.
-pub async fn requeue_match_failed(
-    redis: &RedisPool,
-    event_json: &str,
-) -> Result<(), AppError> {
+pub async fn requeue_match_failed(redis: &RedisPool, event_json: &str) -> Result<(), AppError> {
     let mut conn = redis
         .get()
         .await

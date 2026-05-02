@@ -50,7 +50,10 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                 n
             );
             sentry::capture_message(
-                &format!("Settlement worker recovered {} stuck match events on startup", n),
+                &format!(
+                    "Settlement worker recovered {} stuck match events on startup",
+                    n
+                ),
                 sentry::Level::Warning,
             );
         }
@@ -169,7 +172,10 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                         re_err
                     );
                     sentry::capture_message(
-                        &format!("Settlement requeue failed (will recover on restart): {}", re_err),
+                        &format!(
+                            "Settlement requeue failed (will recover on restart): {}",
+                            re_err
+                        ),
                         sentry::Level::Error,
                     );
                 }
