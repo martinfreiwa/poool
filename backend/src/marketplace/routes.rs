@@ -149,26 +149,27 @@ pub async fn api_submit_order(
     // 2. Validate request fields
     validation::validate_order_fields(&body)?;
 
-    // 3. Step-up 2FA for trades >= TRADE_2FA_THRESHOLD_CENTS ($500).
-    //    Below threshold trades skip the prompt; above-threshold trades
-    //    require a recent TOTP-verified trading session in Redis.
-    //    Only check for limit orders here — market-order amounts depend on
-    //    the orderbook price and are checked again inside `create_order` via
-    //    a stricter call once the actual price is resolved.
-    if body.order_type == "limit" {
-        let estimated_cents = body
-            .price_cents
-            .unwrap_or(0)
-            .saturating_mul(body.quantity as i64);
-        crate::auth::step_up::require_step_up_2fa(
-            &state.db,
-            state.redis.as_ref(),
-            user.id,
-            crate::auth::step_up::FinancialAction::Trade,
-            estimated_cents,
-        )
-        .await?;
-    }
+    // 3. Step-up 2FA for trades — TEMPORARILY DISABLED.
+    //    Will re-enable once the step-up flow has more UX polish (inline
+    //    modal instead of full-page redirect, "remember device" option,
+    //    threshold tunable from admin settings). Withdrawals still gated.
+    //
+    // To re-enable, uncomment:
+    //
+    // if body.order_type == "limit" {
+    //     let estimated_cents = body
+    //         .price_cents
+    //         .unwrap_or(0)
+    //         .saturating_mul(body.quantity as i64);
+    //     crate::auth::step_up::require_step_up_2fa(
+    //         &state.db,
+    //         state.redis.as_ref(),
+    //         user.id,
+    //         crate::auth::step_up::FinancialAction::Trade,
+    //         estimated_cents,
+    //     )
+    //     .await?;
+    // }
 
     // 4. Execute order creation (all business logic in service layer)
     let response = service::create_order(&state.db, state.redis.as_ref(), user.id, body).await?;
