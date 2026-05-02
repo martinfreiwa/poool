@@ -93,13 +93,6 @@
     border-top-color: var(--card-border-color, #E5E7EB);
 }
 
-.developer-settings-main .settings-edit-footer .ds-btn {
-    min-height: 40px;
-    border-radius: var(--btn-border-radius, 8px);
-    font-weight: var(--btn-font-weight, 600);
-}
-
-.developer-settings-main .settings-edit-footer .ds-btn--primary,
 .developer-settings-main .settings-edit-footer .settings-btn--primary {
     background: var(--btn-primary-bg, #0000FF);
     border: 1px solid var(--btn-primary-bg, #0000FF);
@@ -107,7 +100,6 @@
     box-shadow: none;
 }
 
-.developer-settings-main .settings-edit-footer .ds-btn--primary:hover,
 .developer-settings-main .settings-edit-footer .settings-btn--primary:hover {
     background: var(--btn-primary-hover-bg, #0000CC);
     border-color: var(--btn-primary-hover-bg, #0000CC);
@@ -559,6 +551,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
+    text-align: center;
     gap: 4px;
 }
 
@@ -737,20 +731,6 @@
 
 .developer-settings-main #form-developer-links .settings-form-row--social-last {
     border-bottom: 0;
-}
-
-.developer-settings-main #form-developer-identity .settings-edit-footer .settings-btn--primary,
-.developer-settings-main #form-developer-links .settings-edit-footer .settings-btn--primary {
-    background: var(--btn-primary-bg, #0000FF);
-    border-color: var(--btn-primary-bg, #0000FF);
-    color: var(--btn-primary-color, #98FB96);
-}
-
-.developer-settings-main #form-developer-identity .settings-edit-footer .settings-btn--primary:hover,
-.developer-settings-main #form-developer-links .settings-edit-footer .settings-btn--primary:hover {
-    background: var(--btn-primary-hover-bg, #0000CC);
-    border-color: var(--btn-primary-hover-bg, #0000CC);
-    color: var(--btn-primary-color, #98FB96);
 }
 
 .developer-settings-main #form-developer-identity .settings-edit-footer .settings-btn--cancel,
