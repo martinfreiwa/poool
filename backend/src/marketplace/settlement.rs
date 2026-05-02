@@ -97,7 +97,10 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                 sentry::capture_message(
                     &format!(
                         "Match dropped (terminal order): {}: asset={}, ask={}, bid={}",
-                        reason, match_event.asset_id, match_event.ask_order_id, match_event.bid_order_id
+                        reason,
+                        match_event.asset_id,
+                        match_event.ask_order_id,
+                        match_event.bid_order_id
                     ),
                     sentry::Level::Warning,
                 );
@@ -188,10 +191,7 @@ async fn settle_trade(
     if !sell_order.is_active() {
         // Terminal — drop the match, don't retry. (See worker loop dispatch.)
         return Err(AppError::OrderTerminal {
-            reason: format!(
-                "sell order {} status={}",
-                sell_order.id, sell_order.status
-            ),
+            reason: format!("sell order {} status={}", sell_order.id, sell_order.status),
         });
     }
 

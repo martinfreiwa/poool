@@ -255,21 +255,15 @@ pub async fn create_order(
     };
 
     // Per-asset tick size override (NULL = fall back to platform default).
-    let asset_tick_override: Option<i64> = sqlx::query_scalar(
-        "SELECT tick_size_cents::bigint FROM assets WHERE id = $1",
-    )
-    .bind(asset_uuid)
-    .fetch_optional(pool)
-    .await
-    .map_err(AppError::Database)?
-    .flatten();
+    let asset_tick_override: Option<i64> =
+        sqlx::query_scalar("SELECT tick_size_cents::bigint FROM assets WHERE id = $1")
+            .bind(asset_uuid)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::Database)?
+            .flatten();
 
-    validate_runtime_settings_for_order(
-        &runtime_settings,
-        &req,
-        price_cents,
-        asset_tick_override,
-    )?;
+    validate_runtime_settings_for_order(&runtime_settings, &req, price_cents, asset_tick_override)?;
 
     validation::check_no_opposing_orders(pool, user_id, asset_uuid, &req.side, price_cents)
         .await
@@ -633,8 +627,7 @@ pub const DEFAULT_PAGE_SIZE: i64 = 50;
 
 /// Clamp a user-supplied limit to a safe range.
 pub fn clamp_page_size(req: Option<i64>) -> i64 {
-    req.unwrap_or(DEFAULT_PAGE_SIZE)
-        .clamp(1, MAX_PAGE_SIZE)
+    req.unwrap_or(DEFAULT_PAGE_SIZE).clamp(1, MAX_PAGE_SIZE)
 }
 
 /// Get the user's orders, paginated by `(created_at, id)` cursor.
@@ -669,8 +662,7 @@ pub async fn get_user_orders(
 
     // Cache resolved fees per asset so we don't call resolve_fees() once
     // per order. Most users have orders concentrated in a few assets.
-    let mut fee_cache: std::collections::HashMap<Uuid, i32> =
-        std::collections::HashMap::new();
+    let mut fee_cache: std::collections::HashMap<Uuid, i32> = std::collections::HashMap::new();
 
     let mut result = Vec::new();
     for o in orders {

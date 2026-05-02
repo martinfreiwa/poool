@@ -221,13 +221,12 @@ async fn snapshot(
     .fetch_one(&mut **tx)
     .await
     .unwrap_or(0);
-    let trade_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM trade_history WHERE asset_id = $1",
-    )
-    .bind(asset)
-    .fetch_one(&mut **tx)
-    .await
-    .unwrap_or(0);
+    let trade_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM trade_history WHERE asset_id = $1")
+            .bind(asset)
+            .fetch_one(&mut **tx)
+            .await
+            .unwrap_or(0);
     State {
         buyer_balance,
         buyer_held,

@@ -236,13 +236,12 @@ async fn idempotency_key_unique_per_user_under_race() {
         }
     }
 
-    let count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM market_orders WHERE idempotency_key = $1",
-    )
-    .bind(key)
-    .fetch_one(&*pool)
-    .await
-    .unwrap_or(0);
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM market_orders WHERE idempotency_key = $1")
+            .bind(key)
+            .fetch_one(&*pool)
+            .await
+            .unwrap_or(0);
 
     // Cleanup
     sqlx::query("DELETE FROM market_orders WHERE user_id = $1")
@@ -261,10 +260,6 @@ async fn idempotency_key_unique_per_user_under_race() {
         .await
         .ok();
 
-    assert_eq!(
-        wins, 1,
-        "exactly one INSERT should succeed; got {}",
-        wins
-    );
+    assert_eq!(wins, 1, "exactly one INSERT should succeed; got {}", wins);
     assert_eq!(count, 1, "exactly one row should exist; got {}", count);
 }

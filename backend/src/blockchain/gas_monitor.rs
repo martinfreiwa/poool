@@ -35,22 +35,19 @@ pub async fn run_gas_monitor(pool: &PgPool) {
     let config = match ChainConfig::from_env() {
         Some(c) if c.enabled => c,
         _ => {
-            tracing::info!(
-                "⛓️ Gas monitor: blockchain not enabled — monitor will not start"
-            );
+            tracing::info!("⛓️ Gas monitor: blockchain not enabled — monitor will not start");
             return;
         }
     };
 
-    let address = match super::service::derive_address_from_private_key_pub(
-        &config.settlement_private_key,
-    ) {
-        Ok(addr) => addr,
-        Err(e) => {
-            tracing::error!("⛓️ Gas monitor: cannot derive wallet address: {}", e);
-            return;
-        }
-    };
+    let address =
+        match super::service::derive_address_from_private_key_pub(&config.settlement_private_key) {
+            Ok(addr) => addr,
+            Err(e) => {
+                tracing::error!("⛓️ Gas monitor: cannot derive wallet address: {}", e);
+                return;
+            }
+        };
 
     tracing::info!(
         "⛓️ Gas monitor starting (wallet={}, low={} wei, critical={} wei, interval={}s)",

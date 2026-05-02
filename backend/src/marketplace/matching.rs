@@ -482,11 +482,7 @@ async fn cancel_order_in_db(
 ///
 /// Only cancels orders older than 100ms — younger ones may still be racing
 /// the Redis-insert step from `service::create_order` and deserve another cycle.
-async fn sweep_ioc_orders(
-    redis: &RedisPool,
-    pool: &PgPool,
-    asset_id: Uuid,
-) -> Result<(), String> {
+async fn sweep_ioc_orders(redis: &RedisPool, pool: &PgPool, asset_id: Uuid) -> Result<(), String> {
     let candidates = sqlx::query_as::<_, (Uuid, Uuid, String)>(
         r#"SELECT id, user_id, side
            FROM market_orders

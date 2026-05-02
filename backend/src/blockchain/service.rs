@@ -313,36 +313,30 @@ async fn process_pending_settlements(
                 contract_address,
                 e
             );
-            update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e))
-                .await?;
+            update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e)).await?;
             reset_trades_to_pending(pool, &trade_ids).await?;
             continue;
         }
 
         // Phase 3 — Broadcast.
-        let tx_hash = match send_settle_batch_and_get_hash(
-            pool,
-            config,
-            client,
-            &group,
-            &contract_address,
-        )
-        .await
-        {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::error!(
-                    "⛓️ ❌ Broadcast failed for contract {}: {}",
-                    contract_address,
-                    e
-                );
-                update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e))
-                    .await?;
-                // Nothing on-chain → safe to release for clean retry.
-                reset_trades_to_pending(pool, &trade_ids).await?;
-                continue;
-            }
-        };
+        let tx_hash =
+            match send_settle_batch_and_get_hash(pool, config, client, &group, &contract_address)
+                .await
+            {
+                Ok(h) => h,
+                Err(e) => {
+                    tracing::error!(
+                        "⛓️ ❌ Broadcast failed for contract {}: {}",
+                        contract_address,
+                        e
+                    );
+                    update_batch_status(pool, batch_id, "failed", None, None, None, None, Some(&e))
+                        .await?;
+                    // Nothing on-chain → safe to release for clean retry.
+                    reset_trades_to_pending(pool, &trade_ids).await?;
+                    continue;
+                }
+            };
 
         update_batch_status(
             pool,
@@ -355,8 +349,14 @@ async fn process_pending_settlements(
             None,
         )
         .await?;
-        update_trades_status(pool, &trade_ids, "submitted", Some(&tx_hash), Some(batch_id))
-            .await?;
+        update_trades_status(
+            pool,
+            &trade_ids,
+            "submitted",
+            Some(&tx_hash),
+            Some(batch_id),
+        )
+        .await?;
 
         // Phase 4 — Best-effort receipt poll. Timeout ≠ failure: leave
         // 'submitted', the reconciler will resolve it. Real revert receipt
@@ -365,8 +365,8 @@ async fn process_pending_settlements(
             Ok(receipt) => {
                 let block = u64::from_str_radix(receipt.block_number.trim_start_matches("0x"), 16)
                     .unwrap_or(0);
-                let gas = u64::from_str_radix(receipt.gas_used.trim_start_matches("0x"), 16)
-                    .unwrap_or(0);
+                let gas =
+                    u64::from_str_radix(receipt.gas_used.trim_start_matches("0x"), 16).unwrap_or(0);
                 let gas_price = receipt
                     .effective_gas_price
                     .as_deref()
@@ -566,11 +566,7 @@ async fn update_trades_status(
 /// Stamps `on_chain_batch_id` while keeping `on_chain_status='pending'`.
 /// `fetch_pending_trades` filters on `on_chain_batch_id IS NULL`, so this
 /// is the actual mutual-exclusion gate between concurrent workers.
-async fn reserve_trades(
-    pool: &PgPool,
-    trade_ids: &[Uuid],
-    batch_id: Uuid,
-) -> Result<bool, String> {
+async fn reserve_trades(pool: &PgPool, trade_ids: &[Uuid], batch_id: Uuid) -> Result<bool, String> {
     let affected = sqlx::query(
         r#"UPDATE trade_history SET on_chain_batch_id = $1
            WHERE id = ANY($2)
@@ -614,7 +610,10 @@ async fn reserve_nonce(
     signer: &str,
 ) -> Result<u64, String> {
     let signer_lower = signer.to_lowercase();
-    let mut tx = pool.begin().await.map_err(|e| format!("nonce tx begin: {}", e))?;
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("nonce tx begin: {}", e))?;
 
     let row: Option<(i64,)> = sqlx::query_as(
         "SELECT next_nonce FROM chain_nonce_state WHERE signer_address = $1 FOR UPDATE",
@@ -659,7 +658,9 @@ async fn reserve_nonce(
     .await
     .map_err(|e| format!("nonce bump: {}", e))?;
 
-    tx.commit().await.map_err(|e| format!("nonce commit: {}", e))?;
+    tx.commit()
+        .await
+        .map_err(|e| format!("nonce commit: {}", e))?;
     Ok(nonce)
 }
 
@@ -719,8 +720,14 @@ async fn send_settle_batch_and_get_hash(
     let calldata = encode_settle_batch_calldata(trades)?;
     let sender = derive_address_from_private_key(&config.settlement_private_key)?;
 
-    let gas_estimate =
-        estimate_gas(client, &config.rpc_url, &sender, contract_address, &calldata).await?;
+    let gas_estimate = estimate_gas(
+        client,
+        &config.rpc_url,
+        &sender,
+        contract_address,
+        &calldata,
+    )
+    .await?;
     let gas_limit = gas_estimate + (gas_estimate / 5); // +20% headroom
     let gas_price = get_gas_price(client, &config.rpc_url).await?;
 
@@ -1032,7 +1039,12 @@ fn sign_and_send_via_cast(
             data,
         ])
         .output()
-        .map_err(|e| format!("Failed to execute `cast send`: {}. Is Foundry installed?", e))?;
+        .map_err(|e| {
+            format!(
+                "Failed to execute `cast send`: {}. Is Foundry installed?",
+                e
+            )
+        })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);

@@ -128,8 +128,7 @@ async fn expire_single_order(
             .price_cents
             .checked_mul(remaining as i64)
             .ok_or_else(|| AppError::Internal("expiry: hold-release overflow".into()))?;
-        let fee_hold =
-            super::models::calculate_fee_cents(price_hold, order.fee_reserve_bps);
+        let fee_hold = super::models::calculate_fee_cents(price_hold, order.fee_reserve_bps);
         let held_release = price_hold
             .checked_add(fee_hold)
             .ok_or_else(|| AppError::Internal("expiry: hold-release sum overflow".into()))?;
@@ -285,14 +284,12 @@ async fn persist_drift_metric(
     metric_type: &str,
     value: i64,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO marketplace_drift_metrics (metric_type, value) VALUES ($1, $2)",
-    )
-    .bind(metric_type)
-    .bind(value)
-    .execute(pool)
-    .await
-    .map(|_| ())
+    sqlx::query("INSERT INTO marketplace_drift_metrics (metric_type, value) VALUES ($1, $2)")
+        .bind(metric_type)
+        .bind(value)
+        .execute(pool)
+        .await
+        .map(|_| ())
 }
 
 /// Remove orders from Redis that are no longer active in PostgreSQL.
