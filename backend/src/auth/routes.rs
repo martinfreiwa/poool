@@ -233,21 +233,9 @@ pub async fn login_submit(
         Err(err) => return Ok(login_error_response(err, &headers)),
     };
 
-    // 2. Check 2FA settings. Keep this on the critical path because it
-    // determines whether the new session may be fully verified.
-    let settings = timeout(
-        Duration::from_secs(5),
-        service::get_user_settings(&state.db, user.id),
-    )
-    .await
-    .map_err(|_| AppError::Internal("Login settings lookup timed out.".to_string()))??;
-
-    // 3. Determine 2FA requirements
-    let (is_2fa_verified, redirect_to) = if settings.totp_enabled {
-        (false, "/auth/2fa")
-    } else {
-        (true, "/marketplace")
-    };
+    // 2. Login-time 2FA challenge is temporarily disabled. Existing 2FA
+    // enrollment, setup, settings, and step-up routes remain available.
+    let (is_2fa_verified, redirect_to) = (true, "/marketplace");
 
     // Extract client info for session
     let ip = match crate::common::net::client_ip(&headers).as_str() {
@@ -260,7 +248,8 @@ pub async fn login_submit(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    // 4. Create session (starts as unverified if 2FA is needed)
+    // 3. Create session. Mark it 2FA-verified so enrolled accounts can log
+    // in without the temporary login-time challenge.
     let session_token = timeout(
         Duration::from_secs(5),
         service::create_session(
@@ -1624,13 +1613,9 @@ async fn google_callback_inner(
     )
     .await?;
 
-    // Apply same 2FA gate as password login
-    let settings = service::get_user_settings(&state.db, user.id).await?;
-    let (is_2fa_verified, redirect_to) = if settings.totp_enabled {
-        (false, "/auth/2fa")
-    } else {
-        (true, "/marketplace")
-    };
+    // Apply same temporary login-time 2FA bypass as password login. Existing
+    // enrollment, setup, settings, and step-up routes remain available.
+    let (is_2fa_verified, redirect_to) = (true, "/marketplace");
 
     // Clear transient OAuth cookies
     let jar = clear_oauth_cookies(jar);

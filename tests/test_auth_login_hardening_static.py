@@ -52,7 +52,7 @@ def test_successful_login_path_does_not_block_on_noncritical_side_effects():
     )[0]
 
     assert "service::is_admin" not in login_body
-    assert "Login settings lookup timed out." in login_body
+    assert "service::get_user_settings(&state.db, user.id)" not in login_body
     assert "Login session creation timed out." in login_body
     assert "spawn_login_side_effects(" in login_body
 
@@ -63,6 +63,23 @@ def test_successful_login_path_does_not_block_on_noncritical_side_effects():
     assert 'Duration::from_secs(2)' in side_effects
     assert "crate::common::audit::log" in side_effects
     assert "crate::community::xp::track_login_streak" in side_effects
+
+
+def test_login_time_2fa_challenge_is_temporarily_disabled_but_routes_remain():
+    routes = (ROOT / "backend/src/auth/routes.rs").read_text()
+    login_body = routes.split("pub async fn login_submit(", 1)[1].split(
+        "fn spawn_login_side_effects(", 1
+    )[0]
+    oauth_callback = routes.split("pub async fn google_callback(", 1)[1].split(
+        "fn google_oauth_redirect_uri(", 1
+    )[0]
+
+    assert 'route("/2fa", get(totp_verify_page).post(totp_verify_submit))' in routes
+    assert 'route("/2fa/setup", get(totp_setup_page).post(totp_setup_submit))' in routes
+    assert 'let (is_2fa_verified, redirect_to) = (true, "/marketplace");' in login_body
+    assert 'let (is_2fa_verified, redirect_to) = (true, "/marketplace");' in oauth_callback
+    assert 'redirect_to) = if settings.totp_enabled' not in login_body
+    assert 'redirect_to) = if settings.totp_enabled' not in oauth_callback
 
 
 def test_totp_verify_errors_return_auth_html_fragments_not_json_bubbles():
