@@ -872,24 +872,30 @@ fn order_set_key(asset_id: Uuid, side: &str) -> String {
 fn aggregate_price_levels(raw: &[(String, f64)], max_levels: usize) -> Vec<PriceLevel> {
     use std::collections::BTreeMap;
 
-    let mut levels: BTreeMap<i64, (i32, i32)> = BTreeMap::new();
+    // Per-level aggregate: total_qty, order_count, set of distinct user_ids.
+    // unique_users is len(set) — lets the FE label "5 orders from 3 traders".
+    let mut levels: BTreeMap<i64, (i32, i32, std::collections::HashSet<Uuid>)> = BTreeMap::new();
 
     for (member, score) in raw {
         let price = *score as i64;
         if let Some(parsed) = ParsedOrderMember::parse(member, price) {
-            let entry = levels.entry(price).or_insert((0, 0));
+            let entry = levels
+                .entry(price)
+                .or_insert_with(|| (0, 0, std::collections::HashSet::new()));
             entry.0 += parsed.quantity; // total_quantity
             entry.1 += 1; // order_count
+            entry.2.insert(parsed.user_id);
         }
     }
 
     levels
         .into_iter()
         .take(max_levels)
-        .map(|(price, (qty, count))| PriceLevel {
+        .map(|(price, (qty, count, users))| PriceLevel {
             price_cents: price,
             total_quantity: qty,
             order_count: count,
+            unique_users: users.len() as i32,
         })
         .collect()
 }

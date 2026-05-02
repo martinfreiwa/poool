@@ -14,35 +14,66 @@ const RELEASE_REASON_MAX_CHARS: usize = 500;
 
 /// Response type for the Primary Escrow tracker
 #[derive(Serialize)]
+#[allow(missing_docs)]
 pub struct EscrowCampagin {
-    /// Asset ID
     pub asset_id: Uuid,
-    /// Human readable title
     pub title: String,
-    /// System status e.g., 'funding_in_progress'
+    pub asset_type: String,
     pub funding_status: String,
-    /// Expiration deadline for funding
     pub funding_end_at: Option<String>,
-    /// How many tokens exist
+    pub funding_start_at: Option<String>,
     pub tokens_total: i32,
-    /// How many are left
     pub tokens_available: i32,
-    /// Soft cap in tokens
     pub min_funding_tokens: i32,
-    /// Price per token
     pub token_price_cents: i64,
-    /// Calculation: Sold tokens * Price
     pub current_escrow_cents: i64,
-    /// Calculation: Total tokens * Price
     pub target_total_cents: i64,
-    /// Calculation: Min tokens * Price
     pub target_min_cents: i64,
-    /// Assigned escrow agent name
     pub escrow_agent: String,
-    /// Percentage sold vs Total tokens
     pub progress_percent: f64,
-    /// Whether the soft-cap is reached and admins may request release.
     pub release_ready: bool,
+    /// Days since asset created
+    pub days_open: i64,
+    /// Days until funding_end_at (negative = overdue, None = no deadline)
+    pub days_to_deadline: Option<i64>,
+    /// Sold tokens * price — what escrow ledger SHOULD hold
+    pub expected_escrow_cents: i64,
+    /// True if sold > 0 but escrow ledger is materially out-of-sync (>5% drift)
+    pub reconciliation_warning: bool,
+    /// Existing pending release approval request, if any
+    pub pending_release_request_id: Option<Uuid>,
+}
+
+/// Response for GET /api/admin/primary-escrow/summary
+#[derive(Serialize)]
+#[allow(missing_docs)]
+pub struct EscrowSummary {
+    pub active_offerings: i64,
+    pub total_locked_cents: i64,
+    pub total_target_cents: i64,
+    pub near_cap_count: i64,
+    pub unassigned_agent_count: i64,
+    pub reconciliation_warnings: i64,
+    pub stalest_days_open: i64,
+    pub overdue_count: i64,
+}
+
+#[derive(Deserialize)]
+#[allow(missing_docs)]
+pub struct BulkAssignAgentPayload {
+    pub asset_ids: Vec<Uuid>,
+    pub agent: String,
+}
+
+#[derive(Serialize)]
+#[allow(missing_docs)]
+pub struct AuditLogEntry {
+    pub id: i64,
+    pub action: String,
+    pub actor_email: Option<String>,
+    pub created_at: String,
+    pub previous_state: Option<serde_json::Value>,
+    pub new_state: Option<serde_json::Value>,
 }
 
 /// Request body for creating a primary escrow release approval request.
@@ -55,11 +86,20 @@ pub struct ReleaseRequestPayload {
 
 // Removed redundant page_admin_primary_escrow as page_admin_generic handles it.
 
+#[derive(Debug, Deserialize, Default)]
+#[allow(missing_docs)]
+pub struct ListQuery {
+    #[serde(default)]
+    pub include_inactive: Option<bool>,
+}
+
 /// JSON API to list all open and pending primary offering campaigns
 pub async fn api_admin_primary_escrow_list(
     admin: AdminUser,
     State(state): State<AppState>,
+    axum::extract::Query(query): axum::extract::Query<ListQuery>,
 ) -> Result<Json<Vec<EscrowCampagin>>, ApiError> {
+    let include_inactive = query.include_inactive.unwrap_or(false);
     let pool = &state.db;
     if !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.view").await
         && !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.manage").await
@@ -73,30 +113,42 @@ pub async fn api_admin_primary_escrow_list(
 
     let rows = sqlx::query!(
         r#"
-        SELECT 
-            id, title, funding_status, funding_end_at,
-            tokens_total, tokens_available, min_funding_tokens, 
-            token_price_cents, COALESCE(escrow_agent, 'unassigned') as escrow_agent,
+        SELECT
+            a.id, a.title, a.asset_type, a.funding_status, a.funding_end_at, a.created_at,
+            a.tokens_total, a.tokens_available, a.min_funding_tokens,
+            a.token_price_cents, COALESCE(a.escrow_agent, 'unassigned') as escrow_agent,
             COALESCE((
                 SELECT SUM(i.purchase_value_cents)::bigint
                 FROM investments i
-                WHERE i.asset_id = assets.id
+                WHERE i.asset_id = a.id
                   AND i.status IN ('funding_in_progress', 'active')
-            ), 0)::bigint as "current_escrow_cents!"
-        FROM assets
-        WHERE funding_status IN ('funding_open', 'funding_in_progress')
-        ORDER BY created_at DESC
-        "#
+            ), 0)::bigint as "current_escrow_cents!",
+            (
+                SELECT id FROM admin_approval_requests r
+                WHERE r.action_type = 'primary_escrow.release'
+                  AND r.entity_type = 'assets'
+                  AND r.entity_id = a.id
+                  AND r.status = 'pending'
+                LIMIT 1
+            ) as "pending_release_request_id?"
+        FROM assets a
+        WHERE ($1 AND a.funding_status IN ('funding_open', 'funding_in_progress', 'aborted', 'funded'))
+           OR (NOT $1 AND a.funding_status IN ('funding_open', 'funding_in_progress'))
+        ORDER BY a.created_at DESC
+        "#,
+        include_inactive
     )
     .fetch_all(pool)
     .await
     .map_err(|e| ApiError::Internal(e.to_string()))?;
 
+    let now = chrono::Utc::now();
     let mut response = Vec::new();
     for row in rows {
         let sold = row.tokens_total - row.tokens_available;
         let target_total_cents = row.tokens_total as i64 * row.token_price_cents;
         let target_min_cents = row.min_funding_tokens as i64 * row.token_price_cents;
+        let expected_escrow_cents = sold as i64 * row.token_price_cents;
 
         let progress = if row.tokens_total > 0 {
             (sold as f64 / row.tokens_total as f64) * 100.0
@@ -104,17 +156,30 @@ pub async fn api_admin_primary_escrow_list(
             0.0
         };
 
+        let days_open = (now - row.created_at).num_days();
+        let days_to_deadline = row.funding_end_at.map(|d| (d - now).num_days());
+
+        let reconciliation_warning = sold > 0 && {
+            if expected_escrow_cents == 0 {
+                false
+            } else {
+                let diff = (expected_escrow_cents - row.current_escrow_cents).abs();
+                (diff as f64 / expected_escrow_cents as f64) > 0.05
+            }
+        };
+
         response.push(EscrowCampagin {
             asset_id: row.id,
             title: row.title,
+            asset_type: row.asset_type,
             funding_status: row.funding_status,
             funding_end_at: row
                 .funding_end_at
                 .map(|d| d.format("%Y-%m-%d %H:%M").to_string()),
+            funding_start_at: Some(row.created_at.format("%Y-%m-%d").to_string()),
             tokens_total: row.tokens_total,
             tokens_available: row.tokens_available,
             min_funding_tokens: row.min_funding_tokens,
-
             token_price_cents: row.token_price_cents,
             current_escrow_cents: row.current_escrow_cents,
             target_total_cents,
@@ -122,10 +187,233 @@ pub async fn api_admin_primary_escrow_list(
             escrow_agent: row.escrow_agent.unwrap_or_else(|| "unassigned".to_string()),
             progress_percent: progress,
             release_ready: sold >= row.min_funding_tokens && row.current_escrow_cents > 0,
+            days_open,
+            days_to_deadline,
+            expected_escrow_cents,
+            reconciliation_warning,
+            pending_release_request_id: row.pending_release_request_id,
         });
     }
 
     Ok(Json(response))
+}
+
+/// GET /api/admin/primary-escrow/summary — header KPI strip
+pub async fn api_admin_primary_escrow_summary(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<EscrowSummary>, ApiError> {
+    let pool = &state.db;
+    if !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.view").await
+        && !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.manage").await
+    {
+        return Err(ApiError::Forbidden(
+            "Missing marketplace permission".to_string(),
+        ));
+    }
+
+    let row = sqlx::query!(
+        r#"
+        WITH offerings AS (
+            SELECT
+                a.id,
+                a.tokens_total,
+                a.tokens_available,
+                a.min_funding_tokens,
+                a.token_price_cents,
+                a.created_at,
+                a.funding_end_at,
+                COALESCE(a.escrow_agent, 'unassigned') as escrow_agent,
+                COALESCE((
+                    SELECT SUM(i.purchase_value_cents)::bigint
+                    FROM investments i
+                    WHERE i.asset_id = a.id
+                      AND i.status IN ('funding_in_progress', 'active')
+                ), 0)::bigint as escrow_cents
+            FROM assets a
+            WHERE a.funding_status IN ('funding_open', 'funding_in_progress')
+        )
+        SELECT
+            COUNT(*)::bigint as "active_offerings!",
+            COALESCE(SUM(escrow_cents), 0)::bigint as "total_locked_cents!",
+            COALESCE(SUM(tokens_total::bigint * token_price_cents), 0)::bigint as "total_target_cents!",
+            COUNT(*) FILTER (
+                WHERE tokens_total > 0
+                  AND ((tokens_total - tokens_available)::float / tokens_total::float) >= 0.8
+            )::bigint as "near_cap_count!",
+            COUNT(*) FILTER (WHERE escrow_agent = 'unassigned')::bigint as "unassigned_agent_count!",
+            COUNT(*) FILTER (
+                WHERE (tokens_total - tokens_available) > 0
+                  AND escrow_cents > 0
+                  AND ABS((tokens_total - tokens_available)::bigint * token_price_cents - escrow_cents)::float
+                      / NULLIF((tokens_total - tokens_available)::bigint * token_price_cents, 0)::float > 0.05
+            )::bigint as "reconciliation_warnings!",
+            COALESCE(MAX(EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400)::bigint, 0) as "stalest_days_open!",
+            COUNT(*) FILTER (WHERE funding_end_at IS NOT NULL AND funding_end_at < NOW())::bigint as "overdue_count!"
+        FROM offerings
+        "#,
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    Ok(Json(EscrowSummary {
+        active_offerings: row.active_offerings,
+        total_locked_cents: row.total_locked_cents,
+        total_target_cents: row.total_target_cents,
+        near_cap_count: row.near_cap_count,
+        unassigned_agent_count: row.unassigned_agent_count,
+        reconciliation_warnings: row.reconciliation_warnings,
+        stalest_days_open: row.stalest_days_open,
+        overdue_count: row.overdue_count,
+    }))
+}
+
+/// GET /api/admin/primary-escrow/agents — distinct agent values for dropdown
+pub async fn api_admin_primary_escrow_agents(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<String>>, ApiError> {
+    let pool = &state.db;
+    if !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.view").await
+        && !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.manage").await
+    {
+        return Err(ApiError::Forbidden(
+            "Missing marketplace permission".to_string(),
+        ));
+    }
+    let rows: Vec<String> = sqlx::query_scalar!(
+        r#"
+        SELECT DISTINCT escrow_agent as "agent!"
+        FROM assets
+        WHERE escrow_agent IS NOT NULL AND escrow_agent <> 'unassigned'
+        ORDER BY 1
+        "#
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| ApiError::Internal(e.to_string()))?;
+    Ok(Json(rows))
+}
+
+/// POST /api/admin/primary-escrow/bulk-assign-agent
+pub async fn api_admin_primary_escrow_bulk_assign_agent(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(payload): Json<BulkAssignAgentPayload>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let pool = &state.db;
+    admin.require_permission(pool, "marketplace.manage").await?;
+
+    let agent = payload.agent.trim();
+    if agent.is_empty() {
+        return Err(ApiError::BadRequest("agent is required".to_string()));
+    }
+    if agent.len() > 50 {
+        return Err(ApiError::BadRequest(
+            "agent must be 50 chars or fewer".to_string(),
+        ));
+    }
+    if payload.asset_ids.is_empty() {
+        return Err(ApiError::BadRequest(
+            "asset_ids must not be empty".to_string(),
+        ));
+    }
+    if payload.asset_ids.len() > 100 {
+        return Err(ApiError::BadRequest(
+            "max 100 asset_ids per request".to_string(),
+        ));
+    }
+
+    let mut tx = pool.begin().await.map_err(ApiError::Database)?;
+
+    let updated = sqlx::query!(
+        r#"
+        UPDATE assets
+        SET escrow_agent = $1, updated_at = NOW()
+        WHERE id = ANY($2)
+          AND funding_status IN ('funding_open', 'funding_in_progress')
+        "#,
+        agent,
+        &payload.asset_ids
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?
+    .rows_affected();
+
+    sqlx::query(
+        r#"
+        INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+        VALUES ($1, 'primary_escrow.bulk_assign_agent', 'assets', $2)
+        "#,
+    )
+    .bind(admin.user.id)
+    .bind(serde_json::json!({
+        "agent": agent,
+        "asset_ids": payload.asset_ids,
+        "rows_affected": updated,
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "rows_affected": updated,
+        "agent": agent,
+    })))
+}
+
+/// GET /api/admin/primary-escrow/:asset_id/audit
+pub async fn api_admin_primary_escrow_audit(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(asset_id): Path<String>,
+) -> Result<Json<Vec<AuditLogEntry>>, ApiError> {
+    let pool = &state.db;
+    if !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.view").await
+        && !crate::auth::middleware::has_permission(pool, admin.user.id, "marketplace.manage").await
+    {
+        return Err(ApiError::Forbidden(
+            "Missing marketplace permission".to_string(),
+        ));
+    }
+    let asset_uuid = asset_id
+        .parse::<Uuid>()
+        .map_err(|_| ApiError::BadRequest(format!("Invalid ID format: {}", asset_id)))?;
+
+    let rows = sqlx::query!(
+        r#"
+        SELECT al.id, al.action, al.created_at, al.previous_state, al.new_state, u.email as "email?"
+        FROM audit_logs al
+        LEFT JOIN users u ON u.id = al.actor_user_id
+        WHERE al.entity_type = 'assets'
+          AND al.entity_id = $1
+          AND al.action LIKE 'primary_escrow.%'
+        ORDER BY al.created_at DESC
+        LIMIT 100
+        "#,
+        asset_uuid
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    let entries: Vec<AuditLogEntry> = rows
+        .into_iter()
+        .map(|r| AuditLogEntry {
+            id: r.id,
+            action: r.action,
+            actor_email: r.email,
+            created_at: r.created_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
+            previous_state: r.previous_state,
+            new_state: r.new_state,
+        })
+        .collect();
+
+    Ok(Json(entries))
 }
 
 fn normalize_release_text(value: &str, field: &str) -> Result<String, ApiError> {

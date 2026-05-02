@@ -37,6 +37,15 @@
           </nav>
         </div>
         <div class="admin-topbar-right">
+          <a href="/admin/pending-settlements.html" class="admin-link mp-topbar-link" title="View pending settlements (next stage of trade lifecycle)" id="orders-settlements-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Pending Settlements
+            <span class="admin-badge admin-badge--neutral" id="orders-settlements-count" hidden>0</span>
+          </a>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-rebuild-orderbook" type="button" title="Force-rebuild Redis orderbook from Postgres (admin recovery tool)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3.5-7"/><polyline points="21 4 21 12 13 12"/></svg>
+            Rebuild Book
+          </button>
           <div class="admin-health-indicators" title="System Health">
             <span class="admin-health-dot admin-health-dot--ok" title="Matching Engine"></span>
             <span class="admin-health-dot admin-health-dot--ok" title="Database"></span>
@@ -52,53 +61,150 @@
 
         <!-- KPI Summary -->
         <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
-          <div class="admin-kpi-card">
+          <button class="admin-kpi-card mp-kpi-clickable" id="kpi-card-total" type="button" data-filter-status="open,partially_filled" aria-label="Drill down to all active orders">
             <div class="admin-kpi-header">
               <span class="admin-kpi-label">Total Open</span>
+              <span class="mp-kpi-delta" id="kpi-total-delta" aria-hidden="true"></span>
             </div>
             <div class="admin-kpi-value" id="kpi-total-open">—</div>
-          </div>
-          <div class="admin-kpi-card">
+            <svg class="mp-kpi-spark" id="kpi-total-spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg>
+          </button>
+          <button class="admin-kpi-card mp-kpi-clickable" id="kpi-card-held" type="button" data-sort="held" data-order="desc" aria-label="Drill down to highest held balances">
             <div class="admin-kpi-header">
               <span class="admin-kpi-label">Total Held Balance</span>
             </div>
-            <div class="admin-kpi-value" id="kpi-held-balance" style="color:var(--admin-warning);">—</div>
-          </div>
-          <div class="admin-kpi-card">
+            <div class="admin-kpi-value" id="kpi-held-balance">—</div>
+            <div class="mp-heatmap" id="kpi-held-heatmap" aria-hidden="true"></div>
+          </button>
+          <button class="admin-kpi-card mp-kpi-clickable" id="kpi-card-age" type="button" data-sort="created_at" data-order="asc" aria-label="Drill down to oldest orders first">
             <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Avg. Order Age</span>
+              <span class="admin-kpi-label">Order Age</span>
+              <span class="admin-kpi-tooltip" title="Avg / P50 / P90 — green <6h, amber <24h, red ≥24h">ⓘ</span>
             </div>
             <div class="admin-kpi-value" id="kpi-avg-age">—</div>
+            <div class="mp-kpi-sub" id="kpi-age-distribution">P50 — · P90 —</div>
+          </button>
+        </div>
+
+        <!-- Saved Views -->
+        <div class="mp-saved-views" id="orders-saved-views" role="toolbar" aria-label="Saved filter presets">
+          <button type="button" class="mp-chip" data-preset='{"status":"open,partially_filled","side":"","q":"","sort":"held","order":"desc"}'>Largest Holds</button>
+          <button type="button" class="mp-chip" data-preset='{"status":"open,partially_filled","side":"buy","q":"","sort":"created_at","order":"asc"}'>Oldest BUY</button>
+          <button type="button" class="mp-chip" data-preset='{"status":"open,partially_filled","side":"sell","q":"","sort":"created_at","order":"asc"}'>Oldest SELL</button>
+          <button type="button" class="mp-chip" data-preset='{"status":"partially_filled","side":"","q":"","sort":"created_at","order":"desc"}'>Partial Fills</button>
+          <span class="mp-chip-divider" aria-hidden="true"></span>
+          <span id="orders-saved-views-custom"></span>
+          <button type="button" class="mp-chip mp-chip--add" id="orders-save-view" title="Save current filters as a view">+ Save view</button>
+        </div>
+
+        <!-- Status Tabs -->
+        <div class="admin-tabs" role="tablist" aria-label="Order status" style="margin-bottom:12px;">
+          <button class="admin-tab active" role="tab" data-status="open,partially_filled" aria-selected="true" type="button">Active</button>
+          <button class="admin-tab" role="tab" data-status="open" aria-selected="false" type="button">Open</button>
+          <button class="admin-tab" role="tab" data-status="partially_filled" aria-selected="false" type="button">Partial</button>
+          <button class="admin-tab" role="tab" data-status="filled" aria-selected="false" type="button">Filled</button>
+          <button class="admin-tab" role="tab" data-status="cancelled,admin_cancelled" aria-selected="false" type="button">Cancelled</button>
+          <button class="admin-tab" role="tab" data-status="open,partially_filled,filled,cancelled,admin_cancelled" aria-selected="false" type="button">All</button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="mp-filter-bar">
+          <input type="search" class="admin-input" id="orders-search" placeholder="Search by Order ID or User email…" aria-label="Search orders" style="min-width:260px;">
+          <label for="orders-side" class="sr-only">Side</label>
+          <select class="admin-select" id="orders-side" aria-label="Side">
+            <option value="">All Sides</option>
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+          </select>
+          <span class="mp-side-counters" id="orders-side-counters" aria-live="polite">
+            <span class="mp-side-counter mp-side-counter--buy"  id="orders-count-buy"  title="BUY orders on this page">BUY 0</span>
+            <span class="mp-side-counter mp-side-counter--sell" id="orders-count-sell" title="SELL orders on this page">SELL 0</span>
+          </span>
+          <label for="orders-page-size" class="sr-only">Page size</label>
+          <select class="admin-select" id="orders-page-size" aria-label="Page size">
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+            <option value="100">100 / page</option>
+            <option value="200">200 / page</option>
+          </select>
+
+          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+            <span id="orders-last-updated" class="admin-meta-muted" aria-live="polite" style="font-size:12px; color:var(--admin-text-muted);">Updated —</span>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--admin-text-muted); cursor:pointer;">
+              <input type="checkbox" id="orders-autorefresh" />
+              Auto-refresh 30s
+            </label>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-refresh" type="button" title="Refresh now">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/><path d="M20.49 15a9 9 0 01-14.85 3.36L1 14"/></svg>
+              Refresh
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-export-csv" type="button" title="Export current view as CSV">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
+            </button>
           </div>
+        </div>
+
+        <!-- View Options Toolbar -->
+        <div class="mp-view-toolbar" role="toolbar" aria-label="View options">
+          <div class="mp-view-group" role="group" aria-label="Density">
+            <button type="button" class="mp-view-btn active" data-density="comfortable" title="Comfortable rows">≡</button>
+            <button type="button" class="mp-view-btn"        data-density="compact"     title="Compact rows">☰</button>
+          </div>
+          <div class="mp-view-group" role="group" aria-label="Group by user">
+            <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--admin-text-muted); cursor:pointer;">
+              <input type="checkbox" id="orders-group-user"> Group by user
+            </label>
+          </div>
+          <div class="mp-view-group mp-columns-toggle" role="group" aria-label="Column visibility">
+            <button type="button" class="mp-view-btn" id="orders-columns-btn" aria-expanded="false">Columns ▾</button>
+            <div class="mp-columns-menu" id="orders-columns-menu" hidden role="menu">
+              <label><input type="checkbox" data-col="type" checked> Type</label>
+              <label><input type="checkbox" data-col="qty" checked> Qty / Filled</label>
+              <label><input type="checkbox" data-col="price" checked> Price</label>
+              <label><input type="checkbox" data-col="held" checked> Held Balance</label>
+              <label><input type="checkbox" data-col="status" checked> Status</label>
+            </div>
+          </div>
+          <button type="button" class="mp-view-btn" id="orders-share-view" title="Copy shareable URL of current filters" style="margin-left:auto;">🔗 Share view</button>
+        </div>
+
+        <!-- Bulk Action Bar (visible when selection > 0) -->
+        <div class="mp-bulk-bar" id="orders-bulk-bar" hidden role="region" aria-label="Bulk actions">
+          <span class="mp-bulk-count"><strong id="orders-bulk-count">0</strong> orders selected</span>
+          <button type="button" class="admin-btn admin-btn--danger admin-btn--sm" id="orders-bulk-cancel">Cancel Selected</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-bulk-export">Export Selected</button>
+          <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="orders-bulk-clear">Clear</button>
         </div>
 
         <!-- Orders Table -->
         <div class="admin-card">
           <div class="admin-card-body admin-card-body--flush">
-            <table class="admin-table" id="orders-table">
+            <table class="admin-table mp-orders-table" id="orders-table">
               <thead>
                 <tr>
+                  <th class="mp-th-checkbox"><input type="checkbox" id="orders-select-all" aria-label="Select all orders on this page"></th>
                   <th>Order ID</th>
                   <th>User</th>
                   <th>Asset</th>
-                  <th>Side</th>
-                  <th>Type</th>
-                  <th style="text-align:right">Qty</th>
-                  <th style="text-align:right">Price</th>
-                  <th style="text-align:right">Held Balance</th>
-                  <th>Created</th>
-                  <th>Status</th>
-                  <th style="text-align:center">Action</th>
+                  <th class="mp-th-sort" data-sort="side">Side</th>
+                  <th data-col="type">Type</th>
+                  <th class="mp-th-sort" data-sort="quantity" data-col="qty" style="text-align:right">Qty / Filled</th>
+                  <th class="mp-th-sort" data-sort="price" data-col="price" style="text-align:right">Price</th>
+                  <th class="mp-th-sort" data-sort="held" data-col="held" style="text-align:right">Held Balance</th>
+                  <th class="mp-th-sort active is-desc" data-sort="created_at">Created</th>
+                  <th class="mp-th-sort" data-sort="status" data-col="status">Status</th>
+                  <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
               <tbody id="orders-body">
                 <tr>
-                  <td colspan="11" style="text-align:center; color:var(--admin-text-muted); padding:24px;">Loading orders...</td>
+                  <td colspan="12" style="text-align:center; color:var(--admin-text-muted); padding:24px;">Loading orders…</td>
                 </tr>
               </tbody>
             </table>
             <div class="admin-table-footer" id="orders-pagination" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-top:1px solid var(--admin-border);">
-              <span id="orders-page-info" style="font-size:13px; color:var(--admin-text-muted);">Page 1 of 1</span>
+              <span id="orders-page-info" style="font-size:13px; color:var(--admin-text-muted);">—</span>
               <div style="display:flex; gap:8px;">
                 <button class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-prev-page" type="button">Previous</button>
                 <button class="admin-btn admin-btn--secondary admin-btn--sm" id="orders-next-page" type="button">Next</button>
@@ -110,8 +216,59 @@
     </main>
   </div>
 
+  <!-- Command Palette (Cmd/Ctrl+K) -->
+  <div id="orders-palette" class="mp-palette" hidden role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="mp-palette-backdrop" data-palette-close></div>
+    <div class="mp-palette-panel" role="listbox">
+      <input type="text" class="mp-palette-input" id="orders-palette-input" placeholder="Type a command — filter, sort, action…" autocomplete="off" spellcheck="false" aria-label="Command search">
+      <ul class="mp-palette-list" id="orders-palette-list"></ul>
+      <div class="mp-palette-footer">
+        <span><kbd>↑↓</kbd> nav</span>
+        <span><kbd>Enter</kbd> run</span>
+        <span><kbd>Esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Detail Drawer -->
+  <div id="orders-drawer" class="mp-drawer" hidden role="dialog" aria-modal="true" aria-label="Order detail">
+    <div class="mp-drawer-backdrop" data-drawer-close></div>
+    <aside class="mp-drawer-panel" role="region">
+      <header class="mp-drawer-header">
+        <h2 class="mp-drawer-title" id="orders-drawer-title">Order Detail</h2>
+        <button type="button" class="mp-drawer-close" data-drawer-close aria-label="Close detail drawer">×</button>
+      </header>
+      <div class="mp-drawer-body" id="orders-drawer-body">Loading…</div>
+    </aside>
+  </div>
+
+  <!-- Help overlay (? key) -->
+  <div id="orders-help" class="mp-help" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts help">
+    <div class="mp-help-backdrop" data-help-close></div>
+    <div class="mp-help-panel">
+      <header class="mp-help-header">
+        <h2>Keyboard Shortcuts</h2>
+        <button type="button" class="mp-drawer-close" data-help-close aria-label="Close">×</button>
+      </header>
+      <div class="mp-help-body">
+        <dl class="mp-help-grid">
+          <dt><kbd>/</kbd></dt><dd>Focus search</dd>
+          <dt><kbd>r</kbd></dt><dd>Refresh now</dd>
+          <dt><kbd>j</kbd> / <kbd>k</kbd></dt><dd>Move row cursor</dd>
+          <dt><kbd>Enter</kbd></dt><dd>Open order detail drawer</dd>
+          <dt><kbd>x</kbd></dt><dd>Cancel cursored order</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Close drawer / clear selection</dd>
+          <dt><kbd>?</kbd></dt><dd>Toggle this help</dd>
+          <dt><kbd>Ctrl/Cmd + K</kbd></dt><dd>Command palette</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/marketplace-event-bus.js"></script>
+  <script src="/static/js/marketplace-websocket.js"></script>
   <script src="/static/js/mp-toast.js"></script>
-  <script src="/static/js/mp-orders.js"></script>
+  <script src="/static/js/mp-orders.js?v=6"></script>
 </body>
 
 </html>

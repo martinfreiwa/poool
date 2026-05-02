@@ -93,16 +93,6 @@ fn safe_fragment_error(message: &str) -> Html<String> {
     ))
 }
 
-fn commodity_status_label(status: &str) -> &'static str {
-    match status {
-        "funding_open" | "funding_in_progress" => "Available",
-        "funded" => "Funded",
-        "rented" => "Rented",
-        "exited" => "Exited",
-        _ => "Upcoming",
-    }
-}
-
 fn render_commodity_card(asset: &CommodityDisplayData) -> String {
     let slug = html_escape(&asset.slug);
     let title = html_escape(&asset.title);
@@ -128,7 +118,6 @@ fn render_commodity_card(asset: &CommodityDisplayData) -> String {
     let price_dollars = asset.total_value_cents / 100;
     let price_usd = html_escape(&asset.total_value_usd);
     let funded_pct = asset.funded_percentage.clamp(0, 100);
-    let status_label = commodity_status_label(&asset.funding_status);
     let annual_yield = html_escape(&asset.annual_yield_percent);
     let annual_yield_data = html_escape(&asset.annual_yield_percent);
     let appreciation = html_escape(&asset.capital_appreciation_percent);
@@ -183,17 +172,13 @@ fn render_commodity_card(asset: &CommodityDisplayData) -> String {
             <div class="property-content">
                 <div class="card-meta-row">
                     <div class="card-meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22L2 12 12 2l10 10z"/><path d="M7.5 7.5L12 12"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg>
                         <span>{hectares_label}</span>
                     </div>
                     <div class="card-meta-divider"></div>
                     <div class="card-meta-item">
                         <img src="/static/images/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
                         <span>{location_city}, {location_country}</span>
-                    </div>
-                    <div class="card-meta-divider"></div>
-                    <div class="card-meta-item">
-                        <span>{status_label}</span>
                     </div>
                 </div>
                 <div class="property-heading">
@@ -257,7 +242,7 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
                 SELECT image_url 
                 FROM asset_images 
                 WHERE asset_id = a.id 
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
             a.bedrooms,
             a.bathrooms,
@@ -374,7 +359,7 @@ pub async fn page_property(
                 SELECT image_url 
                 FROM asset_images 
                 WHERE asset_id = a.id 
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
                 a.bedrooms,
             a.bathrooms,
@@ -472,7 +457,7 @@ pub async fn page_property(
                 SELECT image_url 
                 FROM asset_images 
                 WHERE asset_id = a.id 
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
                 a.bedrooms,
             a.bathrooms,
@@ -638,7 +623,7 @@ pub async fn page_property_public(
                 SELECT image_url
                 FROM asset_images
                 WHERE asset_id = a.id
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
             a.bedrooms,
             a.bathrooms,
@@ -791,7 +776,7 @@ pub async fn page_commodity(
                 SELECT image_url
                 FROM asset_images
                 WHERE asset_id = a.id
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
             a.term_months,
             a.area,
@@ -939,7 +924,7 @@ pub async fn page_commodity(
                 SELECT image_url
                 FROM asset_images
                 WHERE asset_id = a.id
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
             a.bedrooms,
             a.bathrooms,
@@ -1074,7 +1059,7 @@ pub async fn api_marketplace_tab(
     };
 
     let assets = match sqlx::query(
-        r#"SELECT a.*, ARRAY(SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY is_cover DESC, created_at ASC) as image_urls
+        r#"SELECT a.*, ARRAY(SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY is_cover DESC, sort_order ASC, created_at ASC) as image_urls
            FROM assets a
            WHERE a.published = true AND a.funding_status = ANY($1) AND a.asset_type != 'commodity'
            ORDER BY a.featured DESC, a.created_at DESC"#
@@ -1319,7 +1304,7 @@ pub async fn page_commodities_marketplace(
                 SELECT image_url 
                 FROM asset_images 
                 WHERE asset_id = a.id 
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
             a.term_months,
             a.area,
@@ -1449,7 +1434,7 @@ pub async fn api_commodities_tab(
                 SELECT image_url
                 FROM asset_images
                 WHERE asset_id = a.id
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls?",
             a.term_months,
             a.area,

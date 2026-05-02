@@ -298,21 +298,16 @@ function loadSavedProfile() {
     if (selectedItem) {
       const avatar = selectedItem.querySelector(".profile-avatar img");
       const name = selectedItem.querySelector(".profile-account-name");
-      const type = selectedItem.querySelector(".profile-account-type");
 
       const mainAvatar = document.querySelector("#account-avatar img");
       const mainName = document.querySelector("#account-name");
-      const mainEmail = document.querySelector("#account-email");
 
       if (avatar && mainAvatar) {
         mainAvatar.src = avatar.src;
         mainAvatar.alt = avatar.alt;
       }
-      if (name && mainName) {
+      if (name && mainName && name.textContent.trim()) {
         mainName.textContent = name.textContent;
-      }
-      if (type && mainEmail) {
-        mainEmail.textContent = type.textContent;
       }
     }
   }

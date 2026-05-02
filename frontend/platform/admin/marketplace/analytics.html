@@ -35,6 +35,15 @@
       background: var(--admin-bg-card, #fff);
       border: 1px solid var(--admin-border, #e5e7eb);
       border-radius: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+    }
+    a.mp-analytics-stat:hover {
+      border-color: var(--admin-primary, #0000ff);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0,0,0,.04);
+      cursor: pointer;
     }
     .mp-analytics-stat-icon {
       width: 40px;
@@ -51,6 +60,8 @@
     .mp-analytics-stat-icon--assets  { background: #faf5ff; color: #7c3aed; }
     .mp-analytics-stat-icon--fees    { background: #f0fdfa; color: #0d9488; }
     .mp-analytics-stat-icon--pending { background: #fff7ed; color: #ea580c; }
+    .mp-analytics-stat-icon--muted   { background: #f3f4f6; color: #6b7280; }
+    .mp-analytics-stat-body { min-width: 0; flex: 1; }
     .mp-analytics-stat-value {
       font-size: 18px;
       font-weight: 700;
@@ -61,6 +72,69 @@
       color: var(--admin-text-secondary, #717680);
       margin-top: 2px;
     }
+    .mp-analytics-stat-delta {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 2px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .mp-analytics-stat-delta--up { color: #16a34a; }
+    .mp-analytics-stat-delta--down { color: #b42318; }
+    .mp-analytics-stat-delta--flat { color: #717680; }
+
+    /* Action Required Zone */
+    .mp-action-zone {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .mp-action-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .mp-action-card:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+    .mp-action-card--ok    { border-color: #d1fae5; background: #f0fdf4; }
+    .mp-action-card--warn  { border-color: #fde68a; background: #fffbeb; }
+    .mp-action-card--alert { border-color: #fecaca; background: #fef2f2; }
+    .mp-action-card-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mp-action-card--ok    .mp-action-card-icon { background: #d1fae5; color: #047857; }
+    .mp-action-card--warn  .mp-action-card-icon { background: #fde68a; color: #92400e; }
+    .mp-action-card--alert .mp-action-card-icon { background: #fecaca; color: #991b1b; }
+    .mp-action-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--admin-text-secondary, #717680);
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .mp-action-card-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--admin-text, #181d27);
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+    .mp-action-card-meta {
+      font-size: 12px;
+      color: var(--admin-text-secondary, #717680);
+      margin-top: 2px;
+    }
+
+    /* Charts */
     .mp-analytics-charts {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -75,11 +149,41 @@
       border-radius: 12px;
       padding: 16px;
     }
+    .mp-analytics-chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
     .mp-analytics-chart-card h4 {
       font-size: 14px;
       font-weight: 600;
       color: var(--admin-text, #181d27);
-      margin: 0 0 12px;
+      margin: 0;
+    }
+    .mp-period-toggle {
+      display: inline-flex;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--admin-bg, #fafafa);
+    }
+    .mp-period-toggle button {
+      border: 0;
+      background: transparent;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--admin-text-secondary, #717680);
+      cursor: pointer;
+    }
+    .mp-period-toggle button.active {
+      background: var(--admin-primary, #0000ff);
+      color: #fff;
+    }
+    .mp-period-toggle button:not(.active):hover {
+      background: rgba(0,0,0,.04);
     }
     .mp-analytics-empty {
       text-align: center;
@@ -94,6 +198,762 @@
       opacity: 0.5;
       pointer-events: none;
     }
+
+    /* Updated bar */
+    .mp-analytics-updated {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--admin-text-secondary, #717680);
+      margin-bottom: 8px;
+    }
+    .mp-analytics-updated-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 0 rgba(22,163,74,.6);
+      animation: mpPulse 2s infinite;
+    }
+    @keyframes mpPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(22,163,74,.6); }
+      70%  { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
+      100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+    }
+
+    /* Recent trades table */
+    .mp-trades-table-wrap {
+      background: var(--admin-bg-card, #fff);
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+    .mp-trades-table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--admin-border, #e5e7eb);
+    }
+    .mp-trades-table-header h4 {
+      font-size: 14px; font-weight: 600; margin: 0;
+      color: var(--admin-text, #181d27);
+    }
+    .mp-trades-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .mp-trades-table th, .mp-trades-table td {
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--admin-border, #e5e7eb);
+    }
+    .mp-trades-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      color: var(--admin-text-secondary, #717680);
+      background: var(--admin-bg, #fafafa);
+    }
+    .mp-trades-table tr:last-child td { border-bottom: 0; }
+    .mp-trades-table tr:hover td { background: rgba(0,0,0,.015); }
+    .mp-trades-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .mp-trades-table .truncate {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mp-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .mp-pill--ok { background: #d1fae5; color: #047857; }
+    .mp-pill--pending { background: #fef3c7; color: #92400e; }
+    .mp-pill--fail { background: #fecaca; color: #991b1b; }
+
+    /* Range-scope hint */
+    .mp-charts-scope-hint {
+      font-size: 12px;
+      color: #555a63;
+      margin: 0 0 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .mp-charts-scope-hint::before {
+      content: "ⓘ";
+      font-size: 13px;
+      color: var(--admin-primary, #0000FF);
+    }
+
+    /* A11y: darken secondary text site-locally on this page */
+    .mp-analytics-stat-label,
+    .mp-action-card-meta,
+    .mp-fraud-card-meta,
+    .mp-analytics-toolbar-meta,
+    .mp-analytics-chart-meta,
+    .mp-analytics-updated { color: #555a63; }
+
+    /* Tap-targets: ensure ≥36px height for buttons + 44px for primary actions */
+    .mp-period-toggle button { min-height: 32px; padding: 6px 12px; }
+    #analytics-refresh-btn,
+    #analytics-export-btn { min-height: 36px; }
+    .mp-quick-link { min-height: 36px; padding: 8px 12px; display: inline-flex; align-items: center; }
+
+    /* Sidebar active-state accent (page-local override) */
+    .admin-sidebar a[href$="/marketplace/analytics.html"].active::before,
+    .admin-sidebar .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 3px;
+      background: var(--admin-primary, #0000FF);
+      border-radius: 0 3px 3px 0;
+    }
+    .admin-sidebar { position: relative; }
+
+    /* Info-tooltip (ⓘ) on KPI labels */
+    .mp-info-tip {
+      display: inline-flex;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.06);
+      color: #555a63;
+      font-size: 10px;
+      line-height: 14px;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+      cursor: help;
+      vertical-align: middle;
+    }
+    .mp-info-tip:hover { background: rgba(0,0,255,.1); color: #0000FF; }
+
+    /* KPI card customization controls */
+    .mp-analytics-stat { position: relative; }
+    .mp-stat-hide-btn {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 22px; height: 22px;
+      border: 0;
+      background: transparent;
+      color: #9ca3af;
+      cursor: pointer;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity .12s ease, background .12s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mp-analytics-stat:hover .mp-stat-hide-btn { opacity: 1; }
+    .mp-stat-hide-btn:hover { background: rgba(0,0,0,.06); color: #181d27; }
+    .mp-hidden-cards-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #555a63;
+    }
+    .mp-hidden-cards-bar.has-hidden { display: flex; }
+    .mp-hidden-cards-bar button {
+      border: 1px solid var(--admin-border, #e5e7eb);
+      background: var(--admin-bg-card, #fff);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #181d27;
+    }
+    .mp-hidden-cards-bar button:hover { border-color: var(--admin-primary, #0000FF); color: var(--admin-primary, #0000FF); }
+
+    /* Empty state: caught-up emerald */
+    .mp-action-card--ok .mp-action-card-meta::before {
+      content: "✓ ";
+      color: #047857;
+      font-weight: 700;
+    }
+
+    /* Skeleton shimmer for loading states */
+    .mp-skeleton {
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+      background-size: 400% 100%;
+      animation: mp-shimmer 1.4s ease-in-out infinite;
+      border-radius: 6px;
+      color: transparent !important;
+    }
+    @keyframes mp-shimmer {
+      0% { background-position: 100% 50%; }
+      100% { background-position: 0 50%; }
+    }
+    .mp-skeleton-stat {
+      height: 80px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+      background-size: 400% 100%;
+      animation: mp-shimmer 1.4s ease-in-out infinite;
+    }
+
+    /* Asset ranked-list fallback (n<3) */
+    .mp-asset-rank-list {
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 8px 0;
+    }
+    .mp-asset-rank-row {
+      display: grid;
+      grid-template-columns: 24px 1fr 80px 90px 70px;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 4px;
+      text-decoration: none;
+      color: inherit;
+      border-radius: 8px;
+      transition: background .12s ease;
+    }
+    .mp-asset-rank-row:hover { background: rgba(0,0,255,.04); }
+    .mp-asset-rank-num {
+      font-weight: 700; color: var(--admin-primary, #0000FF);
+      font-size: 13px;
+    }
+    .mp-asset-rank-name {
+      font-weight: 500; font-size: 13px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mp-asset-rank-bar {
+      height: 6px; border-radius: 3px;
+      background: #f3f4f6; overflow: hidden;
+    }
+    .mp-asset-rank-bar > span {
+      display: block; height: 100%;
+      background: linear-gradient(90deg, #0000FF 0%, #4f46e5 100%);
+    }
+    .mp-asset-rank-value { font-weight: 700; font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+    .mp-asset-rank-count { font-size: 11px; color: #555a63; text-align: right; }
+
+    /* Drag handle for KPI cards */
+    .mp-stat-drag {
+      position: absolute;
+      top: 6px; left: 6px;
+      width: 22px; height: 22px;
+      color: #9ca3af;
+      cursor: grab;
+      opacity: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity .12s ease;
+    }
+    .mp-analytics-stat:hover .mp-stat-drag { opacity: 1; }
+    .mp-stat-drag:active { cursor: grabbing; }
+    .mp-analytics-stat.dragging { opacity: 0.4; transform: scale(0.96); }
+    .mp-analytics-stat.drop-target { border-color: var(--admin-primary, #0000FF); background: rgba(0,0,255,.03); }
+
+    /* Custom popover (replacing native title attr) */
+    .mp-popover {
+      position: absolute;
+      z-index: 9999;
+      background: #181d27;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 260px;
+      pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,.18);
+      opacity: 0;
+      transform: translateY(2px);
+      transition: opacity .12s ease, transform .12s ease;
+    }
+    .mp-popover.open { opacity: 1; transform: translateY(0); }
+    .mp-popover::after {
+      content: "";
+      position: absolute;
+      top: 100%; left: 12px;
+      border: 5px solid transparent;
+      border-top-color: #181d27;
+    }
+
+    /* Recent trades sortable headers */
+    .mp-trades-table th[data-sort] {
+      cursor: pointer; user-select: none;
+      position: relative;
+      padding-right: 22px;
+    }
+    .mp-trades-table th[data-sort]:hover { color: var(--admin-primary, #0000FF); }
+    .mp-trades-table th[data-sort]::after {
+      content: "⇅";
+      position: absolute;
+      right: 8px; top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.35;
+      font-size: 10px;
+    }
+    .mp-trades-table th[data-sort].asc::after  { content: "▲"; opacity: 1; color: var(--admin-primary, #0000FF); }
+    .mp-trades-table th[data-sort].desc::after { content: "▼"; opacity: 1; color: var(--admin-primary, #0000FF); }
+
+    /* Trades filter bar */
+    .mp-trades-filter-bar {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mp-trades-filter-bar select {
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      background: var(--admin-bg-card, #fff);
+      color: var(--admin-text, #181d27);
+      cursor: pointer;
+    }
+
+    /* Auto-refresh interval picker */
+    #analytics-interval-picker {
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      background: var(--admin-bg-card, #fff);
+      color: var(--admin-text, #181d27);
+      cursor: pointer;
+      margin-left: 6px;
+    }
+
+    /* Volume chart subtitle (period delta) */
+    .mp-chart-subtitle {
+      font-size: 12px;
+      color: #555a63;
+      margin: -4px 0 8px;
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .mp-chart-subtitle .mp-delta-up   { color: #166534; font-weight: 600; }
+    .mp-chart-subtitle .mp-delta-down { color: #991b1b; font-weight: 600; }
+    .mp-chart-subtitle .mp-delta-flat { color: #4b5563; font-weight: 600; }
+
+    /* Mobile: 2-col KPI grid <600px */
+    @media (max-width: 600px) {
+      .mp-analytics-stats { grid-template-columns: repeat(2, 1fr) !important; }
+      .mp-action-zone { grid-template-columns: 1fr !important; }
+      .mp-fraud-grid { grid-template-columns: 1fr !important; }
+      .mp-asset-rank-row {
+        grid-template-columns: 20px 1fr 70px;
+      }
+      .mp-asset-rank-bar, .mp-asset-rank-count { display: none; }
+    }
+
+    /* Chart card "Open in X" link */
+    .mp-chart-link {
+      font-size: 12px;
+      color: var(--admin-primary, #0000FF);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .mp-chart-link:hover { background: rgba(0,0,255,.08); }
+
+    /* Skeleton for chart + trades-table initial render */
+    .mp-chart-skel:empty {
+      height: 280px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+      background-size: 400% 100%;
+      animation: mp-shimmer 1.4s ease-in-out infinite;
+    }
+    .mp-trades-skel-row {
+      height: 36px;
+      margin: 4px 12px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+      background-size: 400% 100%;
+      animation: mp-shimmer 1.4s ease-in-out infinite;
+    }
+
+    /* Pin card */
+    .mp-stat-pin-btn {
+      position: absolute;
+      top: 6px; right: 32px;
+      width: 22px; height: 22px;
+      border: 0;
+      background: transparent;
+      color: #9ca3af;
+      cursor: pointer;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity .12s ease, color .12s ease, background .12s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mp-analytics-stat:hover .mp-stat-pin-btn,
+    .mp-analytics-stat.pinned .mp-stat-pin-btn { opacity: 1; }
+    .mp-stat-pin-btn:hover { background: rgba(0,0,0,.06); }
+    .mp-analytics-stat.pinned {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #fffbeb 0%, transparent 60%);
+    }
+    .mp-analytics-stat.pinned .mp-stat-pin-btn { color: #d97706; }
+
+    /* Custom date-range picker */
+    .mp-daterange {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .mp-daterange input[type="date"] {
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 12px;
+      background: var(--admin-bg-card, #fff);
+      color: var(--admin-text, #181d27);
+    }
+    .mp-daterange .mp-daterange-clear {
+      background: none;
+      border: 0;
+      color: #555a63;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .mp-daterange .mp-daterange-clear:hover { color: var(--admin-primary, #0000FF); }
+
+    /* Trades bulk-action bar */
+    .mp-bulk-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: rgba(0,0,255,.04);
+      border-bottom: 1px solid var(--admin-border, #e5e7eb);
+      font-size: 13px;
+    }
+    .mp-bulk-bar.active { display: flex; }
+    .mp-bulk-bar .mp-bulk-count {
+      font-weight: 600;
+      color: var(--admin-primary, #0000FF);
+    }
+    .mp-bulk-bar button {
+      border: 1px solid var(--admin-border, #e5e7eb);
+      background: var(--admin-bg-card, #fff);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--admin-text, #181d27);
+    }
+    .mp-bulk-bar button:hover { border-color: var(--admin-primary, #0000FF); color: var(--admin-primary, #0000FF); }
+    .mp-trades-table th.mp-bulk-checkbox-col,
+    .mp-trades-table td.mp-bulk-checkbox-col { width: 28px; padding-right: 0; }
+
+    /* Breadcrumb hover */
+    .admin-breadcrumbs a {
+      transition: color .12s ease;
+    }
+    .admin-breadcrumbs a:hover {
+      color: var(--admin-primary, #0000FF);
+      text-decoration: underline;
+    }
+    .admin-breadcrumbs .current {
+      color: var(--admin-text, #181d27);
+      font-weight: 600;
+    }
+
+    /* Sub-tab nav */
+    .mp-subtabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 1px solid var(--admin-border, #e5e7eb);
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    .mp-subtab {
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--admin-text-secondary, #717680);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+    .mp-subtab:hover { color: var(--admin-text, #181d27); }
+    .mp-subtab.active {
+      color: var(--admin-primary, #0000FF);
+      border-bottom-color: var(--admin-primary, #0000FF);
+    }
+
+    /* Quick-action bar */
+    .mp-quick-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .mp-quick-actions .admin-btn--danger {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .mp-quick-actions .admin-btn--danger:hover { background: #fecaca; }
+
+    /* Refresh spinner */
+    @keyframes mpSpin { to { transform: rotate(360deg); } }
+    .mp-spinning svg { animation: mpSpin 0.8s linear infinite; }
+
+    /* Fraud signals */
+    .mp-fraud-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .mp-fraud-card {
+      padding: 14px 16px;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 10px;
+      background: var(--admin-bg-card, #fff);
+    }
+    .mp-fraud-card-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--admin-text-secondary, #717680);
+    }
+    .mp-fraud-card-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--admin-text, #181d27);
+      margin-top: 4px;
+    }
+    .mp-fraud-card-meta {
+      font-size: 12px;
+      color: var(--admin-text-secondary, #717680);
+      margin-top: 2px;
+    }
+    .mp-fraud-card.flagged {
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+    .mp-fraud-card.flagged .mp-fraud-card-title { color: #991b1b; }
+
+    /* Quick-links restyled as pills */
+    .mp-quick-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--admin-border, #e5e7eb);
+    }
+    .mp-quick-links-label {
+      font-size: 12px;
+      color: var(--admin-text-secondary, #717680);
+      align-self: center;
+      margin-right: 4px;
+    }
+    .mp-quick-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 999px;
+      background: var(--admin-bg-card, #fff);
+      font-size: 12px;
+      color: var(--admin-text, #181d27);
+      text-decoration: none;
+    }
+    .mp-quick-link:hover { border-color: var(--admin-primary, #0000FF); color: var(--admin-primary, #0000FF); }
+    .mp-quick-link[aria-disabled="true"] { opacity: 0.4; pointer-events: none; }
+
+    /* Keyboard help overlay */
+    .mp-kbd-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .mp-kbd-overlay.open { display: flex; }
+    .mp-kbd-modal {
+      background: var(--admin-bg-card, #fff);
+      border-radius: 12px;
+      padding: 24px;
+      width: min(440px, 92vw);
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .mp-kbd-modal h3 { margin: 0 0 16px; font-size: 16px; }
+    .mp-kbd-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--admin-border, #e5e7eb);
+    }
+    .mp-kbd-row:last-child { border-bottom: 0; }
+    .mp-kbd-row span:first-child { font-size: 13px; color: var(--admin-text, #181d27); }
+    .mp-kbd-key {
+      font-family: monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      background: var(--admin-bg, #fafafa);
+      color: var(--admin-text-secondary, #717680);
+    }
+
+    /* Responsive KPI breakpoints */
+    @media (max-width: 1280px) {
+      .mp-analytics-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .mp-analytics-stats { grid-template-columns: repeat(2, 1fr); }
+      .mp-action-zone     { grid-template-columns: 1fr; }
+    }
+
+    /* Date range picker */
+    .mp-range-picker { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mp-range-pills { display: inline-flex; border: 1px solid var(--admin-border, #e5e7eb); border-radius: 8px; overflow: hidden; background: var(--admin-bg, #fafafa); }
+    .mp-range-pills button { border: 0; background: transparent; padding: 6px 12px; font-size: 12px; font-weight: 500; color: var(--admin-text-secondary, #717680); cursor: pointer; }
+    .mp-range-pills button.active { background: var(--admin-primary, #0000ff); color: #fff; }
+    .mp-range-custom { display: none; align-items: center; gap: 4px; font-size: 12px; }
+    .mp-range-custom.open { display: inline-flex; }
+    .mp-range-custom input[type=date] { padding: 4px 6px; font-size: 12px; border: 1px solid var(--admin-border, #e5e7eb); border-radius: 6px; }
+
+    /* Asset segment filter */
+    .mp-asset-filter {
+      padding: 4px 28px 4px 10px;
+      font-size: 12px;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 8px;
+      background: var(--admin-bg, #fafafa) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f87' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center;
+      appearance: none;
+    }
+
+    /* Skeleton loaders */
+    @keyframes mpShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .mp-skeleton {
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+      background-size: 200% 100%;
+      animation: mpShimmer 1.4s infinite;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .mp-skeleton-card { height: 72px; border-radius: 12px; }
+    .mp-skeleton-row  { height: 14px; margin: 4px 0; width: 100%; }
+
+    /* Rich KPI tooltip */
+    .mp-info-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; margin-left: 4px;
+      border: 1px solid var(--admin-border, #d1d5db);
+      border-radius: 50%; font-size: 10px;
+      color: var(--admin-text-secondary, #6b7280);
+      cursor: help; vertical-align: middle; position: relative;
+    }
+    .mp-info-icon::before { content: '?'; line-height: 1; }
+    .mp-info-icon:hover .mp-info-tip { display: block; }
+    .mp-info-tip {
+      display: none; position: absolute;
+      bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      width: 220px; padding: 8px 10px;
+      background: #181d27; color: #fff;
+      font-size: 11px; line-height: 1.4;
+      border-radius: 6px; z-index: 100;
+      text-transform: none; letter-spacing: normal; font-weight: 400;
+      pointer-events: none;
+    }
+    .mp-info-tip::after {
+      content: ''; position: absolute;
+      top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent; border-top-color: #181d27;
+    }
+
+    /* Card hide/pin */
+    .mp-stat-controls { position: absolute; top: 6px; right: 6px; display: none; gap: 2px; }
+    .mp-analytics-stat { position: relative; }
+    .mp-analytics-stat:hover .mp-stat-controls { display: flex; }
+    .mp-stat-ctrl {
+      width: 22px; height: 22px;
+      border: 0; background: rgba(255,255,255,.85);
+      border-radius: 4px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--admin-text-secondary, #717680);
+    }
+    .mp-stat-ctrl:hover { background: var(--admin-bg, #fafafa); color: var(--admin-text, #181d27); }
+    .mp-stat-ctrl.pinned { color: var(--admin-primary, #0000ff); }
+    .mp-stat-hidden { display: none !important; }
+
+    .mp-hidden-manager {
+      display: none; gap: 6px; flex-wrap: wrap; align-items: center;
+      margin: 0 0 16px; padding: 8px 12px;
+      background: var(--admin-bg, #fafafa);
+      border: 1px dashed var(--admin-border, #e5e7eb);
+      border-radius: 8px; font-size: 12px;
+    }
+    .mp-hidden-manager.has-items { display: flex; }
+    .mp-hidden-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; background: #fff;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 999px; cursor: pointer;
+    }
+    .mp-hidden-chip:hover { border-color: var(--admin-primary, #0000ff); }
+
+    /* Command Palette */
+    .mp-cmdk {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: none; align-items: flex-start; justify-content: center;
+      z-index: 9999; padding-top: 12vh;
+    }
+    .mp-cmdk.open { display: flex; }
+    .mp-cmdk-modal {
+      background: var(--admin-bg-card, #fff);
+      border-radius: 12px; width: min(560px, 92vw);
+      box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden;
+    }
+    .mp-cmdk-input {
+      width: 100%; padding: 14px 16px;
+      border: 0; border-bottom: 1px solid var(--admin-border, #e5e7eb);
+      font-size: 14px; outline: none;
+    }
+    .mp-cmdk-list { max-height: 50vh; overflow-y: auto; padding: 4px 0; }
+    .mp-cmdk-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; font-size: 13px; cursor: pointer;
+      color: var(--admin-text, #181d27);
+    }
+    .mp-cmdk-item.active,
+    .mp-cmdk-item:hover { background: var(--admin-bg, #f3f4f6); }
+    .mp-cmdk-item-meta {
+      margin-left: auto; font-size: 11px;
+      color: var(--admin-text-secondary, #717680);
+      text-transform: uppercase;
+    }
+    .mp-cmdk-empty { padding: 16px; text-align: center; color: var(--admin-text-secondary, #717680); font-size: 13px; }
+
+    /* System health bar */
+    .mp-health-bar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 8px 12px;
+      background: var(--admin-bg-card, #fff);
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 8px;
+      font-size: 12px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .mp-health-item {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--admin-text-secondary, #717680);
+    }
+    .mp-health-item strong { color: var(--admin-text, #181d27); font-weight: 600; }
+    .mp-health-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; }
+    .mp-health-dot--ok    { background: #16a34a; }
+    .mp-health-dot--warn  { background: #d97706; }
+    .mp-health-dot--alert { background: #dc2626; }
   </style>
 </head>
 
@@ -112,13 +972,81 @@
             <span class="current">Analytics</span>
           </nav>
         </div>
-        <div class="admin-topbar-right"></div>
+        <div class="admin-topbar-right">
+          <div class="mp-range-picker" role="group" aria-label="Date range">
+            <span style="font-size: 12px; color: var(--admin-text-secondary, #717680);">Range:</span>
+            <div class="mp-range-pills" id="mp-range-pills">
+              <button type="button" data-range="1"   class="active">24h</button>
+              <button type="button" data-range="7">7d</button>
+              <button type="button" data-range="30">30d</button>
+              <button type="button" data-range="90">90d</button>
+              <button type="button" data-range="custom">Custom</button>
+            </div>
+            <div class="mp-range-custom" id="mp-range-custom">
+              <input type="date" id="mp-range-from" />
+              <span>→</span>
+              <input type="date" id="mp-range-to" />
+              <button type="button" id="mp-range-apply" class="admin-btn admin-btn--secondary admin-btn--sm">Apply</button>
+            </div>
+          </div>
+        </div>
       </header>
 
       <div class="admin-content">
         <div class="admin-page-header">
           <h1 class="admin-page-title">Trading Analytics</h1>
           <p class="admin-page-subtitle">Marketplace trading analytics — Metabase dashboard + built-in charts from live data</p>
+        </div>
+
+        <!-- Sub-tab nav -->
+        <nav class="mp-subtabs" aria-label="Marketplace sections">
+          <a href="/admin/marketplace/" class="mp-subtab">Overview</a>
+          <a href="/admin/marketplace/orders.html" class="mp-subtab">Orders</a>
+          <a href="/admin/marketplace/trades.html" class="mp-subtab">Trades</a>
+          <a href="/admin/marketplace/reconciliation.html" class="mp-subtab">Reconciliation</a>
+          <a href="/admin/marketplace/alerts.html" class="mp-subtab">Alerts</a>
+          <a href="/admin/marketplace/settings.html" class="mp-subtab">Settings</a>
+          <a href="/admin/marketplace/analytics.html" class="mp-subtab active">Analytics</a>
+        </nav>
+
+        <!-- Quick-action bar -->
+        <div class="mp-quick-actions">
+          <button type="button" id="btn-halt-trading" class="admin-btn admin-btn--sm admin-btn--danger" title="Halt all marketplace trading immediately">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            Halt Market
+          </button>
+          <button type="button" id="btn-resume-trading" class="admin-btn admin-btn--sm admin-btn--secondary" style="display:none;" title="Resume marketplace trading">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Resume Trading
+          </button>
+          <a href="/api/admin/marketplace/trades/export.csv" id="btn-export-csv" class="admin-btn admin-btn--sm admin-btn--secondary" title="Export trade history as CSV">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </a>
+          <button type="button" id="btn-kbd-help" class="admin-btn admin-btn--sm admin-btn--secondary" title="Show keyboard shortcuts (?)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
+            Shortcuts
+          </button>
+          <button type="button" id="btn-cmdk" class="admin-btn admin-btn--sm admin-btn--secondary" title="Command palette (⌘K)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Command (⌘K)
+          </button>
+        </div>
+
+        <!-- System Health Bar -->
+        <div class="mp-health-bar" id="mp-health-bar" hidden>
+          <div class="mp-health-item"><span class="mp-health-dot" id="mp-health-db-dot"></span>DB <strong id="mp-health-db">—</strong></div>
+          <div class="mp-health-item"><span class="mp-health-dot" id="mp-health-redis-dot"></span>Redis <strong id="mp-health-redis">—</strong></div>
+          <div class="mp-health-item"><span class="mp-health-dot" id="mp-health-engine-dot"></span>Match Engine <strong id="mp-health-engine">—</strong></div>
+          <div class="mp-health-item">Queue depth <strong id="mp-health-queue">—</strong></div>
+          <div class="mp-health-item">Last trade <strong id="mp-health-last-trade">—</strong></div>
+        </div>
+
+        <!-- Hidden cards manager -->
+        <div class="mp-hidden-manager" id="mp-hidden-manager">
+          <span style="color: var(--admin-text-secondary, #717680);">Hidden cards:</span>
+          <span id="mp-hidden-chips"></span>
+          <button type="button" id="mp-hidden-reset" class="admin-btn admin-btn--secondary admin-btn--sm" style="margin-left:auto;">Reset all</button>
         </div>
 
         <!-- Metabase Embed (primary) -->
@@ -161,58 +1089,174 @@
 
         <!-- Built-in Analytics (fallback + supplementary) -->
         <div id="analytics-fallback" style="margin-top: 20px;">
-          <h2 style="font-size: 18px; font-weight: 600; color: var(--admin-text, #181d27); margin: 0 0 16px; display:flex; align-items:center; gap:8px;">
+
+          <!-- Action Required Zone -->
+          <h2 style="font-size: 14px; font-weight: 600; color: var(--admin-text-secondary, #717680); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; display:flex; align-items:center; gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Action Required
+          </h2>
+          <div class="mp-action-zone" id="analytics-action-zone">
+            <div class="mp-analytics-empty" style="grid-column: 1/-1;">Loading…</div>
+          </div>
+
+          <!-- Last updated -->
+          <div class="mp-analytics-updated" id="analytics-updated">
+            <span class="mp-analytics-updated-dot" aria-hidden="true"></span>
+            <span id="analytics-updated-text">Updated just now</span>
+            <span aria-hidden="true" style="margin: 0 6px;">·</span>
+            <span>Auto-refresh <span id="analytics-autorefresh-state">on</span></span>
+            <button type="button" id="analytics-refresh-btn" class="admin-btn admin-btn--secondary admin-btn--sm" style="margin-left: 8px;" title="Refresh now (R)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              Refresh
+            </button>
+            <button type="button" id="analytics-export-btn" class="admin-btn admin-btn--secondary admin-btn--sm" style="margin-left: 4px;" title="Export trades as CSV (E)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+            <select id="analytics-interval-picker" aria-label="Auto-refresh interval">
+              <option value="15000">15s</option>
+              <option value="30000">30s</option>
+              <option value="60000" selected>60s</option>
+              <option value="300000">5m</option>
+              <option value="0">Off</option>
+            </select>
+            <span class="mp-daterange" title="Custom date range — overrides 7/30/90d preset on charts">
+              <input type="date" id="mp-daterange-start" aria-label="Start date" />
+              <span aria-hidden="true">→</span>
+              <input type="date" id="mp-daterange-end" aria-label="End date" />
+              <button type="button" class="mp-daterange-clear" id="mp-daterange-clear" title="Clear custom range">clear</button>
+            </span>
+          </div>
+
+          <h2 style="font-size: 18px; font-weight: 600; color: var(--admin-text, #181d27); margin: 0 0 12px; display:flex; align-items:center; gap:8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Built-in Analytics
+            Live Snapshot
           </h2>
 
-          <!-- Stats Cards -->
+          <!-- Stats Cards (skeleton during initial load) -->
           <div class="mp-analytics-stats" id="analytics-stats-grid">
-            <div class="mp-analytics-empty">Loading stats…</div>
+            <div class="mp-skeleton-stat"></div>
+            <div class="mp-skeleton-stat"></div>
+            <div class="mp-skeleton-stat"></div>
+            <div class="mp-skeleton-stat"></div>
+            <div class="mp-skeleton-stat"></div>
+            <div class="mp-skeleton-stat"></div>
           </div>
 
           <!-- Charts Grid -->
+          <p class="mp-charts-scope-hint">Period selector below applies to charts only — KPIs above are always 24h.</p>
           <div class="mp-analytics-charts">
             <div class="mp-analytics-chart-card">
-              <h4>Daily Volume &amp; Fee Revenue</h4>
-              <div id="analytics-volume-chart"></div>
+              <div class="mp-analytics-chart-header">
+                <h4>Daily Volume &amp; Fee Revenue</h4>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <select class="mp-asset-filter" id="mp-asset-filter-volume" aria-label="Filter by asset">
+                    <option value="">All assets</option>
+                  </select>
+                  <div class="mp-period-toggle" data-target="volume" role="group" aria-label="Period">
+                    <button type="button" data-period="7"  class="active">7d</button>
+                    <button type="button" data-period="30">30d</button>
+                    <button type="button" data-period="90">90d</button>
+                  </div>
+                  <a href="/admin/marketplace/trades.html" class="mp-chart-link" title="Open trades view (G then T)">View trades →</a>
+                </div>
+              </div>
+              <div id="analytics-volume-chart" class="mp-chart-skel"></div>
             </div>
             <div class="mp-analytics-chart-card">
-              <h4>Top Assets by Volume</h4>
-              <div id="analytics-assets-chart"></div>
+              <div class="mp-analytics-chart-header">
+                <h4>Top Assets by Volume</h4>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <div class="mp-period-toggle" data-target="assets" role="group" aria-label="Period">
+                    <button type="button" data-period="7"  class="active">7d</button>
+                    <button type="button" data-period="30">30d</button>
+                    <button type="button" data-period="90">90d</button>
+                  </div>
+                  <a href="/admin/marketplace/orderbook.html" class="mp-chart-link" title="Open orderbook">View orderbook →</a>
+                </div>
+              </div>
+              <div id="analytics-assets-chart" class="mp-chart-skel"></div>
             </div>
           </div>
-        </div>
 
-        <!-- Quick Links -->
-        <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
-          <a href="#" data-metabase-path="/question/40" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Total Users
-          </a>
-          <a href="#" data-metabase-path="/question/41" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            User Signups
-          </a>
-          <a href="#" data-metabase-path="/question/42" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Investment Volume
-          </a>
-          <a href="#" data-metabase-path="/question/43" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            Orders
-          </a>
-          <a href="#" data-metabase-path="/question/44" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-            Recent Orders
-          </a>
-          <a href="#" data-metabase-path="/question/45" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            Wallet Balances
-          </a>
+          <!-- Risk / Fraud signals -->
+          <h2 style="font-size: 14px; font-weight: 600; color: var(--admin-text-secondary, #717680); margin: 24px 0 8px; text-transform: uppercase; letter-spacing: .04em; display:flex; align-items:center; gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Risk Signals
+          </h2>
+          <div class="mp-fraud-grid" id="analytics-fraud-grid">
+            <div class="mp-analytics-empty" style="grid-column: 1/-1;">Computing…</div>
+          </div>
+
+          <!-- Recent Trades -->
+          <div class="mp-trades-table-wrap">
+            <div class="mp-trades-table-header">
+              <h4>Recent Trades</h4>
+              <a href="/admin/marketplace/trades.html" class="admin-btn admin-btn--secondary admin-btn--sm">View all →</a>
+            </div>
+            <div class="mp-bulk-bar" id="mp-trades-bulk-bar">
+              <span class="mp-bulk-count">0 selected</span>
+              <button type="button" data-bulk-action="cancel">Cancel</button>
+              <button type="button" data-bulk-action="retry">Retry on-chain</button>
+              <button type="button" data-bulk-action="export">Export selected</button>
+              <button type="button" data-bulk-action="clear">Clear</button>
+            </div>
+            <div id="analytics-trades-table">
+              <div class="mp-trades-skel-row"></div>
+              <div class="mp-trades-skel-row"></div>
+              <div class="mp-trades-skel-row"></div>
+              <div class="mp-trades-skel-row"></div>
+              <div class="mp-trades-skel-row"></div>
+            </div>
+          </div>
+
+          <!-- Recent Orders -->
+          <div class="mp-trades-table-wrap">
+            <div class="mp-trades-table-header">
+              <h4>Recent Open Orders</h4>
+              <a href="/admin/marketplace/orders.html" class="admin-btn admin-btn--secondary admin-btn--sm">View all →</a>
+            </div>
+            <div id="analytics-orders-table">
+              <div class="mp-analytics-empty">Loading orders…</div>
+            </div>
+          </div>
+
+          <!-- Metabase Quick Links (only shown if Metabase configured) -->
+          <div class="mp-quick-links" id="analytics-quick-links" style="display:none;">
+            <span class="mp-quick-links-label">Open in Metabase:</span>
+            <a href="#" data-metabase-path="/question/40" target="_blank" rel="noopener noreferrer" class="mp-quick-link">Total Users</a>
+            <a href="#" data-metabase-path="/question/41" target="_blank" rel="noopener noreferrer" class="mp-quick-link">User Signups</a>
+            <a href="#" data-metabase-path="/question/42" target="_blank" rel="noopener noreferrer" class="mp-quick-link">Investment Volume</a>
+            <a href="#" data-metabase-path="/question/43" target="_blank" rel="noopener noreferrer" class="mp-quick-link">Orders</a>
+            <a href="#" data-metabase-path="/question/44" target="_blank" rel="noopener noreferrer" class="mp-quick-link">Recent Orders</a>
+            <a href="#" data-metabase-path="/question/45" target="_blank" rel="noopener noreferrer" class="mp-quick-link">Wallet Balances</a>
+          </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Keyboard shortcuts overlay -->
+  <div class="mp-kbd-overlay" id="mp-kbd-overlay" role="dialog" aria-modal="true" aria-labelledby="mp-kbd-title">
+    <div class="mp-kbd-modal">
+      <h3 id="mp-kbd-title">Keyboard Shortcuts</h3>
+      <div class="mp-kbd-row"><span>Refresh data</span><span class="mp-kbd-key">R</span></div>
+      <div class="mp-kbd-row"><span>Go to Trades</span><span><span class="mp-kbd-key">G</span> then <span class="mp-kbd-key">T</span></span></div>
+      <div class="mp-kbd-row"><span>Go to Orders</span><span><span class="mp-kbd-key">G</span> then <span class="mp-kbd-key">O</span></span></div>
+      <div class="mp-kbd-row"><span>Go to Approvals</span><span><span class="mp-kbd-key">G</span> then <span class="mp-kbd-key">A</span></span></div>
+      <div class="mp-kbd-row"><span>Export CSV</span><span><span class="mp-kbd-key">E</span></span></div>
+      <div class="mp-kbd-row"><span>Toggle this help</span><span class="mp-kbd-key">?</span></div>
+      <div class="mp-kbd-row"><span>Command palette</span><span><span class="mp-kbd-key">⌘</span> + <span class="mp-kbd-key">K</span></span></div>
+      <div class="mp-kbd-row"><span>Close</span><span class="mp-kbd-key">Esc</span></div>
+    </div>
+  </div>
+
+  <!-- Command Palette -->
+  <div class="mp-cmdk" id="mp-cmdk" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="mp-cmdk-modal">
+      <input type="text" class="mp-cmdk-input" id="mp-cmdk-input" placeholder="Search pages, actions, assets…" autocomplete="off" />
+      <div class="mp-cmdk-list" id="mp-cmdk-list"></div>
+    </div>
   </div>
 
   <script src="/static/js/mp-toast.js"></script>

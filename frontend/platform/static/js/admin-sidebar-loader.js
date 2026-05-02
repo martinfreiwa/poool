@@ -29,6 +29,9 @@
                         <img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL">
                         <span class="admin-sidebar-logo-badge" id="admin-sidebar-env-pill" data-env="loading">Admin</span>
                     </a>
+                    <button type="button" class="admin-sidebar-collapse-btn" id="admin-sidebar-collapse" aria-label="Collapse sidebar" title="Collapse / expand sidebar (mod-B)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
                 </div>
 
                 <!-- Navigation -->
@@ -66,9 +69,9 @@
                     <!-- Finance -->
                     <div class="admin-nav-section">
                         <span class="admin-nav-section-label">Finance</span>
-                        <a href="/admin/orders.html" class="admin-nav-item ${isPathActive(["/admin/orders.html"]) ? "active" : ""}" id="nav-orders">
+                        <a href="/admin/orders.html" class="admin-nav-item ${isPathActive(["/admin/orders.html"]) ? "active" : ""}" id="nav-orders" title="Primary investment purchase orders">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h4l2.5 12h11.5a2 2 0 001.9-1.3L23 5H5.5"/><circle cx="9" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
-                            <span>Orders</span>
+                            <span>Investment Orders</span>
                         </a>
                         <a href="/admin/deposits.html" class="admin-nav-item ${isPathActive(["/admin/deposits.html"]) ? "active" : ""}" id="nav-deposits">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M8 6l4-4 4 4"/><rect x="3" y="10" width="18" height="10" rx="3"/></svg>
@@ -132,9 +135,9 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17L17 7"/></svg>
                             <span>Trades</span>
                         </a>
-                        <a href="/admin/marketplace/orders.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/orders.html"]) ? "active" : ""}" id="nav-mp-orders">
+                        <a href="/admin/marketplace/orders.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/orders.html"]) ? "active" : ""}" id="nav-mp-orders" title="Live secondary-market trade orders">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h4l2.5 12h11.5a2 2 0 001.9-1.3L23 5H5.5"/><circle cx="9" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
-                            <span>Open Orders</span>
+                            <span>Trade Orders</span>
                         </a>
                         <a href="/admin/marketplace/approvals.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/approvals.html"]) ? "active" : ""}" id="nav-mp-approvals">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -350,14 +353,24 @@
                         </span>
                         <span id="theme-toggle-label" class="admin-theme-toggle-label">Light</span>
                     </button>
-                    <div class="admin-sidebar-user">
-                        <span class="admin-sidebar-avatar-wrap">
-                            <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
-                            <span class="admin-sidebar-avatar-status admin-sidebar-avatar-status--online" id="sidebar-user-status" aria-label="Online" title="Online"></span>
-                        </span>
-                        <div class="admin-sidebar-user-info">
-                            <div class="admin-sidebar-user-name" id="sidebar-user-name">Admin User</div>
-                            <div class="admin-sidebar-user-role" id="sidebar-user-role">Super Admin</div>
+                    <div class="admin-sidebar-user-menu" id="admin-sidebar-user-menu">
+                        <button type="button" class="admin-sidebar-user" id="admin-sidebar-user-btn" aria-haspopup="menu" aria-expanded="false">
+                            <span class="admin-sidebar-avatar-wrap">
+                                <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
+                                <span class="admin-sidebar-avatar-status admin-sidebar-avatar-status--online" id="sidebar-user-status" aria-label="Online" title="Online"></span>
+                            </span>
+                            <div class="admin-sidebar-user-info">
+                                <div class="admin-sidebar-user-name" id="sidebar-user-name">Admin User</div>
+                                <div class="admin-sidebar-user-role" id="sidebar-user-role">Super Admin</div>
+                            </div>
+                            <svg class="admin-sidebar-user-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                        </button>
+                        <div class="admin-sidebar-user-popover" id="admin-sidebar-user-popover" role="menu">
+                            <a href="/admin/profile" class="admin-sidebar-user-popover__item" role="menuitem">Profile</a>
+                            <a href="/admin/audit-logs" class="admin-sidebar-user-popover__item" role="menuitem">My audit log</a>
+                            <a href="/admin/" class="admin-sidebar-user-popover__item" role="menuitem">Switch account</a>
+                            <div class="admin-sidebar-user-popover__sep"></div>
+                            <button type="button" class="admin-sidebar-user-popover__item admin-sidebar-user-popover__item--danger" id="admin-sidebar-logout" role="menuitem">Sign out</button>
                         </div>
                     </div>
                 </div>
@@ -374,6 +387,55 @@
         // Notify the permission guard (and any other listeners) that the
         // sidebar DOM is now available so they can apply visibility rules.
         document.dispatchEvent(new CustomEvent("admin:sidebar-ready"));
+
+        // Sidebar collapse (#25)
+        const COLLAPSE_KEY = "admin_sidebar_collapsed";
+        const applyCollapsed = (on) => {
+            document.body.classList.toggle("admin-sidebar-collapsed", on);
+            const btn = document.getElementById("admin-sidebar-collapse");
+            if (btn) {
+                btn.setAttribute("aria-label", on ? "Expand sidebar" : "Collapse sidebar");
+                btn.setAttribute("aria-expanded", on ? "false" : "true");
+            }
+        };
+        applyCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
+        document.getElementById("admin-sidebar-collapse")?.addEventListener("click", () => {
+            const next = !document.body.classList.contains("admin-sidebar-collapsed");
+            localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+            applyCollapsed(next);
+        });
+        document.addEventListener("keydown", (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+                e.preventDefault();
+                const next = !document.body.classList.contains("admin-sidebar-collapsed");
+                localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+                applyCollapsed(next);
+            }
+        });
+
+        // Profile popover (#26)
+        const userBtn = document.getElementById("admin-sidebar-user-btn");
+        const userPop = document.getElementById("admin-sidebar-user-popover");
+        const userMenu = document.getElementById("admin-sidebar-user-menu");
+        if (userBtn && userPop && userMenu) {
+            userBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const open = userMenu.classList.toggle("is-open");
+                userBtn.setAttribute("aria-expanded", open ? "true" : "false");
+            });
+            document.addEventListener("click", (e) => {
+                if (!userMenu.contains(e.target)) {
+                    userMenu.classList.remove("is-open");
+                    userBtn.setAttribute("aria-expanded", "false");
+                }
+            });
+        }
+        document.getElementById("admin-sidebar-logout")?.addEventListener("click", async () => {
+            try {
+                await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+            } catch (_) { /* ignore */ }
+            window.location.href = "/login";
+        });
 
         // Sync theme label immediately. Label is the action ("Switch to X")
         // so it's unambiguous what clicking will do.
@@ -490,10 +552,15 @@
         if (saved !== null) {
             sidebar.scrollTop = parseInt(saved, 10);
         } else {
-            // No saved position — scroll the active item into view
+            // No saved position — scroll the active item into view inside the nav container
             const activeItem = sidebar.querySelector(".admin-nav-item.active");
             if (activeItem) {
-                activeItem.scrollIntoView({ block: "center", behavior: "instant" });
+                const itemTop = activeItem.offsetTop;
+                const itemHeight = activeItem.offsetHeight;
+                const viewHeight = sidebar.clientHeight;
+                if (itemTop < sidebar.scrollTop + 16 || itemTop + itemHeight > sidebar.scrollTop + viewHeight - 16) {
+                    sidebar.scrollTop = Math.max(0, itemTop - viewHeight / 2 + itemHeight / 2);
+                }
             }
         }
 

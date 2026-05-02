@@ -760,8 +760,24 @@ pub fn router() -> axum::Router<AppState> {
             get(primary_escrow::api_admin_primary_escrow_list),
         )
         .route(
+            "/api/admin/primary-escrow/summary",
+            get(primary_escrow::api_admin_primary_escrow_summary),
+        )
+        .route(
+            "/api/admin/primary-escrow/agents",
+            get(primary_escrow::api_admin_primary_escrow_agents),
+        )
+        .route(
+            "/api/admin/primary-escrow/bulk-assign-agent",
+            post(primary_escrow::api_admin_primary_escrow_bulk_assign_agent),
+        )
+        .route(
             "/api/admin/primary-escrow/:asset_id/release-request",
             post(primary_escrow::api_admin_primary_escrow_release_request),
+        )
+        .route(
+            "/api/admin/primary-escrow/:asset_id/audit",
+            get(primary_escrow::api_admin_primary_escrow_audit),
         )
         .route(
             "/api/admin/marketplace/stats",
@@ -780,12 +796,33 @@ pub fn router() -> axum::Router<AppState> {
             get(marketplace::api_admin_marketplace_trades_export_csv),
         )
         .route(
+            "/api/admin/marketplace/trades/bulk-retry-onchain",
+            post(marketplace::api_admin_marketplace_trades_bulk_retry_onchain),
+        )
+        .route(
             "/api/admin/marketplace/trades",
             get(marketplace::api_admin_marketplace_trades),
         )
         .route(
+            "/api/admin/marketplace/trade-notes/:trade_id",
+            get(marketplace::api_admin_marketplace_trade_notes_list)
+                .post(marketplace::api_admin_marketplace_trade_notes_create),
+        )
+        .route(
             "/api/admin/marketplace/orders",
             get(marketplace::api_admin_marketplace_orders),
+        )
+        .route(
+            "/api/admin/marketplace/orders/export.csv",
+            get(marketplace::api_admin_marketplace_orders_export_csv),
+        )
+        .route(
+            "/api/admin/marketplace/orders/stats",
+            get(marketplace::api_admin_marketplace_orders_stats),
+        )
+        .route(
+            "/api/admin/marketplace/orders/bulk-cancel",
+            post(marketplace::api_admin_marketplace_orders_bulk_cancel),
         )
         .route(
             "/api/admin/marketplace/orders/:order_id",
@@ -798,6 +835,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/marketplace/orderbook/:asset_id",
             get(marketplace::api_admin_marketplace_orderbook),
+        )
+        .route(
+            "/api/admin/marketplace/orderbook/:asset_id/level",
+            get(marketplace::api_admin_marketplace_orderbook_level),
         )
         .route(
             "/api/admin/marketplace/orderbook/rebuild",
@@ -827,6 +868,48 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/marketplace/compliance/tax-export",
             get(marketplace::api_admin_marketplace_compliance_tax),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/summary",
+            get(marketplace::api_admin_marketplace_compliance_summary),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/exports",
+            get(marketplace::api_admin_marketplace_compliance_exports),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/exports/:id/mark-submitted",
+            post(marketplace::api_admin_marketplace_compliance_mark_submitted),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/requests",
+            get(marketplace::api_admin_marketplace_compliance_requests_list)
+                .post(marketplace::api_admin_marketplace_compliance_request_create),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/requests/:id/approve",
+            post(marketplace::api_admin_marketplace_compliance_request_approve),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/requests/:id/deny",
+            post(marketplace::api_admin_marketplace_compliance_request_deny),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/schedules",
+            get(marketplace::api_admin_marketplace_compliance_schedule_list)
+                .post(marketplace::api_admin_marketplace_compliance_schedule_create),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/schedules/:id",
+            delete(marketplace::api_admin_marketplace_compliance_schedule_delete),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/compare",
+            get(marketplace::api_admin_marketplace_compliance_compare),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/meta",
+            get(marketplace::api_admin_marketplace_compliance_meta),
         )
         // ── 6A.7: Pending Approvals ──────────────────────────────
         .route(
@@ -878,11 +961,68 @@ pub fn router() -> axum::Router<AppState> {
             get(marketplace::api_admin_marketplace_watchlist)
                 .post(marketplace::api_admin_marketplace_add_watchlist),
         )
+        // ── Alert extensions (mig 109): claim/snooze/audit/bulk + rules + watchlist v2
+        .route(
+            "/api/admin/marketplace/alerts/bulk",
+            post(marketplace::api_admin_marketplace_alerts_bulk),
+        )
+        .route(
+            "/api/admin/marketplace/alerts/:alert_id/claim",
+            post(marketplace::api_admin_marketplace_claim_alert),
+        )
+        .route(
+            "/api/admin/marketplace/alerts/:alert_id/snooze",
+            post(marketplace::api_admin_marketplace_snooze_alert),
+        )
+        .route(
+            "/api/admin/marketplace/alerts/:alert_id/audit",
+            get(marketplace::api_admin_marketplace_alert_audit),
+        )
+        .route(
+            "/api/admin/marketplace/alert-rules",
+            get(marketplace::api_admin_marketplace_list_rules)
+                .post(marketplace::api_admin_marketplace_create_rule),
+        )
+        .route(
+            "/api/admin/marketplace/alert-rules/:id",
+            axum::routing::put(marketplace::api_admin_marketplace_update_rule)
+                .delete(marketplace::api_admin_marketplace_delete_rule),
+        )
+        .route(
+            "/api/admin/marketplace/alert-rules/:id/test",
+            post(marketplace::api_admin_marketplace_test_rule),
+        )
+        .route(
+            "/api/admin/marketplace/watchlist/v2",
+            get(marketplace::api_admin_marketplace_watchlist_v2)
+                .post(marketplace::api_admin_marketplace_add_watchlist_v2),
+        )
+        .route(
+            "/api/admin/marketplace/watchlist/v2/:id",
+            axum::routing::delete(marketplace::api_admin_marketplace_delete_watchlist_v2),
+        )
         // ── 6A.14: Marketplace Settings ──────────────────────────
         .route(
             "/api/admin/marketplace/settings",
             get(marketplace::api_admin_marketplace_settings)
                 .post(marketplace::api_admin_marketplace_save_settings),
+        )
+        .route(
+            "/api/admin/marketplace/settings/history",
+            get(marketplace::api_admin_marketplace_settings_history),
+        )
+        .route(
+            "/api/admin/marketplace/settings/context",
+            get(marketplace::api_admin_marketplace_settings_context),
+        )
+        .route(
+            "/api/admin/marketplace/settings/schedule",
+            get(marketplace::api_admin_marketplace_list_scheduled_settings)
+                .post(marketplace::api_admin_marketplace_schedule_settings),
+        )
+        .route(
+            "/api/admin/marketplace/settings/schedule/:id",
+            delete(marketplace::api_admin_marketplace_cancel_scheduled_settings),
         )
         // ── Blockchain Treasury & Tokenization ───────────────────
         .route(

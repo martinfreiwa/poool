@@ -5,6 +5,7 @@
 
 let assetData = null;
 let assetId = null;
+let detailAssetImages = [];
 
 // ─── Init ─────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
@@ -228,26 +229,200 @@ function renderOverview(a) {
 const POOOL_LOGO_URL = "/static/images/logos/logo-blue.svg";
 
 function renderMedia(a) {
-  const images = (a.images || []).filter((i) => i.url);
-  document.getElementById("media-count").textContent =
-    `${images.length} image${images.length !== 1 ? "s" : ""}`;
+  const images = (a.images || [])
+    .filter((i) => i.url)
+    .map((img, index) => ({
+      id: img.id || "",
+      url: img.url,
+      is_cover: !!img.is_cover,
+      sort_order: Number.isFinite(Number(img.sort_order)) ? Number(img.sort_order) : index,
+    }))
+    .sort((left, right) => left.sort_order - right.sort_order);
 
-  if (images.length > 0) {
-    document.getElementById("media-grid").innerHTML = images
-      .map(
-        (img) => `
-            <div class="media-item" style="background-image:url('${esc(img.url)}')"
-              onerror="this.style.backgroundImage='none';this.style.background='#F5F7FF';this.style.display='flex';this.style.alignItems='center';this.style.justifyContent='center';this.innerHTML='<img src=\\'${POOOL_LOGO_URL}\\' style=\\'width:48px;opacity:0.3;\\'>'">
-                ${img.is_cover ? '<span class="cover-badge">Cover</span>' : ""}
-            </div>
-        `,
-      )
-      .join("");
+  if (images.length > 0 && !images.some((img) => img.is_cover)) {
+    images[0].is_cover = true;
+  }
+  detailAssetImages = images.map((img, index) => ({
+    ...img,
+    sort_order: index,
+    is_cover: index === 0 ? true : img.is_cover && images.findIndex((item) => item.is_cover) === index,
+  }));
+
+  document.getElementById("media-count").textContent =
+    `${detailAssetImages.length} image${detailAssetImages.length !== 1 ? "s" : ""}`;
+
+  renderMediaGrid();
+
+  const mediaBody = document.querySelector("#panel-media .ad-card__body");
+  let hint = document.getElementById("media-order-hint");
+  if (mediaBody && !hint) {
+    hint = document.createElement("p");
+    hint.id = "media-order-hint";
+    hint.className = "media-order-hint";
+    mediaBody.insertBefore(hint, document.getElementById("media-grid"));
+  }
+  if (hint) {
+    hint.hidden = detailAssetImages.length < 2;
+    hint.textContent = "Drag images or use the arrow buttons to set the display order. Image 1 is used as the cover.";
   }
 
   if (a.video_url) {
     document.getElementById("video-section").hidden = false;
     document.getElementById("video-link").href = a.video_url;
+  }
+}
+
+function renderMediaGrid() {
+  const grid = document.getElementById("media-grid");
+  if (!grid) return;
+
+  grid.textContent = "";
+  if (detailAssetImages.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "ad-empty";
+    empty.textContent = "No images uploaded.";
+    grid.appendChild(empty);
+    return;
+  }
+
+  detailAssetImages.forEach((img, index) => {
+    img.sort_order = index;
+    img.is_cover = index === 0;
+
+    const item = document.createElement("div");
+    item.className = "media-item media-item--sortable";
+    item.draggable = detailAssetImages.length > 1 && !!img.id;
+    item.dataset.index = String(index);
+    item.dataset.id = img.id;
+    item.style.backgroundImage = `url("${cssUrl(img.url)}")`;
+    item.setAttribute("aria-label", `Image ${index + 1} of ${detailAssetImages.length}`);
+    item.addEventListener("dragstart", handleMediaDragStart);
+    item.addEventListener("dragover", handleMediaDragOver);
+    item.addEventListener("drop", handleMediaDrop);
+    item.addEventListener("dragend", handleMediaDragEnd);
+
+    const orderBadge = document.createElement("span");
+    orderBadge.className = "media-order-badge";
+    orderBadge.textContent = `#${index + 1}`;
+    item.appendChild(orderBadge);
+
+    if (img.is_cover) {
+      const coverBadge = document.createElement("span");
+      coverBadge.className = "cover-badge";
+      coverBadge.textContent = "Cover";
+      item.appendChild(coverBadge);
+    }
+
+    if (detailAssetImages.length > 1 && img.id) {
+      const controls = document.createElement("div");
+      controls.className = "media-order-controls";
+      controls.appendChild(createMediaOrderButton("up", index, index === 0));
+      controls.appendChild(createMediaOrderButton("down", index, index === detailAssetImages.length - 1));
+      if (index !== 0) {
+        const coverButton = document.createElement("button");
+        coverButton.type = "button";
+        coverButton.className = "media-order-cover";
+        coverButton.textContent = "Make cover";
+        coverButton.addEventListener("click", () => moveDetailImage(index, 0));
+        controls.appendChild(coverButton);
+      }
+      item.appendChild(controls);
+    }
+
+    grid.appendChild(item);
+  });
+}
+
+function createMediaOrderButton(direction, index, disabled) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "media-order-btn";
+  button.disabled = disabled;
+  button.setAttribute("aria-label", direction === "up" ? "Move image earlier" : "Move image later");
+  button.textContent = direction === "up" ? "↑" : "↓";
+  button.addEventListener("click", () => {
+    moveDetailImage(index, direction === "up" ? index - 1 : index + 1);
+  });
+  return button;
+}
+
+let draggedMediaIndex = null;
+
+function handleMediaDragStart(event) {
+  draggedMediaIndex = Number(this.dataset.index);
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", String(draggedMediaIndex));
+  this.classList.add("media-item--dragging");
+}
+
+function handleMediaDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+}
+
+function handleMediaDrop(event) {
+  event.preventDefault();
+  const targetIndex = Number(this.dataset.index);
+  if (Number.isInteger(draggedMediaIndex) && draggedMediaIndex !== targetIndex) {
+    moveDetailImage(draggedMediaIndex, targetIndex);
+  }
+}
+
+function handleMediaDragEnd() {
+  this.classList.remove("media-item--dragging");
+  draggedMediaIndex = null;
+}
+
+async function moveDetailImage(fromIndex, toIndex) {
+  if (fromIndex < 0 || toIndex < 0 || fromIndex >= detailAssetImages.length || toIndex >= detailAssetImages.length) {
+    return;
+  }
+  if (!detailAssetImages.every((img) => img.id)) {
+    showToast("Image order cannot be saved until all images have server IDs.", "warning");
+    return;
+  }
+
+  const previousImages = detailAssetImages.map((img) => ({ ...img }));
+  const [moved] = detailAssetImages.splice(fromIndex, 1);
+  detailAssetImages.splice(toIndex, 0, moved);
+  normalizeDetailImageOrder();
+  renderMediaGrid();
+
+  try {
+    await syncDetailImageOrder();
+    showToast("Image order saved.", "success");
+  } catch (err) {
+    detailAssetImages = previousImages;
+    renderMediaGrid();
+    showToast(`Could not save image order: ${err.message}`, "error");
+  }
+}
+
+function normalizeDetailImageOrder() {
+  detailAssetImages.forEach((img, index) => {
+    img.sort_order = index;
+    img.is_cover = index === 0;
+  });
+}
+
+async function syncDetailImageOrder() {
+  if (!assetId || detailAssetImages.length === 0) return;
+  const payload = detailAssetImages.map((img, index) => ({
+    id: img.id,
+    sort_order: index,
+    is_cover: index === 0,
+  }));
+  const response = await fetch(`/api/developer/draft/${assetId}/images/reorder`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": getCsrfToken(),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `HTTP ${response.status}`);
   }
 }
 
@@ -427,6 +602,17 @@ function esc(s) {
   return d.innerHTML;
 }
 
+function cssUrl(value) {
+  return String(value || "").replace(/["\\\n\r\f]/g, "");
+}
+
+function getCsrfToken() {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; csrf_token=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return "";
+}
+
 function formatUSD(cents) {
   if (typeof cents !== "number") return "$0.00";
   return (
@@ -481,8 +667,8 @@ function orderStatusBadge(status) {
   return `<span class="ad-badge ${cls}">${status || "—"}</span>`;
 }
 
-function showToast(msg) {
+function showToast(msg, type = "info") {
   if(window.showPooolToast) {
-    window.showPooolToast(null, msg, "info");
+    window.showPooolToast(null, msg, type);
   }
 }

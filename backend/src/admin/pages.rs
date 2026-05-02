@@ -199,10 +199,14 @@ pub async fn page_admin_generic(
         return Redirect::to("/admin/").into_response();
     }
 
+    // 301 redirect .html → clean URL (#28 — keep canonical URLs).
+    if let Some(stem) = relative.strip_suffix(".html") {
+        let q = req.uri().query().map(|s| format!("?{}", s)).unwrap_or_default();
+        return Redirect::permanent(&format!("/{}{}", stem, q)).into_response();
+    }
+
     // If the path doesn't end with .html, append it so clean URLs resolve correctly
-    let file = if relative.ends_with(".html") {
-        relative.to_string()
-    } else if relative.ends_with('/') {
+    let file = if relative.ends_with('/') {
         format!("{}index.html", relative)
     } else {
         format!("{}.html", relative)

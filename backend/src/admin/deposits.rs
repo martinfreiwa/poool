@@ -72,7 +72,11 @@ pub async fn api_admin_deposits(
             let email = r.10.clone();
             let display_name = {
                 let n = r.11.trim();
-                if n.is_empty() { email.clone() } else { n.to_string() }
+                if n.is_empty() {
+                    email.clone()
+                } else {
+                    n.to_string()
+                }
             };
             serde_json::json!({
                 "id": r.0, "type": "deposit", "status": r.1, "amount_cents": r.2,

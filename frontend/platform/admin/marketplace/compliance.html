@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <link rel="stylesheet" href="/static/css/mp-compliance.css?v=3" />
+  <script src="/static/js/mp-compliance-i18n.js?v=1"></script>
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
   <script src="/static/js/poool-dropdown.js"></script>
@@ -22,6 +24,25 @@
 </head>
 
 <body class="admin-body dom-ready">
+  <!-- ── Reusable SVG icons ─────────────────────────────────── -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="mp-i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </symbol>
+      <symbol id="mp-i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </symbol>
+      <symbol id="mp-i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+      </symbol>
+      <symbol id="mp-i-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v18M5 21h14M5 9l-3 7a4 4 0 0 0 6 0L5 9zM19 9l-3 7a4 4 0 0 0 6 0l-3-7zM4 5h16"/>
+      </symbol>
+    </defs>
+  </svg>
+
   <div class="admin-wrapper">
     {% include 'admin/components/sidebar.html' %}
 
@@ -36,103 +57,435 @@
             <span class="current">Compliance</span>
           </nav>
         </div>
-        <div class="admin-topbar-right"></div>
+        <div class="admin-topbar-right">
+          <select id="mp-locale-switch" class="admin-input admin-input--inline" aria-label="Locale">
+            <option value="en">EN</option>
+            <option value="id">ID</option>
+          </select>
+          <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="mp-shortcuts-help"
+            title="Keyboard shortcuts" aria-label="Keyboard shortcuts">?</button>
+        </div>
       </header>
 
       <div class="admin-content">
         <div class="admin-page-header">
-          <h1 class="admin-page-title">Compliance & OJK Reports</h1>
+          <h1 class="admin-page-title">Compliance &amp; OJK Reports</h1>
           <p class="admin-page-subtitle">Generate regulatory reports and access Travel-Rule datasets required by OJK and Bappebti.</p>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 24px;">
-
-          <!-- OJK Quarterly Report -->
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3 class="admin-card-title">OJK Quarterly Report</h3>
-            </div>
-            <div class="admin-card-body">
-              <p style="color: var(--admin-text-muted); font-size: 14px; margin-bottom: 20px;">
-                Required by OJK Regulation 27/2024. Contains gross trading volume (cents), registered users, and system incidents for the specified quarter.
-              </p>
-              
-              <div style="margin-bottom: 20px;">
-                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Reporting Period</label>
-                <select id="ojk-quarter" class="admin-input" style="width: 100%;">
-                  <option value="2026-Q1" selected>Q1 2026 (Jan - Mar)</option>
-                  <option value="2025-Q4">Q4 2025 (Oct - Dec)</option>
-                  <option value="2025-Q3">Q3 2025 (Jul - Sep)</option>
-                  <option value="2025-Q2">Q2 2025 (Apr - Jun)</option>
-                </select>
-              </div>
-
-              <div style="display: flex; gap: 12px; align-items: center;">
-                <button class="admin-btn admin-btn--primary" id="btn-export-ojk">
-                  <span class="icon" style="font-size:16px;">⬇️</span> Download CSV
-                </button>
+        <!-- ── Compliance Health Banner ─────────────────────────── -->
+        <section id="mp-compliance-health" class="mp-compliance-health" aria-live="polite" data-state="loading">
+          <div class="mp-compliance-health__row">
+            <div class="mp-compliance-health__heading">
+              <svg class="mp-compliance-health__icon" aria-hidden="true"><use href="#mp-i-scale"/></svg>
+              <div>
+                <div class="mp-compliance-health__title">Regulatory deadlines</div>
+                <div class="mp-compliance-health__subtitle">
+                  <span id="mp-health-cutoff">Loading…</span>
+                  <span class="mp-compliance-health__sep" aria-hidden="true">·</span>
+                  <span id="mp-health-refreshed" class="mp-compliance-health__refreshed">refreshing</span>
+                </div>
               </div>
             </div>
+            <div class="mp-compliance-health__deadlines" id="mp-health-deadlines"></div>
+            <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="mp-health-refresh" aria-label="Refresh compliance health">
+              <svg class="mp-icon" aria-hidden="true"><use href="#mp-i-refresh"/></svg>
+            </button>
           </div>
+        </section>
 
-          <!-- AML Travel Rule Export -->
-          <div class="admin-card">
+        <div class="mp-compliance-grid">
+
+          <!-- ── OJK Quarterly Report (PRIMARY) ───────────────── -->
+          <article class="admin-card mp-compliance-card mp-compliance-card--primary" data-export-type="ojk_quarterly">
             <div class="admin-card-header">
-              <h3 class="admin-card-title">AML / Travel-Rule Data</h3>
+              <h3 class="admin-card-title">
+                OJK Quarterly Report
+                <span class="mp-compliance-card__pill" aria-label="Required regulatory filing">Required</span>
+              </h3>
+              <span class="mp-compliance-card__badge" data-status-badge>—</span>
             </div>
             <div class="admin-card-body">
-              <p style="color: var(--admin-text-muted); font-size: 14px; margin-bottom: 20px;">
-                Export raw peer-to-peer and marketplace trade data. Includes originating and beneficiary identities required under FATF Recommendation 16.
+              <p class="mp-compliance-card__desc">
+                Required by <a href="https://www.ojk.go.id/id/regulasi/Pages/POJK-27-2024.aspx"
+                  target="_blank" rel="noopener noreferrer" class="mp-link"
+                  >OJK Regulation 27/2024 <svg class="mp-icon mp-icon--xs" aria-hidden="true"><use href="#mp-i-external"/></svg></a>.
+                Contains gross trading volume (cents), registered users, and system incidents for the specified quarter.
               </p>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                <div>
-                  <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Start Date</label>
-                  <input type="date" id="aml-start" class="admin-input" style="width: 100%;" />
-                </div>
-                <div>
-                  <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">End Date</label>
-                  <input type="date" id="aml-end" class="admin-input" style="width: 100%;" />
-                </div>
-              </div>
+              <label class="mp-field">
+                <span class="mp-field__label">Reporting Period</span>
+                <select id="ojk-quarter" class="admin-input"></select>
+              </label>
 
-              <button class="admin-btn admin-btn--outline" id="btn-export-aml">
-                 <span class="icon" style="font-size:16px;">⬇️</span> Export Complete Dataset (CSV)
+              <label class="mp-field">
+                <span class="mp-field__label">Format</span>
+                <select class="admin-input mp-format-select" data-format-for="ojk_quarterly">
+                  <option value="csv" selected>CSV (OJK-conform)</option>
+                  <option value="json">JSON</option>
+                </select>
+              </label>
+
+              <dl class="mp-preview" data-preview-for="ojk_quarterly">
+                <div><dt>Rows</dt><dd data-preview-rows>—</dd></div>
+                <div><dt>Excluded</dt><dd data-preview-excluded>0</dd></div>
+                <div><dt>Est. size</dt><dd data-preview-size>—</dd></div>
+                <div><dt>Last export</dt><dd data-preview-last>Never</dd></div>
+              </dl>
+
+              <button class="admin-btn admin-btn--primary" id="btn-export-ojk" data-export-button>
+                <svg class="mp-icon" aria-hidden="true"><use href="#mp-i-download"/></svg>
+                <span>Download Report</span>
               </button>
             </div>
-          </div>
+          </article>
 
-          <!-- Tax Returns (User Data) -->
-          <div class="admin-card">
+          <!-- ── AML Travel-Rule Export ───────────────────────── -->
+          <article class="admin-card mp-compliance-card" data-export-type="travel_rule">
             <div class="admin-card-header">
-              <h3 class="admin-card-title">Tax & Fiscal Exports</h3>
+              <h3 class="admin-card-title">AML / Travel-Rule Data</h3>
+              <span class="mp-compliance-card__badge" data-status-badge>—</span>
             </div>
             <div class="admin-card-body">
-              <p style="color: var(--admin-text-muted); font-size: 14px; margin-bottom: 20px;">
+              <p class="mp-compliance-card__desc">
+                Export raw peer-to-peer and marketplace trade data. Includes originating and beneficiary identities required under
+                <a href="https://www.fatf-gafi.org/en/recommendations.html" target="_blank" rel="noopener noreferrer" class="mp-link"
+                  >FATF Recommendation 16 <svg class="mp-icon mp-icon--xs" aria-hidden="true"><use href="#mp-i-external"/></svg></a>.
+              </p>
+
+              <div class="mp-presets" role="group" aria-label="Date range presets">
+                <button type="button" data-preset="7" class="mp-preset-chip">Last 7 days</button>
+                <button type="button" data-preset="30" class="mp-preset-chip">Last 30 days</button>
+                <button type="button" data-preset="quarter" class="mp-preset-chip">This quarter</button>
+                <button type="button" data-preset="ytd" class="mp-preset-chip">Year to date</button>
+              </div>
+
+              <div class="mp-field-row">
+                <label class="mp-field">
+                  <span class="mp-field__label" data-i18n="field.start">Start Date</span>
+                  <input type="date" id="aml-start" class="admin-input" aria-describedby="aml-start-display aml-error" />
+                  <span class="mp-field__display" id="aml-start-display" aria-hidden="true">—</span>
+                </label>
+                <label class="mp-field">
+                  <span class="mp-field__label" data-i18n="field.end">End Date</span>
+                  <input type="date" id="aml-end" class="admin-input" aria-describedby="aml-end-display aml-error" />
+                  <span class="mp-field__display" id="aml-end-display" aria-hidden="true">—</span>
+                </label>
+              </div>
+              <div class="mp-field__error" id="aml-error" role="alert" aria-live="polite"></div>
+              <div class="mp-field__hint">Capped at 10,000 rows per export. Stored format ISO YYYY-MM-DD.</div>
+
+              <label class="mp-field">
+                <span class="mp-field__label">Format</span>
+                <select class="admin-input mp-format-select" data-format-for="travel_rule">
+                  <option value="csv" selected>CSV (FATF-conform)</option>
+                  <option value="json">JSON (machine-consumable)</option>
+                </select>
+              </label>
+
+              <dl class="mp-preview" data-preview-for="travel_rule">
+                <div><dt>Rows</dt><dd data-preview-rows>—</dd></div>
+                <div><dt>Excluded</dt><dd data-preview-excluded>0</dd></div>
+                <div><dt>Est. size</dt><dd data-preview-size>—</dd></div>
+                <div><dt>Last export</dt><dd data-preview-last>Never</dd></div>
+              </dl>
+
+              <button class="admin-btn admin-btn--outline" id="btn-export-aml" data-export-button>
+                <svg class="mp-icon" aria-hidden="true"><use href="#mp-i-download"/></svg>
+                <span data-i18n="approval.requestBtn">Request Approval</span>
+              </button>
+              <div class="mp-field__hint">PII export requires a second admin to approve before download.</div>
+            </div>
+          </article>
+
+          <!-- ── Tax & Fiscal Exports ─────────────────────────── -->
+          <article class="admin-card mp-compliance-card" data-export-type="tax_fiscal">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Tax &amp; Fiscal Exports</h3>
+              <span class="mp-compliance-card__badge" data-status-badge>—</span>
+            </div>
+            <div class="admin-card-body">
+              <p class="mp-compliance-card__desc">
                 Summarizes annual capital gains, realized dividend yields, and withholding taxes per individual entity. Used for fiscal year reporting.
               </p>
 
-              <div style="margin-bottom: 20px;">
-                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Fiscal Year</label>
-                <select id="tax-year" class="admin-input" style="width: 100%;">
-                  <option value="2025" selected>2025</option>
-                  <option value="2024">2024</option>
-                </select>
-              </div>
+              <label class="mp-field">
+                <span class="mp-field__label">Fiscal Year</span>
+                <select id="tax-year" class="admin-input"></select>
+              </label>
 
-              <button class="admin-btn admin-btn--outline" id="btn-export-tax">
-                 <span class="icon" style="font-size:16px;">⬇️</span> Export Fiscal Data (CSV)
+              <label class="mp-field">
+                <span class="mp-field__label">Format</span>
+                <select class="admin-input mp-format-select" data-format-for="tax_fiscal">
+                  <option value="csv" selected>CSV</option>
+                  <option value="json">JSON</option>
+                </select>
+              </label>
+
+              <dl class="mp-preview" data-preview-for="tax_fiscal">
+                <div><dt>Rows</dt><dd data-preview-rows>—</dd></div>
+                <div><dt>Excluded</dt><dd data-preview-excluded>0</dd></div>
+                <div><dt>Est. size</dt><dd data-preview-size>—</dd></div>
+                <div><dt>Last export</dt><dd data-preview-last>Never</dd></div>
+              </dl>
+
+              <button class="admin-btn admin-btn--outline" id="btn-export-tax" data-export-button>
+                <svg class="mp-icon" aria-hidden="true"><use href="#mp-i-download"/></svg>
+                <span>Export Fiscal Data</span>
+              </button>
+            </div>
+          </article>
+
+        </div>
+
+        <!-- ── Export History ─────────────────────────────────── -->
+        <section class="admin-card mp-compliance-history">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Recent Exports</h3>
+            <div class="admin-card-actions">
+              <select id="mp-history-filter" class="admin-input admin-input--inline" aria-label="Filter by export type">
+                <option value="">All types</option>
+                <option value="ojk_quarterly">OJK Quarterly</option>
+                <option value="travel_rule">Travel Rule</option>
+                <option value="tax_fiscal">Tax / Fiscal</option>
+              </select>
+              <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="mp-history-refresh">
+                <svg class="mp-icon" aria-hidden="true"><use href="#mp-i-refresh"/></svg>
+                <span>Refresh</span>
               </button>
             </div>
           </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <div class="mp-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th scope="col">When</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Period</th>
+                    <th scope="col">By</th>
+                    <th scope="col" class="num">Rows</th>
+                    <th scope="col" class="num">Size</th>
+                    <th scope="col">Hash</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="mp-history-tbody">
+                  <tr><td colspan="9" class="mp-table-empty">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
+        <!-- ── Pending Approval Requests ────────────────────────── -->
+        <section class="admin-card mp-compliance-approvals" id="mp-approvals-section">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title" data-i18n="approval.title">Pending approval requests</h3>
+            <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="mp-approvals-refresh">
+              <svg class="mp-icon" aria-hidden="true"><use href="#mp-i-refresh"/></svg>
+            </button>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <div class="mp-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Type</th>
+                    <th>Period</th>
+                    <th>By</th>
+                    <th>Reason</th>
+                    <th class="actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="mp-approvals-tbody">
+                  <tr><td colspan="6" class="mp-table-empty" data-i18n="approval.empty">No pending requests.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Compare-mode + Auto-Schedule (side by side) ─────── -->
+        <div class="mp-compliance-grid mp-compliance-grid--two">
+          <article class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">
+                <span data-i18n="card.ojk.title">OJK Quarterly</span>
+                <span class="mp-text-muted">·</span>
+                <span data-i18n="compare.title">vs prior quarter</span>
+              </h3>
+            </div>
+            <div class="admin-card-body" id="mp-compare-body">
+              <div class="mp-table-empty">Loading…</div>
+            </div>
+          </article>
+
+          <article class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title" data-i18n="schedule.title">Auto-Schedule</h3>
+              <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" id="mp-schedule-create-btn">
+                <span data-i18n="schedule.create">Create schedule</span>
+              </button>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <div class="mp-table-wrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Cadence</th>
+                      <th>Format</th>
+                      <th>Email</th>
+                      <th>Next run</th>
+                      <th class="actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mp-schedules-tbody">
+                    <tr><td colspan="6" class="mp-table-empty" data-i18n="schedule.empty">No schedules configured.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </article>
         </div>
+
+        <!-- ── Page footer (dynamic from /meta) ────────────────── -->
+        <footer class="mp-compliance-footer">
+          <div class="mp-compliance-footer__row">
+            <div>
+              <strong>Data sources</strong>
+              <span class="mp-compliance-footer__src" id="mp-footer-sources">…</span>
+            </div>
+            <div>
+              <strong>Schema</strong>
+              <span id="mp-footer-schema">…</span>
+            </div>
+            <div>
+              <strong>Support</strong>
+              <a href="#" class="mp-link" id="mp-footer-support">…</a>
+            </div>
+          </div>
+        </footer>
+
       </div>
     </main>
   </div>
 
+  <!-- ── Schedule Create Modal ─────────────────────────────── -->
+  <div class="mp-modal" id="mp-schedule-modal" hidden role="dialog" aria-modal="true" aria-labelledby="mp-schedule-title">
+    <div class="mp-modal__backdrop" data-modal-close></div>
+    <div class="mp-modal__panel" tabindex="-1">
+      <header class="mp-modal__header">
+        <h2 class="mp-modal__title" id="mp-schedule-title" data-i18n="schedule.create">Create schedule</h2>
+        <button type="button" class="mp-modal__close" data-modal-close aria-label="Close">×</button>
+      </header>
+      <form class="mp-modal__body" id="mp-schedule-form">
+        <label class="mp-field">
+          <span class="mp-field__label">Export type</span>
+          <select name="export_type" class="admin-input" required>
+            <option value="ojk_quarterly">OJK Quarterly</option>
+            <option value="tax_fiscal">Tax / Fiscal</option>
+          </select>
+        </label>
+        <label class="mp-field">
+          <span class="mp-field__label" data-i18n="schedule.cadence">Cadence</span>
+          <select name="cadence" class="admin-input" required>
+            <option value="quarterly">Quarterly</option>
+            <option value="annually">Annually</option>
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </label>
+        <label class="mp-field">
+          <span class="mp-field__label" data-i18n="field.format">Format</span>
+          <select name="format" class="admin-input">
+            <option value="csv" selected>CSV</option>
+            <option value="json">JSON</option>
+          </select>
+        </label>
+        <label class="mp-field">
+          <span class="mp-field__label" data-i18n="schedule.email">Delivery email</span>
+          <input type="email" name="delivery_email" class="admin-input" required placeholder="compliance@example.com" />
+        </label>
+        <div class="mp-field__hint">Cron-style auto-generation. Server runs every minute and dispatches due schedules.</div>
+      </form>
+      <footer class="mp-modal__footer">
+        <button type="button" class="admin-btn admin-btn--ghost" data-modal-close data-i18n="modal.cancel">Cancel</button>
+        <button type="submit" form="mp-schedule-form" class="admin-btn admin-btn--primary" data-i18n="schedule.create">Create schedule</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ── Approval Action Modal (Approve / Deny / Request) ─── -->
+  <div class="mp-modal" id="mp-approval-modal" hidden role="dialog" aria-modal="true" aria-labelledby="mp-approval-title">
+    <div class="mp-modal__backdrop" data-modal-close></div>
+    <div class="mp-modal__panel" tabindex="-1">
+      <header class="mp-modal__header">
+        <h2 class="mp-modal__title" id="mp-approval-title">Approval action</h2>
+        <button type="button" class="mp-modal__close" data-modal-close aria-label="Close">×</button>
+      </header>
+      <div class="mp-modal__body">
+        <div id="mp-approval-context" class="mp-modal__warn"></div>
+        <label class="mp-field">
+          <span class="mp-field__label">Notes / reason</span>
+          <textarea id="mp-approval-notes" class="admin-input" rows="3" placeholder="Optional"></textarea>
+        </label>
+      </div>
+      <footer class="mp-modal__footer">
+        <button type="button" class="admin-btn admin-btn--ghost" data-modal-close data-i18n="modal.cancel">Cancel</button>
+        <button type="button" class="admin-btn admin-btn--primary" id="mp-approval-confirm">Confirm</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ── Keyboard Shortcuts Dialog ─────────────────────────── -->
+  <div class="mp-modal" id="mp-shortcuts-modal" hidden role="dialog" aria-modal="true" aria-labelledby="mp-shortcuts-title">
+    <div class="mp-modal__backdrop" data-modal-close></div>
+    <div class="mp-modal__panel" tabindex="-1">
+      <header class="mp-modal__header">
+        <h2 class="mp-modal__title" id="mp-shortcuts-title" data-i18n="shortcuts.title">Keyboard shortcuts</h2>
+        <button type="button" class="mp-modal__close" data-modal-close aria-label="Close">×</button>
+      </header>
+      <div class="mp-modal__body">
+        <table class="mp-shortcuts">
+          <tbody>
+            <tr><td><kbd>?</kbd></td><td>Show this dialog</td></tr>
+            <tr><td><kbd>r</kbd></td><td>Refresh summary &amp; history</td></tr>
+            <tr><td><kbd>o</kbd></td><td>Focus OJK quarter</td></tr>
+            <tr><td><kbd>a</kbd></td><td>Focus AML start date</td></tr>
+            <tr><td><kbd>t</kbd></td><td>Focus Tax year</td></tr>
+            <tr><td><kbd>e</kbd></td><td>Trigger primary export (OJK)</td></tr>
+            <tr><td><kbd>n</kbd></td><td>New auto-schedule</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>h</kbd></td><td>Scroll to history</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>p</kbd></td><td>Scroll to approvals</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Close any modal</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Pre-Export Confirmation Modal ─────────────────────── -->
+  <div class="mp-modal" id="mp-confirm-modal" hidden role="dialog" aria-modal="true" aria-labelledby="mp-confirm-title">
+    <div class="mp-modal__backdrop" data-modal-close></div>
+    <div class="mp-modal__panel" tabindex="-1">
+      <header class="mp-modal__header">
+        <h2 class="mp-modal__title" id="mp-confirm-title">Confirm export</h2>
+        <button type="button" class="mp-modal__close" data-modal-close aria-label="Close">×</button>
+      </header>
+      <div class="mp-modal__body" id="mp-confirm-body"></div>
+      <footer class="mp-modal__footer">
+        <button type="button" class="admin-btn admin-btn--ghost" data-modal-close>Cancel</button>
+        <button type="button" class="admin-btn admin-btn--primary" id="mp-confirm-go">Generate &amp; Download</button>
+      </footer>
+    </div>
+  </div>
+
   <script src="/static/js/mp-toast.js"></script>
-  <script src="/static/js/mp-compliance.js"></script>
+  <script src="/static/js/mp-compliance.js?v=4"></script>
 </body>
 
 </html>

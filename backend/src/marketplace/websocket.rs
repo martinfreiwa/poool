@@ -448,11 +448,13 @@ mod tests {
                 price_cents: 10000,
                 total_quantity: 5,
                 order_count: 2,
+                unique_users: 2,
             }],
             asks: vec![PriceLevel {
                 price_cents: 10500,
                 total_quantity: 3,
                 order_count: 1,
+                unique_users: 1,
             }],
             spread_cents: Some(500),
         };

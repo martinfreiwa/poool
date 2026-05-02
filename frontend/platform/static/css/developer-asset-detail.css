@@ -482,6 +482,12 @@
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;
 }
+.media-order-hint {
+    margin: 0 0 14px;
+    color: var(--label-color);
+    font-size: 13px;
+    line-height: 1.45;
+}
 .media-item {
     aspect-ratio: 16/10;
     border-radius: 10px;
@@ -493,12 +499,78 @@
     transition: transform 0.15s;
 }
 .media-item:hover { transform: scale(1.02); }
+.media-item--sortable {
+    cursor: grab;
+}
+.media-item--dragging {
+    opacity: 0.55;
+    cursor: grabbing;
+}
+.media-order-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    min-width: 28px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(1, 1, 28, 0.82);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
 .cover-badge {
-    position: absolute; top: 8px; left: 8px;
+    position: absolute; top: 8px; left: 44px;
     background: var(--btn-primary-bg); color: var(--btn-primary-color);
     font-size: 9px; font-weight: 700;
     padding: 3px 8px; border-radius: 4px;
     text-transform: uppercase; letter-spacing: 0.04em;
+}
+.media-order-controls {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.media-item:hover .media-order-controls,
+.media-item:focus-within .media-order-controls {
+    opacity: 1;
+    transform: translateY(0);
+}
+.media-order-btn,
+.media-order-cover {
+    min-height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--value-color);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(1, 1, 28, 0.14);
+}
+.media-order-btn {
+    width: 30px;
+    padding: 0;
+}
+.media-order-cover {
+    padding: 0 9px;
+}
+.media-order-btn:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
 }
 
 /* ─── Document Items ─── */

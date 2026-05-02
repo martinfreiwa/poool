@@ -36,7 +36,19 @@
             <span class="current">Reconciliation</span>
           </nav>
         </div>
-        <div class="admin-topbar-right">
+        <div class="admin-topbar-right" style="display:flex; gap:10px; align-items:center;">
+          <span id="recon-live" class="recon-live" title="Auto-refresh status">
+            <span class="mp-live-dot"></span><span id="recon-live-text">Live</span>
+          </span>
+          <label class="recon-autorefresh" title="Auto-refresh interval">
+            <select id="recon-refresh-interval" class="admin-select admin-select--sm">
+              <option value="0">Manual</option>
+              <option value="30">30s</option>
+              <option value="60" selected>1m</option>
+              <option value="300">5m</option>
+            </select>
+          </label>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-cmdk" title="Command palette (Cmd/Ctrl+K)">⌘K</button>
           <button class="admin-btn admin-btn--primary" id="btn-run-recon" style="gap:6px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
             Run Reconciliation
@@ -50,24 +62,124 @@
           <p class="admin-page-subtitle">Verify wallet balances match internal ledger and on-chain state</p>
         </div>
 
+        <div class="recon-throttle-banner" id="recon-throttle" hidden role="status" aria-live="polite">
+          <span class="recon-throttle-icon">⏳</span>
+          <span id="recon-throttle-text">Cooldown active</span>
+        </div>
+
+        <div class="recon-stale-banner" id="recon-stale" hidden role="status" aria-live="polite">
+          <span class="recon-stale-icon">⚠</span>
+          <span id="recon-stale-text">Data is stale</span>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-stale-refresh" style="margin-left:auto;">Refresh now</button>
+        </div>
+
         <!-- Recon Summary -->
-        <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:20px;">
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header"><span class="admin-kpi-label">Last Run</span></div>
-            <div class="admin-kpi-value" style="font-size:16px;">Today 04:00 UTC</div>
+        <div class="admin-kpi-grid" id="recon-kpis" style="grid-template-columns: repeat(5, 1fr); margin-bottom:20px;">
+          <div class="admin-kpi-card admin-kpi-card--clickable" id="kpi-status" tabindex="0" role="button" aria-label="Filter by status">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Status</span>
+              <span class="admin-kpi-info" title="Aggregated from current mismatch table. 'Needs Review' = ≥1 unresolved mismatch.">ⓘ</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-status-value" style="font-size:18px;">—</div>
+            <div class="admin-kpi-sub" id="kpi-status-sub" style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;"></div>
+            <button class="recon-kpi-cta" id="kpi-status-cta" style="display:none;">Review now →</button>
+          </div>
+          <div class="admin-kpi-card admin-kpi-card--clickable" id="kpi-mismatches" tabindex="0" role="button" aria-label="Show only mismatches">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Mismatches</span>
+              <span class="admin-kpi-info" title="Unresolved balance mismatches. Click to filter table.">ⓘ</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-mismatches-value">—</div>
+            <div class="admin-kpi-sub" id="kpi-mismatches-delta" style="font-size:11px; margin-top:4px;"></div>
           </div>
           <div class="admin-kpi-card">
-            <div class="admin-kpi-header"><span class="admin-kpi-label">Wallets Checked</span></div>
-            <div class="admin-kpi-value">1,247</div>
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Wallets Checked</span>
+              <span class="admin-kpi-info" title="Custodial + connected wallets scanned in last run.">ⓘ</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-wallets-value">—</div>
+            <div class="admin-kpi-sub" id="kpi-wallets-delta" style="font-size:11px; margin-top:4px;"></div>
+          </div>
+          <div class="admin-kpi-card" id="kpi-exposure">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Total Exposure</span>
+              <span class="admin-kpi-info" title="Sum of |diff| across open mismatches. Toggle currency.">ⓘ</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-exposure-value" style="font-size:18px;">—</div>
+            <div class="admin-kpi-sub" style="margin-top:4px; display:flex; align-items:center; gap:6px;">
+              <select id="kpi-exposure-ccy" class="admin-select admin-select--sm" style="height:22px; font-size:11px; padding:0 4px;">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="CHF">CHF</option>
+                <option value="GBP">GBP</option>
+              </select>
+              <span id="kpi-exposure-detail" style="font-size:11px; color:var(--admin-text-muted);"></span>
+            </div>
           </div>
           <div class="admin-kpi-card">
-            <div class="admin-kpi-header"><span class="admin-kpi-label">Mismatches Found</span></div>
-            <div class="admin-kpi-value" style="color:var(--admin-danger);">3</div>
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Last Run</span>
+              <span class="admin-kpi-info" title="Schedule: daily 04:00 UTC. Configurable in MP Settings.">ⓘ</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-lastrun-value" style="font-size:16px;">—</div>
+            <div class="admin-kpi-sub" id="kpi-lastrun-sub" style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;"></div>
           </div>
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header"><span class="admin-kpi-label">Status</span></div>
-            <div class="admin-kpi-value" style="color:var(--admin-warning);">Needs Review</div>
+        </div>
+
+        <!-- Per-Asset Breakdown + Cross-links -->
+        <div class="recon-secondary-grid" id="recon-secondary" style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-bottom:16px;">
+          <div class="admin-card">
+            <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 class="admin-card-title">Mismatches by Asset (last 30d)</h3>
+              <span style="font-size:11px; color:var(--admin-text-muted);" id="breakdown-meta"></span>
+            </div>
+            <div class="admin-card-body" id="recon-breakdown" style="min-height:80px;"></div>
           </div>
+          <div class="admin-card">
+            <div class="admin-card-header"><h3 class="admin-card-title">Related Operations</h3></div>
+            <div class="admin-card-body">
+              <ul class="recon-xref" id="recon-xref">
+                <li><a href="/admin/marketplace/pending-settlements.html" data-xref="settlements">Pending Settlements <span class="recon-xref-badge" id="xref-settlements">—</span></a></li>
+                <li><a href="/admin/blockchain-sync.html" data-xref="sync">Blockchain Sync <span class="recon-xref-badge" id="xref-sync">OK</span></a></li>
+                <li><a href="/admin/audit-logs.html?source=reconciliation" data-xref="audit">Reconciliation Audit Log →</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter / Action Bar -->
+        <div class="recon-toolbar" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+          <input type="search" id="recon-search" class="admin-input" placeholder="Search user, asset, wallet… (press /)" style="max-width:280px;" aria-label="Search mismatches" />
+          <select id="recon-preset" class="admin-select admin-select--sm" aria-label="Saved presets" title="Saved filter presets">
+            <option value="">— Presets —</option>
+            <option value="critical-open">Critical & Open</option>
+            <option value="age-24h">Aged ≥ 24h</option>
+            <option value="settlement">Settlement-related</option>
+            <option value="all-status">All statuses</option>
+            <option value="save">＋ Save current as preset…</option>
+          </select>
+          <label class="recon-toggle" title="Show ledger units vs USD-normalized values">
+            <input type="checkbox" id="recon-normalize" />
+            <span>Normalize (USD)</span>
+          </label>
+          <select id="recon-severity-filter" class="admin-select" aria-label="Filter by severity">
+            <option value="">All severities</option>
+            <option value="critical">Critical</option>
+            <option value="warning">Warning</option>
+            <option value="info">Info</option>
+          </select>
+          <select id="recon-status-filter" class="admin-select" aria-label="Filter by status">
+            <option value="open">Open</option>
+            <option value="all">All</option>
+            <option value="resolved">Resolved</option>
+            <option value="dismissed">Dismissed</option>
+          </select>
+          <div style="flex:1"></div>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-bulk-action" disabled>Bulk action…</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-import-csv" title="Paste/upload wallet list to spot-check">Import CSV</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-export-csv" title="Export current view as CSV">Export CSV</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-print" title="Print / Save as PDF">Print</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-tour" title="Restart onboarding">?</button>
         </div>
 
         <!-- Mismatches Table -->
@@ -79,13 +191,17 @@
             <table class="admin-table">
               <thead>
                 <tr>
+                  <th style="width:32px;"><input type="checkbox" id="recon-select-all" aria-label="Select all" /></th>
                   <th>User</th>
                   <th>Asset</th>
-                  <th style="text-align:right">Wallet Balance</th>
-                  <th style="text-align:right">Ledger Balance</th>
+                  <th>Severity</th>
+                  <th style="text-align:right">Wallet</th>
+                  <th style="text-align:right">Ledger</th>
                   <th style="text-align:right">Difference</th>
+                  <th>Age</th>
                   <th>Likely Cause</th>
-                  <th style="text-align:center">Action</th>
+                  <th style="width:90px;">Trend (7d)</th>
+                  <th style="text-align:right">Actions</th>
                 </tr>
               </thead>
               <tbody id="recon-body">
@@ -97,17 +213,31 @@
 
         <!-- History -->
         <div class="admin-card" style="margin-top:16px;">
-          <div class="admin-card-header">
+          <div class="admin-card-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
             <h3 class="admin-card-title">Reconciliation History</h3>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input type="date" id="hist-from" class="admin-input admin-input--sm" aria-label="From date" />
+              <span style="color:var(--admin-text-muted); font-size:12px;">→</span>
+              <input type="date" id="hist-to" class="admin-input admin-input--sm" aria-label="To date" />
+              <select id="hist-status" class="admin-select admin-select--sm" aria-label="Filter status">
+                <option value="">All</option>
+                <option value="ok">Clean</option>
+                <option value="warning">Mismatches</option>
+              </select>
+              <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-compare-runs" disabled>Compare (0)</button>
+              <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-export-history">Export</button>
+            </div>
           </div>
           <div class="admin-card-body admin-card-body--flush">
-            <table class="admin-table">
+            <table class="admin-table admin-table--hoverable">
               <thead>
                 <tr>
+                  <th style="width:32px;"></th>
                   <th>Run Time</th>
-                  <th>Wallets Checked</th>
-                  <th>Mismatches</th>
-                  <th>Duration</th>
+                  <th style="text-align:right">Wallets</th>
+                  <th style="text-align:right">Mismatches</th>
+                  <th style="text-align:right">Duration</th>
+                  <th style="width:120px;">Trend</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -117,8 +247,179 @@
             </table>
           </div>
         </div>
+
+        <!-- Alert Rules + Thresholds -->
+        <div class="admin-card" style="margin-top:16px;">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title">Alerts & Thresholds</h3>
+            <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-test-alert">Send test notification</button>
+          </div>
+          <div class="admin-card-body">
+            <div class="recon-rules-grid">
+              <label class="recon-field">
+                <span>Critical threshold (USD) — <span id="thr-critical-readout" style="font-weight:600; color:var(--admin-danger);">$100</span></span>
+                <input type="range" id="thr-critical-slider" min="1" max="1000" step="1" value="100" />
+                <input type="number" id="thr-critical" class="admin-input" value="100" min="0" step="1" />
+                <div class="recon-thr-histogram" id="thr-histogram" aria-hidden="true"></div>
+              </label>
+              <label class="recon-field">
+                <span>Warning threshold (USD) — <span id="thr-warning-readout" style="font-weight:600; color:var(--admin-warning);">$1</span></span>
+                <input type="range" id="thr-warning-slider" min="0.01" max="100" step="0.01" value="1" />
+                <input type="number" id="thr-warning" class="admin-input" value="1" min="0" step="0.01" />
+              </label>
+              <label class="recon-field">
+                <span>Schedule (cron, UTC) <span class="recon-cron-hint" id="cron-hint">—</span></span>
+                <input type="text" id="thr-cron" class="admin-input" value="0 4 * * *" />
+                <span class="recon-cron-next" id="cron-next" style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;"></span>
+              </label>
+              <label class="recon-field">
+                <span>Slack webhook</span>
+                <input type="url" id="alert-slack" class="admin-input" placeholder="https://hooks.slack.com/…" />
+              </label>
+              <label class="recon-field">
+                <span>PagerDuty integration key</span>
+                <input type="text" id="alert-pd" class="admin-input" placeholder="key…" />
+              </label>
+              <div class="recon-field" style="grid-column: span 2;">
+                <span>Webhook delivery status</span>
+                <div class="recon-webhook-status" id="webhook-status"></div>
+              </div>
+              <label class="recon-field recon-field--inline">
+                <input type="checkbox" id="alert-on-critical" checked />
+                <span>Page on Critical mismatch</span>
+              </label>
+              <label class="recon-field recon-field--inline">
+                <input type="checkbox" id="alert-on-warning" />
+                <span>Slack on Warning mismatch</span>
+              </label>
+              <label class="recon-field recon-field--inline">
+                <input type="checkbox" id="alert-on-anomaly" checked />
+                <span>Alert on duration anomaly (&gt;25% baseline)</span>
+              </label>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+              <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-reset-rules">Reset</button>
+              <button class="admin-btn admin-btn--primary admin-btn--sm" id="btn-save-rules">Save rules</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Log (local) -->
+        <div class="admin-card" style="margin-top:16px;">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title">Recent Admin Actions</h3>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span style="font-size:11px; color:var(--admin-text-muted);">Local · syncs to audit log when backend ships</span>
+              <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-clear-audit">Clear</button>
+            </div>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Notes</th></tr>
+              </thead>
+              <tbody id="recon-audit-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Snapshot Drawer -->
+        <div id="recon-snapshot" class="admin-card" style="margin-top:16px; display:none;">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title" id="snapshot-title">Snapshot</h3>
+            <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-close-snapshot">Close</button>
+          </div>
+          <div class="admin-card-body" id="snapshot-body"></div>
+        </div>
       </div>
     </main>
+  </div>
+
+  <!-- CSV Import Modal -->
+  <div id="csv-import-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:560px;">
+      <h2 class="mp-modal-title">Spot-check wallets (CSV import)</h2>
+      <p class="mp-modal-subtitle">Paste wallet addresses (one per line) or comma-separated <code>wallet,asset</code>.</p>
+      <textarea id="csv-import-text" class="admin-input" rows="6" style="width:100%; resize:vertical; font-family:ui-monospace,monospace; font-size:12px;" placeholder="0x4a...b21f,BVRT&#10;0x9c...7e02,JOTX"></textarea>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="csv-import-cancel">Cancel</button>
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="csv-import-confirm">Run spot-check</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding Tour -->
+  <div id="tour-overlay" class="recon-tour-overlay" hidden>
+    <div class="recon-tour-card" id="tour-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3 id="tour-title" style="margin:0; font-size:15px;">Welcome to Reconciliation</h3>
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="tour-skip">Skip</button>
+      </div>
+      <p id="tour-body" style="margin:0 0 12px 0; font-size:13px; color:var(--admin-text-secondary);"></p>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span id="tour-progress" style="font-size:11px; color:var(--admin-text-muted);"></span>
+        <div style="display:flex; gap:6px;">
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="tour-prev">Back</button>
+          <button class="admin-btn admin-btn--primary admin-btn--sm" id="tour-next">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <ul id="recon-ctxmenu" class="recon-ctxmenu" hidden role="menu"></ul>
+
+  <!-- Mobile Action Sheet -->
+  <div id="recon-sheet-overlay" class="recon-sheet-overlay" hidden>
+    <div class="recon-sheet">
+      <div class="recon-sheet-handle"></div>
+      <h3 id="recon-sheet-title" style="margin:0 0 12px 0; font-size:15px;">Actions</h3>
+      <div id="recon-sheet-body"></div>
+      <button class="admin-btn admin-btn--ghost admin-btn--sm" id="recon-sheet-close" style="width:100%; margin-top:12px;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Mismatch Detail Modal -->
+  <div id="mm-detail-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true" aria-label="Mismatch detail">
+    <div class="mp-modal" style="max-width:640px;" id="mm-detail-modal">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 class="mp-modal-title" id="mm-detail-title">Mismatch detail</h2>
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="mm-detail-close">Close</button>
+      </div>
+      <div id="mm-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- Resolve Reason Modal -->
+  <div id="mm-reason-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:480px;">
+      <h2 class="mp-modal-title" id="mm-reason-title">Resolve mismatch</h2>
+      <p class="mp-modal-subtitle" id="mm-reason-subtitle"></p>
+      <label style="display:block; font-size:12px; color:var(--admin-text-muted); margin-bottom:4px;">Reason template</label>
+      <select id="mm-reason-template" class="admin-select" style="width:100%; margin-bottom:12px;">
+        <option value="manual-credit">Manually credited via support</option>
+        <option value="onchain-confirmed">On-chain tx confirmed late</option>
+        <option value="ledger-correction">Ledger correction applied</option>
+        <option value="false-positive">False positive — re-sync resolved</option>
+        <option value="rounding-acceptable">Rounding within tolerance</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <label style="display:block; font-size:12px; color:var(--admin-text-muted); margin-bottom:4px;">Notes (visible in audit log)</label>
+      <textarea id="mm-reason-notes" class="admin-input" rows="3" style="width:100%; resize:vertical;" placeholder="Optional context…"></textarea>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="mm-reason-cancel">Cancel</button>
+        <button class="admin-btn admin-btn--success admin-btn--sm" id="mm-reason-confirm">Confirm resolve</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Command palette -->
+  <div id="cmdk-overlay" class="cmdk-overlay" role="dialog" aria-modal="true" aria-label="Command palette" hidden>
+    <div class="cmdk-modal">
+      <input type="text" id="cmdk-input" class="cmdk-input" placeholder="Type a command…" autocomplete="off" />
+      <ul id="cmdk-list" class="cmdk-list"></ul>
+      <div class="cmdk-footer"><kbd>↑↓</kbd> navigate <kbd>Enter</kbd> run <kbd>Esc</kbd> close</div>
+    </div>
   </div>
 
   <script src="/static/js/mp-toast.js"></script>

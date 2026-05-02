@@ -39,30 +39,83 @@
           </nav>
         </div>
         <div class="admin-topbar-right">
-          <label class="sr-only" for="asset-selector">Orderbook asset</label>
-          <select id="asset-selector" class="admin-select" aria-label="Orderbook asset">
-            <option value="">Loading assets...</option>
-          </select>
+          <div id="asset-combobox" class="mp-ob-combo" role="combobox" aria-label="Orderbook asset"></div>
 
-          <!-- Rebuild Button -->
-          <button class="admin-btn admin-btn--primary" id="btn-rebuild-orderbook" style="gap: 6px;" type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-            <span>Rebuild Orderbook</span>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-pause-refresh" type="button" aria-pressed="false" title="Pause auto-refresh">⏸ Pause</button>
+
+          <a class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-asset-settings" href="/admin/marketplace/settings.html" title="Per-asset marketplace settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
+          </a>
+
+          <button class="admin-btn admin-btn--ghost" id="btn-export-csv" type="button" title="Export current snapshot as CSV">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>CSV</span>
           </button>
+
+          <button class="admin-btn admin-btn--ghost" id="btn-export-pdf" type="button" title="Print snapshot to PDF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>PDF</span>
+          </button>
+
+          <div class="mp-ob-rebuild-wrap">
+            <button class="admin-btn admin-btn--secondary" id="btn-rebuild-orderbook" style="gap: 6px;" type="button" title="Force-rebuild Redis orderbook from PostgreSQL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              <span>Rebuild</span>
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-rebuild-history" type="button" title="View rebuild history" aria-haspopup="true" aria-expanded="false">▾</button>
+            <div id="mp-ob-rebuild-history" class="mp-ob-history-panel" hidden></div>
+          </div>
         </div>
       </header>
 
       <!-- Page Content -->
       <div class="admin-content">
-        <div class="admin-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="admin-page-header" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;">
           <div>
             <h1 class="admin-page-title">Live Orderbook</h1>
-            <p class="admin-page-subtitle">Real-time bid/ask depth — <span id="selected-asset-name">Bali Villa Resort (BVRT)</span></p>
+            <p class="admin-page-subtitle">Real-time bid/ask depth — <span id="selected-asset-name">…</span></p>
+            <div id="ob-live-indicator" class="mp-ob-live" aria-live="polite"></div>
           </div>
           <div class="mp-ob-stats" id="ob-stats" aria-live="polite">
             <!-- Filled by JS -->
           </div>
         </div>
+
+        <div class="mp-ob-shortcuts" aria-label="Keyboard shortcuts">
+          <kbd>[</kbd> / <kbd>]</kbd> switch asset · <kbd>/</kbd> search · <kbd>r</kbd> reload · <kbd>Esc</kbd> close
+        </div>
+
+        <!-- Filter / aggregation toolbar -->
+        <div class="mp-ob-toolbar" role="toolbar" aria-label="Orderbook filters">
+          <div class="mp-ob-toolbar-group" role="radiogroup" aria-label="Side">
+            <button type="button" class="mp-ob-chip is-active" data-side="both">Both</button>
+            <button type="button" class="mp-ob-chip" data-side="buy">Bids</button>
+            <button type="button" class="mp-ob-chip" data-side="sell">Asks</button>
+          </div>
+          <label class="mp-ob-toolbar-field">
+            <span>Group</span>
+            <select id="mp-ob-tick" class="admin-select admin-select--sm">
+              <option value="1">$0.01 (raw)</option>
+              <option value="100">$1</option>
+              <option value="1000">$10</option>
+              <option value="10000">$100</option>
+            </select>
+          </label>
+          <label class="mp-ob-toolbar-field">
+            <span>Min qty</span>
+            <input id="mp-ob-min-qty" type="number" min="0" step="1" class="admin-input admin-input--sm" placeholder="0" />
+          </label>
+          <label class="mp-ob-toolbar-field">
+            <span>Times in</span>
+            <select id="mp-ob-tz" class="admin-select admin-select--sm">
+              <option value="local">Local</option>
+              <option value="utc" selected>UTC</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="mp-ob-bulk-bar" class="mp-ob-bulk-bar" role="status" aria-live="polite" hidden></div>
 
         <div id="orderbook-status" class="admin-alert" role="status" aria-live="polite" hidden></div>
 
@@ -75,14 +128,20 @@
         <div class="admin-card">
           <div class="admin-card-body admin-card-body--flush">
             <div class="mp-orderbook-grid">
-              <!-- BIDS (Left) -->
+              <!-- BIDS (Left) — buy-side resting orders, sorted DESC by price -->
               <div class="mp-orderbook-side mp-orderbook-side--bids">
+                <div class="mp-ob-side-header" style="padding:8px 12px; font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#15803d; border-bottom:1px solid var(--admin-border, #eaecf0); background:rgba(34,197,94,0.05);">
+                  Bids · Buy orders waiting for a seller
+                </div>
                 <table class="admin-table">
+                  <caption class="visually-hidden">Bids — buy-side resting orders sorted by price descending.</caption>
                   <thead>
                     <tr>
-                      <th>Orders</th>
+                      <th title="Number of distinct orders aggregated at this price level"># Orders</th>
                       <th style="text-align:right">Qty</th>
-                      <th style="text-align:right">Price (USD)</th>
+                      <th style="text-align:right" title="Cumulative qty (this level + better)">Cum. Qty</th>
+                      <th style="text-align:right" title="Cumulative notional in USD">Cum. USD</th>
+                      <th style="text-align:right">Bid Price</th>
                     </tr>
                   </thead>
                   <tbody id="bids-body">
@@ -91,14 +150,20 @@
                 </table>
               </div>
 
-              <!-- ASKS (Right) -->
+              <!-- ASKS (Right) — sell-side resting orders, sorted ASC by price -->
               <div class="mp-orderbook-side mp-orderbook-side--asks">
+                <div class="mp-ob-side-header" style="padding:8px 12px; font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#b91c1c; border-bottom:1px solid var(--admin-border, #eaecf0); background:rgba(239,68,68,0.05);">
+                  Asks · Sell orders waiting for a buyer
+                </div>
                 <table class="admin-table">
+                  <caption class="visually-hidden">Asks — sell-side resting orders sorted by price ascending.</caption>
                   <thead>
                     <tr>
-                      <th>Price (USD)</th>
+                      <th>Ask Price</th>
+                      <th title="Cumulative notional in USD">Cum. USD</th>
+                      <th title="Cumulative qty (this level + better)">Cum. Qty</th>
                       <th>Qty</th>
-                      <th style="text-align:right">Orders</th>
+                      <th style="text-align:right" title="Number of distinct orders aggregated at this price level"># Orders</th>
                     </tr>
                   </thead>
                   <tbody id="asks-body">
@@ -110,9 +175,30 @@
           </div>
         </div>
       </div>
+
+      <footer class="mp-ob-footer" aria-label="Time zone notice">
+        <span id="mp-ob-tz-note">Times shown in UTC</span>
+      </footer>
     </main>
   </div>
 
+  <!-- Match preview popover -->
+  <div id="mp-ob-popover" class="mp-ob-popover" role="tooltip" hidden></div>
+
+  <!-- Per-asset settings drawer -->
+  <div id="mp-ob-settings-drawer" class="mp-ob-drawer" role="dialog" aria-modal="true" aria-labelledby="mp-ob-drawer-title" hidden aria-hidden="true">
+    <div id="mp-ob-drawer-scrim" class="mp-ob-drawer-scrim"></div>
+    <aside class="mp-ob-drawer-panel">
+      <header class="mp-ob-drawer-head">
+        <h2 id="mp-ob-drawer-title">Asset settings</h2>
+        <button id="mp-ob-drawer-close" type="button" class="admin-btn admin-btn--ghost admin-btn--sm" aria-label="Close settings">✕</button>
+      </header>
+      <div id="mp-ob-settings-body" class="mp-ob-drawer-body"></div>
+    </aside>
+  </div>
+
+  <script src="/static/js/marketplace-event-bus.js"></script>
+  <script src="/static/js/marketplace-websocket.js"></script>
   <script src="/static/js/mp-toast.js"></script>
   <script src="/static/js/mp-orderbook.js"></script>
 </body>

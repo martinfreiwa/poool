@@ -4,7 +4,7 @@
 
 {% include "components/head.html" %}
 
-<body id="payment-success-body" class="fouc-guard">
+<body id="payment-success-body" class="fouc-guard trade-success-body">
   {% include 'components/mobile-menu.html' %}
   <div id="payment-success-page" class="payment-success-page">
 
@@ -13,9 +13,6 @@
 
     <!-- Main Content Area -->
     <main id="payment-success-main" class="ds-main payment-success-main">
-      <!-- Confetti Container -->
-      <div class="confetti-container" id="confetti-container"></div>
-
       <!-- Page Header -->
       <div class="payment-success-header">
         <a href="/my-trading" class="payment-success-header__back" title="Back to My Trading">
@@ -33,7 +30,13 @@
       </div>
 
       <!-- Main Card -->
-      <div class="payment-success-card">
+      <div class="payment-success-card trade-success-card">
+
+        <div class="trade-success-brand">
+          <img src="/static/images/logos/Logo Pool.svg" alt="POOOL" class="trade-success-brand__logo">
+          <span class="trade-success-brand__divider" aria-hidden="true"></span>
+          <span class="trade-success-brand__label">Resale market order</span>
+        </div>
 
         <!-- Status Icon -->
         <div id="status-icon" class="payment-success-icon payment-success-icon--success">
@@ -52,13 +55,22 @@
           You can track its status in your trading dashboard.
         </p>
 
+        <div class="trade-success-status-strip" aria-label="Order status">
+          <span class="trade-success-status-strip__dot" aria-hidden="true"></span>
+          <span>Order accepted</span>
+          <span class="trade-success-status-strip__sep" aria-hidden="true"></span>
+          <span>Matching automatically</span>
+          <span class="trade-success-status-strip__sep" aria-hidden="true"></span>
+          <span>No charge until matched</span>
+        </div>
+
         <!-- Order Details -->
         <div id="order-details" class="payment-success-order">
           <div class="payment-success-order__row payment-success-order__row--border">
             <span class="payment-success-order__label">Order ID</span>
-            <span style="display:flex; align-items:center; gap:6px;">
-              <span id="display-order-id" class="payment-success-order__value" style="font-family:monospace; font-size:12px; color:#667085;">#...</span>
-              <button id="btn-copy-order-id" title="Copy Order ID" style="background:none; border:none; cursor:pointer; padding:2px; color:#98A2B3; display:flex; align-items:center;" aria-label="Copy order ID">
+            <span class="payment-success-order__copy-group">
+              <span id="display-order-id" class="payment-success-order__value payment-success-order__value--mono">#...</span>
+              <button id="btn-copy-order-id" class="payment-success-order__copy" title="Copy Order ID" aria-label="Copy order ID">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
@@ -96,8 +108,8 @@
         </div>
 
         <!-- Info Notice -->
-        <div style="display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:#F0F9FF; border:1px solid #BAE6FD; border-radius:8px; margin-top:0; font-size:13px; color:#0C4A6E; line-height:1.6; text-align:left; position:relative; z-index:1;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0369A1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;">
+        <div class="payment-success-info-notice">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0369A1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
           <span id="display-info-text">Your order is now <strong>live on the marketplace</strong>. Once a matching buyer is found, the trade will be executed automatically and you'll receive a notification.</span>
@@ -112,7 +124,7 @@
             onclick="window.location.href='/marketplace-secondary'">
             Continue Trading
           </button>
-          <button id="btn-cancel-order" class="payment-success-btn payment-success-btn--secondary" style="display:none;color:#d92d20;border-color:#fda29b;">
+          <button id="btn-cancel-order" class="payment-success-btn payment-success-btn--secondary payment-success-btn--danger" hidden>
             Cancel Order
           </button>
         </div>
@@ -197,7 +209,7 @@
       // Cancel Order button — visible when we have an order ID
       if (orderId) {
         var cancelBtn = document.getElementById('btn-cancel-order');
-        cancelBtn.style.display = '';
+        cancelBtn.hidden = false;
         cancelBtn.addEventListener('click', function() {
           if (!confirm('Cancel this order? Your shares will be unlocked and returned to your portfolio.')) return;
           cancelBtn.disabled = true;
@@ -228,46 +240,7 @@
         };
       }
 
-      // Confetti — brand colors only
-      var container = document.getElementById('confetti-container');
-      if (container) {
-        var colors = ['#0000FF', '#98FB96', '#03FF88', '#DBE2E9', '#08232F'];
-        for (var i = 0; i < 60; i++) {
-          var particle = document.createElement('div');
-          var color    = colors[Math.floor(Math.random() * colors.length)];
-          var size     = 6 + Math.random() * 6;
-          Object.assign(particle.style, {
-            position: 'absolute', width: size + 'px', height: size + 'px',
-            background: color, borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-            left: (Math.random() * 100) + '%', top: '-10px', opacity: '0.85',
-            animation: 'confetti-fall ' + (2 + Math.random() * 2) + 's ease-out ' + (Math.random() * 1.5) + 's forwards',
-            transform: 'rotate(' + (Math.random() * 360) + 'deg)'
-          });
-          container.appendChild(particle);
-        }
-      }
     })();
   </script>
-
-  <style>
-    @keyframes confetti-fall {
-      0% {
-        opacity: 1;
-        transform: translateY(0) rotate(0deg) scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(60vh) rotate(720deg) scale(0.3);
-      }
-    }
-    .confetti-container {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 100vh;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 9999;
-    }
-  </style>
 </body>
 </html>

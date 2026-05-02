@@ -479,3 +479,29 @@ mod tests {
         assert_eq!(price_interval, 5 * 60);
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ── WORKER 4: ALERT ESCALATION (EVERY 60 SECONDS) ────────────
+// ═══════════════════════════════════════════════════════════════
+
+/// Polls marketplace_alerts for un-ack'd alerts that have crossed their
+/// rule.escalate_after_min threshold and dispatches notifications.
+///
+/// Runs every 60s (alerts are time-sensitive). Single-leader to avoid
+/// duplicate pages.
+pub async fn run_alert_escalation_worker(pool: &PgPool) {
+    tracing::info!("🚨 Alert escalation worker started (runs every 60s)");
+
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+    interval.tick().await;
+
+    loop {
+        interval.tick().await;
+
+        match crate::admin::marketplace::escalate_overdue_alerts(pool).await {
+            Ok(0) => tracing::trace!("🚨 No alerts to escalate"),
+            Ok(n) => tracing::info!("🚨 Escalated {} overdue alerts", n),
+            Err(e) => tracing::error!("🚨 Alert escalation failed: {}", e),
+        }
+    }
+}

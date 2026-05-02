@@ -47,7 +47,46 @@
       <div class="admin-content">
         <div class="admin-page-header">
           <h1 class="admin-page-title">Trade History</h1>
-          <p class="admin-page-subtitle">All executed marketplace trades</p>
+          <p class="admin-page-subtitle">All marketplace trades — including pending settlements</p>
+        </div>
+
+        <!-- SLA / Action-Required Banner -->
+        <div id="trades-sla-banner" class="mp-sla-banner" role="status" aria-live="polite" hidden></div>
+
+        <!-- Reconciliation deep-link banner -->
+        <div id="trades-recon-banner" class="mp-recon-banner" role="status" aria-live="polite" hidden></div>
+
+        <!-- Quick Range Chips -->
+        <div class="mp-chip-row" role="group" aria-label="Quick date ranges">
+          <button type="button" class="mp-chip" data-range="today">Today</button>
+          <button type="button" class="mp-chip" data-range="24h">Last 24h</button>
+          <button type="button" class="mp-chip" data-range="7d">Last 7d</button>
+          <button type="button" class="mp-chip" data-range="30d">Last 30d</button>
+          <button type="button" class="mp-chip" data-range="all">All time</button>
+          <span class="mp-chip-spacer"></span>
+          <span id="trades-updated-stamp" class="mp-updated-stamp" aria-live="polite">—</span>
+          <button type="button" class="mp-chip mp-chip--ghost" id="btn-refresh-trades" aria-label="Refresh trades" title="Refresh (r)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Refresh
+          </button>
+          <button type="button" class="mp-chip mp-chip--ghost" id="btn-group-by-pair" aria-pressed="false" title="Dim repeated buyer→seller pairs in consecutive rows">
+            Group by pair
+          </button>
+          <div class="mp-col-toggle" id="col-toggle-wrap">
+            <button type="button" class="mp-chip mp-chip--ghost" id="btn-col-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="col-toggle-menu">
+              Columns
+            </button>
+            <div class="mp-col-toggle-menu" id="col-toggle-menu" role="menu" hidden></div>
+          </div>
+        </div>
+
+        <!-- Status preset chips (Action Required quick filters) -->
+        <div class="mp-chip-row mp-chip-row--secondary" role="group" aria-label="Status presets">
+          <span class="mp-chip-row-label">Quick filter:</span>
+          <button type="button" class="mp-chip mp-status-preset" data-status-preset="action_required">Action Required</button>
+          <button type="button" class="mp-chip mp-status-preset" data-status-preset="pending">Pending only</button>
+          <button type="button" class="mp-chip mp-status-preset" data-status-preset="failed">Failed only</button>
+          <button type="button" class="mp-chip mp-status-preset" data-status-preset="all">All statuses</button>
         </div>
 
         <!-- Filter Bar -->
@@ -72,6 +111,8 @@
             <option value="confirmed">Confirmed</option>
             <option value="failed">Failed</option>
           </select>
+          <label for="filter-search" class="sr-only">Search trade ID or email</label>
+          <input type="search" class="admin-input" id="filter-search" placeholder="Search trade ID or email…" autocomplete="off" style="min-width:220px;">
           <button class="admin-btn admin-btn--primary" id="btn-apply-filter" style="margin-left:auto;">Apply Filters</button>
           <button class="admin-btn admin-btn--secondary" id="btn-export-csv" style="gap:6px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -83,30 +124,57 @@
           </button>
         </div>
 
+        <!-- Filter summary bar -->
+        <div class="mp-filter-summary" id="trades-filter-summary" aria-live="polite"></div>
+
+        <!-- Bulk-action bar (shown when rows selected) -->
+        <div class="mp-bulk-bar" id="trades-bulk-bar" role="region" aria-label="Bulk actions" hidden>
+          <span class="mp-bulk-bar-count" id="trades-bulk-count">0 selected</span>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-bulk-copy-ids">Copy IDs</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-bulk-export">Export selected (CSV)</button>
+          <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-bulk-clear">Clear</button>
+        </div>
+
         <!-- Trades Table -->
         <div class="admin-card">
           <div class="admin-card-body admin-card-body--flush">
-            <table class="admin-table" id="trades-table">
+            <table class="admin-table mp-trades-table" id="trades-table">
               <thead>
                 <tr>
-                  <th>Trade ID</th>
-                  <th>Date/Time</th>
-                  <th>Asset</th>
-                  <th>Side</th>
-                  <th>Buyer ID</th>
-                  <th>Seller ID</th>
-                  <th style="text-align:right">Qty</th>
-                  <th style="text-align:right">Price</th>
-                  <th style="text-align:right">Fee</th>
-                  <th style="text-align:right">Total</th>
-                  <th>Status</th>
+                  <th class="mp-th-checkbox">
+                    <label class="mp-check-wrap"><input type="checkbox" id="select-all-trades" aria-label="Select all visible trades"><span></span></label>
+                  </th>
+                  <th data-col="id">Trade ID</th>
+                  <th class="mp-sortable" data-sort-key="executed_at" data-col="date" aria-sort="descending"><span class="mp-sort-label">Date/Time</span></th>
+                  <th data-col="asset">Asset</th>
+                  <th data-col="age">Age</th>
+                  <th data-col="buyer">Buyer</th>
+                  <th data-col="seller">Seller</th>
+                  <th class="mp-sortable mp-th-num" data-sort-key="quantity" data-col="qty"><span class="mp-sort-label">Qty</span></th>
+                  <th class="mp-sortable mp-th-num" data-sort-key="price" data-col="price"><span class="mp-sort-label">Price</span></th>
+                  <th class="mp-sortable mp-th-num" data-sort-key="fee" data-col="fee">
+                    <span class="mp-sort-label">Fee</span>
+                    <span class="mp-info-icon" tabindex="0" role="img" aria-label="Fee charged to buyer; expressed in basis points (bps) of total. Hover for details." title="Fee charged to buyer at trade execution. Shown in dollars; basis points (bps) shown in row detail. Standard rate: 50 bps (0.5%).">ⓘ</span>
+                  </th>
+                  <th class="mp-sortable mp-th-num" data-sort-key="total" data-col="total"><span class="mp-sort-label">Total</span></th>
+                  <th data-col="status">Status</th>
                 </tr>
               </thead>
               <tbody id="trades-body" aria-live="polite">
                 <tr>
-                  <td colspan="11" style="text-align:center; color:var(--admin-text-muted); padding:24px;">Loading trades...</td>
+                  <td colspan="12" style="text-align:center; color:var(--admin-text-muted); padding:24px;">Loading trades...</td>
                 </tr>
               </tbody>
+              <tfoot id="trades-foot" hidden>
+                <tr class="mp-totals-row">
+                  <td colspan="7" style="text-align:right; font-weight:600; color:var(--admin-text-muted);">Totals (filtered)</td>
+                  <td id="totals-qty" style="text-align:right; font-variant-numeric:tabular-nums; font-weight:600;">—</td>
+                  <td></td>
+                  <td id="totals-fee" style="text-align:right; font-variant-numeric:tabular-nums; color:var(--admin-text-muted);">—</td>
+                  <td id="totals-volume" style="text-align:right; font-variant-numeric:tabular-nums; font-weight:700;">—</td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -115,7 +183,20 @@
         <div class="mp-pagination" id="pagination">
           <!-- Filled by JS -->
         </div>
+
+        <!-- Keyboard shortcut hint -->
+        <p class="mp-kbd-hint" aria-hidden="true">Shortcuts: <kbd>/</kbd> search · <kbd>r</kbd> refresh · <kbd>Esc</kbd> clear/close</p>
       </div>
+
+      <!-- Trade detail drawer (drill-down) -->
+      <div class="mp-p2p-drawer-backdrop" id="trade-drawer-backdrop" hidden></div>
+      <aside class="mp-p2p-drawer" id="trade-drawer" hidden aria-labelledby="trade-drawer-title" role="dialog" aria-modal="false">
+        <header class="mp-p2p-drawer-header">
+          <h2 class="mp-p2p-drawer-title" id="trade-drawer-title">Trade detail</h2>
+          <button type="button" class="mp-p2p-drawer-close" id="trade-drawer-close" aria-label="Close detail panel">×</button>
+        </header>
+        <div class="mp-p2p-drawer-body" id="trade-drawer-body"></div>
+      </aside>
     </main>
   </div>
 

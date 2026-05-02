@@ -20,20 +20,170 @@
   <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <style>
+    /* ── Header KPI Strip ─────────────────────────────── */
+    .escrow-kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .kpi-label {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--admin-text-primary);
+      line-height: 1.1;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      font-weight: 500;
+    }
+    .kpi-card.kpi-warn {
+      border-color: var(--admin-warning, #d97706);
+      background: rgba(245, 166, 35, 0.06);
+    }
+    .kpi-card.kpi-danger {
+      border-color: var(--admin-danger, #d92d20);
+      background: rgba(217, 45, 32, 0.06);
+    }
+    @media (max-width: 1100px) {
+      .escrow-kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .escrow-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Toolbar ─────────────────────────────────────── */
+    .escrow-toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .escrow-toolbar input[type="search"] {
+      flex: 1 1 240px;
+      min-width: 220px;
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-sm);
+      background: var(--admin-bg-card);
+      color: var(--admin-text-primary);
+      font: inherit;
+    }
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--admin-border);
+      background: transparent;
+      color: var(--admin-text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip.active {
+      background: var(--admin-primary);
+      color: #fff;
+      border-color: var(--admin-primary);
+    }
+    .toolbar-select {
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-sm);
+      background: var(--admin-bg-card);
+      color: var(--admin-text-primary);
+      font: inherit;
+    }
+    .toolbar-meta {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--admin-success, #079455);
+      box-shadow: 0 0 0 0 rgba(7, 148, 85, 0.6);
+      animation: pulse 2s infinite;
+      display: inline-block;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(7, 148, 85, 0.6); }
+      70% { box-shadow: 0 0 0 6px rgba(7, 148, 85, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(7, 148, 85, 0); }
+    }
+
+    /* ── Cards ───────────────────────────────────────── */
     .escrow-card {
       background: var(--admin-bg-card);
       border: 1px solid var(--admin-border);
       border-radius: var(--admin-radius-lg);
-      padding: 24px;
-      margin-bottom: 16px;
+      padding: 20px 24px;
+      margin-bottom: 14px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
+      position: relative;
     }
+    .escrow-card.compact { padding: 14px 18px; gap: 10px; }
+    .escrow-card.compact .escrow-stats-grid { padding: 10px; gap: 12px; }
+    .escrow-card.compact .stat-val { font-size: 14px; }
+    .escrow-card.has-warning {
+      border-left: 4px solid var(--admin-warning, #d97706);
+    }
+    .escrow-card.is-overdue {
+      border-left: 4px solid var(--admin-danger, #d92d20);
+    }
+
     .escrow-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 12px;
+    }
+    .escrow-header-left {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .escrow-checkbox {
+      margin-top: 4px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
     }
     .escrow-title {
       font-size: 16px;
@@ -45,7 +195,13 @@
       font-size: 12px;
       color: var(--admin-text-muted);
       font-family: monospace;
+      cursor: pointer;
     }
+    .escrow-id:hover { color: var(--admin-primary); }
+    .escrow-id .copy-hint { opacity: 0; margin-left: 6px; font-size: 10px; }
+    .escrow-id:hover .copy-hint { opacity: 1; }
+
+    .badges-stack { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
     .escrow-badge {
       padding: 4px 10px;
       border-radius: 20px;
@@ -53,15 +209,25 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
-    .badge-open {
-      background: rgba(43, 89, 255, 0.1);
-      color: var(--admin-primary);
+    .badge-open { background: rgba(43, 89, 255, 0.1); color: var(--admin-primary); }
+    .badge-progress { background: rgba(245, 166, 35, 0.15); color: #a04a00; }
+    .badge-warning {
+      background: rgba(217, 119, 6, 0.15);
+      color: #92400e;
+      cursor: help;
     }
-    .badge-progress {
-      background: rgba(245, 166, 35, 0.1);
-      color: var(--admin-warning);
+    .badge-danger {
+      background: rgba(217, 45, 32, 0.15);
+      color: #b42318;
+      cursor: help;
     }
+    .badge-no-agent {
+      background: rgba(217, 45, 32, 0.1);
+      color: #b42318;
+    }
+
     .escrow-stats-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -71,11 +237,7 @@
       border-radius: var(--admin-radius-md);
       border: 1px solid var(--admin-border);
     }
-    .stat-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+    .stat-item { display: flex; flex-direction: column; gap: 4px; }
     .stat-label {
       font-size: 11px;
       color: var(--admin-text-muted);
@@ -83,16 +245,24 @@
       font-weight: 600;
       letter-spacing: 0.5px;
     }
+    .stat-label[data-tooltip] {
+      cursor: help;
+      border-bottom: 1px dotted var(--admin-text-muted);
+      display: inline-block;
+      width: fit-content;
+    }
     .stat-val {
       font-size: 16px;
       font-weight: 700;
       color: var(--admin-text-primary);
     }
+    .stat-val.muted { color: var(--admin-text-muted); font-weight: 500; }
     .target-val {
       font-size: 12px;
       color: var(--admin-text-muted);
       font-weight: 500;
     }
+
     .progress-track {
       height: 8px;
       background: var(--admin-border);
@@ -105,9 +275,8 @@
       background: var(--admin-primary);
       transition: width 0.3s ease;
     }
-    .progress-fill.success {
-      background: var(--admin-success);
-    }
+    .progress-fill.success { background: var(--admin-success, #079455); }
+    .progress-fill.warn { background: var(--admin-warning, #d97706); }
     .progress-meta {
       display: flex;
       justify-content: space-between;
@@ -115,78 +284,352 @@
       color: var(--admin-text-muted);
       margin-top: 4px;
     }
+    .softcap-marker {
+      position: relative;
+      height: 0;
+    }
+    .softcap-marker::after {
+      content: '';
+      position: absolute;
+      top: -10px;
+      width: 2px;
+      height: 12px;
+      background: var(--admin-text-muted);
+    }
+
+    .escrow-aging {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      flex-wrap: wrap;
+    }
+    .escrow-aging strong { color: var(--admin-text-primary); }
+    .escrow-aging .overdue { color: var(--admin-danger, #d92d20); font-weight: 600; }
+
     .escrow-footer {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
+      align-items: center;
       gap: 12px;
-      padding-top: 16px;
+      padding-top: 12px;
       border-top: 1px solid var(--admin-border);
       flex-wrap: wrap;
     }
-    .escrow-page-status {
+    .escrow-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .escrow-release-note {
       font-size: 12px;
       color: var(--admin-text-muted);
-      font-weight: 600;
     }
+    .escrow-release-note.is-error { color: var(--admin-danger, #d92d20); }
+    .escrow-release-note.is-success { color: var(--admin-success, #079455); }
+
+    .admin-btn[disabled] {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.4);
+    }
+
+    /* ── Bulk action bar (sticky bottom) ─────────────── */
+    .bulk-action-bar {
+      position: sticky;
+      bottom: 16px;
+      margin-top: 16px;
+      padding: 12px 18px;
+      background: var(--admin-text-primary);
+      color: #fff;
+      border-radius: var(--admin-radius-md);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      display: none;
+      align-items: center;
+      gap: 14px;
+      z-index: 10;
+    }
+    .bulk-action-bar.visible { display: flex; }
+    .bulk-action-bar .bulk-count {
+      font-weight: 700;
+    }
+    .bulk-action-bar select,
+    .bulk-action-bar input {
+      height: 34px;
+      padding: 0 10px;
+      border-radius: var(--admin-radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font: inherit;
+    }
+    .bulk-action-bar select option { color: #000; }
+    .bulk-action-bar .bulk-spacer { flex: 1; }
+    .bulk-action-bar .admin-btn--secondary {
+      background: transparent;
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* ── Modal ───────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-backdrop.visible { display: flex; }
+    .modal-card {
+      background: var(--admin-bg-card);
+      border-radius: var(--admin-radius-lg);
+      max-width: 560px;
+      width: 100%;
+      max-height: 90vh;
+      overflow: auto;
+      padding: 24px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+    }
+    .modal-card h2 { margin: 0 0 6px 0; font-size: 18px; }
+    .modal-card .modal-sub { color: var(--admin-text-muted); font-size: 13px; margin-bottom: 18px; }
+    .modal-summary {
+      background: var(--admin-bg-secondary);
+      border-radius: var(--admin-radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 6px 14px;
+    }
+    .modal-summary dt { color: var(--admin-text-muted); }
+    .modal-summary dd { margin: 0; font-weight: 600; }
+    .modal-card label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted); margin-bottom: 6px; letter-spacing: 0.5px; }
+    .modal-card input, .modal-card textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-sm);
+      background: var(--admin-bg-card);
+      color: var(--admin-text-primary);
+      font: inherit;
+      margin-bottom: 14px;
+    }
+    .modal-card textarea { min-height: 70px; resize: vertical; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .modal-feedback { font-size: 12px; min-height: 18px; margin-bottom: 8px; }
+    .modal-feedback.is-error { color: var(--admin-danger, #d92d20); }
+    .modal-feedback.is-success { color: var(--admin-success, #079455); }
+
+    /* ── Audit drawer ────────────────────────────────── */
+    .audit-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 460px;
+      max-width: 95vw;
+      background: var(--admin-bg-card);
+      border-left: 1px solid var(--admin-border);
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+    }
+    .audit-drawer.visible { transform: translateX(0); }
+    .audit-drawer-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--admin-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .audit-drawer-head h3 { margin: 0; font-size: 15px; }
+    .audit-drawer-body {
+      padding: 16px 22px;
+      overflow: auto;
+      flex: 1;
+    }
+    .audit-entry {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--admin-border);
+      font-size: 13px;
+    }
+    .audit-entry:last-child { border-bottom: none; }
+    .audit-entry .audit-action { font-weight: 700; color: var(--admin-text-primary); }
+    .audit-entry .audit-meta { font-size: 11px; color: var(--admin-text-muted); margin-top: 2px; }
+    .audit-entry pre {
+      font-size: 11px;
+      background: var(--admin-bg-secondary);
+      padding: 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      max-height: 200px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     .escrow-error {
       text-align: center;
       padding: 40px;
       color: var(--admin-danger, #d92d20);
     }
-    .escrow-error .admin-btn {
-      margin-top: 16px;
+    .escrow-error .admin-btn { margin-top: 16px; }
+
+    /* ── Anomaly banner ─────────────────────────────── */
+    .anomaly-banner {
+      background: rgba(217, 119, 6, 0.1);
+      border: 1px solid var(--admin-warning, #d97706);
+      border-radius: var(--admin-radius-md);
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: #92400e;
+      display: none;
+      gap: 10px;
+      align-items: center;
     }
-    .escrow-release-note {
+    .anomaly-banner.visible { display: flex; }
+    .anomaly-banner.is-danger {
+      background: rgba(217, 45, 32, 0.08);
+      border-color: var(--admin-danger, #d92d20);
+      color: #b42318;
+    }
+    .anomaly-banner strong { font-weight: 700; }
+    .anomaly-banner .filter-link {
+      color: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+    }
+
+    /* ── Pagination ────────────────────────────────── */
+    .pagination-bar {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 0;
+      align-items: center;
+    }
+    .pagination-bar .page-info {
       font-size: 12px;
       color: var(--admin-text-muted);
-      align-self: center;
     }
-    .escrow-release-form {
-      display: grid;
-      grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
-      gap: 10px;
-      align-items: end;
-      flex: 1 1 640px;
+
+    /* ── Card focus ring (j/k nav) ─────────────────── */
+    .escrow-card.is-focused {
+      outline: 2px solid var(--admin-primary);
+      outline-offset: 2px;
     }
-    .escrow-release-form label {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 11px;
-      font-weight: 700;
+
+    /* ── Breadcrumbs hover ─────────────────────────── */
+    .admin-breadcrumbs a {
+      transition: color 0.15s;
+    }
+    .admin-breadcrumbs a:hover {
+      color: var(--admin-primary);
+      text-decoration: underline;
+    }
+
+    /* ── Sidebar overflow safety (page-scoped) ─────── */
+    .admin-wrapper > .admin-sidebar,
+    .admin-wrapper > aside.admin-sidebar {
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+
+    /* ── Tap-target floor (44px) ───────────────────── */
+    .escrow-toolbar .admin-btn,
+    .escrow-toolbar .toolbar-select,
+    .escrow-toolbar input[type="search"],
+    .escrow-footer .admin-btn,
+    .escrow-actions .admin-btn,
+    .modal-actions .admin-btn,
+    .bulk-action-bar .admin-btn,
+    .pagination-bar .admin-btn {
+      min-height: 38px;
+      min-width: 38px;
+    }
+    .escrow-actions { gap: 10px; }
+    .chip { min-height: 32px; padding: 8px 14px; }
+    .escrow-checkbox, #show-inactive { min-width: 18px; min-height: 18px; }
+
+    /* ── Toolbar toggle / autorefresh button ─────────── */
+    .toolbar-toggle {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
       color: var(--admin-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      cursor: pointer;
     }
-    .escrow-release-form input {
-      height: 38px;
+    .autorefresh-btn {
+      background: transparent;
       border: 1px solid var(--admin-border);
       border-radius: var(--admin-radius-sm);
-      padding: 0 10px;
-      color: var(--admin-text-primary);
-      background: var(--admin-bg-card);
+      padding: 6px 10px;
       font: inherit;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-    .escrow-release-feedback {
-      flex-basis: 100%;
       font-size: 12px;
       color: var(--admin-text-muted);
-      min-height: 18px;
+      cursor: pointer;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
     }
-    .escrow-release-feedback.is-error {
-      color: var(--admin-danger, #d92d20);
+    .autorefresh-btn.is-paused .live-dot {
+      background: var(--admin-text-muted);
+      animation: none;
+      box-shadow: none;
     }
-    .escrow-release-feedback.is-success {
-      color: var(--admin-success, #079455);
+
+    /* ── Range row ───────────────────────────────── */
+    .range-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 16px;
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-top: none;
+      border-radius: 0 0 var(--admin-radius-md) var(--admin-radius-md);
+      margin-top: -16px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: var(--admin-text-muted);
     }
-    @media (max-width: 920px) {
-      .escrow-release-form {
-        grid-template-columns: 1fr;
-      }
+    .range-row input[type="range"] { flex: 1 1 120px; max-width: 220px; }
+    .range-val { font-weight: 700; color: var(--admin-text-primary); min-width: 38px; text-align: right; }
+    .range-sep { opacity: 0.5; }
+
+    /* ── Mobile (<= 480px) ───────────────────────── */
+    @media (max-width: 480px) {
+      .escrow-toolbar { padding: 10px; gap: 8px; }
+      .escrow-toolbar input[type="search"] { min-width: 100%; flex-basis: 100%; }
+      .escrow-toolbar .toolbar-select,
+      .escrow-toolbar .admin-btn { flex: 1 1 calc(50% - 4px); }
+      .filter-chips { width: 100%; }
+      .toolbar-meta { width: 100%; justify-content: space-between; }
+      .escrow-stats-grid { grid-template-columns: 1fr 1fr; }
+      .escrow-card { padding: 14px; }
+      .escrow-footer { flex-direction: column; align-items: stretch; }
+      .escrow-actions { justify-content: stretch; }
+      .escrow-actions .admin-btn { flex: 1; }
+      .badges-stack { justify-content: flex-start; }
+      .modal-card { padding: 16px; }
+      .modal-summary { grid-template-columns: 1fr; gap: 4px; }
+      .audit-drawer { width: 100vw; max-width: 100vw; }
+      .bulk-action-bar { flex-wrap: wrap; bottom: 8px; }
+      .range-row { flex-wrap: wrap; }
+      .pagination-bar { flex-direction: column; }
     }
+
+    /* ── Permission-gated button hidden state ───── */
+    .perm-hidden { display: none !important; }
   </style>
 </head>
 
@@ -213,7 +656,63 @@
       <div class="admin-content">
         <div class="admin-page-header">
           <h1 class="admin-page-title">Primary Escrow Engine</h1>
-          <p class="admin-page-subtitle">Track Primary Offerings funding goals and Escrow pools in real-time.</p>
+          <p class="admin-page-subtitle" id="page-subtitle">Loading offerings…</p>
+        </div>
+
+        <!-- KPI Strip -->
+        <div id="kpi-strip" class="escrow-kpi-strip" style="display:none;"></div>
+
+        <!-- Anomaly banner -->
+        <div id="anomaly-banner" class="anomaly-banner" role="alert" aria-live="polite"></div>
+
+        <!-- Toolbar -->
+        <div id="toolbar" class="escrow-toolbar" style="display:none;">
+          <input id="search-input" type="search" placeholder="Search title or asset ID…  ( / )" aria-label="Search offerings" />
+          <div class="filter-chips" id="status-chips" role="tablist" aria-label="Filter by status">
+            <button type="button" class="chip active" data-filter="all">All</button>
+            <button type="button" class="chip" data-filter="funding_open">Open</button>
+            <button type="button" class="chip" data-filter="funding_in_progress">In Progress</button>
+            <button type="button" class="chip" data-filter="needs_attention">Needs Attention</button>
+          </div>
+          <select id="agent-filter" class="toolbar-select" aria-label="Filter by escrow agent">
+            <option value="all">All agents</option>
+            <option value="unassigned">Unassigned only</option>
+          </select>
+          <select id="type-filter" class="toolbar-select" aria-label="Filter by asset type">
+            <option value="all">All types</option>
+          </select>
+          <select id="sort-select" class="toolbar-select" aria-label="Sort">
+            <option value="created_desc">Newest first</option>
+            <option value="created_asc">Oldest first</option>
+            <option value="progress_desc">Progress: high → low</option>
+            <option value="progress_asc">Progress: low → high</option>
+            <option value="balance_desc">Balance: high → low</option>
+            <option value="days_open_desc">Stalest first</option>
+          </select>
+          <select id="density-select" class="toolbar-select" aria-label="Density">
+            <option value="comfortable">Comfortable</option>
+            <option value="compact">Compact</option>
+          </select>
+          <button type="button" id="export-csv" class="admin-btn admin-btn--secondary" title="Download filtered list as CSV">Export CSV</button>
+          <div class="toolbar-meta">
+            <label class="toolbar-toggle" title="Include closed/aborted offerings">
+              <input id="show-inactive" type="checkbox" /> Closed
+            </label>
+            <button type="button" id="autorefresh-btn" class="autorefresh-btn" title="Pause/resume auto-refresh">
+              <span id="live-dot" class="live-dot" aria-hidden="true"></span>
+              <span id="last-updated">just now</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="range-row" class="range-row" style="display:none;">
+          <label class="range-label" for="min-progress">Funding %:</label>
+          <input id="min-progress" type="range" min="0" max="100" step="5" />
+          <span id="range-min-val" class="range-val">0%</span>
+          <span class="range-sep">→</span>
+          <input id="max-progress" type="range" min="0" max="100" step="5" />
+          <span id="range-max-val" class="range-val">100%</span>
+          <button type="button" id="range-reset" class="admin-btn admin-btn--secondary" style="margin-left:auto; height:32px;">Reset</button>
         </div>
 
         <div id="loading" role="status" aria-live="polite" style="text-align:center; padding: 40px; color: var(--admin-text-muted);">
@@ -227,208 +726,796 @@
 
         <div id="escrow-grid" style="display:none;"></div>
 
+        <div id="pagination" class="pagination-bar" style="display:none;">
+          <span class="page-info" id="page-info"></span>
+          <button type="button" id="load-more" class="admin-btn admin-btn--secondary">Load more</button>
+        </div>
+
         <div id="escrow-empty" style="display:none;">
           <div class="admin-empty-state">
             <div class="admin-empty-state-icon">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--admin-info,#2563eb)"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
             </div>
-            <div class="admin-empty-state-title">No Active Campaigns</div>
-            <div class="admin-empty-state-text">There are currently no active primary offerings holding escrow funds.</div>
+            <div class="admin-empty-state-title">No matching offerings</div>
+            <div class="admin-empty-state-text">Try clearing filters or search.</div>
           </div>
+        </div>
+
+        <!-- Bulk action bar -->
+        <div id="bulk-bar" class="bulk-action-bar">
+          <span class="bulk-count"><span id="bulk-count">0</span> selected</span>
+          <select id="bulk-agent-select" aria-label="Escrow agent"></select>
+          <input id="bulk-agent-custom" type="text" placeholder="Or new agent name…" maxlength="50" />
+          <button type="button" id="bulk-assign-btn" class="admin-btn admin-btn--primary">Assign Agent</button>
+          <span class="bulk-spacer"></span>
+          <button type="button" id="bulk-cancel" class="admin-btn admin-btn--secondary">Cancel</button>
         </div>
       </div>
     </main>
   </div>
 
+  <!-- Release confirm modal -->
+  <div id="release-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="release-modal-title">
+    <div class="modal-card">
+      <h2 id="release-modal-title">Request Escrow Release</h2>
+      <p class="modal-sub">A second admin must approve before funds are released. This action is logged.</p>
+      <dl class="modal-summary" id="release-summary"></dl>
+      <form id="release-form">
+        <label for="m-notarization">Notarization reference *</label>
+        <input id="m-notarization" name="notarization_reference" required maxlength="500" placeholder="Notary deed / closing memo ID" />
+        <label for="m-reason">Release reason</label>
+        <textarea id="m-reason" name="reason" maxlength="500" placeholder="Optional operator note for the second approver"></textarea>
+        <div id="release-feedback" class="modal-feedback"></div>
+        <div class="modal-actions">
+          <button type="button" id="release-cancel" class="admin-btn admin-btn--secondary">Cancel</button>
+          <button type="submit" id="release-submit" class="admin-btn admin-btn--primary">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Audit drawer -->
+  <div id="audit-drawer" class="audit-drawer" aria-hidden="true">
+    <div class="audit-drawer-head">
+      <h3 id="audit-title">History</h3>
+      <button type="button" id="audit-close" class="admin-btn admin-btn--secondary" aria-label="Close history">✕</button>
+    </div>
+    <div class="audit-drawer-body" id="audit-body"></div>
+  </div>
+
   <script src="/static/js/mp-toast.js"></script>
   <script>
+    // ── DOM refs
     const loadingEl = document.getElementById('loading');
     const errorEl = document.getElementById('escrow-error');
     const errorTextEl = document.getElementById('escrow-error-text');
     const retryBtn = document.getElementById('escrow-retry');
     const gridEl = document.getElementById('escrow-grid');
     const emptyEl = document.getElementById('escrow-empty');
+    const kpiEl = document.getElementById('kpi-strip');
+    const toolbarEl = document.getElementById('toolbar');
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
+    const densitySelect = document.getElementById('density-select');
+    const statusChips = document.getElementById('status-chips');
+    const lastUpdatedEl = document.getElementById('last-updated');
+    const subtitleEl = document.getElementById('page-subtitle');
+    const bulkBar = document.getElementById('bulk-bar');
+    const bulkCountEl = document.getElementById('bulk-count');
+    const bulkAgentSelect = document.getElementById('bulk-agent-select');
+    const bulkAgentCustom = document.getElementById('bulk-agent-custom');
+    const bulkAssignBtn = document.getElementById('bulk-assign-btn');
+    const bulkCancelBtn = document.getElementById('bulk-cancel');
+    const releaseModal = document.getElementById('release-modal');
+    const releaseSummary = document.getElementById('release-summary');
+    const releaseForm = document.getElementById('release-form');
+    const releaseFeedback = document.getElementById('release-feedback');
+    const releaseCancelBtn = document.getElementById('release-cancel');
+    const releaseSubmitBtn = document.getElementById('release-submit');
+    const auditDrawer = document.getElementById('audit-drawer');
+    const auditCloseBtn = document.getElementById('audit-close');
+    const auditTitle = document.getElementById('audit-title');
+    const auditBody = document.getElementById('audit-body');
+    const anomalyBanner = document.getElementById('anomaly-banner');
+    const agentFilter = document.getElementById('agent-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const exportBtn = document.getElementById('export-csv');
+    const paginationEl = document.getElementById('pagination');
+    const pageInfoEl = document.getElementById('page-info');
+    const loadMoreBtn = document.getElementById('load-more');
 
+    const PAGE_SIZE = 25;
+    const ASSET_TYPE_LABELS = {
+      real_estate: 'Real Estate',
+      commercial_property: 'Commercial Property',
+      commodity: 'Commodity',
+      business: 'Business',
+      startup: 'Startup',
+      land_plot: 'Land Plot',
+    };
+    const STATUS_LABELS = {
+      funding_open: { label: 'Funding Open', cls: 'badge-open', tooltip: 'Asset accepting investments — no buyers yet or below threshold.' },
+      funding_in_progress: { label: 'Funding In Progress', cls: 'badge-progress', tooltip: 'At least one investment received — actively raising.' },
+      funded: { label: 'Funded', cls: 'badge-open', tooltip: 'Soft cap met and escrow released.' },
+      paused: { label: 'Paused', cls: 'badge-warning', tooltip: 'Funding paused by admin.' },
+      cancelled: { label: 'Cancelled', cls: 'badge-danger', tooltip: 'Offering cancelled.' },
+      aborted: { label: 'Aborted', cls: 'badge-danger', tooltip: 'Auto-aborted: deadline passed without reaching soft cap.' },
+      refunding: { label: 'Refunding', cls: 'badge-warning', tooltip: 'Investors being refunded.' },
+    };
+
+    // ── Persistence
+    const PREFS_KEY = 'primary-escrow.prefs.v1';
+    function loadPrefs() {
+      try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); } catch { return {}; }
+    }
+    function savePrefs() {
+      try {
+        localStorage.setItem(PREFS_KEY, JSON.stringify({
+          filterStatus: state.filterStatus,
+          filterAgent: state.filterAgent,
+          filterType: state.filterType,
+          sort: state.sort,
+          density: state.density,
+          minProgress: state.minProgress,
+          maxProgress: state.maxProgress,
+          showInactive: state.showInactive,
+          autoRefresh: state.autoRefresh,
+        }));
+      } catch {}
+    }
+    const prefs = loadPrefs();
+
+    // ── Permissions (uses admin-permission-guard.js)
+    function canManage() {
+      return !!(window.adminPermissions && (window.adminPermissions.has('marketplace.manage') || window.adminPermissions.has('all')));
+    }
+
+    // ── State
+    const state = {
+      campaigns: [],
+      summary: null,
+      agents: [],
+      filterStatus: prefs.filterStatus || 'all',
+      filterAgent: prefs.filterAgent || 'all',
+      filterType: prefs.filterType || 'all',
+      minProgress: typeof prefs.minProgress === 'number' ? prefs.minProgress : 0,
+      maxProgress: typeof prefs.maxProgress === 'number' ? prefs.maxProgress : 100,
+      showInactive: !!prefs.showInactive,
+      autoRefresh: prefs.autoRefresh !== false,
+      search: '',
+      sort: prefs.sort || 'created_desc',
+      density: prefs.density || 'comfortable',
+      selected: new Set(),
+      activeRelease: null,
+      lastUpdated: null,
+      visibleCount: PAGE_SIZE,
+      focusedIndex: -1,
+    };
+
+    // ── Helpers
     function formatMoney(cents) {
-      if (!cents) return "$0.00";
-      return "$" + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const n = Number(cents) || 0;
+      return '$' + (n / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
     }
-
-    function appendText(parent, tag, className, text) {
-      const el = document.createElement(tag);
-      if (className) el.className = className;
-      el.textContent = text;
-      parent.appendChild(el);
-      return el;
+    function formatMoneyCompact(cents) {
+      const n = Number(cents) || 0;
+      const v = n / 100;
+      let body;
+      if (v >= 1_000_000) body = '$' + (v / 1_000_000).toFixed(1) + 'M';
+      else if (v >= 1_000) body = '$' + (v / 1_000).toFixed(0) + 'K';
+      else body = '$' + v.toFixed(0);
+      return body + ' USD';
     }
-
-    function createStat(label, value, options = {}) {
-      const item = document.createElement('div');
-      item.className = 'stat-item';
-      appendText(item, 'span', 'stat-label', label);
-      const valueEl = appendText(item, 'span', 'stat-val', value);
-      if (options.primary) valueEl.style.color = 'var(--admin-primary)';
-      if (options.compact) {
-        valueEl.style.fontSize = '14px';
-        valueEl.style.fontWeight = '500';
-      }
-      if (options.subtext) appendText(item, 'span', 'target-val', options.subtext);
-      return item;
-    }
-
     function csrfHeaders() {
-      const token = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('csrf_token='))
-        ?.split('=')[1];
+      const token = document.cookie.split('; ').find((row) => row.startsWith('csrf_token='))?.split('=')[1];
       return token ? { 'X-CSRF-Token': decodeURIComponent(token) } : {};
     }
+    function timeAgo(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      const s = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (s < 60) return s + 's ago';
+      if (s < 3600) return Math.floor(s / 60) + 'm ago';
+      if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+      return Math.floor(s / 86400) + 'd ago';
+    }
 
-    async function requestRelease(camp, form, feedback, button) {
-      const notarizationInput = form.querySelector('[name="notarization_reference"]');
-      const reasonInput = form.querySelector('[name="reason"]');
-      const notarizationReference = notarizationInput.value.trim();
-      const reason = reasonInput.value.trim();
-      feedback.className = 'escrow-release-feedback';
-      feedback.textContent = '';
-
-      if (!notarizationReference) {
-        feedback.classList.add('is-error');
-        feedback.textContent = 'Notarization reference is required.';
-        notarizationInput.focus();
-        return;
+    // ── KPI strip
+    function renderKpis(summary) {
+      if (!summary) { kpiEl.style.display = 'none'; return; }
+      kpiEl.replaceChildren();
+      const cards = [
+        {
+          label: 'Total Locked',
+          value: formatMoneyCompact(summary.total_locked_cents),
+          sub: 'of ' + formatMoneyCompact(summary.total_target_cents) + ' target',
+        },
+        {
+          label: 'Active Offerings',
+          value: String(summary.active_offerings),
+          sub: summary.active_offerings === 1 ? 'campaign' : 'campaigns',
+        },
+        {
+          label: 'Near Cap (≥80%)',
+          value: String(summary.near_cap_count),
+          sub: summary.near_cap_count > 0 ? 'ready for release prep' : 'none',
+          modifier: summary.near_cap_count > 0 ? 'kpi-warn' : '',
+        },
+        {
+          label: 'Unassigned Agent',
+          value: String(summary.unassigned_agent_count),
+          sub: summary.unassigned_agent_count > 0 ? 'compliance risk' : 'all assigned',
+          modifier: summary.unassigned_agent_count > 0 ? 'kpi-danger' : '',
+        },
+        {
+          label: 'Stalest / Overdue',
+          value: summary.stalest_days_open + 'd',
+          sub: summary.overdue_count > 0 ? summary.overdue_count + ' past deadline' : 'on schedule',
+          modifier: summary.overdue_count > 0 ? 'kpi-danger' : '',
+        },
+      ];
+      for (const c of cards) {
+        const card = document.createElement('div');
+        card.className = 'kpi-card' + (c.modifier ? ' ' + c.modifier : '');
+        const lbl = document.createElement('div'); lbl.className = 'kpi-label'; lbl.textContent = c.label; card.appendChild(lbl);
+        const val = document.createElement('div'); val.className = 'kpi-value'; val.textContent = c.value; card.appendChild(val);
+        const sub = document.createElement('div'); sub.className = 'kpi-sub'; sub.textContent = c.sub; card.appendChild(sub);
+        kpiEl.appendChild(card);
       }
+      kpiEl.style.display = 'grid';
+    }
 
-      button.disabled = true;
-      button.textContent = 'Requesting...';
-      try {
-        const res = await fetch(`/api/admin/primary-escrow/${encodeURIComponent(camp.asset_id)}/release-request`, {
-          method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...csrfHeaders(),
-          },
-          body: JSON.stringify({
-            notarization_reference: notarizationReference,
-            reason: reason || null,
-          }),
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.error || `Release request failed (${res.status})`);
-        feedback.classList.add('is-success');
-        feedback.textContent = `Approval request created: ${body.approval_id}`;
-        form.querySelectorAll('input, button').forEach((el) => { el.disabled = true; });
-      } catch (err) {
-        feedback.classList.add('is-error');
-        feedback.textContent = err.message;
-        button.disabled = false;
-        button.textContent = 'Request Release';
-      }
+    // ── Card render
+    function isNeedsAttention(c) {
+      return c.escrow_agent === 'unassigned'
+        || c.reconciliation_warning
+        || (c.days_to_deadline !== null && c.days_to_deadline !== undefined && c.days_to_deadline < 0)
+        || c.pending_release_request_id;
     }
 
     function renderEscrowCard(camp) {
       const card = document.createElement('article');
       card.className = 'escrow-card';
+      if (state.density === 'compact') card.classList.add('compact');
+      if (camp.reconciliation_warning) card.classList.add('has-warning');
+      if (camp.days_to_deadline !== null && camp.days_to_deadline !== undefined && camp.days_to_deadline < 0) card.classList.add('is-overdue');
 
-      const header = document.createElement('div');
-      header.className = 'escrow-header';
+      // Header
+      const header = document.createElement('div'); header.className = 'escrow-header';
+      const headerLeft = document.createElement('div'); headerLeft.className = 'escrow-header-left';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'escrow-checkbox';
+      checkbox.setAttribute('aria-label', 'Select ' + (camp.title || ''));
+      checkbox.checked = state.selected.has(camp.asset_id);
+      checkbox.addEventListener('change', () => toggleSelect(camp.asset_id, checkbox.checked));
+      headerLeft.appendChild(checkbox);
+
       const titleWrap = document.createElement('div');
-      appendText(titleWrap, 'h3', 'escrow-title', camp.title || 'Untitled asset');
-      appendText(titleWrap, 'div', 'escrow-id', camp.asset_id || 'Unknown asset');
-      header.appendChild(titleWrap);
+      titleWrap.style.minWidth = '0';
+      const title = document.createElement('h3'); title.className = 'escrow-title'; title.textContent = camp.title || 'Untitled asset';
+      titleWrap.appendChild(title);
+      const idEl = document.createElement('div');
+      idEl.className = 'escrow-id';
+      idEl.title = 'Click to copy';
+      idEl.textContent = camp.asset_id || 'Unknown asset';
+      const copyHint = document.createElement('span'); copyHint.className = 'copy-hint'; copyHint.textContent = '📋'; idEl.appendChild(copyHint);
+      idEl.addEventListener('click', () => {
+        navigator.clipboard?.writeText(camp.asset_id || '');
+        if (window.MPToast) window.MPToast.success('Asset ID copied');
+      });
+      titleWrap.appendChild(idEl);
+      headerLeft.appendChild(titleWrap);
+      header.appendChild(headerLeft);
 
+      // Badges stack
+      const badges = document.createElement('div'); badges.className = 'badges-stack';
       const status = String(camp.funding_status || 'unknown');
-      const badge = appendText(header, 'div', `escrow-badge ${status === 'funding_open' ? 'badge-open' : 'badge-progress'}`, status.replace(/_/g, ' '));
-      badge.setAttribute('aria-label', `Funding status: ${badge.textContent}`);
+      const meta = STATUS_LABELS[status] || { label: status.replace(/_/g, ' '), cls: 'badge-progress', tooltip: '' };
+      const statusBadge = document.createElement('div');
+      statusBadge.className = 'escrow-badge ' + meta.cls;
+      statusBadge.textContent = meta.label;
+      statusBadge.title = meta.tooltip;
+      statusBadge.setAttribute('aria-label', 'Funding status: ' + meta.label);
+      badges.appendChild(statusBadge);
+
+      if (camp.escrow_agent === 'unassigned') {
+        const b = document.createElement('div'); b.className = 'escrow-badge badge-no-agent'; b.textContent = 'No Agent'; b.title = 'Compliance risk: no escrow agent assigned'; badges.appendChild(b);
+      }
+      if (camp.reconciliation_warning) {
+        const b = document.createElement('a');
+        b.className = 'escrow-badge badge-warning';
+        b.textContent = 'Reconciliation';
+        b.href = '/admin/marketplace/reconciliation?asset=' + encodeURIComponent(camp.asset_id || '');
+        b.title = 'Sold tokens (' + (camp.tokens_total - camp.tokens_available) + ') × price = ' + formatMoney(camp.expected_escrow_cents) + ' but escrow ledger shows ' + formatMoney(camp.current_escrow_cents) + '. Click to investigate.';
+        badges.appendChild(b);
+      }
+      if (camp.days_to_deadline !== null && camp.days_to_deadline !== undefined && camp.days_to_deadline < 0) {
+        const b = document.createElement('div'); b.className = 'escrow-badge badge-danger'; b.textContent = 'Overdue'; b.title = Math.abs(camp.days_to_deadline) + ' days past deadline'; badges.appendChild(b);
+      }
+      if (camp.pending_release_request_id) {
+        const b = document.createElement('a');
+        b.className = 'escrow-badge badge-warning';
+        b.textContent = 'Awaiting Approval';
+        b.href = '/admin/approvals?id=' + encodeURIComponent(camp.pending_release_request_id);
+        b.title = 'Release request pending second admin approval. Click to open.';
+        badges.appendChild(b);
+      }
+      header.appendChild(badges);
       card.appendChild(header);
 
-      const progress = Number.isFinite(Number(camp.progress_percent)) ? Number(camp.progress_percent) : 0;
+      // Progress
       const progressWrap = document.createElement('div');
-      const progressTrack = document.createElement('div');
-      progressTrack.className = 'progress-track';
-      progressTrack.setAttribute('role', 'progressbar');
-      progressTrack.setAttribute('aria-valuemin', '0');
-      progressTrack.setAttribute('aria-valuemax', '100');
-      progressTrack.setAttribute('aria-valuenow', String(Math.max(0, Math.min(progress, 100)).toFixed(1)));
-      progressTrack.setAttribute('aria-label', 'Funding progress');
+      const progress = Number.isFinite(Number(camp.progress_percent)) ? Number(camp.progress_percent) : 0;
+      const softCapPct = camp.tokens_total > 0 ? (camp.min_funding_tokens / camp.tokens_total) * 100 : 0;
+      const track = document.createElement('div');
+      track.className = 'progress-track';
+      track.setAttribute('role', 'progressbar');
+      track.setAttribute('aria-valuemin', '0');
+      track.setAttribute('aria-valuemax', '100');
+      track.setAttribute('aria-valuenow', String(Math.max(0, Math.min(progress, 100)).toFixed(1)));
+      track.setAttribute('aria-label', 'Funding progress');
       const fill = document.createElement('div');
-      fill.className = `progress-fill${progress >= 100 ? ' success' : ''}`;
-      fill.style.width = `${Math.max(0, Math.min(progress, 100))}%`;
-      progressTrack.appendChild(fill);
-      progressWrap.appendChild(progressTrack);
+      const fillCls = progress >= 100 ? 'success' : (progress >= softCapPct ? '' : 'warn');
+      fill.className = 'progress-fill ' + fillCls;
+      fill.style.width = Math.max(0, Math.min(progress, 100)) + '%';
+      track.appendChild(fill);
+      progressWrap.appendChild(track);
 
-      const progressMeta = document.createElement('div');
-      progressMeta.className = 'progress-meta';
-      appendText(progressMeta, 'span', '', `${progress.toFixed(1)}% Funded`);
-      const soldTokens = Number(camp.tokens_total || 0) - Number(camp.tokens_available || 0);
-      appendText(progressMeta, 'span', '', `${soldTokens} / ${Number(camp.tokens_total || 0)} Tokens`);
-      progressWrap.appendChild(progressMeta);
+      const meta = document.createElement('div'); meta.className = 'progress-meta';
+      const left = document.createElement('span');
+      left.textContent = progress.toFixed(1) + '% Funded';
+      if (softCapPct > 0 && softCapPct < 100) left.textContent += ' (soft cap ' + softCapPct.toFixed(0) + '%)';
+      meta.appendChild(left);
+      const sold = Number(camp.tokens_total || 0) - Number(camp.tokens_available || 0);
+      const right = document.createElement('span'); right.textContent = sold + ' / ' + Number(camp.tokens_total || 0) + ' Tokens';
+      meta.appendChild(right);
+      progressWrap.appendChild(meta);
       card.appendChild(progressWrap);
 
-      const stats = document.createElement('div');
-      stats.className = 'escrow-stats-grid';
-      stats.appendChild(createStat('Current Escrow Balance', formatMoney(camp.current_escrow_cents), { primary: true }));
-      stats.appendChild(createStat('Funding Target', formatMoney(camp.target_total_cents), {
-        subtext: camp.target_min_cents > 0 ? `Soft Cap: ${formatMoney(camp.target_min_cents)}` : '',
+      // Stats grid
+      const stats = document.createElement('div'); stats.className = 'escrow-stats-grid';
+      stats.appendChild(makeStat('Current Escrow Balance', formatMoney(camp.current_escrow_cents), {
+        tooltip: 'Sum of investments in funding_in_progress / active status for this asset.',
       }));
-      stats.appendChild(createStat('Escrow Agent', camp.escrow_agent || 'unassigned', { compact: true }));
-      stats.appendChild(createStat('Deadline', camp.funding_end_at || 'None', { compact: true }));
+      stats.appendChild(makeStat('Funding Target', formatMoney(camp.target_total_cents), {
+        sub: camp.target_min_cents > 0 && camp.target_min_cents !== camp.target_total_cents ? 'Soft Cap: ' + formatMoney(camp.target_min_cents) : '',
+        tooltip: 'Total tokens × token price. Soft cap is the minimum to enable release.',
+      }));
+      stats.appendChild(makeStat('Escrow Agent', camp.escrow_agent || 'unassigned', {
+        compact: true,
+        muted: camp.escrow_agent === 'unassigned',
+        tooltip: 'Notary or trustee responsible for off-chain release. Required by compliance.',
+      }));
+      stats.appendChild(makeStat('Deadline', camp.funding_end_at || 'No deadline set', {
+        compact: true,
+        muted: !camp.funding_end_at,
+        tooltip: 'Funding-window end. After this date, if soft cap is not met, the auto-refund worker aborts the offering.',
+      }));
       card.appendChild(stats);
 
-      const footer = document.createElement('div');
-      footer.className = 'escrow-footer';
+      // Aging row
+      const aging = document.createElement('div'); aging.className = 'escrow-aging';
+      const ageSpan = document.createElement('span');
+      ageSpan.append('Open ');
+      const ageStrong = document.createElement('strong'); ageStrong.textContent = camp.days_open + ' days'; ageSpan.appendChild(ageStrong);
+      if (camp.funding_start_at) ageSpan.append(' (since ' + camp.funding_start_at + ')');
+      aging.appendChild(ageSpan);
+      if (camp.days_to_deadline !== null && camp.days_to_deadline !== undefined) {
+        const dlSpan = document.createElement('span');
+        if (camp.days_to_deadline < 0) {
+          const o = document.createElement('span'); o.className = 'overdue'; o.textContent = 'Overdue ' + Math.abs(camp.days_to_deadline) + ' days'; dlSpan.appendChild(o);
+        } else {
+          dlSpan.textContent = camp.days_to_deadline + ' days to deadline';
+        }
+        aging.appendChild(dlSpan);
+      }
+      if (camp.reconciliation_warning) {
+        const w = document.createElement('span');
+        w.style.color = 'var(--admin-warning, #d97706)';
+        w.textContent = 'Expected ' + formatMoney(camp.expected_escrow_cents) + ' in escrow';
+        aging.appendChild(w);
+      }
+      card.appendChild(aging);
+
+      // Footer
+      const footer = document.createElement('div'); footer.className = 'escrow-footer';
+      const actions = document.createElement('div'); actions.className = 'escrow-actions';
       const assetLink = document.createElement('a');
       assetLink.className = 'admin-btn admin-btn--secondary';
-      assetLink.href = `/admin/asset-details.html?id=${encodeURIComponent(camp.asset_id || '')}`;
+      assetLink.href = '/admin/asset-details.html?id=' + encodeURIComponent(camp.asset_id || '');
       assetLink.textContent = 'View Asset';
-      footer.appendChild(assetLink);
+      actions.appendChild(assetLink);
 
-      const releaseForm = document.createElement('form');
-      releaseForm.className = 'escrow-release-form';
-      const referenceLabel = document.createElement('label');
-      referenceLabel.textContent = 'Notarization reference';
-      const referenceInput = document.createElement('input');
-      referenceInput.name = 'notarization_reference';
-      referenceInput.maxLength = 500;
-      referenceInput.placeholder = 'Notary deed / closing memo ID';
-      referenceLabel.appendChild(referenceInput);
-      releaseForm.appendChild(referenceLabel);
+      const capLink = document.createElement('a');
+      capLink.className = 'admin-btn admin-btn--secondary';
+      capLink.href = '/admin/asset-details.html?id=' + encodeURIComponent(camp.asset_id || '') + '&tab=investors';
+      capLink.textContent = 'Cap Table';
+      capLink.title = 'View investor list / token holders';
+      actions.appendChild(capLink);
 
-      const reasonLabel = document.createElement('label');
-      reasonLabel.textContent = 'Release reason';
-      const reasonInput = document.createElement('input');
-      reasonInput.name = 'reason';
-      reasonInput.maxLength = 500;
-      reasonInput.placeholder = 'Optional operator note';
-      reasonLabel.appendChild(reasonInput);
-      releaseForm.appendChild(reasonLabel);
+      const histBtn = document.createElement('button');
+      histBtn.type = 'button';
+      histBtn.className = 'admin-btn admin-btn--secondary';
+      histBtn.textContent = 'History';
+      histBtn.title = 'View escrow audit trail for this offering';
+      histBtn.addEventListener('click', () => openAuditDrawer(camp));
+      actions.appendChild(histBtn);
 
-      const releaseButton = document.createElement('button');
-      releaseButton.type = 'submit';
-      releaseButton.className = 'admin-btn admin-btn--primary';
-      releaseButton.textContent = 'Request Release';
-      releaseButton.disabled = !camp.release_ready;
-      releaseForm.appendChild(releaseButton);
-      footer.appendChild(releaseForm);
-      const feedback = appendText(footer, 'div', 'escrow-release-feedback', camp.release_ready ? '' : 'Release requires the soft cap and escrow ledger balance.');
-      releaseForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        requestRelease(camp, releaseForm, feedback, releaseButton);
-      });
+      const releaseBtn = document.createElement('button');
+      releaseBtn.type = 'button';
+      releaseBtn.className = 'admin-btn admin-btn--primary';
+      releaseBtn.textContent = camp.pending_release_request_id ? 'Approval Pending' : 'Request Release';
+      releaseBtn.disabled = !camp.release_ready || !!camp.pending_release_request_id;
+      if (releaseBtn.disabled) {
+        if (camp.pending_release_request_id) {
+          releaseBtn.title = 'Release request already pending — second admin must approve.';
+        } else if (sold < camp.min_funding_tokens) {
+          const remaining = camp.min_funding_tokens - sold;
+          releaseBtn.title = 'Soft cap not reached. ' + remaining + ' more token(s) needed.';
+        } else {
+          releaseBtn.title = 'Escrow ledger has zero balance. Reconcile before release.';
+        }
+      }
+      releaseBtn.addEventListener('click', () => openReleaseModal(camp));
+      actions.appendChild(releaseBtn);
+      footer.appendChild(actions);
+
+      const note = document.createElement('div');
+      note.className = 'escrow-release-note';
+      if (camp.pending_release_request_id) {
+        note.textContent = 'A release request is awaiting four-eyes approval.';
+      } else if (!camp.release_ready) {
+        if (sold < camp.min_funding_tokens) {
+          note.textContent = 'Soft cap not yet reached.';
+        } else {
+          note.textContent = 'Escrow ledger empty — reconcile before release.';
+          note.classList.add('is-error');
+        }
+      } else {
+        note.textContent = 'Soft cap reached. Ready for release request.';
+        note.classList.add('is-success');
+      }
+      footer.appendChild(note);
       card.appendChild(footer);
 
       return card;
     }
 
+    function makeStat(label, value, opts = {}) {
+      const item = document.createElement('div'); item.className = 'stat-item';
+      const lbl = document.createElement('span');
+      lbl.className = 'stat-label';
+      lbl.textContent = label;
+      if (opts.tooltip) { lbl.setAttribute('data-tooltip', '1'); lbl.title = opts.tooltip; }
+      item.appendChild(lbl);
+      const val = document.createElement('span');
+      val.className = 'stat-val' + (opts.muted ? ' muted' : '');
+      if (opts.compact) val.style.fontSize = '14px';
+      val.textContent = value;
+      item.appendChild(val);
+      if (opts.sub) {
+        const sub = document.createElement('span'); sub.className = 'target-val'; sub.textContent = opts.sub; item.appendChild(sub);
+      }
+      return item;
+    }
+
+    // ── Filter / sort
+    function applyFilters() {
+      const q = state.search.trim().toLowerCase();
+      let list = state.campaigns.filter((c) => {
+        if (state.filterStatus === 'needs_attention') {
+          if (!isNeedsAttention(c)) return false;
+        } else if (state.filterStatus !== 'all' && c.funding_status !== state.filterStatus) {
+          return false;
+        }
+        if (state.filterAgent === 'unassigned' && c.escrow_agent !== 'unassigned') return false;
+        else if (state.filterAgent !== 'all' && state.filterAgent !== 'unassigned' && c.escrow_agent !== state.filterAgent) return false;
+        if (state.filterType !== 'all' && (c.asset_type || '') !== state.filterType) return false;
+        const p = c.progress_percent || 0;
+        if (p < state.minProgress || p > state.maxProgress) return false;
+        if (q && !(c.title || '').toLowerCase().includes(q) && !(c.asset_id || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
+      list.sort((a, b) => {
+        switch (state.sort) {
+          case 'created_asc': return (a.funding_start_at || '').localeCompare(b.funding_start_at || '');
+          case 'progress_desc': return (b.progress_percent || 0) - (a.progress_percent || 0);
+          case 'progress_asc': return (a.progress_percent || 0) - (b.progress_percent || 0);
+          case 'balance_desc': return (b.current_escrow_cents || 0) - (a.current_escrow_cents || 0);
+          case 'days_open_desc': return (b.days_open || 0) - (a.days_open || 0);
+          case 'created_desc':
+          default: return (b.funding_start_at || '').localeCompare(a.funding_start_at || '');
+        }
+      });
+      return list;
+    }
+
+    function renderGrid() {
+      const list = applyFilters();
+      gridEl.replaceChildren();
+      state.focusedIndex = -1;
+      if (list.length === 0) {
+        gridEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        paginationEl.style.display = 'none';
+      } else {
+        emptyEl.style.display = 'none';
+        gridEl.style.display = 'block';
+        const visible = list.slice(0, state.visibleCount);
+        for (const c of visible) gridEl.appendChild(renderEscrowCard(c));
+        if (list.length > state.visibleCount) {
+          paginationEl.style.display = 'flex';
+          pageInfoEl.textContent = 'Showing ' + visible.length + ' of ' + list.length;
+          loadMoreBtn.textContent = 'Load ' + Math.min(PAGE_SIZE, list.length - state.visibleCount) + ' more';
+        } else if (list.length > PAGE_SIZE) {
+          paginationEl.style.display = 'flex';
+          pageInfoEl.textContent = 'Showing all ' + list.length;
+          loadMoreBtn.style.display = 'none';
+        } else {
+          paginationEl.style.display = 'none';
+          loadMoreBtn.style.display = '';
+        }
+      }
+      subtitleEl.textContent = list.length + ' of ' + state.campaigns.length + ' offerings shown';
+      updateBulkBar();
+    }
+
+    function renderAnomalyBanner() {
+      const s = state.summary;
+      anomalyBanner.replaceChildren();
+      anomalyBanner.classList.remove('visible', 'is-danger');
+      if (!s) return;
+      const issues = [];
+      if (s.unassigned_agent_count > 0) issues.push({ label: s.unassigned_agent_count + ' offering(s) without escrow agent', danger: true });
+      if (s.reconciliation_warnings > 0) issues.push({ label: s.reconciliation_warnings + ' reconciliation warning(s)', danger: false });
+      if (s.overdue_count > 0) issues.push({ label: s.overdue_count + ' past deadline', danger: true });
+      if (issues.length === 0) return;
+      const danger = issues.some((i) => i.danger);
+      if (danger) anomalyBanner.classList.add('is-danger');
+      const icon = document.createElement('span'); icon.textContent = danger ? '⚠️' : 'ℹ️'; anomalyBanner.appendChild(icon);
+      const text = document.createElement('span');
+      const strong = document.createElement('strong'); strong.textContent = 'Action required: '; text.appendChild(strong);
+      text.append(issues.map((i) => i.label).join(' · '));
+      anomalyBanner.appendChild(text);
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'filter-link';
+      link.textContent = 'Filter to Needs Attention →';
+      link.addEventListener('click', () => {
+        const chip = statusChips.querySelector('[data-filter="needs_attention"]');
+        if (chip) chip.click();
+      });
+      anomalyBanner.appendChild(link);
+      anomalyBanner.classList.add('visible');
+    }
+
+    function rebuildAgentFilter() {
+      const current = agentFilter.value;
+      [...agentFilter.querySelectorAll('option:not([value="all"]):not([value="unassigned"])')].forEach((o) => o.remove());
+      for (const a of state.agents) {
+        const opt = document.createElement('option'); opt.value = a; opt.textContent = a; agentFilter.appendChild(opt);
+      }
+      agentFilter.value = current || 'all';
+    }
+
+    function rebuildTypeFilter() {
+      const current = typeFilter.value;
+      [...typeFilter.querySelectorAll('option:not([value="all"])')].forEach((o) => o.remove());
+      const types = [...new Set(state.campaigns.map((c) => c.asset_type).filter(Boolean))].sort();
+      for (const t of types) {
+        const opt = document.createElement('option'); opt.value = t; opt.textContent = ASSET_TYPE_LABELS[t] || t; typeFilter.appendChild(opt);
+      }
+      typeFilter.value = current || 'all';
+    }
+
+    // ── CSV export
+    function exportCsv() {
+      const list = applyFilters();
+      const headers = ['asset_id', 'title', 'asset_type', 'funding_status', 'escrow_agent', 'tokens_total', 'tokens_sold', 'progress_percent', 'current_escrow_cents', 'expected_escrow_cents', 'target_min_cents', 'target_total_cents', 'days_open', 'days_to_deadline', 'funding_end_at', 'reconciliation_warning', 'release_ready'];
+      const rows = list.map((c) => [
+        c.asset_id, c.title, c.asset_type, c.funding_status, c.escrow_agent,
+        c.tokens_total, (c.tokens_total - c.tokens_available),
+        (c.progress_percent || 0).toFixed(2),
+        c.current_escrow_cents, c.expected_escrow_cents, c.target_min_cents, c.target_total_cents,
+        c.days_open, (c.days_to_deadline ?? ''),
+        c.funding_end_at || '', c.reconciliation_warning, c.release_ready,
+      ]);
+      const escape = (v) => {
+        const s = String(v ?? '');
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
+      const csv = [headers.join(','), ...rows.map((r) => r.map(escape).join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.href = url; a.download = 'primary-escrow-' + ts + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (window.MPToast) window.MPToast.success('Exported ' + list.length + ' offering(s)');
+    }
+
+    // ── j/k card navigation
+    function focusCard(idx) {
+      const cards = gridEl.querySelectorAll('.escrow-card');
+      if (cards.length === 0) return;
+      const clamped = Math.max(0, Math.min(idx, cards.length - 1));
+      cards.forEach((c, i) => c.classList.toggle('is-focused', i === clamped));
+      cards[clamped].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      state.focusedIndex = clamped;
+    }
+
+    // ── Bulk selection
+    function toggleSelect(id, on) {
+      if (on) state.selected.add(id); else state.selected.delete(id);
+      updateBulkBar();
+    }
+    function clearSelection() {
+      state.selected.clear();
+      renderGrid();
+    }
+    function updateBulkBar() {
+      bulkCountEl.textContent = String(state.selected.size);
+      bulkBar.classList.toggle('visible', state.selected.size > 0);
+    }
+    function rebuildAgentSelect() {
+      bulkAgentSelect.replaceChildren();
+      const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Select agent…'; bulkAgentSelect.appendChild(placeholder);
+      for (const a of state.agents) {
+        const opt = document.createElement('option'); opt.value = a; opt.textContent = a; bulkAgentSelect.appendChild(opt);
+      }
+    }
+
+    async function bulkAssign() {
+      const fromCustom = bulkAgentCustom.value.trim();
+      const fromSelect = bulkAgentSelect.value.trim();
+      const agent = fromCustom || fromSelect;
+      if (!agent) {
+        if (window.MPToast) window.MPToast.error('Pick or enter an agent name.');
+        return;
+      }
+      if (state.selected.size === 0) return;
+      bulkAssignBtn.disabled = true;
+      bulkAssignBtn.textContent = 'Assigning…';
+      try {
+        const res = await fetch('/api/admin/primary-escrow/bulk-assign-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
+          body: JSON.stringify({ asset_ids: [...state.selected], agent }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || ('Bulk assign failed (' + res.status + ')'));
+        if (window.MPToast) window.MPToast.success(body.rows_affected + ' offering(s) updated to "' + agent + '"');
+        state.selected.clear();
+        bulkAgentCustom.value = '';
+        bulkAgentSelect.value = '';
+        await loadAll();
+      } catch (err) {
+        if (window.MPToast) window.MPToast.error(err.message);
+      } finally {
+        bulkAssignBtn.disabled = false;
+        bulkAssignBtn.textContent = 'Assign Agent';
+      }
+    }
+
+    // ── Release modal
+    function openReleaseModal(camp) {
+      state.activeRelease = camp;
+      releaseSummary.replaceChildren();
+      const sold = camp.tokens_total - camp.tokens_available;
+      const rows = [
+        ['Asset', camp.title],
+        ['Asset ID', camp.asset_id],
+        ['Sold tokens', sold + ' of ' + camp.tokens_total + ' (' + camp.progress_percent.toFixed(1) + '%)'],
+        ['Escrow balance', formatMoney(camp.current_escrow_cents)],
+        ['Soft cap', camp.min_funding_tokens + ' tokens (' + formatMoney(camp.target_min_cents) + ')'],
+        ['Escrow agent', camp.escrow_agent],
+      ];
+      for (const [k, v] of rows) {
+        const dt = document.createElement('dt'); dt.textContent = k;
+        const dd = document.createElement('dd'); dd.textContent = v;
+        releaseSummary.appendChild(dt); releaseSummary.appendChild(dd);
+      }
+      releaseFeedback.textContent = '';
+      releaseFeedback.className = 'modal-feedback';
+      releaseForm.reset();
+      releaseSubmitBtn.disabled = false;
+      releaseSubmitBtn.textContent = 'Submit Request';
+      releaseModal.classList.add('visible');
+      document.getElementById('m-notarization').focus();
+    }
+    function closeReleaseModal() {
+      releaseModal.classList.remove('visible');
+      state.activeRelease = null;
+    }
+    async function requestRelease(camp, notarization, reason) {
+      const res = await fetch('/api/admin/primary-escrow/' + encodeURIComponent(camp.asset_id) + '/release-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
+        body: JSON.stringify({ notarization_reference: notarization, reason: reason || null }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || ('Release request failed (' + res.status + ')'));
+      return body;
+    }
+
+    async function submitRelease(ev) {
+      ev.preventDefault();
+      const camp = state.activeRelease;
+      if (!camp) return;
+      const notarization = document.getElementById('m-notarization').value.trim();
+      const reason = document.getElementById('m-reason').value.trim();
+      if (!notarization) {
+        releaseFeedback.classList.add('is-error');
+        releaseFeedback.textContent = 'Notarization reference is required.';
+        return;
+      }
+      releaseSubmitBtn.disabled = true;
+      releaseSubmitBtn.textContent = 'Submitting…';
+      try {
+        const body = await requestRelease(camp, notarization, reason);
+        releaseFeedback.classList.add('is-success');
+        releaseFeedback.textContent = 'Approval request created: ' + body.approval_id;
+        if (window.MPToast) window.MPToast.success('Release request submitted for approval');
+        setTimeout(() => { closeReleaseModal(); loadAll(); }, 1100);
+      } catch (err) {
+        releaseFeedback.classList.add('is-error');
+        releaseFeedback.textContent = err.message;
+        releaseSubmitBtn.disabled = false;
+        releaseSubmitBtn.textContent = 'Submit Request';
+      }
+    }
+
+    // ── Audit drawer
+    async function openAuditDrawer(camp) {
+      auditTitle.textContent = 'History — ' + (camp.title || camp.asset_id);
+      auditBody.replaceChildren();
+      const loadingDiv = document.createElement('div'); loadingDiv.style.cssText = 'color: var(--admin-text-muted); font-size: 13px;'; loadingDiv.textContent = 'Loading…'; auditBody.appendChild(loadingDiv);
+      auditDrawer.classList.add('visible');
+      auditDrawer.setAttribute('aria-hidden', 'false');
+      try {
+        const res = await fetch('/api/admin/primary-escrow/' + encodeURIComponent(camp.asset_id) + '/audit', {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) throw new Error('Failed (' + res.status + ')');
+        const entries = await res.json();
+        auditBody.replaceChildren();
+        if (!entries || entries.length === 0) {
+          const empty = document.createElement('div'); empty.style.cssText = 'color: var(--admin-text-muted); font-size: 13px;'; empty.textContent = 'No primary-escrow audit events yet.'; auditBody.appendChild(empty);
+          return;
+        }
+        for (const e of entries) {
+          const div = document.createElement('div'); div.className = 'audit-entry';
+          const action = document.createElement('div'); action.className = 'audit-action'; action.textContent = e.action.replace(/^primary_escrow\./, ''); div.appendChild(action);
+          const meta = document.createElement('div'); meta.className = 'audit-meta';
+          meta.textContent = e.created_at + (e.actor_email ? ' • by ' + e.actor_email : ' • system');
+          div.appendChild(meta);
+          if (e.new_state) {
+            const pre = document.createElement('pre'); pre.textContent = JSON.stringify(e.new_state, null, 2); div.appendChild(pre);
+          }
+          auditBody.appendChild(div);
+        }
+      } catch (err) {
+        auditBody.replaceChildren();
+        const errDiv = document.createElement('div'); errDiv.style.cssText = 'color: var(--admin-danger, #d92d20);'; errDiv.textContent = 'Failed to load history: ' + err.message; auditBody.appendChild(errDiv);
+      }
+    }
+    function closeAuditDrawer() {
+      auditDrawer.classList.remove('visible');
+      auditDrawer.setAttribute('aria-hidden', 'true');
+    }
+
+    // ── Loading
     function showLoading() {
       loadingEl.style.display = 'block';
       errorEl.style.display = 'none';
       emptyEl.style.display = 'none';
       gridEl.style.display = 'none';
+      kpiEl.style.display = 'none';
+      toolbarEl.style.display = 'none';
       gridEl.replaceChildren();
     }
-
     function showError(message) {
       loadingEl.style.display = 'none';
       gridEl.style.display = 'none';
@@ -438,29 +1525,164 @@
       retryBtn.focus();
     }
 
-    async function loadEscrow() {
-      showLoading();
+    async function loadAll() {
+      const isFirst = state.campaigns.length === 0;
+      if (isFirst) showLoading();
       try {
-        const res = await fetch('/api/admin/primary-escrow', { headers: { Accept: 'application/json' } });
-        if (!res.ok) throw new Error(`Failed to fetch data (${res.status})`);
-        const data = await res.json();
-
+        const [list, summary, agents] = await Promise.all([
+          fetch('/api/admin/primary-escrow', { headers: { Accept: 'application/json' } }).then((r) => { if (!r.ok) throw new Error('list ' + r.status); return r.json(); }),
+          fetch('/api/admin/primary-escrow/summary', { headers: { Accept: 'application/json' } }).then((r) => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/admin/primary-escrow/agents', { headers: { Accept: 'application/json' } }).then((r) => r.ok ? r.json() : []).catch(() => []),
+        ]);
+        state.campaigns = list || [];
+        state.summary = summary;
+        state.agents = agents || [];
+        state.lastUpdated = new Date().toISOString();
         loadingEl.style.display = 'none';
-        if (!data || data.length === 0) {
+
+        if (state.campaigns.length === 0 && state.filterStatus === 'all' && !state.search) {
+          renderKpis(state.summary);
+          toolbarEl.style.display = 'none';
+          emptyEl.querySelector('.admin-empty-state-title').textContent = 'No Active Campaigns';
+          emptyEl.querySelector('.admin-empty-state-text').textContent = 'There are currently no active primary offerings holding escrow funds.';
           emptyEl.style.display = 'block';
+          subtitleEl.textContent = '0 active offerings';
           return;
         }
 
-        gridEl.style.display = 'block';
-        data.forEach((camp) => gridEl.appendChild(renderEscrowCard(camp)));
+        renderKpis(state.summary);
+        renderAnomalyBanner();
+        rebuildAgentSelect();
+        rebuildAgentFilter();
+        rebuildTypeFilter();
+        toolbarEl.style.display = 'flex';
+        renderGrid();
+        lastUpdatedEl.textContent = 'Updated ' + timeAgo(state.lastUpdated);
       } catch (err) {
         console.error(err);
-        showError(`Failed to load escrow data: ${err.message}`);
+        showError('Failed to load escrow data: ' + err.message);
       }
     }
 
-    retryBtn.addEventListener('click', loadEscrow);
-    document.addEventListener('DOMContentLoaded', loadEscrow);
+    // ── New control refs
+    const showInactiveCb = document.getElementById('show-inactive');
+    const autorefreshBtn = document.getElementById('autorefresh-btn');
+    const liveDot = document.getElementById('live-dot');
+    const minProgressInput = document.getElementById('min-progress');
+    const maxProgressInput = document.getElementById('max-progress');
+    const rangeMinVal = document.getElementById('range-min-val');
+    const rangeMaxVal = document.getElementById('range-max-val');
+    const rangeRow = document.getElementById('range-row');
+    const rangeResetBtn = document.getElementById('range-reset');
+
+    function syncRangeUi() {
+      minProgressInput.value = state.minProgress;
+      maxProgressInput.value = state.maxProgress;
+      rangeMinVal.textContent = state.minProgress + '%';
+      rangeMaxVal.textContent = state.maxProgress + '%';
+      const dirty = state.minProgress !== 0 || state.maxProgress !== 100;
+      rangeResetBtn.style.visibility = dirty ? 'visible' : 'hidden';
+    }
+
+    function syncAutoRefreshUi() {
+      autorefreshBtn.classList.toggle('is-paused', !state.autoRefresh);
+      autorefreshBtn.title = state.autoRefresh ? 'Auto-refresh on (click to pause)' : 'Auto-refresh paused (click to resume)';
+    }
+
+    function applyExportMode() {
+      if (state.selected.size > 0) {
+        exportBtn.textContent = 'Export Selected (' + state.selected.size + ')';
+        exportBtn.title = 'Download selected rows as CSV';
+      } else {
+        exportBtn.textContent = 'Export CSV';
+        exportBtn.title = 'Download filtered list as CSV';
+      }
+    }
+
+    // ── Wire events
+    retryBtn.addEventListener('click', loadAll);
+    searchInput.addEventListener('input', () => { state.search = searchInput.value; state.visibleCount = PAGE_SIZE; renderGrid(); });
+    sortSelect.addEventListener('change', () => { state.sort = sortSelect.value; state.visibleCount = PAGE_SIZE; savePrefs(); renderGrid(); });
+    densitySelect.addEventListener('change', () => { state.density = densitySelect.value; savePrefs(); renderGrid(); });
+    agentFilter.addEventListener('change', () => { state.filterAgent = agentFilter.value; state.visibleCount = PAGE_SIZE; savePrefs(); renderGrid(); });
+    typeFilter.addEventListener('change', () => { state.filterType = typeFilter.value; state.visibleCount = PAGE_SIZE; savePrefs(); renderGrid(); });
+    exportBtn.addEventListener('click', exportCsv);
+    loadMoreBtn.addEventListener('click', () => { state.visibleCount += PAGE_SIZE; renderGrid(); });
+    statusChips.addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip'); if (!btn) return;
+      [...statusChips.children].forEach((c) => c.classList.remove('active'));
+      btn.classList.add('active');
+      state.filterStatus = btn.dataset.filter;
+      state.visibleCount = PAGE_SIZE;
+      savePrefs();
+      renderGrid();
+    });
+    showInactiveCb.addEventListener('change', () => {
+      state.showInactive = showInactiveCb.checked;
+      savePrefs();
+      loadAll();
+    });
+    autorefreshBtn.addEventListener('click', () => {
+      state.autoRefresh = !state.autoRefresh;
+      savePrefs();
+      syncAutoRefreshUi();
+      if (window.MPToast) window.MPToast.info(state.autoRefresh ? 'Auto-refresh resumed' : 'Auto-refresh paused');
+    });
+    function onRangeChange() {
+      let lo = Number(minProgressInput.value);
+      let hi = Number(maxProgressInput.value);
+      if (lo > hi) [lo, hi] = [hi, lo];
+      state.minProgress = lo; state.maxProgress = hi;
+      syncRangeUi();
+      state.visibleCount = PAGE_SIZE;
+      savePrefs();
+      renderGrid();
+    }
+    minProgressInput.addEventListener('input', onRangeChange);
+    maxProgressInput.addEventListener('input', onRangeChange);
+    rangeResetBtn.addEventListener('click', () => {
+      state.minProgress = 0; state.maxProgress = 100;
+      syncRangeUi();
+      savePrefs();
+      renderGrid();
+    });
+    bulkCancelBtn.addEventListener('click', clearSelection);
+    bulkAssignBtn.addEventListener('click', bulkAssign);
+    releaseCancelBtn.addEventListener('click', closeReleaseModal);
+    releaseModal.addEventListener('click', (e) => { if (e.target === releaseModal) closeReleaseModal(); });
+    releaseForm.addEventListener('submit', submitRelease);
+    auditCloseBtn.addEventListener('click', closeAuditDrawer);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (releaseModal.classList.contains('visible')) closeReleaseModal();
+        else if (auditDrawer.classList.contains('visible')) closeAuditDrawer();
+      }
+      const inField = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT');
+      if (e.key === '/' && !inField) { e.preventDefault(); searchInput.focus(); }
+      if (!inField && !releaseModal.classList.contains('visible')) {
+        if (e.key === 'j') { e.preventDefault(); focusCard(state.focusedIndex + 1); }
+        else if (e.key === 'k') { e.preventDefault(); focusCard(state.focusedIndex - 1); }
+        else if (e.key === 'Enter' && state.focusedIndex >= 0) {
+          const card = gridEl.querySelectorAll('.escrow-card')[state.focusedIndex];
+          const releaseBtn = card?.querySelector('.admin-btn--primary');
+          if (releaseBtn && !releaseBtn.disabled) releaseBtn.click();
+        }
+      }
+    });
+
+    // Auto-refresh every 30s
+    setInterval(() => {
+      if (!releaseModal.classList.contains('visible') && !auditDrawer.classList.contains('visible')) {
+        loadAll();
+      } else if (state.lastUpdated) {
+        lastUpdatedEl.textContent = 'Updated ' + timeAgo(state.lastUpdated);
+      }
+    }, 30000);
+    setInterval(() => {
+      if (state.lastUpdated) lastUpdatedEl.textContent = 'Updated ' + timeAgo(state.lastUpdated);
+    }, 5000);
+
+    document.addEventListener('DOMContentLoaded', loadAll);
   </script>
 </body>
 

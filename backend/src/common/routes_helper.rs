@@ -5,6 +5,15 @@ use axum_extra::extract::cookie::CookieJar;
 use minijinja::context;
 use tracing::error;
 
+fn user_display_name(email: &str) -> String {
+    email
+        .split('@')
+        .next()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or("User")
+        .to_string()
+}
+
 /// Helper: serve a protected HTML page from the platform frontend.
 ///
 /// Checks the session cookie against the database.
@@ -30,10 +39,16 @@ pub async fn serve_protected(
             .unwrap_or_else(|| "unregistered".to_string());
 
     let is_developer = file.starts_with("developer");
+    let user_display_name = user_display_name(&user.email);
 
     // Render using Minijinja to resolve {% include %}
     match state.templates.get_template(file) {
-        Ok(template) => match template.render(context! { user => user, affiliate_status => affiliate_status, is_developer => is_developer }) {
+        Ok(template) => match template.render(context! {
+            user => user,
+            user_display_name => user_display_name,
+            affiliate_status => affiliate_status,
+            is_developer => is_developer,
+        }) {
             Ok(content) => Html(content).into_response(),
             Err(e) => {
                 error!("Template rendering error for {}: {}", file, e);
@@ -73,6 +88,8 @@ pub async fn serve_protected_with_context<T: serde::Serialize>(
     if let Ok(u_val) = serde_json::to_value(&user) {
         map.insert("user".to_string(), u_val);
     }
+    map.entry("user_display_name".to_string())
+        .or_insert_with(|| serde_json::json!(user_display_name(&user.email)));
 
     let affiliate_status: String =
         sqlx::query_scalar("SELECT status FROM affiliates WHERE user_id = $1")
@@ -127,6 +144,8 @@ pub async fn serve_public_with_context<T: serde::Serialize>(
         if let Ok(u_val) = serde_json::to_value(&user) {
             map.insert("user".to_string(), u_val);
         }
+        map.entry("user_display_name".to_string())
+            .or_insert_with(|| serde_json::json!(user_display_name(&user.email)));
 
         let affiliate_status: String =
             sqlx::query_scalar("SELECT status FROM affiliates WHERE user_id = $1")

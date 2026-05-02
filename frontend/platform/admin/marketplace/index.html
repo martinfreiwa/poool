@@ -39,25 +39,69 @@
           </nav>
         </div>
         <div class="admin-topbar-right">
-          <div class="admin-health-indicators" title="System Health" aria-label="System health indicators">
-            <span id="health-dot-matching" class="admin-health-dot admin-health-dot--warn" title="Matching Engine: loading"></span>
-            <span id="health-dot-db" class="admin-health-dot admin-health-dot--warn" title="Database: loading"></span>
-            <span id="health-dot-ws" class="admin-health-dot admin-health-dot--warn" title="WebSocket Gateway: loading"></span>
+          <div class="admin-health-indicators" role="group" aria-label="System health">
+            <span class="admin-health-label" aria-hidden="true">Health</span>
+            <span id="health-dot-matching" class="admin-health-dot admin-health-dot--warn" role="img" aria-label="Matching Engine: loading" title="Matching Engine: loading"></span>
+            <span id="health-dot-db" class="admin-health-dot admin-health-dot--warn" role="img" aria-label="Database: loading" title="Database: loading"></span>
+            <span id="health-dot-ws" class="admin-health-dot admin-health-dot--warn" role="img" aria-label="WebSocket Gateway: loading" title="WebSocket Gateway: loading"></span>
           </div>
         </div>
       </header>
 
       <!-- Page Content -->
       <div class="admin-content">
-        <div class="admin-page-header">
-          <h1 class="admin-page-title">Marketplace Overview</h1>
-          <p class="admin-page-subtitle">Live trading status and operational KPIs</p>
+        <div class="admin-page-header mp-page-header">
+          <div>
+            <h1 class="admin-page-title">Marketplace Overview</h1>
+            <p class="admin-page-subtitle">Live trading status and operational KPIs</p>
+          </div>
+          <div class="mp-toolbar" role="group" aria-label="Overview controls">
+            <span class="mp-conn-pill" id="mp-conn-pill" title="Connection state">
+              <span class="mp-conn-dot" aria-hidden="true"></span>
+              <span class="mp-conn-label">Connecting…</span>
+            </span>
+            <span class="mp-updated" id="mp-last-updated" title="Last refresh time">Updated --</span>
+            <div class="mp-range-picker" role="radiogroup" aria-label="Trade view range">
+              <button type="button" class="mp-range-btn" data-range="1h">1h</button>
+              <button type="button" class="mp-range-btn is-active" data-range="24h" aria-pressed="true">24h</button>
+              <button type="button" class="mp-range-btn" data-range="7d">7d</button>
+            </div>
+            <label class="mp-toolbar-toggle">
+              <input type="checkbox" id="mp-autorefresh" checked />
+              <span>Auto-refresh</span>
+            </label>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="mp-refresh-btn" aria-label="Refresh now">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+              Refresh
+            </button>
+            <button type="button" class="admin-btn admin-btn--danger admin-btn--sm" id="mp-halt-btn" hidden aria-label="Halt trading kill-switch">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+              Halt Trading
+            </button>
+            <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" id="mp-resume-btn" hidden aria-label="Resume trading">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              Resume Trading
+            </button>
+          </div>
         </div>
 
-        <!-- KPI Cards -->
+        <!-- KPI Cards — order: Action-required first, then status, volume, orders -->
         <div class="admin-kpi-grid" id="kpi-grid">
+          <!-- Pending Approvals (Action Required — first) -->
+          <a href="/admin/marketplace/approvals.html" class="admin-kpi-card admin-kpi-card--clickable" id="kpi-card-pending" aria-label="View pending approvals">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Pending Approvals</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" id="kpi-pending">--</div>
+            <span class="admin-kpi-subtext" id="kpi-pending-subtext">Awaiting review queue</span>
+            <span class="mp-kpi-sla" id="kpi-pending-sla" hidden></span>
+          </a>
+
           <!-- Trading Status -->
-          <div class="admin-kpi-card mp-kpi-live">
+          <div class="admin-kpi-card mp-kpi-live" id="kpi-card-status">
             <div class="admin-kpi-header">
               <span class="admin-kpi-label">Trading Status</span>
               <div class="admin-kpi-icon">
@@ -68,8 +112,21 @@
             <span class="admin-kpi-subtext" id="kpi-trading-subtext">Checking trading controls</span>
           </div>
 
+          <!-- 24h Volume -->
+          <a href="/admin/marketplace/trades.html" class="admin-kpi-card admin-kpi-card--clickable" aria-label="View trade history">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">24h Volume <abbr title="USD, last 24 hours">(USD)</abbr></span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" id="kpi-volume">--</div>
+            <span class="admin-kpi-change" id="kpi-volume-subtext">Awaiting 24h trade volume</span>
+            <span class="mp-kpi-delta" id="kpi-volume-delta" hidden></span>
+          </a>
+
           <!-- Open Orders -->
-          <div class="admin-kpi-card">
+          <a href="/admin/marketplace/orders.html?status=open" class="admin-kpi-card admin-kpi-card--clickable" aria-label="View open orders">
             <div class="admin-kpi-header">
               <span class="admin-kpi-label">Open Orders</span>
               <div class="admin-kpi-icon">
@@ -78,38 +135,90 @@
             </div>
             <div class="admin-kpi-value" id="kpi-open-orders">--</div>
             <span class="admin-kpi-change" id="kpi-open-orders-subtext">Awaiting API data</span>
+            <span class="mp-kpi-sla" id="kpi-open-orders-sla" hidden></span>
+          </a>
+        </div>
+
+        <!-- Top Assets + Mini Orderbook -->
+        <div class="mp-two-col" style="margin-bottom: 28px;">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Top Assets — 24h</h3>
+              <a href="/admin/marketplace/orderbook.html" class="admin-btn admin-btn--ghost admin-btn--sm">Orderbooks</a>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table mp-top-assets">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th class="mp-num">Trades</th>
+                    <th class="mp-num">Volume <abbr title="US Dollars">USD</abbr></th>
+                    <th class="mp-num">Last <abbr title="US Dollars">USD</abbr></th>
+                  </tr>
+                </thead>
+                <tbody id="mp-top-assets-body">
+                  <tr><td colspan="4" class="mp-table-message">Loading top assets</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <!-- 24h Volume -->
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header">
-              <span class="admin-kpi-label">24h Volume</span>
-              <div class="admin-kpi-icon">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">
+                Top of Book
+                <span class="mp-orderbook-asset" id="mp-orderbook-asset"></span>
+              </h3>
+              <span class="mp-spread" id="mp-orderbook-spread" hidden></span>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <div class="mp-orderbook-mini" id="mp-orderbook-mini">
+                <div class="mp-table-message">Select asset auto-loads when trades available</div>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-volume">--</div>
-            <span class="admin-kpi-change" id="kpi-volume-subtext">Awaiting 24h trade volume</span>
           </div>
+        </div>
 
-          <!-- Pending Approvals -->
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Pending Approvals</span>
-              <div class="admin-kpi-icon">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              </div>
-            </div>
-            <div class="admin-kpi-value" id="kpi-pending">--</div>
-            <span class="admin-kpi-subtext" id="kpi-pending-subtext">Awaiting review queue</span>
+        <!-- Fraud Signals -->
+        <div class="admin-card mp-fraud-card" id="mp-fraud-card" style="margin-bottom: 28px;">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Fraud Signals</h3>
+            <span class="mp-fraud-score" id="mp-fraud-score" data-tone="ok" title="Heuristic risk score from recent trades">0</span>
+          </div>
+          <div class="admin-card-body">
+            <ul class="mp-fraud-list" id="mp-fraud-list">
+              <li class="mp-fraud-empty">Awaiting recent-trade data…</li>
+            </ul>
+            <p class="mp-fraud-legend">Heuristics: self-trade (×10), velocity spike >10/60s (×5), A↔B reversal &lt;30s (×7).</p>
           </div>
         </div>
 
         <!-- Recent Live Trades -->
         <div class="admin-card" style="margin-bottom: 28px;">
           <div class="admin-card-header">
-            <h3 class="admin-card-title"><span class="mp-live-dot"></span> Recent Live Trades</h3>
-            <a href="/admin/marketplace/trades.html" class="admin-btn admin-btn--secondary admin-btn--sm">View All</a>
+            <h3 class="admin-card-title">
+              <span class="mp-live-dot" title="Streaming live"></span>
+              Recent Live Trades
+              <span class="mp-anomaly-badge" id="mp-anomaly-badge" hidden title="Suspicious trade clusters detected"></span>
+            </h3>
+            <div class="mp-card-actions">
+              <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="mp-export-trades" title="Export visible trades as CSV">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                CSV
+              </button>
+              <a href="/admin/marketplace/trades.html" class="admin-btn admin-btn--secondary admin-btn--sm">View All</a>
+            </div>
+          </div>
+          <div class="mp-filter-bar" role="search" aria-label="Filter trades">
+            <input type="search" id="mp-filter-text" class="mp-filter-input" placeholder="Filter by asset, buyer, seller…" autocomplete="off" />
+            <select id="mp-filter-asset" class="mp-filter-select" aria-label="Asset filter">
+              <option value="">All assets</option>
+            </select>
+            <select id="mp-filter-flagged" class="mp-filter-select" aria-label="Suspicious filter">
+              <option value="all">All trades</option>
+              <option value="suspicious">Suspicious only</option>
+            </select>
+            <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="mp-filter-clear">Clear</button>
           </div>
           <div class="admin-card-body admin-card-body--flush">
             <table class="admin-table" id="live-trades-table">
@@ -117,10 +226,10 @@
                 <tr>
                   <th>Time</th>
                   <th>Asset</th>
-                  <th>Side</th>
-                  <th>Price</th>
-                  <th>Quantity</th>
-                  <th>Total</th>
+                  <th>Type</th>
+                  <th class="mp-num">Price <abbr title="US Dollars">USD</abbr></th>
+                  <th class="mp-num">Qty</th>
+                  <th class="mp-num">Total <abbr title="US Dollars">USD</abbr></th>
                   <th>Buyer</th>
                   <th>Seller</th>
                 </tr>
@@ -130,17 +239,51 @@
               </tbody>
             </table>
           </div>
+          <div class="admin-card-footer mp-trades-footer" id="mp-trades-footer" hidden>
+            <span id="mp-trades-count">Showing 0 of 0</span>
+            <a href="/admin/marketplace/trades.html" class="mp-footer-link">View all trades →</a>
+          </div>
+        </div>
+
+        <!-- Trade Detail Slide-Out Panel -->
+        <aside class="mp-slideout" id="mp-trade-detail" hidden aria-hidden="true" aria-label="Trade detail">
+          <div class="mp-slideout-header">
+            <h3>Trade Detail</h3>
+            <button type="button" class="mp-slideout-close" id="mp-trade-detail-close" aria-label="Close">&times;</button>
+          </div>
+          <div class="mp-slideout-body" id="mp-trade-detail-body"></div>
+        </aside>
+        <div class="mp-slideout-backdrop" id="mp-slideout-backdrop" hidden></div>
+
+        <!-- Cmd+K Command Palette -->
+        <div class="mp-palette-backdrop" id="mp-palette-backdrop" hidden></div>
+        <div class="mp-palette" id="mp-palette" hidden role="dialog" aria-modal="true" aria-label="Command palette">
+          <div class="mp-palette-input-row">
+            <span class="mp-palette-prefix">⌘K</span>
+            <input type="text" id="mp-palette-input" class="mp-palette-input" placeholder="Jump to a page, asset, or action…" autocomplete="off" />
+            <kbd class="mp-palette-kbd">Esc</kbd>
+          </div>
+          <ul class="mp-palette-results" id="mp-palette-results" role="listbox"></ul>
+          <div class="mp-palette-footer">
+            <kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>↵</kbd> open · <kbd>Esc</kbd> close
+          </div>
         </div>
 
         <!-- System Health -->
         <div class="admin-card">
           <div class="admin-card-header">
             <h3 class="admin-card-title">System Health</h3>
+            <span class="mp-spread" id="mp-health-summary" title="Status summary"></span>
           </div>
           <div class="admin-card-body">
-            <div class="mp-health-grid" id="health-grid">
-              <!-- Filled by JS -->
+            <div class="mp-health-tier mp-health-tier--critical" id="health-tier-critical" aria-label="Critical components"></div>
+            <div class="mp-health-sparkline-wrap">
+              <div class="mp-health-sparkline-label">DB latency, last 30 polls</div>
+              <svg class="mp-health-sparkline" id="mp-latency-spark" viewBox="0 0 300 40" preserveAspectRatio="none" aria-label="Database latency sparkline" role="img"></svg>
             </div>
+            <div class="mp-health-tier mp-health-tier--info" id="health-tier-info" aria-label="Other indicators"></div>
+            <!-- Legacy mount kept for backward compatibility / errors -->
+            <div class="mp-health-grid" id="health-grid" hidden></div>
           </div>
         </div>
       </div>

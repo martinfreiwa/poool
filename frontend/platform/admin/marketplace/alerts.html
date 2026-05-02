@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" id="favicon-base" />
   <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Alerts & Watchlist | Admin | POOOL</title>
@@ -19,6 +19,233 @@
   <script src="/static/js/admin-permission-guard.js"></script>
   <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    /* Aging */
+    .alerts-row--aging-warn td:nth-child(8) { color: var(--admin-warning) !important; font-weight: 600; }
+    .alerts-row--aging-crit td:nth-child(8) { color: var(--admin-danger) !important; font-weight: 700; }
+    /* Bulk bar */
+    .alerts-bulk-bar {
+      position: sticky; bottom: 0; z-index: 5;
+      display: none; align-items: center; gap: 12px;
+      padding: 10px 16px; margin-top: 12px;
+      background: var(--admin-accent-bg); border: 1px solid var(--admin-accent);
+      border-radius: var(--admin-radius-sm);
+    }
+    .alerts-bulk-bar.is-visible { display: flex; }
+    .alerts-checkbox { width: 14px; height: 14px; cursor: pointer; }
+    /* KPI cards */
+    .admin-kpi-card--clickable { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .admin-kpi-card--clickable:hover { border-color: var(--admin-accent); }
+    .admin-kpi-card--active { border-color: var(--admin-accent) !important; background: var(--admin-accent-bg) !important; }
+    .admin-kpi-card--alarm {
+      border-color: var(--admin-danger) !important;
+      background: var(--admin-danger-bg) !important;
+      animation: alerts-card-pulse 2s ease-in-out infinite;
+    }
+    @keyframes alerts-card-pulse {
+      0%,100% { box-shadow: 0 0 0 0 var(--admin-danger-bg); }
+      50% { box-shadow: 0 0 0 6px transparent; }
+    }
+    .alerts-live-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--admin-success); margin-right: 6px;
+      animation: alerts-pulse 2s ease-in-out infinite;
+    }
+    @keyframes alerts-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .alerts-spark { width: 100%; height: 28px; margin-top: 6px; display: block; }
+    /* Legend */
+    .alerts-legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      padding: 8px 14px; margin-bottom: 12px;
+      font-size: 11px; color: var(--admin-text-muted);
+      background: var(--admin-bg-card); border: 1px dashed var(--admin-border);
+      border-radius: var(--admin-radius-sm);
+    }
+    .alerts-legend-item { display: inline-flex; align-items: center; gap: 4px; }
+    .alerts-legend-shape {
+      display: inline-block; width: 10px; height: 10px;
+      font-size: 10px; line-height: 10px; text-align: center;
+    }
+    /* Detail row */
+    .alerts-row-detail {
+      background: var(--admin-bg-soft, var(--admin-accent-bg));
+      font-size: 12px;
+    }
+    .alerts-row-detail td { padding: 12px 18px !important; }
+    .alerts-detail-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 16px;
+    }
+    .alerts-detail-grid dt { font-size: 11px; color: var(--admin-text-muted); }
+    .alerts-detail-grid dd { margin: 0; font-size: 12px; color: var(--admin-text-primary); word-break: break-word; }
+    .alerts-expand-btn {
+      background: none; border: none; cursor: pointer; color: var(--admin-text-muted);
+      font-size: 14px; padding: 0 4px; line-height: 1;
+    }
+    .alerts-expand-btn:hover { color: var(--admin-accent); }
+    .alerts-audit-list { margin: 8px 0 0; padding: 0; list-style: none; }
+    .alerts-audit-list li {
+      font-size: 11px; color: var(--admin-text-secondary);
+      padding: 3px 0; border-top: 1px solid var(--admin-border);
+    }
+    .alerts-audit-list li:first-child { border-top: none; }
+    /* Category tabs */
+    .alerts-cat-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+    .alerts-cat-tab {
+      padding: 6px 12px; font-size: 12px; font-weight: 600;
+      border: 1px solid var(--admin-border); background: var(--admin-bg-card);
+      color: var(--admin-text-secondary); border-radius: var(--admin-radius-sm);
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .alerts-cat-tab:hover { color: var(--admin-text-primary); border-color: var(--admin-border-hover); }
+    .alerts-cat-tab.is-active { color: var(--admin-accent); background: var(--admin-accent-bg); border-color: var(--admin-accent); }
+    .alerts-cat-tab-badge {
+      font-size: 10px; padding: 1px 5px; border-radius: 999px;
+      background: var(--admin-border); color: var(--admin-text-muted);
+    }
+    .alerts-cat-tab.is-active .alerts-cat-tab-badge { background: var(--admin-accent); color: #fff; }
+    /* Saved views */
+    .alerts-views-bar {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      padding: 8px 14px; margin-bottom: 12px;
+      background: var(--admin-bg-card); border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-sm);
+    }
+    .alerts-view-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; font-size: 11px; border: 1px solid var(--admin-border);
+      border-radius: 999px; background: transparent; color: var(--admin-text-secondary);
+      cursor: pointer;
+    }
+    .alerts-view-chip:hover { border-color: var(--admin-accent); color: var(--admin-accent); }
+    .alerts-view-chip-x { background: none; border: none; color: var(--admin-text-muted); cursor: pointer; padding: 0 0 0 4px; font-size: 12px; }
+    .alerts-snooze-row { opacity: 0.4; }
+    .alerts-snooze-badge {
+      font-size: 10px; padding: 1px 6px; border-radius: 999px;
+      background: var(--admin-border); color: var(--admin-text-muted); margin-left: 6px;
+    }
+    /* Donut */
+    .alerts-breakdown { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center; padding: 16px 20px; }
+    .alerts-breakdown-legend { font-size: 12px; }
+    .alerts-breakdown-legend li { list-style: none; display: flex; align-items: center; gap: 8px; padding: 3px 0; color: var(--admin-text-secondary); }
+    .alerts-breakdown-legend .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .alerts-breakdown-legend .pct { margin-left: auto; color: var(--admin-text-muted); font-variant-numeric: tabular-nums; }
+    @media (max-width: 720px) { .alerts-breakdown { grid-template-columns: 1fr; } }
+    /* Page tabs (Alerts / Watchlist / Rules) */
+    .alerts-page-tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--admin-border);
+      margin-bottom: 18px;
+    }
+    .alerts-page-tab {
+      padding: 10px 18px; font-size: 13px; font-weight: 600;
+      background: none; border: none; cursor: pointer;
+      color: var(--admin-text-muted); border-bottom: 2px solid transparent;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .alerts-page-tab:hover { color: var(--admin-text-primary); }
+    .alerts-page-tab.is-active { color: var(--admin-accent); border-bottom-color: var(--admin-accent); }
+    .alerts-page-tab-badge {
+      font-size: 10px; padding: 1px 6px; border-radius: 999px;
+      background: var(--admin-border); color: var(--admin-text-muted);
+    }
+    .alerts-page-tab.is-active .alerts-page-tab-badge { background: var(--admin-accent); color: #fff; }
+    .alerts-pane { display: none; }
+    .alerts-pane.is-active { display: block; }
+    /* Assignee */
+    .alerts-assignee {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--admin-text-secondary);
+    }
+    .alerts-avatar {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--admin-accent-bg); color: var(--admin-accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700;
+    }
+    /* Modal (rule editor) */
+    .alerts-modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: none; align-items: center; justify-content: center; z-index: 100;
+    }
+    .alerts-modal-backdrop.is-open { display: flex; }
+    .alerts-modal {
+      background: var(--admin-bg-card); border-radius: var(--admin-radius-md);
+      width: min(640px, 92vw); max-height: 88vh; overflow: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .alerts-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--admin-border);
+    }
+    .alerts-modal-body { padding: 20px; display: grid; gap: 14px; }
+    .alerts-modal-footer {
+      display: flex; gap: 8px; justify-content: flex-end;
+      padding: 14px 20px; border-top: 1px solid var(--admin-border);
+    }
+    .alerts-form-row { display: grid; gap: 4px; }
+    .alerts-form-row label { font-size: 11px; color: var(--admin-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .alerts-form-row input, .alerts-form-row select, .alerts-form-row textarea {
+      padding: 8px 10px; border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-sm); font-size: 13px;
+      background: var(--admin-bg); color: var(--admin-text-primary);
+      font-family: inherit;
+    }
+    .alerts-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    /* Cmd+K palette */
+    .alerts-palette-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: none; align-items: flex-start; justify-content: center; z-index: 200;
+      padding-top: 12vh;
+    }
+    .alerts-palette-backdrop.is-open { display: flex; }
+    .alerts-palette {
+      background: var(--admin-bg-card); border-radius: var(--admin-radius-md);
+      width: min(560px, 92vw); box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+    .alerts-palette input {
+      width: 100%; padding: 14px 18px; font-size: 14px; border: none;
+      background: transparent; color: var(--admin-text-primary); outline: none;
+    }
+    .alerts-palette-list { max-height: 50vh; overflow: auto; border-top: 1px solid var(--admin-border); }
+    .alerts-palette-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px; font-size: 13px; cursor: pointer;
+      color: var(--admin-text-secondary);
+    }
+    .alerts-palette-item.is-active { background: var(--admin-accent-bg); color: var(--admin-accent); }
+    .alerts-palette-item .kbd { margin-left: auto; font-size: 10px; color: var(--admin-text-muted); }
+    /* Notify chip in topbar */
+    .alerts-fraud-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; margin-right: 8px;
+      font-size: 11px; font-weight: 600; color: var(--admin-warning);
+      background: var(--admin-warning-bg); border: 1px solid var(--admin-warning);
+      border-radius: 999px; text-decoration: none;
+    }
+    .alerts-fraud-link:hover { opacity: 0.85; }
+    /* Watchlist */
+    .alerts-watchlist-empty {
+      padding: 40px 20px; text-align: center; color: var(--admin-text-muted);
+    }
+    /* Snooze menu */
+    .alerts-snooze-menu {
+      position: absolute; z-index: 50; min-width: 160px;
+      background: var(--admin-bg-card); border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-sm);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 4px 0;
+    }
+    .alerts-snooze-menu button {
+      display: block; width: 100%; text-align: left; background: none; border: none;
+      padding: 8px 14px; font-size: 12px; color: var(--admin-text-primary);
+      cursor: pointer; font-family: inherit;
+    }
+    .alerts-snooze-menu button:hover { background: var(--admin-hover-overlay); }
+    /* Card elevation refinement */
+    .admin-content .admin-card {
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .admin-dark .admin-content .admin-card { box-shadow: none; }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -36,7 +263,13 @@
             <span class="current">Alerts</span>
           </nav>
         </div>
-        <div class="admin-topbar-right"></div>
+        <div class="admin-topbar-right">
+          <a href="/admin/marketplace/syndicate-fraud.html" class="alerts-fraud-link" title="View related Syndicate Fraud signals">
+            ⚠ Syndicate Fraud <span id="fraud-link-count" style="background:var(--admin-warning);color:#fff;padding:0 5px;border-radius:8px;font-size:10px;">—</span>
+          </a>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-cmdk" title="Open command palette (⌘K)">⌘K</button>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-notify" title="Enable browser notifications for new critical alerts">🔔 Enable alerts</button>
+        </div>
       </header>
 
       <div class="admin-content">
@@ -45,46 +278,344 @@
           <p class="admin-page-subtitle">Automated trading alerts, anomaly detection, and compliance flags</p>
         </div>
 
-        <!-- Summary KPIs -->
-        <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:20px;">
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header"><span class="admin-kpi-label">Total Alerts</span></div>
-            <div class="admin-kpi-value" id="kpi-total-alerts">—</div>
+        <!-- Page tabs -->
+        <div class="alerts-page-tabs" role="tablist">
+          <button class="alerts-page-tab is-active" data-pane="alerts" role="tab" aria-selected="true">Alerts <span class="alerts-page-tab-badge" id="tab-count-alerts">0</span></button>
+          <button class="alerts-page-tab" data-pane="watchlist" role="tab" aria-selected="false">Watchlist <span class="alerts-page-tab-badge" id="tab-count-watchlist">0</span></button>
+          <button class="alerts-page-tab" data-pane="rules" role="tab" aria-selected="false">Detection Rules <span class="alerts-page-tab-badge" id="tab-count-rules">0</span></button>
+        </div>
+
+        <!-- ╔══ ALERTS PANE ═════════════════════════════════════════ -->
+        <div class="alerts-pane is-active" id="pane-alerts" role="tabpanel">
+
+          <!-- KPIs -->
+          <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:20px;">
+            <div class="admin-kpi-card admin-kpi-card--clickable admin-kpi-card--active" data-filter="all" tabindex="0" role="button" aria-pressed="true" aria-labelledby="kpi-total-label kpi-total-alerts">
+              <div class="admin-kpi-header"><span class="admin-kpi-label" id="kpi-total-label">Total Alerts</span></div>
+              <div class="admin-kpi-value" id="kpi-total-alerts">—</div>
+              <div style="font-size:11px;color:var(--admin-text-muted);" id="kpi-total-sub">Click to clear filters</div>
+              <svg class="alerts-spark" id="spark-total" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
+            <div class="admin-kpi-card admin-kpi-card--clickable" data-filter="critical" tabindex="0" role="button" aria-pressed="false" aria-labelledby="kpi-crit-label kpi-critical">
+              <div class="admin-kpi-header"><span class="admin-kpi-label" id="kpi-crit-label">Critical</span></div>
+              <div class="admin-kpi-value" id="kpi-critical" style="color:var(--admin-danger);">—</div>
+              <div style="font-size:11px;color:var(--admin-text-muted);" id="kpi-critical-sub">—</div>
+              <svg class="alerts-spark" id="spark-critical" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
+            <div class="admin-kpi-card admin-kpi-card--clickable" data-filter="unresolved" tabindex="0" role="button" aria-pressed="false" aria-labelledby="kpi-unres-label kpi-unresolved">
+              <div class="admin-kpi-header"><span class="admin-kpi-label" id="kpi-unres-label">Unresolved</span></div>
+              <div class="admin-kpi-value" id="kpi-unresolved" style="color:var(--admin-warning);">—</div>
+              <div style="font-size:11px;color:var(--admin-text-muted);" id="kpi-unresolved-sub">—</div>
+              <svg class="alerts-spark" id="spark-unresolved" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
           </div>
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header"><span class="admin-kpi-label">Critical</span></div>
-            <div class="admin-kpi-value" id="kpi-critical" style="color:var(--admin-danger);">—</div>
+
+          <!-- Legend -->
+          <div class="alerts-legend" aria-label="Severity and status legend">
+            <span style="font-weight:600;color:var(--admin-text-secondary);">Legend:</span>
+            <span class="alerts-legend-item"><span class="alerts-legend-shape" style="color:var(--admin-danger);">●</span>Critical · immediate action</span>
+            <span class="alerts-legend-item"><span class="alerts-legend-shape" style="color:var(--admin-warning);">▲</span>Warning · review within 24h</span>
+            <span class="alerts-legend-item"><span class="alerts-legend-shape" style="color:var(--admin-text-muted);">■</span>Info · informational</span>
+            <span style="color:var(--admin-border);">|</span>
+            <span class="alerts-legend-item">Aging: <span style="color:var(--admin-warning);">amber &gt;24h</span> · <span style="color:var(--admin-danger);">red crit &gt;1h</span></span>
           </div>
-          <div class="admin-kpi-card">
-            <div class="admin-kpi-header"><span class="admin-kpi-label">Unresolved</span></div>
-            <div class="admin-kpi-value" id="kpi-unresolved" style="color:var(--admin-warning);">—</div>
+
+          <!-- Donut -->
+          <div class="admin-card" style="margin-bottom:12px;">
+            <div style="padding:10px 16px;border-bottom:1px solid var(--admin-border);font-size:12px;font-weight:600;color:var(--admin-text-secondary);">
+              Alerts by source type
+            </div>
+            <div class="alerts-breakdown">
+              <svg id="alerts-donut" viewBox="0 0 100 100" style="width:160px;height:160px;justify-self:center;" aria-label="Alert distribution by type"></svg>
+              <ul class="alerts-breakdown-legend" id="alerts-breakdown-legend" style="margin:0;padding:0;"></ul>
+            </div>
+          </div>
+
+          <!-- Category tabs -->
+          <div class="alerts-cat-tabs" role="tablist" aria-label="Alert categories">
+            <button class="alerts-cat-tab is-active" data-cat="all" role="tab" aria-selected="true">All <span class="alerts-cat-tab-badge" id="cat-count-all">0</span></button>
+            <button class="alerts-cat-tab" data-cat="trading" role="tab" aria-selected="false">Trading <span class="alerts-cat-tab-badge" id="cat-count-trading">0</span></button>
+            <button class="alerts-cat-tab" data-cat="compliance" role="tab" aria-selected="false">Compliance <span class="alerts-cat-tab-badge" id="cat-count-compliance">0</span></button>
+            <button class="alerts-cat-tab" data-cat="system" role="tab" aria-selected="false">System <span class="alerts-cat-tab-badge" id="cat-count-system">0</span></button>
+            <button class="alerts-cat-tab" data-cat="anomaly" role="tab" aria-selected="false">Anomaly <span class="alerts-cat-tab-badge" id="cat-count-anomaly">0</span></button>
+          </div>
+
+          <!-- Toolbar -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+            <span id="alerts-live-status" style="display:inline-flex;align-items:center;font-size:12px;color:var(--admin-text-muted);">
+              <span class="alerts-live-dot" id="alerts-live-dot"></span>
+              <span id="alerts-last-updated">Loading…</span>
+            </span>
+            <label style="font-size:12px;color:var(--admin-text-muted);display:inline-flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="alerts-auto-refresh" checked style="margin:0;" /> Auto-refresh 30s
+            </label>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-refresh" title="Reload alerts">↻ Refresh</button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-test" title="Fire a synthetic test alert">⚡ Test alert</button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-export" title="Export filtered view as CSV" style="margin-left:auto;">⬇ Export CSV</button>
+          </div>
+
+          <!-- Saved views -->
+          <div class="alerts-views-bar" id="alerts-views-bar">
+            <span style="font-size:11px;color:var(--admin-text-muted);font-weight:600;">Saved views:</span>
+            <span id="alerts-views-list" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-save-view" style="margin-left:auto;font-size:11px;padding:3px 10px;">+ Save current view</button>
+          </div>
+
+          <!-- Filter bar -->
+          <div class="admin-card" style="margin-bottom:12px;">
+            <div style="padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div class="admin-search" style="width:240px;">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" /><path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" id="alerts-search" placeholder="Search by ID, user, description…" aria-label="Search alerts" />
+              </div>
+              <select id="alerts-filter-severity" class="admin-select" aria-label="Filter by severity">
+                <option value="">All Severities</option>
+                <option value="critical">Critical</option>
+                <option value="warning">Warning</option>
+                <option value="info">Info</option>
+              </select>
+              <select id="alerts-filter-type" class="admin-select" aria-label="Filter by type">
+                <option value="">All Types</option>
+              </select>
+              <select id="alerts-filter-status" class="admin-select" aria-label="Filter by status">
+                <option value="">All Statuses</option>
+                <option value="new">New</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="resolved">Resolved</option>
+                <option value="false_positive">False Positive</option>
+              </select>
+              <select id="alerts-filter-assignee" class="admin-select" aria-label="Filter by assignee">
+                <option value="">All Assignees</option>
+                <option value="__me">Mine</option>
+                <option value="__unassigned">Unassigned</option>
+              </select>
+              <span style="margin-left:auto;font-size:12px;color:var(--admin-text-muted);" id="alerts-count-label">0 alerts</span>
+            </div>
+            <div style="padding:0 20px 14px;display:flex;gap:6px;flex-wrap:wrap;" id="alerts-quick-chips">
+              <button type="button" class="admin-chip is-active" data-chip="all">All</button>
+              <button type="button" class="admin-chip" data-chip="unresolved">Unresolved</button>
+              <button type="button" class="admin-chip" data-chip="critical">Critical</button>
+              <button type="button" class="admin-chip" data-chip="aging" title="Critical/Warning unresolved &gt;1h">Aging &gt;1h</button>
+              <button type="button" class="admin-chip" data-chip="new">New</button>
+              <button type="button" class="admin-chip" data-chip="mine">Mine</button>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table" id="alerts-table">
+                <thead>
+                  <tr>
+                    <th style="width:32px;text-align:center;">
+                      <input type="checkbox" id="alerts-select-all" class="alerts-checkbox" aria-label="Select all visible alerts" />
+                    </th>
+                    <th style="width:24px;"></th>
+                    <th>Alert ID</th>
+                    <th>Severity</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Related Users</th>
+                    <th title="Time since detection. Critical >1h or Warning >24h shown in red.">Detected ▼</th>
+                    <th>Status</th>
+                    <th>Assignee</th>
+                    <th id="th-actions" style="text-align:center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="alerts-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bulk action bar -->
+          <div class="alerts-bulk-bar" id="alerts-bulk-bar">
+            <strong style="font-size:13px;color:var(--admin-accent);" id="alerts-bulk-count">0 selected</strong>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-bulk-ack">Acknowledge</button>
+            <button class="admin-btn admin-btn--success admin-btn--sm" id="alerts-bulk-resolve">Resolve</button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-bulk-claim">Claim</button>
+            <select id="alerts-bulk-snooze" class="admin-select" style="font-size:12px;padding:4px 8px;">
+              <option value="">Snooze…</option>
+              <option value="3600000">1 hour</option>
+              <option value="14400000">4 hours</option>
+              <option value="86400000">24 hours</option>
+              <option value="-1">Until resolved</option>
+            </select>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-bulk-clear" style="margin-left:auto;">Clear</button>
           </div>
         </div>
 
-        <div class="admin-card">
-          <div class="admin-card-body admin-card-body--flush">
-            <table class="admin-table" id="alerts-table">
-              <thead>
-                <tr>
-                  <th>Alert ID</th>
-                  <th>Severity</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th>Related Users</th>
-                  <th>Detected</th>
-                  <th>Status</th>
-                  <th style="text-align:center">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="alerts-body">
-                <!-- Filled by JS -->
-              </tbody>
-            </table>
+        <!-- ╔══ WATCHLIST PANE ══════════════════════════════════════ -->
+        <div class="alerts-pane" id="pane-watchlist" role="tabpanel">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+            <p style="margin:0;font-size:13px;color:var(--admin-text-secondary);max-width:600px;">
+              Pin users, wallets, or assets that need ongoing monitoring. Watched entities surface a banner when they appear in any new alert.
+            </p>
+            <button class="admin-btn admin-btn--primary admin-btn--sm" id="watchlist-btn-add" style="margin-left:auto;">+ Add to watchlist</button>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Identifier</th>
+                    <th>Reason</th>
+                    <th>Added</th>
+                    <th>Linked Alerts</th>
+                    <th style="text-align:center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="watchlist-body"></tbody>
+              </table>
+            </div>
           </div>
         </div>
+
+        <!-- ╔══ RULES PANE ══════════════════════════════════════════ -->
+        <div class="alerts-pane" id="pane-rules" role="tabpanel">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+            <p style="margin:0;font-size:13px;color:var(--admin-text-secondary);max-width:600px;">
+              Configure detection rules, thresholds, escalation chains, and rule-level snoozes.
+              <span style="color:var(--admin-warning);">Rules are stored locally until backend integration is enabled.</span>
+            </p>
+            <button class="admin-btn admin-btn--primary admin-btn--sm" id="rules-btn-add" style="margin-left:auto;">+ New rule</button>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Severity</th>
+                    <th>Threshold</th>
+                    <th>Escalate after</th>
+                    <th>Notify</th>
+                    <th style="text-align:center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="rules-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
+
+  <!-- ╔══ MODAL: rule editor ══════════════════════════════════════ -->
+  <div class="alerts-modal-backdrop" id="rule-modal" role="dialog" aria-modal="true" aria-labelledby="rule-modal-title">
+    <div class="alerts-modal">
+      <div class="alerts-modal-header">
+        <strong id="rule-modal-title">New detection rule</strong>
+        <button class="alerts-expand-btn" id="rule-modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="alerts-modal-body">
+        <div class="alerts-form-row">
+          <label for="rule-name">Rule name</label>
+          <input type="text" id="rule-name" placeholder="e.g. Wash trading – IP reuse 30s" />
+        </div>
+        <div class="alerts-form-grid">
+          <div class="alerts-form-row">
+            <label for="rule-category">Category</label>
+            <select id="rule-category">
+              <option value="trading">Trading</option>
+              <option value="compliance">Compliance</option>
+              <option value="system">System</option>
+              <option value="anomaly">Anomaly</option>
+            </select>
+          </div>
+          <div class="alerts-form-row">
+            <label for="rule-severity">Severity</label>
+            <select id="rule-severity">
+              <option value="critical">Critical</option>
+              <option value="warning">Warning</option>
+              <option value="info">Info</option>
+            </select>
+          </div>
+        </div>
+        <div class="alerts-form-row">
+          <label for="rule-threshold">Threshold (description)</label>
+          <input type="text" id="rule-threshold" placeholder="e.g. >10% daily volume in single order" />
+        </div>
+        <div class="alerts-form-grid">
+          <div class="alerts-form-row">
+            <label for="rule-escalate">Escalate if unack &gt; (minutes)</label>
+            <input type="number" id="rule-escalate" min="0" placeholder="30" />
+          </div>
+          <div class="alerts-form-row">
+            <label for="rule-channel">Notify channel</label>
+            <select id="rule-channel">
+              <option value="none">None</option>
+              <option value="slack">Slack #ops</option>
+              <option value="email">Email oncall</option>
+              <option value="sms">SMS oncall</option>
+              <option value="page">PagerDuty</option>
+            </select>
+          </div>
+        </div>
+        <div class="alerts-form-row">
+          <label><input type="checkbox" id="rule-enabled" checked /> Enabled</label>
+        </div>
+      </div>
+      <div class="alerts-modal-footer">
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="rule-modal-test">Send test alert</button>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="rule-modal-cancel">Cancel</button>
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="rule-modal-save">Save rule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ╔══ MODAL: watchlist add ════════════════════════════════════ -->
+  <div class="alerts-modal-backdrop" id="watch-modal" role="dialog" aria-modal="true" aria-labelledby="watch-modal-title">
+    <div class="alerts-modal">
+      <div class="alerts-modal-header">
+        <strong id="watch-modal-title">Add to watchlist</strong>
+        <button class="alerts-expand-btn" id="watch-modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="alerts-modal-body">
+        <div class="alerts-form-grid">
+          <div class="alerts-form-row">
+            <label for="watch-type">Type</label>
+            <select id="watch-type">
+              <option value="user">User</option>
+              <option value="wallet">Wallet</option>
+              <option value="asset">Asset</option>
+              <option value="ip">IP address</option>
+            </select>
+          </div>
+          <div class="alerts-form-row">
+            <label for="watch-id">Identifier</label>
+            <input type="text" id="watch-id" placeholder="USR-1234 / 0xabcd… / SWHS" />
+          </div>
+        </div>
+        <div class="alerts-form-row">
+          <label for="watch-reason">Reason</label>
+          <input type="text" id="watch-reason" placeholder="e.g. previously flagged for spoofing" />
+        </div>
+      </div>
+      <div class="alerts-modal-footer">
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="watch-modal-cancel">Cancel</button>
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="watch-modal-save">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ╔══ Cmd+K command palette ═══════════════════════════════════ -->
+  <div class="alerts-palette-backdrop" id="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="alerts-palette">
+      <input type="text" id="palette-input" placeholder="Type a command or search…" />
+      <div class="alerts-palette-list" id="palette-list"></div>
+    </div>
+  </div>
+
+  <!-- Audio cue -->
+  <audio id="alerts-chime" preload="auto">
+    <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQBvT18A" type="audio/wav" />
+  </audio>
 
   <script src="/static/js/mp-toast.js"></script>
   <script src="/static/js/mp-alerts.js"></script>

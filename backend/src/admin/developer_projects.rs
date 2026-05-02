@@ -1292,14 +1292,13 @@ pub async fn api_admin_developer_project_assign(
         None => Some(admin.user.id),
     };
 
-    let prev_assignee: Option<uuid::Uuid> = sqlx::query_scalar(
-        "SELECT assigned_admin_id FROM developer_projects WHERE id = $1",
-    )
-    .bind(pid)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::NotFound("Project not found".to_string()))?;
+    let prev_assignee: Option<uuid::Uuid> =
+        sqlx::query_scalar("SELECT assigned_admin_id FROM developer_projects WHERE id = $1")
+            .bind(pid)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::Database)?
+            .ok_or_else(|| ApiError::NotFound("Project not found".to_string()))?;
 
     sqlx::query(
         r#"UPDATE developer_projects
@@ -1411,23 +1410,20 @@ pub async fn api_admin_developer_project_test_flag(
         .and_then(|v| v.as_bool())
         .ok_or_else(|| ApiError::BadRequest("is_test (boolean) is required".to_string()))?;
 
-    let prev: Option<bool> = sqlx::query_scalar(
-        "SELECT is_test FROM developer_projects WHERE id = $1",
-    )
-    .bind(pid)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::NotFound("Project not found".to_string()))?;
+    let prev: Option<bool> =
+        sqlx::query_scalar("SELECT is_test FROM developer_projects WHERE id = $1")
+            .bind(pid)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::Database)?
+            .ok_or_else(|| ApiError::NotFound("Project not found".to_string()))?;
 
-    sqlx::query(
-        "UPDATE developer_projects SET is_test = $1, updated_at = NOW() WHERE id = $2",
-    )
-    .bind(is_test)
-    .bind(pid)
-    .execute(&state.db)
-    .await
-    .map_err(ApiError::Database)?;
+    sqlx::query("UPDATE developer_projects SET is_test = $1, updated_at = NOW() WHERE id = $2")
+        .bind(is_test)
+        .bind(pid)
+        .execute(&state.db)
+        .await
+        .map_err(ApiError::Database)?;
 
     let _ = sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)

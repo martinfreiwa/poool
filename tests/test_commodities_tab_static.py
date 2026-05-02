@@ -40,6 +40,27 @@ def test_commodities_tab_fragment_matches_filter_and_link_contract():
         assert fragment in renderer
 
     assert "onclick=\"window.location.href='/commodity/{slug}'\"" not in renderer
+    assert "commodity_status_label" not in renderer
+    assert "<span>{status_label}</span>" not in renderer
+
+
+def test_commodities_cards_use_property_size_icon_without_status_meta():
+    routes = read("backend/src/assets/routes.rs")
+    renderer = routes.split("fn render_commodity_card", 1)[1].split(
+        "pub async fn page_marketplace", 1
+    )[0]
+    template = read("frontend/platform/commodities-marketplace.html")
+    square_meter_icon = (
+        '<path d="M4 4h16v16H4z"/><path d="M9 4v16"/>'
+        '<path d="M4 9h16"/>'
+    )
+    diamond_icon = '<path d="M12 22L2 12 12 2l10 10z"/>'
+
+    assert square_meter_icon in renderer
+    assert square_meter_icon in template
+    assert diamond_icon not in renderer
+    assert diamond_icon not in template
+    assert "{% set funding_status_label" not in template
 
 
 def test_commodities_parent_template_uses_display_safe_values():
@@ -52,6 +73,21 @@ def test_commodities_parent_template_uses_display_safe_values():
     assert "asset.total_value_usd" in template
     assert "asset.funded_percentage" in template
     assert 'data-yield="{{ asset.annual_yield_percent }}"' in template
+
+
+def test_commodities_filter_dropdowns_use_matching_icons():
+    template = read("frontend/platform/commodities-marketplace.html")
+
+    assert (
+        'id="filter-bar-investment-icon" src="/static/images/icons/calendar-check-02.svg"'
+        in template
+    )
+    assert (
+        'id="filter-bar-property-icon" src="/static/images/icons/coins-stacked-03.svg"'
+        in template
+    )
+    assert 'id="filter-bar-investment-icon" src="/static/images/icons/dollar.svg"' not in template
+    assert 'id="filter-bar-property-icon" src="/static/images/icons/home-03.svg"' not in template
 
 
 def test_marketplace_search_reinitialization_is_idempotent():

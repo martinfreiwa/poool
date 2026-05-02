@@ -47,6 +47,8 @@ pub enum LockKey {
     AffiliateHoldback = 3004,
     AffiliateTierProgression = 3005,
     PrimaryEscrowAutoRefund = 3006,
+    MarketplaceSettingsScheduler = 1006,
+    MarketplaceAlertEscalation = 1007,
 }
 
 impl LockKey {
@@ -72,6 +74,8 @@ impl LockKey {
             LockKey::AffiliateHoldback => "affiliate_holdback",
             LockKey::AffiliateTierProgression => "affiliate_tier_progression",
             LockKey::PrimaryEscrowAutoRefund => "primary_escrow_auto_refund",
+            LockKey::MarketplaceSettingsScheduler => "marketplace_settings_scheduler",
+            LockKey::MarketplaceAlertEscalation => "marketplace_alert_escalation",
         }
     }
 }

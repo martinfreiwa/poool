@@ -137,12 +137,10 @@ async fn process_pending_whitelists(
             // rows. If any DB write fails, the user gets re-whitelisted
             // next cycle — the contract is idempotent on bool=true.
             for (address, user_id, _email) in &entries {
-                let _ = sqlx::query(
-                    "UPDATE users SET chain_whitelisted_at = NOW() WHERE id = $1",
-                )
-                .bind(user_id)
-                .execute(pool)
-                .await;
+                let _ = sqlx::query("UPDATE users SET chain_whitelisted_at = NOW() WHERE id = $1")
+                    .bind(user_id)
+                    .execute(pool)
+                    .await;
                 let _ = sqlx::query(
                     r#"INSERT INTO audit_logs (user_id, action, details, ip_address, created_at)
                        VALUES ($1, 'kyc_whitelist_sync', $2, '0.0.0.0', NOW())"#,

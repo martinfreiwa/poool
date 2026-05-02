@@ -388,6 +388,11 @@ pub struct PriceLevel {
     pub total_quantity: i32,
     /// Number of individual orders at this price.
     pub order_count: i32,
+    /// Number of distinct users with orders at this price (always
+    /// `<= order_count`). Lets the FE label honestly — a single user
+    /// posting two orders is "1 trader, 2 orders", not "2 buyers".
+    #[serde(default)]
+    pub unique_users: i32,
 }
 
 /// 24-hour ticker response.
@@ -575,6 +580,22 @@ pub enum OrderRejection {
         /// Seconds until rate limit resets.
         retry_after_secs: u64,
     },
+    /// Limit price is outside the allowed price collar (% from last trade).
+    /// Pre-trade risk control (NYSE Rule 80C / SEC LULD analogue).
+    PriceCollarBreach {
+        /// Last trade price in cents (the anchor).
+        last_trade_cents: i64,
+        /// Submitted limit price in cents.
+        submitted_cents: i64,
+        /// Allowed deviation as a percentage (e.g. 5.0 means ±5%).
+        max_pct: f64,
+    },
+    /// No opposing liquidity exists for a market order. The caller should
+    /// switch to a limit order ("place a resting bid/ask").
+    NoLiquidity {
+        /// "buy" or "sell" — the side the order was on.
+        side: &'static str,
+    },
 }
 
 impl OrderRejection {
@@ -634,6 +655,47 @@ impl OrderRejection {
                     retry_after_secs
                 )
             }
+            Self::PriceCollarBreach {
+                last_trade_cents,
+                submitted_cents,
+                max_pct,
+            } => format!(
+                "Price ${:.2} is outside the allowed ±{:.1}% collar around the last trade ${:.2}.",
+                *submitted_cents as f64 / 100.0,
+                max_pct,
+                *last_trade_cents as f64 / 100.0
+            ),
+            Self::NoLiquidity { side } => match *side {
+                "buy" => {
+                    "No asks in the order book. Switch to a limit order to place a resting bid."
+                        .into()
+                }
+                _ => "No bids in the order book. Switch to a limit order to place a resting ask."
+                    .into(),
+            },
+        }
+    }
+
+    /// Stable machine-readable error code for the frontend to dispatch on.
+    /// UPPER_SNAKE_CASE. Never rename once shipped — frontends key off this.
+    pub fn error_code(&self) -> &'static str {
+        match self {
+            Self::InsufficientBalance { .. } => "INSUFFICIENT_BALANCE",
+            Self::InsufficientTokens { .. } => "INSUFFICIENT_TOKENS",
+            Self::ConcentrationLimit { .. } => "CONCENTRATION_LIMIT",
+            Self::RequiresAdminReview { .. } => "REQUIRES_ADMIN_REVIEW",
+            Self::BelowMinimum { .. } => "BELOW_MINIMUM",
+            Self::InvalidQuantity => "INVALID_QUANTITY",
+            Self::InvalidPrice => "INVALID_PRICE",
+            Self::AssetNotTradable => "ASSET_NOT_TRADABLE",
+            Self::KycNotApproved => "KYC_NOT_APPROVED",
+            Self::SelfTradeBlocked => "SELF_TRADE_BLOCKED",
+            Self::TooManyOpenOrders { .. } => "TOO_MANY_OPEN_ORDERS",
+            Self::DuplicateIdempotencyKey => "DUPLICATE_IDEMPOTENCY_KEY",
+            Self::TwoFactorRequired => "TWO_FACTOR_REQUIRED",
+            Self::RateLimited { .. } => "RATE_LIMITED",
+            Self::PriceCollarBreach { .. } => "PRICE_COLLAR_BREACH",
+            Self::NoLiquidity { .. } => "NO_LIQUIDITY",
         }
     }
 
@@ -658,7 +720,14 @@ impl OrderRejection {
             Self::RateLimited { retry_after_secs } => {
                 crate::error::AppError::RateLimited(retry_after_secs)
             }
-            other => crate::error::AppError::OrderRejected(other.to_user_message()),
+            other => {
+                // All other rejections route through OrderRejectedTyped so
+                // clients receive both `error` and `error_code`. Existing
+                // string-rendered messages are preserved.
+                let code = other.error_code();
+                let message = other.to_user_message();
+                crate::error::AppError::OrderRejectedTyped { code, message }
+            }
         }
     }
 }

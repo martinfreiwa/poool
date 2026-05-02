@@ -45,6 +45,19 @@ def test_trading_page_loads_shared_property_detail_lightbox_css_before_v3_css():
     assert "{% set extra_css=['property-detail', 'marketplace-trading-v3', 'marketplace-orderbook'] %}" in template
 
 
+def test_social_proof_metrics_stay_inside_card_on_narrow_screens():
+    css = read(TRADING_V3_CSS)
+
+    assert ".tv3-social-proof {\n    display: grid;" in css
+    assert "grid-template-columns: repeat(auto-fit, minmax(min(124px, 100%), 1fr));" in css
+    assert "overflow: hidden;" in css
+    assert ".tv3-sp-item {\n    display: flex;" in css
+    assert "flex-wrap: wrap;" in css
+    assert "min-width: 0;" in css
+    assert "white-space: normal;" in css
+    assert ".tv3-sp-sep {\n    display: none;" in css
+
+
 def test_trading_page_contains_legacy_property_detail_width_overrides():
     css = read(TRADING_V3_CSS)
 
@@ -79,6 +92,27 @@ def test_trading_page_normalizes_secondary_location_without_duplicate_country():
     assert "country: locationParts.country" in source
     assert "city: locationParts.city" in source
     assert "location: rawAsset.location + (rawAsset.country ? ', ' + rawAsset.country : '')" not in source
+
+
+def test_trading_widget_uses_live_orderbook_depth_not_secondary_aggregate():
+    source = read(TRADING_V3_JS)
+
+    assert "async function fetchLiveOrderbook(slug)" in source
+    assert "/api/marketplace/${encodeURIComponent(slug)}/orderbook" in source
+    assert "sellOrders: mapOrderbookLevelsToOrders(snapshot.asks)" in source
+    assert "buyBids: mapOrderbookLevelsToOrders(snapshot.bids)" in source
+    assert "const sellOrders = liveOrderbook ? liveOrderbook.sellOrders : fallbackSellOrders;" in source
+    assert "const buyBids = liveOrderbook ? liveOrderbook.buyBids : fallbackBuyBids;" in source
+    assert "const displayPriceCents = liveOrderbook?.lastPrice || rawAsset.price;" in source
+    assert "const orderCount = sorted.reduce((s, o) => s + (o.count || 1), 0);" in source
+
+
+def test_market_order_submit_disables_when_live_opposite_side_is_empty():
+    source = read(TRADING_V3_JS)
+
+    assert "const isMarketWithoutLiquidity = priceMode === 'market' && getMarketData(currentAsset, currentSide).totalShares <= 0;" in source
+    assert "No sell orders available" in source
+    assert "No buy offers available" in source
 
 
 def test_trading_hero_title_is_larger():

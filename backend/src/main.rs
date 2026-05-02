@@ -716,6 +716,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         ));
 
+        // Background Worker #4: Alert Escalation
+        let escalate_pool = pool.clone();
+        let escalate_lock_pool = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            escalate_lock_pool,
+            common::leader::LockKey::MarketplaceAlertEscalation,
+            move || {
+                let p = escalate_pool.clone();
+                async move { marketplace::background::run_alert_escalation_worker(&p).await }
+            },
+        ));
+
         // WebSocket: Redis Pub/Sub subscriber (cross-instance message delivery)
         let pubsub_redis = redis.clone();
         tokio::spawn(async move {
@@ -779,6 +791,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         move || {
             let p = gas_pool.clone();
             async move { blockchain::gas_monitor::run_gas_monitor(&p).await }
+        },
+    ));
+
+    // Marketplace settings scheduler (#28): apply scheduled settings changes
+    let mp_sched_pool = pool.clone();
+    let mp_sched_redis = state.redis.clone();
+    tokio::spawn(common::leader::run_as_leader(
+        pool.clone(),
+        common::leader::LockKey::MarketplaceSettingsScheduler,
+        move || {
+            let p = mp_sched_pool.clone();
+            let r = mp_sched_redis.clone();
+            async move { admin::marketplace::run_settings_scheduler(p, r).await }
         },
     ));
 

@@ -50,6 +50,17 @@ pub enum AppError {
     WashTradingBlocked,
     /// Order was rejected for a business-logic reason (HTTP 400).
     OrderRejected(String),
+    /// Structured rejection with a stable machine-readable error_code (HTTP 400).
+    /// Frontend dispatches on `code` to render the right UX (e.g.
+    /// `NO_LIQUIDITY` switches the panel to "place resting order" mode,
+    /// `PRICE_COLLAR_BREACH` highlights the price field). Industry-standard
+    /// FIX/REST error envelope shape.
+    OrderRejectedTyped {
+        /// Stable error code (UPPER_SNAKE). Never change once shipped.
+        code: &'static str,
+        /// Human-readable message (safe to show users).
+        message: String,
+    },
     /// Settlement encountered an order in a terminal state (cancelled,
     /// expired, fully filled). Match must be DROPPED, not retried — internal
     /// signal only, never returned to HTTP clients.
@@ -101,6 +112,9 @@ impl std::fmt::Display for AppError {
             AppError::TradingDisabled => write!(f, "TradingDisabled"),
             AppError::WashTradingBlocked => write!(f, "WashTradingBlocked"),
             AppError::OrderRejected(reason) => write!(f, "OrderRejected: {}", reason),
+            AppError::OrderRejectedTyped { code, message } => {
+                write!(f, "OrderRejected[{}]: {}", code, message)
+            }
             AppError::OrderTerminal { reason } => write!(f, "OrderTerminal: {}", reason),
             AppError::ServiceUnavailable(_) => write!(f, "ServiceUnavailable"),
         }
@@ -180,6 +194,18 @@ impl IntoResponse for AppError {
                 "Self-trading is not allowed.".to_string(),
             ),
             AppError::OrderRejected(reason) => (StatusCode::BAD_REQUEST, reason.clone()),
+            // Structured rejection: emit { error, error_code } so the FE can
+            // dispatch on a stable code instead of substring-matching messages.
+            AppError::OrderRejectedTyped { code, message } => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({
+                        "error": message,
+                        "error_code": code,
+                    })),
+                )
+                    .into_response();
+            }
             // Internal-only signal — should never reach HTTP. If it does,
             // surface as 500 so it's noticed.
             AppError::OrderTerminal { reason } => (

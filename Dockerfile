@@ -17,6 +17,12 @@ RUN cargo chef prepare --recipe-path recipe.json
 # ── Stage 3: Build & cache dependencies ────────────────────────
 FROM chef AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev curl git cmake && rm -rf /var/lib/apt/lists/*
+
+# Install Foundry FIRST so the layer is cached and never invalidated
+# by Rust source changes. (Previously this ran after `cargo build`,
+# which meant a fresh download on every backend code change.)
+RUN curl -L https://foundry.paradigm.xyz | bash && /root/.foundry/bin/foundryup
+
 WORKDIR /app/backend
 COPY --from=planner /app/backend/recipe.json recipe.json
 # Build dependencies
@@ -40,9 +46,6 @@ ARG CACHEBUST=1
 COPY frontend/platform/ /app/frontend/platform/
 COPY frontend/www/ /app/frontend/www/
 RUN bash /app/frontend/platform/static/css/build-bundle.sh
-
-# Install Foundry to get 'cast' binary for blockchain interactions
-RUN curl -L https://foundry.paradigm.xyz | bash && /root/.foundry/bin/foundryup
 # ── IMPORTANT: Normalize file permissions ────────────────────────
 # macOS may assign restrictive permissions (e.g. 750) to directories,
 # which breaks file serving in the distroless container where the app

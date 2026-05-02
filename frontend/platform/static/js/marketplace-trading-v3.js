@@ -16,6 +16,7 @@
     }
 
     function fmt(val) {
+        if (val == null || !isFinite(val)) return '—';
         return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function fmtInt(val) {
@@ -46,7 +47,12 @@
     }
 
     // ── Order Confirmation Modal ──
-    function showOrderConfirmModal({ side, assetName, priceDisplay, quantity, orderType, totalValue, feeValue, grandTotal }) {
+    // Industry-standard pre-trade confirmation modal (FINRA 15c3-5 / MiFID II
+    // RTS 7 disclosures): asset, side, price, qty, est. fill ladder, fee,
+    // funds-locked vs net-proceeds figure, resting-order warning when no
+    // immediate match, explicit affirmation checkbox for non-marketable
+    // orders, and TIF disclosure. Returns true on confirm, false on cancel.
+    function showOrderConfirmModal({ side, assetName, priceDisplay, quantity, orderType, totalValue, feeValue, grandTotal, restingOnly, partialFill, fillEstimate, tif }) {
         return new Promise((resolve) => {
             // Remove any existing modal
             const existing = document.getElementById('tv3-confirm-overlay');
@@ -55,7 +61,59 @@
             const sideLabel = side === 'buy' ? 'Buy' : 'Sell';
             const sideColor = side === 'buy' ? '#00c896' : '#ef4444';
             const sideBg = side === 'buy' ? 'rgba(0,200,150,0.08)' : 'rgba(239,68,68,0.08)';
-            const fmt = (v) => '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const fmt = (v) => v == null || !isFinite(v)
+                ? '—'
+                : '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // Build fill-ladder HTML when order spans multiple price tiers
+            // (taker sweeping across asks/bids). Standard L2 disclosure.
+            const tiers = (fillEstimate && fillEstimate.tiers) || [];
+            const showLadder = tiers.length > 1;
+            const ladderHtml = showLadder ? `
+                <div style="
+                    background:#fff; border:1px solid #eaecf0; border-radius:10px;
+                    padding:10px 12px; margin-bottom:12px;
+                ">
+                    <div style="font-size:11px; font-weight:700; color:#667085; letter-spacing:0.04em; text-transform:uppercase; margin-bottom:6px;">
+                        Estimated fill across ${tiers.length} price tier${tiers.length > 1 ? 's' : ''}
+                    </div>
+                    ${tiers.map(t => `
+                        <div style="display:flex; justify-content:space-between; padding:3px 0; font-size:13px;">
+                            <span style="color:#475467;">${t.qty} sh @ ${fmt(t.price)}</span>
+                            <span style="color:#101828; font-weight:600;">${fmt(t.cost)}</span>
+                        </div>`).join('')}
+                    <div style="display:flex; justify-content:space-between; padding:6px 0 0; font-size:12px; color:#667085; border-top:1px solid #eaecf0; margin-top:4px;">
+                        <span>VWAP</span>
+                        <span style="color:#101828; font-weight:700;">${fmt(fillEstimate.vwap)}/share</span>
+                    </div>
+                </div>` : '';
+
+            // Resting-order callout: nothing matches at the given limit price,
+            // so order will sit in the book until cancel/expire/match.
+            const restingHtml = restingOnly ? `
+                <div style="
+                    display:flex; align-items:flex-start; gap:10px; padding:12px 14px;
+                    background:#EFF8FF; border:1px solid #B2DDFF; border-radius:10px;
+                    font-size:12px; color:#175CD3; line-height:1.5; margin-bottom:12px;
+                ">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1570EF" stroke-width="2" style="flex-shrink:0; margin-top:1px;">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span><strong>This is a resting limit order.</strong> No counterparty currently matches this price. Your order will sit in the order book until matched, cancelled, or expired (90 days). <strong>Fill is not guaranteed.</strong></span>
+                </div>` : '';
+
+            // Partial-fill callout: some quantity fills now, the rest rests.
+            const partialHtml = partialFill ? `
+                <div style="
+                    display:flex; align-items:flex-start; gap:10px; padding:12px 14px;
+                    background:#FFFAEB; border:1px solid #FEC84B; border-radius:10px;
+                    font-size:12px; color:#93370D; line-height:1.5; margin-bottom:12px;
+                ">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="2" style="flex-shrink:0; margin-top:1px;">
+                        <path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    <span><strong>Partial fill expected.</strong> ${fillEstimate.filledQty} share${fillEstimate.filledQty === 1 ? '' : 's'} match now; remaining ${fillEstimate.unfilledQty} will rest as a limit order at ${fmt(priceDisplay)}.</span>
+                </div>` : '';
 
             const overlay = document.createElement('div');
             overlay.id = 'tv3-confirm-overlay';
@@ -90,6 +148,9 @@
                     </div>
 
                     <div class="ds-modal__body">
+                        ${restingHtml}
+                        ${partialHtml}
+                        ${ladderHtml}
                         <!-- Order Details -->
                         <div style="
                             background: #f9fafb; border-radius: 12px; padding: 16px 18px;
@@ -119,8 +180,19 @@
                                 <span style="color:#667085;">Platform Fee (${window.POOOL_FEE_DISPLAY || '5'}%)</span>
                                 <span style="font-weight:600; color:#667085;">${side === 'buy' ? '+' : '−'}${fmt(feeValue)}</span>
                             </div>
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px; border-top:1px solid #eaecf0; color:#667085;">
+                                <span>Time in force</span>
+                                <span style="font-weight:600; color:#101828;">${(function() {
+                                    switch ((tif || 'gtc').toLowerCase()) {
+                                        case 'day': return 'Day (24h)';
+                                        case 'ioc': return 'Immediate-or-Cancel';
+                                        case 'fok': return 'Fill-or-Kill';
+                                        default:    return 'Good-Til-Cancelled (90d)';
+                                    }
+                                })()}</span>
+                            </div>
                             <div style="display:flex; justify-content:space-between; padding:10px 0 4px; font-size:16px; border-top:2px solid #d0d5dd; margin-top:4px;">
-                                <span style="font-weight:700; color:#101828;">Total</span>
+                                <span style="font-weight:700; color:#101828;">${side === 'buy' ? 'Funds locked' : 'Net proceeds'}</span>
                                 <span style="font-weight:800; color:${sideColor}; font-size:18px;">${fmt(grandTotal)}</span>
                             </div>
                         </div>
@@ -139,11 +211,28 @@
                                 : `Your shares will be listed for sale and held in escrow until matched with a buyer. You can cancel any time to return them.`
                             }</span>
                         </div>
+
+                        <!-- Affirmation checkbox: required by FINRA 15c3-5 for
+                             non-marketable orders. Always present for clarity. -->
+                        <label id="tv3-affirm-row" style="
+                            display:flex; align-items:flex-start; gap:10px; padding:12px 0 0;
+                            font-size:12px; color:#475467; line-height:1.5; cursor:pointer;
+                        ">
+                            <input id="tv3-affirm-cb" type="checkbox" style="
+                                margin-top:2px; width:16px; height:16px; flex-shrink:0; cursor:pointer;
+                            "/>
+                            <span>I understand that ${restingOnly
+                                ? '<strong>this order may not fill</strong> and my funds remain held until match, cancellation, or expiry.'
+                                : (side === 'buy'
+                                    ? 'my funds will be <strong>held (not spent)</strong> until the order matches.'
+                                    : 'my shares will be <strong>held in escrow</strong> until the order matches.')}
+                            </span>
+                        </label>
                     </div>
 
                     <div class="ds-modal__footer ds-modal__footer--bordered">
                         <button id="tv3-confirm-cancel" class="ds-btn ds-btn--secondary">Cancel</button>
-                        <button id="tv3-confirm-ok" class="ds-btn ds-btn--primary">Confirm ${sideLabel}</button>
+                        <button id="tv3-confirm-ok" class="ds-btn ds-btn--primary" disabled style="opacity:0.5; cursor:not-allowed;">Confirm ${restingOnly ? 'Resting Order' : sideLabel}</button>
                     </div>
                 </div>
             `;
@@ -163,7 +252,26 @@
                 resolve(result);
             }
 
-            confirmBtn.addEventListener('click', () => close(true));
+            // Gate confirm button on affirmation checkbox.
+            const affirmCb = overlay.querySelector('#tv3-affirm-cb');
+            if (affirmCb) {
+                affirmCb.addEventListener('change', () => {
+                    if (affirmCb.checked) {
+                        confirmBtn.disabled = false;
+                        confirmBtn.style.opacity = '';
+                        confirmBtn.style.cursor = '';
+                    } else {
+                        confirmBtn.disabled = true;
+                        confirmBtn.style.opacity = '0.5';
+                        confirmBtn.style.cursor = 'not-allowed';
+                    }
+                });
+            }
+
+            confirmBtn.addEventListener('click', () => {
+                if (confirmBtn.disabled) return;
+                close(true);
+            });
             cancelBtn.addEventListener('click', () => close(false));
             closeBtn.addEventListener('click', () => close(false));
             overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
@@ -206,6 +314,30 @@
                 : (country || 'N/A'),
             country: country || (locationParts.length > 1 ? locationParts[locationParts.length - 1] : 'N/A'),
             city
+        };
+    }
+
+    function mapOrderbookLevelsToOrders(levels) {
+        return (Array.isArray(levels) ? levels : [])
+            .map(level => ({
+                tokens: Number(level.total_quantity ?? level.totalQuantity ?? 0),
+                price: Number(level.price_cents ?? level.priceCents ?? 0) / 100,
+                count: Number(level.order_count ?? level.orderCount ?? 0),
+                // unique_users: distinct trader count at this level (always
+                // <= count). Lets UI label "5 orders from 3 traders" honestly.
+                uniqueUsers: Number(level.unique_users ?? level.uniqueUsers ?? 0)
+            }))
+            .filter(level => level.tokens > 0 && level.price > 0);
+    }
+
+    async function fetchLiveOrderbook(slug) {
+        const res = await fetch(`/api/marketplace/${encodeURIComponent(slug)}/orderbook`);
+        if (!res.ok) throw new Error('Orderbook fetch failed');
+        const snapshot = await res.json();
+        return {
+            sellOrders: mapOrderbookLevelsToOrders(snapshot.asks),
+            buyBids: mapOrderbookLevelsToOrders(snapshot.bids),
+            lastPrice: snapshot.last_price_cents ?? snapshot.lastPriceCents ?? null
         };
     }
 
@@ -510,20 +642,61 @@
     }
 
     // ── Trade Widget: Market Data ──
+    // CLOB semantics: bestPrice is null when opposing side empty. UI MUST NOT
+    // substitute primary-issue tokenPrice — that quote misleads users into
+    // posting phantom bids/asks at a price no counterparty agreed to.
     function getMarketData(asset, side) {
         if (side === 'buy') {
             // Buying: show sell offers (cheapest first)
             const sorted = [...asset.sellOrders].sort((a, b) => a.price - b.price);
             const totalShares = sorted.reduce((s, o) => s + o.tokens, 0);
-            const bestPrice = sorted.length > 0 ? sorted[0].price : asset.tokenPrice;
-            return { bestPrice, totalShares, count: sorted.length, orders: sorted };
+            const orderCount = sorted.reduce((s, o) => s + (o.count || 1), 0);
+            // Approximate distinct traders across price levels: max() over
+            // levels (a single trader's orders at multiple prices counts once).
+            // Frontend can't perfectly dedupe without per-order user IDs.
+            const uniqueUsers = sorted.reduce((m, o) => Math.max(m, Number(o.uniqueUsers || 0)), 0);
+            const bestPrice = sorted.length > 0 ? sorted[0].price : null;
+            return { bestPrice, totalShares, count: orderCount, uniqueUsers, orders: sorted };
         } else {
             // Selling: show buy bids (highest first)
             const sorted = [...asset.buyBids].sort((a, b) => b.price - a.price);
             const totalShares = sorted.reduce((s, o) => s + o.tokens, 0);
-            const bestPrice = sorted.length > 0 ? sorted[0].price : asset.tokenPrice;
-            return { bestPrice, totalShares, count: sorted.length, orders: sorted };
+            const orderCount = sorted.reduce((s, o) => s + (o.count || 1), 0);
+            const uniqueUsers = sorted.reduce((m, o) => Math.max(m, Number(o.uniqueUsers || 0)), 0);
+            const bestPrice = sorted.length > 0 ? sorted[0].price : null;
+            return { bestPrice, totalShares, count: orderCount, uniqueUsers, orders: sorted };
         }
+    }
+
+    // Walk the opposing book greedily for `qty` shares. Returns tier breakdown,
+    // VWAP, filled/unfilled split. Used for multi-level fill preview + worst-case
+    // (limit) cost. Pre-trade cost transparency required by FINRA 15c3-5.
+    function simulateFill(orders, qty) {
+        const tiers = [];
+        let remaining = Math.max(0, Math.floor(qty));
+        let cumCost = 0;
+        let cumQty = 0;
+        for (const o of orders) {
+            if (remaining <= 0) break;
+            const take = Math.min(o.tokens, remaining);
+            tiers.push({ qty: take, price: o.price, cost: take * o.price });
+            cumCost += take * o.price;
+            cumQty += take;
+            remaining -= take;
+        }
+        return {
+            tiers,
+            filledQty: cumQty,
+            unfilledQty: remaining,
+            vwap: cumQty > 0 ? cumCost / cumQty : null,
+            subtotal: cumCost,
+        };
+    }
+
+    // Whether opposing side has any liquidity. When false, Market mode must be
+    // disabled and order forced to limit ("Place bid"/"Place ask" UX).
+    function hasOpposingLiquidity(asset, side) {
+        return getMarketData(asset, side).totalShares > 0;
     }
 
     function populateTradeWidget(asset) {
@@ -577,46 +750,88 @@
     function getActivePrice() {
         if (priceMode === 'market') {
             const data = getMarketData(currentAsset, currentSide);
-            return data.bestPrice;
+            return data.bestPrice; // may be null when book empty
         } else {
-            return parseFloat(document.getElementById('tv3-price').value) || 0;
+            const v = parseFloat(document.getElementById('tv3-price').value);
+            return isFinite(v) && v > 0 ? v : null;
         }
     }
 
     // ── Update Summary ──
+    // CLOB cost model:
+    //   Buyer:  locked = subtotal + fee_reserve (taker fee — refunded if maker)
+    //   Seller: net   = subtotal − fee
+    // The widget displays "Total" as funds LOCKED for buyer, NET PROCEEDS for seller.
+    // When opposing book empty, order rests as limit — label as "Place bid/ask" not
+    // "Buy/Sell" to set expectation that fill is not guaranteed.
     function updateSummary() {
         if (!currentAsset) return;
 
         const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
         const price = getActivePrice();
-        const subtotal = qty * price;
-        const fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
-        const total = subtotal + fee;
+        const feePct = (window.POOOL_FEE_PCT || 5) / 100;
+        const hasPrice = price != null && price > 0 && qty > 0;
 
-        document.getElementById('tv3-subtotal').textContent = fmt(subtotal);
-        document.getElementById('tv3-fee').textContent = fmt(fee);
-        document.getElementById('tv3-total').textContent = fmt(total);
+        const subtotal = hasPrice ? qty * price : 0;
+        const fee = subtotal * feePct;
+        // Buyer pays subtotal + fee (locked). Seller receives subtotal − fee (net).
+        const total = currentSide === 'buy' ? subtotal + fee : subtotal - fee;
 
-        // Update submit button text
+        document.getElementById('tv3-subtotal').textContent = hasPrice ? fmt(subtotal) : '—';
+        document.getElementById('tv3-fee').textContent = hasPrice ? fmt(fee) : '—';
+        document.getElementById('tv3-total').textContent = hasPrice ? fmt(total) : '—';
+
+        // Relabel total row by side ("Locked" for buyer, "Net proceeds" for seller).
+        const totalLabel = document.querySelector('#tv3-order-summary-total-label')
+            || document.querySelector('.tv3-sum-row--total span:first-child');
+        if (totalLabel) {
+            totalLabel.textContent = currentSide === 'buy' ? 'Locked' : 'Net proceeds';
+        }
+
+        // Submit button state machine
         const btn = document.getElementById('tv3-submit-btn');
         const isFunded = currentAsset.fundingStatus === 'funded';
         const isAdmin = currentUserEmail === 'support@traffic-creator.com';
+        const opposingHasLiquidity = hasOpposingLiquidity(currentAsset, currentSide);
+        const isMarketWithoutLiquidity = priceMode === 'market' && !opposingHasLiquidity;
 
-        if (!isFunded && !isAdmin) {
-            btn.textContent = 'Trading unavailable: Asset is not yet fully funded';
+        const setDisabled = (label) => {
+            btn.textContent = label;
             btn.disabled = true;
             btn.style.opacity = '0.5';
             btn.style.cursor = 'not-allowed';
             btn.style.fontSize = '12px';
-        } else {
-            const action = currentSide === 'buy' ? 'Buy' : 'Sell';
-            const shareText = qty === 1 ? 'Share' : 'Shares';
-            btn.textContent = action + ' ' + qty + ' ' + shareText + ' · ' + fmt(total);
+        };
+        const setEnabled = (label) => {
+            btn.textContent = label;
             btn.disabled = false;
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
-            btn.style.fontSize = ''; // Reset font size
+            btn.style.fontSize = '';
+        };
+
+        if (!isFunded && !isAdmin) {
+            setDisabled('Trading unavailable: Asset is not yet fully funded');
+            return;
         }
+        if (isMarketWithoutLiquidity) {
+            setDisabled(currentSide === 'buy'
+                ? 'No asks available — switch to Custom Price to place a bid'
+                : 'No bids available — switch to Custom Price to place an ask');
+            return;
+        }
+        if (!hasPrice) {
+            setDisabled(currentSide === 'buy' ? 'Enter price and quantity' : 'Enter price and quantity');
+            return;
+        }
+
+        const shareText = qty === 1 ? 'Share' : 'Shares';
+        // "Place bid/ask" framing when this order will rest (no opposing liquidity).
+        // "Buy/Sell" framing when order will (likely) match instantly.
+        const action = !opposingHasLiquidity
+            ? (currentSide === 'buy' ? 'Place Bid for' : 'Place Ask for')
+            : (currentSide === 'buy' ? 'Buy' : 'Sell');
+        setEnabled(action + ' ' + qty + ' ' + shareText + ' · ' + fmt(total));
     }
 
     // ── Set Buy/Sell Side ──
@@ -647,43 +862,93 @@
     }
 
     // ── Update market info display ──
+    // Labels reflect actual book state. Counts are ORDERS (not unique users —
+    // backend doesn't dedupe by user_id, so "1 buyer" was a lie). When no
+    // opposing liquidity, force Custom Price mode and hint user to place a
+    // resting order. Display reference info (best opposing price, depth) only
+    // when it exists; never substitute primary-issue tokenPrice.
     function updateMarketInfo() {
         if (!currentAsset) return;
         const data = getMarketData(currentAsset, currentSide);
+        const hasLiquidity = data.totalShares > 0;
 
-        // Market info card
         const bestPriceEl = document.getElementById('tv3-best-price');
         const availSharesEl = document.getElementById('tv3-avail-shares');
         const availSellersEl = document.getElementById('tv3-avail-sellers');
         const marketInfoEl = document.getElementById('tv3-market-info');
         const customHint = document.getElementById('tv3-custom-hint');
+        const marketModeBtn = document.getElementById('tv3-mode-market');
 
-        if (bestPriceEl) bestPriceEl.textContent = fmt(data.bestPrice);
+        // Best price: show real value or em-dash. NEVER fall back to tokenPrice.
+        if (bestPriceEl) bestPriceEl.textContent = data.bestPrice != null ? fmt(data.bestPrice) : '—';
+
         if (availSharesEl) {
-            availSharesEl.textContent = data.totalShares + (data.totalShares === 1 ? ' share' : ' shares');
+            availSharesEl.textContent = hasLiquidity
+                ? data.totalShares + (data.totalShares === 1 ? ' share' : ' shares')
+                : '0 shares';
         }
+        // count = aggregated order count. uniqueUsers = distinct traders.
+        // Label both when they differ ("5 orders from 3 traders") so users see
+        // depth concentration. Falls back to orders-only when uniqueUsers
+        // unavailable (older payload).
         if (availSellersEl) {
-            const noun = currentSide === 'buy' ? 'seller' : 'buyer';
-            const label = data.count === 1 ? noun : noun + 's';
-            availSellersEl.textContent = data.count + ' ' + label;
+            const orders = data.count;
+            const traders = Number(data.uniqueUsers || 0);
+            const ordersTxt = orders + (orders === 1 ? ' order' : ' orders');
+            if (traders > 0 && traders < orders) {
+                availSellersEl.textContent =
+                    ordersTxt + ' from ' + traders + (traders === 1 ? ' trader' : ' traders');
+            } else {
+                availSellersEl.textContent = ordersTxt;
+            }
         }
 
-        // Ensure market info remains transparent for luxury look
         if (marketInfoEl) {
             marketInfoEl.style.background = 'transparent';
             marketInfoEl.style.borderColor = 'var(--tv3-border)';
             if (bestPriceEl) bestPriceEl.style.color = 'var(--tv3-text)';
         }
 
-        // Update label
+        // Label: real-state aware
         const infoLabel = document.querySelector('.tv3-market-info-label');
         if (infoLabel) {
-            infoLabel.textContent = currentSide === 'buy' ? 'Best available price' : 'Highest buy offer';
+            if (!hasLiquidity) {
+                infoLabel.textContent = currentSide === 'buy'
+                    ? 'No asks — place a resting bid'
+                    : 'No bids — place a resting ask';
+            } else {
+                infoLabel.textContent = currentSide === 'buy' ? 'Best ask' : 'Best bid';
+            }
         }
 
-        // Custom hint
+        // Custom price hint: only show real reference when book non-empty.
         if (customHint) {
-            customHint.textContent = 'Market price: ' + fmt(data.bestPrice) + '/share';
+            customHint.textContent = data.bestPrice != null
+                ? (currentSide === 'buy' ? 'Best ask: ' : 'Best bid: ') + fmt(data.bestPrice) + '/share'
+                : (currentSide === 'buy'
+                    ? 'No asks in book — your bid will rest until a seller matches.'
+                    : 'No bids in book — your ask will rest until a buyer matches.');
+        }
+
+        // Disable Market mode when no opposing liquidity; force Custom mode.
+        if (marketModeBtn) {
+            if (!hasLiquidity) {
+                marketModeBtn.disabled = true;
+                marketModeBtn.style.opacity = '0.45';
+                marketModeBtn.style.cursor = 'not-allowed';
+                marketModeBtn.title = currentSide === 'buy'
+                    ? 'Market buy disabled — no asks. Use Custom Price to place a bid.'
+                    : 'Market sell disabled — no bids. Use Custom Price to place an ask.';
+                if (priceMode === 'market') {
+                    // Auto-flip to custom so user lands in correct flow.
+                    setPriceMode('custom');
+                }
+            } else {
+                marketModeBtn.disabled = false;
+                marketModeBtn.style.opacity = '';
+                marketModeBtn.style.cursor = '';
+                marketModeBtn.title = '';
+            }
         }
     }
 
@@ -699,8 +964,16 @@
         if (mode === 'custom') {
             const data = getMarketData(currentAsset, currentSide);
             const priceInput = document.getElementById('tv3-price');
-            if (priceInput && !priceInput.value) {
+            // Only prefill when a real opposing-side price exists. When book is
+            // empty, leave input blank — forcing the user to consciously enter
+            // a price. Avoids silently posting a bid at primary-issue tokenPrice.
+            if (priceInput && !priceInput.value && data.bestPrice != null) {
                 priceInput.value = data.bestPrice.toFixed(2);
+            }
+            // Make custom price input recompute summary live.
+            if (priceInput && !priceInput._tv3Wired) {
+                priceInput.addEventListener('input', updateSummary);
+                priceInput._tv3Wired = true;
             }
         }
 
@@ -734,8 +1007,24 @@
                 return;
             }
 
+            let liveOrderbook = null;
+            try {
+                liveOrderbook = await fetchLiveOrderbook(rawAsset.slug);
+            } catch (orderbookError) {
+                console.warn('Could not fetch live orderbook, using secondary aggregate fallback:', orderbookError);
+            }
+
             const buyInterest = rawAsset.buyInterest ?? rawAsset.buy_interest ?? 0;
             const locationParts = normalizeSecondaryLocation(rawAsset.location, rawAsset.country);
+            const fallbackSellOrders = rawAsset.sellOrders > 0
+                ? [{ tokens: rawAsset.sellOrders, price: rawAsset.price / 100, count: 1 }]
+                : [];
+            const fallbackBuyBids = buyInterest > 0
+                ? [{ tokens: buyInterest, price: rawAsset.price / 100, count: 1 }]
+                : [];
+            const sellOrders = liveOrderbook ? liveOrderbook.sellOrders : fallbackSellOrders;
+            const buyBids = liveOrderbook ? liveOrderbook.buyBids : fallbackBuyBids;
+            const displayPriceCents = liveOrderbook?.lastPrice || rawAsset.price;
 
             // Map backend structure to UI standard
             asset = {
@@ -746,7 +1035,7 @@
                 country: locationParts.country,
                 city: locationParts.city,
                 description: rawAsset.description || 'No description available for this property.',
-                tokenPrice: rawAsset.price / 100,
+                tokenPrice: displayPriceCents / 100,
                 annualYield: rawAsset.roi,
                 projectedReturn: (rawAsset.roi * 1.5).toFixed(1),
                 netReturn: (rawAsset.roi * 0.75).toFixed(1),
@@ -759,10 +1048,12 @@
                 rentStatus: rawAsset.rentStatus || 'N/A',
                 platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * ((window.POOOL_FEE_PCT || 5) / 100) : 0,
                 images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/static/images/seed/villa1.webp'],
-                sellOrders: rawAsset.sellOrders > 0 ? [{ tokens: rawAsset.sellOrders, price: rawAsset.price / 100 }] : [],
-                buyBids: buyInterest > 0 ? [{ tokens: buyInterest, price: rawAsset.price / 100 }] : [],
+                sellOrders,
+                buyBids,
                 locationDesc: rawAsset.locationDesc || '',
-                fundingStatus: rawAsset.fundingStatus
+                fundingStatus: rawAsset.fundingStatus,
+                // Carry through the asset UUID — needed for WebSocket subscribe.
+                id: rawAsset.id,
             };
             
             // Assign to global
@@ -781,6 +1072,53 @@
         // Initialize trade widget
         updateMarketInfo();
         updateSummary();
+
+        // ── Live orderbook via WebSocket ──
+        // Server-pushed orderbook_update events replace the prior 5-second
+        // poll. Falls back gracefully if WS infra missing (e.g. older bundle).
+        // Updates `currentAsset.sellOrders / buyBids` in place, then re-renders
+        // the trade widget. Hero "available" count updates too so users see
+        // depth changes immediately without a page refresh.
+        if (window.MarketWS && window.MarketBus && asset?.id) {
+            // Bus listener BEFORE connect so we don't miss the first message
+            // delivered while the socket settles.
+            window.MarketBus.on('orderbook:update', (msg) => {
+                if (!currentAsset) return;
+                // Server may key by asset slug or UUID — accept both.
+                if (
+                    msg.asset_id &&
+                    msg.asset_id !== currentAsset.id &&
+                    msg.asset_id !== currentAsset.slug
+                ) {
+                    return;
+                }
+                currentAsset.sellOrders = mapOrderbookLevelsToOrders(msg.asks);
+                currentAsset.buyBids = mapOrderbookLevelsToOrders(msg.bids);
+
+                // Re-render every panel that reads orderbook data.
+                populateTradeWidget(currentAsset);
+                updateMarketInfo();
+                updateSummary();
+
+                // Hero "shares available" derives from sellOrders depth.
+                const available =
+                    currentAsset.totalSupply -
+                    (currentAsset.sellOrders.reduce((s, o) => s + o.tokens, 0) || 0);
+                const availEl = document.getElementById('tv3-available');
+                if (availEl) {
+                    availEl.innerHTML =
+                        available.toLocaleString() +
+                        ' <small>/ ' +
+                        currentAsset.totalSupply.toLocaleString() +
+                        '</small>';
+                }
+            });
+            try {
+                window.MarketWS.connect(asset.id);
+            } catch (e) {
+                console.warn('[tv3] MarketWS.connect failed; falling back to no-WS mode:', e);
+            }
+        }
 
         // ── Performance Strip ──
         document.getElementById('tv3-ticker-price').textContent = fmt(asset.tokenPrice);
@@ -865,6 +1203,15 @@
                 priceCents = Math.round(priceVal * 100);
                 priceDisplay = priceVal;
             } else {
+                // Hard guard: market order with no opposing liquidity must NEVER
+                // submit. Backend rejects with NO_LIQUIDITY but UI must catch
+                // first to prevent a malformed (NaN price) request hitting API.
+                if (data.bestPrice == null) {
+                    showTradeToast(currentSide === 'buy'
+                        ? 'No asks in book — switch to Custom Price to place a bid.'
+                        : 'No bids in book — switch to Custom Price to place an ask.', 'error');
+                    return;
+                }
                 priceCents = Math.round(data.bestPrice * 100);
                 priceDisplay = data.bestPrice;
             }
@@ -873,6 +1220,18 @@
             const feeRate = ((window.POOOL_FEE_PCT || 5) / 100);
             const feeValue = totalValue * feeRate;
             const grandTotal = currentSide === 'buy' ? totalValue + feeValue : totalValue - feeValue;
+
+            // Pre-trade fill simulation against the opposing book at this price.
+            // Used to flag resting-only orders + show tier breakdown in modal.
+            const opposingOrders = currentSide === 'buy' ? data.orders : data.orders;
+            const matchableOrders = opposingOrders.filter(o =>
+                currentSide === 'buy' ? o.price <= priceDisplay : o.price >= priceDisplay
+            );
+            const fill = simulateFill(matchableOrders, qty);
+            const restingOnly = fill.filledQty === 0; // nothing matches at this limit
+            const partialFill = fill.filledQty > 0 && fill.unfilledQty > 0;
+
+            const tifValue = document.getElementById('tv3-tif')?.value || 'gtc';
 
             // ── Show Confirmation Modal ──
             const confirmed = await showOrderConfirmModal({
@@ -884,6 +1243,10 @@
                 totalValue: totalValue,
                 feeValue: feeValue,
                 grandTotal: grandTotal,
+                restingOnly: restingOnly,
+                partialFill: partialFill,
+                fillEstimate: fill,
+                tif: tifValue,
             });
             if (!confirmed) return;
 
@@ -905,7 +1268,8 @@
                         order_type: orderType,
                         price_cents: priceCents,
                         quantity: qty,
-                        idempotency_key: idemKey
+                        idempotency_key: idemKey,
+                        time_in_force: (document.getElementById('tv3-tif')?.value || 'gtc')
                     })
                 });
                 const result = await res.json();
@@ -935,7 +1299,44 @@
                         window.location.href = `/auth/2fa/step-up?return_to=${returnTo}&action=trade`;
                     }, 600);
                 } else {
-                    showTradeToast(result.error || 'Order failed', 'error');
+                    // Dispatch on stable error_code (FINRA/MiFID structured
+                    // error envelope). Falls back to the human message.
+                    const code = result.error_code;
+                    const msg = result.error || 'Order failed';
+                    if (code === 'NO_LIQUIDITY') {
+                        // Backend confirms zero opposing depth — force user
+                        // into Custom Price flow so they can place a resting
+                        // bid/ask. UI was supposed to catch this client-side
+                        // but the book may have changed between render + submit.
+                        if (priceMode === 'market') setPriceMode('custom');
+                        showTradeToast(msg, 'error');
+                    } else if (code === 'PRICE_COLLAR_BREACH') {
+                        // Highlight the price input and bring user's attention.
+                        const priceInput = document.getElementById('tv3-price');
+                        if (priceInput) {
+                            priceInput.style.borderColor = '#ef4444';
+                            priceInput.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.15)';
+                            priceInput.focus();
+                            priceInput.select();
+                            setTimeout(() => {
+                                priceInput.style.borderColor = '';
+                                priceInput.style.boxShadow = '';
+                            }, 4000);
+                        }
+                        showTradeToast(msg, 'error');
+                    } else if (code === 'CONCENTRATION_LIMIT') {
+                        showTradeToast(msg, 'error');
+                    } else if (code === 'INSUFFICIENT_BALANCE' || code === 'INSUFFICIENT_TOKENS') {
+                        showTradeToast(msg, 'error');
+                    } else if (code === 'TOO_MANY_OPEN_ORDERS') {
+                        showTradeToast(msg, 'error');
+                    } else if (code === 'DUPLICATE_IDEMPOTENCY_KEY') {
+                        // Order already accepted — clear key so user can place new one.
+                        sessionStorage.removeItem('tv3_idem_key');
+                        showTradeToast(msg, 'error');
+                    } else {
+                        showTradeToast(msg, 'error');
+                    }
                     btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
                     isSubmitting = false;
                 }
@@ -957,8 +1358,15 @@
         const sheetTotal = document.getElementById('tv3-sheet-total');
 
         function openSheet() {
-            const data = getMarketData(asset, 'buy');
-            if (sheetPrice) sheetPrice.value = data.bestPrice.toFixed(2);
+            // Default sheet to current widget side (not always 'buy') so the
+            // price prefill matches what the user is doing on the desktop card.
+            const side = currentSide || 'buy';
+            const data = getMarketData(asset, side);
+            // Only prefill when opposing book has liquidity; never substitute
+            // primary-issue tokenPrice. Empty input forces user to pick a price.
+            if (sheetPrice) {
+                sheetPrice.value = data.bestPrice != null ? data.bestPrice.toFixed(2) : '';
+            }
             if (sheetOverlay) sheetOverlay.classList.add('open');
             if (bottomSheet) bottomSheet.classList.add('open');
             updateSheetTotal();
@@ -970,7 +1378,12 @@
         function updateSheetTotal() {
             const q = parseInt(sheetQty?.value) || 0;
             const p = parseFloat(sheetPrice?.value) || 0;
-            if (sheetTotal) sheetTotal.textContent = fmt(q * p * 1.05);
+            const subtotal = q * p;
+            const fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
+            // Side-aware total: buyer locks subtotal+fee, seller nets subtotal−fee.
+            const sheetSide = sheetBuy?.classList.contains('active') ? 'buy' : 'sell';
+            const total = sheetSide === 'buy' ? subtotal + fee : subtotal - fee;
+            if (sheetTotal) sheetTotal.textContent = fmt(total);
         }
 
         if (mobileTradeBtn) mobileTradeBtn.addEventListener('click', openSheet);

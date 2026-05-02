@@ -2,6 +2,250 @@
    Marketplace Overview — Page-specific CSS
    =========================== */
 
+/* Page header w/ toolbar */
+.mp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mp-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mp-updated {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mp-toolbar-toggle input { accent-color: var(--admin-primary, #4f46e5); }
+
+/* Connection state pill (#11) */
+.mp-conn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.04));
+  color: var(--admin-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.mp-conn-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--admin-text-muted);
+}
+.mp-conn-pill[data-state="live"] { background: var(--admin-success-bg); color: var(--admin-success); }
+.mp-conn-pill[data-state="live"] .mp-conn-dot {
+  background: var(--admin-success);
+  animation: mp-conn-pulse 1.6s ease-in-out infinite;
+}
+.mp-conn-pill[data-state="stale"] { background: var(--admin-warning-bg); color: var(--admin-warning); }
+.mp-conn-pill[data-state="stale"] .mp-conn-dot { background: var(--admin-warning); }
+.mp-conn-pill[data-state="error"] { background: var(--admin-danger-bg); color: var(--admin-danger); }
+.mp-conn-pill[data-state="error"] .mp-conn-dot { background: var(--admin-danger); }
+.mp-conn-pill[data-state="connecting"] .mp-conn-dot { animation: mp-conn-pulse 1s ease-in-out infinite; }
+
+@keyframes mp-conn-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(1.3); }
+}
+
+/* Range picker (#25) */
+.mp-range-picker {
+  display: inline-flex;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.mp-range-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--admin-border);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition: background var(--admin-transition);
+}
+.mp-range-btn:last-child { border-right: 0; }
+.mp-range-btn:hover { background: var(--admin-bg-soft, rgba(0,0,0,0.04)); }
+.mp-range-btn.is-active {
+  background: var(--admin-primary, #4f46e5);
+  color: white;
+}
+.mp-range-btn:focus-visible {
+  outline: 2px solid var(--admin-primary, #4f46e5);
+  outline-offset: -2px;
+}
+
+/* Filter bar (#7) */
+.mp-filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-bg-soft, rgba(0,0,0,0.02));
+  flex-wrap: wrap;
+}
+.mp-filter-input,
+.mp-filter-select {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: var(--admin-bg-card);
+  color: var(--admin-text-primary);
+  font-family: inherit;
+}
+.mp-filter-input { flex: 1; min-width: 200px; }
+.mp-filter-input:focus,
+.mp-filter-select:focus {
+  outline: 2px solid var(--admin-primary, #4f46e5);
+  outline-offset: -1px;
+  border-color: var(--admin-primary, #4f46e5);
+}
+
+/* Topbar health label (#29) */
+.admin-health-label {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-right: 4px;
+}
+
+/* Health hierarchy (#18) */
+.mp-health-tier { display: flex; gap: 12px; flex-wrap: wrap; }
+.mp-health-tier--critical { margin-bottom: 16px; }
+.mp-health-tier--info { margin-top: 16px; gap: 8px; }
+
+.mp-health-tile {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-bg-card);
+  position: relative;
+}
+.mp-health-tile--critical { flex: 1; min-width: 160px; padding: 16px 18px; }
+.mp-health-tile--critical .mp-health-tile-value { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+.mp-health-tile--critical .mp-health-tile-label { font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.mp-health-tile--critical .mp-health-dot { position: absolute; top: 14px; right: 14px; }
+
+.mp-health-tile--info {
+  flex-direction: row; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.03));
+  border-radius: 999px;
+}
+.mp-health-tile--info .mp-health-tile-label { color: var(--admin-text-muted); }
+.mp-health-tile--info .mp-health-tile-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.mp-health-tile--warn  { border-color: var(--admin-warning); }
+.mp-health-tile--error { border-color: var(--admin-danger); background: var(--admin-danger-bg); }
+
+.mp-health-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.mp-health-dot--ok    { background: var(--admin-success); }
+.mp-health-dot--warn  { background: var(--admin-warning); }
+.mp-health-dot--error { background: var(--admin-danger); }
+
+#mp-health-summary[data-tone="ok"]    { background: var(--admin-success-bg); color: var(--admin-success); }
+#mp-health-summary[data-tone="warn"]  { background: var(--admin-warning-bg); color: var(--admin-warning); }
+#mp-health-summary[data-tone="error"] { background: var(--admin-danger-bg);  color: var(--admin-danger); }
+
+/* DB latency sparkline (#19) */
+.mp-health-sparkline-wrap {
+  margin: 14px 0 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-bg-card);
+}
+.mp-health-sparkline-label {
+  font-size: 10px;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+.mp-health-sparkline {
+  width: 100%; height: 40px;
+  color: var(--admin-text-secondary);
+}
+
+/* Sticky table headers + responsive (#34) */
+#live-trades-table thead th,
+.mp-top-assets thead th,
+.mp-ob-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--admin-bg-card);
+  border-bottom: 1px solid var(--admin-border);
+}
+.admin-card-body--flush { max-height: 600px; overflow-y: auto; }
+.mp-orderbook-mini { max-height: 320px; overflow-y: auto; }
+
+@media (max-width: 1280px) {
+  .admin-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .mp-toolbar { font-size: 11px; }
+  .mp-filter-input { min-width: 140px; }
+}
+@media (max-width: 900px) {
+  .admin-kpi-grid { grid-template-columns: 1fr; }
+  .mp-page-header { flex-direction: column; align-items: stretch; }
+  .mp-toolbar { justify-content: flex-start; }
+  #live-trades-table { font-size: 11px; }
+  #live-trades-table th:nth-child(7),
+  #live-trades-table td:nth-child(7),
+  #live-trades-table th:nth-child(8),
+  #live-trades-table td:nth-child(8) { display: none; }
+  .mp-slideout { width: 100vw; }
+}
+
+/* Empty state with SVG (#32) */
+.mp-empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--admin-text-muted);
+}
+.mp-empty-svg { width: 96px; height: 64px; color: var(--admin-text-muted); margin-bottom: 8px; }
+.mp-empty-msg { font-size: 13px; }
+.mp-empty-state--filtered .mp-empty-svg { color: var(--admin-warning); }
+
+#mp-refresh-btn.is-loading svg {
+  animation: mp-spin 0.8s linear infinite;
+}
+
+@keyframes mp-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Live KPI card pulsing border */
 .mp-kpi-live {
   border-color: var(--admin-success) !important;
@@ -16,12 +260,37 @@
   border: 1px solid var(--admin-success);
   opacity: 0;
   animation: mp-live-border 3s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes mp-live-border {
   0%, 100% { opacity: 0; }
   50% { opacity: 0.3; }
 }
+
+/* Pending-approvals card draws attention when count > 0 */
+.mp-kpi-card--alert {
+  border-color: var(--admin-warning) !important;
+  background: var(--admin-warning-bg);
+}
+
+/* KPI delta + SLA chips */
+.mp-kpi-delta,
+.mp-kpi-sla {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+.mp-kpi-delta[data-tone="up"]   { color: var(--admin-success); }
+.mp-kpi-delta[data-tone="down"] { color: var(--admin-danger); }
+.mp-kpi-delta[data-tone="neutral"] { color: var(--admin-text-muted); }
+
+.mp-kpi-sla[data-tone="ok"]   { color: var(--admin-text-muted); font-weight: 500; }
+.mp-kpi-sla[data-tone="crit"] { color: var(--admin-danger); }
 
 /* Trade side badges */
 .mp-side-buy {
@@ -70,4 +339,397 @@
 .mp-health-message {
   color: var(--admin-text-muted);
   padding: 18px;
+}
+
+/* Suspicious trade row — wash-trade pattern detected */
+.mp-trade-suspicious {
+  background: var(--admin-danger-bg);
+  position: relative;
+}
+
+.mp-trade-suspicious td:first-child {
+  border-left: 3px solid var(--admin-danger);
+}
+
+.mp-trade-suspicious:hover {
+  background: var(--admin-danger-bg);
+  filter: brightness(1.05);
+}
+
+/* Anomaly badge in card header */
+.mp-anomaly-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border-radius: 999px;
+  border: 1px solid var(--admin-danger);
+}
+
+.mp-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Health tile — threshold-aware tinting */
+.mp-health-item--warn { border-left: 3px solid var(--admin-warning); padding-left: 8px; }
+.mp-health-item--error { border-left: 3px solid var(--admin-danger); padding-left: 8px; }
+
+/* Two-column layout for top-assets + mini orderbook */
+.mp-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .mp-two-col { grid-template-columns: 1fr; }
+}
+
+/* Right-aligned numeric column headers/cells */
+.mp-num { text-align: right; }
+
+/* Top assets table */
+.mp-top-assets a { color: inherit; text-decoration: none; }
+.mp-top-assets a:hover { color: var(--admin-primary, #4f46e5); text-decoration: underline; }
+
+/* Mini orderbook */
+.mp-orderbook-asset {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+}
+.mp-spread {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.04));
+  border-radius: 999px;
+}
+.mp-ob-table { width: 100%; }
+.mp-ob-row--ask td { color: var(--admin-danger); }
+.mp-ob-row--bid td { color: var(--admin-success); }
+.mp-ob-spread td {
+  background: var(--admin-bg-soft, rgba(0,0,0,0.03));
+  text-align: center;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  padding: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Type chip + on-chain sub-badge (replaces low-contrast TRADE text) */
+.mp-type-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+  border-radius: 4px;
+  border: 1px solid var(--admin-success);
+}
+.mp-chain-sub {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.06));
+  color: var(--admin-text-muted);
+}
+.mp-chain-sub--confirmed { background: var(--admin-success-bg); color: var(--admin-success); }
+.mp-chain-sub--failed    { background: var(--admin-danger-bg);  color: var(--admin-danger); }
+.mp-chain-sub--pending   { background: var(--admin-warning-bg); color: var(--admin-warning); }
+
+/* Time cell — relative + absolute */
+.mp-time-rel { font-weight: 600; color: var(--admin-text-secondary); }
+.mp-time-abs { color: var(--admin-text-muted); font-size: 10px; }
+
+/* User cell with system badge */
+.mp-user-cell { white-space: nowrap; }
+.mp-sys-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: var(--admin-info-bg, rgba(59, 130, 246, 0.1));
+  color: var(--admin-info, #3b82f6);
+  border-radius: 3px;
+}
+
+/* Clickable trade row */
+.mp-trade-row { cursor: pointer; }
+.mp-trade-row:hover { background: var(--admin-bg-soft, rgba(0,0,0,0.02)); }
+.mp-trade-row:focus-visible { outline: 2px solid var(--admin-primary, #4f46e5); outline-offset: -2px; }
+
+/* Trades footer with row-count */
+.mp-trades-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  border-top: 1px solid var(--admin-border);
+}
+.mp-footer-link {
+  color: var(--admin-primary, #4f46e5);
+  text-decoration: none;
+  font-weight: 600;
+}
+.mp-footer-link:hover { text-decoration: underline; }
+
+/* Slide-out trade detail panel */
+.mp-slideout-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 90;
+  animation: mp-fade-in 0.18s ease;
+}
+.mp-slideout {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(440px, 92vw);
+  background: var(--admin-bg-card);
+  border-left: 1px solid var(--admin-border);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.18);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+}
+.mp-slideout.is-open { transform: translateX(0); }
+.mp-slideout-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--admin-border);
+}
+.mp-slideout-header h3 { margin: 0; font-size: 16px; }
+.mp-slideout-close {
+  background: transparent; border: 0; cursor: pointer;
+  font-size: 24px; line-height: 1; color: var(--admin-text-muted);
+  padding: 4px 8px;
+}
+.mp-slideout-close:hover { color: var(--admin-text-primary); }
+.mp-slideout-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.mp-detail-list { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; margin: 0; }
+.mp-detail-list dt { font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.mp-detail-list dd { margin: 0; font-size: 13px; word-break: break-all; }
+
+@keyframes mp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Command palette (#21) */
+.mp-palette-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  animation: mp-fade-in 0.12s ease;
+}
+.mp-palette {
+  position: fixed;
+  top: 18vh; left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 92vw);
+  z-index: 201;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.mp-palette-input-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--admin-border);
+}
+.mp-palette-prefix {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  padding: 2px 6px;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.05));
+  border-radius: 4px;
+}
+.mp-palette-input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--admin-text-primary);
+  font-size: 15px;
+  font-family: inherit;
+}
+.mp-palette-kbd, .mp-palette-footer kbd {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.05));
+  border: 1px solid var(--admin-border);
+  border-radius: 3px;
+  color: var(--admin-text-muted);
+}
+.mp-palette-results {
+  list-style: none; margin: 0; padding: 6px 0;
+  max-height: 360px; overflow-y: auto;
+}
+.mp-palette-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 18px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.mp-palette-item.is-active {
+  background: var(--admin-primary, #4f46e5);
+  color: white;
+}
+.mp-palette-kind {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  font-size: 12px;
+  border-radius: 4px;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.05));
+}
+.mp-palette-item.is-active .mp-palette-kind {
+  background: rgba(255,255,255,0.2);
+}
+.mp-palette-empty {
+  padding: 16px 18px;
+  color: var(--admin-text-muted);
+  font-size: 13px;
+}
+.mp-palette-footer {
+  border-top: 1px solid var(--admin-border);
+  padding: 8px 18px;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  display: flex; gap: 8px; align-items: center;
+}
+
+/* Fraud signals (#26) */
+.mp-fraud-score {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 36px; padding: 2px 8px;
+  font-size: 13px; font-weight: 700;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.mp-fraud-score[data-tone="ok"]   { background: var(--admin-success-bg); color: var(--admin-success); }
+.mp-fraud-score[data-tone="warn"] { background: var(--admin-warning-bg); color: var(--admin-warning); }
+.mp-fraud-score[data-tone="crit"] { background: var(--admin-danger-bg);  color: var(--admin-danger); }
+
+.mp-fraud-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.mp-fraud-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-left: 3px solid var(--admin-warning);
+  background: var(--admin-bg-soft, rgba(0,0,0,0.02));
+  margin-bottom: 6px;
+  border-radius: 4px;
+}
+.mp-fraud-item--self { border-left-color: var(--admin-danger); }
+.mp-fraud-item--velocity { border-left-color: var(--admin-warning); }
+.mp-fraud-item--pingpong { border-left-color: var(--admin-danger); }
+.mp-fraud-kind {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 2px 6px; border-radius: 3px;
+  background: var(--admin-bg-card);
+  color: var(--admin-text-muted);
+}
+.mp-fraud-empty {
+  padding: 12px;
+  color: var(--admin-text-muted);
+  font-style: italic;
+  font-size: 13px;
+}
+.mp-fraud-legend {
+  margin: 0;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+/* Trade notes (#35) */
+.mp-notes-mount { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--admin-border); }
+.mp-notes-title { margin: 0 0 12px; font-size: 13px; color: var(--admin-text-secondary); }
+.mp-notes-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.mp-note {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--admin-bg-soft, rgba(0,0,0,0.02));
+  border-radius: 6px;
+  border-left: 2px solid var(--admin-primary, #4f46e5);
+}
+.mp-note-meta {
+  display: flex; justify-content: space-between;
+  font-size: 10px;
+  color: var(--admin-text-muted);
+  margin-bottom: 4px;
+}
+.mp-note-content { font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+.mp-notes-empty {
+  font-size: 12px; color: var(--admin-text-muted); font-style: italic;
+  padding: 6px 0;
+}
+.mp-note-form { display: flex; flex-direction: column; gap: 8px; }
+.mp-note-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: var(--admin-bg-card);
+  color: var(--admin-text-primary);
+  resize: vertical;
+}
+.mp-note-form textarea:focus {
+  outline: 2px solid var(--admin-primary, #4f46e5);
+  outline-offset: -1px;
+  border-color: var(--admin-primary, #4f46e5);
+}
+.mp-note-form button { align-self: flex-end; }
+.mp-notes-loading, .mp-notes-error {
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--admin-text-muted);
+}
+.mp-notes-error { color: var(--admin-danger); }
+
+/* Live dot — used in card headers */
+.mp-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--admin-success);
+  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
+  animation: mp-live-pulse 1.8s ease-in-out infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+@keyframes mp-live-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
+  70%  { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
 }

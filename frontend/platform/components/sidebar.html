@@ -260,8 +260,8 @@
               <div id="account-online-indicator" class="sidebar__account-online"></div>
             </div>
             <div id="account-text-wrapper" class="sidebar__account-text">
-              <span id="account-name" class="sidebar__account-name"></span>
-              <span id="account-email" class="sidebar__account-email">Developer Profile</span>
+              <span id="account-name" class="sidebar__account-name">{{ user_display_name }}</span>
+              <span id="account-email" class="sidebar__account-email">{{ user.email }}</span>
             </div>
           </div>
           <!-- Menu Button Icon (no longer a button) -->
@@ -310,7 +310,7 @@
                         <div class="profile-online-indicator"></div>
                       </div>
                       <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
+                        <span class="profile-account-name">{{ user_display_name }}</span>
                         <span class="profile-account-type">Investor Profile</span>
                       </div>
                     </div>
@@ -329,7 +329,7 @@
                         <div class="profile-online-indicator"></div>
                       </div>
                       <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
+                        <span class="profile-account-name">{{ user_display_name }}</span>
                         <span class="profile-account-type">Developer Profile</span>
                       </div>
                     </div>
@@ -540,8 +540,8 @@
               <div id="account-online-indicator" class="sidebar__account-online"></div>
             </div>
             <div id="account-text-wrapper" class="sidebar__account-text">
-              <span id="account-name" class="sidebar__account-name"></span>
-              <span id="account-email" class="sidebar__account-email"></span>
+              <span id="account-name" class="sidebar__account-name">{{ user_display_name }}</span>
+              <span id="account-email" class="sidebar__account-email">{{ user.email }}</span>
             </div>
           </div>
           <!-- Menu Button Icon (no longer a button) -->
@@ -590,7 +590,7 @@
                         <div class="profile-online-indicator"></div>
                       </div>
                       <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
+                        <span class="profile-account-name">{{ user_display_name }}</span>
                         <span class="profile-account-type">Investor Profile</span>
                       </div>
                     </div>
@@ -609,7 +609,7 @@
                         <div class="profile-online-indicator"></div>
                       </div>
                       <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
+                        <span class="profile-account-name">{{ user_display_name }}</span>
                         <span class="profile-account-type">Developer Profile</span>
                       </div>
                     </div>

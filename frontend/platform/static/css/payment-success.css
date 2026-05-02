@@ -40,15 +40,13 @@
     background: white;
     border: 1px solid var(--table-border-color);
     border-radius: 12px;
-    transition: all 0.2s ease;
     text-decoration: none;
     flex-shrink: 0;
 }
 
 .payment-success-header__back:hover {
-    background: #f0f1f5;
+    background: white;
     border-color: #d5d7da;
-    transform: translateX(-2px);
 }
 
 .payment-success-steps {
@@ -96,6 +94,81 @@
     overflow: hidden;
 }
 
+.trade-success-card {
+    max-width: 640px;
+    padding: 28px 36px 32px;
+    text-align: left;
+}
+
+.trade-success-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), #62F7A4);
+}
+
+.trade-success-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    position: relative;
+    z-index: 1;
+}
+
+.trade-success-brand__logo {
+    width: 104px;
+    height: auto;
+    display: block;
+}
+
+.trade-success-brand__divider {
+    width: 1px;
+    height: 22px;
+    background: var(--card-border-color, #E5E7EB);
+}
+
+.trade-success-brand__label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #535862;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.trade-success-status-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 12px 14px;
+    margin: 0 0 20px;
+    background: #F5FFF8;
+    border: 1px solid #B9F8CF;
+    border-radius: 8px;
+    color: #166534;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+    position: relative;
+    z-index: 1;
+}
+
+.trade-success-status-strip__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #12B76A;
+    flex: 0 0 auto;
+}
+
+.trade-success-status-strip__sep {
+    width: 1px;
+    height: 14px;
+    background: #86EFAC;
+}
+
 /* ── Gradient Blur Effects ───────────────────────────────────── */
 .payment-success-blur-1 {
     position: absolute;
@@ -136,6 +209,19 @@
     z-index: 1;
 }
 
+.trade-success-card .payment-success-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 0 20px;
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+}
+
+.trade-success-card .payment-success-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
 .payment-success-icon--success {
     background: #ECFDF3;
 }
@@ -155,6 +241,13 @@
     z-index: 1;
 }
 
+.trade-success-card .payment-success-title {
+    font-size: 28px;
+    line-height: 1.15;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
 /* ── Description ─────────────────────────────────────────────── */
 .payment-success-description {
     font-size: 15px;
@@ -163,6 +256,12 @@
     margin: 0 0 28px;
     position: relative;
     z-index: 1;
+}
+
+.trade-success-card .payment-success-description {
+    max-width: 560px;
+    margin-bottom: 20px;
+    color: #535862;
 }
 
 /* ── Skeleton Loading ────────────────────────────────────────── */
@@ -193,7 +292,7 @@
 .payment-success-order {
     background: #f9fafb;
     border: 1px solid var(--card-border-color);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 20px 24px;
     text-align: left;
     margin-bottom: 20px;
@@ -201,11 +300,16 @@
     z-index: 1;
 }
 
+.trade-success-card .payment-success-order {
+    background: #FFFFFF;
+}
+
 .payment-success-order__row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 0;
+    gap: 16px;
 }
 
 .payment-success-order__row--border {
@@ -220,12 +324,45 @@
 .payment-success-order__label {
     font-size: 13px;
     color: #717680;
+    flex: 0 0 auto;
 }
 
 .payment-success-order__value {
     font-size: 13px;
     font-weight: 600;
     color: var(--page-title-color);
+    min-width: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.payment-success-order__value--mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    color: #667085;
+}
+
+.payment-success-order__copy-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.payment-success-order__copy {
+    background: none;
+    border: 0;
+    cursor: pointer;
+    padding: 2px;
+    color: #98A2B3;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+}
+
+.payment-success-order__copy:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 .payment-success-order__total-label {
@@ -239,6 +376,28 @@
     font-weight: 800;
     color: #101828;
     font-variant-numeric: tabular-nums;
+}
+
+.payment-success-info-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #F0F9FF;
+    border: 1px solid #BAE6FD;
+    border-radius: 8px;
+    margin-top: 0;
+    font-size: 13px;
+    color: #0C4A6E;
+    line-height: 1.55;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+}
+
+.payment-success-info-notice svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
 }
 
 /* ── Order Items ─────────────────────────────────────────────── */
@@ -316,26 +475,23 @@
 
 .payment-success-btn {
     width: 100%;
-    height: 52px;
-    border-radius: 14px;
+    min-height: 48px;
+    border-radius: 8px;
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     border: none;
-    transition: all 0.2s ease;
-    letter-spacing: 0.2px;
+    letter-spacing: 0;
 }
 
 .payment-success-btn--primary {
     background: var(--primary-color);
-    color: white;
+    color: #98FB96;
     box-shadow: 0 2px 8px rgba(0, 0, 255, 0.15);
 }
 
 .payment-success-btn--primary:hover {
-    filter: brightness(0.88);
     box-shadow: 0 4px 16px rgba(0, 0, 255, 0.25);
-    transform: translateY(-1px);
 }
 
 .payment-success-btn--primary:active {
@@ -345,12 +501,17 @@
 .payment-success-btn--secondary {
     background: white;
     color: #414651;
-    border: 1.5px solid var(--table-border-color);
+    border: 1px solid #D5D7DA;
 }
 
 .payment-success-btn--secondary:hover {
-    background: #f5f6fa;
+    background: white;
     border-color: #d5d7da;
+}
+
+.payment-success-btn--danger {
+    color: #D92D20;
+    border-color: #FDA29B;
 }
 
 /* ── Confetti ────────────────────────────────────────────────── */
@@ -394,5 +555,48 @@
 
     .payment-success-title {
         font-size: 22px;
+    }
+
+    .trade-success-card {
+        padding: 24px 18px 24px;
+    }
+
+    .trade-success-brand {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 22px;
+    }
+
+    .trade-success-brand__divider {
+        display: none;
+    }
+
+    .trade-success-card .payment-success-title {
+        font-size: 24px;
+    }
+
+    .trade-success-status-strip {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .trade-success-status-strip__sep {
+        display: none;
+    }
+
+    .payment-success-order {
+        padding: 16px;
+    }
+
+    .payment-success-order__row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .payment-success-order__value,
+    .payment-success-order__total-value {
+        text-align: left;
     }
 }

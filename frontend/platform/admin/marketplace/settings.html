@@ -39,72 +39,166 @@
         <div class="admin-topbar-right"></div>
       </header>
 
-      <div class="admin-content">
-        <div class="admin-page-header">
-          <h1 class="admin-page-title">Marketplace Settings</h1>
-          <p class="admin-page-subtitle">Configure matching engine, settlement, and marketplace behavior</p>
+      <div class="admin-content mp-settings-layout" id="settings-content">
+        <!-- Sticky right scroll-spy nav -->
+        <aside class="mp-section-nav" id="mp-section-nav" aria-label="Sections">
+          <a href="#section-matching" data-spy="matching" class="active">Matching Engine</a>
+          <a href="#section-settlement" data-spy="settlement">Settlement</a>
+          <a href="#section-hours" data-spy="hours">Trading Hours</a>
+        </aside>
+        <div class="mp-settings-main">
+        <!-- Environment banner -->
+        <div id="mp-env-banner" class="mp-env-banner mp-env-banner--prod" hidden>
+          <span class="mp-env-banner__dot"></span>
+          <strong id="mp-env-banner__label">PRODUCTION</strong>
+          <span class="mp-env-banner__msg">Changes affect live trading. Saves are audit-logged.</span>
+        </div>
+
+        <!-- Anomaly banner (recent high-risk change) -->
+        <div id="mp-anomaly-banner" class="mp-anomaly-banner" hidden role="status">
+          <span class="mp-anomaly-banner__icon" aria-hidden="true">⚠</span>
+          <div>
+            <strong id="mp-anomaly-banner__title">Recent change</strong>
+            <span id="mp-anomaly-banner__msg"></span>
+          </div>
+          <button type="button" class="mp-anomaly-banner__close" data-dismiss-anomaly aria-label="Dismiss">×</button>
+        </div>
+
+        <!-- Concurrent edit warning -->
+        <div id="mp-concurrent-banner" class="mp-anomaly-banner mp-anomaly-banner--info" hidden role="status">
+          <span class="mp-anomaly-banner__icon" aria-hidden="true">↻</span>
+          <div>
+            <strong>Settings updated by another admin.</strong>
+            <span id="mp-concurrent-actor"></span>
+            <button type="button" class="mp-link-btn" id="btn-reload-concurrent">Reload latest</button>
+          </div>
+        </div>
+
+        <!-- Permission lock notice -->
+        <div id="mp-permission-notice" class="mp-perm-notice" hidden>
+          <span class="mp-perm-notice__icon" aria-hidden="true">🔒</span>
+          <div>
+            <strong>Read-only mode.</strong>
+            <span>You have <code>marketplace.view</code> but not <code>marketplace.manage</code>. Inputs are disabled.</span>
+          </div>
+        </div>
+
+        <div class="admin-page-header" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <h1 class="admin-page-title">Marketplace Settings</h1>
+            <p class="admin-page-subtitle">Configure matching engine, settlement, and marketplace behavior</p>
+            <div id="mp-last-saved" class="mp-meta-line" hidden></div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="admin-btn admin-btn--secondary" id="btn-show-history" type="button">
+              <span aria-hidden="true">⟲</span> History
+            </button>
+            <button class="admin-btn admin-btn--secondary" id="btn-export-config" type="button">
+              Export JSON
+            </button>
+          </div>
         </div>
 
         <!-- Matching Engine -->
-        <div class="admin-card" style="margin-bottom:20px;">
+        <div class="admin-card mp-settings-card" id="section-matching" data-section="matching" style="margin-bottom:20px;">
           <div class="admin-card-header">
             <h3 class="admin-card-title">Matching Engine</h3>
           </div>
           <div class="admin-card-body">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:700px;">
+            <div class="mp-settings-grid">
               <div class="admin-form-group">
-                <label class="admin-form-label">Matching Algorithm</label>
-                <select class="admin-select" id="setting-algo">
+                <label class="admin-form-label" for="setting-algo">Matching Algorithm</label>
+                <select class="admin-select" id="setting-algo" data-setting="matching_algorithm">
                   <option value="price-time" selected>Price-Time Priority (FIFO)</option>
                 </select>
-                <div style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;">Determines order priority in the matching engine</div>
+                <div class="mp-help" id="help-algo">Determines order priority in the matching engine</div>
               </div>
               <div class="admin-form-group">
-                <label class="admin-form-label">Tick Size (USD)</label>
-                <input type="number" class="admin-input" id="setting-tick" value="0.05" step="0.01" min="0.01">
-                <div style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;">Minimum price increment between orders</div>
+                <label class="admin-form-label" for="setting-tick">Tick Size (USD)</label>
+                <div class="mp-input-wrap">
+                  <span class="mp-input-prefix">$</span>
+                  <input type="number" class="admin-input mp-input--with-prefix" id="setting-tick" value="0.05" step="0.01" min="0.01" data-setting="tick_size_cents" aria-describedby="help-tick">
+                </div>
+                <div class="mp-help" id="help-tick">Minimum price increment between orders</div>
+                <div class="mp-field-error" id="err-tick" hidden></div>
               </div>
               <div class="admin-form-group">
-                <label class="admin-form-label">Min Order Size (tokens)</label>
-                <input type="number" class="admin-input" id="setting-min-order" value="1" step="1" min="1">
+                <label class="admin-form-label" for="setting-min-order">Min Order Size (tokens)</label>
+                <div class="mp-stepper">
+                  <button type="button" class="mp-stepper__btn" data-step="-1" data-target="setting-min-order" aria-label="Decrease">−</button>
+                  <input type="number" class="admin-input" id="setting-min-order" value="1" step="1" min="1" data-setting="min_order_size" aria-describedby="help-min-order err-min-order">
+                  <button type="button" class="mp-stepper__btn" data-step="1" data-target="setting-min-order" aria-label="Increase">+</button>
+                </div>
+                <div class="mp-help" id="help-min-order">Smallest fillable size per order.</div>
+                <div class="mp-field-error" id="err-min-order" hidden></div>
               </div>
               <div class="admin-form-group">
-                <label class="admin-form-label">Max Order Size (tokens)</label>
-                <input type="number" class="admin-input" id="setting-max-order" value="10000" step="100" min="1">
+                <label class="admin-form-label" for="setting-max-order">Max Order Size (tokens)</label>
+                <div class="mp-stepper">
+                  <button type="button" class="mp-stepper__btn" data-step="-100" data-target="setting-max-order" aria-label="Decrease">−</button>
+                  <input type="number" class="admin-input" id="setting-max-order" value="10000" step="100" min="1" data-setting="max_order_size" aria-describedby="help-max-order err-max-order">
+                  <button type="button" class="mp-stepper__btn" data-step="100" data-target="setting-max-order" aria-label="Increase">+</button>
+                </div>
+                <div class="mp-help" id="help-max-order">Largest single order accepted.</div>
+                <div class="mp-field-error" id="err-max-order" hidden></div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Settlement -->
-        <div class="admin-card" style="margin-bottom:20px;">
+        <div class="admin-card mp-settings-card" id="section-settlement" data-section="settlement" style="margin-bottom:20px;">
           <div class="admin-card-header">
             <h3 class="admin-card-title">Settlement Configuration</h3>
           </div>
           <div class="admin-card-body">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:700px;">
+            <div class="mp-settings-grid">
               <div class="admin-form-group">
-                <label class="admin-form-label">Settlement Mode</label>
-                <select class="admin-select" id="setting-settlement">
+                <label class="admin-form-label" for="setting-settlement">
+                  Settlement Mode
+                  <span class="mp-info" tabindex="0" aria-label="Settlement mode help">
+                    ⓘ
+                    <span class="mp-info-tip">T+0: instant on-chain. T+1: batched daily. Manual: ops approves each batch.</span>
+                  </span>
+                </label>
+                <select class="admin-select" id="setting-settlement" data-setting="settlement_mode" data-high-risk="true">
                   <option value="instant" selected>Instant (T+0)</option>
                   <option value="batched">Batched (T+1 daily)</option>
                   <option value="manual">Manual Approval</option>
                 </select>
+                <div class="mp-help" id="help-settlement">High-risk: changing this affects all open trades.</div>
               </div>
               <div class="admin-form-group">
-                <label class="admin-form-label">Max Gas Price (Gwei)</label>
-                <input type="number" class="admin-input" id="setting-gas" value="5" step="1" min="1">
+                <label class="admin-form-label" for="setting-gas">Max Gas Price (Gwei)</label>
+                <div class="mp-stepper">
+                  <button type="button" class="mp-stepper__btn" data-step="-1" data-target="setting-gas" aria-label="Decrease">−</button>
+                  <input type="number" class="admin-input" id="setting-gas" value="5" step="1" min="1" data-setting="max_gas_gwei" aria-describedby="help-gas">
+                  <button type="button" class="mp-stepper__btn" data-step="1" data-target="setting-gas" aria-label="Increase">+</button>
+                </div>
+                <div class="mp-help" id="help-gas">
+                  Settlements queue when network gas exceeds this limit.
+                  <span class="mp-live-meta" id="live-gas">· Network now: <span data-live="gas">—</span></span>
+                </div>
               </div>
               <div class="admin-form-group">
-                <label class="admin-form-label">Settlement Batch Size</label>
-                <input type="number" class="admin-input" id="setting-batch" value="50" step="10" min="1">
+                <label class="admin-form-label" for="setting-batch">Settlement Batch Size</label>
+                <div class="mp-stepper">
+                  <button type="button" class="mp-stepper__btn" data-step="-10" data-target="setting-batch" aria-label="Decrease">−</button>
+                  <input type="number" class="admin-input" id="setting-batch" value="50" step="10" min="1" data-setting="settlement_batch_size" aria-describedby="help-batch err-batch">
+                  <button type="button" class="mp-stepper__btn" data-step="10" data-target="setting-batch" aria-label="Increase">+</button>
+                </div>
+                <div class="mp-help" id="help-batch">
+                  Max trades per settlement transaction.
+                  <span class="mp-live-meta" id="live-batch">· Avg utilization 24h: <span data-live="batch_util">—</span></span>
+                </div>
+                <div class="mp-field-error" id="err-batch" hidden></div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Trading Hours -->
-        <div class="admin-card" style="margin-bottom:20px;">
+        <div class="admin-card mp-settings-card" id="section-hours" data-section="hours" style="margin-bottom:20px;">
           <div class="admin-card-header">
             <h3 class="admin-card-title">Trading Hours</h3>
           </div>
@@ -115,10 +209,86 @@
           </div>
         </div>
 
-        <!-- Save Button -->
-        <div style="display:flex; justify-content:flex-end; gap:12px;">
-          <button class="admin-btn admin-btn--secondary" id="btn-reset-settings">Reset to Defaults</button>
-          <button class="admin-btn admin-btn--primary" id="btn-save-settings" style="padding:12px 32px; font-size:14px; font-weight:600;">Save All Settings</button>
+        <!-- Action row -->
+        <div class="mp-settings-actions" id="mp-actions-bar">
+          <button class="admin-btn admin-btn--secondary" id="btn-reset-settings" type="button">Reset to Defaults</button>
+          <button class="admin-btn admin-btn--primary" id="btn-save-settings" type="button" style="padding:12px 32px; font-size:14px; font-weight:600;">Save All Settings</button>
+        </div>
+        </div><!-- /mp-settings-main -->
+      </div>
+
+      <!-- Sticky save bar (only when dirty) -->
+      <div class="mp-sticky-save" id="mp-sticky-save" hidden>
+        <div class="mp-sticky-save__msg">
+          <strong id="mp-dirty-count">0</strong> unsaved change<span id="mp-dirty-plural">s</span>
+        </div>
+        <div class="mp-sticky-save__actions">
+          <button class="admin-btn admin-btn--secondary" id="btn-discard" type="button">Discard</button>
+          <button class="admin-btn admin-btn--primary" id="btn-save-sticky" type="button">Save changes</button>
+        </div>
+      </div>
+
+      <!-- Confirm diff modal -->
+      <div class="mp-modal" id="mp-confirm-modal" hidden role="dialog" aria-modal="true" aria-labelledby="mp-confirm-title">
+        <div class="mp-modal__backdrop" data-close></div>
+        <div class="mp-modal__panel" role="document">
+          <header class="mp-modal__header">
+            <h3 id="mp-confirm-title">Review changes before save</h3>
+            <button class="mp-modal__x" type="button" data-close aria-label="Close">×</button>
+          </header>
+          <div class="mp-modal__body">
+            <table class="mp-diff-table" id="mp-diff-table">
+              <thead><tr><th>Field</th><th>Current</th><th>→</th><th>New</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="mp-dryrun" id="mp-dryrun" hidden>
+              <strong>Estimated impact (last 24h baseline):</strong>
+              <ul id="mp-dryrun-list"></ul>
+            </div>
+            <div class="mp-schedule-block">
+              <label class="mp-schedule-toggle">
+                <input type="checkbox" id="mp-schedule-enable">
+                <span>Schedule for later instead of saving now</span>
+              </label>
+              <div id="mp-schedule-fields" hidden>
+                <input type="datetime-local" class="admin-input" id="mp-schedule-when">
+                <input type="text" class="admin-input" id="mp-schedule-note" placeholder="Optional note (e.g. maintenance window)">
+                <div class="mp-help">Worker checks every 30s; min 30s in future. UTC stored, local time shown.</div>
+              </div>
+            </div>
+            <div class="mp-confirm-warn" id="mp-confirm-warn" hidden>
+              <strong>⚠ High-risk change.</strong>
+              Type <code>CONFIRM</code> below to enable Save.
+              <input type="text" class="admin-input" id="mp-confirm-text" autocomplete="off" placeholder="Type CONFIRM" style="margin-top:8px;">
+            </div>
+          </div>
+          <footer class="mp-modal__footer">
+            <button class="admin-btn admin-btn--secondary" type="button" data-close>Cancel</button>
+            <button class="admin-btn admin-btn--primary" id="btn-confirm-save" type="button" disabled>Save</button>
+          </footer>
+        </div>
+      </div>
+
+      <!-- History modal -->
+      <div class="mp-modal" id="mp-history-modal" hidden role="dialog" aria-modal="true" aria-labelledby="mp-history-title">
+        <div class="mp-modal__backdrop" data-close></div>
+        <div class="mp-modal__panel mp-modal__panel--wide" role="document">
+          <header class="mp-modal__header">
+            <h3 id="mp-history-title">Settings change history</h3>
+            <button class="mp-modal__x" type="button" data-close aria-label="Close">×</button>
+          </header>
+          <div class="mp-modal__body">
+            <div id="mp-scheduled-section" class="mp-scheduled-section" hidden>
+              <h4>Pending scheduled changes</h4>
+              <div id="mp-scheduled-list"></div>
+            </div>
+            <div class="mp-history-toolbar">
+              <input type="search" class="admin-input" id="mp-history-search" placeholder="Filter by actor, field…" aria-label="Search history">
+              <button type="button" class="admin-btn admin-btn--secondary" id="btn-history-compare" disabled>Compare selected (0)</button>
+            </div>
+            <div id="mp-history-list" class="mp-history-list">Loading…</div>
+            <div id="mp-history-compare" class="mp-history-compare" hidden></div>
+          </div>
         </div>
       </div>
     </main>

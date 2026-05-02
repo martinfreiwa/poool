@@ -1398,9 +1398,10 @@ body.tv3-body {
    MARKET DATA TICKER
    ═══════════════════════════════════════ */
 .tv3-social-proof {
-    display: flex;
-    align-items: center;
-    gap: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(124px, 100%), 1fr));
+    align-items: stretch;
+    gap: 0;
     padding: 16px 24px;
     background: var(--tv3-surface);
     border: 1px solid var(--tv3-border);
@@ -1408,14 +1409,23 @@ body.tv3-body {
     margin-bottom: 24px;
     font-size: 13px;
     color: var(--tv3-text-sec);
+    overflow: hidden;
     animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: 0.1s;
 }
 .tv3-sp-item {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
     gap: 8px;
-    white-space: nowrap;
+    min-width: 0;
+    padding: 4px 12px;
+    text-align: center;
+    white-space: normal;
+}
+.tv3-sp-item:not(:first-child) {
+    border-left: 1px solid var(--tv3-border-strong);
 }
 .tv3-sp-label {
     font-size: 11px;
@@ -1423,19 +1433,19 @@ body.tv3-body {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--tv3-text-muted);
+    white-space: nowrap;
 }
 .tv3-sp-value {
     font-size: 14px;
     font-weight: 700;
     color: var(--tv3-text);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 .tv3-sp-value--green { color: var(--tv3-green); }
 .tv3-sp-value--red { color: var(--tv3-red); }
 .tv3-sp-sep {
-    width: 1px;
-    height: 20px;
-    background: var(--tv3-border-strong);
+    display: none;
 }
 
 

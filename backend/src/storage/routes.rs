@@ -15,6 +15,7 @@ use axum::{
     response::{IntoResponse, Json},
 };
 use axum_extra::extract::cookie::CookieJar;
+use std::collections::HashSet;
 use uuid::Uuid;
 
 use super::service;
@@ -62,7 +63,7 @@ pub async fn upload_avatar(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -77,7 +78,7 @@ pub async fn upload_avatar(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": e})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -164,7 +165,7 @@ pub async fn upload_developer_logo(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -178,7 +179,7 @@ pub async fn upload_developer_logo(
                     StatusCode::BAD_REQUEST,
                     Json(serde_json::json!({"error": e})),
                 )
-                    .into_response()
+                    .into_response();
             }
         };
 
@@ -259,7 +260,7 @@ pub async fn upload_post_image(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -274,7 +275,7 @@ pub async fn upload_post_image(
                     StatusCode::BAD_REQUEST,
                     Json(serde_json::json!({"error": e})),
                 )
-                    .into_response()
+                    .into_response();
             }
         };
 
@@ -362,7 +363,7 @@ pub async fn upload_kyc_document(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -418,7 +419,7 @@ pub async fn upload_kyc_document(
                             StatusCode::BAD_REQUEST,
                             Json(serde_json::json!({"error": "Failed to read uploaded file"})),
                         )
-                            .into_response()
+                            .into_response();
                     }
                 }
             }
@@ -434,7 +435,7 @@ pub async fn upload_kyc_document(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "No file field found in request"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -446,7 +447,7 @@ pub async fn upload_kyc_document(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "Unsupported or unrecognized file format"})),
             )
-                .into_response()
+                .into_response();
         }
     };
     if !mime_matches(&mime_type, sniffed) {
@@ -778,7 +779,7 @@ pub async fn upload_asset_document(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -836,7 +837,7 @@ pub async fn upload_asset_document(
                             StatusCode::BAD_REQUEST,
                             Json(serde_json::json!({"error": "Failed to read file"})),
                         )
-                            .into_response()
+                            .into_response();
                     }
                 };
                 if bytes.len() > MAX_ASSET_DOC_BYTES {
@@ -859,7 +860,7 @@ pub async fn upload_asset_document(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "No file field in request"})),
             )
-                .into_response()
+                .into_response();
         }
     };
     document_type = match normalize_asset_document_type(&document_type) {
@@ -869,7 +870,7 @@ pub async fn upload_asset_document(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "Invalid document type"})),
             )
-                .into_response()
+                .into_response();
         }
     };
     title = sanitize_text(&title);
@@ -896,7 +897,7 @@ pub async fn upload_asset_document(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "Unsupported or unrecognized file format"})),
             )
-                .into_response()
+                .into_response();
         }
     };
     if !mime_matches(&mime_type, sniffed) {
@@ -1008,7 +1009,7 @@ pub async fn upload_asset_image(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -1067,7 +1068,7 @@ pub async fn upload_asset_image(
                             StatusCode::BAD_REQUEST,
                             Json(serde_json::json!({"error": "Failed to read file"})),
                         )
-                            .into_response()
+                            .into_response();
                     }
                 };
                 if bytes.len() > MAX_ASSET_IMAGE_BYTES {
@@ -1090,7 +1091,7 @@ pub async fn upload_asset_image(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "No file field in request"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -1102,7 +1103,7 @@ pub async fn upload_asset_image(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "Unsupported or unrecognized image format"})),
             )
-                .into_response()
+                .into_response();
         }
     };
     if !mime_matches(&mime_type, sniffed) {
@@ -1240,7 +1241,7 @@ pub async fn delete_asset_document(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -1295,7 +1296,7 @@ pub async fn delete_asset_image(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -1351,6 +1352,41 @@ pub async fn reorder_asset_images(
     State(state): State<AppState>,
     Json(payload): Json<Vec<ImageOrderUpdate>>,
 ) -> axum::response::Response {
+    if payload.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "At least one image is required"})),
+        )
+            .into_response();
+    }
+
+    let cover_count = payload.iter().filter(|img| img.is_cover).count();
+    if cover_count != 1 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Exactly one image must be marked as cover"})),
+        )
+            .into_response();
+    }
+
+    let mut seen = HashSet::with_capacity(payload.len());
+    for img in &payload {
+        if img.sort_order < 0 {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "sort_order must not be negative"})),
+            )
+                .into_response();
+        }
+        if !seen.insert(img.id) {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Duplicate image id in reorder payload"})),
+            )
+                .into_response();
+        }
+    }
+
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
         None => {
@@ -1358,7 +1394,7 @@ pub async fn reorder_asset_images(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -1391,15 +1427,23 @@ pub async fn reorder_asset_images(
         }
     };
 
-    // First unset all covers to avoid duplicates
-    let _ = sqlx::query("UPDATE asset_images SET is_cover = false WHERE asset_id = $1")
+    // First unset all covers to avoid duplicates.
+    if let Err(e) = sqlx::query("UPDATE asset_images SET is_cover = false WHERE asset_id = $1")
         .bind(asset_id)
         .execute(&mut *tx)
-        .await;
+        .await
+    {
+        tracing::error!("Failed to clear existing cover image: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "Failed to save order"})),
+        )
+            .into_response();
+    }
 
-    // Update each image
-    for img in payload {
-        let _ = sqlx::query(
+    // Update each image and fail if the client referenced an image outside this asset.
+    for img in &payload {
+        let result = sqlx::query(
             "UPDATE asset_images SET sort_order = $1, is_cover = $2 WHERE id = $3 AND asset_id = $4",
         )
         .bind(img.sort_order)
@@ -1408,6 +1452,25 @@ pub async fn reorder_asset_images(
         .bind(asset_id)
         .execute(&mut *tx)
         .await;
+
+        match result {
+            Ok(updated) if updated.rows_affected() == 1 => {}
+            Ok(_) => {
+                return (
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({"error": "Image not found for this asset"})),
+                )
+                    .into_response();
+            }
+            Err(e) => {
+                tracing::error!("Failed to update asset image order: {}", e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"error": "Failed to save order"})),
+                )
+                    .into_response();
+            }
+        }
     }
 
     if let Err(e) = tx.commit().await {
@@ -1440,7 +1503,7 @@ pub async fn download_asset_document(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Not authenticated"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 

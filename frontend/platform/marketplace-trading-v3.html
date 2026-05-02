@@ -780,6 +780,23 @@
                                             placeholder="e.g. 10" />
                                     </div>
 
+                                    <!-- Time-in-force selector (industry-standard order qualifier).
+                                         GTC default — rests in book until cancel/expire/match.
+                                         Day — auto-cancel +24h. IOC — match now, cancel rest.
+                                         FOK — all-or-nothing now (pre-checked depth at submit). -->
+                                    <div class="tv3-field tv3-tif-field">
+                                        <div class="tv3-market-info-label">
+                                            Time in force
+                                            <span title="GTC: rest up to 90 days. Day: cancel after 24h. IOC: match what's available now, cancel rest. FOK: fully match now or reject." style="cursor:help; opacity:0.6; margin-left:4px;">ⓘ</span>
+                                        </div>
+                                        <select class="tv3-field-input" id="tv3-tif">
+                                            <option value="gtc" selected>Good-Til-Cancelled (90d)</option>
+                                            <option value="day">Day (24h)</option>
+                                            <option value="ioc">Immediate-or-Cancel</option>
+                                            <option value="fok">Fill-or-Kill</option>
+                                        </select>
+                                    </div>
+
                                     <!-- Cost summary -->
                                     <div class="tv3-order-summary">
                                         <div class="tv3-sum-row"><span>Subtotal</span><span

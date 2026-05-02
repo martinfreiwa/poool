@@ -165,12 +165,15 @@ pub fn sign_legacy_transaction(
     if key_bytes.len() != 32 {
         return Err("private key must be 32 bytes".to_string());
     }
-    let signing_key = SigningKey::from_slice(&key_bytes)
-        .map_err(|e| format!("invalid private key: {}", e))?;
+    let signing_key =
+        SigningKey::from_slice(&key_bytes).map_err(|e| format!("invalid private key: {}", e))?;
 
     let to_bytes = parse_hex(to)?;
     if to_bytes.len() != 20 {
-        return Err(format!("to-address must be 20 bytes, got {}", to_bytes.len()));
+        return Err(format!(
+            "to-address must be 20 bytes, got {}",
+            to_bytes.len()
+        ));
     }
     let data_bytes = parse_hex(data)?;
 

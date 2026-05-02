@@ -779,8 +779,8 @@ pub async fn api_developer_asset_detail(
     .unwrap_or_default();
 
     // Images
-    let images: Vec<(String, bool, i32)> = sqlx::query_as(
-        "SELECT COALESCE(image_url,''), COALESCE(is_cover,false), COALESCE(sort_order,0) FROM asset_images WHERE asset_id = $1 ORDER BY sort_order"
+    let images: Vec<(uuid::Uuid, String, bool, i32)> = sqlx::query_as(
+        "SELECT id, COALESCE(image_url,''), COALESCE(is_cover,false), COALESCE(sort_order,0) FROM asset_images WHERE asset_id = $1 ORDER BY sort_order"
     ).bind(id).fetch_all(&state.db).await.unwrap_or_default();
 
     // Milestones
@@ -849,8 +849,8 @@ pub async fn api_developer_asset_detail(
         })).collect::<Vec<_>>(),
         "documents": docs.iter().map(|d| serde_json::json!({"document_type": d.0, "title": d.1, "file_size": d.2, "id": d.3})).collect::<Vec<_>>(),
         "images": images.iter().map(|i| {
-            let url = crate::storage::service::rewrite_gcs_url(&i.0);
-            serde_json::json!({"url": url, "is_cover": i.1, "sort_order": i.2})
+            let url = crate::storage::service::rewrite_gcs_url(&i.1);
+            serde_json::json!({"id": i.0, "url": url, "is_cover": i.2, "sort_order": i.3})
         }).collect::<Vec<_>>(),
         "milestones": milestones.iter().map(|m| serde_json::json!({"title": m.0, "description": m.1, "month_index": m.2, "is_completed": m.3})).collect::<Vec<_>>(),
         "orders": orders.iter().map(|o| serde_json::json!({

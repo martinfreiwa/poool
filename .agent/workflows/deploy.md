@@ -65,9 +65,29 @@ psql -d poool -c "SELECT table_name FROM information_schema.tables WHERE table_s
 cd /Users/martin/Projects/poool && git add . && git commit -m "deploy: <description>" && git push
 ```
 
+## Build Speed (Fast Path)
+
+The Rust release build dominates deploy time. Three knobs keep it fast — **all live in the repo, all triggered by `git push origin main`**, no manual gcloud needed.
+
+| Knob | Where | Effect |
+|------|-------|--------|
+| `[profile.release]` with `lto = "thin"`, `codegen-units = 16` | `backend/Cargo.toml` | Parallel codegen + thin LTO. Cuts cold release compile roughly in half vs default/fat-LTO. |
+| `cargo-chef` deps stage | `Dockerfile` (planner + `cargo chef cook`) | Dependency layer cached unless `Cargo.toml`/`Cargo.lock` change. Code-only changes skip dep recompile. |
+| `cache-from/cache-to: type=gha,mode=max` | `.github/workflows/deploy.yml` | GitHub Actions cache of all Docker layers across runs. |
+| Foundry install **above** `cargo build` | `Dockerfile` (builder stage) | `cast` binary download cached; not re-fetched on every source change. |
+
+**Expected timings** (push to main → revision live):
+- Code-only change (deps cached): **~3–4 min**
+- `Cargo.lock` changed (cold deps): **~9–12 min**
+- First build / no cache: **~15 min**
+
+If a deploy is taking >5 min on a code-only change, check the Cloud Build / GHA log for `cargo chef cook` running again — that means the deps cache was invalidated. Look for unrelated edits to `Cargo.toml`/`Cargo.lock`.
+
+**Do NOT** add `RUN` steps above the `cargo chef cook` line that change frequently — every layer above busts every layer below.
+
 ## Post-Deploy Verification
 
-9. **Wait for Cloud Build to finish** (~6 minutes):
+9. **Wait for Cloud Build to finish** (~3–4 min for code-only changes, ~9 min if deps changed):
 ```bash
 sleep 180 && gcloud builds list --limit=1 --project=my-project-35266-489713
 ```

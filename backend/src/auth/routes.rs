@@ -1909,7 +1909,7 @@ async fn render_login(
                 ARRAY(
                     SELECT image_url FROM asset_images
                     WHERE asset_id = a.id
-                    ORDER BY is_cover DESC, created_at ASC
+                    ORDER BY is_cover DESC, sort_order ASC, created_at ASC
                 ) AS "image_urls?",
                 a.bedrooms, a.bathrooms, a.building_size_sqm, a.lease_type,
                 a.term_months, a.area, a.land_size_sqm,
@@ -1995,7 +1995,7 @@ async fn render_signup(
                 ARRAY(
                     SELECT image_url FROM asset_images
                     WHERE asset_id = a.id
-                    ORDER BY is_cover DESC, created_at ASC
+                    ORDER BY is_cover DESC, sort_order ASC, created_at ASC
                 ) AS "image_urls?",
                 a.bedrooms,
                 a.bathrooms,

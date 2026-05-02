@@ -92,3 +92,15 @@ regex = "1.12.3"
 # This is the recommended approach for crypto-heavy projects.
 [profile.dev.package."*"]
 opt-level = 2
+
+# ─── Release profile: tuned for CI build speed ────────────────
+# `lto = "thin"` keeps most LTO benefits at a fraction of the cost
+# of full/fat LTO. `codegen-units = 16` parallelises codegen across
+# cores (was implicitly 1 with full LTO). `incremental = false`
+# is the safe default for clean CI builds. Strip symbols to shrink
+# the final binary copied into the runtime image.
+[profile.release]
+lto = "thin"
+codegen-units = 16
+incremental = false
+strip = "symbols"

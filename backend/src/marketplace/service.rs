@@ -28,6 +28,15 @@ struct MarketplaceRuntimeSettings {
     max_order_size: i32,
     trading_enabled: bool,
     maintenance_window: bool,
+    /// Maximum allowed price deviation from last trade for limit orders, as a
+    /// percentage (e.g. 5.0 = ±5%). 0 disables the check. Defaults to 5%.
+    /// Industry-standard pre-trade risk control (NYSE Rule 80C / SEC LULD).
+    #[serde(default = "default_price_collar_pct")]
+    price_collar_pct: f64,
+}
+
+fn default_price_collar_pct() -> f64 {
+    5.0
 }
 
 impl Default for MarketplaceRuntimeSettings {
@@ -38,6 +47,7 @@ impl Default for MarketplaceRuntimeSettings {
             max_order_size: 10000,
             trading_enabled: true,
             maintenance_window: false,
+            price_collar_pct: default_price_collar_pct(),
         }
     }
 }
@@ -258,6 +268,15 @@ pub async fn create_order(
 
     validate_runtime_settings_for_order(&runtime_settings, &req, price_cents, asset_tick_override)?;
 
+    // Price collar (NYSE Rule 80C / SEC LULD analogue): reject any limit price
+    // outside ±MAX% from the last trade. Prevents fat-finger orders (e.g. typing
+    // 800 instead of 80) and protects users when the book is thin. Skipped when
+    // there is no last trade (asset has never traded — collar would have no
+    // anchor) and for market orders (price came from the book).
+    if req.order_type == "limit" {
+        check_price_collar(pool, asset_uuid, price_cents, &runtime_settings).await?;
+    }
+
     validation::check_no_opposing_orders(pool, user_id, asset_uuid, &req.side, price_cents)
         .await
         .map_err(|r| r.into_app_error())?;
@@ -363,21 +382,50 @@ pub async fn create_order(
     let idempotency_uuid = Uuid::parse_str(&req.idempotency_key)
         .map_err(|_| AppError::BadRequest("Invalid idempotency_key.".into()))?;
 
-    // Default expiry: 90 days from now
-    let expires_at = Utc::now() + chrono::Duration::days(90);
-
-    // Validate + normalise time-in-force
+    // Validate + normalise time-in-force.
+    // Supported:
+    //   gtc — Good-Til-Cancelled (default; expires at +90d).
+    //   ioc — Immediate-Or-Cancel (matches what's available now, rest cancelled).
+    //   fok — Fill-Or-Kill (matches FULLY now or rejected; never rests).
+    //   day — Day order (expires +24h, mimics session close on a 24/7 venue).
     let tif = req
         .time_in_force
         .as_deref()
         .map(|s| s.to_lowercase())
         .unwrap_or_else(|| "gtc".to_string());
-    if !matches!(tif.as_str(), "gtc" | "ioc") {
+    if !matches!(tif.as_str(), "gtc" | "ioc" | "fok" | "day") {
         return Err(AppError::BadRequest(format!(
-            "Unsupported time_in_force: {} (allowed: gtc, ioc)",
+            "Unsupported time_in_force: {} (allowed: gtc, ioc, fok, day)",
             tif
         )));
     }
+
+    // FOK pre-trade depth check: simulate the fill against the opposing book
+    // BEFORE accepting the order. If insufficient depth at acceptable price,
+    // reject up-front with NO_LIQUIDITY rather than admit it and let the IOC
+    // sweep cancel after partial fill (which would violate FOK semantics).
+    // Race window: the book can change between this check and the insert
+    // below, but tif=fok holders accept that risk — the check is best-effort.
+    if tif == "fok" {
+        let depth_ok = check_fok_depth(pool, asset_uuid, &side, price_cents, req.quantity).await?;
+        if !depth_ok {
+            return Err(super::models::OrderRejection::NoLiquidity {
+                side: match side {
+                    OrderSide::Buy => "buy",
+                    OrderSide::Sell => "sell",
+                },
+            }
+            .into_app_error());
+        }
+    }
+
+    // Expiry depends on TIF. Day = 24h, GTC/IOC/FOK = 90d (IOC/FOK swept fast
+    // by the matching engine; the long expiry is a safety net only).
+    let expires_at = if tif == "day" {
+        Utc::now() + chrono::Duration::hours(24)
+    } else {
+        Utc::now() + chrono::Duration::days(90)
+    };
 
     // Insert order
     let order = sqlx::query_as::<_, MarketOrder>(
@@ -988,7 +1036,7 @@ pub async fn get_secondary_assets(
                 SELECT image_url 
                 FROM asset_images 
                 WHERE asset_id = a.id 
-                ORDER BY is_cover DESC, created_at ASC
+                ORDER BY is_cover DESC, sort_order ASC, created_at ASC
             ) AS "image_urls!"
         FROM assets a
         WHERE a.published = true
@@ -1114,7 +1162,10 @@ pub async fn get_orderbook_snapshot_from_db(
     // Asks: Lowest price first
     let asks = sqlx::query_as!(
         PriceLevel,
-        r#"SELECT price_cents, SUM(quantity - quantity_filled)::integer as "total_quantity!", COUNT(*)::integer as "order_count!"
+        r#"SELECT price_cents,
+                  SUM(quantity - quantity_filled)::integer as "total_quantity!",
+                  COUNT(*)::integer as "order_count!",
+                  COUNT(DISTINCT user_id)::integer as "unique_users!"
            FROM market_orders
            WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')
            GROUP BY price_cents
@@ -1130,7 +1181,10 @@ pub async fn get_orderbook_snapshot_from_db(
     // Bids: Highest price first
     let bids = sqlx::query_as!(
         PriceLevel,
-        r#"SELECT price_cents, SUM(quantity - quantity_filled)::integer as "total_quantity!", COUNT(*)::integer as "order_count!"
+        r#"SELECT price_cents,
+                  SUM(quantity - quantity_filled)::integer as "total_quantity!",
+                  COUNT(*)::integer as "order_count!",
+                  COUNT(DISTINCT user_id)::integer as "unique_users!"
            FROM market_orders
            WHERE asset_id = $1 AND side = 'buy' AND status IN ('open', 'partially_filled')
            GROUP BY price_cents
@@ -1159,6 +1213,96 @@ pub async fn get_orderbook_snapshot_from_db(
 }
 
 /// Helper to get the best bid/ask from the database when Redis is unavailable.
+/// Pre-trade price collar check (NYSE Rule 80C / SEC LULD analogue).
+///
+/// Rejects any limit price that deviates more than `price_collar_pct` from
+/// the most recent trade. Skipped when:
+///   - the asset has never traded (no anchor — can't compute a percentage),
+///   - `price_collar_pct == 0` (admin disabled the control),
+///   - the order is a market order (price is taken directly from the book).
+///
+/// Returns `Err(OrderRejection::PriceCollarBreach)` mapped to a structured
+/// `PRICE_COLLAR_BREACH` error code so the FE can highlight the price input.
+async fn check_price_collar(
+    pool: &PgPool,
+    asset_id: Uuid,
+    submitted_cents: i64,
+    settings: &MarketplaceRuntimeSettings,
+) -> Result<(), AppError> {
+    let max_pct = settings.price_collar_pct;
+    if max_pct <= 0.0 {
+        return Ok(()); // Admin-disabled
+    }
+    let last_trade_cents: Option<i64> = sqlx::query_scalar(
+        "SELECT price_cents FROM trade_history
+         WHERE asset_id = $1
+         ORDER BY executed_at DESC
+         LIMIT 1",
+    )
+    .bind(asset_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    let Some(anchor) = last_trade_cents else {
+        return Ok(()); // No anchor — first trade of this asset
+    };
+    if anchor <= 0 {
+        return Ok(()); // Defensive — shouldn't happen due to CHECK constraint
+    }
+
+    let deviation_pct = ((submitted_cents - anchor).abs() as f64 / anchor as f64) * 100.0;
+    if deviation_pct > max_pct {
+        return Err(super::models::OrderRejection::PriceCollarBreach {
+            last_trade_cents: anchor,
+            submitted_cents,
+            max_pct,
+        }
+        .into_app_error());
+    }
+    Ok(())
+}
+
+/// FOK (Fill-Or-Kill) pre-trade depth check.
+///
+/// Sums available quantity on the OPPOSING side at prices that are acceptable
+/// to this order (≤ limit for buyers, ≥ limit for sellers). Returns `true` if
+/// total available ≥ requested quantity.
+///
+/// Best-effort — between this check and order insert the book can change.
+/// FOK by design accepts that risk; if the post-check liquidity is gone, the
+/// IOC sweep cancels the remainder. The check just keeps the success rate
+/// high and avoids accepting obviously-DOA FOK orders.
+async fn check_fok_depth(
+    pool: &PgPool,
+    asset_id: Uuid,
+    side: &OrderSide,
+    limit_price_cents: i64,
+    requested_qty: i32,
+) -> Result<bool, AppError> {
+    let (opposing_side, price_op) = match side {
+        OrderSide::Buy => ("sell", "<="),
+        OrderSide::Sell => ("buy", ">="),
+    };
+    let sql = format!(
+        "SELECT COALESCE(SUM(quantity - quantity_filled), 0)::BIGINT
+         FROM market_orders
+         WHERE asset_id = $1
+           AND side = $2
+           AND status IN ('open', 'partially_filled')
+           AND price_cents {op} $3",
+        op = price_op
+    );
+    let available: i64 = sqlx::query_scalar(&sql)
+        .bind(asset_id)
+        .bind(opposing_side)
+        .bind(limit_price_cents)
+        .fetch_one(pool)
+        .await
+        .map_err(AppError::Database)?;
+    Ok(available >= requested_qty as i64)
+}
+
 pub async fn get_best_price_from_db(
     pool: &PgPool,
     asset_id: Uuid,
@@ -1181,10 +1325,16 @@ pub async fn get_best_price_from_db(
     .await
     .map_err(AppError::Database)?;
 
+    // Structured rejection: error_code=NO_LIQUIDITY so the frontend can
+    // dispatch to "place resting order" flow instead of a generic toast.
+    let _ = opposing_side; // retained for clarity; side carried via OrderSide.
     price.ok_or_else(|| {
-        AppError::OrderRejected(format!(
-            "No {} orders available. Try a limit order instead.",
-            opposing_side
-        ))
+        super::models::OrderRejection::NoLiquidity {
+            side: match side {
+                OrderSide::Buy => "buy",
+                OrderSide::Sell => "sell",
+            },
+        }
+        .into_app_error()
     })
 }

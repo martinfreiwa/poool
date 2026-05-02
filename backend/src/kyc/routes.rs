@@ -412,9 +412,11 @@ pub async fn wallet_bind(
 
     // Verify the EIP-191 signature.
     let message = build_siwe_message(&address, &nonce);
-    if let Err(e) =
-        crate::blockchain::signing::verify_personal_sign(message.as_bytes(), &req.signature, &address)
-    {
+    if let Err(e) = crate::blockchain::signing::verify_personal_sign(
+        message.as_bytes(),
+        &req.signature,
+        &address,
+    ) {
         tracing::warn!(
             "wallet_bind signature verification failed: user={} addr={} err={}",
             user_id,

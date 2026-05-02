@@ -75,7 +75,10 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
                     key_count
                 );
                 match orderbook::sync_with_postgres(redis, pool).await {
-                    Ok(n) if n > 0 => tracing::warn!("🔧 Startup sync: re-inserted {} missing orders into Redis", n),
+                    Ok(n) if n > 0 => tracing::warn!(
+                        "🔧 Startup sync: re-inserted {} missing orders into Redis",
+                        n
+                    ),
                     Ok(_) => tracing::info!("✅ Startup sync: orderbook in sync with DB"),
                     Err(e) => tracing::error!("❌ Startup sync failed: {}", e),
                 }
@@ -502,11 +505,19 @@ async fn cancel_order_in_db(
 /// Only cancels orders older than 100ms — younger ones may still be racing
 /// the Redis-insert step from `service::create_order` and deserve another cycle.
 async fn sweep_ioc_orders(redis: &RedisPool, pool: &PgPool, asset_id: Uuid) -> Result<(), String> {
-    let candidates = sqlx::query_as::<_, (Uuid, Uuid, String)>(
-        r#"SELECT id, user_id, side
+    // Sweep both IOC (cancel remainder after one pass) and FOK (cancel
+    // remainder — for FOK the pre-trade depth check should prevent partial
+    // fills, but if a race lets one through the unfilled portion is still
+    // cancelled here, leaving the user with the partial they actually got).
+    // Load the FULL MarketOrder rows so we can deterministically reconstruct
+    // the Redis ZSET member via `redis_member()` and ZREM precisely. Avoids
+    // the previous 5-min sync-worker wait which let stale entries linger and
+    // briefly mismatch matching.engine reads vs DB truth.
+    let candidates = sqlx::query_as::<_, super::models::MarketOrder>(
+        r#"SELECT *
            FROM market_orders
            WHERE asset_id = $1
-             AND time_in_force = 'ioc'
+             AND time_in_force IN ('ioc', 'fok')
              AND status IN ('open', 'partially_filled')
              AND created_at < NOW() - INTERVAL '100 milliseconds'
            LIMIT 50"#,
@@ -516,17 +527,31 @@ async fn sweep_ioc_orders(redis: &RedisPool, pool: &PgPool, asset_id: Uuid) -> R
     .await
     .map_err(|e| e.to_string())?;
 
-    for (order_id, user_id, side) in candidates {
-        // Atomic DB cancel + hold release.
-        cancel_order_in_db(pool, order_id, user_id, "ioc_unfilled")
+    for order in candidates {
+        // Compute the live Redis member BEFORE cancel — `redis_member()` is
+        // pure (depends on id/user_id/remaining_qty/created_at) and `cancel`
+        // only changes `status`, so the value is stable across cancel.
+        let member = order.redis_member();
+        let book_side = if order.side == "sell" { "sell" } else { "buy" };
+
+        // 1. DB cancel + hold release (atomic).
+        cancel_order_in_db(pool, order.id, order.user_id, "ioc_unfilled")
             .await
             .map_err(|e| format!("ioc cancel db: {}", e))?;
-        // Best-effort Redis remove. Sync worker reconciles if it lingers.
-        let book_side = if side == "sell" { "sell" } else { "buy" };
-        // Without the raw_member format we can't ZREM precisely; rely on
-        // the 5-min sync worker to clean up. The DB row is now `cancelled`
-        // so settlement will drop any incoming match (OrderTerminal path).
-        let _ = (book_side, redis);
+
+        // 2. Redis ZREM the precise member. Best-effort — if Redis is down
+        //    the 5-min sync worker reconciles. The DB row is `cancelled` so
+        //    any incoming match referencing this order will hit the
+        //    OrderTerminal path in settlement and drop cleanly.
+        if let Err(e) =
+            super::orderbook::remove_member(redis, asset_id, book_side, &member).await
+        {
+            tracing::warn!(
+                order_id = %order.id,
+                "ioc/fok ZREM failed (will be reconciled by sync worker): {}",
+                e
+            );
+        }
     }
 
     Ok(())
