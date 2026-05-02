@@ -1,7 +1,7 @@
 {% set title="Asset Trading V3" %}
 {% set extra_css=['property-detail', 'marketplace-trading-v3', 'marketplace-orderbook'] %}
 {% set extra_js=['poool-confirm', 'marketplace-event-bus', 'marketplace-websocket', 'marketplace-orderbook',
-'marketplace-chart', 'marketplace-p2p', 'marketplace-trading-v3'] %}
+'marketplace-chart', 'marketplace-trading-v3'] %}
 {% set body_class="tv3-body fouc-guard" %}
 {% set external_scripts=['https://cdn.jsdelivr.net/npm/apexcharts'] %}
 
@@ -156,12 +156,6 @@
                 <div class="tv3-layout-grid">
                     <div class="tv3-layout-main">
                         <div class="tv3-main-card">
-
-
-                        <!-- P2P Offers Section -->
-                        <section class="tv3-panel tv3-p2p-panel" aria-label="Peer-to-peer offers">
-                            <div id="tv3-p2p-container"></div>
-                        </section>
 
                         <!-- ═══════════════════════════════════════
                      3. PROPERTY OVERVIEW
@@ -886,12 +880,8 @@
             var params = new URLSearchParams(window.location.search);
             var assetId = params.get('asset_id') || params.get('id') || params.get('asset');
 
-            // If we have an asset ID or slug, initialize P2P offers.
             if (assetId) {
                 console.log('[Trading] Live mode — asset:', assetId);
-                if (window.MarketP2P) {
-                    window.MarketP2P.init('tv3-p2p-container', assetId);
-                }
             } else {
                 console.log('[Trading] Demo mode — using mock data');
             }

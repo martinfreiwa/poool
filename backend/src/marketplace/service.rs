@@ -226,14 +226,16 @@ pub async fn create_order(
                 match best {
                     Ok(Some(price)) => price,
                     Ok(None) => {
-                        return Err(AppError::OrderRejected(format!(
-                            "No {} orders available. Try a limit order instead.",
+                        tracing::warn!(
+                            "Redis best-price lookup returned no {} orders for asset {}. Falling back to Database.",
                             if side == OrderSide::Buy {
                                 "sell"
                             } else {
                                 "buy"
-                            }
-                        )));
+                            },
+                            asset_uuid
+                        );
+                        get_best_price_from_db(pool, asset_uuid, side).await?
                     }
                     Err(e) => {
                         tracing::warn!(
