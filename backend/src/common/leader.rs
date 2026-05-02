@@ -156,8 +156,10 @@ where
         drop(conn);
 
         tracing::warn!(
-            "🔒 [{}] worker returned — leader lock released, will re-acquire",
-            name
+            "🔒 [{}] worker returned — leader lock released, retrying in {}s",
+            name,
+            RETRY_SECS
         );
+        tokio::time::sleep(Duration::from_secs(RETRY_SECS)).await;
     }
 }
