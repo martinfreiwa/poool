@@ -134,7 +134,10 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="2" style="flex-shrink:0; margin-top:1px;">
                                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                             </svg>
-                            <span>This action cannot be undone. Your ${side === 'buy' ? 'balance' : 'shares'} will be ${side === 'buy' ? 'debited' : 'listed for sale'} immediately.</span>
+                            <span>${side === 'buy'
+                                ? `${fmt(grandTotal)} will be <strong>reserved (held)</strong> on your balance until the order matches with a seller. You can cancel any time before then to release the hold.`
+                                : `Your shares will be listed for sale and held in escrow until matched with a buyer. You can cancel any time to return them.`
+                            }</span>
                         </div>
                     </div>
 
