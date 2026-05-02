@@ -199,102 +199,6 @@
     });
   }
 
-  // ── TERMS RE-ACCEPTANCE BANNER (All platform pages) ───────────────────────
-  // Called on every platform page. Checks /api/user/legal-status — if the
-  // user hasn't accepted the current Terms version, a top banner is shown
-  // that they must accept before it dismisses. Non-blocking but persistent.
-  async function checkTermsReacceptance() {
-    // Don't show on auth pages (not logged in)
-    if (
-      window.location.pathname.startsWith("/auth/") ||
-      window.location.pathname.startsWith("/p/") ||
-      window.location.pathname === "/signup" ||
-      window.location.pathname === "/"
-    )
-      return;
-
-    // Check if already dismissed for this version in sessionStorage
-    const dismissKey = "poool_terms_dismissed_v";
-    try {
-      const res = await fetch("/api/user/legal-status");
-      if (!res.ok) return; // Not logged in or error — skip silently
-      const data = await res.json();
-
-      if (!data.needs_reaccept) return; // Up to date
-
-      const sessionDismissed = sessionStorage.getItem(dismissKey);
-      if (sessionDismissed === data.current_version) return; // Already dismissed this session
-
-      showTermsBanner(data.current_version, dismissKey);
-    } catch (_) {
-      // Silently ignore — never block the user experience
-    }
-  }
-
-  function showTermsBanner(currentVersion, dismissKey) {
-    if (document.getElementById("terms-reaccept-banner")) return; // Already showing
-
-    const banner = document.createElement("div");
-    banner.id = "terms-reaccept-banner";
-    banner.style.cssText = `
-            position:sticky; top:0; left:0; right:0; z-index:99998;
-            background:linear-gradient(135deg, #1D3557 0%, #1a2a50 100%);
-            color:#fff; padding:14px 24px;
-            font-family:'TT Norms Pro','Segoe UI',system-ui,sans-serif; font-size:14px; line-height:1.5;
-            display:flex; flex-wrap:wrap; align-items:center; gap:12px;
-            box-shadow:0 2px 12px rgba(0,0,0,0.18);
-            animation:termsSlideDown 0.35s ease-out;
-        `;
-
-    banner.innerHTML = `
-            <style>
-                @keyframes termsSlideDown { from { transform:translateY(-100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
-                .terms-accept-btn {
-                    padding:7px 18px; border-radius:8px; font-size:13px; font-weight:600;
-                    cursor:pointer; border:none; font-family:inherit; transition:all 0.2s;
-                    background:#4A7DFF; color:#fff;
-                }
-                .terms-accept-btn:hover { background:#3A6DE8; transform:translateY(-1px); }
-                .terms-view-link { color:#A3C0FF; font-weight:500; text-decoration:underline; }
-                .terms-view-link:hover { color:#fff; }
-            </style>
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#A3C0FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                <path d="M4 5h12M4 10h12M4 15h8"/>
-            </svg>
-            <span style="flex:1; min-width:260px;">
-                <strong style="color:#fff;">Our Terms have been updated</strong> — 
-                Please <a href="/terms" target="_blank" class="terms-view-link">review the changes</a> 
-                and accept the updated Terms &amp; Conditions (v${currentVersion}).
-            </span>
-            <button class="terms-accept-btn" id="terms-accept-btn">I Accept</button>
-        `;
-    document.body.insertBefore(banner, document.body.firstChild);
-
-    document
-      .getElementById("terms-accept-btn")
-      .addEventListener("click", async () => {
-        try {
-          const res = await fetch("/api/user/legal-accept", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRF-Token": typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "",
-            },
-          });
-          if (res.ok) {
-            banner.style.animation = "none";
-            banner.style.transform = "translateY(-100%)";
-            banner.style.transition = "transform 0.3s";
-            setTimeout(() => banner.remove(), 300);
-          }
-        } catch (_) {
-          // Dismiss anyway on error — don't trap users
-          sessionStorage.setItem(dismissKey, currentVersion);
-          banner.remove();
-        }
-      });
-  }
-
   // ── INITIALIZE ────────────────────────────────────────────────────────────
   function init() {
     buildTableOfContents();
@@ -302,7 +206,6 @@
     addPrintStyles();
     injectPlatformFooter();
     showCookieConsent();
-    checkTermsReacceptance();
   }
 
   // ── PLATFORM FOOTER (Legal links) ─────────────────────────────────────────

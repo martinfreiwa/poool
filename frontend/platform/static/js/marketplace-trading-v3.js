@@ -191,6 +191,24 @@
         return data;
     }
 
+    function normalizeSecondaryLocation(rawLocation, rawCountry) {
+        const location = String(rawLocation || '').trim();
+        const country = String(rawCountry || '').trim();
+        const locationParts = location.split(',').map(part => part.trim()).filter(Boolean);
+        const city = locationParts[0] || 'N/A';
+        const hasCountry = country
+            && country !== 'N/A'
+            && locationParts.some(part => part.toLowerCase() === country.toLowerCase());
+
+        return {
+            displayLocation: location
+                ? (hasCountry || !country || country === 'N/A' ? location : `${location}, ${country}`)
+                : (country || 'N/A'),
+            country: country || (locationParts.length > 1 ? locationParts[locationParts.length - 1] : 'N/A'),
+            city
+        };
+    }
+
     // ── Populate Hero ──
     function populateHero(asset) {
         document.getElementById('tv3-bc-name').textContent = asset.name;
@@ -259,94 +277,200 @@
         document.getElementById('tv3-lightbox')?.remove();
 
         let idx = Math.max(0, Math.min(startIndex, images.length - 1));
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchDeltaX = 0;
+        let isSwiping = false;
+        const returnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
         const overlay = document.createElement('div');
         overlay.id = 'tv3-lightbox';
-        overlay.style.cssText = `
-            position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999;
-            display:flex; align-items:center; justify-content:center;
-            padding:40px; cursor:zoom-out;
+        overlay.className = 'lightbox-modal lightbox-opening';
+        overlay.style.display = 'flex';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', alt ? alt + ' gallery' : 'Asset gallery');
+
+        const topBar = document.createElement('div');
+        topBar.className = 'lightbox-top-bar';
+
+        const counter = document.createElement('span');
+        counter.className = 'lightbox-counter';
+
+        const close = document.createElement('button');
+        close.className = 'lightbox-close';
+        close.type = 'button';
+        close.setAttribute('aria-label', 'Close gallery');
+        close.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
         `;
+        topBar.appendChild(counter);
+        topBar.appendChild(close);
+
+        const imageWrapper = document.createElement('div');
+        imageWrapper.className = 'lightbox-image-wrapper';
 
         const img = document.createElement('img');
-        img.style.cssText = `
-            max-width:100%; max-height:100%; object-fit:contain;
-            border-radius:8px; box-shadow:0 25px 80px rgba(0,0,0,0.5);
-            cursor:default; user-select:none;
-        `;
+        img.className = 'lightbox-content';
         img.alt = alt || '';
         img.src = images[idx];
         img.onclick = (e) => e.stopPropagation();
+        imageWrapper.appendChild(img);
 
-        const close = document.createElement('button');
-        close.setAttribute('aria-label', 'Close');
-        close.style.cssText = `
-            position:absolute; top:20px; right:24px; width:44px; height:44px;
-            border:none; border-radius:50%; background:rgba(255,255,255,0.12);
-            color:#fff; font-size:24px; cursor:pointer; display:flex;
-            align-items:center; justify-content:center;
-        `;
-        close.textContent = '×';
-
-        const counter = document.createElement('div');
-        counter.style.cssText = `
-            position:absolute; top:28px; left:50%; transform:translateX(-50%);
-            color:#fff; font-size:14px; opacity:0.8;
-        `;
+        const thumbnails = document.createElement('div');
+        thumbnails.className = 'lightbox-thumbnails';
 
         const renderCounter = () => {
-            counter.textContent = images.length > 1
-                ? `${idx + 1} / ${images.length}` : '';
+            counter.textContent = `${idx + 1} / ${images.length}`;
         };
-        renderCounter();
 
-        const navBtn = (label, onClick) => {
+        const updateThumbnails = () => {
+            thumbnails.querySelectorAll('.lightbox-thumb').forEach((thumb, thumbIdx) => {
+                thumb.classList.toggle('active', thumbIdx === idx);
+            });
+            const active = thumbnails.querySelector('.lightbox-thumb.active');
+            if (active) {
+                active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        };
+
+        const showImage = () => {
+            img.src = images[idx];
+            renderCounter();
+            updateThumbnails();
+        };
+
+        images.forEach((src, thumbIdx) => {
+            const thumb = document.createElement('button');
+            thumb.className = 'lightbox-thumb';
+            thumb.type = 'button';
+            thumb.setAttribute('aria-label', 'Go to image ' + (thumbIdx + 1));
+            const thumbImg = document.createElement('img');
+            thumbImg.alt = alt ? alt + ' ' + (thumbIdx + 1) : '';
+            thumbImg.draggable = false;
+            thumbImg.src = src;
+            thumb.appendChild(thumbImg);
+            thumb.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (thumbIdx === idx) return;
+                idx = thumbIdx;
+                showImage();
+            });
+            thumbnails.appendChild(thumb);
+        });
+
+        const navBtn = (className, label, path, onClick) => {
             const b = document.createElement('button');
+            b.className = className;
+            b.type = 'button';
             b.setAttribute('aria-label', label);
-            b.style.cssText = `
-                position:absolute; top:50%; transform:translateY(-50%);
-                width:48px; height:48px; border:none; border-radius:50%;
-                background:rgba(255,255,255,0.12); color:#fff; font-size:28px;
-                cursor:pointer; display:flex; align-items:center;
-                justify-content:center;
+            b.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    ${path}
+                </svg>
             `;
             b.onclick = (e) => { e.stopPropagation(); onClick(); };
             return b;
         };
 
-        const goPrev = () => { idx = (idx - 1 + images.length) % images.length; img.src = images[idx]; renderCounter(); };
-        const goNext = () => { idx = (idx + 1) % images.length; img.src = images[idx]; renderCounter(); };
+        const goPrev = () => {
+            idx = (idx - 1 + images.length) % images.length;
+            showImage();
+        };
+        const goNext = () => {
+            idx = (idx + 1) % images.length;
+            showImage();
+        };
 
-        const prev = navBtn('Previous', goPrev);
-        prev.style.left = '24px';
-        prev.textContent = '‹';
-        const next = navBtn('Next', goNext);
-        next.style.right = '24px';
-        next.textContent = '›';
+        const prev = navBtn(
+            'lightbox-prev',
+            'Previous image',
+            '<path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>',
+            goPrev
+        );
+        const next = navBtn(
+            'lightbox-next',
+            'Next image',
+            '<path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>',
+            goNext
+        );
 
-        overlay.appendChild(img);
-        overlay.appendChild(close);
-        overlay.appendChild(counter);
+        overlay.appendChild(topBar);
+        overlay.appendChild(imageWrapper);
         if (images.length > 1) {
             overlay.appendChild(prev);
             overlay.appendChild(next);
         }
+        overlay.appendChild(thumbnails);
         document.body.appendChild(overlay);
         document.body.style.overflow = 'hidden';
+        document.body.classList.add('lightbox-open');
+        showImage();
+        setTimeout(() => overlay.classList.remove('lightbox-opening'), 300);
 
         const closeLightbox = () => {
-            overlay.remove();
-            document.body.style.overflow = '';
-            document.removeEventListener('keydown', onKey);
+            overlay.classList.add('lightbox-closing');
+            setTimeout(() => {
+                overlay.remove();
+                document.body.style.overflow = '';
+                document.body.classList.remove('lightbox-open');
+                document.removeEventListener('keydown', onKey);
+                if (returnFocusEl && document.contains(returnFocusEl)) {
+                    returnFocusEl.focus();
+                }
+            }, 300);
         };
         const onKey = (e) => {
             if (e.key === 'Escape') closeLightbox();
             else if (e.key === 'ArrowLeft' && images.length > 1) goPrev();
             else if (e.key === 'ArrowRight' && images.length > 1) goNext();
         };
-        overlay.onclick = closeLightbox;
-        close.onclick = closeLightbox;
+
+        imageWrapper.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchDeltaX = 0;
+            isSwiping = false;
+        }, { passive: true });
+
+        imageWrapper.addEventListener('touchmove', (e) => {
+            if (e.touches.length !== 1 || images.length <= 1) return;
+            const dx = e.touches[0].clientX - touchStartX;
+            const dy = e.touches[0].clientY - touchStartY;
+            if (!isSwiping && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+                isSwiping = true;
+            }
+            if (!isSwiping) return;
+            touchDeltaX = dx;
+            e.preventDefault();
+            img.style.transition = 'none';
+            img.style.transform = 'translateX(' + dx + 'px)';
+            img.style.opacity = Math.max(0.4, 1 - Math.abs(dx) / 400).toString();
+        }, { passive: false });
+
+        imageWrapper.addEventListener('touchend', () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            img.style.transition = '';
+            img.style.transform = '';
+            img.style.opacity = '';
+            if (touchDeltaX < -50) goNext();
+            else if (touchDeltaX > 50) goPrev();
+            touchDeltaX = 0;
+        }, { passive: true });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay || e.target === imageWrapper) closeLightbox();
+        });
+        close.onclick = (e) => {
+            e.stopPropagation();
+            closeLightbox();
+        };
         document.addEventListener('keydown', onKey);
+        close.focus();
     }
 
     // ── Populate Property Details ──
@@ -611,15 +735,16 @@
             }
 
             const buyInterest = rawAsset.buyInterest ?? rawAsset.buy_interest ?? 0;
+            const locationParts = normalizeSecondaryLocation(rawAsset.location, rawAsset.country);
 
             // Map backend structure to UI standard
             asset = {
                 slug: rawAsset.slug,
                 name: rawAsset.name,
                 type: rawAsset.type,
-                location: rawAsset.location + (rawAsset.country ? ', ' + rawAsset.country : ''),
-                country: rawAsset.country || 'N/A',
-                city: rawAsset.location || 'N/A',
+                location: locationParts.displayLocation,
+                country: locationParts.country,
+                city: locationParts.city,
                 description: rawAsset.description || 'No description available for this property.',
                 tokenPrice: rawAsset.price / 100,
                 annualYield: rawAsset.roi,

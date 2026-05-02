@@ -355,7 +355,7 @@ body.tv3-body {
 }
 
 .tv3-hero-title {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.2;
@@ -1074,6 +1074,10 @@ body.tv3-body {
 .tv3-doc-dl:hover {
     background: var(--tv3-blue-bg);
     border-color: var(--tv3-blue-border);
+}
+.tv3-doc-dl-icon {
+    color: var(--tv3-text);
+    display: block;
 }
 
 /* ═══════════════════════════════════════
@@ -1862,6 +1866,218 @@ body.tv3-body {
 }
 
 /* ═══════════════════════════════════════
+   V3 PROPERTY DETAIL CONTAINMENT
+   Overrides legacy property-detail fixed widths/heights inside the
+   narrower trading page left card.
+   ═══════════════════════════════════════ */
+.tv3-main-card {
+    overflow: hidden;
+}
+
+.tv3-main-card :where(
+    .info-badge,
+    .info-badge-text,
+    .funding-step-base,
+    .funding-step-text,
+    .leasing-content-box,
+    .leasing-item,
+    .leasing-item-header,
+    .strategy-card,
+    .strategy-content,
+    .strategy-item,
+    .tv3-calculator-div,
+    .tv3-calc-statistics-card,
+    .tv3-doc-tabs,
+    .tv3-docs,
+    .tv3-doc-item,
+    .tv3-doc-info,
+    .risk-strategy-card,
+    .faq-section,
+    .faq-container,
+    .faq-content,
+    .faq-item,
+    .faq-item-content,
+    .faq-text-wrapper,
+    .faq-answer
+) {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.tv3-main-card :where(
+    .info-badge-text,
+    .info-badge-text h4,
+    .info-badge-text p,
+    .funding-step-heading,
+    .funding-step-date,
+    .funding-step-description,
+    .payment-badge,
+    .leasing-item-header h3,
+    .leasing-item p,
+    .strategy-text h3,
+    .strategy-text p,
+    .strategy-item h4,
+    .strategy-item p,
+    .tv3-calc-stat-label,
+    .tv3-calc-stat-value,
+    .tv3-doc-info span,
+    .faq-text,
+    .faq-answer p
+) {
+    overflow-wrap: anywhere;
+    word-break: normal;
+    white-space: normal;
+}
+
+.tv3-main-card #property-info-div,
+.tv3-main-card #investment-type-section,
+.tv3-main-card #funding-section,
+.tv3-main-card #leasing-strategy-section,
+.tv3-main-card .financial-section,
+.tv3-main-card #calculator-section,
+.tv3-main-card .location-section,
+.tv3-main-card #developer-section,
+.tv3-main-card .documents-section,
+.tv3-main-card #risk-notification-section,
+.tv3-main-card .faq-section-wrapper {
+    padding-inline: clamp(16px, 3vw, 28px);
+}
+
+.tv3-main-card .info-badge {
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.tv3-main-card .info-badge-icon {
+    flex: 0 0 24px;
+}
+
+.tv3-main-card .info-badge-text {
+    flex: 1 1 auto;
+}
+
+.tv3-main-card .info-badge-text h4,
+.tv3-main-card .info-badge-text p {
+    width: 100%;
+}
+
+.tv3-main-card .funding-step-base,
+.tv3-main-card .funding-step-base.last,
+.tv3-main-card .funding-connector-wrap,
+.tv3-main-card .funding-step-base.last .funding-connector-wrap,
+.tv3-main-card .funding-step-text,
+.tv3-main-card .funding-step-base:nth-child(2) .funding-step-text,
+.tv3-main-card .funding-step-base.last .funding-step-text,
+.tv3-main-card .funding-text-icon-row,
+.tv3-main-card .funding-step-heading,
+.tv3-main-card .funding-step-date,
+.tv3-main-card .funding-step-description,
+.tv3-main-card .funding-step-base.last .funding-step-description,
+.tv3-main-card .leasing-item-header h3,
+.tv3-main-card .faq-text {
+    width: auto;
+    height: auto;
+}
+
+.tv3-main-card .funding-step-text {
+    flex: 1 1 auto;
+}
+
+.tv3-main-card .funding-step-base {
+    min-height: 0;
+    width: 100%;
+}
+
+.tv3-main-card .payment-badge {
+    max-width: 100%;
+}
+
+.tv3-main-card .leasing-item-header h3 {
+    flex: 1 1 auto;
+    line-height: 1.25;
+}
+
+.tv3-main-card .tv3-calc-statistics-card {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    overflow: hidden;
+}
+
+.tv3-main-card .tv3-calc-stat-legend {
+    justify-content: center;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+.tv3-main-card .tv3-calc-stat-value {
+    max-width: 100%;
+}
+
+.tv3-main-card .tv3-doc-tabs {
+    width: 100%;
+}
+
+.tv3-main-card .tv3-doc-info {
+    flex: 1 1 auto;
+}
+
+.tv3-main-card .tv3-doc-info span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tv3-main-card .tv3-doc-dl {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+}
+
+.tv3-main-card .faq-section,
+.tv3-main-card .faq-container,
+.tv3-main-card .faq-content,
+.tv3-main-card .faq-item,
+.tv3-main-card .faq-item-content,
+.tv3-main-card .faq-text-wrapper {
+    width: 100%;
+}
+
+.tv3-main-card .faq-section {
+    overflow: hidden;
+}
+
+.tv3-main-card .faq-container {
+    padding-inline: clamp(16px, 4vw, 32px);
+}
+
+.tv3-main-card .faq-content {
+    align-self: auto;
+}
+
+.tv3-main-card .faq-item {
+    min-width: 0;
+}
+
+.tv3-main-card .faq-item-content {
+    gap: 16px;
+}
+
+.tv3-main-card .faq-text-wrapper {
+    flex: 1 1 auto;
+}
+
+.tv3-main-card .faq-text {
+    min-height: 0;
+    line-height: 1.35;
+}
+
+.tv3-main-card .faq-icon-wrapper {
+    flex: 0 0 24px;
+}
+
+/* ═══════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════ */
 @media (max-width: 1100px) {
@@ -2227,4 +2443,3 @@ textarea:focus-visible {
         flex-wrap: wrap;
     }
 }
-
