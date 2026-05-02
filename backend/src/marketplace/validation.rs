@@ -259,7 +259,7 @@ pub async fn check_buyer_balance(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     user_id: Uuid,
     required_cents: i64,
-) -> Result<i64, OrderRejection> {
+) -> Result<i64, AppError> {
     let row = sqlx::query!(
         r#"SELECT balance_cents, held_balance_cents
            FROM wallets
@@ -269,8 +269,7 @@ pub async fn check_buyer_balance(
     )
     .fetch_optional(&mut **tx)
     .await
-    .ok()
-    .flatten();
+    .map_err(AppError::Database)?;
 
     match row {
         Some(wallet) => {
@@ -279,14 +278,16 @@ pub async fn check_buyer_balance(
                 return Err(OrderRejection::InsufficientBalance {
                     available_cents: available,
                     required_cents,
-                });
+                }
+                .into_app_error());
             }
             Ok(available)
         }
         None => Err(OrderRejection::InsufficientBalance {
             available_cents: 0,
             required_cents,
-        }),
+        }
+        .into_app_error()),
     }
 }
 
@@ -298,7 +299,7 @@ pub async fn check_seller_tokens(
     user_id: Uuid,
     asset_id: Uuid,
     required_tokens: i32,
-) -> Result<i32, OrderRejection> {
+) -> Result<i32, AppError> {
     let row = sqlx::query!(
         r#"SELECT tokens_owned, held_tokens
            FROM investments
@@ -309,8 +310,7 @@ pub async fn check_seller_tokens(
     )
     .fetch_optional(&mut **tx)
     .await
-    .ok()
-    .flatten();
+    .map_err(AppError::Database)?;
 
     match row {
         Some(inv) => {
@@ -319,14 +319,16 @@ pub async fn check_seller_tokens(
                 return Err(OrderRejection::InsufficientTokens {
                     owned: available,
                     requested: required_tokens,
-                });
+                }
+                .into_app_error());
             }
             Ok(available)
         }
         None => Err(OrderRejection::InsufficientTokens {
             owned: 0,
             requested: required_tokens,
-        }),
+        }
+        .into_app_error()),
     }
 }
 
@@ -341,23 +343,25 @@ pub async fn check_concentration_limit_tx(
     asset_id: Uuid,
     additional_tokens: i32,
     total_tokens: i32,
-) -> Result<(), OrderRejection> {
+) -> Result<(), AppError> {
     if total_tokens <= 0 {
-        return Err(OrderRejection::AssetNotTradable);
+        return Err(OrderRejection::AssetNotTradable.into_app_error());
     }
 
     let current_owned: i32 = sqlx::query_scalar(
         "SELECT COALESCE(SUM(tokens_owned), 0)::int4
-         FROM investments
-         WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'
-         FOR UPDATE",
+         FROM (
+             SELECT tokens_owned
+             FROM investments
+             WHERE user_id = $1 AND asset_id = $2 AND status != 'exited'
+             FOR UPDATE
+         ) locked_investments",
     )
     .bind(user_id)
     .bind(asset_id)
     .fetch_one(&mut **tx)
     .await
-    .ok()
-    .unwrap_or(0);
+    .map_err(AppError::Database)?;
 
     let new_total = current_owned + additional_tokens;
     let new_pct = (new_total as f64 / total_tokens as f64) * 100.0;
@@ -369,7 +373,8 @@ pub async fn check_concentration_limit_tx(
             current_pct,
             requested_pct,
             max_pct: MAX_CONCENTRATION_PCT,
-        });
+        }
+        .into_app_error());
     }
 
     Ok(())

@@ -344,9 +344,7 @@ pub async fn create_order(
     // the hold placement (H7 — closes concurrent-buy race window).
     match side {
         OrderSide::Buy => {
-            validation::check_buyer_balance(&mut tx, user_id, buyer_hold_total_cents)
-                .await
-                .map_err(|r| r.into_app_error())?;
+            validation::check_buyer_balance(&mut tx, user_id, buyer_hold_total_cents).await?;
             validation::check_concentration_limit_tx(
                 &mut tx,
                 user_id,
@@ -354,13 +352,10 @@ pub async fn create_order(
                 req.quantity,
                 total_tokens,
             )
-            .await
-            .map_err(|r| r.into_app_error())?;
+            .await?;
         }
         OrderSide::Sell => {
-            validation::check_seller_tokens(&mut tx, user_id, asset_uuid, req.quantity)
-                .await
-                .map_err(|r| r.into_app_error())?;
+            validation::check_seller_tokens(&mut tx, user_id, asset_uuid, req.quantity).await?;
         }
     }
 
