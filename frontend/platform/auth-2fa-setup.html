@@ -1,140 +1,166 @@
-{% with title="Setup Two-Factor Authentication | POOOL", extra_css=['login'] %}{% include "components/head.html" %}{%
-endwith %}
+{% with title="Setup Two-Factor Authentication | POOOL" %}{% include "components/head.html" %}{% endwith %}
 
-<body class="auth-2fa-setup-page">
-    <div id="login-container">
-        <section id="left-section">
-            <div id="container" class="auth-setup-container">
-                <div id="content">
-                    <div id="header">
-                        <div id="logo-pool">
-                            <img src="/static/images/icons/logo-pool.svg" alt="POOOL" width="184" height="48" />
-                        </div>
-                        <div class="auth-setup-badge" aria-hidden="true">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" />
-                                <path d="M12 14v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                            </svg>
-                        </div>
-                        <div id="text-and-supporting-text">
-                            <h1 id="text">Set up two-factor authentication</h1>
-                            <p id="supporting-text">Protect your POOOL account with a one-time code from your authenticator app.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div id="content-inner" class="auth-setup-panel">
-                        <div class="auth-setup-step auth-setup-step--scan">
-                            <div class="auth-setup-step__label">
-                                <span class="auth-setup-step__number">1</span>
-                                <div>
-                                    <h2>Scan this QR code</h2>
-                                    <p>Open Google Authenticator, Authy, or another TOTP app and scan the code below.</p>
-                                </div>
-                            </div>
-                            <div class="auth-setup-qr">
-                                <img src="data:image/png;base64,{{ qr_code }}" alt="Authenticator setup QR code" class="qr-code" />
-                            </div>
-                        </div>
-
-                        <div class="auth-setup-step">
-                            <div class="auth-setup-step__label">
-                                <span class="auth-setup-step__number">2</span>
-                                <div>
-                                    <h2>Enter the secret manually</h2>
-                                    <p>Use this setup key if your authenticator cannot scan the QR code.</p>
-                                </div>
-                            </div>
-                            <div class="auth-setup-secret" aria-label="Manual authenticator secret">
-                                {{ secret }}
-                            </div>
-                        </div>
-
-                        <div class="auth-setup-step auth-setup-step--verify">
-                            <div class="auth-setup-step__label">
-                                <span class="auth-setup-step__number">3</span>
-                                <div>
-                                    <h2>Verify setup</h2>
-                                    <p>Enter the 6-digit code from your app to confirm two-factor authentication.</p>
-                                </div>
-                            </div>
-
-                            <div id="auth-error" role="alert" aria-live="polite"></div>
-                            <form hx-post="/auth/2fa/setup" hx-target="#auth-error" hx-swap="innerHTML"
-                                hx-indicator="#loading-indicator"
-                                hx-on::before-request="this.querySelector('button[type=submit]').disabled = true; this.setAttribute('aria-busy', 'true')"
-                                hx-on::after-request="this.querySelector('button[type=submit]').disabled = false; this.setAttribute('aria-busy', 'false')"
-                                class="auth-setup-form">
-                                <input type="hidden" name="setup_token" value="{{ setup_token }}" />
-                                <div id="input-field" class="input-field">
-                                    <div id="input-with-label" class="input-with-label">
-                                        <label for="totp-code-input" class="input-label">Authentication code</label>
-                                        <div id="email-input-wrapper">
-                                            <input type="text" id="totp-code-input" name="code" placeholder="000000"
-                                                inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
-                                                autocomplete="one-time-code" aria-describedby="auth-error" required />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button type="submit" id="login-button">
-                                    <div id="button-text-padding">
-                                        <span id="button-text">Enable 2FA</span>
-                                        <span id="loading-indicator" class="htmx-indicator" aria-hidden="true">Verifying...</span>
-                                    </div>
-                                </button>
-                            </form>
-                        </div>
-
-                        <div id="signup-row">
-                            <span id="signup-text">Changed your mind?</span>
-                            <a href="/logout" id="signup-link"><span id="signup-link-text">Log out</span></a>
-                        </div>
-                    </div>
+<body style="margin:0; min-height:100vh; background:#FAFAFA; font-family:'TT Norms Pro','Inter',system-ui,sans-serif; color:#344054;">
+    <main style="
+        min-height:100vh;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:48px 16px;
+    ">
+        <div style="
+            width:100%;
+            max-width:480px;
+            background:#FFFFFF;
+            border:1px solid #E5E7EB;
+            border-radius:12px;
+            box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06);
+            padding:32px;
+        ">
+            <!-- Brand + lock icon -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:16px; margin-bottom:24px;">
+                <img src="/static/images/icons/logo-pool.svg" alt="POOOL" height="36" style="display:block;" />
+                <div style="
+                    width:48px; height:48px; border-radius:12px;
+                    background:rgba(0,0,255,0.08); color:#0000FF;
+                    display:flex; align-items:center; justify-content:center;
+                ">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
                 </div>
             </div>
-        </section>
-        <section id="right-section">
-            <div class="auth-setup-side-panel" aria-label="POOOL security details">
-                <div class="auth-setup-side-panel__top">
-                    <img src="/static/images/logos/poool-icon.svg" alt="" width="48" height="48" aria-hidden="true" />
-                    <span>POOOL Security</span>
-                </div>
-                <div class="auth-setup-side-panel__content">
-                    <p class="auth-setup-side-panel__eyebrow">Account protection</p>
-                    <h2>One extra step for high-value account access.</h2>
-                    <p>Authenticator codes help protect settings, withdrawals, and sensitive account changes.</p>
-                </div>
-                <div class="auth-setup-checklist" aria-label="Security coverage">
-                    <div class="auth-setup-checklist__item">
-                        <span aria-hidden="true">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </span>
-                        <p>Time-based one-time codes</p>
-                    </div>
-                    <div class="auth-setup-checklist__item">
-                        <span aria-hidden="true">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </span>
-                        <p>Compatible with common authenticator apps</p>
-                    </div>
-                    <div class="auth-setup-checklist__item">
-                        <span aria-hidden="true">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </span>
-                        <p>Required before protected account actions</p>
-                    </div>
-                </div>
+
+            <!-- Title -->
+            <div style="text-align:center; margin-bottom:24px;">
+                <h1 style="margin:0 0 8px; font-size:24px; font-weight:700; color:#181D27; letter-spacing:-0.01em;">
+                    Set up two-factor authentication
+                </h1>
+                <p style="margin:0; font-size:14px; color:#667085; line-height:1.5;">
+                    Protect your POOOL account with a one-time code from your authenticator app.
+                </p>
             </div>
-        </section>
-    </div>
+
+            <!-- Step 1: QR -->
+            <section style="margin-bottom:24px;">
+                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:12px;">
+                    <span style="
+                        flex-shrink:0;
+                        width:24px; height:24px; border-radius:50%;
+                        background:#0000FF; color:#fff;
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:12px; font-weight:700;
+                    ">1</span>
+                    <div>
+                        <h2 style="margin:0 0 2px; font-size:15px; font-weight:600; color:#181D27;">Scan the QR code</h2>
+                        <p style="margin:0; font-size:13px; color:#667085;">Open Google Authenticator, Authy, or any TOTP app.</p>
+                    </div>
+                </div>
+                <div style="
+                    background:#FFFFFF; border:1px solid #E5E7EB; border-radius:12px;
+                    padding:16px; display:flex; justify-content:center;
+                ">
+                    <img src="data:image/png;base64,{{ qr_code }}" alt="Authenticator setup QR code" width="180" height="180" style="display:block; border-radius:4px;" />
+                </div>
+            </section>
+
+            <!-- Step 2: Manual secret -->
+            <section style="margin-bottom:24px;">
+                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:12px;">
+                    <span style="
+                        flex-shrink:0;
+                        width:24px; height:24px; border-radius:50%;
+                        background:#0000FF; color:#fff;
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:12px; font-weight:700;
+                    ">2</span>
+                    <div>
+                        <h2 style="margin:0 0 2px; font-size:15px; font-weight:600; color:#181D27;">Or enter the key manually</h2>
+                        <p style="margin:0; font-size:13px; color:#667085;">Use this if your app can't scan the QR.</p>
+                    </div>
+                </div>
+                <div style="
+                    background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8px;
+                    padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace;
+                    font-size:13px; color:#181D27; word-break:break-all; letter-spacing:0.05em;
+                ">{{ secret }}</div>
+            </section>
+
+            <!-- Step 3: Verify -->
+            <section style="margin-bottom:24px;">
+                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:12px;">
+                    <span style="
+                        flex-shrink:0;
+                        width:24px; height:24px; border-radius:50%;
+                        background:#0000FF; color:#fff;
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:12px; font-weight:700;
+                    ">3</span>
+                    <div>
+                        <h2 style="margin:0 0 2px; font-size:15px; font-weight:600; color:#181D27;">Verify and enable</h2>
+                        <p style="margin:0; font-size:13px; color:#667085;">Enter the 6-digit code from your authenticator app.</p>
+                    </div>
+                </div>
+
+                <div id="auth-error" role="alert" aria-live="polite" style="
+                    margin-bottom:12px; font-size:13px; color:#B42318;
+                "></div>
+
+                <form hx-post="/auth/2fa/setup" hx-target="#auth-error" hx-swap="innerHTML"
+                    hx-on::before-request="this.querySelector('button[type=submit]').disabled = true; this.setAttribute('aria-busy', 'true')"
+                    hx-on::after-request="this.querySelector('button[type=submit]').disabled = false; this.setAttribute('aria-busy', 'false')">
+                    <input type="hidden" name="setup_token" value="{{ setup_token }}" />
+
+                    <label for="totp-code-input" style="
+                        display:block; margin-bottom:6px;
+                        font-size:13px; font-weight:500; color:#344054;
+                    ">Authentication code</label>
+                    <input type="text" id="totp-code-input" name="code" placeholder="000000"
+                        inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                        autocomplete="one-time-code" aria-describedby="auth-error" required
+                        style="
+                            width:100%; padding:12px 14px;
+                            font-family:inherit; font-size:18px; font-weight:600;
+                            color:#181D27; letter-spacing:0.3em; text-align:center;
+                            background:#FFFFFF; border:1px solid #D0D5DD; border-radius:8px;
+                            outline:none; transition:border-color 120ms, box-shadow 120ms;
+                            box-sizing:border-box;
+                        "
+                        onfocus="this.style.borderColor='#0000FF'; this.style.boxShadow='0 0 0 3px rgba(0,0,255,0.12)';"
+                        onblur="this.style.borderColor='#D0D5DD'; this.style.boxShadow='none';" />
+
+                    <button type="submit" style="
+                        width:100%; margin-top:16px;
+                        padding:12px 16px;
+                        background:#0000FF; color:#FFFFFF;
+                        border:none; border-radius:8px;
+                        font-family:inherit; font-size:15px; font-weight:600;
+                        cursor:pointer;
+                        transition:background-color 120ms, opacity 120ms;
+                    "
+                    onmouseover="this.style.background='#0000DD'"
+                    onmouseout="this.style.background='#0000FF'">
+                        <span>Enable 2FA</span>
+                        <span class="htmx-indicator" aria-hidden="true" style="display:none;">Verifying…</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Footer -->
+            <div style="text-align:center; padding-top:16px; border-top:1px solid #E5E7EB;">
+                <span style="font-size:13px; color:#667085;">Changed your mind?</span>
+                <a href="/logout" style="margin-left:6px; font-size:13px; font-weight:500; color:#0000FF; text-decoration:none;">Log out</a>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        #totp-code-input::placeholder { color:#D0D5DD; letter-spacing:0.3em; font-weight:500; }
+        button[disabled] { opacity:0.6; cursor:not-allowed; }
+        button[aria-busy="true"] .htmx-indicator { display:inline !important; }
+        button[aria-busy="true"] span:first-child { display:none; }
+    </style>
 </body>
 
 </html>
