@@ -554,13 +554,13 @@ async fn settle_trade(
         None => {
             // Buyer doesn't have an investment — create one
             sqlx::query(
-                "INSERT INTO investments (user_id, asset_id, tokens_owned, purchase_price_cents, status)
-                 VALUES ($1, $2, $3, $4, 'active')",
+                "INSERT INTO investments (user_id, asset_id, tokens_owned, purchase_value_cents, current_value_cents, status)
+                 VALUES ($1, $2, $3, $4, $4, 'active')",
             )
             .bind(event.buyer_user_id)
             .bind(event.asset_id)
             .bind(event.match_quantity)
-            .bind(event.match_price_cents)
+            .bind(total_cents)
             .execute(&mut *tx)
             .await
             .map_err(AppError::Database)?;
