@@ -13,7 +13,7 @@
 /// - Failed settlements stay in the queue and are retried.
 /// - No `unwrap()` in any production path.
 use deadpool_redis::Pool as RedisPool;
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use super::models::MatchEvent;
@@ -149,7 +149,11 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                 let _ = orderbook::ack_match_processed(redis, &event_json).await;
             }
             Err(e) => {
-                tracing::error!("❌ Settlement FAILED: {} — re-queuing event for retry", e);
+                tracing::error!(
+                    "❌ Settlement FAILED: {} (detail: {}) — re-queuing event for retry",
+                    e,
+                    e.detail()
+                );
                 sentry::capture_message(
                     &format!(
                         "Settlement failed: asset={}, price={}, qty={}: {}",
@@ -190,6 +194,121 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
 // ═══════════════════════════════════════════════════════════════
 // ── 8-STEP ACID SETTLEMENT ────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+
+async fn credit_seller_cash_wallet(
+    tx: &mut Transaction<'_, Postgres>,
+    seller_user_id: Uuid,
+    amount_cents: i64,
+) -> Result<(), AppError> {
+    if amount_cents < 0 {
+        return Err(AppError::Internal(format!(
+            "Negative seller credit attempted (user={}, amount={})",
+            seller_user_id, amount_cents
+        )));
+    }
+
+    let wallet_id = sqlx::query_scalar::<_, Uuid>(
+        r#"INSERT INTO wallets (user_id, wallet_type, currency, balance_cents)
+           VALUES ($1, 'cash', 'USD', $2)
+           ON CONFLICT (user_id, wallet_type, currency)
+           DO UPDATE SET
+               balance_cents = wallets.balance_cents + EXCLUDED.balance_cents,
+               updated_at = NOW()
+           RETURNING id"#,
+    )
+    .bind(seller_user_id)
+    .bind(amount_cents)
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(AppError::Database)?;
+
+    tracing::debug!(
+        "Credited seller cash wallet {} by {} cents",
+        wallet_id,
+        amount_cents
+    );
+
+    Ok(())
+}
+
+async fn credit_platform_fee_wallet(
+    tx: &mut Transaction<'_, Postgres>,
+    amount_cents: i64,
+) -> Result<(), AppError> {
+    if amount_cents <= 0 {
+        return Ok(());
+    }
+
+    let existing_wallet_id: Option<Uuid> = sqlx::query_scalar(
+        r#"SELECT id
+           FROM wallets
+           WHERE wallet_type = 'platform_fee' AND currency = 'USD'
+           ORDER BY created_at ASC
+           LIMIT 1
+           FOR UPDATE"#,
+    )
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(AppError::Database)?;
+
+    let wallet_id = match existing_wallet_id {
+        Some(id) => id,
+        None => {
+            let admin_id: Option<Uuid> = sqlx::query_scalar(
+                r#"SELECT id
+                   FROM users
+                   WHERE email IN ('admin@poool.app', 'support@traffic-creator.com')
+                   ORDER BY CASE
+                       WHEN email = 'admin@poool.app' THEN 0
+                       WHEN email = 'support@traffic-creator.com' THEN 1
+                       ELSE 2
+                   END
+                   LIMIT 1"#,
+            )
+            .fetch_optional(&mut **tx)
+            .await
+            .map_err(AppError::Database)?;
+
+            let admin_id = admin_id.ok_or_else(|| {
+                AppError::Internal(
+                    "Cannot create platform fee wallet: no platform admin user exists".into(),
+                )
+            })?;
+
+            sqlx::query_scalar::<_, Uuid>(
+                r#"INSERT INTO wallets (user_id, wallet_type, currency, balance_cents)
+                   VALUES ($1, 'platform_fee', 'USD', 0)
+                   ON CONFLICT (user_id, wallet_type, currency)
+                   DO UPDATE SET updated_at = wallets.updated_at
+                   RETURNING id"#,
+            )
+            .bind(admin_id)
+            .fetch_one(&mut **tx)
+            .await
+            .map_err(AppError::Database)?
+        }
+    };
+
+    let affected = sqlx::query(
+        "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
+         WHERE id = $2 AND wallet_type = 'platform_fee' AND currency = 'USD'",
+    )
+    .bind(amount_cents)
+    .bind(wallet_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(AppError::Database)?
+    .rows_affected();
+
+    if affected != 1 {
+        return Err(AppError::Internal(format!(
+            "Platform fee wallet credit failed (wallet={}, affected={})",
+            wallet_id, affected
+        )));
+    }
+
+    Ok(())
+}
 
 /// Settle a single trade in an ACID transaction.
 ///
@@ -345,22 +464,7 @@ async fn settle_trade(
     // ── Step 5: Transfer balance ─────────────────────────────
     // Seller receives proceeds (total - fee). Lock seller wallet FOR UPDATE
     // to ensure atomicity with concurrent settlements / withdrawals.
-    let seller_wallet_affected = sqlx::query(
-        "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
-         WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
-    )
-    .bind(seller_proceeds)
-    .bind(event.seller_user_id)
-    .execute(&mut *tx)
-    .await
-    .map_err(AppError::Database)?
-    .rows_affected();
-    if seller_wallet_affected != 1 {
-        return Err(AppError::Internal(format!(
-            "Seller wallet not uniquely matched (user={}, affected={})",
-            event.seller_user_id, seller_wallet_affected
-        )));
-    }
+    credit_seller_cash_wallet(&mut tx, event.seller_user_id, seller_proceeds).await?;
 
     // Buyer's balance was already held at order creation.
     // The held amount is consumed — actual balance_cents doesn't change
@@ -567,28 +671,10 @@ async fn settle_trade(
         )));
     }
 
-    // Collect platform fee into the singleton platform wallet. Require
-    // rows_affected == 1 so an unseeded or accidentally duplicated
-    // platform_fee wallet row aborts the settlement instead of silently
-    // losing or duplicating the fee credit.
-    // Total platform fee = buyer_fee + seller_fee.
-    if total_fee_cents > 0 {
-        let affected = sqlx::query(
-            "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
-             WHERE wallet_type = 'platform_fee' AND currency = 'USD'",
-        )
-        .bind(total_fee_cents)
-        .execute(&mut *tx)
-        .await
-        .map_err(AppError::Database)?
-        .rows_affected();
-        if affected != 1 {
-            return Err(AppError::Internal(format!(
-                "Platform fee wallet not uniquely matched (affected={})",
-                affected
-            )));
-        }
-    }
+    // Collect platform fee into the canonical platform wallet. Older seed
+    // states can miss this wallet; create it once instead of letting a
+    // valid match loop forever in settlement retry.
+    credit_platform_fee_wallet(&mut tx, total_fee_cents).await?;
 
     // ── Step 9: Immutable audit log entries ───────────────────
     // One row per fund movement, inside the same transaction so audit and
