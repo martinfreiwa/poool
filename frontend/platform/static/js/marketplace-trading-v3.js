@@ -800,17 +800,15 @@
                     }));
                     window.location.href = '/trade-success';
                 } else if (res.status === 428) {
-                    // Step-up 2FA required (trades >= $500). For unenrolled
-                    // users, /auth/2fa/setup renders enrollment form. For
-                    // enrolled users, it redirects to settings where a
-                    // step-up verify modal handles the case. Either path
-                    // brings the user toward a working state instead of a
-                    // dead-end toast.
+                    // Step-up 2FA required (trades >= $500). Send to the
+                    // step-up verify page; if user isn't enrolled yet it
+                    // server-redirects to /auth/2fa/setup. After verify
+                    // (or enrollment), user is sent back here via return_to.
                     const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-                    showTradeToast('Two-factor authentication required — redirecting to setup…', 'info');
+                    showTradeToast('Two-factor authentication required…', 'info');
                     setTimeout(() => {
-                        window.location.href = `/auth/2fa/setup?return_to=${returnTo}`;
-                    }, 800);
+                        window.location.href = `/auth/2fa/step-up?return_to=${returnTo}&action=trade`;
+                    }, 600);
                 } else {
                     showTradeToast(result.error || 'Order failed', 'error');
                     btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';

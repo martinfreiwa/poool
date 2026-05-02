@@ -1,0 +1,161 @@
+{% with title="Verify your identity | POOOL" %}{% include "components/head.html" %}{% endwith %}
+
+<body style="margin:0; min-height:100vh; background:#F4F6FB; font-family:'TT Norms Pro','Inter',system-ui,sans-serif; color:#344054; -webkit-font-smoothing:antialiased;">
+    <a href="{{ return_to }}" aria-label="Cancel and go back" style="
+        position:fixed; top:24px; left:24px; z-index:20;
+        display:inline-flex; align-items:center; gap:8px;
+        padding:10px 12px;
+        color:#344054; background:#FFFFFF;
+        border:1px solid #E5E7EB; border-radius:10px;
+        box-shadow:0 1px 2px rgba(16,24,40,0.05);
+        font-size:14px; font-weight:600; text-decoration:none;
+    ">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 12H5" /><path d="m12 19-7-7 7-7" />
+        </svg>
+        Cancel
+    </a>
+
+    <main style="
+        min-height:100vh;
+        display:flex; align-items:center; justify-content:center;
+        padding:48px 16px;
+    ">
+        <div style="
+            width:100%; max-width:440px;
+            background:#FFFFFF; border:1px solid #E5E7EB; border-radius:16px;
+            box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 4px 12px rgba(16,24,40,0.04);
+            padding:40px 32px;
+        ">
+            <!-- Brand + lock -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:16px; margin-bottom:24px;">
+                <img src="/static/images/icons/logo-pool.svg" alt="POOOL" height="32" style="display:block;" />
+                <div style="
+                    width:56px; height:56px; border-radius:14px;
+                    background:rgba(0,0,255,0.08); color:#0000FF;
+                    display:flex; align-items:center; justify-content:center;
+                ">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                </div>
+            </div>
+
+            <div style="text-align:center; margin-bottom:24px;">
+                <h1 style="margin:0 0 8px; font-size:22px; font-weight:700; color:#181D27; letter-spacing:-0.01em;">
+                    Verify your identity
+                </h1>
+                <p style="margin:0; font-size:14px; color:#667085; line-height:1.55;">
+                    Enter the 6-digit code from your authenticator app to continue.
+                </p>
+            </div>
+
+            <div id="auth-error" role="alert" aria-live="polite" style="
+                margin-bottom:12px; min-height:1.4em;
+                font-size:13px; color:#B42318; text-align:center;
+            "></div>
+
+            <form id="step-up-form">
+                <label for="code-input" style="
+                    display:block; margin-bottom:6px;
+                    font-size:13px; font-weight:500; color:#344054;
+                ">Authentication code</label>
+                <input type="text" id="code-input" name="code" placeholder="000 000"
+                    inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                    autocomplete="one-time-code" required autofocus
+                    style="
+                        width:100%; padding:14px;
+                        font-family:inherit; font-size:22px; font-weight:600;
+                        color:#181D27; letter-spacing:0.4em; text-align:center;
+                        background:#FFFFFF; border:1px solid #D0D5DD; border-radius:10px;
+                        outline:none; transition:border-color 120ms, box-shadow 120ms;
+                        box-sizing:border-box;
+                    "
+                    onfocus="this.style.borderColor='#0000FF'; this.style.boxShadow='0 0 0 3px rgba(0,0,255,0.12)';"
+                    onblur="this.style.borderColor='#D0D5DD'; this.style.boxShadow='none';" />
+
+                <button type="submit" id="submit-btn" style="
+                    width:100%; margin-top:16px;
+                    display:flex; align-items:center; justify-content:center; gap:8px;
+                    padding:14px 16px;
+                    background:#0000FF; color:#FFFFFF;
+                    border:none; border-radius:10px;
+                    font-family:inherit; font-size:15px; font-weight:600;
+                    cursor:pointer;
+                    transition:background-color 120ms, opacity 120ms;
+                    box-shadow:0 1px 2px rgba(0,0,255,0.15);
+                "
+                onmouseover="this.style.background='#0000DD'"
+                onmouseout="this.style.background='#0000FF'">
+                    <span class="btn-label">Verify</span>
+                    <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                    </svg>
+                </button>
+            </form>
+
+            <div style="margin-top:24px; text-align:center; font-size:12px; color:#98A2B3;">
+                Codes refresh every 30 seconds.
+            </div>
+        </div>
+    </main>
+
+    <style>
+        #code-input::placeholder { color:#D0D5DD; letter-spacing:0.4em; font-weight:500; }
+        button[disabled] { opacity:0.6; cursor:not-allowed; }
+    </style>
+
+    <script>
+        (function() {
+            const form = document.getElementById('step-up-form');
+            const input = document.getElementById('code-input');
+            const btn = document.getElementById('submit-btn');
+            const errEl = document.getElementById('auth-error');
+            const returnTo = {{ return_to | tojson }};
+            const action = {{ action | tojson }};
+
+            // Auto-submit when 6 digits entered
+            input.addEventListener('input', () => {
+                input.value = input.value.replace(/\D/g, '').slice(0, 6);
+                if (input.value.length === 6) {
+                    form.requestSubmit();
+                }
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errEl.textContent = '';
+                btn.disabled = true;
+                btn.querySelector('.btn-label').textContent = 'Verifying…';
+                try {
+                    const res = await fetch('/auth/2fa/step-up', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: input.value, action: action })
+                    });
+                    if (res.ok) {
+                        window.location.href = returnTo || '/';
+                        return;
+                    }
+                    let msg = 'Verification failed. Try again.';
+                    try {
+                        const body = await res.json();
+                        if (body && body.error) msg = body.error;
+                    } catch (_) {}
+                    errEl.textContent = msg;
+                    input.value = '';
+                    input.focus();
+                } catch (err) {
+                    errEl.textContent = 'Network error — try again.';
+                } finally {
+                    btn.disabled = false;
+                    btn.querySelector('.btn-label').textContent = 'Verify';
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>

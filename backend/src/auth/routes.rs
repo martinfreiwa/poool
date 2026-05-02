@@ -69,7 +69,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/signup", get(signup_page).post(signup_submit))
         .route("/2fa", get(totp_verify_page).post(totp_verify_submit))
         .route("/2fa/setup", get(totp_setup_page).post(totp_setup_submit))
-        .route("/2fa/step-up", post(step_up_verify))
+        .route("/2fa/step-up", get(step_up_page).post(step_up_verify))
         .route("/logout", get(logout_page).post(logout))
         .route("/google", get(google_redirect))
         .route("/google/callback", get(google_callback))
@@ -429,6 +429,7 @@ pub async fn totp_verify_submit(
 pub async fn totp_setup_page(
     State(state): State<AppState>,
     jar: CookieJar,
+    Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Response, AppError> {
     let session_token = jar
         .get(SESSION_COOKIE)
@@ -439,8 +440,28 @@ pub async fn totp_setup_page(
         .await?
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
 
+    // If TOTP is already enrolled, sending the user to settings is a
+    // dead-end: they hit setup because something needed step-up auth, not
+    // because they wanted to re-enroll. Forward them to the step-up page
+    // (preserves return_to) so they can verify and continue.
     if service::user_totp_enabled(&state.db, user.id).await? {
-        return Ok(Redirect::to("/settings?error=2fa_already_enabled").into_response());
+        let return_to = params.get("return_to").cloned().unwrap_or_default();
+        let url = if return_to.is_empty() {
+            "/auth/2fa/step-up".to_string()
+        } else {
+            let encoded: String = return_to
+                .bytes()
+                .flat_map(|b| match b {
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                        vec![b]
+                    }
+                    _ => format!("%{:02X}", b).into_bytes(),
+                })
+                .map(|b| b as char)
+                .collect();
+            format!("/auth/2fa/step-up?return_to={}", encoded)
+        };
+        return Ok(Redirect::to(&url).into_response());
     }
 
     let (secret, url, qr_code) = service::generate_totp_secret(&user.email)?;
@@ -560,10 +581,93 @@ pub async fn totp_setup_submit(
         .same_site(axum_extra::extract::cookie::SameSite::Lax);
     let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
 
-    let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", HeaderValue::from_static("/marketplace"));
+    let success_html = r#"
+        <div class="auth-success-message" role="status" aria-live="polite" tabindex="-1" style="
+            margin:0 0 14px;
+            padding:12px 14px;
+            background:#ECFDF3;
+            border:1px solid #ABEFC6;
+            border-radius:8px;
+            color:#027A48;
+            font-size:13px;
+            font-weight:600;
+            line-height:1.45;
+        ">
+            Two-factor authentication connected successfully.
+            <a href="/marketplace" style="color:#027A48; font-weight:700;">Continue to POOOL</a>
+        </div>
+    "#;
 
-    Ok((jar, response_headers, Html("")).into_response())
+    Ok((jar, Html(success_html)).into_response())
+}
+
+/// GET /auth/2fa/step-up – Render TOTP step-up verification page.
+///
+/// Used when an existing TOTP-enrolled user needs to re-verify before a
+/// high-value financial operation (trade ≥ $500, withdrawal, etc.). Form
+/// JS POSTs to the same path (JSON API) and on success redirects to the
+/// `return_to` query param.
+pub async fn step_up_page(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<Response, AppError> {
+    let session_token = jar
+        .get(SESSION_COOKIE)
+        .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?
+        .value();
+
+    let user = service::get_user_by_session(&state.db, session_token)
+        .await?
+        .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
+
+    // If TOTP isn't enrolled yet, redirect to setup instead.
+    if !service::user_totp_enabled(&state.db, user.id).await? {
+        // Pass return_to through unmodified — Query gives us the
+        // already-decoded value, and Redirect::to escapes as needed.
+        let return_to = params.get("return_to").cloned().unwrap_or_default();
+        let url = if return_to.is_empty() {
+            "/auth/2fa/setup".to_string()
+        } else {
+            // Re-encode with a tiny inline helper (no extra crate needed).
+            let encoded: String = return_to
+                .bytes()
+                .flat_map(|b| match b {
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                        vec![b]
+                    }
+                    _ => format!("%{:02X}", b).into_bytes(),
+                })
+                .map(|b| b as char)
+                .collect();
+            format!("/auth/2fa/setup?return_to={}", encoded)
+        };
+        return Ok(Redirect::to(&url).into_response());
+    }
+
+    let return_to = params
+        .get("return_to")
+        .cloned()
+        .unwrap_or_else(|| "/".to_string());
+    let action = params
+        .get("action")
+        .cloned()
+        .unwrap_or_else(|| "trade".to_string());
+
+    let tmpl = state
+        .templates
+        .get_template("auth-2fa-step-up.html")
+        .map_err(|e| AppError::Internal(format!("Template error: {}", e)))?;
+
+    let html = tmpl
+        .render(context! {
+            email => user.email,
+            return_to => return_to,
+            action => action,
+        })
+        .map_err(|e| AppError::Internal(format!("Template error: {}", e)))?;
+
+    Ok(Html(html).into_response())
 }
 
 /// POST /auth/2fa/step-up – Verify TOTP code for step-up 2FA (JSON API).
