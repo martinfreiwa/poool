@@ -21,11 +21,16 @@ window.applyPooolImageFallback = function (img) {
   }
 };
 
+function hasRealSrc(img) {
+  var src = img.getAttribute("src");
+  return !!src && src.trim() !== "" && src !== POOOL_IMAGE_FALLBACK;
+}
+
 function attachPooolImageFallback(img) {
   if (!img || img.dataset.pooolFallbackReady === "true") return;
   img.dataset.pooolFallbackReady = "true";
   img.addEventListener("error", function () {
-    window.applyPooolImageFallback(img);
+    if (hasRealSrc(img)) window.applyPooolImageFallback(img);
   });
   img.addEventListener("load", function () {
     if (img.dataset.usingFallback !== "true") {
@@ -33,8 +38,17 @@ function attachPooolImageFallback(img) {
       if (img.parentElement) img.parentElement.classList.add("image-loaded");
     }
   });
-  if (img.complete && img.naturalWidth === 0) {
+  if (hasRealSrc(img) && img.complete && img.naturalWidth === 0) {
     window.applyPooolImageFallback(img);
+  }
+}
+
+function resetPooolImageFallback(img) {
+  if (!img) return;
+  img.dataset.usingFallback = "false";
+  img.classList.remove("poool-image-fallback");
+  if (img.parentElement) {
+    img.parentElement.classList.remove("poool-image-fallback-container");
   }
 }
 
@@ -204,6 +218,7 @@ function openLightbox(index) {
   modal.offsetHeight; // reflow
 
   attachPooolImageFallback(img);
+  resetPooolImageFallback(img);
   img.src = galleryImages[currentImageIndex].src;
   updateCounter();
 
@@ -281,6 +296,7 @@ function animateImageTransition(direction) {
 
   setTimeout(function () {
     attachPooolImageFallback(img);
+    resetPooolImageFallback(img);
     img.src = galleryImages[currentImageIndex].src;
 
     img.style.transition = "none";

@@ -352,12 +352,16 @@
   filter: blur(0);
 }
 
-.gallery-img.poool-image-fallback,
-.lightbox-content.poool-image-fallback,
-.lightbox-thumb img.poool-image-fallback {
+.gallery-img.poool-image-fallback {
   object-fit: contain;
   padding: 56px;
   background: #ffffff;
+}
+
+.lightbox-content.poool-image-fallback,
+.lightbox-thumb img.poool-image-fallback {
+  object-fit: contain;
+  background: transparent;
 }
 
 .lightbox-thumb img.poool-image-fallback {

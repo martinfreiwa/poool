@@ -156,7 +156,8 @@ pub async fn api_admin_asset_detail(
                 a.developer_website, a.developer_facebook,
                 a.developer_instagram, a.developer_youtube,
                 a.info_badges, a.leasing_items,
-                a.risk_notification_items, a.google_maps_url
+                a.risk_notification_items, a.google_maps_url,
+                a.image_urls
          FROM assets a WHERE a.id = $1",
     )
     .bind(aid)
@@ -201,10 +202,26 @@ pub async fn api_admin_asset_detail(
     .await
     .map_err(ApiError::Database)?;
 
-    // Images
-    let images: Vec<(String, bool, i32)> = sqlx::query_as(
-        "SELECT COALESCE(image_url,''), COALESCE(is_cover,false), COALESCE(sort_order,0) FROM asset_images WHERE asset_id = $1 ORDER BY sort_order"
+    // Images: prefer asset_images table; fall back to assets.image_urls array
+    // (user-facing property page reads image_urls, so admin must mirror it).
+    let mut images: Vec<(String, bool, i32)> = sqlx::query_as(
+        "SELECT COALESCE(image_url,''), COALESCE(is_cover,false), COALESCE(sort_order,0)
+         FROM asset_images WHERE asset_id = $1
+           AND COALESCE(image_url,'') <> ''
+         ORDER BY sort_order"
     ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
+    if images.is_empty() {
+        if let Ok(urls) = row.try_get::<Option<Vec<String>>, _>("image_urls") {
+            if let Some(urls) = urls {
+                images = urls
+                    .into_iter()
+                    .filter(|u| !u.trim().is_empty())
+                    .enumerate()
+                    .map(|(i, u)| (u, i == 0, i as i32))
+                    .collect();
+            }
+        }
+    }
 
     // Milestones (include id so the editor can patch/delete by row)
     #[allow(clippy::type_complexity)]
