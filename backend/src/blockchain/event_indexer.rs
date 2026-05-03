@@ -97,7 +97,7 @@ struct BalanceChange {
 ///
 /// If blockchain is not configured, exits silently.
 pub async fn run_event_indexer(pool: &PgPool) {
-    let config = match ChainConfig::from_env() {
+    let config = match ChainConfig::from_env().await {
         Some(c) => c,
         None => {
             tracing::info!("🔍 Event indexer: blockchain not configured, skipping.");

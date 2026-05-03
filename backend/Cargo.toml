@@ -53,6 +53,10 @@ hex = "0.4"
 # signer). rlp: transaction encoding for in-process signing.
 k256 = { version = "0.13", features = ["ecdsa", "sha256"] }
 rlp = "0.5"
+# GCP KMS asymmetric signer for the production settlement key path.
+# When CHAIN_KMS_KEY is set the settler uses HSM-backed secp256k1 signing;
+# private-key env path remains as fallback for local/dev.
+google-cloud-kms = { version = "0.6", default-features = false, features = ["default-tls", "auth"] }
 
 # Templating (for HTML responses to HTMX)
 minijinja = { version = "2.0", features = ["loader"] }

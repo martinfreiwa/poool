@@ -24,9 +24,10 @@ pub struct ChainConfig {
     pub rpc_url: String,
     /// POOOLProperty1155 contract address (0x-prefixed, 42 chars)
     pub contract_address: String,
-    /// Private key of the SETTLEMENT_ROLE wallet (0x-prefixed, 66 chars)
-    /// 🔴 SECURITY: Never log this value.
-    pub settlement_private_key: String,
+    /// Settlement signer — local raw key OR HSM-backed GCP KMS key.
+    /// Built once at config load; private key material never leaves the
+    /// signer instance. 🔴 SECURITY: Never log signer state.
+    pub signer: std::sync::Arc<dyn super::signer::Signer>,
     /// Chain ID (80002 for Amoy testnet, 137 for Polygon mainnet)
     pub chain_id: u64,
     /// Maximum trades per batch (gas limit safety)
@@ -100,12 +101,17 @@ struct TxReceipt {
 
 impl ChainConfig {
     /// Load blockchain configuration from environment variables.
-    /// Returns None if blockchain integration is not configured.
-    pub fn from_env() -> Option<Self> {
-        let private_key = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").ok()?;
-        if private_key.is_empty() {
-            return None;
-        }
+    /// Returns None when no signer is configured (neither CHAIN_KMS_KEY
+    /// nor CHAIN_SETTLEMENT_PRIVATE_KEY set).
+    pub async fn from_env() -> Option<Self> {
+        let signer_result = super::signer::build_signer_from_env().await?;
+        let signer = match signer_result {
+            Ok(s) => std::sync::Arc::from(s),
+            Err(e) => {
+                tracing::error!("⛓️ Settlement signer init failed: {}", e);
+                return None;
+            }
+        };
 
         let rpc_url = std::env::var("CHAIN_RPC_URL")
             .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
@@ -131,7 +137,7 @@ impl ChainConfig {
         Some(Self {
             rpc_url,
             contract_address,
-            settlement_private_key: private_key,
+            signer,
             chain_id,
             max_batch_size,
             enabled,
@@ -157,7 +163,7 @@ impl ChainConfig {
 ///
 /// If blockchain is not configured, this worker logs a message and exits.
 pub async fn run_settlement_worker(pool: &PgPool) {
-    let config = match ChainConfig::from_env() {
+    let config = match ChainConfig::from_env().await {
         Some(c) if c.enabled => c,
         Some(_) => {
             tracing::info!("⛓️ Blockchain settlement is configured but DISABLED. Set CHAIN_SETTLEMENT_ENABLED=true to enable.");
@@ -695,7 +701,7 @@ async fn simulate_settle_batch(
     contract_address: &str,
 ) -> Result<(), String> {
     let calldata = encode_settle_batch_calldata(trades)?;
-    let sender = derive_address_from_private_key(&config.settlement_private_key)?;
+    let sender = super::signing::format_address(&config.signer.address());
     let params = serde_json::json!([
         { "from": sender, "to": contract_address, "data": calldata },
         "latest"
@@ -718,7 +724,7 @@ async fn send_settle_batch_and_get_hash(
     contract_address: &str,
 ) -> Result<String, String> {
     let calldata = encode_settle_batch_calldata(trades)?;
-    let sender = derive_address_from_private_key(&config.settlement_private_key)?;
+    let sender = super::signing::format_address(&config.signer.address());
 
     let gas_estimate = estimate_gas(
         client,
@@ -979,28 +985,6 @@ async fn rpc_call(
 // ── TRANSACTION SIGNING (EIP-155) ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-/// Derive the Ethereum address from a private key.
-///
-/// Uses the secp256k1 curve to derive the public key, then keccak256 hash
-/// the uncompressed public key (without the 0x04 prefix) → last 20 bytes.
-///
-/// NOTE: This is a placeholder that uses `cast` CLI for signing.
-/// In production, we'd use the `k256` or `secp256k1` Rust crate directly.
-///
-/// Public wrapper used by the gas monitor / reconciler so they don't need
-/// to duplicate the derivation logic.
-pub fn derive_address_from_private_key_pub(private_key: &str) -> Result<String, String> {
-    derive_address_from_private_key(private_key)
-}
-
-fn derive_address_from_private_key(private_key: &str) -> Result<String, String> {
-    // Real secp256k1 derivation via the `k256` crate. The previous stub
-    // returned an env var and ignored the key — which silently desynced
-    // the nonce manager, simulation, and gas estimation from the actual
-    // signer whenever the env var didn't match.
-    super::signing::address_from_private_key(private_key)
-}
-
 /// Sign a transaction in-process and broadcast it via JSON-RPC. Returns
 /// the tx hash from the chain.
 ///
@@ -1020,8 +1004,8 @@ async fn sign_and_send_in_process(
     gas_limit: u64,
     gas_price: u64,
 ) -> Result<String, String> {
-    let signed_hex = super::signing::sign_legacy_transaction(
-        &config.settlement_private_key,
+    let signed_hex = super::signing::sign_legacy_transaction_with(
+        &*config.signer,
         config.chain_id,
         nonce,
         gas_price,
@@ -1029,7 +1013,8 @@ async fn sign_and_send_in_process(
         target_contract,
         0u128, // settleBatch is non-payable
         data,
-    )?;
+    )
+    .await?;
     send_raw_transaction(client, &config.rpc_url, &signed_hex).await
 }
 

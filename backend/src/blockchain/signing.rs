@@ -48,6 +48,11 @@ fn parse_hex(s: &str) -> Result<Vec<u8>, String> {
     hex::decode(trimmed).map_err(|e| format!("invalid hex: {}", e))
 }
 
+/// Public re-export of `parse_hex` for sibling modules (signer.rs).
+pub fn parse_hex_pub(s: &str) -> Result<Vec<u8>, String> {
+    parse_hex(s)
+}
+
 /// Format 20 bytes as a 0x-prefixed lowercase Ethereum address.
 pub fn format_address(addr: &[u8; 20]) -> String {
     format!("0x{}", hex::encode(addr))
@@ -218,6 +223,61 @@ pub fn sign_legacy_transaction(
         Some((v, r_bytes.as_slice(), s_bytes.as_slice())),
     );
 
+    Ok(format!("0x{}", hex::encode(signed_rlp)))
+}
+
+/// Sign a legacy (EIP-155) transaction using any [`Signer`]
+/// (local key OR KMS). Same wire output as `sign_legacy_transaction` —
+/// callers should prefer this variant going forward.
+#[allow(clippy::too_many_arguments)]
+pub async fn sign_legacy_transaction_with(
+    signer: &dyn super::signer::Signer,
+    chain_id: u64,
+    nonce: u64,
+    gas_price: u64,
+    gas_limit: u64,
+    to: &str,
+    value_wei: u128,
+    data: &str,
+) -> Result<String, String> {
+    let to_bytes = parse_hex(to)?;
+    if to_bytes.len() != 20 {
+        return Err(format!("to-address must be 20 bytes, got {}", to_bytes.len()));
+    }
+    let data_bytes = parse_hex(data)?;
+
+    let unsigned_rlp = encode_legacy_tx_rlp(
+        nonce,
+        gas_price,
+        gas_limit,
+        &to_bytes,
+        value_wei,
+        &data_bytes,
+        Some(chain_id),
+        None,
+    );
+    let digest = keccak256(&unsigned_rlp);
+
+    let signed = signer.sign_prehash(&digest).await?;
+
+    let v = chain_id
+        .checked_mul(2)
+        .and_then(|x| x.checked_add(35))
+        .and_then(|x| x.checked_add(signed.recovery_id.to_byte() as u64))
+        .ok_or_else(|| "v overflow".to_string())?;
+    let r_bytes = signed.signature.r().to_bytes();
+    let s_bytes = signed.signature.s().to_bytes();
+
+    let signed_rlp = encode_legacy_tx_rlp(
+        nonce,
+        gas_price,
+        gas_limit,
+        &to_bytes,
+        value_wei,
+        &data_bytes,
+        None,
+        Some((v, r_bytes.as_slice(), s_bytes.as_slice())),
+    );
     Ok(format!("0x{}", hex::encode(signed_rlp)))
 }
 

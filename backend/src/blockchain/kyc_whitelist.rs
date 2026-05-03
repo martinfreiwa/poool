@@ -40,7 +40,7 @@ struct PendingWhitelist {
 /// Polls every 60 seconds for KYC-approved users without a chain_wallet_address,
 /// generates addresses, and calls setWhitelisted() on-chain.
 pub async fn run_kyc_whitelist_worker(pool: &PgPool) {
-    let config = match ChainConfig::from_env() {
+    let config = match ChainConfig::from_env().await {
         Some(c) if c.enabled => c,
         Some(_) => {
             tracing::info!("🔑 KYC→Whitelist: blockchain configured but DISABLED.");
@@ -199,7 +199,7 @@ async fn send_batch_whitelist_tx(
     // = 0x9beb20f8 (verified via `cast sig`).
     let calldata = encode_batch_set_whitelisted_calldata(addresses)?;
 
-    let sender = super::signing::address_from_private_key(&config.settlement_private_key)?;
+    let sender = super::signing::format_address(&config.signer.address());
 
     // RPC params — same shape as the settlement worker.
     let nonce_resp = rpc_call(
@@ -242,8 +242,8 @@ async fn send_batch_whitelist_tx(
         .map_err(|e| format!("gas_estimate parse: {}", e))?;
     let gas_limit = gas_estimate + (gas_estimate / 5);
 
-    let signed = super::signing::sign_legacy_transaction(
-        &config.settlement_private_key,
+    let signed = super::signing::sign_legacy_transaction_with(
+        &*config.signer,
         config.chain_id,
         nonce,
         gas_price,
@@ -251,7 +251,8 @@ async fn send_batch_whitelist_tx(
         registry_address,
         0,
         &calldata,
-    )?;
+    )
+    .await?;
 
     let tx_hash_resp = rpc_call(
         client,

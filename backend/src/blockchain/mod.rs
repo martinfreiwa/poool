@@ -26,3 +26,5 @@ pub mod reconciler;
 pub mod service;
 /// In-process Ethereum signing + EIP-191 verification (replaces `cast` subprocess).
 pub mod signing;
+/// Pluggable signer abstraction — local raw key vs HSM-backed GCP KMS.
+pub mod signer;

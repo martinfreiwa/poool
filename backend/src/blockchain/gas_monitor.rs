@@ -32,7 +32,7 @@ const CRITICAL_GAS_THRESHOLD_WEI: u128 = 10_000_000_000_000_000; // 0.01 MATIC
 const POLL_INTERVAL_SECS: u64 = 300;
 
 pub async fn run_gas_monitor(pool: &PgPool) {
-    let config = match ChainConfig::from_env() {
+    let config = match ChainConfig::from_env().await {
         Some(c) if c.enabled => c,
         _ => {
             tracing::info!("⛓️ Gas monitor: blockchain not enabled — monitor will not start");
@@ -40,14 +40,7 @@ pub async fn run_gas_monitor(pool: &PgPool) {
         }
     };
 
-    let address =
-        match super::service::derive_address_from_private_key_pub(&config.settlement_private_key) {
-            Ok(addr) => addr,
-            Err(e) => {
-                tracing::error!("⛓️ Gas monitor: cannot derive wallet address: {}", e);
-                return;
-            }
-        };
+    let address = super::signing::format_address(&config.signer.address());
 
     tracing::info!(
         "⛓️ Gas monitor starting (wallet={}, low={} wei, critical={} wei, interval={}s)",

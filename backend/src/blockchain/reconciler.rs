@@ -36,7 +36,7 @@ const RECONCILER_INTERVAL_SECS: u64 = 120; // 2 minutes
 const HARD_TIMEOUT_SECS: i64 = 3600; // 1 hour
 
 pub async fn run_reconciler(pool: &PgPool) {
-    let config = match ChainConfig::from_env() {
+    let config = match ChainConfig::from_env().await {
         Some(c) if c.enabled => c,
         _ => {
             tracing::info!("⛓️ Reconciler: blockchain not enabled — reconciler will not start");
