@@ -860,6 +860,9 @@ body.mp-ob-drawer-open {
   align-items: center;
   justify-content: center;
 }
+.mp-ob-reason-overlay[hidden] {
+  display: none !important;
+}
 .mp-ob-reason-card {
   background: var(--admin-bg-card);
   border: 1px solid var(--admin-border);

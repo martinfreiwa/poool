@@ -109,6 +109,7 @@ def test_orderbook_css_has_aging_status_pill_and_history_styles():
     assert ".mp-ob-history-panel" in source
     assert ".mp-ob-empty-cta" in source
     assert ".mp-ob-combo-item.is-cursor" in source
+    assert ".mp-ob-reason-overlay[hidden]" in source
 
 
 def test_orderbook_html_has_depth_chart_offline_banner_reason_overlay():
@@ -116,6 +117,7 @@ def test_orderbook_html_has_depth_chart_offline_banner_reason_overlay():
     assert 'id="mp-ob-depth-chart"' in source
     assert 'id="mp-ob-offline-banner"' in source
     assert 'id="mp-ob-reason-overlay"' in source
+    assert 'aria-hidden="true"' in source
     assert 'id="mp-ob-reason-input"' in source
     assert 'list="mp-ob-reason-list"' in source
     assert 'class="mp-ob-shortcut"' in source
@@ -130,6 +132,8 @@ def test_orderbook_js_wires_match_preview_save_audit_and_stale_dot():
     assert "loadAssetSettingsAudit" in source
     assert "mp-ob-live-dot--stale" in source
     assert "renderOfflineBanner" in source
+    assert "function closeReasonPrompt" in source
+    assert 'overlay.setAttribute("aria-hidden", "false")' in source
     assert "function reasonPrompt" in source
     assert "function renderDepthChart" in source
 

@@ -666,6 +666,13 @@
     loadReasons().forEach((r) => dl.appendChild(el("option", { value: r })));
   }
 
+  function closeReasonPrompt() {
+    const overlay = document.getElementById("mp-ob-reason-overlay");
+    if (!overlay) return;
+    overlay.hidden = true;
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
   /**
    * Custom prompt that wires a <datalist> autocomplete from past reasons.
    * Falls back to window.prompt() if our overlay can't render.
@@ -685,12 +692,17 @@
       input.value = defaultValue;
       syncReasonDatalist();
       overlay.hidden = false;
+      overlay.setAttribute("aria-hidden", "false");
       requestAnimationFrame(() => input.focus());
+
       const cleanup = (val) => {
         overlay.hidden = true;
+        overlay.setAttribute("aria-hidden", "true");
         ok.removeEventListener("click", onOk);
         cancel.removeEventListener("click", onCancel);
         input.removeEventListener("keydown", onKey);
+        overlay.removeEventListener("click", onScrim);
+        document.removeEventListener("keydown", onDocKey);
         resolve(val);
       };
       const onOk = () => cleanup(input.value);
@@ -710,23 +722,6 @@
         if (ev.key === "Escape") onCancel();
       };
       document.addEventListener("keydown", onDocKey);
-      const origCleanup = cleanup;
-      // wrap cleanup to remove the new listeners
-      const _wrappedCleanup = (val) => {
-        overlay.removeEventListener("click", onScrim);
-        document.removeEventListener("keydown", onDocKey);
-        origCleanup(val);
-      };
-      // re-bind handlers to wrapped cleanup
-      ok.removeEventListener("click", onOk);
-      cancel.removeEventListener("click", onCancel);
-      input.removeEventListener("keydown", onKey);
-      ok.addEventListener("click", () => _wrappedCleanup(input.value));
-      cancel.addEventListener("click", () => _wrappedCleanup(null));
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") _wrappedCleanup(input.value);
-        else if (e.key === "Escape") _wrappedCleanup(null);
-      });
     });
   }
 
@@ -2367,6 +2362,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    closeReasonPrompt();
     wireToolbar();
     setupWebSocket();
     loadAssets();
