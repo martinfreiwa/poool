@@ -44,6 +44,9 @@
     wsState: "closed",
     recentAssetIds: loadRecent(),
     bulkSelected: new Set(), // order_ids picked in drilldown
+    fetchFailures: 0,
+    pageSize: 50, // combobox page size
+    pageMore: 0,  // extra pages clicked open
   };
 
   function loadRecent() {
@@ -610,8 +613,9 @@
   }
 
   async function cancelOrder(orderId) {
-    const reason = window.prompt("Reason for cancelling this order?");
+    const reason = await reasonPrompt("Reason for cancelling this order?");
     if (!reason || !reason.trim()) return;
+    pushReason(reason.trim());
     try {
       await fetchJSON(`${CANCEL_API}/${orderId}`, {
         method: "DELETE",
@@ -633,13 +637,107 @@
     }
   }
 
+  const REASON_KEY = "poool.admin.orderbook.reasons";
+
+  function loadReasons() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(REASON_KEY) || "[]");
+      return Array.isArray(arr) ? arr.slice(0, 20) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function pushReason(reason) {
+    const list = loadReasons().filter((r) => r !== reason);
+    list.unshift(reason);
+    try {
+      localStorage.setItem(REASON_KEY, JSON.stringify(list.slice(0, 20)));
+    } catch (_) {
+      /* ignore */
+    }
+    syncReasonDatalist();
+  }
+
+  function syncReasonDatalist() {
+    const dl = document.getElementById("mp-ob-reason-list");
+    if (!dl) return;
+    clearNode(dl);
+    loadReasons().forEach((r) => dl.appendChild(el("option", { value: r })));
+  }
+
+  /**
+   * Custom prompt that wires a <datalist> autocomplete from past reasons.
+   * Falls back to window.prompt() if our overlay can't render.
+   */
+  function reasonPrompt(message, defaultValue = "") {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById("mp-ob-reason-overlay");
+      if (!overlay) {
+        resolve(window.prompt(message, defaultValue));
+        return;
+      }
+      const titleEl = overlay.querySelector(".mp-ob-reason-title");
+      const input = overlay.querySelector("#mp-ob-reason-input");
+      const ok = overlay.querySelector("#mp-ob-reason-ok");
+      const cancel = overlay.querySelector("#mp-ob-reason-cancel");
+      if (titleEl) titleEl.textContent = message;
+      input.value = defaultValue;
+      syncReasonDatalist();
+      overlay.hidden = false;
+      requestAnimationFrame(() => input.focus());
+      const cleanup = (val) => {
+        overlay.hidden = true;
+        ok.removeEventListener("click", onOk);
+        cancel.removeEventListener("click", onCancel);
+        input.removeEventListener("keydown", onKey);
+        resolve(val);
+      };
+      const onOk = () => cleanup(input.value);
+      const onCancel = () => cleanup(null);
+      const onKey = (e) => {
+        if (e.key === "Enter") onOk();
+        else if (e.key === "Escape") onCancel();
+      };
+      ok.addEventListener("click", onOk);
+      cancel.addEventListener("click", onCancel);
+      input.addEventListener("keydown", onKey);
+      const onScrim = (ev) => {
+        if (ev.target === overlay) onCancel();
+      };
+      overlay.addEventListener("click", onScrim);
+      const onDocKey = (ev) => {
+        if (ev.key === "Escape") onCancel();
+      };
+      document.addEventListener("keydown", onDocKey);
+      const origCleanup = cleanup;
+      // wrap cleanup to remove the new listeners
+      const _wrappedCleanup = (val) => {
+        overlay.removeEventListener("click", onScrim);
+        document.removeEventListener("keydown", onDocKey);
+        origCleanup(val);
+      };
+      // re-bind handlers to wrapped cleanup
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      input.removeEventListener("keydown", onKey);
+      ok.addEventListener("click", () => _wrappedCleanup(input.value));
+      cancel.addEventListener("click", () => _wrappedCleanup(null));
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") _wrappedCleanup(input.value);
+        else if (e.key === "Escape") _wrappedCleanup(null);
+      });
+    });
+  }
+
   async function bulkCancel(orderIds) {
     if (!orderIds.length) return;
-    const reason = window.prompt(
+    const reason = await reasonPrompt(
       `Reason for cancelling ${orderIds.length} order(s)?`,
     );
     if (!reason || !reason.trim()) return;
     const trimmed = reason.trim();
+    pushReason(trimmed);
     const results = await Promise.allSettled(
       orderIds.map((id) =>
         fetchJSON(`${CANCEL_API}/${id}`, {
@@ -669,27 +767,57 @@
     });
   }
 
+  async function bulkCancelSide(apiSide) {
+    if (!state.lastData) return;
+    const levels = apiSide === "buy" ? state.lastData.bids : state.lastData.asks;
+    if (!levels || !levels.length) return;
+    if (
+      !window.confirm(
+        `Fetch and cancel ALL ${apiSide === "buy" ? "bids" : "asks"} on the book? ` +
+          `This will hit the level endpoint for each price level (${levels.length}).`,
+      )
+    )
+      return;
+    const reason = await reasonPrompt(
+      `Reason for cancelling all ${apiSide === "buy" ? "bids" : "asks"}?`,
+    );
+    if (!reason || !reason.trim()) return;
+    pushReason(reason.trim());
+    const allIds = [];
+    for (const lvl of levels) {
+      try {
+        const orders = await fetchJSON(
+          `${API}/${state.selectedAssetId}/level?side=${apiSide}&price_cents=${lvl.price_cents}`,
+        );
+        orders.forEach((o) => allIds.push(o.id));
+      } catch (err) {
+        reportError("bulkCancelSide.fetchLevel", err);
+      }
+    }
+    if (!allIds.length) return;
+    state.bulkSelected = new Set(allIds);
+    renderBulkBar();
+    await bulkCancel(allIds);
+  }
+
   function renderBulkBar() {
     const bar = document.getElementById("mp-ob-bulk-bar");
     if (!bar) return;
     const count = state.bulkSelected.size;
-    if (!count) {
-      bar.hidden = true;
-      bar.textContent = "";
-      return;
-    }
     clearNode(bar);
     bar.hidden = false;
-    bar.appendChild(el("span", {}, `${count} order(s) selected`));
+    bar.appendChild(
+      el("span", { class: "mp-ob-bulk-side" }, `Bulk:`),
+    );
     bar.appendChild(
       el(
         "button",
         {
-          class: "admin-btn admin-btn--danger admin-btn--sm",
+          class: "admin-btn admin-btn--ghost admin-btn--sm",
           type: "button",
-          onClick: () => bulkCancel([...state.bulkSelected]),
+          onClick: () => bulkCancelSide("buy"),
         },
-        "Cancel all selected",
+        "Select all bids",
       ),
     );
     bar.appendChild(
@@ -698,17 +826,42 @@
         {
           class: "admin-btn admin-btn--ghost admin-btn--sm",
           type: "button",
-          onClick: () => {
-            state.bulkSelected.clear();
-            document.querySelectorAll('input[type="checkbox"][data-oid]').forEach((cb) => {
-              cb.checked = false;
-            });
-            renderBulkBar();
-          },
+          onClick: () => bulkCancelSide("sell"),
         },
-        "Clear",
+        "Select all asks",
       ),
     );
+    if (count) {
+      bar.appendChild(el("span", { class: "mp-ob-bulk-count" }, `${count} selected`));
+      bar.appendChild(
+        el(
+          "button",
+          {
+            class: "admin-btn admin-btn--danger admin-btn--sm",
+            type: "button",
+            onClick: () => bulkCancel([...state.bulkSelected]),
+          },
+          "Cancel selected",
+        ),
+      );
+      bar.appendChild(
+        el(
+          "button",
+          {
+            class: "admin-btn admin-btn--ghost admin-btn--sm",
+            type: "button",
+            onClick: () => {
+              state.bulkSelected.clear();
+              document.querySelectorAll('input[type="checkbox"][data-oid]').forEach((cb) => {
+                cb.checked = false;
+              });
+              renderBulkBar();
+            },
+          },
+          "Clear",
+        ),
+      );
+    }
   }
 
   // ─── match preview popover ───────────────────────────────────────
@@ -724,9 +877,50 @@
     )} gross.`;
   }
 
+  async function _trySimulateMatch(level, cumQty, apiSide) {
+    // Optional: backend may expose POST /api/admin/marketplace/match-preview.
+    // Render a richer popover when it does; otherwise the cumulative
+    // estimate is good enough.
+    if (!state.selectedAssetId) return null;
+    try {
+      return await fetchJSON("/api/admin/marketplace/match-preview", {
+        method: "POST",
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          asset_id: state.selectedAssetId,
+          side: apiSide === "buy" ? "sell" : "buy",
+          quantity: cumQty,
+          limit_price_cents: level.price_cents,
+        }),
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  let _matchPopToken = 0;
+
+  function _placePopover(pop, target) {
+    pop.hidden = false;
+    const rect = target.getBoundingClientRect();
+    const popRect = pop.getBoundingClientRect();
+    const margin = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let left = rect.left + 12;
+    let top = rect.bottom + 6;
+    if (left + popRect.width + margin > vw) left = vw - popRect.width - margin;
+    if (left < margin) left = margin;
+    if (top + popRect.height + margin > vh) top = rect.top - popRect.height - 6;
+    if (top < margin) top = margin;
+    pop.style.left = `${left + window.scrollX}px`;
+    pop.style.top = `${top + window.scrollY}px`;
+  }
+
   function showMatchPopover(target, level, cumQty, cumUsd, apiSide) {
     const pop = document.getElementById("mp-ob-popover");
     if (!pop) return;
+    const token = ++_matchPopToken;
     const avgPrice = cumQty > 0 ? cumUsd / cumQty : 0;
     const slipBps =
       state.lastData && state.lastData.mid_price_cents
@@ -744,7 +938,15 @@
         apiSide === "buy" ? "Match SELL into bids" : "Match BUY into asks",
       ),
     );
-    pop.appendChild(el("div", {}, describeMatch(level, cumQty, cumUsd, apiSide)));
+    pop.appendChild(
+      el(
+        "div",
+        {},
+        cumQty > 0
+          ? describeMatch(level, cumQty, cumUsd, apiSide)
+          : "No fillable depth at this level after current filters.",
+      ),
+    );
     pop.appendChild(
       el(
         "div",
@@ -757,7 +959,7 @@
       el(
         "div",
         { class: "mp-ob-pop-row" },
-        el("span", {}, "Avg fill:"),
+        el("span", {}, "Avg fill (cumulative):"),
         el("strong", {}, formatUsd(avgPrice)),
       ),
     );
@@ -771,10 +973,43 @@
         ),
       );
     }
-    const rect = target.getBoundingClientRect();
-    pop.style.left = `${rect.left + window.scrollX + 12}px`;
-    pop.style.top = `${rect.bottom + window.scrollY + 6}px`;
-    pop.hidden = false;
+    _placePopover(pop, target);
+    // Augment with server-side simulation if available — only patch DOM if
+    // this is still the most recent hover (prevents flicker race).
+    _trySimulateMatch(level, cumQty, apiSide).then((sim) => {
+      if (token !== _matchPopToken || !sim || pop.hidden) return;
+      const block = el(
+        "div",
+        { class: "mp-ob-pop-sim" },
+        el("div", { class: "mp-ob-pop-sim-title" }, "Server simulation"),
+        el(
+          "div",
+          { class: "mp-ob-pop-row" },
+          el("span", {}, "Filled:"),
+          el(
+            "strong",
+            {},
+            `${formatQty(sim.filled_qty)}${sim.partial ? " (partial)" : ""}`,
+          ),
+        ),
+        sim.avg_price_cents != null
+          ? el(
+              "div",
+              { class: "mp-ob-pop-row" },
+              el("span", {}, "Avg price:"),
+              el("strong", {}, formatUsd(sim.avg_price_cents)),
+            )
+          : null,
+        el(
+          "div",
+          { class: "mp-ob-pop-row" },
+          el("span", {}, "Total cost:"),
+          el("strong", {}, formatUsd(sim.total_cost_cents)),
+        ),
+      );
+      pop.appendChild(block);
+      _placePopover(pop, target);
+    });
   }
 
   function hideMatchPopover() {
@@ -883,7 +1118,14 @@
     const live = document.getElementById("ob-live-indicator");
     if (!live) return;
     clearNode(live);
-    live.appendChild(el("span", { class: "mp-ob-live-dot" }));
+    const ageMs = data.generated_at ? Date.now() - new Date(data.generated_at).getTime() : 0;
+    const stale = ageMs > 30000;
+    live.appendChild(
+      el("span", {
+        class: `mp-ob-live-dot ${stale ? "mp-ob-live-dot--stale" : ""}`,
+        title: stale ? "No update in >30s" : "Live data",
+      }),
+    );
     live.appendChild(
       el(
         "span",
@@ -965,6 +1207,7 @@
 
     renderSideTable(bidsBody, bidLevels, "bid");
     renderSideTable(asksBody, askLevels, "ask");
+    renderDepthChart(bidLevels, askLevels);
     renderLive(data);
 
     const tzNote = document.getElementById("mp-ob-tz-note");
@@ -1042,6 +1285,7 @@
         value: state.pickerFilter,
         onInput: (e) => {
           state.pickerFilter = e.target.value;
+          state.pageMore = 0;
           const list = document.getElementById("mp-ob-combo-list");
           if (list) renderComboList(list, e.target.value);
         },
@@ -1146,26 +1390,76 @@
       );
     };
 
+    const window = state.pageSize + state.pageMore * state.pageSize;
+
     if (showRecent) {
       const recentObjs = state.recentAssetIds
         .map((id) => matches.find((a) => a.id === id))
         .filter(Boolean);
       if (recentObjs.length) {
-        list.appendChild(
-          el("li", { class: "mp-ob-combo-section" }, "Recent"),
-        );
+        list.appendChild(el("li", { class: "mp-ob-combo-section" }, "Recent"));
         recentObjs.forEach((a) => renderItem(a, true));
-        list.appendChild(
-          el("li", { class: "mp-ob-combo-section" }, "All assets"),
-        );
+        list.appendChild(el("li", { class: "mp-ob-combo-section" }, "All assets"));
       }
-      matches
-        .filter((a) => !state.recentAssetIds.includes(a.id))
-        .slice(0, 50)
-        .forEach((a) => renderItem(a, false));
+      const rest = matches.filter((a) => !state.recentAssetIds.includes(a.id));
+      rest.slice(0, window).forEach((a) => renderItem(a, false));
+      if (rest.length > window) {
+        list.appendChild(_renderShowMore(rest.length - window));
+      }
     } else {
-      matches.slice(0, 50).forEach((a) => renderItem(a, false));
+      matches.slice(0, window).forEach((a) => renderItem(a, false));
+      if (matches.length > window) {
+        list.appendChild(_renderShowMore(matches.length - window));
+      }
     }
+  }
+
+  function _ensureComboObserver() {
+    if (state._comboObserver) return state._comboObserver;
+    state._comboObserver = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            state.pageMore += 1;
+            const list = document.getElementById("mp-ob-combo-list");
+            if (list) renderComboList(list, state.pickerFilter);
+          }
+        }
+      },
+      { root: document.getElementById("mp-ob-combo-list"), rootMargin: "60px" },
+    );
+    return state._comboObserver;
+  }
+
+  function _renderShowMore(remaining) {
+    const node = el(
+      "li",
+      {
+        class: "mp-ob-combo-more",
+        role: "option",
+        tabIndex: 0,
+        onClick: (ev) => {
+          ev.stopPropagation();
+          state.pageMore += 1;
+          const list = document.getElementById("mp-ob-combo-list");
+          if (list) renderComboList(list, state.pickerFilter);
+        },
+        onKeydown: (e) => {
+          if (e.key === "Enter") {
+            state.pageMore += 1;
+            const list = document.getElementById("mp-ob-combo-list");
+            if (list) renderComboList(list, state.pickerFilter);
+          }
+        },
+      },
+      `Show ${Math.min(remaining, state.pageSize)} more (${remaining} remaining)`,
+    );
+    try {
+      _ensureComboObserver().observe(node);
+    } catch (_) {
+      /* IntersectionObserver unsupported — keep manual click */
+    }
+    return node;
   }
 
   function selectAsset(assetId) {
@@ -1241,12 +1535,33 @@
     }
     try {
       const data = await fetchJSON(`${API}/${state.selectedAssetId}`);
+      state.fetchFailures = 0;
+      renderOfflineBanner();
       renderOrderbook(data);
     } catch (err) {
+      state.fetchFailures += 1;
+      renderOfflineBanner();
       clearOrderbook("Orderbook unavailable");
       setStatus(`Unable to load orderbook: ${err.message}`, "error");
     } finally {
       if (!opts.silent) setBusy(false);
+    }
+  }
+
+  function renderOfflineBanner() {
+    const banner = document.getElementById("mp-ob-offline-banner");
+    if (!banner) return;
+    // Show when both polling has failed >= 3x AND ws is closed/reconnecting/never-open.
+    const wsBad = state.wsState !== "open";
+    const pollBad = state.fetchFailures >= 3;
+    if (wsBad && pollBad) {
+      banner.hidden = false;
+      banner.textContent =
+        `Connection lost. Live updates paused; ${state.fetchFailures} failed reloads. ` +
+        `Click WS pill or hit "r" to retry.`;
+    } else {
+      banner.hidden = true;
+      banner.textContent = "";
     }
   }
 
@@ -1260,6 +1575,7 @@
     });
     window.MarketBus.on("ws:state", ({ state: wsState }) => {
       state.wsState = wsState;
+      renderOfflineBanner();
       if (state.lastData) renderLive(state.lastData);
     });
     if (state.selectedAssetId) {
@@ -1442,6 +1758,107 @@
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }
 
+  function renderDepthChart(bids, asks) {
+    const svg = document.getElementById("mp-ob-depth-chart");
+    if (!svg) return;
+    if ((!bids || !bids.length) && (!asks || !asks.length)) {
+      svg.hidden = true;
+      svg.replaceChildren();
+      return;
+    }
+    svg.hidden = false;
+
+    // Build cumulative curves on shared price axis.
+    const W = 800;
+    const H = 80;
+    const allPrices = [...bids.map((l) => l.price_cents), ...asks.map((l) => l.price_cents)];
+    if (!allPrices.length) {
+      svg.replaceChildren();
+      return;
+    }
+    const minP = Math.min(...allPrices);
+    const maxP = Math.max(...allPrices);
+    const span = Math.max(1, maxP - minP);
+
+    const buildCurve = (levels, ascending) => {
+      const sorted = levels
+        .slice()
+        .sort((a, b) => (ascending ? a.price_cents - b.price_cents : b.price_cents - a.price_cents));
+      let cum = 0;
+      return sorted.map((l) => {
+        cum += Number(l.total_quantity || 0);
+        return { x: ((l.price_cents - minP) / span) * W, qty: cum };
+      });
+    };
+    const bidPts = buildCurve(bids, false); // descending → cumulative right→left
+    const askPts = buildCurve(asks, true);
+    const maxQty = Math.max(
+      bidPts.reduce((m, p) => Math.max(m, p.qty), 0),
+      askPts.reduce((m, p) => Math.max(m, p.qty), 0),
+      1,
+    );
+    const toY = (q) => H - (q / maxQty) * (H - 4) - 2;
+
+    const toPath = (pts, leftEdge) => {
+      if (!pts.length) return "";
+      // pts come ordered along their natural side; we draw a step-curve.
+      let d = `M ${leftEdge} ${H} L ${pts[0].x} ${H}`;
+      pts.forEach((p) => {
+        d += ` L ${p.x} ${toY(p.qty)}`;
+      });
+      d += ` L ${pts[pts.length - 1].x} ${H} Z`;
+      return d;
+    };
+
+    const ns = "http://www.w3.org/2000/svg";
+    const gradId = "mp-ob-depth-grad";
+    svg.replaceChildren();
+    const defs = document.createElementNS(ns, "defs");
+    // Explicit hex stops so light-mode gradient does not collapse to grey
+    // when `currentColor` is muted on the parent SVG.
+    defs.innerHTML =
+      `<linearGradient id="bid-fill" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="#22c55e" stop-opacity="0.05"/>
+      </linearGradient>` +
+      `<linearGradient id="ask-fill" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#ef4444" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="#ef4444" stop-opacity="0.05"/>
+      </linearGradient>`;
+    svg.appendChild(defs);
+
+    if (bidPts.length) {
+      const bidPath = document.createElementNS(ns, "path");
+      bidPath.setAttribute("d", toPath(bidPts, 0));
+      bidPath.setAttribute("class", "mp-ob-depth-bid");
+      bidPath.setAttribute("fill", "url(#bid-fill)");
+      bidPath.setAttribute("stroke", "#16a34a");
+      bidPath.setAttribute("stroke-width", "1");
+      svg.appendChild(bidPath);
+    }
+    if (askPts.length) {
+      const askPath = document.createElementNS(ns, "path");
+      askPath.setAttribute("d", toPath(askPts, W));
+      askPath.setAttribute("class", "mp-ob-depth-ask");
+      askPath.setAttribute("fill", "url(#ask-fill)");
+      askPath.setAttribute("stroke", "#dc2626");
+      askPath.setAttribute("stroke-width", "1");
+      svg.appendChild(askPath);
+    }
+    // Mid-line marker
+    if (state.lastData && state.lastData.mid_price_cents != null) {
+      const x = ((state.lastData.mid_price_cents - minP) / span) * W;
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", x);
+      line.setAttribute("x2", x);
+      line.setAttribute("y1", 0);
+      line.setAttribute("y2", H);
+      line.setAttribute("class", "mp-ob-depth-mid");
+      svg.appendChild(line);
+    }
+    void gradId;
+  }
+
   function exportCsv() {
     const data = state.lastData;
     if (!data) return;
@@ -1483,25 +1900,94 @@
     setTimeout(cleanup, 4000); // safety fallback
   }
 
+
+  function _applyOverrides(overrides) {
+    if (!overrides) return;
+    if (overrides.tick_size_cents != null && state.tickCents === 1) {
+      state.tickCents = Number(overrides.tick_size_cents) || 1;
+      const tick = document.getElementById("mp-ob-tick");
+      if (tick) tick.value = String(state.tickCents);
+    }
+    if (overrides.min_order_size != null && state.minQty === 0) {
+      state.minQty = Number(overrides.min_order_size) || 0;
+      const minQ = document.getElementById("mp-ob-min-qty");
+      if (minQ) minQ.value = String(state.minQty);
+    }
+    if (state.lastData) renderOrderbook(state.lastData, { keepStatus: true });
+  }
+
   // ─── per-asset settings drawer ───────────────────────────────────
+
+  const DRAWER_SCROLL_KEY = "poool.admin.orderbook.drawerScroll";
+  let _drawerPrevFocus = null;
 
   function openSettingsDrawer() {
     const drawer = document.getElementById("mp-ob-settings-drawer");
     if (!drawer) return;
     state.settingsOpen = true;
+    _drawerPrevFocus = document.activeElement;
     drawer.hidden = false;
     drawer.setAttribute("aria-hidden", "false");
     document.body.classList.add("mp-ob-drawer-open");
-    loadAssetSettings();
+    drawer.addEventListener("keydown", _drawerKeydown);
+    loadAssetSettings().then(() => {
+      const body = document.getElementById("mp-ob-settings-body");
+      const saved = Number(localStorage.getItem(DRAWER_SCROLL_KEY) || "0");
+      if (body && Number.isFinite(saved)) body.scrollTop = saved;
+      if (body) body.addEventListener("scroll", _drawerScrollSave);
+    });
+    requestAnimationFrame(() => {
+      const close = document.getElementById("mp-ob-drawer-close");
+      if (close) close.focus();
+    });
   }
 
   function closeSettingsDrawer() {
     const drawer = document.getElementById("mp-ob-settings-drawer");
     if (!drawer) return;
+    if (state.assetSettingsDirty) {
+      const proceed = window.confirm("Discard unsaved settings changes?");
+      if (!proceed) return;
+    }
+    state.assetSettingsDirty = false;
     state.settingsOpen = false;
     drawer.hidden = true;
     drawer.setAttribute("aria-hidden", "true");
+    drawer.removeEventListener("keydown", _drawerKeydown);
+    const body = document.getElementById("mp-ob-settings-body");
+    if (body) body.removeEventListener("scroll", _drawerScrollSave);
     document.body.classList.remove("mp-ob-drawer-open");
+    if (_drawerPrevFocus && typeof _drawerPrevFocus.focus === "function") {
+      _drawerPrevFocus.focus();
+    }
+    _drawerPrevFocus = null;
+  }
+
+  function _drawerScrollSave(ev) {
+    try {
+      localStorage.setItem(DRAWER_SCROLL_KEY, String(ev.target.scrollTop || 0));
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function _drawerKeydown(e) {
+    if (e.key !== "Tab") return;
+    const drawer = document.getElementById("mp-ob-settings-drawer");
+    if (!drawer) return;
+    const focusable = drawer.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 
   async function loadAssetSettings() {
@@ -1510,10 +1996,35 @@
     clearNode(body);
     body.appendChild(el("div", {}, "Loading…"));
     try {
-      const settings = await fetchJSON(
-        `/api/admin/marketplace/runtime-settings?asset_id=${state.selectedAssetId}`,
-      ).catch(() => fetchJSON("/api/admin/marketplace/runtime-settings"));
+      // Try the per-asset endpoint first; fall back to global if backend
+      // is older or this asset has no record. Both return MarketplaceSettings-
+      // shaped JSON: per-asset wraps it as { global, asset_overrides, ... }.
+      let payload = null;
+      if (state.selectedAssetId) {
+        try {
+          payload = await fetchJSON(
+            `/api/admin/marketplace/settings/asset/${state.selectedAssetId}`,
+          );
+        } catch (_) {
+          payload = null;
+        }
+      }
+      const settings = payload
+        ? Object.assign({}, payload.global || {}, payload.asset_overrides || {})
+        : await fetchJSON("/api/admin/marketplace/settings");
+      const hasOverride = !!(payload && payload.has_override);
+      state.assetSettingsEtag = payload && payload.etag ? payload.etag : null;
+      _applyOverrides(payload ? payload.asset_overrides : null);
       clearNode(body);
+      if (hasOverride) {
+        body.appendChild(
+          el(
+            "div",
+            { class: "mp-ob-settings-banner" },
+            "Per-asset overrides active (read-only here \u2014 use full settings page to edit).",
+          ),
+        );
+      }
       const tickField = el(
         "label",
         { class: "mp-ob-settings-field" },
@@ -1528,13 +2039,38 @@
       const minQty = el(
         "label",
         { class: "mp-ob-settings-field" },
-        el("span", {}, "Min order qty"),
+        el("span", {}, "Min order size"),
         el("input", {
           id: "mp-ob-settings-minqty",
           type: "number",
           min: "1",
-          value: settings.min_order_quantity != null ? String(settings.min_order_quantity) : "1",
+          value: settings.min_order_size != null ? String(settings.min_order_size) : "1",
         }),
+      );
+      const maxSize = el(
+        "label",
+        { class: "mp-ob-settings-field" },
+        el("span", {}, "Max order size"),
+        el("input", {
+          id: "mp-ob-settings-maxsize",
+          type: "number",
+          min: "1",
+          value: settings.max_order_size != null ? String(settings.max_order_size) : "10000",
+        }),
+      );
+      const matchingAlgo = el(
+        "label",
+        { class: "mp-ob-settings-field" },
+        el("span", {}, "Matching algorithm"),
+        (() => {
+          const sel = el("select", { id: "mp-ob-settings-algo" });
+          ["price-time", "pro-rata"].forEach((v) => {
+            const o = el("option", { value: v }, v);
+            if (settings.matching_algorithm === v) o.selected = true;
+            sel.appendChild(o);
+          });
+          return sel;
+        })(),
       );
       const tradingEnabled = el(
         "label",
@@ -1546,13 +2082,46 @@
         }),
         el("span", {}, "Trading enabled (kill-switch)"),
       );
+      const weekend = el(
+        "label",
+        { class: "mp-ob-settings-field mp-ob-settings-field--row" },
+        el("input", {
+          id: "mp-ob-settings-weekend",
+          type: "checkbox",
+          checked: settings.weekend_trading === true,
+        }),
+        el("span", {}, "Weekend trading"),
+      );
       body.appendChild(tickField);
       body.appendChild(minQty);
+      body.appendChild(maxSize);
+      body.appendChild(matchingAlgo);
       body.appendChild(tradingEnabled);
+      body.appendChild(weekend);
+      // Mark dirty on any change.
+      [tickField, minQty, maxSize, matchingAlgo, tradingEnabled, weekend].forEach((wrap) => {
+        wrap.querySelectorAll("input,select").forEach((field) => {
+          field.addEventListener("change", () => (state.assetSettingsDirty = true));
+          field.addEventListener("input", () => (state.assetSettingsDirty = true));
+        });
+      });
+      state.assetSettingsDirty = false;
+      const recentBox = el("div", { id: "mp-ob-settings-audit", class: "mp-ob-settings-audit" });
+      body.appendChild(recentBox);
+      loadAssetSettingsAudit(recentBox);
       body.appendChild(
         el(
           "div",
           { class: "mp-ob-settings-actions" },
+          el(
+            "button",
+            {
+              type: "button",
+              class: "admin-btn admin-btn--primary admin-btn--sm",
+              onClick: saveAssetSettings,
+            },
+            "Save as default for asset",
+          ),
           el(
             "a",
             {
@@ -1574,6 +2143,98 @@
           { class: "admin-alert admin-alert--error" },
           `Settings unavailable: ${err.message}`,
         ),
+      );
+    }
+  }
+
+
+  async function saveAssetSettings() {
+    if (!state.selectedAssetId) return;
+    const tick = Number(document.getElementById("mp-ob-settings-tick")?.value || 0) | 0;
+    const minSize = Number(document.getElementById("mp-ob-settings-minqty")?.value || 0) | 0;
+    const maxSize = Number(document.getElementById("mp-ob-settings-maxsize")?.value || 0) | 0;
+    const algo = document.getElementById("mp-ob-settings-algo")?.value || null;
+    const trading = document.getElementById("mp-ob-settings-trading");
+    const weekend = document.getElementById("mp-ob-settings-weekend");
+    const body = {
+      tick_size_cents: tick > 0 ? tick : null,
+      min_order_size: minSize > 0 ? minSize : null,
+      max_order_size: maxSize > 0 ? maxSize : null,
+      matching_algorithm: algo,
+      trading_enabled: trading ? trading.checked : null,
+      weekend_trading: weekend ? weekend.checked : null,
+    };
+    try {
+      const headers = csrfHeaders({ "Content-Type": "application/json" });
+      if (state.assetSettingsEtag) headers["If-Match"] = `"${state.assetSettingsEtag}"`;
+      const resp = await fetchJSON(
+        `/api/admin/marketplace/settings/asset/${state.selectedAssetId}`,
+        { method: "POST", headers, body: JSON.stringify(body) },
+      );
+      state.assetSettingsEtag = resp && resp.etag ? resp.etag : state.assetSettingsEtag;
+      state.assetSettingsDirty = false;
+      _applyOverrides(body);
+      if (typeof window.mpToast === "function") window.mpToast("Asset overrides saved", "success");
+      const audit = document.getElementById("mp-ob-settings-audit");
+      if (audit) loadAssetSettingsAudit(audit);
+    } catch (err) {
+      reportError("saveAssetSettings", err);
+      if (typeof window.mpToast === "function")
+        window.mpToast(
+          /409|conflict|etag/i.test(err.message)
+            ? "Settings were updated by someone else. Reload the drawer to see the latest."
+            : err.message,
+          "error",
+        );
+    }
+  }
+
+  async function loadAssetSettingsAudit(container) {
+    if (!container || !state.selectedAssetId) return;
+    clearNode(container);
+    container.appendChild(el("div", { class: "mp-ob-settings-audit-title" }, "Recent overrides"));
+    try {
+      const data = await fetchJSON(
+        `/api/admin/audit-logs?action=marketplace.asset_settings.saved&per_page=5`,
+      );
+      const rows = Array.isArray(data) ? data : data.logs || [];
+      const matching = rows.filter((r) => String(r.entity_id) === String(state.selectedAssetId));
+      if (!matching.length) {
+        container.appendChild(
+          el("div", { class: "mp-ob-settings-audit-empty" }, "No overrides recorded for this asset."),
+        );
+        return;
+      }
+      matching.slice(0, 5).forEach((r) => {
+        container.appendChild(
+          el(
+            "div",
+            { class: "mp-ob-settings-audit-row" },
+            el(
+              "span",
+              { class: "mp-ob-settings-audit-when", title: formatTime(r.created_at) },
+              formatRelative(r.created_at),
+            ),
+            el("span", { class: "mp-ob-settings-audit-actor" }, r.actor_email || "system"),
+          ),
+        );
+      });
+      container.appendChild(
+        el(
+          "a",
+          {
+            class: "mp-ob-history-link",
+            target: "_blank",
+            rel: "noopener",
+            href: `/admin/audit-logs.html?action=marketplace.asset_settings.saved&entity_id=${state.selectedAssetId}`,
+          },
+          "Open full audit timeline ↗",
+        ),
+      );
+    } catch (err) {
+      reportError("loadAssetSettingsAudit", err);
+      container.appendChild(
+        el("div", { class: "mp-ob-settings-audit-empty" }, "Audit unavailable."),
       );
     }
   }
@@ -1668,7 +2329,14 @@
     } else if (e.key === "r" && !e.shiftKey) {
       e.preventDefault();
       loadOrderbook();
+    } else if (e.key === "?") {
+      e.preventDefault();
+      toggleShortcutHelp();
     } else if (e.key === "Escape") {
+      if (state.helpOpen) {
+        toggleShortcutHelp(false);
+        return;
+      }
       if (state.settingsOpen) {
         closeSettingsDrawer();
         return;
@@ -1678,6 +2346,14 @@
         renderCombobox();
       }
     }
+  }
+
+  function toggleShortcutHelp(force) {
+    const overlay = document.getElementById("mp-ob-help-overlay");
+    if (!overlay) return;
+    const next = typeof force === "boolean" ? force : overlay.hidden;
+    overlay.hidden = !next;
+    state.helpOpen = next;
   }
 
   function handleOutsideClick(e) {
@@ -1704,6 +2380,29 @@
 
     const csvBtn = document.getElementById("btn-export-csv");
     if (csvBtn) csvBtn.addEventListener("click", exportCsv);
+
+    const helpBtn = document.getElementById("mp-ob-help-close");
+    if (helpBtn) helpBtn.addEventListener("click", () => toggleShortcutHelp(false));
+    const helpOverlay = document.getElementById("mp-ob-help-overlay");
+    if (helpOverlay) {
+      helpOverlay.addEventListener("click", (ev) => {
+        if (ev.target === helpOverlay) toggleShortcutHelp(false);
+      });
+    }
+    document.querySelectorAll(".mp-ob-shortcut[data-shortcut]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const action = btn.dataset.shortcut;
+        if (action === "prev") shiftAsset("prev");
+        else if (action === "next") shiftAsset("next");
+        else if (action === "reload") loadOrderbook();
+        else if (action === "search") {
+          state.pickerOpen = true;
+          renderCombobox();
+          const input = document.getElementById("mp-ob-combo-search");
+          if (input) input.focus();
+        }
+      });
+    });
 
     const pdfBtn = document.getElementById("btn-export-pdf");
     if (pdfBtn) pdfBtn.addEventListener("click", exportPdf);

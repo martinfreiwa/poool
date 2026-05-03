@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
   <script src="/static/js/poool-dropdown.js"></script>
   <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-sentry-shim.js"></script>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
   <script src="/static/js/admin-global-search.js"></script>
@@ -82,8 +83,12 @@
           </div>
         </div>
 
-        <div class="mp-ob-shortcuts" aria-label="Keyboard shortcuts">
-          <kbd>[</kbd> / <kbd>]</kbd> switch asset · <kbd>/</kbd> search · <kbd>r</kbd> reload · <kbd>Esc</kbd> close
+        <div class="mp-ob-shortcuts" role="toolbar" aria-label="Keyboard shortcuts">
+          <button type="button" class="mp-ob-shortcut" data-shortcut="prev" title="Previous asset"><kbd>[</kbd> prev</button>
+          <button type="button" class="mp-ob-shortcut" data-shortcut="next" title="Next asset"><kbd>]</kbd> next</button>
+          <button type="button" class="mp-ob-shortcut" data-shortcut="search" title="Search assets"><kbd>/</kbd> search</button>
+          <button type="button" class="mp-ob-shortcut" data-shortcut="reload" title="Reload"><kbd>r</kbd> reload</button>
+          <span class="mp-ob-shortcuts-hint"><kbd>Esc</kbd> close</span>
         </div>
 
         <!-- Filter / aggregation toolbar -->
@@ -114,6 +119,11 @@
             </select>
           </label>
         </div>
+
+        <div id="mp-ob-offline-banner" class="admin-alert admin-alert--error" role="alert" aria-live="assertive" hidden></div>
+
+        <!-- Depth curve sparkline above the orderbook -->
+        <svg id="mp-ob-depth-chart" class="mp-ob-depth-chart" viewBox="0 0 800 80" preserveAspectRatio="none" role="img" aria-label="Cumulative depth curve" hidden></svg>
 
         <div id="mp-ob-bulk-bar" class="mp-ob-bulk-bar" role="status" aria-live="polite" hidden></div>
 
@@ -184,6 +194,38 @@
 
   <!-- Match preview popover -->
   <div id="mp-ob-popover" class="mp-ob-popover" role="tooltip" hidden></div>
+
+  <!-- Shortcut help modal -->
+  <div id="mp-ob-help-overlay" class="mp-ob-help-overlay" role="dialog" aria-modal="true" aria-labelledby="mp-ob-help-title" hidden>
+    <div class="mp-ob-help-card">
+      <h2 id="mp-ob-help-title">Keyboard shortcuts</h2>
+      <table class="mp-ob-help-table">
+        <tbody>
+          <tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>Previous / next asset</td></tr>
+          <tr><td><kbd>/</kbd></td><td>Focus asset search</td></tr>
+          <tr><td><kbd>r</kbd></td><td>Reload orderbook</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Close drawer / picker / help</td></tr>
+          <tr><td><kbd>?</kbd></td><td>Toggle this help</td></tr>
+        </tbody>
+      </table>
+      <div class="mp-ob-help-actions">
+        <button type="button" id="mp-ob-help-close" class="admin-btn admin-btn--primary admin-btn--sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reason prompt overlay (with autocomplete) -->
+  <div id="mp-ob-reason-overlay" class="mp-ob-reason-overlay" role="dialog" aria-modal="true" aria-labelledby="mp-ob-reason-title-el" hidden>
+    <div class="mp-ob-reason-card">
+      <div id="mp-ob-reason-title-el" class="mp-ob-reason-title">Reason</div>
+      <input list="mp-ob-reason-list" id="mp-ob-reason-input" class="mp-ob-reason-input" autocomplete="off" />
+      <datalist id="mp-ob-reason-list"></datalist>
+      <div class="mp-ob-reason-actions">
+        <button type="button" id="mp-ob-reason-cancel" class="admin-btn admin-btn--ghost admin-btn--sm">Cancel</button>
+        <button type="button" id="mp-ob-reason-ok" class="admin-btn admin-btn--primary admin-btn--sm">Confirm</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Per-asset settings drawer -->
   <div id="mp-ob-settings-drawer" class="mp-ob-drawer" role="dialog" aria-modal="true" aria-labelledby="mp-ob-drawer-title" hidden aria-hidden="true">

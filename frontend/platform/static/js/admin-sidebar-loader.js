@@ -62,7 +62,7 @@
                         </a>
                         <a href="/admin/asset-tokenize.html" class="admin-nav-item ${isPathActive(["/admin/asset-tokenize.html"]) ? "active" : ""}" id="nav-asset-tokenize">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M7.5 4.21l4.5 2.6 4.5-2.6M7.5 19.79V14.6L3 12M21 12l-4.5 2.6v5.19M12 6.81v5.2"/></svg>
-                            <span>Tokenize Asset</span>
+                            <span>Asset Tokenization</span>
                         </a>
                     </div>
 
@@ -123,6 +123,7 @@
                     <!-- Marketplace -->
                     <div class="admin-nav-section">
                         <span class="admin-nav-section-label">Marketplace</span>
+                        <span class="admin-nav-subsection-label">Trading</span>
                         <a href="/admin/marketplace/" class="admin-nav-item ${isPathActive(["/admin/marketplace/", "/admin/marketplace/index.html"]) ? "active" : ""}" id="nav-mp-overview">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
                             <span>MP Overview</span>
@@ -139,6 +140,7 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h4l2.5 12h11.5a2 2 0 001.9-1.3L23 5H5.5"/><circle cx="9" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
                             <span>Trade Orders</span>
                         </a>
+                        <span class="admin-nav-subsection-label">Approvals & Reconciliation</span>
                         <a href="/admin/marketplace/approvals.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/approvals.html"]) ? "active" : ""}" id="nav-mp-approvals">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
                             <span>MP Approvals</span>
@@ -147,13 +149,15 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 10a4 4 0 01-8 0"/><path d="M9 6V4a3 3 0 016 0v2"/></svg>
                             <span>Primary Escrow</span>
                         </a>
+                        <span class="admin-nav-subsection-label">Insights & Config</span>
                         <a href="/admin/marketplace/fees.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/fees.html"]) ? "active" : ""}" id="nav-mp-fees">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
                             <span>Fees</span>
                         </a>
-                        <a href="/admin/marketplace/alerts.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/alerts.html"]) ? "active" : ""}" id="nav-mp-alerts">
+                        <a href="/admin/marketplace/alerts.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/alerts.html"]) ? "active" : ""}" id="nav-mp-alerts" title="Alerts, Watchlist & Detection Rules">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>
                             <span>Alerts</span>
+                            <span id="nav-mp-alerts-badge" style="margin-left:auto;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--admin-danger);color:#fff;display:none;">0</span>
                         </a>
                         <a href="/admin/marketplace/p2p.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/p2p.html"]) ? "active" : ""}" id="nav-mp-p2p">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
@@ -344,15 +348,6 @@
 
                 <!-- Footer -->
                 <div class="admin-sidebar-footer">
-                    <button type="button" class="admin-theme-toggle" id="admin-theme-toggle" role="switch" aria-checked="false" aria-label="Toggle dark mode">
-                        <span class="admin-theme-toggle-icon admin-theme-toggle-icon--sun" aria-hidden="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-                        </span>
-                        <span class="admin-theme-toggle-icon admin-theme-toggle-icon--moon" aria-hidden="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                        </span>
-                        <span id="theme-toggle-label" class="admin-theme-toggle-label">Light</span>
-                    </button>
                     <div class="admin-sidebar-user-menu" id="admin-sidebar-user-menu">
                         <button type="button" class="admin-sidebar-user" id="admin-sidebar-user-btn" aria-haspopup="menu" aria-expanded="false">
                             <span class="admin-sidebar-avatar-wrap">
@@ -369,6 +364,19 @@
                             <a href="/admin/profile" class="admin-sidebar-user-popover__item" role="menuitem">Profile</a>
                             <a href="/admin/audit-logs" class="admin-sidebar-user-popover__item" role="menuitem">My audit log</a>
                             <a href="/admin/" class="admin-sidebar-user-popover__item" role="menuitem">Switch account</a>
+                            <div class="admin-sidebar-user-popover__sep"></div>
+                            <button type="button" class="admin-sidebar-user-popover__item" id="admin-theme-toggle" role="menuitemcheckbox" aria-checked="false" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                <span style="display:inline-flex;align-items:center;gap:8px;">
+                                    <span class="admin-theme-toggle-icon admin-theme-toggle-icon--sun" aria-hidden="true">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                                    </span>
+                                    <span class="admin-theme-toggle-icon admin-theme-toggle-icon--moon" aria-hidden="true">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                                    </span>
+                                    <span id="theme-toggle-label">Light mode</span>
+                                </span>
+                                <span class="admin-theme-toggle-track" aria-hidden="true"><span class="admin-theme-toggle-thumb"></span></span>
+                            </button>
                             <div class="admin-sidebar-user-popover__sep"></div>
                             <button type="button" class="admin-sidebar-user-popover__item admin-sidebar-user-popover__item--danger" id="admin-sidebar-logout" role="menuitem">Sign out</button>
                         </div>
@@ -524,6 +532,20 @@
                     ? data.filter(r => r.status === "pending").length
                     : 0;
                 setBadge("com-reports-badge", pending);
+            }),
+            fetchJson("/api/admin/marketplace/alerts").then(data => {
+                if (!Array.isArray(data)) return;
+                const unresolved = data.filter(a => !["resolved", "false_positive"].includes(a.status)).length;
+                const badge = document.getElementById("nav-mp-alerts-badge");
+                if (!badge) return;
+                if (unresolved > 0) {
+                    badge.textContent = unresolved > 99 ? "99+" : unresolved;
+                    badge.style.display = "";
+                    const critical = data.filter(a => (a.severity || "").toLowerCase() === "critical" && !["resolved", "false_positive"].includes(a.status)).length;
+                    badge.style.background = critical > 0 ? "var(--admin-danger)" : "var(--admin-warning)";
+                } else {
+                    badge.style.display = "none";
+                }
             }),
         ];
 

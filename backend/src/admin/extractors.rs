@@ -34,6 +34,8 @@ pub enum ApiError {
     Forbidden(String),
     /// 409
     Conflict(String),
+    /// 429 — rate-limit exceeded; message tells caller when to retry.
+    TooManyRequests(String),
     /// Database error – wrapped and hidden from client.
     Database(sqlx::Error),
 }
@@ -50,6 +52,7 @@ impl std::fmt::Display for ApiError {
             ApiError::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
             ApiError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
             ApiError::Conflict(msg) => write!(f, "Conflict: {}", msg),
+            ApiError::TooManyRequests(msg) => write!(f, "TooManyRequests: {}", msg),
             ApiError::Database(_) => write!(f, "Database"),
         }
     }
@@ -71,6 +74,7 @@ impl IntoResponse for ApiError {
             ApiError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, msg.clone()),
             ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg.clone()),
             ApiError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
+            ApiError::TooManyRequests(msg) => (StatusCode::TOO_MANY_REQUESTS, msg.clone()),
             ApiError::Database(err) => {
                 tracing::error!("API database error: {}", err);
                 sentry::capture_error(err);

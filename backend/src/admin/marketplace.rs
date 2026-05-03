@@ -13,10 +13,11 @@
 
 use axum::{
     extract::{Path, Query, State},
+    response::IntoResponse,
     Json,
 };
 use axum_extra::extract::CookieJar;
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, Timelike};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, QueryBuilder};
@@ -94,6 +95,12 @@ pub struct AdminOrder {
     pub quantity_filled: i32,
     pub status: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    /// T4-E: server-side anomaly flag timestamp (NULL when not flagged).
+    #[serde(default)]
+    pub flagged_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// T4-E: short reason label (e.g. "large_hold", "stale_7d").
+    #[serde(default)]
+    pub flag_reason: Option<String>,
 }
 
 /// Query filters for trade history.
@@ -612,10 +619,10 @@ fn normalize_trade_filters(filters: &TradeFilters) -> Result<ValidatedTradeFilte
     if let Some(ref status) = status {
         if !matches!(
             status.as_str(),
-            "pending" | "submitted" | "confirmed" | "failed"
+            "pending" | "submitted" | "confirmed" | "failed" | "cancelled"
         ) {
             return Err(ApiError::BadRequest(
-                "on_chain_status must be pending, submitted, confirmed, or failed".to_string(),
+                "on_chain_status must be pending, submitted, confirmed, failed, or cancelled".to_string(),
             ));
         }
     }
@@ -1032,6 +1039,210 @@ pub async fn api_admin_marketplace_trades_export_csv(
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// ── Trade mutation: cancel / retry settlement ─────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+/// Body for `POST /api/admin/marketplace/trades/:id/cancel`.
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct AdminTradeCancelRequest {
+    pub reason: Option<String>,
+}
+
+/// Response for trade mutation endpoints.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[allow(missing_docs)]
+pub struct AdminTradeMutationResponse {
+    pub id: Uuid,
+    pub on_chain_status: String,
+    pub cancelled_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub cancellation_reason: Option<String>,
+}
+
+/// POST /api/admin/marketplace/trades/:id/cancel — Cancel a pending or failed trade.
+pub async fn api_admin_marketplace_cancel_trade(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(trade_id): Path<Uuid>,
+    Json(body): Json<AdminTradeCancelRequest>,
+) -> Result<Json<AdminTradeMutationResponse>, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
+    let reason = normalize_admin_cancel_reason(body.reason)?;
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+    let prev: Option<(String,)> = sqlx::query_as(
+        "SELECT on_chain_status FROM trade_history WHERE id = $1 FOR UPDATE",
+    )
+    .bind(trade_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    let prev_status = match prev {
+        Some((s,)) => s,
+        None => return Err(ApiError::NotFound("Trade not found".into())),
+    };
+    if !matches!(prev_status.as_str(), "pending" | "failed") {
+        return Err(ApiError::BadRequest(format!(
+            "Cannot cancel trade in status '{}' — only pending or failed trades may be cancelled",
+            prev_status
+        )));
+    }
+
+    let updated: AdminTradeMutationResponse = sqlx::query_as(
+        r#"UPDATE trade_history
+              SET on_chain_status     = 'cancelled',
+                  cancelled_at        = NOW(),
+                  cancelled_by        = $2,
+                  cancellation_reason = $3
+            WHERE id = $1
+        RETURNING id, on_chain_status, cancelled_at, cancellation_reason"#,
+    )
+    .bind(trade_id).bind(admin.user.id).bind(&reason)
+    .fetch_one(&mut *tx).await.map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'marketplace.trade.cancelled', 'trade', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id).bind(trade_id)
+    .bind(serde_json::json!({ "on_chain_status": prev_status }))
+    .bind(serde_json::json!({ "on_chain_status": "cancelled", "reason": reason }))
+    .execute(&mut *tx).await.map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+    tracing::info!(admin_id = %admin.user.id, trade_id = %trade_id, prev_status = %prev_status, "Admin cancelled marketplace trade");
+    Ok(Json(updated))
+}
+
+/// POST /api/admin/marketplace/trades/:id/retry-settlement — Requeue a failed trade.
+pub async fn api_admin_marketplace_retry_trade_settlement(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(trade_id): Path<Uuid>,
+) -> Result<Json<AdminTradeMutationResponse>, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+    let prev: Option<(String,)> = sqlx::query_as(
+        "SELECT on_chain_status FROM trade_history WHERE id = $1 FOR UPDATE",
+    )
+    .bind(trade_id)
+    .fetch_optional(&mut *tx).await.map_err(ApiError::Database)?;
+
+    let prev_status = match prev {
+        Some((s,)) => s,
+        None => return Err(ApiError::NotFound("Trade not found".into())),
+    };
+    if prev_status != "failed" {
+        return Err(ApiError::BadRequest(format!(
+            "Cannot retry trade in status '{}' — only failed trades may be retried",
+            prev_status
+        )));
+    }
+
+    let updated: AdminTradeMutationResponse = sqlx::query_as(
+        r#"UPDATE trade_history
+              SET on_chain_status     = 'pending',
+                  on_chain_tx_hash    = NULL,
+                  cancelled_at        = NULL,
+                  cancelled_by        = NULL,
+                  cancellation_reason = NULL
+            WHERE id = $1
+        RETURNING id, on_chain_status, cancelled_at, cancellation_reason"#,
+    )
+    .bind(trade_id)
+    .fetch_one(&mut *tx).await.map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'marketplace.trade.retry_settlement', 'trade', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id).bind(trade_id)
+    .bind(serde_json::json!({ "on_chain_status": prev_status }))
+    .bind(serde_json::json!({ "on_chain_status": "pending" }))
+    .execute(&mut *tx).await.map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+    tracing::info!(admin_id = %admin.user.id, trade_id = %trade_id, prev_status = %prev_status, "Admin retried marketplace trade settlement");
+    Ok(Json(updated))
+}
+
+/// Body for `POST /api/admin/marketplace/trades/bulk-cancel`.
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct BulkCancelRequest {
+    pub trade_ids: Vec<Uuid>,
+    pub reason: Option<String>,
+}
+
+/// Response shape for the bulk-cancel endpoint.
+#[derive(Debug, Serialize)]
+#[allow(missing_docs)]
+pub struct BulkCancelResponse {
+    pub requested: usize,
+    pub eligible: usize,
+    pub cancelled: usize,
+}
+
+/// POST /api/admin/marketplace/trades/bulk-cancel — Cancel many trades at once.
+pub async fn api_admin_marketplace_trades_bulk_cancel(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(req): Json<BulkCancelRequest>,
+) -> Result<Json<BulkCancelResponse>, ApiError> {
+    admin.require_permission(&state.db, "marketplace.manage").await?;
+    if req.trade_ids.is_empty() {
+        return Ok(Json(BulkCancelResponse { requested: 0, eligible: 0, cancelled: 0 }));
+    }
+    if req.trade_ids.len() > 500 {
+        return Err(ApiError::BadRequest("trade_ids exceeds limit of 500".to_string()));
+    }
+    let reason = normalize_admin_cancel_reason(req.reason.clone())?;
+
+    let eligible: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*)::BIGINT FROM trade_history
+            WHERE id = ANY($1) AND on_chain_status IN ('pending', 'failed')"#,
+    )
+    .bind(&req.trade_ids)
+    .fetch_one(&state.db).await.map_err(ApiError::Database)?;
+
+    let result = sqlx::query(
+        r#"UPDATE trade_history SET
+              on_chain_status     = 'cancelled',
+              cancelled_at        = NOW(),
+              cancelled_by        = $2,
+              cancellation_reason = $3
+            WHERE id = ANY($1)
+              AND on_chain_status IN ('pending', 'failed')"#,
+    )
+    .bind(&req.trade_ids).bind(admin.user.id).bind(&reason)
+    .execute(&state.db).await.map_err(ApiError::Database)?;
+    let cancelled = result.rows_affected() as usize;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+           VALUES ($1, 'marketplace.trade.bulk_cancel', 'trade_history', $2)"#,
+    )
+    .bind(admin.user.id)
+    .bind(serde_json::json!({
+        "requested": req.trade_ids.len(),
+        "eligible": eligible,
+        "cancelled": cancelled,
+        "trade_ids": &req.trade_ids,
+        "reason": reason,
+    }))
+    .execute(&state.db).await;
+
+    tracing::info!(admin_id = %admin.user.id, requested = req.trade_ids.len(), cancelled, "Admin bulk-cancelled marketplace trades");
+    Ok(Json(BulkCancelResponse {
+        requested: req.trade_ids.len(),
+        eligible: eligible as usize,
+        cancelled,
+    }))
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // ── 6A.6: Open Orders + Admin Cancel ──────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 
@@ -1122,7 +1333,7 @@ pub async fn api_admin_marketplace_orders(
 
     let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
         "SELECT o.id, o.user_id, u.email AS user_email, o.asset_id, a.title AS asset_name, \
-         o.side, o.order_type, o.price_cents, o.quantity, o.quantity_filled, o.status, o.created_at \
+         o.side, o.order_type, o.price_cents, o.quantity, o.quantity_filled, o.status, o.created_at, o.flagged_at, o.flag_reason \
          FROM market_orders o \
          LEFT JOIN users u ON u.id = o.user_id \
          LEFT JOIN assets a ON a.id = o.asset_id \
@@ -1209,7 +1420,7 @@ pub async fn api_admin_marketplace_orders_export_csv(
 
     let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
         "SELECT o.id, o.user_id, u.email AS user_email, o.asset_id, a.title AS asset_name, \
-         o.side, o.order_type, o.price_cents, o.quantity, o.quantity_filled, o.status, o.created_at \
+         o.side, o.order_type, o.price_cents, o.quantity, o.quantity_filled, o.status, o.created_at, o.flagged_at, o.flag_reason \
          FROM market_orders o \
          LEFT JOIN users u ON u.id = o.user_id \
          LEFT JOIN assets a ON a.id = o.asset_id \
@@ -3463,6 +3674,351 @@ pub async fn api_admin_marketplace_settings(
     }
 
     Ok(Json(defaults))
+}
+
+/// GET /api/admin/marketplace/settings/asset/:asset_id — Per-asset settings view.
+///
+/// Returns the resolved global+override view alongside an `ETag` derived from
+/// the override payload. Clients must echo it back via `If-Match` on POST to
+/// avoid clobbering concurrent edits.
+pub async fn api_admin_marketplace_settings_for_asset(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(asset_id): Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
+    let asset_uuid = ApiError::parse_uuid(&asset_id)?;
+
+    let asset_row: Option<(String, String)> =
+        sqlx::query_as("SELECT title, slug FROM assets WHERE id = $1")
+            .bind(asset_uuid)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::Database)?;
+    let (asset_title, asset_slug) = asset_row
+        .ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
+
+    // Reuse the global resolver — Redis-backed, falls back to defaults.
+    let mut global = default_marketplace_settings();
+    if let Some(ref redis) = state.redis {
+        if let Ok(mut conn) = redis.get().await {
+            if let Ok(Some(s)) = redis::cmd("GET")
+                .arg("marketplace:settings")
+                .query_async::<Option<String>>(&mut *conn)
+                .await
+            {
+                if let Ok(parsed) = serde_json::from_str::<MarketplaceSettings>(&s) {
+                    global = parsed;
+                }
+            }
+            if let Ok(Some(val)) = redis::cmd("GET")
+                .arg("marketplace:trading_enabled")
+                .query_async::<Option<String>>(&mut *conn)
+                .await
+            {
+                global.trading_enabled = val == "1" || val.to_lowercase() == "true";
+            }
+        }
+    }
+
+    let (overrides, has_override) = read_asset_overrides(&state, asset_uuid).await;
+    let etag = compute_settings_etag(&overrides);
+
+    let body = serde_json::json!({
+        "asset_id": asset_uuid,
+        "asset_title": asset_title,
+        "asset_slug": asset_slug,
+        "has_override": has_override,
+        "global": global,
+        "asset_overrides": overrides,
+        "etag": etag,
+    });
+    let mut resp = Json(body).into_response();
+    resp.headers_mut().insert(
+        axum::http::header::ETAG,
+        axum::http::HeaderValue::from_str(&format!("\"{etag}\""))
+            .unwrap_or(axum::http::HeaderValue::from_static("\"\"")),
+    );
+    Ok(resp)
+}
+
+async fn read_asset_overrides(
+    state: &AppState,
+    asset_uuid: Uuid,
+) -> (Option<AssetSettingsOverrides>, bool) {
+    let Some(redis) = state.redis.as_ref() else {
+        return (None, false);
+    };
+    let mut conn = match redis.get().await {
+        Ok(c) => c,
+        Err(_) => return (None, false),
+    };
+    let key = format!("marketplace:settings:asset:{}", asset_uuid);
+    match redis::cmd("GET")
+        .arg(&key)
+        .query_async::<Option<String>>(&mut *conn)
+        .await
+    {
+        Ok(Some(s)) => match serde_json::from_str::<AssetSettingsOverrides>(&s) {
+            Ok(parsed) => (Some(parsed), true),
+            Err(_) => (None, false),
+        },
+        _ => (None, false),
+    }
+}
+
+fn compute_settings_etag(overrides: &Option<AssetSettingsOverrides>) -> String {
+    let payload = serde_json::to_string(overrides).unwrap_or_else(|_| "null".into());
+    let mut hasher = Sha256::new();
+    hasher.update(payload.as_bytes());
+    let bytes = hasher.finalize();
+    bytes.iter().take(8).map(|b| format!("{:02x}", b)).collect()
+}
+
+/// Per-asset settings overrides (currently Redis-backed JSON keyed by asset_id).
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
+#[allow(missing_docs)]
+pub struct AssetSettingsOverrides {
+    pub tick_size_cents: Option<i64>,
+    pub min_order_size: Option<i32>,
+    pub max_order_size: Option<i32>,
+    pub trading_enabled: Option<bool>,
+    pub weekend_trading: Option<bool>,
+}
+
+/// POST /api/admin/marketplace/settings/asset/:asset_id — Save per-asset overrides.
+pub async fn api_admin_marketplace_save_asset_settings(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(asset_id): Path<String>,
+    headers: axum::http::HeaderMap,
+    Json(body): Json<AssetSettingsOverrides>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
+    let asset_uuid = ApiError::parse_uuid(&asset_id)?;
+
+    // Optimistic lock: if the client supplied If-Match, it must equal the
+    // current ETag (sha256-trim of the stored override payload).
+    let (current_overrides, _) = read_asset_overrides(&state, asset_uuid).await;
+    let current_etag = compute_settings_etag(&current_overrides);
+    if let Some(if_match) = headers.get(axum::http::header::IF_MATCH) {
+        let raw = if_match.to_str().unwrap_or("").trim_matches('"');
+        if raw != current_etag {
+            return Err(ApiError::Conflict(format!(
+                "ETag mismatch: settings changed under you. Expected {}, got {}.",
+                current_etag, raw
+            )));
+        }
+    }
+
+    if let Some(redis) = state.redis.as_ref() {
+        let mut conn = redis
+            .get()
+            .await
+            .map_err(|e| ApiError::Internal(format!("Redis connection failed: {}", e)))?;
+        let key = format!("marketplace:settings:asset:{}", asset_uuid);
+        let payload = serde_json::to_string(&body)
+            .map_err(|e| ApiError::Internal(format!("Encode failed: {}", e)))?;
+        let _: Result<(), redis::RedisError> = redis::cmd("SET")
+            .arg(&key)
+            .arg(&payload)
+            .query_async(&mut *conn)
+            .await;
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'marketplace.asset_settings.saved', 'asset_settings', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(asset_uuid)
+    .bind(serde_json::to_value(&body).unwrap_or(serde_json::Value::Null))
+    .execute(&state.db)
+    .await
+    .ok();
+
+    let new_etag = compute_settings_etag(&Some(body.clone()));
+    let mut resp = Json(serde_json::json!({
+        "success": true,
+        "asset_id": asset_uuid,
+        "overrides": body,
+        "etag": new_etag,
+    })).into_response();
+    resp.headers_mut().insert(
+        axum::http::header::ETAG,
+        axum::http::HeaderValue::from_str(&format!("\"{new_etag}\""))
+            .unwrap_or(axum::http::HeaderValue::from_static("\"\"")),
+    );
+    Ok(resp)
+}
+
+/// Match-preview request body.
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct MatchPreviewRequest {
+    pub asset_id: Uuid,
+    pub side: String, // "buy" | "sell"
+    pub quantity: i64,
+    pub limit_price_cents: Option<i64>,
+}
+
+/// Per-level fill detail.
+#[derive(Debug, Serialize)]
+#[allow(missing_docs)]
+pub struct MatchPreviewLevel {
+    pub price_cents: i64,
+    pub qty_consumed: i64,
+}
+
+/// Match-preview response.
+#[derive(Debug, Serialize)]
+#[allow(missing_docs)]
+pub struct MatchPreviewResponse {
+    pub filled_qty: i64,
+    pub remaining_qty: i64,
+    pub total_cost_cents: i64,
+    pub avg_price_cents: Option<i64>,
+    pub worst_price_cents: Option<i64>,
+    pub levels_consumed: Vec<MatchPreviewLevel>,
+    pub partial: bool,
+    pub crossed_limit: bool,
+}
+
+/// POST /api/admin/marketplace/match-preview — Simulate a market/limit fill against current depth.
+///
+/// Walks aggregated opposite-side levels in price-time priority and computes
+/// filled qty, total cost, average + worst price, and whether the limit was
+/// crossed before the order could fill. Read-only: no orders are created.
+static MATCH_PREVIEW_LIMITER: std::sync::OnceLock<
+    tokio::sync::Mutex<std::collections::HashMap<Uuid, (std::time::Instant, u32)>>,
+> = std::sync::OnceLock::new();
+
+fn match_preview_limiter()
+    -> &'static tokio::sync::Mutex<std::collections::HashMap<Uuid, (std::time::Instant, u32)>>
+{
+    MATCH_PREVIEW_LIMITER
+        .get_or_init(|| tokio::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+const MATCH_PREVIEW_WINDOW: std::time::Duration = std::time::Duration::from_secs(10);
+const MATCH_PREVIEW_BURST: u32 = 30; // 30 requests per 10s per admin
+
+async fn check_match_preview_rate(admin_id: Uuid) -> Result<(), ApiError> {
+    let mut map = match_preview_limiter().lock().await;
+    let now = std::time::Instant::now();
+    let entry = map.entry(admin_id).or_insert((now, 0));
+    if now.duration_since(entry.0) > MATCH_PREVIEW_WINDOW {
+        *entry = (now, 0);
+    }
+    if entry.1 >= MATCH_PREVIEW_BURST {
+        let retry = MATCH_PREVIEW_WINDOW
+            .saturating_sub(now.duration_since(entry.0))
+            .as_secs()
+            .max(1);
+        return Err(ApiError::TooManyRequests(format!(
+            "Match-preview rate limit exceeded. Retry in {}s.",
+            retry
+        )));
+    }
+    entry.1 += 1;
+    Ok(())
+}
+
+/// POST /api/admin/marketplace/match-preview — Simulate fill at current depth.
+pub async fn api_admin_marketplace_match_preview(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(req): Json<MatchPreviewRequest>,
+) -> Result<Json<MatchPreviewResponse>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
+    check_match_preview_rate(admin.user.id).await?;
+    if req.quantity <= 0 {
+        return Err(ApiError::BadRequest("quantity must be > 0".into()));
+    }
+    let opposite = match req.side.as_str() {
+        "buy" => "sell",
+        "sell" => "buy",
+        _ => return Err(ApiError::BadRequest("side must be 'buy' or 'sell'".into())),
+    };
+    // Buys consume the lowest asks first; sells consume the highest bids first.
+    let order_by = if opposite == "sell" { "ASC" } else { "DESC" };
+
+    let levels: Vec<AdminOrderbookLevelRow> = sqlx::query_as(&format!(
+        r#"
+        SELECT price_cents,
+               SUM(quantity - quantity_filled)::BIGINT AS total_quantity,
+               COUNT(*)::BIGINT AS order_count
+        FROM market_orders
+        WHERE asset_id = $1 AND side = $2 AND status IN ('open', 'partially_filled')
+        GROUP BY price_cents
+        ORDER BY price_cents {order_by}
+        LIMIT 200
+        "#,
+    ))
+    .bind(req.asset_id)
+    .bind(opposite)
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    let mut remaining = req.quantity;
+    let mut filled: i64 = 0;
+    let mut total_cost: i64 = 0;
+    let mut consumed: Vec<MatchPreviewLevel> = Vec::new();
+    let mut worst_price: Option<i64> = None;
+    let mut crossed_limit = false;
+
+    for lvl in levels {
+        if remaining <= 0 {
+            break;
+        }
+        if let Some(limit) = req.limit_price_cents {
+            let allowed = match req.side.as_str() {
+                "buy" => lvl.price_cents <= limit,
+                "sell" => lvl.price_cents >= limit,
+                _ => true,
+            };
+            if !allowed {
+                crossed_limit = true;
+                break;
+            }
+        }
+        let take = lvl.total_quantity.min(remaining);
+        if take <= 0 {
+            continue;
+        }
+        filled += take;
+        remaining -= take;
+        total_cost += lvl.price_cents * take;
+        worst_price = Some(lvl.price_cents);
+        consumed.push(MatchPreviewLevel {
+            price_cents: lvl.price_cents,
+            qty_consumed: take,
+        });
+    }
+
+    let avg_price_cents = if filled > 0 {
+        Some(total_cost / filled)
+    } else {
+        None
+    };
+
+    Ok(Json(MatchPreviewResponse {
+        filled_qty: filled,
+        remaining_qty: remaining.max(0),
+        total_cost_cents: total_cost,
+        avg_price_cents,
+        worst_price_cents: worst_price,
+        levels_consumed: consumed,
+        partial: remaining > 0,
+        crossed_limit,
+    }))
 }
 
 /// POST /api/admin/marketplace/settings — Save marketplace settings to Redis.
@@ -5877,6 +6433,7 @@ pub struct AlertRule {
     pub escalate_after_min: i32,
     pub channel: String,
     pub enabled: bool,
+    pub mute_schedule: Option<serde_json::Value>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -5891,6 +6448,8 @@ pub struct AlertRuleUpsert {
     pub escalate_after_min: i32,
     pub channel: String,
     pub enabled: bool,
+    #[serde(default)]
+    pub mute_schedule: Option<serde_json::Value>,
 }
 
 fn validate_rule(r: &AlertRuleUpsert) -> Result<(), ApiError> {
@@ -5920,7 +6479,7 @@ pub async fn api_admin_marketplace_list_rules(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AlertRule>>, ApiError> {
     let rows: Vec<AlertRule> = sqlx::query_as(
-        "SELECT id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, created_at, updated_at
+        "SELECT id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_at, updated_at
            FROM marketplace_alert_rules
        ORDER BY enabled DESC, name ASC",
     )
@@ -5939,9 +6498,9 @@ pub async fn api_admin_marketplace_create_rule(
     validate_rule(&body)?;
     let row: AlertRule = sqlx::query_as(
         "INSERT INTO marketplace_alert_rules
-            (name, category, severity, threshold_text, escalate_after_min, channel, enabled, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-         RETURNING id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, created_at, updated_at",
+            (name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         RETURNING id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_at, updated_at",
     )
     .bind(&body.name)
     .bind(&body.category)
@@ -5950,6 +6509,7 @@ pub async fn api_admin_marketplace_create_rule(
     .bind(body.escalate_after_min)
     .bind(&body.channel)
     .bind(body.enabled)
+    .bind(body.mute_schedule.as_ref())
     .bind(admin.user.id)
     .fetch_one(&state.db)
     .await
@@ -5969,9 +6529,9 @@ pub async fn api_admin_marketplace_update_rule(
     let row: AlertRule = sqlx::query_as(
         "UPDATE marketplace_alert_rules
             SET name = $1, category = $2, severity = $3, threshold_text = $4,
-                escalate_after_min = $5, channel = $6, enabled = $7, updated_at = NOW()
-          WHERE id = $8
-         RETURNING id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, created_at, updated_at",
+                escalate_after_min = $5, channel = $6, enabled = $7, mute_schedule = $8, updated_at = NOW()
+          WHERE id = $9
+         RETURNING id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_at, updated_at",
     )
     .bind(&body.name)
     .bind(&body.category)
@@ -5980,6 +6540,7 @@ pub async fn api_admin_marketplace_update_rule(
     .bind(body.escalate_after_min)
     .bind(&body.channel)
     .bind(body.enabled)
+    .bind(body.mute_schedule.as_ref())
     .bind(id)
     .fetch_one(&state.db)
     .await
@@ -6015,7 +6576,7 @@ pub async fn api_admin_marketplace_test_rule(
     let id = Uuid::parse_str(&rule_id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
 
     let rule: Option<AlertRule> = sqlx::query_as(
-        "SELECT id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, created_at, updated_at
+        "SELECT id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_at, updated_at
            FROM marketplace_alert_rules WHERE id = $1",
     )
     .bind(id)
@@ -6167,8 +6728,8 @@ pub async fn api_admin_marketplace_delete_watchlist_v2(
 /// Notification dispatch is currently a tracing log — wire to Slack/email/SMS
 /// transport in a follow-up.
 pub async fn escalate_overdue_alerts(db: &sqlx::PgPool) -> Result<u64, sqlx::Error> {
-    let rows: Vec<(Uuid, String, String, String, String)> = sqlx::query_as(
-        r#"SELECT a.id, a.alert_type, a.message, a.severity, COALESCE(r.channel, 'none')
+    let rows: Vec<(Uuid, String, String, String, String, Option<serde_json::Value>)> = sqlx::query_as(
+        r#"SELECT a.id, a.alert_type, a.message, a.severity, COALESCE(r.channel, 'none'), r.mute_schedule
              FROM marketplace_alerts a
              LEFT JOIN marketplace_alert_rules r ON r.id = a.rule_id
             WHERE a.status IN ('new', 'acknowledged')
@@ -6182,8 +6743,26 @@ pub async fn escalate_overdue_alerts(db: &sqlx::PgPool) -> Result<u64, sqlx::Err
     .fetch_all(db)
     .await?;
 
-    let count = rows.len() as u64;
-    for (id, alert_type, message, severity, channel) in &rows {
+    let now = chrono::Utc::now();
+    let weekday = now.weekday().num_days_from_monday(); // Mon=0..Sun=6
+    let is_weekend = weekday >= 5;
+    let hour = now.hour() as i64;
+
+    let mut count = 0u64;
+    for (id, alert_type, message, severity, channel, mute) in &rows {
+        // Skip if mute_schedule active right now
+        if let Some(mute) = mute {
+            let weekends = mute.get("weekends").and_then(|v| v.as_bool()).unwrap_or(false);
+            if weekends && is_weekend {
+                continue;
+            }
+            if let Some(hours) = mute.get("hours").and_then(|v| v.as_array()) {
+                if hours.iter().any(|h| h.as_i64() == Some(hour)) {
+                    continue;
+                }
+            }
+        }
+        count += 1;
         tracing::warn!(
             alert_id = %id,
             severity = %severity,
@@ -6193,11 +6772,483 @@ pub async fn escalate_overdue_alerts(db: &sqlx::PgPool) -> Result<u64, sqlx::Err
             alert_type,
             message
         );
-        // TODO: dispatch to channel transport (slack/email/sms/page)
+        dispatch_alert_notification(channel, severity, alert_type, message, &id.to_string());
+        // Always also fire web-push (independent of channel — admin opted in via SW subscribe)
+        dispatch_web_push(db, alert_type, message, severity, &id.to_string()).await;
         sqlx::query("UPDATE marketplace_alerts SET escalated_at = NOW() WHERE id = $1")
             .bind(id)
             .execute(db)
             .await?;
     }
     Ok(count)
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ── 6A.12+++: Notification transports + push subs + backtest ──────
+// ═══════════════════════════════════════════════════════════════════
+
+/// Dispatch an escalation notification via the configured channel.
+/// All transports are HTTP POST webhooks — set env vars to wire them up.
+/// Fire-and-forget; never blocks escalation worker.
+fn dispatch_alert_notification(
+    channel: &str,
+    severity: &str,
+    alert_type: &str,
+    message: &str,
+    alert_id: &str,
+) {
+    let env_var = match channel {
+        "slack" => "ALERT_SLACK_WEBHOOK_URL",
+        "email" => "ALERT_EMAIL_WEBHOOK_URL",
+        "sms" => "ALERT_SMS_WEBHOOK_URL",
+        "page" => "ALERT_PAGERDUTY_WEBHOOK_URL",
+        _ => return,
+    };
+    let url = match std::env::var(env_var) {
+        Ok(v) if !v.is_empty() => v,
+        _ => {
+            tracing::debug!(channel, "Notification skipped: {} not configured", env_var);
+            return;
+        }
+    };
+    let alert_type = alert_type.to_string();
+    let message = message.to_string();
+    let severity = severity.to_string();
+    let alert_id = alert_id.to_string();
+    let channel = channel.to_string();
+    tokio::spawn(async move {
+        let payload = match channel.as_str() {
+            "slack" => serde_json::json!({
+                "text": format!("🚨 *{}* alert: {}\n>{}\nID: `{}`", severity.to_uppercase(), alert_type, message, alert_id),
+            }),
+            "page" => serde_json::json!({
+                "routing_key": std::env::var("ALERT_PAGERDUTY_ROUTING_KEY").unwrap_or_default(),
+                "event_action": "trigger",
+                "dedup_key": format!("poool-alert-{}", alert_id),
+                "payload": {
+                    "summary": format!("{}: {}", alert_type, message),
+                    "severity": severity,
+                    "source": "poool-admin",
+                },
+            }),
+            // email/sms generic webhook — recipient list configured server-side
+            _ => serde_json::json!({
+                "severity": severity, "type": alert_type, "message": message, "id": alert_id,
+            }),
+        };
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build();
+        if let Ok(c) = client {
+            match c.post(&url).json(&payload).send().await {
+                Ok(r) if r.status().is_success() => {
+                    tracing::info!(channel, alert_id, "Alert notification dispatched");
+                }
+                Ok(r) => tracing::warn!(channel, alert_id, status = %r.status(), "Notification webhook returned non-2xx"),
+                Err(e) => tracing::warn!(channel, alert_id, err = %e, "Notification webhook failed"),
+            }
+        }
+    });
+}
+
+// ── Web push subscriptions ─────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct PushSubKeys {
+    pub p256dh: String,
+    pub auth: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct PushSubBody {
+    pub endpoint: String,
+    pub keys: PushSubKeys,
+}
+
+/// GET /api/admin/marketplace/push-vapid-key — Returns server VAPID public
+/// key (or 404-ish empty payload if not configured).
+pub async fn api_admin_marketplace_push_vapid_key(
+    _admin: AdminUser,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let key = std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default();
+    if key.is_empty() {
+        return Err(ApiError::BadRequest(
+            "VAPID_PUBLIC_KEY not configured".into(),
+        ));
+    }
+    Ok(Json(serde_json::json!({ "key": key })))
+}
+
+/// POST /api/admin/marketplace/push-subscriptions — Store a browser push
+/// subscription for the current admin.
+pub async fn api_admin_marketplace_register_push_subscription(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+    Json(body): Json<PushSubBody>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let ua = headers
+        .get("user-agent")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    sqlx::query(
+        "INSERT INTO marketplace_alert_push_subscriptions (user_id, endpoint, p256dh, auth, user_agent)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (endpoint) DO UPDATE
+            SET p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth,
+                user_agent = EXCLUDED.user_agent, last_seen_at = NOW()",
+    )
+    .bind(admin.user.id)
+    .bind(&body.endpoint)
+    .bind(&body.keys.p256dh)
+    .bind(&body.keys.auth)
+    .bind(&ua)
+    .execute(&state.db)
+    .await
+    .map_err(|e| ApiError::Internal(format!("Failed to store subscription: {}", e)))?;
+
+    Ok(Json(serde_json::json!({ "status": "registered" })))
+}
+
+// ── Watchlist enrichment ──────────────────────────────────────────
+// Already supported via LEFT JOIN users in v2 list; extend to count linked
+// active alerts per entry.
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[allow(missing_docs)]
+pub struct WatchlistEntryEnriched {
+    pub id: Uuid,
+    pub entity_type: String,
+    pub entity_identifier: Option<String>,
+    pub user_id: Option<Uuid>,
+    pub user_email: Option<String>,
+    pub reason: String,
+    pub added_by: Uuid,
+    pub added_by_email: Option<String>,
+    pub linked_alerts: i64,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// GET /api/admin/marketplace/watchlist/v2/enriched — Adds per-entity
+/// linked-alerts count and "added by" email.
+pub async fn api_admin_marketplace_watchlist_enriched(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<WatchlistEntryEnriched>>, ApiError> {
+    let rows: Vec<WatchlistEntryEnriched> = sqlx::query_as(
+        r#"SELECT
+              w.id, w.entity_type, w.entity_identifier,
+              w.user_id, u.email AS user_email,
+              w.reason, w.added_by, ab.email AS added_by_email,
+              COALESCE((
+                SELECT COUNT(*)
+                  FROM marketplace_alerts a
+                 WHERE a.status IN ('new','acknowledged')
+                   AND (
+                     (w.entity_type = 'user' AND a.user_id::TEXT = w.entity_identifier)
+                     OR (w.entity_type = 'asset' AND a.alert_type ILIKE '%' || w.entity_identifier || '%')
+                     OR (w.entity_type IN ('wallet','ip') AND a.metadata::TEXT LIKE '%' || w.entity_identifier || '%')
+                   )
+              ), 0) AS linked_alerts,
+              w.created_at
+            FROM marketplace_watchlist w
+            LEFT JOIN users u ON u.id = w.user_id
+            LEFT JOIN users ab ON ab.id = w.added_by
+           WHERE w.is_active = true
+        ORDER BY w.created_at DESC"#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    Ok(Json(rows))
+}
+
+// ── Rule backtest ──────────────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+#[allow(missing_docs)]
+pub struct RuleBacktestResult {
+    pub rule_id: Uuid,
+    pub rule_name: String,
+    pub days: i32,
+    pub matched_alerts: i64,
+    pub critical_matches: i64,
+    pub avg_per_day: f64,
+}
+
+/// POST /api/admin/marketplace/alert-rules/:id/backtest?days=30
+/// Counts past alerts matching the rule's name pattern in the lookback
+/// window. Cheap, naive — pattern match on `alert_type`. Good enough as
+/// a sanity check before enabling a rule.
+pub async fn api_admin_marketplace_backtest_rule(
+    _admin: AdminUser,
+    Path(rule_id): Path<String>,
+    State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<RuleBacktestResult>, ApiError> {
+    let id = Uuid::parse_str(&rule_id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
+    let days: i32 = q.get("days").and_then(|s| s.parse().ok()).unwrap_or(30).clamp(1, 365);
+
+    let rule: Option<AlertRule> = sqlx::query_as(
+        "SELECT id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_at, updated_at
+           FROM marketplace_alert_rules WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| ApiError::Internal(format!("Failed to load rule: {}", e)))?;
+    let rule = rule.ok_or_else(|| ApiError::BadRequest("rule not found".into()))?;
+
+    // Match alert_type containing first significant word of rule.name.
+    let key = rule
+        .name
+        .split_whitespace()
+        .find(|w| w.len() > 3)
+        .unwrap_or(&rule.name)
+        .to_string();
+
+    let row: (i64, i64) = sqlx::query_as(
+        "SELECT COUNT(*),
+                COUNT(*) FILTER (WHERE severity = 'critical')
+           FROM marketplace_alerts
+          WHERE alert_type ILIKE '%' || $1 || '%'
+            AND created_at > NOW() - ($2::INT * INTERVAL '1 day')",
+    )
+    .bind(&key)
+    .bind(days)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or((0, 0));
+
+    Ok(Json(RuleBacktestResult {
+        rule_id: rule.id,
+        rule_name: rule.name,
+        days,
+        matched_alerts: row.0,
+        critical_matches: row.1,
+        avg_per_day: row.0 as f64 / days as f64,
+    }))
+}
+
+// ── Matview refresh ────────────────────────────────────────────────
+
+/// Refresh the daily-counts matview. Call from background worker every 5–10 min.
+pub async fn refresh_alert_daily_counts(db: &sqlx::PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query("REFRESH MATERIALIZED VIEW CONCURRENTLY marketplace_alert_daily_counts")
+        .execute(db)
+        .await
+        .map(|_| ())
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ── Restored: Saved views, history (mig 110) ──────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[allow(missing_docs)]
+pub struct AlertView {
+    pub id: Uuid,
+    pub name: String,
+    pub state: serde_json::Value,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// GET /api/admin/marketplace/alert-views
+pub async fn api_admin_marketplace_list_views(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<AlertView>>, ApiError> {
+    let rows: Vec<AlertView> = sqlx::query_as(
+        "SELECT id, name, state, created_at
+           FROM marketplace_alert_views
+          WHERE user_id = $1
+       ORDER BY created_at DESC",
+    )
+    .bind(admin.user.id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    Ok(Json(rows))
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct SaveViewRequest {
+    pub name: String,
+    pub state: serde_json::Value,
+}
+
+/// POST /api/admin/marketplace/alert-views
+pub async fn api_admin_marketplace_save_view(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(body): Json<SaveViewRequest>,
+) -> Result<Json<AlertView>, ApiError> {
+    if body.name.trim().is_empty() || body.name.len() > 80 {
+        return Err(ApiError::BadRequest("name 1..80 chars".into()));
+    }
+    let row: AlertView = sqlx::query_as(
+        "INSERT INTO marketplace_alert_views (user_id, name, state) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, name) DO UPDATE SET state = EXCLUDED.state, created_at = NOW()
+         RETURNING id, name, state, created_at",
+    )
+    .bind(admin.user.id)
+    .bind(&body.name)
+    .bind(&body.state)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| ApiError::Internal(format!("Failed to save view: {}", e)))?;
+    Ok(Json(row))
+}
+
+/// DELETE /api/admin/marketplace/alert-views/:id
+pub async fn api_admin_marketplace_delete_view(
+    admin: AdminUser,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let uuid = Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
+    let res = sqlx::query("DELETE FROM marketplace_alert_views WHERE id = $1 AND user_id = $2")
+        .bind(uuid)
+        .bind(admin.user.id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to delete view: {}", e)))?;
+    Ok(Json(serde_json::json!({ "deleted": res.rows_affected() })))
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[allow(missing_docs)]
+pub struct AlertHistoryBucket {
+    pub day: chrono::NaiveDate,
+    pub severity: String,
+    pub count: i32,
+}
+
+/// GET /api/admin/marketplace/alerts/history?days=7
+pub async fn api_admin_marketplace_alert_history(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<Vec<AlertHistoryBucket>>, ApiError> {
+    let days: i32 = q
+        .get("days")
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(7)
+        .clamp(1, 90);
+
+    let rows: Vec<AlertHistoryBucket> = sqlx::query_as(
+        "SELECT day, severity, count
+           FROM marketplace_alert_daily_counts
+          WHERE day >= (CURRENT_DATE - ($1::INT - 1))
+       ORDER BY day ASC, severity",
+    )
+    .bind(days)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    Ok(Json(rows))
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ── Web-push real send (via web-push crate) ───────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+/// Send a push notification to all stored subscriptions.
+/// Stale subscriptions (410 Gone / 404) are auto-removed.
+/// Requires VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY + VAPID_SUBJECT (mailto:…) env.
+pub async fn dispatch_web_push(
+    db: &sqlx::PgPool,
+    title: &str,
+    body: &str,
+    severity: &str,
+    alert_id: &str,
+) {
+    use web_push::{
+        ContentEncoding, HyperWebPushClient, SubscriptionInfo, SubscriptionKeys,
+        VapidSignatureBuilder, WebPushClient, WebPushError, WebPushMessageBuilder,
+    };
+
+    let private_pem = match std::env::var("VAPID_PRIVATE_KEY") {
+        Ok(v) if !v.is_empty() => v,
+        _ => return,
+    };
+    let subject =
+        std::env::var("VAPID_SUBJECT").unwrap_or_else(|_| "mailto:admin@poool.app".into());
+
+    let subs: Vec<(Uuid, String, String, String)> = match sqlx::query_as(
+        "SELECT id, endpoint, p256dh, auth FROM marketplace_alert_push_subscriptions",
+    )
+    .fetch_all(db)
+    .await
+    {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!("Failed to load push subs: {}", e);
+            return;
+        }
+    };
+    if subs.is_empty() {
+        return;
+    }
+
+    let client = HyperWebPushClient::new();
+
+    let payload = serde_json::json!({
+        "title": title,
+        "body": body,
+        "severity": severity,
+        "tag": format!("poool-alert-{}", alert_id),
+        "url": "/admin/marketplace/alerts.html",
+    })
+    .to_string();
+
+    for (sub_id, endpoint, p256dh, auth) in subs {
+        let info = SubscriptionInfo {
+            endpoint: endpoint.clone(),
+            keys: SubscriptionKeys { p256dh, auth },
+        };
+        let mut builder_v = match VapidSignatureBuilder::from_pem(private_pem.as_bytes(), &info) {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::warn!("VAPID PEM parse failed: {}", e);
+                return;
+            }
+        };
+        builder_v.add_claim("sub", subject.clone());
+        let sig = match builder_v.build() {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!("VAPID build failed: {}", e);
+                continue;
+            }
+        };
+        let mut builder = WebPushMessageBuilder::new(&info);
+        builder.set_payload(ContentEncoding::Aes128Gcm, payload.as_bytes());
+        builder.set_vapid_signature(sig);
+        let msg = match builder.build() {
+            Ok(m) => m,
+            Err(e) => {
+                tracing::warn!("Push message build failed: {}", e);
+                continue;
+            }
+        };
+        match client.send(msg).await {
+            Ok(_) => {}
+            Err(WebPushError::EndpointNotValid) | Err(WebPushError::EndpointNotFound) => {
+                let _ = sqlx::query(
+                    "DELETE FROM marketplace_alert_push_subscriptions WHERE id = $1",
+                )
+                .bind(sub_id)
+                .execute(db)
+                .await;
+                tracing::info!("Removed stale push subscription {}", sub_id);
+            }
+            Err(e) => tracing::warn!(endpoint, "Push send failed: {}", e),
+        }
+    }
 }

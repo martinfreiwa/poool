@@ -800,6 +800,18 @@ pub fn router() -> axum::Router<AppState> {
             post(marketplace::api_admin_marketplace_trades_bulk_retry_onchain),
         )
         .route(
+            "/api/admin/marketplace/trades/bulk-cancel",
+            post(marketplace::api_admin_marketplace_trades_bulk_cancel),
+        )
+        .route(
+            "/api/admin/marketplace/trades/:trade_id/cancel",
+            post(marketplace::api_admin_marketplace_cancel_trade),
+        )
+        .route(
+            "/api/admin/marketplace/trades/:trade_id/retry-settlement",
+            post(marketplace::api_admin_marketplace_retry_trade_settlement),
+        )
+        .route(
             "/api/admin/marketplace/trades",
             get(marketplace::api_admin_marketplace_trades),
         )
@@ -1001,6 +1013,35 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/marketplace/watchlist/v2/:id",
             axum::routing::delete(marketplace::api_admin_marketplace_delete_watchlist_v2),
         )
+        .route(
+            "/api/admin/marketplace/watchlist/v2/enriched",
+            get(marketplace::api_admin_marketplace_watchlist_enriched),
+        )
+        .route(
+            "/api/admin/marketplace/alert-views",
+            get(marketplace::api_admin_marketplace_list_views)
+                .post(marketplace::api_admin_marketplace_save_view),
+        )
+        .route(
+            "/api/admin/marketplace/alert-views/:id",
+            axum::routing::delete(marketplace::api_admin_marketplace_delete_view),
+        )
+        .route(
+            "/api/admin/marketplace/alerts/history",
+            get(marketplace::api_admin_marketplace_alert_history),
+        )
+        .route(
+            "/api/admin/marketplace/push-vapid-key",
+            get(marketplace::api_admin_marketplace_push_vapid_key),
+        )
+        .route(
+            "/api/admin/marketplace/push-subscriptions",
+            post(marketplace::api_admin_marketplace_register_push_subscription),
+        )
+        .route(
+            "/api/admin/marketplace/alert-rules/:id/backtest",
+            post(marketplace::api_admin_marketplace_backtest_rule),
+        )
         // ── 6A.14: Marketplace Settings ──────────────────────────
         .route(
             "/api/admin/marketplace/settings",
@@ -1010,6 +1051,15 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/marketplace/settings/history",
             get(marketplace::api_admin_marketplace_settings_history),
+        )
+        .route(
+            "/api/admin/marketplace/settings/asset/:asset_id",
+            get(marketplace::api_admin_marketplace_settings_for_asset)
+                .post(marketplace::api_admin_marketplace_save_asset_settings),
+        )
+        .route(
+            "/api/admin/marketplace/match-preview",
+            post(marketplace::api_admin_marketplace_match_preview),
         )
         .route(
             "/api/admin/marketplace/settings/context",
