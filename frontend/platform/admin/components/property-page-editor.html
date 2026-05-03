@@ -106,8 +106,11 @@
       </div>
 
       <div class="section-tag">Risk Notification</div>
-      <textarea class="pc-input" id="pc-risk-notification" rows="3" data-field="risk_notification"
-        placeholder="Asset-specific risk disclosure shown on the property page."></textarea>
+      <p class="pc-hint">Each row is shown as a separate risk note on the property page.</p>
+      <div class="pc-list" id="pc-risk-notifications-list"></div>
+      <button type="button" class="admin-btn admin-btn--secondary pc-add-row-btn" data-list="risk-notifications">
+        Add risk notification
+      </button>
 
       <div style="display:flex;align-items:center;gap:12px;margin-top:18px;">
         <button type="button" class="admin-btn admin-btn--primary" id="btn-save-page-content">Save changes</button>
@@ -128,12 +131,19 @@
         <line x1="3" y1="10" x2="21" y2="10" />
       </svg>Project Milestones / Roadmap
     </h2>
-    <button type="button" class="admin-btn admin-btn--secondary" id="btn-milestone-add"
-      style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add milestone
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+      <span id="milestone-save-status" style="font-size:12px;color:var(--admin-text-muted);"></span>
+      <button type="button" class="admin-btn admin-btn--secondary" id="btn-milestone-save-all"
+        style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;">
+        Save milestones
+      </button>
+      <button type="button" class="admin-btn admin-btn--secondary" id="btn-milestone-add"
+        style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add milestone
+      </button>
+    </div>
   </div>
   <div class="review-card-body" style="padding: 0">
     <table class="admin-table" style="width: 100%">
@@ -153,6 +163,55 @@
 </div>
 
 <style>
+  /* Card chrome (mirrors developer-submission-review.html so the partial
+     renders identically when included from any admin page). */
+  #page-content-card.review-card,
+  #milestones-card.review-card{
+    background:var(--admin-bg-card);
+    border:1px solid var(--admin-border);
+    border-radius:var(--admin-radius-lg);
+    overflow:hidden;
+    margin-bottom:24px;
+  }
+  #page-content-card .review-card-header,
+  #milestones-card .review-card-header{
+    padding:20px 28px;
+    border-bottom:1px solid var(--admin-border);
+    background:var(--admin-bg);
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  #page-content-card .review-card-header h2,
+  #milestones-card .review-card-header h2{
+    font-size:15px;
+    font-weight:700;
+    margin:0;
+    flex:1;
+  }
+  #page-content-card .review-card-body,
+  #milestones-card .review-card-body{
+    padding:28px;
+  }
+  #page-content-card .section-tag,
+  #milestones-card .section-tag{
+    font-size:10px;
+    font-weight:700;
+    color:var(--admin-text-muted);
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    margin:20px 0 8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #page-content-card .section-tag::after,
+  #milestones-card .section-tag::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--admin-border);
+  }
   .pc-label{display:block;font-size:11px;font-weight:600;color:var(--admin-text-muted);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.5px;}
   .pc-input{width:100%;padding:8px 10px;border:1px solid var(--admin-border);border-radius:8px;background:var(--admin-bg);color:var(--admin-text-primary);font-size:13px;font-family:inherit;line-height:1.5;}
   .pc-input:focus{outline:none;border-color:var(--admin-primary);}
@@ -163,6 +222,18 @@
   .pc-list-row{display:grid;gap:8px;padding:10px;border:1px solid var(--admin-border);border-radius:10px;background:var(--admin-bg);}
   .pc-list-row[data-kind="info-badges"]{grid-template-columns:1fr 1fr 2fr 32px;align-items:center;}
   .pc-list-row[data-kind="leasing-items"]{grid-template-columns:1fr 2fr 32px;align-items:center;}
+  .pc-list-row[data-kind="risk-notifications"]{grid-template-columns:1fr 32px;align-items:start;}
   .pc-list-row .pc-row-delete{background:transparent;border:none;color:var(--admin-danger);cursor:pointer;padding:4px;}
   .pc-add-row-btn{font-size:12px;padding:6px 12px;margin-bottom:16px;}
+  #milestones-card .admin-table{table-layout:fixed;}
+  #milestones-card .admin-table th,
+  #milestones-card .admin-table td{vertical-align:top;white-space:normal;}
+  #milestones-card .admin-table input.pc-input{min-width:0;}
+  @media (max-width: 900px){
+    .pc-list-row[data-kind="info-badges"],
+    .pc-list-row[data-kind="leasing-items"],
+    .pc-list-row[data-kind="risk-notifications"]{grid-template-columns:1fr;}
+    #milestones-card .review-card-body{overflow-x:auto;}
+    #milestones-card .admin-table{min-width:760px;}
+  }
 </style>

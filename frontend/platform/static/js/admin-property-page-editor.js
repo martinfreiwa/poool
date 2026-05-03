@@ -38,13 +38,15 @@
         return;
       }
       this._assetId = assetId;
+      this._wireSave();
+      this._wireAddRowButtons();
+      this._wireMilestoneAdd();
+      this._wireMilestoneSaveAll();
       this._hydrateForm(asset || {});
       this._hydrateInfoBadges(asset?.info_badges || []);
       this._hydrateLeasingItems(asset?.leasing_items || []);
-      this._wireSave();
-      this._wireAddRowButtons();
+      this._hydrateRiskNotifications(asset?.risk_notification || "");
       this._renderMilestones(milestones || []);
-      this._wireMilestoneAdd();
     },
 
     // ─── Top-level form ────────────────────────────────────────────────────
@@ -77,7 +79,6 @@
       set("pc-developer-facebook", asset.developer_facebook);
       set("pc-developer-instagram", asset.developer_instagram);
       set("pc-developer-youtube", asset.developer_youtube);
-      set("pc-risk-notification", asset.risk_notification);
     },
 
     _wireSave() {
@@ -135,6 +136,7 @@
       }
       out.info_badges = this._collectInfoBadges();
       out.leasing_items = this._collectLeasingItems();
+      out.risk_notification = this._collectRiskNotifications();
       return out;
     },
 
@@ -143,7 +145,7 @@
       const list = document.getElementById("pc-info-badges-list");
       if (!list) return;
       list.innerHTML = "";
-      (items || []).forEach((b) => list.appendChild(this._infoBadgeRow(b)));
+      this._asArray(items).forEach((b) => list.appendChild(this._infoBadgeRow(b)));
     },
 
     _infoBadgeRow(b) {
@@ -168,11 +170,11 @@
     _collectInfoBadges() {
       const list = document.getElementById("pc-info-badges-list");
       if (!list) return null;
-      const rows = Array.from(list.querySelectorAll(".pc-list-row"));
+      const rows = Array.from(list.querySelectorAll('[data-kind="info-badges"]'));
       if (rows.length === 0) return null;
       return rows
         .map((r, i) => {
-          const get = (k) => r.querySelector(`[data-key="${k}"]`).value.trim();
+          const get = (k) => r.querySelector(`[data-key="${k}"]`)?.value?.trim() || "";
           const icon_url = get("icon_url") || ICON_FALLBACKS[i % ICON_FALLBACKS.length];
           const title = get("title");
           const subtitle = get("subtitle");
@@ -187,7 +189,7 @@
       const list = document.getElementById("pc-leasing-items-list");
       if (!list) return;
       list.innerHTML = "";
-      (items || []).forEach((b) => list.appendChild(this._leasingItemRow(b)));
+      this._asArray(items).forEach((b) => list.appendChild(this._leasingItemRow(b)));
     },
 
     _leasingItemRow(b) {
@@ -210,11 +212,11 @@
     _collectLeasingItems() {
       const list = document.getElementById("pc-leasing-items-list");
       if (!list) return null;
-      const rows = Array.from(list.querySelectorAll(".pc-list-row"));
+      const rows = Array.from(list.querySelectorAll('[data-kind="leasing-items"]'));
       if (rows.length === 0) return null;
       return rows
         .map((r) => {
-          const get = (k) => r.querySelector(`[data-key="${k}"]`).value.trim();
+          const get = (k) => r.querySelector(`[data-key="${k}"]`)?.value?.trim() || "";
           const title = get("title");
           const description = get("description");
           if (!title && !description) return null;
@@ -223,14 +225,80 @@
         .filter(Boolean);
     },
 
+    // ─── Risk Notifications list ──────────────────────────────────────────
+    _hydrateRiskNotifications(value) {
+      const list = document.getElementById("pc-risk-notifications-list");
+      if (!list) return;
+      list.innerHTML = "";
+      const rows = this._parseRiskNotificationRows(value);
+      if (rows.length === 0) {
+        list.appendChild(this._riskNotificationRow(""));
+        return;
+      }
+      rows.forEach((text) => list.appendChild(this._riskNotificationRow(text)));
+    },
+
+    _parseRiskNotificationRows(value) {
+      if (!value) return [];
+      const raw = String(value).trim();
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((item) => String(item || "").trim())
+            .filter(Boolean);
+        }
+      } catch (_) {
+        // Existing content is plain text; keep using newline-separated rows.
+      }
+      return raw
+        .split(/\n+/)
+        .map((line) => line.replace(/^[-*]\s+/, "").trim())
+        .filter(Boolean);
+    },
+
+    _riskNotificationRow(text) {
+      const row = document.createElement("div");
+      row.className = "pc-list-row";
+      row.dataset.kind = "risk-notifications";
+      row.innerHTML = `
+        <textarea class="pc-input" data-key="text" rows="2" maxlength="1200" placeholder="Asset-specific risk disclosure shown on the property page."></textarea>
+        <button type="button" class="pc-row-delete" title="Remove">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      `;
+      row.querySelector('[data-key="text"]').value = text || "";
+      row.querySelector(".pc-row-delete").onclick = () => {
+        row.remove();
+        const list = document.getElementById("pc-risk-notifications-list");
+        if (list && list.children.length === 0) list.appendChild(this._riskNotificationRow(""));
+      };
+      return row;
+    },
+
+    _collectRiskNotifications() {
+      const list = document.getElementById("pc-risk-notifications-list");
+      if (!list) return null;
+      const rows = Array.from(list.querySelectorAll('[data-kind="risk-notifications"]'));
+      const values = rows
+        .map((row) => row.querySelector('[data-key="text"]')?.value?.trim() || "")
+        .filter(Boolean);
+      return values.length === 0 ? null : values.join("\n");
+    },
+
     _wireAddRowButtons() {
       document.querySelectorAll(".pc-add-row-btn").forEach((btn) => {
-        btn.onclick = () => {
+        btn.type = "button";
+        btn.onclick = (event) => {
+          event.preventDefault();
           const which = btn.dataset.list;
           if (which === "info-badges") {
-            document.getElementById("pc-info-badges-list").appendChild(this._infoBadgeRow({}));
+            document.getElementById("pc-info-badges-list")?.appendChild(this._infoBadgeRow({}));
           } else if (which === "leasing-items") {
-            document.getElementById("pc-leasing-items-list").appendChild(this._leasingItemRow({}));
+            document.getElementById("pc-leasing-items-list")?.appendChild(this._leasingItemRow({}));
+          } else if (which === "risk-notifications") {
+            document.getElementById("pc-risk-notifications-list")?.appendChild(this._riskNotificationRow(""));
           }
         };
       });
@@ -251,18 +319,19 @@
     },
 
     _milestoneRowHtml(m) {
-      const id = this._esc(m.id || "");
+      const id = this._esc(m.id || `new-${Date.now()}`);
       const month = m.month_index != null ? m.month_index : "";
       const dateVal = m.milestone_date ? this._toDateInputValue(m.milestone_date) : "";
+      const isNew = !m.id;
       return `
-        <tr data-milestone-id="${id}">
+        <tr data-milestone-id="${id}" ${isNew ? 'data-new-milestone="true"' : ""}>
           <td><input class="pc-input ms-month" type="number" min="0" step="1" value="${this._esc(String(month))}" style="width:60px;padding:6px 8px;font-size:12px;" /></td>
           <td><input class="pc-input ms-title" value="${this._esc(m.title || "")}" maxlength="255" style="font-size:13px;font-weight:600;" /></td>
-          <td><input class="pc-input ms-desc" value="${this._esc(m.description || "")}" style="font-size:12px;" /></td>
+          <td><textarea class="pc-input ms-desc" rows="2" style="font-size:12px;">${this._esc(m.description || "")}</textarea></td>
           <td><input class="pc-input ms-date" type="date" value="${this._esc(dateVal)}" style="font-size:12px;" /></td>
           <td style="text-align:center;"><input type="checkbox" class="ms-done" ${m.is_completed ? "checked" : ""} style="width:16px;height:16px;cursor:pointer;" /></td>
           <td style="text-align:right;">
-            <button type="button" class="admin-btn admin-btn--secondary ms-save-btn" style="padding:4px 8px;font-size:11px;margin-right:4px;display:none;">Save</button>
+            <button type="button" class="admin-btn admin-btn--secondary ms-save-btn" style="padding:4px 8px;font-size:11px;margin-right:4px;${isNew ? "" : "display:none;"}">${isNew ? "Create" : "Save"}</button>
             <button type="button" class="ms-delete-btn" title="Delete" style="background:transparent;border:none;color:var(--admin-danger);cursor:pointer;padding:4px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
             </button>
@@ -273,29 +342,21 @@
 
     _wireMilestoneRow(row) {
       const id = row.dataset.milestoneId;
+      const isNew = row.dataset.newMilestone === "true";
       const saveBtn = row.querySelector(".ms-save-btn");
-      const showSave = () => { if (saveBtn) saveBtn.style.display = "inline-block"; };
-      row.querySelectorAll("input").forEach((inp) => {
+      row.dataset.dirty = isNew ? "true" : "false";
+      const showSave = () => {
+        row.dataset.dirty = "true";
+        if (saveBtn) saveBtn.style.display = "inline-block";
+      };
+      row.querySelectorAll("input, textarea").forEach((inp) => {
         inp.addEventListener("input", showSave);
         inp.addEventListener("change", showSave);
       });
       if (saveBtn) {
         saveBtn.addEventListener("click", async () => {
           try {
-            const res = await fetch(
-              `/api/admin/assets/${this._assetId}/milestones/${id}`,
-              {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-CSRF-Token": (typeof getCsrfToken === "function") ? getCsrfToken() : "",
-                },
-                body: JSON.stringify(this._collectMilestoneInputs(row)),
-              }
-            );
-            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
-            saveBtn.style.display = "none";
-            this._toast("Milestone updated", "success");
+            await this._saveMilestoneRow(row, { showToast: true });
           } catch (e) {
             this._toast(`Failed to save milestone: ${e.message}`, "error");
           }
@@ -304,6 +365,10 @@
       const deleteBtn = row.querySelector(".ms-delete-btn");
       if (deleteBtn) {
         deleteBtn.addEventListener("click", async () => {
+          if (isNew) {
+            row.remove();
+            return;
+          }
           if (!confirm("Delete this milestone?")) return;
           try {
             const res = await fetch(
@@ -338,35 +403,104 @@
       };
     },
 
+    async _saveMilestoneRow(row, { showToast = false } = {}) {
+      const id = row.dataset.milestoneId;
+      const isNew = row.dataset.newMilestone === "true";
+      const saveBtn = row.querySelector(".ms-save-btn");
+      const payload = this._collectMilestoneInputs(row);
+      if (!payload.title) {
+        row.querySelector(".ms-title")?.focus();
+        throw new Error("Milestone title is required");
+      }
+
+      if (saveBtn) saveBtn.disabled = true;
+      try {
+        const endpoint = isNew
+          ? `/api/admin/assets/${this._assetId}/milestones`
+          : `/api/admin/assets/${this._assetId}/milestones/${id}`;
+        const res = await fetch(endpoint, {
+          method: isNew ? "POST" : "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": (typeof getCsrfToken === "function") ? getCsrfToken() : "",
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+
+        if (isNew) {
+          const created = await res.json();
+          row.outerHTML = this._milestoneRowHtml(created);
+          const newRow = document.querySelector(`[data-milestone-id="${created.id}"]`);
+          if (newRow) this._wireMilestoneRow(newRow);
+          if (showToast) this._toast("Milestone added", "success");
+          return created;
+        }
+
+        row.dataset.dirty = "false";
+        if (saveBtn) saveBtn.style.display = "none";
+        if (showToast) this._toast("Milestone updated", "success");
+        return null;
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+      }
+    },
+
+    async _saveAllMilestones() {
+      const status = document.getElementById("milestone-save-status");
+      const btn = document.getElementById("btn-milestone-save-all");
+      const tbody = document.getElementById("milestones-container");
+      if (!tbody) return;
+
+      const rows = Array.from(tbody.querySelectorAll("[data-milestone-id]"))
+        .filter((row) => row.dataset.newMilestone === "true" || row.dataset.dirty === "true");
+      if (rows.length === 0) {
+        if (status) status.textContent = "No milestone changes";
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      if (status) status.textContent = `Saving ${rows.length} milestone${rows.length === 1 ? "" : "s"}...`;
+      try {
+        for (const row of rows) {
+          await this._saveMilestoneRow(row);
+        }
+        if (status) status.textContent = `Saved ${rows.length} milestone${rows.length === 1 ? "" : "s"}`;
+        this._toast("Milestones saved", "success");
+      } catch (e) {
+        if (status) status.textContent = "";
+        this._toast(`Failed to save milestones: ${e.message}`, "error");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    },
+
     _wireMilestoneAdd() {
       const btn = document.getElementById("btn-milestone-add");
       if (!btn) return;
-      btn.onclick = async () => {
-        const title = prompt("Milestone title:");
-        if (!title || !title.trim()) return;
-        try {
-          const res = await fetch(
-            `/api/admin/assets/${this._assetId}/milestones`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": (typeof getCsrfToken === "function") ? getCsrfToken() : "",
-              },
-              body: JSON.stringify({ title: title.trim() }),
-            }
-          );
-          if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
-          const created = await res.json();
-          const tbody = document.getElementById("milestones-container");
-          if (tbody.querySelector("td[colspan]")) tbody.innerHTML = "";
-          tbody.insertAdjacentHTML("beforeend", this._milestoneRowHtml(created));
-          const row = tbody.querySelector(`[data-milestone-id="${created.id}"]`);
-          if (row) this._wireMilestoneRow(row);
-          this._toast("Milestone added", "success");
-        } catch (e) {
-          this._toast(`Failed to add milestone: ${e.message}`, "error");
+      btn.type = "button";
+      btn.onclick = (event) => {
+        event.preventDefault();
+        const tbody = document.getElementById("milestones-container");
+        if (!tbody) return;
+        if (tbody.querySelector("td[colspan]")) tbody.innerHTML = "";
+        const draft = { title: "", description: "", month_index: null, milestone_date: null, is_completed: false };
+        tbody.insertAdjacentHTML("beforeend", this._milestoneRowHtml(draft));
+        const row = tbody.querySelector("tr[data-new-milestone]:last-child");
+        if (row) {
+          this._wireMilestoneRow(row);
+          row.querySelector(".ms-title")?.focus();
         }
+      };
+    },
+
+    _wireMilestoneSaveAll() {
+      const btn = document.getElementById("btn-milestone-save-all");
+      if (!btn) return;
+      btn.type = "button";
+      btn.onclick = (event) => {
+        event.preventDefault();
+        this._saveAllMilestones();
       };
     },
 
@@ -391,6 +525,21 @@
     _toDateInputValue(iso) {
       const m = String(iso).match(/^(\d{4}-\d{2}-\d{2})/);
       return m ? m[1] : "";
+    },
+
+    _asArray(value) {
+      if (Array.isArray(value)) return value;
+      if (value == null || value === "") return [];
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+          return [];
+        }
+      }
+      if (typeof value === "object" && Array.isArray(value.items)) return value.items;
+      return [];
     },
   };
 
