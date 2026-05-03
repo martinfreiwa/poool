@@ -129,6 +129,19 @@ pub struct PropertyDisplayData {
     /// Leasing strategy items (JSONB array of {title,description}). None
     /// falls back to the legacy hardcoded three items.
     pub leasing_items: Option<serde_json::Value>,
+    /// Roadmap milestones populated from `asset_milestones`. None / empty
+    /// falls back to the legacy hardcoded Funding Timeline.
+    pub milestones: Option<Vec<MilestoneDisplay>>,
+}
+
+/// Single roadmap row exposed to templates.
+#[derive(Debug, Serialize)]
+pub struct MilestoneDisplay {
+    pub title: String,
+    pub description: Option<String>,
+    pub milestone_date: Option<String>,
+    pub month_index: Option<i32>,
+    pub is_completed: bool,
 }
 
 /// Editable property-page content fetched separately from the core asset row.
@@ -345,6 +358,7 @@ impl PropertyDisplayData {
             developer_youtube: None,
             info_badges: None,
             leasing_items: None,
+            milestones: None,
         }
     }
 

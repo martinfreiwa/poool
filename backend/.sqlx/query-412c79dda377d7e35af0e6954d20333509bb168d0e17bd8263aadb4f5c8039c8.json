@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            a.id,\n            a.slug,\n            a.title,\n            a.asset_type,\n            COALESCE(a.location_city, '') as \"location_city!\",\n            COALESCE(a.location_country, '') as \"location_country!\",\n            a.token_price_cents,\n            a.tokens_total,\n            a.annual_yield_bps,\n            a.description,\n            a.total_value_cents,\n            a.tokens_available,\n            a.land_size_sqm,\n            a.building_size_sqm,\n            a.bedrooms,\n            a.bathrooms,\n            a.funding_status,\n            a.location_description,\n            a.occupancy_rate_bps,\n            a.lease_type,\n            a.property_type,\n            a.term_months,\n            a.capital_appreciation_bps,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, sort_order ASC, created_at ASC\n            ) AS \"image_urls!\"\n        FROM assets a\n        WHERE a.published = true\n          AND a.asset_type != 'commodity'\n          -- Only include assets that are actually TRADABLE on the secondary\n          -- market. `funding_in_progress` / `funding_open` belong on the\n          -- PRIMARY listing pages — surfacing them here led to users\n          -- clicking \"Trade\" only to be rejected by `check_asset_tradable`.\n          AND a.funding_status = 'funded'\n        ",
+  "query": "\n        SELECT\n            a.id,\n            a.slug,\n            a.title,\n            a.asset_type,\n            COALESCE(a.location_city, '') as \"location_city!\",\n            COALESCE(a.location_country, '') as \"location_country!\",\n            a.token_price_cents,\n            a.tokens_total,\n            a.annual_yield_bps,\n            a.description,\n            a.total_value_cents,\n            a.tokens_available,\n            a.land_size_sqm,\n            a.building_size_sqm,\n            a.bedrooms,\n            a.bathrooms,\n            a.funding_status,\n            a.location_description,\n            a.occupancy_rate_bps,\n            a.lease_type,\n            a.property_type,\n            a.term_months,\n            a.capital_appreciation_bps,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, sort_order ASC, created_at ASC\n            ) AS \"image_urls!\"\n        FROM assets a\n        WHERE a.published = true\n          AND a.asset_type != 'commodity'\n        ",
   "describe": {
     "columns": [
       {
@@ -154,5 +154,5 @@
       null
     ]
   },
-  "hash": "641d58757bf61c2f5d582c6357b59177642ce5369b36a0bfb29a9ca4e83792d8"
+  "hash": "412c79dda377d7e35af0e6954d20333509bb168d0e17bd8263aadb4f5c8039c8"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT tokens_total, funding_status, published\n           FROM assets\n           WHERE id = $1",
+  "query": "SELECT tokens_total, published\n           FROM assets\n           WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,6 @@
       },
       {
         "ordinal": 1,
-        "name": "funding_status",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 2,
         "name": "published",
         "type_info": "Bool"
       }
@@ -26,9 +21,8 @@
     },
     "nullable": [
       false,
-      false,
       false
     ]
   },
-  "hash": "b4123a0818ed0439cd0e063bc3d6f1e3f635327fe22a797b3fc66819f969e20f"
+  "hash": "199aa9eb215f88e3a47d79d6f6c695a078452d3d70e01909cf2e2ed56b13dcdd"
 }

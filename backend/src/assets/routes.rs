@@ -13,7 +13,8 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use super::models::{
-    AssetPageContent, CommodityDisplayData, MarketplaceAsset, PropertyDisplayData,
+    AssetPageContent, CommodityDisplayData, MarketplaceAsset, MilestoneDisplay,
+    PropertyDisplayData,
 };
 use crate::auth::routes::AppState;
 
@@ -23,21 +24,6 @@ struct AssetDocumentDisplay {
     document_type: String,
     download_url: String,
     file_size_label: String,
-}
-
-fn is_investor_visible_asset_document(document_type: &str) -> bool {
-    matches!(
-        document_type,
-        "proof_of_title"
-            | "legal_basis"
-            | "building_permit"
-            | "site_plan"
-            | "expose"
-            | "appraisal"
-            | "financial"
-            | "floor_plan"
-            | "other"
-    )
 }
 
 fn parse_percent_to_bps(value: &str) -> Option<i32> {
@@ -522,22 +508,11 @@ pub async fn page_property(
         SELECT id, document_type, COALESCE(title, document_type), file_size_bytes
         FROM asset_documents
         WHERE asset_id = $1
-          AND document_type = ANY($2::text[])
+          AND is_investor_visible = TRUE
         ORDER BY document_type, created_at
         "#,
         )
         .bind(asset.id)
-        .bind(&[
-            "proof_of_title",
-            "legal_basis",
-            "building_permit",
-            "site_plan",
-            "expose",
-            "appraisal",
-            "financial",
-            "floor_plan",
-            "other",
-        ])
         .fetch_all(&state.db)
         .await
         {
@@ -725,6 +700,41 @@ pub async fn page_property_public(
         .await
         {
             cms.apply_to(&mut display);
+        }
+        // Roadmap milestones drive the public Funding Timeline. Empty list →
+        // template falls back to legacy hardcoded steps.
+        match sqlx::query_as::<_, (String, Option<String>, Option<chrono::NaiveDate>, Option<i32>, bool)>(
+            r#"SELECT title, description, milestone_date, month_index,
+                      COALESCE(is_completed, false)
+               FROM asset_milestones
+               WHERE asset_id = $1
+               ORDER BY COALESCE(month_index, 9999), milestone_date NULLS LAST"#,
+        )
+        .bind(asset.id)
+        .fetch_all(&state.db)
+        .await
+        {
+            Ok(rows) if !rows.is_empty() => {
+                display.milestones = Some(
+                    rows.into_iter()
+                        .map(|(title, description, date, month_index, is_completed)| {
+                            MilestoneDisplay {
+                                title,
+                                description,
+                                milestone_date: date.map(|d| d.format("%b %-d, %Y").to_string()),
+                                month_index,
+                                is_completed,
+                            }
+                        })
+                        .collect(),
+                );
+            }
+            Ok(_) => {}
+            Err(e) => tracing::warn!(
+                "Failed to load milestones for public property {}: {}",
+                asset.id,
+                e
+            ),
         }
         display
     } else {
@@ -931,26 +941,29 @@ pub async fn page_commodity(
         })
         .collect();
 
-    let documents = match sqlx::query!(
+    let documents = match sqlx::query_as::<_, (uuid::Uuid, String, String, Option<i64>)>(
         r#"
-        SELECT id, document_type, title, file_size_bytes
+        SELECT id, document_type, COALESCE(title, document_type), file_size_bytes
         FROM asset_documents
         WHERE asset_id = $1
+          AND is_investor_visible = TRUE
         ORDER BY document_type, created_at
         "#,
-        asset.id
     )
+    .bind(asset.id)
     .fetch_all(&state.db)
     .await
     {
         Ok(rows) => rows
             .into_iter()
-            .map(|d| AssetDocumentDisplay {
-                title: d.title,
-                document_type: d.document_type,
-                download_url: format!("/api/documents/{}/download", d.id),
-                file_size_label: format_file_size(d.file_size_bytes),
-            })
+            .map(
+                |(id, document_type, title, file_size_bytes)| AssetDocumentDisplay {
+                    title,
+                    document_type,
+                    download_url: format!("/api/documents/{}/download", id),
+                    file_size_label: format_file_size(file_size_bytes),
+                },
+            )
             .collect::<Vec<_>>(),
         Err(e) => {
             tracing::error!(asset_id = %asset.id, error = %e, "Commodity document query failed");
