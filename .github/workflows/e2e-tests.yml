@@ -8,8 +8,6 @@
 name: E2E Tests
 
 on:
-  push:
-    branches: [main, staging, develop]
   pull_request:
     branches: [main, staging]
   # Allow manual trigger from GitHub UI
