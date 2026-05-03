@@ -969,7 +969,26 @@
         const feePct = (window.POOOL_FEE_PCT || 5) / 100;
         const hasPrice = price != null && price > 0 && qty > 0;
 
-        const subtotal = hasPrice ? qty * price : 0;
+        // VWAP-aware subtotal:
+        //   - Walk the opposing book at acceptable prices, sum the actual
+        //     fill cost across consumed tiers (VWAP × filledQty).
+        //   - Any unfilled remainder is valued at the user's limit price
+        //     (= what they'll lock as buyer / receive at-best as seller if
+        //     the remainder eventually fills at limit).
+        // This replaces the previous (price × qty) calc which silently
+        // assumed every share fills at best-bid/best-ask. With a thin book,
+        // that misled sellers by tens of thousands of $.
+        let subtotal = 0;
+        if (hasPrice) {
+            const data = getMarketData(currentAsset, currentSide);
+            const matchable = (data.orders || []).filter(o =>
+                currentSide === 'buy' ? o.price <= price : o.price >= price
+            );
+            const fill = simulateFill(matchable, qty);
+            const unfilledAtLimit = fill.unfilledQty * price;
+            subtotal = fill.subtotal + unfilledAtLimit;
+        }
+
         const fee = subtotal * feePct;
         // Buyer pays subtotal + fee (locked). Seller receives subtotal − fee (net).
         const total = currentSide === 'buy' ? subtotal + fee : subtotal - fee;
