@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 
 import psycopg2
@@ -134,12 +135,15 @@ def test_admin_marketplace_index_authenticated_e2e(admin_page):
         expect(page.locator("#kpi-trading-status")).not_to_have_text("Loading")
         expect(page.locator("#live-trades-body")).to_contain_text("E2E <img src=x onerror=alert(1)> Marketplace Index Asset")
         expect(page.locator("#live-trades-body img[src='x']")).to_have_count(0)
-        expect(page.locator("#health-grid")).to_contain_text("Database Latency")
-        # "Active WebSockets" tile is only rendered when the gateway exposes a
-        # tracked count; we hide the misleading "Not tracked" placeholder.
-        ws_tile = page.locator("#health-grid").get_by_text("Active WebSockets")
-        if ws_tile.count() > 0:
-            expect(ws_tile.first).to_be_visible()
+        expect(page.locator("#health-dot-db")).to_have_attribute("aria-label", re.compile("Database:"))
+        expect(page.locator("#health-dot-matching")).to_have_attribute(
+            "aria-label",
+            re.compile("Matching engine:"),
+        )
+        expect(page.locator("#health-dot-ws")).to_have_attribute(
+            "aria-label",
+            re.compile("WebSocket gateway:"),
+        )
 
         stats = page.request.get(f"{BASE_URL}/api/admin/marketplace/stats")
         assert stats.ok

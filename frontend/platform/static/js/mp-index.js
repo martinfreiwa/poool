@@ -1,6 +1,6 @@
 /**
  * Marketplace Overview — mp-index.js
- * Fetches KPIs, Live Trades, and System Health from backend APIs.
+ * Fetches KPIs, Live Trades, and compact topbar health from backend APIs.
  */
 (function () {
   'use strict';
@@ -134,16 +134,6 @@
     cell.textContent = message;
     row.appendChild(cell);
     tbody.appendChild(row);
-  }
-
-  function renderHealthMessage(message, tone) {
-    const grid = $('health-grid');
-    if (!grid) return;
-    clearElement(grid);
-    const item = document.createElement('div');
-    item.className = `mp-health-message${tone ? ` mp-health-message--${tone}` : ''}`;
-    item.textContent = message;
-    grid.appendChild(item);
   }
 
   // ===== KPI RENDER =====
@@ -879,104 +869,7 @@
   }
 
   function renderHealth(health) {
-    const tierCrit = $('health-tier-critical');
-    const tierInfo = $('health-tier-info');
-    const summary = $('mp-health-summary');
-    if (!tierCrit || !tierInfo) return;
-    clearElement(tierCrit);
-    clearElement(tierInfo);
     updateTopbarHealth(health);
-
-    pushLatencySample(Number(health.database_latency_ms || 0));
-
-    const dbStatus = health.database_connected ? dbLatencyStatus(health.database_latency_ms) : 'error';
-    const matchingStatus = health.matching_engine_status === 'healthy' ? 'ok'
-                          : health.matching_engine_status === 'not_configured' ? 'warn'
-                          : 'error';
-
-    // CRITICAL tier — large tiles for path-of-the-trade components
-    const critical = [
-      {
-        label: 'Database',
-        value: `${Number(health.database_latency_ms || 0).toFixed(1)}ms`,
-        status: dbStatus,
-        hint: dbStatus === 'ok' ? `Healthy (<${DB_LATENCY_WARN_MS}ms)`
-              : dbStatus === 'warn' ? `Slow (≥${DB_LATENCY_WARN_MS}ms)`
-              : `Critical (≥${DB_LATENCY_CRIT_MS}ms)`,
-      },
-      {
-        label: 'Matching Engine',
-        value: health.matching_engine_status || 'unknown',
-        status: matchingStatus,
-      },
-      {
-        label: 'Order Queue',
-        value: Number(health.order_queue_depth || 0).toLocaleString(),
-        status: queueStatus(Number(health.order_queue_depth || 0)),
-        hint: `Warn ≥${QUEUE_DEPTH_WARN.toLocaleString()} · Crit ≥${QUEUE_DEPTH_CRIT.toLocaleString()}`,
-      },
-    ];
-
-    // INFO tier — small chips for ancillary signals
-    const info = [
-      {
-        label: 'Redis',
-        value: health.redis_connected
-          ? (health.redis_latency_ms != null ? `${health.redis_latency_ms.toFixed(1)}ms` : 'OK')
-          : 'Down',
-        status: health.redis_connected ? redisLatencyStatus(health.redis_latency_ms) : 'error',
-      },
-      {
-        label: 'Last Trade',
-        value: health.last_trade_at
-          ? new Date(health.last_trade_at).toLocaleTimeString('en-US', { hour12: false })
-          : 'N/A',
-        status: 'ok',
-      },
-    ];
-
-    if (health.websocket_status && health.websocket_status !== 'not_tracked') {
-      info.push({
-        label: 'Active WS',
-        value: Number(health.active_ws_connections || 0).toLocaleString(),
-        status: health.websocket_status === 'healthy' ? 'ok' : 'warn',
-      });
-    }
-
-    critical.forEach((item) => tierCrit.appendChild(buildHealthTile(item, 'critical')));
-    info.forEach((item) => tierInfo.appendChild(buildHealthTile(item, 'info')));
-
-    if (summary) {
-      const worst = [...critical, ...info].reduce((acc, item) => {
-        const rank = { ok: 0, warn: 1, error: 2 }[item.status] ?? 0;
-        return rank > acc ? rank : acc;
-      }, 0);
-      const labels = ['All systems healthy', 'Some signals degraded', 'Critical issues detected'];
-      summary.textContent = labels[worst];
-      summary.dataset.tone = ['ok', 'warn', 'error'][worst];
-    }
-  }
-
-  function buildHealthTile(item, tier) {
-    const el = document.createElement('div');
-    el.className = `mp-health-tile mp-health-tile--${tier} mp-health-tile--${item.status}`;
-    el.title = item.hint || `${item.label}: ${item.value}`;
-
-    const dot = document.createElement('span');
-    dot.className = `mp-health-dot mp-health-dot--${item.status}`;
-    el.appendChild(dot);
-
-    const label = document.createElement('span');
-    label.className = 'mp-health-tile-label';
-    label.textContent = item.label;
-    el.appendChild(label);
-
-    const value = document.createElement('span');
-    value.className = 'mp-health-tile-value';
-    value.textContent = item.value;
-    el.appendChild(value);
-
-    return el;
   }
 
   // ===== INIT / REFRESH ORCHESTRATION =====
@@ -1030,7 +923,6 @@
         setTopbarHealth('health-dot-db', 'error', 'Database: health check unavailable');
         setTopbarHealth('health-dot-matching', 'error', 'Matching Engine: health check unavailable');
         setTopbarHealth('health-dot-ws', 'error', 'WebSocket Gateway: health check unavailable');
-        renderHealthMessage(`System health unavailable: ${lastHealthError.message || 'request failed'}`, 'error');
       }
       const anyOk = [statsResult, tradesResult, healthResult].some((r) => r.status === 'fulfilled');
       const allFail = [statsResult, tradesResult, healthResult].every((r) => r.status !== 'fulfilled');
@@ -1401,7 +1293,6 @@
   document.addEventListener('DOMContentLoaded', async () => {
     setConnectionState('connecting', 'Connecting…');
     renderEmptyState('Loading recent trades…', 'idle');
-    renderHealthMessage('Checking system health', 'muted');
     bindControls();
     bindPalette();
     await refreshAll();
