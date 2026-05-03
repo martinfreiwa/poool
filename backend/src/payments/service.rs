@@ -446,11 +446,56 @@ pub async fn execute_checkout(
     .await
     .map_err(|e| format!("Limit check failed: {}", e))?;
 
-    if let Some(limit) = limit_info {
-        // Only enforce if annual_limit_cents > 0 (0 means no limit, admin-controlled)
-        if limit.annual_limit_cents > 0 && limit.available_cents.unwrap_or(0) < subtotal_cents {
-            let available_usd =
-                crate::common::currency::format_usd(limit.available_cents.unwrap_or(0));
+    let effective_limit = match limit_info {
+        Some(l) => Some((l.annual_limit_cents, l.invested_12m_cents)),
+        None => {
+            // Fallback to global default in platform_settings.
+            // Bootstrap a per-user row so subsequent UPDATE on `invested_12m_cents`
+            // (further down in this function) targets a real row.
+            let global_default: Option<i64> = sqlx::query_scalar(
+                "SELECT value::bigint FROM platform_settings
+                 WHERE key = 'default_annual_investment_limit_cents'",
+            )
+            .fetch_optional(&mut *tx)
+            .await
+            .ok()
+            .flatten();
+            if let Some(default_cents) = global_default.filter(|v| *v > 0) {
+                let invested_12m: i64 = sqlx::query_scalar(
+                    "SELECT COALESCE(SUM(oi.subtotal_cents), 0)::bigint
+                     FROM orders o
+                     JOIN order_items oi ON oi.order_id = o.id
+                     WHERE o.user_id = $1 AND o.status = 'completed'
+                       AND o.created_at >= NOW() - INTERVAL '365 days'",
+                )
+                .bind(user_id)
+                .fetch_one(&mut *tx)
+                .await
+                .unwrap_or(0);
+                sqlx::query(
+                    r#"INSERT INTO investment_limits
+                         (user_id, limit_year, annual_limit_cents, invested_12m_cents, updated_at)
+                       VALUES ($1, $2, $3, $4, NOW())
+                       ON CONFLICT (user_id, limit_year) DO NOTHING"#,
+                )
+                .bind(user_id)
+                .bind(current_year)
+                .bind(default_cents)
+                .bind(invested_12m)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("Limit bootstrap failed: {}", e))?;
+                Some((default_cents, invested_12m))
+            } else {
+                None
+            }
+        }
+    };
+
+    if let Some((annual_limit, invested_12m)) = effective_limit {
+        let available = annual_limit - invested_12m;
+        if annual_limit > 0 && available < subtotal_cents {
+            let available_usd = crate::common::currency::format_usd(available);
             return Err(format!(
                 "Order exceeds your annual investment limit. Available: {}. Please update your profile or contact support.",
                 available_usd

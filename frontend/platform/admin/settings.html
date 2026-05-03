@@ -238,6 +238,20 @@
                 </p>
               </div>
               <div class="admin-form-group">
+                <label class="admin-form-label">Default Annual Investment Limit (USD)</label>
+                <input type="number" step="1" min="0"
+                  x-model.number="settings.default_annual_investment_limit_cents"
+                  class="admin-input"
+                  placeholder="0 = no limit" />
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Applied per user/year when no per-user override exists. Stored in cents (e.g. 25000000 = $250,000). 0 disables the cap.
+                </p>
+              </div>
+              <div class="admin-form-group">
                 <label class="admin-form-label">Min. Withdrawal (cents)</label>
                 <input type="number" step="1" x-model="settings.min_withdrawal_cents" class="admin-input" />
                 <p style="
