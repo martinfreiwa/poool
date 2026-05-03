@@ -598,7 +598,18 @@ pub async fn page_wallet(
         }
     };
 
+    let user_display_name = user
+        .email
+        .split('@')
+        .next()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or("User")
+        .to_string();
+
     let html = match template.render(minijinja::context! {
+        user => user,
+        user_display_name => user_display_name,
+        is_developer => false,
         cash_balance => ctx.cash_balance,
         rewards_balance => ctx.rewards_balance,
         asset_balance => ctx.asset_balance,
