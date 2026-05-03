@@ -571,7 +571,8 @@ pub async fn page_property(
                   default_rental_yield_bps,
                   developer_logo_url, developer_name, developer_description,
                   developer_website, developer_facebook,
-                  developer_instagram, developer_youtube
+                  developer_instagram, developer_youtube,
+                  info_badges, leasing_items
            FROM assets WHERE id = $1"#,
     )
     .bind(asset.id)
@@ -703,7 +704,29 @@ pub async fn page_property_public(
     };
 
     let mut display_data = if let Some(asset) = live_asset {
-        PropertyDisplayData::from_asset(&asset)
+        let mut display = PropertyDisplayData::from_asset(&asset);
+        // Merge editable property-page content (migration 116). Skipped for the
+        // hardcoded public_assets fallback path since those slugs have no DB row.
+        if let Ok(Some(cms)) = sqlx::query_as::<_, AssetPageContent>(
+            r#"SELECT investment_type, investment_type_description,
+                      leasing_strategy_type, leasing_strategy_description,
+                      risk_notification,
+                      default_investment_amount_cents,
+                      default_value_growth_bps,
+                      default_rental_yield_bps,
+                      developer_logo_url, developer_name, developer_description,
+                      developer_website, developer_facebook,
+                      developer_instagram, developer_youtube,
+                      info_badges, leasing_items
+               FROM assets WHERE id = $1"#,
+        )
+        .bind(asset.id)
+        .fetch_optional(&state.db)
+        .await
+        {
+            cms.apply_to(&mut display);
+        }
+        display
     } else {
         match super::public_assets::lookup(&slug) {
             Some(d) => d,

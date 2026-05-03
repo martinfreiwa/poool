@@ -5,6 +5,20 @@
     <h2>Leasing Strategy</h2>
   </div>
   <div class="leasing-content-box">
+    {% if asset.leasing_items %}
+      {% for item in asset.leasing_items %}
+        {% if not loop.first %}<div class="leasing-divider"><div class="divider-line"></div></div>{% endif %}
+        <div class="leasing-item">
+          <div class="leasing-item-header"><h3>{{ item.title | default('', true) }}</h3></div>
+          <p>{{ item.description | default('', true) }}</p>
+        </div>
+      {% endfor %}
+    {% elif asset.leasing_strategy_type or asset.leasing_strategy_description %}
+    <div class="leasing-item">
+      <div class="leasing-item-header"><h3>{{ asset.leasing_strategy_type | default('Leasing strategy', true) }}</h3></div>
+      <p>{{ asset.leasing_strategy_description | default('', true) }}</p>
+    </div>
+    {% else %}
     <div class="leasing-item">
       <div class="leasing-item-header">
         <h3>Professional property management</h3>
@@ -21,5 +35,6 @@
       <div class="leasing-item-header"><h3>Monthly income distribution</h3></div>
       <p>Net rental income is distributed to all property token holders on a monthly basis, providing consistent passive income.</p>
     </div>
+    {% endif %}
   </div>
 </div>

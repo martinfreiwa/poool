@@ -144,7 +144,18 @@ pub async fn api_admin_asset_detail(
                 a.funding_status, a.description, a.video_url,
                 COALESCE(a.featured,false) as featured,
                 COALESCE(a.published,false) as published,
-                a.construction_status
+                a.construction_status,
+                a.location_description,
+                a.investment_type, a.investment_type_description,
+                a.leasing_strategy_type, a.leasing_strategy_description,
+                a.risk_notification,
+                a.default_investment_amount_cents,
+                a.default_value_growth_bps,
+                a.default_rental_yield_bps,
+                a.developer_logo_url, a.developer_name, a.developer_description,
+                a.developer_website, a.developer_facebook,
+                a.developer_instagram, a.developer_youtube,
+                a.info_badges, a.leasing_items
          FROM assets a WHERE a.id = $1",
     )
     .bind(aid)
@@ -194,10 +205,19 @@ pub async fn api_admin_asset_detail(
         "SELECT COALESCE(image_url,''), COALESCE(is_cover,false), COALESCE(sort_order,0) FROM asset_images WHERE asset_id = $1 ORDER BY sort_order"
     ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
 
-    // Milestones
-    let milestones: Vec<(String, Option<String>, Option<i32>, bool)> = sqlx::query_as(
-        "SELECT title, description, month_index, COALESCE(is_completed,false) FROM asset_milestones WHERE asset_id = $1 ORDER BY month_index"
-    ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
+    // Milestones (include id so the editor can patch/delete by row)
+    #[allow(clippy::type_complexity)]
+    let milestones: Vec<(String, String, Option<String>, Option<String>, Option<i32>, bool)> =
+        sqlx::query_as(
+            "SELECT id::text, title, description, milestone_date::text, month_index,
+                    COALESCE(is_completed,false)
+             FROM asset_milestones WHERE asset_id = $1
+             ORDER BY COALESCE(month_index, 9999), milestone_date",
+        )
+        .bind(aid)
+        .fetch_all(&state.db)
+        .await
+        .map_err(ApiError::Database)?;
 
     // Orders referencing this asset
     let orders: Vec<(String, String, i32, i64, String, String)> = sqlx::query_as(
@@ -235,6 +255,24 @@ pub async fn api_admin_asset_detail(
         "featured": row.get::<bool, _>("featured"),
         "published": row.get::<bool, _>("published"),
         "construction_status": row.get::<Option<String>, _>("construction_status"),
+        "location_description": row.get::<Option<String>, _>("location_description"),
+        "investment_type": row.get::<Option<String>, _>("investment_type"),
+        "investment_type_description": row.get::<Option<String>, _>("investment_type_description"),
+        "leasing_strategy_type": row.get::<Option<String>, _>("leasing_strategy_type"),
+        "leasing_strategy_description": row.get::<Option<String>, _>("leasing_strategy_description"),
+        "risk_notification": row.get::<Option<String>, _>("risk_notification"),
+        "default_investment_amount_cents": row.get::<Option<i64>, _>("default_investment_amount_cents"),
+        "default_value_growth_bps": row.get::<Option<i32>, _>("default_value_growth_bps"),
+        "default_rental_yield_bps": row.get::<Option<i32>, _>("default_rental_yield_bps"),
+        "developer_logo_url": row.get::<Option<String>, _>("developer_logo_url"),
+        "developer_name": row.get::<Option<String>, _>("developer_name"),
+        "developer_description": row.get::<Option<String>, _>("developer_description"),
+        "developer_website": row.get::<Option<String>, _>("developer_website"),
+        "developer_facebook": row.get::<Option<String>, _>("developer_facebook"),
+        "developer_instagram": row.get::<Option<String>, _>("developer_instagram"),
+        "developer_youtube": row.get::<Option<String>, _>("developer_youtube"),
+        "info_badges": row.get::<Option<serde_json::Value>, _>("info_badges"),
+        "leasing_items": row.get::<Option<serde_json::Value>, _>("leasing_items"),
         "investors": investors.iter().map(|i| serde_json::json!({
             "name": i.0, "email": i.1, "user_id": i.2, "tokens_owned": i.3,
             "purchase_value_cents": i.4, "current_value_cents": i.5,
@@ -257,7 +295,10 @@ pub async fn api_admin_asset_detail(
             let url = crate::storage::service::rewrite_gcs_url(&i.0);
             serde_json::json!({"url": url, "is_cover": i.1, "sort_order": i.2})
         }).collect::<Vec<_>>(),
-        "milestones": milestones.iter().map(|m| serde_json::json!({"title": m.0, "description": m.1, "month_index": m.2, "is_completed": m.3})).collect::<Vec<_>>(),
+        "milestones": milestones.iter().map(|m| serde_json::json!({
+            "id": m.0, "title": m.1, "description": m.2,
+            "milestone_date": m.3, "month_index": m.4, "is_completed": m.5
+        })).collect::<Vec<_>>(),
         "orders": orders.iter().map(|o| serde_json::json!({
             "order_number": o.0, "user_email": o.1, "tokens": o.2,
             "subtotal_cents": o.3, "status": o.4, "created_at": o.5
@@ -856,6 +897,10 @@ pub struct AssetPageContentPayload {
     pub developer_instagram: Option<Option<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub developer_youtube: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub info_badges: Option<Option<serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub leasing_items: Option<Option<serde_json::Value>>,
 }
 
 const TEXT_MAX_SHORT: usize = 255;
@@ -933,6 +978,63 @@ pub async fn api_admin_asset_page_content(
     payload.developer_facebook = clean_opt_text(payload.developer_facebook, URL_MAX)?;
     payload.developer_instagram = clean_opt_text(payload.developer_instagram, URL_MAX)?;
     payload.developer_youtube = clean_opt_text(payload.developer_youtube, URL_MAX)?;
+    if let Some(Some(ref v)) = payload.info_badges {
+        let arr = v.as_array().ok_or_else(|| {
+            ApiError::BadRequest("info_badges must be a JSON array".to_string())
+        })?;
+        if arr.len() > 12 {
+            return Err(ApiError::BadRequest(
+                "info_badges supports at most 12 entries".to_string(),
+            ));
+        }
+        for item in arr {
+            let obj = item.as_object().ok_or_else(|| {
+                ApiError::BadRequest(
+                    "info_badges entries must be objects with icon_url/title/subtitle"
+                        .to_string(),
+                )
+            })?;
+            for key in ["icon_url", "title", "subtitle"] {
+                if let Some(s) = obj.get(key).and_then(|v| v.as_str()) {
+                    let limit = if key == "icon_url" { URL_MAX } else { TEXT_MAX_LONG };
+                    if s.chars().count() > limit {
+                        return Err(ApiError::BadRequest(format!(
+                            "info_badges.{} exceeds {} character limit",
+                            key, limit
+                        )));
+                    }
+                }
+            }
+        }
+    }
+    if let Some(Some(ref v)) = payload.leasing_items {
+        let arr = v.as_array().ok_or_else(|| {
+            ApiError::BadRequest("leasing_items must be a JSON array".to_string())
+        })?;
+        if arr.len() > 12 {
+            return Err(ApiError::BadRequest(
+                "leasing_items supports at most 12 entries".to_string(),
+            ));
+        }
+        for item in arr {
+            let obj = item.as_object().ok_or_else(|| {
+                ApiError::BadRequest(
+                    "leasing_items entries must be objects with title/description"
+                        .to_string(),
+                )
+            })?;
+            for key in ["title", "description"] {
+                if let Some(s) = obj.get(key).and_then(|v| v.as_str()) {
+                    if s.chars().count() > TEXT_MAX_LONG {
+                        return Err(ApiError::BadRequest(format!(
+                            "leasing_items.{} exceeds {} character limit",
+                            key, TEXT_MAX_LONG
+                        )));
+                    }
+                }
+            }
+        }
+    }
 
     // Build dynamic UPDATE — only touch columns the client sent.
     let mut sets: Vec<String> = Vec::new();
@@ -1000,6 +1102,24 @@ pub async fn api_admin_asset_page_content(
     push_text!(payload.developer_facebook, "developer_facebook");
     push_text!(payload.developer_instagram, "developer_instagram");
     push_text!(payload.developer_youtube, "developer_youtube");
+    if let Some(v) = payload.info_badges {
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        idx += 1;
+        q.push("info_badges = ");
+        q.push_bind::<Option<serde_json::Value>>(v);
+        sets.push("info_badges".to_string());
+    }
+    if let Some(v) = payload.leasing_items {
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        idx += 1;
+        q.push("leasing_items = ");
+        q.push_bind::<Option<serde_json::Value>>(v);
+        sets.push("leasing_items".to_string());
+    }
 
     if sets.is_empty() {
         return Err(ApiError::BadRequest("No fields to update".to_string()));

@@ -123,6 +123,12 @@ pub struct PropertyDisplayData {
     pub developer_instagram: Option<String>,
     /// Property Developer card YouTube URL.
     pub developer_youtube: Option<String>,
+    /// Info badges (JSONB array of {icon_url,title,subtitle}). None falls
+    /// back to the legacy hardcoded badges in the property template.
+    pub info_badges: Option<serde_json::Value>,
+    /// Leasing strategy items (JSONB array of {title,description}). None
+    /// falls back to the legacy hardcoded three items.
+    pub leasing_items: Option<serde_json::Value>,
 }
 
 /// Editable property-page content fetched separately from the core asset row.
@@ -159,6 +165,10 @@ pub struct AssetPageContent {
     pub developer_instagram: Option<String>,
     /// Developer card YouTube URL.
     pub developer_youtube: Option<String>,
+    /// Info badges JSONB array.
+    pub info_badges: Option<serde_json::Value>,
+    /// Leasing strategy items JSONB array.
+    pub leasing_items: Option<serde_json::Value>,
 }
 
 impl AssetPageContent {
@@ -192,6 +202,12 @@ impl AssetPageContent {
         display.developer_facebook = self.developer_facebook;
         display.developer_instagram = self.developer_instagram;
         display.developer_youtube = self.developer_youtube;
+        display.info_badges = self.info_badges.filter(|v| {
+            v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
+        });
+        display.leasing_items = self.leasing_items.filter(|v| {
+            v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
+        });
     }
 }
 
@@ -327,6 +343,8 @@ impl PropertyDisplayData {
             developer_facebook: None,
             developer_instagram: None,
             developer_youtube: None,
+            info_badges: None,
+            leasing_items: None,
         }
     }
 

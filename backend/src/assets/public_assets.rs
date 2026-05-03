@@ -436,6 +436,8 @@ impl PublicPropertySpec {
             developer_facebook: None,
             developer_instagram: None,
             developer_youtube: None,
+            info_badges: None,
+            leasing_items: None,
         }
     }
 }

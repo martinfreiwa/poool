@@ -155,6 +155,10 @@ function renderAll(a) {
   renderDocuments(a);
   renderFinancials(a);
   renderMilestones(a);
+  // Editable property page content + milestones (shared module)
+  if (window.PropertyPageEditor && a.id) {
+    PropertyPageEditor.init({ assetId: a.id, asset: a, milestones: a.milestones || [] });
+  }
   renderCapTable(a);
   renderOrders(a);
   renderSettings(a);

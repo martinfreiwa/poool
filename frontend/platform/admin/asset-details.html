@@ -408,6 +408,9 @@
             <button class="asset-tab" data-tab="financials">
               Financials
             </button>
+            <button class="asset-tab" data-tab="page-content">
+              Page Content
+            </button>
             <button class="asset-tab" data-tab="milestones">
               Milestones
             </button>
@@ -573,6 +576,11 @@
                 </table>
               </div>
             </div>
+          </div>
+
+          <!-- ─── TAB: PAGE CONTENT (CMS) ─── -->
+          <div class="tab-panel" id="panel-page-content">
+            {% include 'admin/components/property-page-editor.html' %}
           </div>
 
           <!-- ─── TAB: MILESTONES ─── -->
@@ -797,6 +805,7 @@
     </main>
   </div>
 
+  <script src="/static/js/admin-property-page-editor.js"></script>
   <script src="/static/js/admin-asset-details.js"></script>
 </body>
 

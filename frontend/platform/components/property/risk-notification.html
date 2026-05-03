@@ -4,10 +4,11 @@
     <div class="strategy-header">
       <div class="strategy-text">
         <h3>Risk notification</h3>
-        <p>While we strive to deliver the best for our customers, it's important to be aware of certain risks of full or partial loss of your investment that may be beyond our control:</p>
+        <p>{% if asset.risk_notification %}{{ asset.risk_notification }}{% else %}While we strive to deliver the best for our customers, it's important to be aware of certain risks of full or partial loss of your investment that may be beyond our control:{% endif %}</p>
       </div>
 
     </div>
+    {% if not asset.risk_notification %}
     <div class="strategy-content">
       <div class="strategy-item">
         <h4>Developer Issues:</h4>
@@ -24,5 +25,6 @@
         <p>Please note that investments cannot be withdrawn until the construction is complete and sold.</p>
       </div>
     </div>
+    {% endif %}
   </div>
 </div>

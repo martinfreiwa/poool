@@ -99,6 +99,19 @@
 
                 <!-- Info badges -->
                 <div id="property-info-div" class="info-div">
+                  {% if asset.info_badges %}
+                    {% for badge in asset.info_badges %}
+                    <div class="info-badge">
+                      <div class="info-badge-icon">
+                        <img loading="lazy" src="{{ badge.icon_url | default('/static/images/prop-details/line-chart-up-02.webp', true) }}" alt="{{ badge.title | default('') }}" width="24" height="24" />
+                      </div>
+                      <div class="info-badge-text">
+                        <h4>{{ badge.title | default('') }}</h4>
+                        <p>{{ badge.subtitle | default('') }}</p>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  {% else %}
                   <div class="info-badge">
                     <div class="info-badge-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -135,6 +148,7 @@
                       <p>With a net yield of {{ asset.annualised_net_return_percent }}% and a price per m² of USD {{ asset.price_per_sqm }}</p>
                     </div>
                   </div>
+                  {% endif %}
                 </div>
 
                 <!-- How it works -->
@@ -219,10 +233,11 @@
                         </div>
                       </div>
                     </div>
+                    {% set _amount_default = asset.default_investment_amount_usd | default(100000, true) %}
                     <div class="calc-slider-section slider-1">
-                      <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1" contenteditable="true" data-placeholder="USD 100,000" spellcheck="false">USD 100,000</span></div>
-                      <input type="range" class="calc-slider" id="calc-slider-1" min="0" max="100000" value="100000" />
-                      <div class="calc-slider-limits"><span>$0</span><span>$100,000</span></div>
+                      <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1" contenteditable="true" data-placeholder="USD {{ _amount_default }}" spellcheck="false">USD {{ _amount_default }}</span></div>
+                      <input type="range" class="calc-slider" id="calc-slider-1" min="0" max="{{ _amount_default }}" value="{{ _amount_default }}" />
+                      <div class="calc-slider-limits"><span>$0</span><span>${{ _amount_default }}</span></div>
                       <div class="calc-slider-total-value">Total property value: ${{ asset.total_value_usd | default("100,000") }}</div>
                     </div>
                     <div class="calc-slider-section slider-2">
@@ -237,9 +252,10 @@
                             <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">Estimated annual rate at which the property value is expected to increase based on market data.</span></span>
                           </span>
                         </span>
-                        <span class="calc-slider-value" id="calc-slider-value-2" contenteditable="true" data-placeholder="10%" spellcheck="false">10%</span>
+                        {% set _vg = asset.default_value_growth_percent | default('10', true) %}
+                        <span class="calc-slider-value" id="calc-slider-value-2" contenteditable="true" data-placeholder="{{ _vg }}%" spellcheck="false">{{ _vg }}%</span>
                       </div>
-                      <input type="range" class="calc-slider" id="calc-slider-2" min="1" max="20" value="10" step="0.5" />
+                      <input type="range" class="calc-slider" id="calc-slider-2" min="1" max="20" value="{{ _vg }}" step="0.5" />
                       <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
                     </div>
                     <div class="calc-slider-section slider-3">
@@ -254,9 +270,10 @@
                             <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">The projected annual rental income as a percentage of the property value.</span></span>
                           </span>
                         </span>
-                        <span class="calc-slider-value" id="calc-slider-value-3" contenteditable="true" data-placeholder="12%" spellcheck="false">12%</span>
+                        {% set _ry = asset.default_rental_yield_percent | default(asset.annual_yield_percent | default('12', true), true) %}
+                        <span class="calc-slider-value" id="calc-slider-value-3" contenteditable="true" data-placeholder="{{ _ry }}%" spellcheck="false">{{ _ry }}%</span>
                       </div>
-                      <input type="range" class="calc-slider" id="calc-slider-3" min="1" max="20" value="12" step="0.5" />
+                      <input type="range" class="calc-slider" id="calc-slider-3" min="1" max="20" value="{{ _ry }}" step="0.5" />
                       <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
                     </div>
                     <div class="calc-help-button">
@@ -348,23 +365,35 @@
                   </div>
                   <div class="developer-card">
                     <div class="developer-logo-wrapper">
-                      <div class="developer-logo"><img src="/static/images/seed/alexvillas.webp" alt="Alex Villas Logo" /></div>
+                      <div class="developer-logo"><img src="{{ asset.developer_logo_url | default('/static/images/seed/alexvillas.webp', true) }}" alt="{{ asset.developer_name | default('Alex Villas', true) }} Logo" /></div>
                     </div>
                     <div class="developer-text">
-                      <h4 class="developer-name">ALEX VILLAS</h4>
-                      <p class="developer-description">At Alex Villas, we believe in complete control over the quality of our projects.<br /><br />That's why we've taken the innovative step of establishing our own production<br />facilities, including a concrete factory and a furniture factory.</p>
+                      <h4 class="developer-name">{{ asset.developer_name | default('ALEX VILLAS', true) }}</h4>
+                      <p class="developer-description">{{ asset.developer_description | default('At Alex Villas, we believe in complete control over the quality of our projects.\n\nThat\'s why we\'ve taken the innovative step of establishing our own production facilities, including a concrete factory and a furniture factory.', true) }}</p>
                     </div>
                     <div class="developer-social">
+                      {% if asset.developer_website %}
                       <div class="developer-website">
                         <span class="social-label">Website</span>
-                        <a href="https://alexvillasgroup.com" class="website-link" target="_blank" rel="noopener noreferrer">
+                        <a href="{{ asset.developer_website }}" class="website-link" target="_blank" rel="noopener noreferrer">
                           <svg class="globe-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <circle cx="8" cy="8" r="7" stroke="#0000FF" stroke-width="1.5"></circle>
                             <path d="M2 8H14M8 1C8 1 5 4 5 8C5 12 8 15 8 15C8 15 11 12 11 8C11 4 8 1 8 1Z" stroke="#0000FF" stroke-width="1.5"></path>
                           </svg>
-                          <span>alexvillasgroup.com</span>
+                          <span>{{ asset.developer_website | replace('https://', '') | replace('http://', '') | replace('www.', '') }}</span>
                         </a>
                       </div>
+                      {% endif %}
+                      {% if asset.developer_facebook or asset.developer_instagram or asset.developer_youtube %}
+                      <div class="developer-socials">
+                        <span class="social-label">Social media</span>
+                        <div class="social-icons">
+                          {% if asset.developer_facebook %}<a href="{{ asset.developer_facebook }}" class="social-icon facebook" target="_blank" rel="noopener noreferrer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M20 10C20 4.477 15.523 0 10 0S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z" fill="#0000FF"></path></svg></a>{% endif %}
+                          {% if asset.developer_instagram %}<a href="{{ asset.developer_instagram }}" class="social-icon instagram" target="_blank" rel="noopener noreferrer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="4" stroke="#0000FF" stroke-width="2"></rect><circle cx="10" cy="10" r="3" stroke="#0000FF" stroke-width="2"></circle><circle cx="14.5" cy="5.5" r="1.5" fill="#0000FF"></circle></svg></a>{% endif %}
+                          {% if asset.developer_youtube %}<a href="{{ asset.developer_youtube }}" class="social-icon youtube" target="_blank" rel="noopener noreferrer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M19.543 5.491C19.353 4.766 18.784 4.197 18.059 4.007C16.728 3.667 10 3.667 10 3.667s-6.728 0-8.059.34C1.216 4.197.647 4.766.457 5.491.167 6.822.167 10 .167 10s0 3.178.29 4.509c.19.725.759 1.294 1.484 1.484C3.272 16.333 10 16.333 10 16.333s6.728 0 8.059-.34c.725-.19 1.294-.759 1.484-1.484.29-1.331.29-4.509.29-4.509s0-3.178-.29-4.509zM8 12.5V7.5l5.5 2.5L8 12.5z" fill="#0000FF"></path></svg></a>{% endif %}
+                        </div>
+                      </div>
+                      {% endif %}
                     </div>
                   </div>
                 </div>
