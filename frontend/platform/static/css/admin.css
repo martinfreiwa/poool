@@ -1772,16 +1772,24 @@ body.admin-sidebar-collapsed .admin-main {
    Admin Quick-Filter Rows
    =========================== */
 .admin-orders-filter-row,
-.admin-deposits-filter-row {
+.admin-deposits-filter-row,
+.admin-support-filter-row,
+.admin-notifications-filter-row,
+.admin-audit-filter-row,
+.admin-users-filter-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 20px;
+  padding: 10px 20px;
   flex-wrap: wrap;
 }
 
 .admin-orders-search,
-.admin-deposits-search {
+.admin-deposits-search,
+.admin-support-search,
+.admin-notifications-search,
+.admin-audit-search,
+.admin-users-search {
   flex: 0 1 280px;
   width: 280px;
   max-width: 100%;
@@ -1790,7 +1798,11 @@ body.admin-sidebar-collapsed .admin-main {
 }
 
 .admin-orders-filter-row .admin-select,
-.admin-deposits-filter-row .admin-select {
+.admin-deposits-filter-row .admin-select,
+.admin-support-filter-row .admin-select,
+.admin-notifications-filter-row .admin-select,
+.admin-audit-filter-row .admin-select,
+.admin-users-filter-row .admin-select {
   flex: 0 0 auto;
   min-width: 136px;
   width: auto;
@@ -1819,7 +1831,118 @@ body.admin-sidebar-collapsed .admin-main {
   width: 152px;
 }
 
-.admin-orders-count {
+.admin-support-filter-row #filter-status {
+  width: 146px;
+}
+
+.admin-support-filter-row #filter-priority {
+  width: 142px;
+}
+
+.admin-support-filter-row #filter-date {
+  width: 128px;
+}
+
+.admin-support-filter-row {
+  padding-block: 10px;
+}
+
+.admin-support-search {
+  padding-block: 4px;
+}
+
+.admin-support-filter-row .admin-select {
+  height: 32px;
+  padding-block: 4px;
+}
+
+.admin-notifications-filter-row #filter-type {
+  width: 142px;
+}
+
+.admin-notifications-filter-row #filter-read {
+  width: 112px;
+}
+
+.admin-audit-filter-row #filter-entity {
+  width: 154px;
+}
+
+.admin-audit-filter-row #filter-action {
+  width: 146px;
+}
+
+.admin-submissions-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+}
+
+.admin-submissions-filter-control {
+  flex: 0 0 190px;
+  width: 190px;
+  max-width: 100%;
+  min-width: 190px;
+}
+
+.admin-submissions-filter-row .admin-select,
+.admin-submissions-filter-row .admin-search {
+  height: 40px;
+}
+
+.admin-submissions-updated {
+  margin-left: auto;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.admin-submissions-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-submissions-progress-track {
+  flex: 1;
+  min-width: 60px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--admin-border);
+}
+
+.admin-submissions-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--admin-success, #059669);
+}
+
+.admin-submissions-progress-label {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.admin-users-filter-row #filter-role {
+  width: 132px;
+}
+
+.admin-users-filter-row #filter-kyc {
+  width: 128px;
+}
+
+.admin-users-filter-row #filter-status {
+  width: 134px;
+}
+
+.admin-orders-count,
+.admin-support-count,
+.admin-notifications-count,
+.admin-audit-count,
+.admin-users-count {
   margin-left: auto;
   color: var(--admin-text-muted);
   font-size: 12px;
@@ -1853,24 +1976,53 @@ body.admin-sidebar-collapsed .admin-main {
 
 @media (max-width: 720px) {
   .admin-orders-filter-row,
-  .admin-deposits-filter-row {
+  .admin-deposits-filter-row,
+  .admin-support-filter-row,
+  .admin-notifications-filter-row,
+  .admin-audit-filter-row,
+  .admin-users-filter-row,
+  .admin-submissions-filter-row {
     align-items: stretch;
   }
 
   .admin-orders-search,
   .admin-deposits-search,
+  .admin-support-search,
+  .admin-notifications-search,
+  .admin-audit-search,
+  .admin-users-search,
+  .admin-submissions-filter-control,
   .admin-orders-filter-row .admin-select,
   .admin-deposits-filter-row .admin-select,
+  .admin-support-filter-row .admin-select,
+  .admin-notifications-filter-row .admin-select,
+  .admin-audit-filter-row .admin-select,
+  .admin-users-filter-row .admin-select,
   #order-filter-status,
   #order-filter-range,
   .admin-deposits-filter-row #filter-status,
   .admin-deposits-filter-row #filter-currency,
-  .admin-deposits-filter-row #filter-provider {
+  .admin-deposits-filter-row #filter-provider,
+  .admin-support-filter-row #filter-status,
+  .admin-support-filter-row #filter-priority,
+  .admin-support-filter-row #filter-date,
+  .admin-notifications-filter-row #filter-type,
+  .admin-notifications-filter-row #filter-read,
+  .admin-audit-filter-row #filter-entity,
+  .admin-audit-filter-row #filter-action,
+  .admin-users-filter-row #filter-role,
+  .admin-users-filter-row #filter-kyc,
+  .admin-users-filter-row #filter-status {
     width: 100%;
     flex-basis: 100%;
   }
 
-  .admin-orders-count {
+  .admin-orders-count,
+  .admin-support-count,
+  .admin-notifications-count,
+  .admin-audit-count,
+  .admin-users-count,
+  .admin-submissions-updated {
     margin-left: 0;
   }
 }

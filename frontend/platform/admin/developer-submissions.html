@@ -63,22 +63,12 @@
               Developer Submissions
               <span class="cr-help-icon" data-tooltip="New asset submissions from developers awaiting admin review. Pipeline: Draft → Submitted → In Review → Approved/Rejected → Live.">?</span>
             </h1>
-            <p class="admin-page-subtitle" id="page-subtitle">
-              Loading queue status…
-              <span class="cr-related" aria-label="Related pages">
-                · Related:
-                <a href="/admin/asset-change-requests.html">Change Requests</a>
-                <a href="/admin/assets.html">Live Assets</a>
-                <a href="/admin/audit-logs.html?entity=asset">Audit Log</a>
-              </span>
-            </p>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-cmdk" title="Open command palette (⌘K / Ctrl+K)" aria-label="Open command palette" onclick="window.adminSubmissionsOpenCmdk && window.adminSubmissionsOpenCmdk()">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5"/><path d="M14 14l-3-3"/></svg>
               <kbd style="font-size:10px;background:var(--admin-border);padding:1px 5px;border-radius:3px;font-family:inherit;">⌘K</kbd>
             </button>
-            <span id="last-updated-indicator" style="font-size: 12px; color: var(--admin-text-muted); white-space: nowrap;" title="Auto-refreshes every 60 seconds"></span>
             <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-refresh" title="Refresh now (auto-refresh runs every 60s)" aria-label="Refresh submissions">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8a6 6 0 11-1.76-4.24L14 5"/><path d="M14 2v3h-3"/></svg>
               <span class="visually-hidden-on-narrow">Refresh</span>
@@ -88,13 +78,6 @@
               Export CSV
             </button>
           </div>
-        </div>
-
-        <!-- Anomaly banner -->
-        <div id="anomaly-banner" class="admin-anomaly-banner" hidden role="status">
-          <span class="admin-anomaly-banner-icon" aria-hidden="true">⚠</span>
-          <span id="anomaly-banner-text"></span>
-          <button type="button" class="admin-anomaly-banner-dismiss" id="anomaly-banner-dismiss" aria-label="Dismiss">×</button>
         </div>
 
         <!-- Action Required Banner -->
@@ -161,8 +144,8 @@
 
         <!-- Filters -->
         <div class="admin-card" style="margin-bottom: 16px">
-          <div style="padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <div class="admin-search" style="width: 220px; flex-shrink: 0;">
+          <div class="admin-submissions-filter-row">
+            <div class="admin-search admin-submissions-filter-control">
               <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="6" />
@@ -171,7 +154,7 @@
               <input type="text" placeholder="Search by title, developer…" id="sub-search"
                 aria-label="Search submissions" />
             </div>
-            <select id="filter-status" class="admin-select" style="width: 160px; flex-shrink: 0;" aria-label="Filter by status">
+            <select id="filter-status" class="admin-select admin-submissions-filter-control" aria-label="Filter by status">
               <option value="">All Status</option>
               <option value="submitted">Submitted</option>
               <option value="in_review">In Review</option>
@@ -181,7 +164,7 @@
               <option value="live">Live</option>
               <option value="draft">Draft</option>
             </select>
-            <select id="filter-type" class="admin-select" style="width: 160px; flex-shrink: 0;" aria-label="Filter by asset type">
+            <select id="filter-type" class="admin-select admin-submissions-filter-control" aria-label="Filter by asset type">
               <option value="">All Types</option>
               <option value="real_estate">Real Estate</option>
               <option value="commercial_property">Commercial</option>
@@ -190,32 +173,24 @@
               <option value="startup">Startup</option>
               <option value="land_plot">Land Plot</option>
             </select>
-            <select id="filter-age" class="admin-select" style="width: 140px; flex-shrink: 0;" aria-label="Filter by age">
+            <select id="filter-age" class="admin-select admin-submissions-filter-control" aria-label="Filter by age">
               <option value="">All Ages</option>
               <option value="overdue">SLA Overdue (&gt;3d)</option>
               <option value="aging">Aging (1–3d)</option>
               <option value="fresh">Fresh (&lt;1d)</option>
             </select>
-            <select id="filter-risk" class="admin-select" style="width: 140px; flex-shrink: 0;" aria-label="Filter by fraud risk" title="Client-side fraud heuristics: rate, KYC status, duplicate name, value outlier, first-time developer.">
+            <select id="filter-risk" class="admin-select admin-submissions-filter-control" aria-label="Filter by fraud risk" title="Client-side fraud heuristics: rate, KYC status, duplicate name, value outlier, first-time developer.">
               <option value="">All Risk</option>
               <option value="high">High Risk (≥60)</option>
               <option value="any">Any Signals (≥30)</option>
               <option value="clean">Clean (&lt;30)</option>
             </select>
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--admin-text-secondary); cursor: pointer; user-select: none;" title="Show only submissions assigned to you">
-              <input type="checkbox" id="filter-mine" style="margin: 0;" />
-              <span>Mine only</span>
-            </label>
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--admin-text-secondary); cursor: pointer; user-select: none;" title="Include submissions flagged as test/dummy data (hidden by default)">
-              <input type="checkbox" id="filter-include-test" style="margin: 0;" />
-              <span>Include test</span>
-            </label>
             <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-toggle-advanced" aria-expanded="false" aria-controls="advanced-filters" title="Show advanced filters">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
               <span>More filters</span>
               <span id="advanced-filter-count" style="display:none;font-size:10px;background:var(--admin-primary, #4f46e5);color:#fff;padding:1px 6px;border-radius:8px;margin-left:2px;">0</span>
             </button>
-            <span style="margin-left: auto; font-size: 12px; color: var(--admin-text-muted); white-space: nowrap;" id="sub-count-label">Showing 0 submissions</span>
+            <span class="admin-submissions-updated" id="last-updated-indicator" title="Auto-refreshes every 60 seconds"></span>
           </div>
 
           <!-- Advanced filters panel -->

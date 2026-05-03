@@ -70,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
   startAutoRefresh();
   setupCmdk();
   setupHelpModal();
-  setupAnomalyDismiss();
   // Tick the "last updated" indicator every 15s so it stays fresh
   setInterval(updateLastUpdatedIndicator, 15_000);
 });
@@ -90,16 +89,6 @@ function setupHelpModal() {
     if (e.key === "Escape" && !modal.hidden) { hide(); return; }
     if (typing) return;
     if (e.key === "?") { e.preventDefault(); show(); }
-  });
-}
-
-function setupAnomalyDismiss() {
-  const btn = document.getElementById("anomaly-banner-dismiss");
-  const banner = document.getElementById("anomaly-banner");
-  if (!btn || !banner) return;
-  btn.addEventListener("click", () => {
-    window.__submissionsAnomalyDismissed = true;
-    banner.hidden = true;
   });
 }
 
@@ -235,7 +224,6 @@ function setupEventListeners() {
   document.getElementById("filter-type")?.addEventListener("change", onFilter);
   document.getElementById("filter-age")?.addEventListener("change", onFilter);
   document.getElementById("filter-risk")?.addEventListener("change", onFilter);
-  document.getElementById("filter-mine")?.addEventListener("change", onFilter);
 
   // KPI cards as filters
   document.querySelectorAll("[data-kpi-filter]").forEach((btn) => {
@@ -294,13 +282,6 @@ function setupEventListeners() {
   document
     .getElementById("bulk-pin-mine")
     ?.addEventListener("click", () => bulkAssignToMe());
-  document
-    .getElementById("filter-include-test")
-    ?.addEventListener("change", (e) => {
-      includeTest = !!e.target.checked;
-      loadSubmissions();
-    });
-
   // Advanced filters
   document
     .getElementById("btn-toggle-advanced")
@@ -531,8 +512,6 @@ function collectFiltersForPreset() {
     status: get("filter-status"),
     type: get("filter-type"),
     age: get("filter-age"),
-    mine: !!document.getElementById("filter-mine")?.checked,
-    includeTest: !!document.getElementById("filter-include-test")?.checked,
     developer: get("filter-developer"),
     dateRange: get("filter-date-range"),
     dateFrom: get("filter-date-from"),
@@ -560,8 +539,6 @@ function applyPreset(name) {
   set("filter-status", p.status);
   set("filter-type", p.type);
   set("filter-age", p.age);
-  set("filter-mine", p.mine);
-  set("filter-include-test", p.includeTest);
   set("filter-developer", p.developer);
   set("filter-date-range", p.dateRange);
   set("filter-date-from", p.dateFrom);
@@ -581,13 +558,7 @@ function applyPreset(name) {
   kpiActiveFilter = p.kpi || "";
   highlightActiveKpi();
 
-  // Reload if includeTest toggled
-  const wantInclude = !!p.includeTest;
-  if (wantInclude !== includeTest) {
-    includeTest = wantInclude;
-    loadSubmissions();
-    return;
-  }
+  includeTest = false;
   currentPage = 1;
   applyFilters();
   updateAdvancedFilterCount();
@@ -791,22 +762,6 @@ function updateStats() {
   );
   set("stat-total-value-sub", "Aggregate asset valuation");
 
-  // Subtitle: actionable (preserve any existing .cr-related span)
-  const subtitle = el("page-subtitle");
-  if (subtitle) {
-    const related = subtitle.querySelector(".cr-related");
-    if (loadError) {
-      subtitle.textContent = "Failed to load queue.";
-    } else {
-      const parts = [];
-      parts.push(`${pending} awaiting your review`);
-      if (overdue > 0) parts.push(`${overdue} SLA-overdue`);
-      if (lastLoadedAt) parts.push(`updated ${formatTime(lastLoadedAt)}`);
-      subtitle.textContent = parts.join(" • ");
-    }
-    if (related) subtitle.appendChild(related);
-  }
-
   // SLA-overdue color cue on Pending KPI
   const pendingCard = document.querySelector(
     '[data-kpi-filter="pending"]',
@@ -842,29 +797,6 @@ function updateStats() {
     }
   }
 
-  detectSubmissionAnomalies();
-}
-
-function detectSubmissionAnomalies() {
-  const banner = document.getElementById("anomaly-banner");
-  if (!banner || window.__submissionsAnomalyDismissed) return;
-  const ANOMALY_WINDOW_H = 24;
-  const ANOMALY_THRESHOLD = 5;
-  const counts = new Map();
-  allSubmissions.forEach((s) => {
-    if (s.age_hours == null || s.age_hours > ANOMALY_WINDOW_H) return;
-    const dev = s.developer_name || s.developer_email || "Unknown";
-    counts.set(dev, (counts.get(dev) || 0) + 1);
-  });
-  const offenders = [...counts.entries()].filter(([, n]) => n >= ANOMALY_THRESHOLD);
-  if (offenders.length === 0) {
-    banner.hidden = true;
-    return;
-  }
-  banner.hidden = false;
-  const txt = document.getElementById("anomaly-banner-text");
-  if (txt) txt.textContent =
-    `Unusual activity (24h): ${offenders.map(([d, n]) => `${d} (${n} submissions)`).join(", ")}`;
 }
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -876,7 +808,6 @@ function applyFilters() {
   const type = document.getElementById("filter-type")?.value || "";
   const age = document.getElementById("filter-age")?.value || "";
   const risk = document.getElementById("filter-risk")?.value || "";
-  const mineOnly = !!document.getElementById("filter-mine")?.checked;
 
   // Advanced filters
   const developer = document.getElementById("filter-developer")?.value || "";
@@ -923,8 +854,6 @@ function applyFilters() {
     } else if (age && s.age_hours == null) {
       return false;
     }
-
-    if (mineOnly && s.assigned_admin_id !== currentAdminId()) return false;
 
     if (risk) {
       const fs = s.fraud_score || 0;
@@ -977,12 +906,6 @@ function applyFilters() {
     Math.max(1, Math.ceil(filteredSubs.length / PAGE_SIZE)),
   );
   updateSortHeaders();
-
-  const countEl = document.getElementById("sub-count-label");
-  if (countEl)
-    countEl.textContent = loadError
-      ? "Unable to load submissions"
-      : `Showing ${filteredSubs.length} of ${allSubmissions.length} submission${allSubmissions.length !== 1 ? "s" : ""}`;
   renderTable();
 }
 
@@ -1044,7 +967,6 @@ function renderTable() {
       !!document.getElementById("filter-status")?.value ||
       !!document.getElementById("filter-type")?.value ||
       !!document.getElementById("filter-age")?.value ||
-      !!document.getElementById("filter-mine")?.checked ||
       kpiActiveFilter !== "";
     const totalCount = allSubmissions.length;
     const empty = hasFilters
@@ -1083,8 +1005,6 @@ function renderTable() {
           if (el.type === "checkbox") el.checked = false;
           else el.value = "";
         });
-        const mine = document.getElementById("filter-mine");
-        if (mine) mine.checked = false;
         kpiActiveFilter = "";
         highlightActiveKpi();
         applyFilters();
@@ -1150,11 +1070,11 @@ function renderTable() {
             }</td>
             <td>${
               showRaisedAndProgress
-                ? `<div style="display:flex;align-items:center;gap:6px;">
-                    <div style="flex:1;background:var(--admin-border);border-radius:4px;height:6px;min-width:60px;">
-                        <div style="background:var(--admin-primary);border-radius:4px;height:6px;width:${Math.min(100, (s.funding_progress_bps || 0) / 100)}%"></div>
+                ? `<div class="admin-submissions-progress">
+                    <div class="admin-submissions-progress-track">
+                        <div class="admin-submissions-progress-fill" style="width:${Math.min(100, (s.funding_progress_bps || 0) / 100)}%"></div>
                     </div>
-                    <span style="font-size:11px;color:var(--admin-text-muted);white-space:nowrap;">${((s.funding_progress_bps || 0) / 100).toFixed(0)}%</span>
+                    <span class="admin-submissions-progress-label">${((s.funding_progress_bps || 0) / 100).toFixed(0)}%</span>
                   </div>`
                 : '<span style="color:var(--admin-text-muted);font-size:12px;">—</span>'
             }</td>
@@ -1932,26 +1852,12 @@ function cmdkActions() {
     },
     {
       kind: "filter",
-      label: "Show only mine",
-      hint: "Toggle Mine only",
-      run: () => {
-        const el = document.getElementById("filter-mine");
-        if (el) {
-          el.checked = !el.checked;
-          applyFilters();
-        }
-      },
-    },
-    {
-      kind: "filter",
       label: "Clear all filters",
       run: () => {
         ["sub-search", "filter-status", "filter-type", "filter-age", "filter-risk"].forEach((id) => {
           const el = document.getElementById(id);
           if (el) el.value = "";
         });
-        const mine = document.getElementById("filter-mine");
-        if (mine) mine.checked = false;
         clearAdvancedFilters();
         kpiActiveFilter = "";
         highlightActiveKpi();

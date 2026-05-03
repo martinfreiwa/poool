@@ -55,14 +55,8 @@
 
         <!-- Filters -->
         <div class="admin-card" style="margin-bottom: 16px">
-          <div style="
-                padding: 14px 20px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-              ">
-            <div class="admin-search" style="width: 200px">
+          <div class="admin-audit-filter-row">
+            <div class="admin-search admin-audit-search">
               <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="6" />
@@ -88,11 +82,7 @@
               <option value="deleted">Deleted</option>
               <option value="login">Login</option>
             </select>
-            <span style="
-                  margin-left: auto;
-                  font-size: 12px;
-                  color: var(--admin-text-muted);
-                " id="audit-count-label">0 entries</span>
+            <span class="admin-audit-count" id="audit-count-label">0 entries</span>
             <button class="admin-btn admin-btn--secondary admin-btn--sm" id="audit-export-csv"
               title="Export filtered logs to CSV">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">

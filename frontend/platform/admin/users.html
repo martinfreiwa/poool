@@ -164,15 +164,9 @@
 
         <!-- Filters Bar -->
         <div class="admin-card" style="margin-bottom: 16px">
-          <div style="
-                padding: 14px 20px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-              ">
+          <div class="admin-users-filter-row">
             <!-- Search -->
-            <div class="admin-search" style="width: 240px">
+            <div class="admin-search admin-users-search">
               <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="6" />
@@ -203,11 +197,7 @@
               <option value="suspended">Suspended</option>
               <option value="pending">Pending</option>
             </select>
-            <span style="
-                  margin-left: auto;
-                  font-size: 12px;
-                  color: var(--admin-text-muted);
-                " id="user-count-label">Showing 0 users</span>
+            <span class="admin-users-count" id="user-count-label">Showing 0 users</span>
           </div>
         </div>
 
