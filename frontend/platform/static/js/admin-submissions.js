@@ -78,15 +78,18 @@ document.addEventListener("DOMContentLoaded", () => {
 function setupHelpModal() {
   const modal = document.getElementById("submissions-help-modal");
   if (!modal) return;
+  const show = () => { modal.hidden = false; modal.style.display = "flex"; };
+  const hide = () => { modal.hidden = true; modal.style.display = "none"; };
+  hide();
   document.querySelectorAll("[data-help-close]").forEach((el) =>
-    el.addEventListener("click", () => { modal.hidden = true; }));
+    el.addEventListener("click", hide));
   document.addEventListener("keydown", (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const tag = (e.target.tagName || "").toLowerCase();
     const typing = tag === "input" || tag === "textarea" || e.target.isContentEditable;
-    if (e.key === "Escape" && !modal.hidden) { modal.hidden = true; return; }
+    if (e.key === "Escape" && !modal.hidden) { hide(); return; }
     if (typing) return;
-    if (e.key === "?") { e.preventDefault(); modal.hidden = false; }
+    if (e.key === "?") { e.preventDefault(); show(); }
   });
 }
 
