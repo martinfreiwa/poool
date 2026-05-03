@@ -84,6 +84,7 @@ jobs:
             --set-env-vars "SERVER_HOST=0.0.0.0" \
             --set-env-vars "SERVER_PORT=8080" \
             --set-env-vars "RUST_LOG=warn" \
+            --set-env-vars "GCS_BUCKET_NAME=poool-assets-primary" \
             --set-secrets "DATABASE_URL=poool-database-url:latest" \
             --set-secrets "JWT_SECRET=poool-jwt-secret:latest" \
             --set-secrets "SESSION_SECRET=poool-jwt-secret:latest" \
