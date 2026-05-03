@@ -1,8 +1,8 @@
 name: Deploy to Cloud Run (Production)
 
 on:
-  push:
-    branches: [main]
+  # Auto-deploy on push disabled — deploys done manually from laptop for now.
+  # Re-enable by adding `push: { branches: [main] }`.
   workflow_dispatch:
     inputs:
       environment:
