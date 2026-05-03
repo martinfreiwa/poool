@@ -435,6 +435,43 @@ mod tests {
         assert_eq!(pubkey_to_address(&recovered), signer.address());
     }
 
+    /// Synthetic test of the high-s recovery path: take a known low-s
+    /// signature, flip s to high-s (s' = N - s), feed it through
+    /// `recover_signature`, and verify normalisation + recid flip recover
+    /// the correct signer address. This exercises the branch that fires
+    /// when KMS returns a high-s signature.
+    #[tokio::test]
+    async fn recover_signature_handles_high_s() {
+        use k256::elliptic_curve::PrimeField;
+
+        // Sign a message with a known key — gives us a low-s baseline.
+        let key_bytes = parse_hex_pub(TEST_KEY).unwrap();
+        let key = SigningKey::from_slice(&key_bytes).unwrap();
+        let expected_addr = pubkey_to_address(key.verifying_key());
+        let hash = keccak256(b"high-s test payload");
+        let (sig_low, _recid_low) = key.sign_prehash_recoverable(&hash).unwrap();
+
+        // Construct the high-s mirror: s' = N - s.
+        let r_bytes: [u8; 32] = sig_low.r().to_bytes().into();
+        let s_low_bytes: [u8; 32] = sig_low.s().to_bytes().into();
+        let s_low_scalar = k256::Scalar::from_repr(s_low_bytes.into()).unwrap();
+        let s_high_scalar = -s_low_scalar;
+        let s_high_bytes: [u8; 32] = s_high_scalar.to_repr().into();
+
+        // Sanity: the flipped s really is high.
+        use k256::elliptic_curve::scalar::IsHigh;
+        assert!(bool::from(s_high_scalar.is_high()), "test setup: s should be high");
+
+        let (recovered_sig, recovered_recid) =
+            recover_signature(&hash, &r_bytes, &s_high_bytes, &expected_addr)
+                .expect("recover_signature must handle high-s input");
+
+        // Verify the returned (sig, recid) actually recovers correctly.
+        let pk = VerifyingKey::recover_from_prehash(&hash, &recovered_sig, recovered_recid)
+            .expect("recover from prehash");
+        assert_eq!(pubkey_to_address(&pk), expected_addr);
+    }
+
     #[tokio::test]
     async fn local_signer_round_trip_via_recovery() {
         let signer = LocalKeySigner::from_hex(TEST_KEY).unwrap();
@@ -444,5 +481,27 @@ mod tests {
             VerifyingKey::recover_from_prehash(&hash, &signed.signature, signed.recovery_id)
                 .unwrap();
         assert_eq!(pubkey_to_address(&recovered), signer.address());
+    }
+}
+
+#[cfg(test)]
+mod stress_tests {
+    use super::*;
+    use super::tests::*;
+
+    /// Hammer KMS with 10 signs to exercise both low-s and high-s
+    /// recovery paths (ECDSA k is random, ~50% chance of high-s per call).
+    #[tokio::test]
+    #[ignore = "requires CHAIN_KMS_KEY env + GCP auth, makes 10 KMS calls"]
+    async fn kms_signer_hammer() {
+        let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+        let key = std::env::var("CHAIN_KMS_KEY").expect("CHAIN_KMS_KEY not set");
+        let signer = KmsSigner::new(key).await.unwrap();
+        for i in 0..10 {
+            let hash = keccak256(format!("kms hammer {}", i).as_bytes());
+            let signed = signer.sign_prehash(&hash).await.unwrap();
+            let pk = VerifyingKey::recover_from_prehash(&hash, &signed.signature, signed.recovery_id).unwrap();
+            assert_eq!(pubkey_to_address(&pk), signer.address(), "iteration {}", i);
+        }
     }
 }
