@@ -53,6 +53,17 @@ pub fn create_engine() -> Templates {
         crate::common::currency::format_thousands(value)
     });
 
+    // Custom filter: split a string by a delimiter (default "\n"). Used by the
+    // risk-notification component to render multi-line CMS text as separate
+    // strategy-item cards.
+    env.add_filter(
+        "split",
+        |value: String, delim: Option<String>| -> Vec<String> {
+            let d = delim.unwrap_or_else(|| "\n".to_string());
+            value.split(d.as_str()).map(|s| s.to_string()).collect()
+        },
+    );
+
     // Auth templates are now loaded dynamically via path_loader from frontend/platform
     // This ensures consistency with the design system and shared head.html.
     tracing::info!(
