@@ -326,6 +326,17 @@ body.admin-sidebar-collapsed .admin-main {
   text-transform: uppercase;
 }
 
+.admin-nav-subsection-label {
+  display: block;
+  padding: 10px 20px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--admin-text-muted);
+  opacity: 0.65;
+}
+
 .admin-nav-item {
   display: flex;
   align-items: center;
