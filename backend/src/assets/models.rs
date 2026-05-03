@@ -331,7 +331,7 @@ impl PropertyDisplayData {
             image_urls,
             cover_image_url,
             funding_status: asset.funding_status.clone(),
-            google_maps_url: asset.google_maps_url.clone(),
+            google_maps_url: normalize_maps_embed_url(asset.google_maps_url.as_deref()),
             video_url: asset.video_url.clone(),
             youtube_video_id,
             long_description,
@@ -406,6 +406,30 @@ fn escape_html(s: &str) -> String {
 /// Format a number with thousands separators (e.g. 1234567 -> "1,234,567")
 pub(crate) fn format_number(n: i64) -> String {
     crate::common::currency::format_thousands(n)
+}
+
+/// Normalize a Google Maps URL to an iframe-embeddable form.
+///
+/// Google blocks share-style `/maps?q=...` URLs inside iframes via X-Frame-Options.
+/// `output=embed` flips the response to an embeddable variant.
+/// `/maps/embed?pb=...` URLs are already embeddable and pass through unchanged.
+/// Short links (`maps.app.goo.gl`, `goo.gl/maps`) cannot be transformed without
+/// resolving redirects → returned as-is (iframe will likely fail; user should
+/// paste an embed URL).
+fn normalize_maps_embed_url(url: Option<&str>) -> Option<String> {
+    let url = url?.trim();
+    if url.is_empty() {
+        return None;
+    }
+    if url.contains("/maps/embed") || url.contains("output=embed") {
+        return Some(url.to_string());
+    }
+    if url.contains("google.com/maps") || url.contains("google.com/maps/place")
+    {
+        let sep = if url.contains('?') { '&' } else { '?' };
+        return Some(format!("{}{}output=embed", url, sep));
+    }
+    Some(url.to_string())
 }
 
 /// Extract YouTube video ID from a URL string.
@@ -665,7 +689,7 @@ impl CommodityDisplayData {
             image_urls,
             cover_image_url,
             funding_status: asset.funding_status.clone(),
-            google_maps_url: asset.google_maps_url.clone(),
+            google_maps_url: normalize_maps_embed_url(asset.google_maps_url.as_deref()),
             video_url: asset.video_url.clone(),
             youtube_video_id: extract_youtube_id(asset.video_url.as_deref()),
             long_description: asset.description.as_ref().and_then(|desc| {
