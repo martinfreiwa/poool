@@ -9,6 +9,23 @@ const BLOCKCHAIN_CONTROL_PERMISSION: &str = "blockchain.manage";
 const BLOCKCHAIN_READ_PERMISSION: &str = "treasury.read";
 const BLOCKCHAIN_TOKENIZE_PERMISSION: &str = "blockchain.tokenize";
 
+/// Resolve settlement wallet address: prefer explicit `CHAIN_SETTLEMENT_ADDRESS`,
+/// fall back to deriving from `CHAIN_SETTLEMENT_PRIVATE_KEY` so the UI doesn't
+/// show "Not configured" when the signer is actually live.
+fn resolve_settlement_address() -> String {
+    if let Ok(addr) = std::env::var("CHAIN_SETTLEMENT_ADDRESS") {
+        if !addr.is_empty() {
+            return addr;
+        }
+    }
+    if let Ok(pk) = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY") {
+        if let Ok(addr) = crate::blockchain::signing::address_from_private_key(&pk) {
+            return addr;
+        }
+    }
+    "Not configured".to_string()
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ── TYPES ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
@@ -302,8 +319,7 @@ fn chain_tokenize_mock_enabled() -> bool {
 fn chain_configured_for_tokenize() -> bool {
     chain_tokenize_mock_enabled()
         || (std::env::var("CHAIN_CONTRACT_ADDRESS").is_ok()
-            && std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").is_ok()
-            && std::env::var("CHAIN_SETTLEMENT_ADDRESS").is_ok())
+            && std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").is_ok())
 }
 
 fn parse_clone_address_from_receipt(receipt_val: &serde_json::Value) -> Result<String, ApiError> {
@@ -541,8 +557,7 @@ pub async fn api_admin_blockchain_treasury(
     admin.require_permission(pool, "treasury.read").await?;
 
     // Load chain config from env
-    let wallet_address =
-        std::env::var("CHAIN_SETTLEMENT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
+    let wallet_address = resolve_settlement_address();
     let contract_address =
         std::env::var("CHAIN_CONTRACT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
     let network = std::env::var("CHAIN_NETWORK")
@@ -769,8 +784,7 @@ pub async fn api_admin_blockchain_tokenize_candidates(
     .await
     .map_err(ApiError::from)?;
 
-    let wallet_address =
-        std::env::var("CHAIN_SETTLEMENT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
+    let wallet_address = resolve_settlement_address();
     let contract_address =
         std::env::var("CHAIN_CONTRACT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
     let network = std::env::var("CHAIN_NETWORK")
@@ -1129,10 +1143,7 @@ pub async fn api_admin_blockchain_tokenize(
         }
     };
     let network = std::env::var("CHAIN_NETWORK").unwrap_or_else(|_| "polygon_amoy".to_string());
-    let settlement_address = match validate_contract_address(
-        &std::env::var("CHAIN_SETTLEMENT_ADDRESS")
-            .unwrap_or_else(|_| "0x0000000000000000000000000000000000000002".to_string()),
-    ) {
+    let settlement_address = match validate_contract_address(&resolve_settlement_address()) {
         Ok(address) => address,
         Err(err) => {
             mark_tokenization_job_failed(pool, job_id, "Invalid CHAIN_SETTLEMENT_ADDRESS").await;
