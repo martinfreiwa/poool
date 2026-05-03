@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH siblings AS (\n              SELECT a.user_id, a.phone_number, a.tax_id, a.company_name,\n                     LOWER(SPLIT_PART(u.email, '@', 2)) AS email_domain\n              FROM affiliates a\n              JOIN users u ON u.id = a.user_id\n           )\n           SELECT s.user_id::text AS id,\n                  COALESCE((SELECT COUNT(*) FROM siblings s2\n                            WHERE s2.phone_number IS NOT NULL\n                              AND s2.phone_number = s.phone_number\n                              AND s2.user_id <> s.user_id), 0) AS \"phone_dupe!\",\n                  COALESCE((SELECT COUNT(*) FROM siblings s2\n                            WHERE s2.tax_id IS NOT NULL\n                              AND s2.tax_id = s.tax_id\n                              AND s2.user_id <> s.user_id), 0) AS \"tax_dupe!\",\n                  COALESCE((SELECT COUNT(*) FROM siblings s2\n                            WHERE s2.company_name IS NOT NULL\n                              AND LOWER(s2.company_name) = LOWER(s.company_name)\n                              AND s2.user_id <> s.user_id), 0) AS \"company_dupe!\",\n                  COALESCE((SELECT COUNT(*) FROM siblings s2\n                            WHERE s2.email_domain = s.email_domain\n                              AND s2.user_id <> s.user_id), 0) AS \"domain_count!\"\n           FROM siblings s\n           WHERE s.user_id IN (SELECT a.user_id FROM affiliates a WHERE a.status = 'pending_approval')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "phone_dupe!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "tax_dupe!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "company_dupe!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "domain_count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "df8f19ae916b5c38738a9f75e50ff58be6b290545d72af11c4ac3f91347b783f"
+}
