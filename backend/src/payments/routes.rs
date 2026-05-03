@@ -1001,9 +1001,43 @@ pub async fn api_latest_order(
             let (order_id, number, total, currency, status, method, created_at) = order;
 
             // Get order items
-            let items = sqlx::query_as::<_, (i32, i64, String)>(
+            let items = sqlx::query_as::<
+                _,
+                (
+                    i32,
+                    i64,
+                    String,
+                    Option<uuid::Uuid>,
+                    Option<String>,
+                    Option<String>,
+                    Option<String>,
+                    Option<String>,
+                    Option<String>,
+                    Option<i32>,
+                    Option<String>,
+                    Option<i32>,
+                    Option<String>,
+                ),
+            >(
                 r#"
-                SELECT oi.tokens_quantity, oi.token_price_cents, COALESCE(a.title, 'Unknown Asset')
+                SELECT
+                    oi.tokens_quantity,
+                    oi.token_price_cents,
+                    COALESCE(a.title, 'Unknown Asset'),
+                    oi.asset_id,
+                    a.slug,
+                    a.location_city,
+                    a.location_country,
+                    a.short_description,
+                    a.asset_type,
+                    a.annual_yield_bps,
+                    a.funding_status,
+                    a.tokens_available,
+                    (SELECT image_url
+                     FROM asset_images ai
+                     WHERE ai.asset_id = a.id
+                     ORDER BY ai.is_cover DESC, ai.sort_order ASC, ai.created_at ASC
+                     LIMIT 1) as cover_image_url
                 FROM order_items oi
                 LEFT JOIN assets a ON oi.asset_id = a.id
                 WHERE oi.order_id = $1
@@ -1016,14 +1050,40 @@ pub async fn api_latest_order(
 
             let items_json: Vec<_> = items
                 .into_iter()
-                .map(|(qty, price, title)| {
+                .map(
+                    |(
+                        qty,
+                        price,
+                        title,
+                        asset_id,
+                        slug,
+                        location_city,
+                        location_country,
+                        short_description,
+                        asset_type,
+                        annual_yield_bps,
+                        funding_status,
+                        tokens_available,
+                        cover_image_url,
+                    )| {
                     serde_json::json!({
                         "tokens_quantity": qty,
                         "token_price_cents": price,
                         "total_cents": (qty as i64) * price,
-                        "asset_title": title
+                        "asset_title": title,
+                        "asset_id": asset_id.map(|id| id.to_string()),
+                        "slug": slug,
+                        "location_city": location_city,
+                        "location_country": location_country,
+                        "short_description": short_description,
+                        "asset_type": asset_type,
+                        "annual_yield_bps": annual_yield_bps,
+                        "funding_status": funding_status,
+                        "tokens_available": tokens_available,
+                        "cover_image_url": cover_image_url.as_ref().map(|u| crate::storage::service::rewrite_gcs_url(u))
                     })
-                })
+                },
+                )
                 .collect();
 
             Json(serde_json::json!({
