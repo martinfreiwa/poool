@@ -2194,6 +2194,7 @@ mark.mp-p2p-hit {
   z-index: 80;
   display: flex; align-items: center; justify-content: center;
 }
+.mp-modal[hidden] { display: none; }
 .mp-modal__backdrop {
   position: absolute; inset: 0;
   background: rgba(15,17,26,0.55);

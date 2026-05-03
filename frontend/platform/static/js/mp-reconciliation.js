@@ -2275,7 +2275,6 @@
     document.getElementById('tour-prev')?.addEventListener('click', () => { if (tourIdx > 0) { tourIdx--; showTourStep(); } });
     document.getElementById('tour-skip')?.addEventListener('click', closeTour);
     document.getElementById('btn-tour')?.addEventListener('click', () => { tourIdx = 0; showTourStep(); });
-    if (!localStorage.getItem(TOUR_KEY)) setTimeout(() => { tourIdx = 0; showTourStep(); }, 1200);
   }
 
   // ── Context menu (right-click on row) ───────────────────────────
