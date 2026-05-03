@@ -169,8 +169,10 @@ pub async fn api_admin_submission_detail(
 
     // Fetch asset using Row::get
     let row = sqlx::query(
-        "SELECT a.title, COALESCE(a.asset_type,'') as asset_type, COALESCE(a.city,'') as city,
-                COALESCE(a.country,'') as country, COALESCE(a.description,'') as description,
+        "SELECT a.title, COALESCE(a.asset_type,'') as asset_type,
+                COALESCE(a.location_city,'') as city,
+                COALESCE(a.location_country,'') as country,
+                COALESCE(a.description,'') as description,
                 a.slug, COALESCE(a.total_value_cents,0) as total_value_cents,
                 COALESCE(a.token_price_cents,0) as token_price_cents,
                 COALESCE(a.tokens_total,0) as tokens_total,
