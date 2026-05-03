@@ -21,6 +21,41 @@
   <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <style>
+    .mp-analytics-page .admin-main {
+      width: calc(100% - var(--admin-sidebar-width, 260px));
+      min-width: 0;
+    }
+    body.admin-sidebar-collapsed.mp-analytics-page .admin-main {
+      width: calc(100% - 64px);
+    }
+    .mp-analytics-page .admin-topbar {
+      align-items: center;
+    }
+    .mp-analytics-page .admin-topbar-left,
+    .mp-analytics-page .admin-topbar-right {
+      flex: 0 1 auto;
+    }
+    .mp-analytics-page .admin-content {
+      width: 100%;
+      max-width: none;
+      padding: 28px 32px 44px;
+    }
+    .mp-analytics-page .admin-page-header {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(320px, auto);
+      align-items: end;
+      gap: 16px 24px;
+      margin-bottom: 18px;
+    }
+    .mp-analytics-page .admin-page-subtitle {
+      max-width: 640px;
+      justify-self: end;
+      text-align: right;
+    }
+    .mp-range-label {
+      font-size: 12px;
+      color: var(--admin-text-secondary, #717680);
+    }
     .mp-analytics-stats {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -202,12 +237,13 @@
     /* Updated bar */
     .mp-analytics-updated {
       display: flex;
-      justify-content: flex-end;
+      justify-content: flex-start;
       align-items: center;
       gap: 8px;
       font-size: 12px;
       color: var(--admin-text-secondary, #717680);
-      margin-bottom: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
     .mp-analytics-updated-dot {
       width: 8px; height: 8px; border-radius: 50%;
@@ -518,6 +554,9 @@
       color: var(--admin-text, #181d27);
       cursor: pointer;
       margin-left: 6px;
+      width: 112px;
+      min-width: 112px;
+      flex: 0 0 112px;
     }
 
     /* Volume chart subtitle (period delta) */
@@ -599,6 +638,7 @@
       align-items: center;
       gap: 6px;
       font-size: 12px;
+      flex: 0 0 auto;
     }
     .mp-daterange input[type="date"] {
       border: 1px solid var(--admin-border, #e5e7eb);
@@ -607,6 +647,9 @@
       font-size: 12px;
       background: var(--admin-bg-card, #fff);
       color: var(--admin-text, #181d27);
+      width: 140px;
+      min-width: 140px;
+      flex: 0 0 140px;
     }
     .mp-daterange .mp-daterange-clear {
       background: none;
@@ -820,7 +863,15 @@
     .mp-range-pills button.active { background: var(--admin-primary, #0000ff); color: #fff; }
     .mp-range-custom { display: none; align-items: center; gap: 4px; font-size: 12px; }
     .mp-range-custom.open { display: inline-flex; }
-    .mp-range-custom input[type=date] { padding: 4px 6px; font-size: 12px; border: 1px solid var(--admin-border, #e5e7eb); border-radius: 6px; }
+    .mp-range-custom input[type=date] {
+      padding: 4px 6px;
+      font-size: 12px;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 6px;
+      width: 132px;
+      min-width: 132px;
+      flex: 0 0 132px;
+    }
 
     /* Asset segment filter */
     .mp-asset-filter {
@@ -830,6 +881,9 @@
       border-radius: 8px;
       background: var(--admin-bg, #fafafa) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f87' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center;
       appearance: none;
+      width: 160px;
+      min-width: 160px;
+      flex: 0 0 160px;
     }
 
     /* Skeleton loaders */
@@ -1054,10 +1108,48 @@
       font-size: 12px;
       cursor: pointer;
     }
+    .mp-analytics-updated > button {
+      margin-left: 0 !important;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 1100px) {
+      .mp-analytics-page .admin-page-header {
+        grid-template-columns: 1fr;
+      }
+      .mp-analytics-page .admin-page-subtitle {
+        justify-self: start;
+        text-align: left;
+      }
+    }
+    @media (max-width: 768px) {
+      .mp-analytics-page .admin-main {
+        width: 100%;
+      }
+      .mp-analytics-page .admin-content {
+        padding: 20px 16px 36px;
+      }
+      .mp-range-picker,
+      .mp-range-pills,
+      .mp-range-custom,
+      .mp-analytics-updated,
+      .mp-daterange {
+        width: 100%;
+      }
+      .mp-range-pills {
+        overflow-x: auto;
+      }
+      #analytics-interval-picker,
+      .mp-daterange input[type="date"],
+      .mp-range-custom input[type=date] {
+        width: 100%;
+        min-width: 0;
+        flex: 1 1 120px;
+      }
+    }
   </style>
 </head>
 
-<body class="admin-body dom-ready">
+<body class="admin-body dom-ready mp-analytics-page">
   <div class="admin-wrapper">
     {% include 'admin/components/sidebar.html' %}
 
@@ -1074,7 +1166,7 @@
         </div>
         <div class="admin-topbar-right">
           <div class="mp-range-picker" role="group" aria-label="Date range">
-            <span style="font-size: 12px; color: var(--admin-text-secondary, #717680);">Range:</span>
+            <span class="mp-range-label">Range:</span>
             <div class="mp-range-pills" id="mp-range-pills">
               <button type="button" data-range="1"   class="active">24h</button>
               <button type="button" data-range="7">7d</button>
@@ -1228,7 +1320,7 @@
               <option value="300000">5m</option>
               <option value="0">Off</option>
             </select>
-            <span class="mp-daterange" title="Custom date range — overrides 7/30/90d preset on charts">
+            <span class="mp-daterange" title="Custom date range - overrides 7/30/90d preset on charts">
               <input type="date" id="mp-daterange-start" aria-label="Start date" />
               <span aria-hidden="true">→</span>
               <input type="date" id="mp-daterange-end" aria-label="End date" />

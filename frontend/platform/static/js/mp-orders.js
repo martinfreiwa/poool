@@ -1507,6 +1507,9 @@
     const btn = $('orders-columns-btn');
     const menu = $('orders-columns-menu');
     if (!btn || !menu) return;
+    menu.hidden = true;
+    menu.setAttribute('aria-hidden', 'true');
+    btn.setAttribute('aria-expanded', 'false');
     const v = readColumnState();
     menu.querySelectorAll('input[data-col]').forEach((cb) => {
       const k = cb.dataset.col;
@@ -1519,13 +1522,15 @@
     });
     applyColumns(v);
     btn.addEventListener('click', () => {
-      const open = !menu.hidden;
-      menu.hidden = open;
-      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+      const nextOpen = menu.hidden;
+      menu.hidden = !nextOpen;
+      menu.setAttribute('aria-hidden', String(!nextOpen));
+      btn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
     });
     document.addEventListener('click', (e) => {
       if (!menu.contains(e.target) && e.target !== btn) {
         menu.hidden = true;
+        menu.setAttribute('aria-hidden', 'true');
         btn.setAttribute('aria-expanded', 'false');
       }
     });

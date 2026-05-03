@@ -168,14 +168,8 @@
         <!-- Tab: Orders -->
         <div class="admin-tab-panel active" id="tab-orders">
           <div class="admin-card" style="margin-bottom: 16px">
-            <div style="
-                  padding: 14px 20px;
-                  display: flex;
-                  align-items: center;
-                  gap: 12px;
-                  flex-wrap: wrap;
-                ">
-              <div class="admin-search" style="width: 220px">
+            <div class="admin-orders-filter-row">
+              <div class="admin-search admin-orders-search">
                 <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="6" />
@@ -200,11 +194,7 @@
                 <option value="30">Last 30 days</option>
                 <option value="90">Last 90 days</option>
               </select>
-              <span style="
-                    margin-left: auto;
-                    font-size: 12px;
-                    color: var(--admin-text-muted);
-                  " id="order-count-label">0 orders</span>
+              <span class="admin-orders-count" id="order-count-label">0 orders</span>
             </div>
             <!-- Quick filter chips -->
             <div style="padding:0 20px 14px;display:flex;gap:6px;flex-wrap:wrap;" id="order-quick-chips">

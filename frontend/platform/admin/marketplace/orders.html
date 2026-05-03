@@ -108,10 +108,10 @@
         </div>
 
         <!-- Filter Bar -->
-        <div class="mp-filter-bar">
-          <input type="search" class="admin-input" id="orders-search" placeholder="Search by Order ID or User email…" aria-label="Search orders" style="min-width:260px;">
+        <div class="mp-filter-bar mp-orders-filter-bar">
+          <input type="search" class="admin-input mp-orders-filter-search" id="orders-search" placeholder="Search by Order ID or User email…" aria-label="Search orders">
           <label for="orders-side" class="sr-only">Side</label>
-          <select class="admin-select" id="orders-side" aria-label="Side">
+          <select class="admin-select mp-orders-filter-side" id="orders-side" aria-label="Side">
             <option value="">All Sides</option>
             <option value="buy">Buy</option>
             <option value="sell">Sell</option>
@@ -121,16 +121,16 @@
             <span class="mp-side-counter mp-side-counter--sell" id="orders-count-sell" title="SELL orders on this page">SELL 0</span>
           </span>
           <label for="orders-page-size" class="sr-only">Page size</label>
-          <select class="admin-select" id="orders-page-size" aria-label="Page size">
+          <select class="admin-select mp-orders-filter-page-size" id="orders-page-size" aria-label="Page size">
             <option value="25">25 / page</option>
             <option value="50">50 / page</option>
             <option value="100">100 / page</option>
             <option value="200">200 / page</option>
           </select>
 
-          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-            <span id="orders-last-updated" class="admin-meta-muted" aria-live="polite" style="font-size:12px; color:var(--admin-text-muted);">Updated —</span>
-            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--admin-text-muted); cursor:pointer;">
+          <div class="mp-orders-filter-actions">
+            <span id="orders-last-updated" class="admin-meta-muted" aria-live="polite">Updated —</span>
+            <label class="mp-orders-autorefresh">
               <input type="checkbox" id="orders-autorefresh" />
               Auto-refresh 30s
             </label>
@@ -243,7 +243,7 @@
   </div>
 
   <!-- Help overlay (? key) -->
-  <div id="orders-help" class="mp-help" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts help">
+  <div id="orders-help" class="mp-help mp-help-overlay" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts help">
     <div class="mp-help-backdrop" data-help-close></div>
     <div class="mp-help-panel">
       <header class="mp-help-header">

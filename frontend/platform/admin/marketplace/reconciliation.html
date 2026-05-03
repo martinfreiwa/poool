@@ -598,8 +598,8 @@
 
   <!-- Mismatch Detail Modal -->
   <div id="mm-detail-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true" aria-label="Mismatch detail">
-    <div class="mp-modal" style="max-width:640px;" id="mm-detail-modal">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <div class="recon-modal-panel recon-modal-panel--wide" id="mm-detail-modal">
+      <div class="recon-modal-header">
         <h2 class="mp-modal-title" id="mm-detail-title">Mismatch detail</h2>
         <button class="admin-btn admin-btn--ghost admin-btn--sm" id="mm-detail-close">Close</button>
       </div>
@@ -608,22 +608,30 @@
   </div>
 
   <!-- Resolve Reason Modal -->
-  <div id="mm-reason-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
-    <div class="mp-modal" style="max-width:480px;">
-      <h2 class="mp-modal-title" id="mm-reason-title">Resolve mismatch</h2>
-      <p class="mp-modal-subtitle" id="mm-reason-subtitle"></p>
-      <label style="display:block; font-size:12px; color:var(--admin-text-muted); margin-bottom:4px;">Reason template</label>
-      <select id="mm-reason-template" class="admin-select" style="width:100%; margin-bottom:12px;">
-        <option value="manual-credit">Manually credited via support</option>
-        <option value="onchain-confirmed">On-chain tx confirmed late</option>
-        <option value="ledger-correction">Ledger correction applied</option>
-        <option value="false-positive">False positive — re-sync resolved</option>
-        <option value="rounding-acceptable">Rounding within tolerance</option>
-        <option value="custom">Custom…</option>
-      </select>
-      <label style="display:block; font-size:12px; color:var(--admin-text-muted); margin-bottom:4px;">Notes (visible in audit log)</label>
-      <textarea id="mm-reason-notes" class="admin-input" rows="3" style="width:100%; resize:vertical;" placeholder="Optional context…"></textarea>
-      <div class="mp-modal-actions">
+  <div id="mm-reason-overlay" class="mp-modal-overlay recon-resolve-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="mm-reason-title">
+    <div class="recon-modal-panel recon-resolve-modal">
+      <div class="recon-resolve-header">
+        <h2 class="mp-modal-title" id="mm-reason-title">Resolve mismatch</h2>
+        <p class="mp-modal-subtitle" id="mm-reason-subtitle"></p>
+      </div>
+      <div class="recon-resolve-body">
+        <label class="recon-modal-field" for="mm-reason-template">
+          <span>Reason template</span>
+          <select id="mm-reason-template" class="admin-select">
+            <option value="manual-credit">Manually credited via support</option>
+            <option value="onchain-confirmed">On-chain tx confirmed late</option>
+            <option value="ledger-correction">Ledger correction applied</option>
+            <option value="false-positive">False positive — re-sync resolved</option>
+            <option value="rounding-acceptable">Rounding within tolerance</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </label>
+        <label class="recon-modal-field" for="mm-reason-notes">
+          <span>Notes (visible in audit log)</span>
+          <textarea id="mm-reason-notes" class="admin-input" rows="4" placeholder="Optional context..."></textarea>
+        </label>
+      </div>
+      <div class="recon-resolve-actions">
         <button class="admin-btn admin-btn--ghost admin-btn--sm" id="mm-reason-cancel">Cancel</button>
         <button class="admin-btn admin-btn--success admin-btn--sm" id="mm-reason-confirm">Confirm resolve</button>
       </div>

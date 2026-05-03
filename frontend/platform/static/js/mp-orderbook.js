@@ -2353,6 +2353,7 @@
     if (!overlay) return;
     const next = typeof force === "boolean" ? force : overlay.hidden;
     overlay.hidden = !next;
+    overlay.setAttribute("aria-hidden", String(!next));
     state.helpOpen = next;
   }
 
@@ -2385,6 +2386,8 @@
     if (helpBtn) helpBtn.addEventListener("click", () => toggleShortcutHelp(false));
     const helpOverlay = document.getElementById("mp-ob-help-overlay");
     if (helpOverlay) {
+      helpOverlay.hidden = true;
+      helpOverlay.setAttribute("aria-hidden", "true");
       helpOverlay.addEventListener("click", (ev) => {
         if (ev.target === helpOverlay) toggleShortcutHelp(false);
       });

@@ -1058,6 +1058,9 @@ html.admin-dark .mp-ob-depth-chart {
   align-items: center;
   justify-content: center;
 }
+.mp-ob-help-overlay[hidden] {
+  display: none !important;
+}
 .mp-ob-help-card {
   background: var(--admin-bg-card);
   border: 1px solid var(--admin-border);

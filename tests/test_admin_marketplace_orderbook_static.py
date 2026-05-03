@@ -177,15 +177,21 @@ def test_orderbook_html_has_help_modal_and_focusable_shortcuts():
     source = ORDERBOOK_HTML.read_text(encoding="utf-8")
     assert 'id="mp-ob-help-overlay"' in source
     assert 'id="mp-ob-help-close"' in source
+    assert 'id="mp-ob-help-overlay"' in source and "hidden" in source.split('id="mp-ob-help-overlay"', 1)[1].split(">", 1)[0]
     assert 'class="mp-ob-shortcut"' in source
 
 
 def test_orderbook_js_handles_etag_dirty_overrides_and_help_modal():
     source = ORDERBOOK_JS.read_text(encoding="utf-8")
+    css = (ROOT / "frontend/platform/static/css/mp-orderbook.css").read_text(encoding="utf-8")
     assert "state.assetSettingsEtag" in source
     assert 'headers["If-Match"]' in source
     assert "state.assetSettingsDirty" in source
     assert "function toggleShortcutHelp" in source
+    assert 'overlay.setAttribute("aria-hidden", String(!next))' in source
+    assert "helpOverlay.hidden = true" in source
+    assert ".mp-ob-help-overlay[hidden]" in css
+    assert "display: none !important" in css
     assert "_applyOverrides" in source
     assert "_ensureComboObserver" in source
     assert "No fillable depth at this level" in source

@@ -41,6 +41,34 @@
     .token-supply-bar .sold { background: var(--admin-accent); }
     .basescan-link { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--admin-accent); text-decoration: none; }
     .basescan-link:hover { text-decoration: underline; }
+    .bt-section-title {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .bt-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(49, 46, 255, 0.08);
+      color: var(--admin-accent);
+      flex-shrink: 0;
+    }
+    .bt-icon svg { width: 17px; height: 17px; }
+    .bt-icon--green { background: rgba(16, 185, 129, 0.1); color: var(--admin-success); }
+    .bt-icon--amber { background: rgba(245, 158, 11, 0.1); color: #b45309; }
+    .bt-icon--slate { background: var(--admin-bg); color: var(--admin-text-secondary); }
+    .bt-stat-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .bt-stat {
+      display: grid; grid-template-columns: 32px 1fr; gap: 10px;
+      align-items: center; min-width: 0;
+    }
+    .bt-stat-label {
+      font-size: 11px; font-weight: 600; color: var(--admin-text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .bt-kpi-card-title {
+      display: flex; align-items: center; gap: 10px;
+    }
     .danger-zone {
       border: 2px solid rgba(239, 68, 68, 0.3); border-radius: var(--admin-radius-lg);
       padding: 24px; background: rgba(239, 68, 68, 0.03);
@@ -90,8 +118,15 @@
         <!-- Deployer Wallet Section -->
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px;">
           <div class="admin-card" style="padding: 24px;">
-            <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 6px;">
-              Settlement Wallet (SETTLEMENT_ROLE)
+            <h3 class="bt-section-title" style="font-size: 15px; font-weight: 700; margin: 0 0 6px;">
+              <span class="bt-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 7.5h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H6a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4h11a2 2 0 0 1 2 2v2" />
+                  <path d="M17 13.5h.01" />
+                  <path d="M6 7.5h13" />
+                </svg>
+              </span>
+              <span>Settlement Wallet (SETTLEMENT_ROLE)</span>
             </h3>
             <p style="font-size: 12px; color: var(--admin-text-muted); margin: 0 0 16px;">
               This wallet sends settleBatch() calls and deploys asset tokens. Private key configured via CHAIN_SETTLEMENT_PRIVATE_KEY.
@@ -99,7 +134,10 @@
             <div class="wallet-address-display">
               <span id="wallet-address">Loading…</span>
               <button class="copy-btn" title="Copy address" onclick="window._copyAddr(document.getElementById('wallet-address').textContent)">
-                📋
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="8" y="8" width="11" height="11" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+                </svg>
               </button>
             </div>
             <div style="margin-top: 16px;">
@@ -113,23 +151,67 @@
           </div>
 
           <div class="admin-card" style="padding: 24px;">
-            <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 16px;">Quick Stats</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div>
-                <div style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Whitelisted Users</div>
-                <div id="kpi-whitelisted" style="font-size: 24px; font-weight: 800;">—</div>
+            <h3 class="bt-section-title" style="font-size: 15px; font-weight: 700; margin: 0 0 16px;">
+              <span class="bt-icon bt-icon--slate" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l7 3v5c0 4.5-2.9 8.4-7 10-4.1-1.6-7-5.5-7-10V6l7-3z" />
+                  <path d="M9.5 12l1.7 1.7 3.8-4" />
+                </svg>
+              </span>
+              <span>Quick Stats</span>
+            </h3>
+            <div class="bt-stat-grid">
+              <div class="bt-stat">
+                <span class="bt-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+                    <circle cx="9.5" cy="7" r="4" />
+                    <path d="M17 11l2 2 4-5" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Whitelisted Users</div>
+                  <div id="kpi-whitelisted" style="font-size: 24px; font-weight: 800;">—</div>
+                </div>
               </div>
-              <div>
-                <div style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Settlement Batches</div>
-                <div id="kpi-batches" style="font-size: 24px; font-weight: 800;">—</div>
+              <div class="bt-stat">
+                <span class="bt-icon bt-icon--slate" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 7h10v10H7z" />
+                    <path d="M4 4h10" />
+                    <path d="M10 20h10" />
+                    <path d="M4 4v10" />
+                    <path d="M20 10v10" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Settlement Batches</div>
+                  <div id="kpi-batches" style="font-size: 24px; font-weight: 800;">—</div>
+                </div>
               </div>
-              <div>
-                <div style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Pending Trades</div>
-                <div id="kpi-pending-trades" style="font-size: 24px; font-weight: 800; color: var(--admin-accent);">—</div>
+              <div class="bt-stat">
+                <span class="bt-icon bt-icon--amber" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Pending Trades</div>
+                  <div id="kpi-pending-trades" style="font-size: 24px; font-weight: 800; color: var(--admin-accent);">—</div>
+                </div>
               </div>
-              <div>
-                <div style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Confirmed On-Chain</div>
-                <div id="kpi-confirmed-trades" style="font-size: 24px; font-weight: 800; color: var(--admin-success);">—</div>
+              <div class="bt-stat">
+                <span class="bt-icon bt-icon--green" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12l4 4 4-4 4 4 4-4" />
+                    <path d="M8 8l4 4 4-4" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Confirmed On-Chain</div>
+                  <div id="kpi-confirmed-trades" style="font-size: 24px; font-weight: 800; color: var(--admin-success);">—</div>
+                </div>
               </div>
             </div>
           </div>
@@ -139,21 +221,48 @@
         <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
           <div class="admin-kpi-card" style="padding: 16px;">
             <div class="admin-kpi-header" style="margin-bottom: 8px;">
-              <span class="admin-kpi-label">Tokenized Assets</span>
+              <span class="bt-kpi-card-title">
+                <span class="bt-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" />
+                    <path d="M4 6.5l8 4.5 8-4.5" />
+                    <path d="M12 11v9" />
+                  </svg>
+                </span>
+                <span class="admin-kpi-label">Tokenized Assets</span>
+              </span>
             </div>
             <div class="admin-kpi-value" id="kpi-tokenized" style="font-size: 28px;">—</div>
             <span class="admin-kpi-subtext">ERC-1155 tokens on Polygon</span>
           </div>
           <div class="admin-kpi-card" style="padding: 16px;">
             <div class="admin-kpi-header" style="margin-bottom: 8px;">
-              <span class="admin-kpi-label">Total Token Supply</span>
+              <span class="bt-kpi-card-title">
+                <span class="bt-icon bt-icon--slate" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 19h14" />
+                    <path d="M7 16V8" />
+                    <path d="M12 16V5" />
+                    <path d="M17 16v-6" />
+                  </svg>
+                </span>
+                <span class="admin-kpi-label">Total Token Supply</span>
+              </span>
             </div>
             <div class="admin-kpi-value" id="kpi-total-supply" style="font-size: 28px;">—</div>
             <span class="admin-kpi-subtext">Across all tokenized assets</span>
           </div>
           <div class="admin-kpi-card" style="padding: 16px;">
             <div class="admin-kpi-header" style="margin-bottom: 8px;">
-              <span class="admin-kpi-label">Tokens Sold</span>
+              <span class="bt-kpi-card-title">
+                <span class="bt-icon bt-icon--green" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 17l6-6 4 4 8-8" />
+                    <path d="M15 7h6v6" />
+                  </svg>
+                </span>
+                <span class="admin-kpi-label">Tokens Sold</span>
+              </span>
             </div>
             <div class="admin-kpi-value" id="kpi-tokens-sold" style="font-size: 28px; color: var(--admin-success);">—</div>
             <span class="admin-kpi-subtext" id="kpi-tokens-sold-sub">—% of total supply</span>

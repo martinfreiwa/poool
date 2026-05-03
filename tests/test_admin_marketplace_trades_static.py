@@ -564,6 +564,40 @@ def test_trades_css_has_dirty_button_indicator():
     assert ".mp-btn-dirty" in css
 
 
+def test_trades_filter_bar_uses_compact_responsive_controls():
+    html = _read(TRADES_HTML)
+    css = _read(ADMIN_MP_CSS)
+
+    filter_start = html.index('class="mp-filter-bar mp-trades-filter-bar"')
+    filter_end = html.index('<!-- Filter summary bar -->', filter_start)
+    filter_bar = html[filter_start:filter_end]
+
+    assert 'class="mp-filter-field mp-filter-field--date"' in filter_bar
+    assert 'class="mp-filter-label"' in filter_bar
+    assert 'class="admin-select mp-trades-filter-asset"' in filter_bar
+    assert 'class="admin-select mp-trades-filter-status"' in filter_bar
+    assert 'class="admin-input mp-trades-filter-search"' in filter_bar
+    assert 'class="mp-trades-filter-actions"' in filter_bar
+    assert 'style="width:auto;"' not in filter_bar
+    assert 'style="min-width:220px;"' not in filter_bar
+    assert 'style="margin-left:auto;"' not in filter_bar
+
+    for selector in (
+        ".mp-trades-filter-bar",
+        ".mp-filter-field",
+        ".mp-filter-label",
+        ".mp-trades-filter-asset",
+        ".mp-trades-filter-status",
+        ".mp-trades-filter-search",
+        ".mp-trades-filter-actions",
+    ):
+        assert selector in css
+
+    assert "max-width: 360px" in css
+    assert "width: 210px" in css
+    assert "width: 220px" in css
+
+
 # 9. Header capitalization consistency
 def test_trades_html_uses_title_case_table_headers():
     """No more all-caps `BUYER ID` / `SELLER ID`. Title-case the visible labels."""

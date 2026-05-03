@@ -93,6 +93,15 @@ fn safe_fragment_error(message: &str) -> Html<String> {
     ))
 }
 
+fn sidebar_user_display_name(email: &str) -> String {
+    email
+        .split('@')
+        .next()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or("User")
+        .to_string()
+}
+
 fn render_commodity_card(asset: &CommodityDisplayData) -> String {
     let slug = html_escape(&asset.slug);
     let title = html_escape(&asset.title);
@@ -215,9 +224,11 @@ fn render_commodity_card(asset: &CommodityDisplayData) -> String {
 }
 
 pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    if !crate::auth::middleware::is_authenticated(&jar, &state.db).await {
-        return Redirect::to("/auth/login").into_response();
-    }
+    let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
+    let user_display_name = sidebar_user_display_name(&user.email);
 
     let assets = match sqlx::query_as!(
         MarketplaceAsset,
@@ -293,7 +304,13 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
 
     match state.templates.get_template("marketplace.html") {
         Ok(template) => {
-            match template.render(context! { assets => display_assets, empty => is_empty }) {
+            match template.render(context! {
+                assets => display_assets,
+                empty => is_empty,
+                user => user,
+                user_display_name => user_display_name,
+                is_developer => false,
+            }) {
                 Ok(html) => Html(html).into_response(),
                 Err(e) => {
                     tracing::error!("Template rendering error: {}", e);
@@ -1357,12 +1374,17 @@ pub async fn page_commodities_marketplace(
         .collect();
 
     let is_empty = display_assets.is_empty();
+    let user_display_name = sidebar_user_display_name(&user.email);
 
     match state.templates.get_template("commodities-marketplace.html") {
         Ok(template) => {
-            match template
-                .render(context! { assets => display_assets, empty => is_empty, user => user })
-            {
+            match template.render(context! {
+                assets => display_assets,
+                empty => is_empty,
+                user => user,
+                user_display_name => user_display_name,
+                is_developer => false,
+            }) {
                 Ok(html) => Html(html).into_response(),
                 Err(e) => {
                     tracing::error!(error = %e, "Commodities marketplace template rendering error");
