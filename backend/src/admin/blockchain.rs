@@ -319,7 +319,8 @@ fn chain_tokenize_mock_enabled() -> bool {
 fn chain_configured_for_tokenize() -> bool {
     chain_tokenize_mock_enabled()
         || (std::env::var("CHAIN_CONTRACT_ADDRESS").is_ok()
-            && std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").is_ok())
+            && (std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").is_ok()
+                || std::env::var("CHAIN_KMS_KEY").is_ok()))
 }
 
 fn parse_clone_address_from_receipt(receipt_val: &serde_json::Value) -> Result<String, ApiError> {
