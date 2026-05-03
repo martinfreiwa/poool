@@ -1769,9 +1769,63 @@ body.admin-sidebar-collapsed .admin-main {
 }
 
 /* ===========================
-   Admin Quick-Filter Chips
-   (Orders & Investments page)
+   Admin Quick-Filter Rows
    =========================== */
+.admin-orders-filter-row,
+.admin-deposits-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+}
+
+.admin-orders-search,
+.admin-deposits-search {
+  flex: 0 1 280px;
+  width: 280px;
+  max-width: 100%;
+  min-width: 220px;
+  padding-block: 5px;
+}
+
+.admin-orders-filter-row .admin-select,
+.admin-deposits-filter-row .admin-select {
+  flex: 0 0 auto;
+  min-width: 136px;
+  width: auto;
+  height: 34px;
+  padding-block: 5px;
+  font-size: 12.5px;
+}
+
+#order-filter-status {
+  width: 148px;
+}
+
+#order-filter-range {
+  width: 132px;
+}
+
+.admin-deposits-filter-row #filter-status {
+  width: 132px;
+}
+
+.admin-deposits-filter-row #filter-currency {
+  width: 142px;
+}
+
+.admin-deposits-filter-row #filter-provider {
+  width: 152px;
+}
+
+.admin-orders-count {
+  margin-left: auto;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .admin-chip {
   display: inline-flex;
   align-items: center;
@@ -1795,4 +1849,28 @@ body.admin-sidebar-collapsed .admin-main {
   background: var(--admin-accent-bg);
   border-color: var(--admin-accent);
   color: var(--admin-accent);
+}
+
+@media (max-width: 720px) {
+  .admin-orders-filter-row,
+  .admin-deposits-filter-row {
+    align-items: stretch;
+  }
+
+  .admin-orders-search,
+  .admin-deposits-search,
+  .admin-orders-filter-row .admin-select,
+  .admin-deposits-filter-row .admin-select,
+  #order-filter-status,
+  #order-filter-range,
+  .admin-deposits-filter-row #filter-status,
+  .admin-deposits-filter-row #filter-currency,
+  .admin-deposits-filter-row #filter-provider {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .admin-orders-count {
+    margin-left: 0;
+  }
 }
