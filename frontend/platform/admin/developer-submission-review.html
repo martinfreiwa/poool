@@ -614,9 +614,118 @@
               </div>
             </div>
 
-            <!-- Milestones -->
-            <div class="review-card">
-              <div class="review-card-header">
+            <!-- Property Page Content (editable) -->
+            <div class="review-card" id="page-content-card">
+              <div class="review-card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right:8px;vertical-align:text-bottom">
+                    <path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/>
+                  </svg>Property Page Content
+                </h2>
+                <span style="font-size:11px;color:var(--admin-text-muted);">Drives sections rendered on /property/&lt;slug&gt;</span>
+              </div>
+              <div class="review-card-body">
+                <form id="page-content-form" onsubmit="return false;">
+                  <div class="section-tag">Location</div>
+                  <label class="pc-label">Location description (long-form)</label>
+                  <textarea class="pc-input" id="pc-location-description" rows="3" data-field="location_description" placeholder="Describes the surrounding area on the Location section."></textarea>
+
+                  <div class="section-tag">Investment Type</div>
+                  <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;">
+                    <div>
+                      <label class="pc-label">Type label</label>
+                      <input class="pc-input" id="pc-investment-type" data-field="investment_type" placeholder="e.g. Fractional ownership" maxlength="255" />
+                    </div>
+                    <div>
+                      <label class="pc-label">Description</label>
+                      <textarea class="pc-input" id="pc-investment-type-description" rows="2" data-field="investment_type_description"></textarea>
+                    </div>
+                  </div>
+
+                  <div class="section-tag">Leasing Strategy</div>
+                  <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;">
+                    <div>
+                      <label class="pc-label">Strategy label</label>
+                      <input class="pc-input" id="pc-leasing-strategy-type" data-field="leasing_strategy_type" placeholder="e.g. Long-term rental" maxlength="255" />
+                    </div>
+                    <div>
+                      <label class="pc-label">Description</label>
+                      <textarea class="pc-input" id="pc-leasing-strategy-description" rows="2" data-field="leasing_strategy_description"></textarea>
+                    </div>
+                  </div>
+
+                  <div class="section-tag">Investment Calculator defaults</div>
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                    <div>
+                      <label class="pc-label">Default amount (USD)</label>
+                      <input class="pc-input" type="number" min="0" step="100" id="pc-default-investment-amount" data-field="default_investment_amount_cents" data-unit="cents" placeholder="e.g. 100000" />
+                    </div>
+                    <div>
+                      <label class="pc-label">Value growth (%)</label>
+                      <input class="pc-input" type="number" min="0" max="200" step="0.1" id="pc-default-value-growth" data-field="default_value_growth_bps" data-unit="bps" placeholder="e.g. 10" />
+                    </div>
+                    <div>
+                      <label class="pc-label">Rental yield (%)</label>
+                      <input class="pc-input" type="number" min="0" max="200" step="0.1" id="pc-default-rental-yield" data-field="default_rental_yield_bps" data-unit="bps" placeholder="e.g. 12" />
+                    </div>
+                  </div>
+
+                  <div class="section-tag">Property Developer card</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div>
+                      <label class="pc-label">Developer name</label>
+                      <input class="pc-input" id="pc-developer-name" data-field="developer_name" maxlength="255" />
+                    </div>
+                    <div>
+                      <label class="pc-label">Logo URL</label>
+                      <input class="pc-input" id="pc-developer-logo-url" data-field="developer_logo_url" maxlength="512" placeholder="https://…" />
+                    </div>
+                  </div>
+                  <label class="pc-label">Description</label>
+                  <textarea class="pc-input" id="pc-developer-description" rows="3" data-field="developer_description"></textarea>
+                  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+                    <div>
+                      <label class="pc-label">Website</label>
+                      <input class="pc-input" id="pc-developer-website" data-field="developer_website" maxlength="512" placeholder="https://…" />
+                    </div>
+                    <div>
+                      <label class="pc-label">Facebook</label>
+                      <input class="pc-input" id="pc-developer-facebook" data-field="developer_facebook" maxlength="512" placeholder="https://…" />
+                    </div>
+                    <div>
+                      <label class="pc-label">Instagram</label>
+                      <input class="pc-input" id="pc-developer-instagram" data-field="developer_instagram" maxlength="512" placeholder="https://…" />
+                    </div>
+                    <div>
+                      <label class="pc-label">YouTube</label>
+                      <input class="pc-input" id="pc-developer-youtube" data-field="developer_youtube" maxlength="512" placeholder="https://…" />
+                    </div>
+                  </div>
+
+                  <div class="section-tag">Risk Notification</div>
+                  <textarea class="pc-input" id="pc-risk-notification" rows="3" data-field="risk_notification" placeholder="Asset-specific risk disclosure shown on the property page."></textarea>
+
+                  <div style="display:flex;align-items:center;gap:12px;margin-top:18px;">
+                    <button type="button" class="admin-btn admin-btn--primary" id="btn-save-page-content">Save changes</button>
+                    <span id="page-content-status" style="font-size:12px;color:var(--admin-text-muted);"></span>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <style>
+              .pc-label{display:block;font-size:11px;font-weight:600;color:var(--admin-text-muted);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.5px;}
+              .pc-input{width:100%;padding:8px 10px;border:1px solid var(--admin-border);border-radius:8px;background:var(--admin-bg);color:var(--admin-text-primary);font-size:13px;font-family:inherit;line-height:1.5;}
+              .pc-input:focus{outline:none;border-color:var(--admin-primary);}
+              .pc-input[type=number]{font-variant-numeric:tabular-nums;}
+              textarea.pc-input{resize:vertical;}
+            </style>
+
+            <!-- Milestones (Roadmap / Funding Timeline) — editable -->
+            <div class="review-card" id="milestones-card">
+              <div class="review-card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                 <h2>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round"
@@ -627,15 +736,22 @@
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>Project Milestones / Roadmap
                 </h2>
+                <button type="button" class="admin-btn admin-btn--secondary" id="btn-milestone-add"
+                  style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add milestone
+                </button>
               </div>
               <div class="review-card-body" style="padding: 0">
                 <table class="admin-table" style="width: 100%">
                   <thead>
                     <tr>
-                      <th style="width: 60px">Month</th>
-                      <th>Milestone</th>
-                      <th style="width: 110px">Date</th>
-                      <th style="width: 100px">Status</th>
+                      <th style="width: 70px">Month</th>
+                      <th>Title</th>
+                      <th>Description</th>
+                      <th style="width: 130px">Date</th>
+                      <th style="width: 90px">Done</th>
+                      <th style="width: 80px"></th>
                     </tr>
                   </thead>
                   <tbody id="milestones-container">

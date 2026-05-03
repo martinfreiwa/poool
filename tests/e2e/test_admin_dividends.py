@@ -3,9 +3,13 @@ import uuid
 from datetime import date, timedelta
 
 import psycopg2
+import psycopg2.extras
 import pytest
 import requests
 from playwright.sync_api import expect
+
+# Register UUID adapter so uuid.UUID objects can be passed as bind params.
+psycopg2.extras.register_uuid()
 
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
@@ -442,8 +446,39 @@ def test_admin_dividends_lifecycle_permissions_csrf_audit_and_browser(quality_pa
         tracker.assert_page_loaded()
         expect(page.locator("#distributions-history-body")).to_contain_text(marker)
         expect(page.locator("#distributions-history-body")).to_contain_text("Distributed")
-        expect(page.get_by_text(asset_title).first).to_be_visible()
+        # PooolDropdown wraps the native <select>, hiding the original. Pick
+        # any visible occurrence of the asset title (the rendered dropdown UI).
+        expect(page.get_by_text(asset_title).locator("visible=true").first).to_be_visible()
         expect(page.locator("img[src='x']")).to_have_count(0)
+        # Preview button is disabled by validation until required fields are
+        # filled. Native <select> is hidden by PooolDropdown — set value via
+        # JS and dispatch events to trigger validateForm.
+        # Asset list is fetched async — re-call loadAssets in page context to
+        # ensure it ran successfully (initial call may race with cookie attach).
+        api_status = page.evaluate(
+            "() => fetch('/api/admin/assets').then(r => r.status)"
+        )
+        if api_status != 200:
+            raise AssertionError(f"/api/admin/assets returned {api_status}")
+        # Trigger reload
+        page.evaluate("() => typeof loadAssets === 'function' && loadAssets()")
+        page.wait_for_function(
+            "id => !!document.querySelector(`#asset-select option[value='${id}']`)",
+            arg=str(asset_id),
+            timeout=10000,
+        )
+        page.evaluate(
+            """([assetIdValue]) => {
+                const sel = document.getElementById('asset-select');
+                sel.value = assetIdValue;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                const amt = document.getElementById('total-amount');
+                amt.value = '100';
+                amt.dispatchEvent(new Event('input', { bubbles: true }));
+            }""",
+            [str(asset_id)],
+        )
+        page.wait_for_function("!document.getElementById('btn-preview').disabled")
         page.locator("#btn-preview").focus()
         expect(page.locator("#btn-preview")).to_be_focused()
         tracker.assert_no_critical_errors()

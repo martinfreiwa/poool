@@ -424,6 +424,53 @@ pub async fn api_admin_search(
         }));
     }
 
+    let affiliate_rows = sqlx::query(
+        r#"
+        SELECT a.user_id::text AS id, COALESCE(u.email, '') AS email, a.status,
+               COALESCE(a.referral_code, '') AS referral_code,
+               COALESCE(a.company_name, '') AS company_name,
+               COALESCE(a.main_url, '') AS main_url
+        FROM affiliates a
+        JOIN users u ON u.id = a.user_id
+        WHERE u.email ILIKE $1
+           OR a.referral_code ILIKE $1
+           OR a.company_name ILIKE $1
+           OR a.main_url ILIKE $1
+           OR a.user_id::text ILIKE $1
+        ORDER BY a.created_at DESC
+        LIMIT 5
+        "#,
+    )
+    .bind(&pattern)
+    .fetch_all(&state.db)
+    .await?;
+
+    for row in affiliate_rows {
+        let status: String = row.get("status");
+        let email: String = row.get("email");
+        let referral_code: String = row.get("referral_code");
+        let company_name: String = row.get("company_name");
+        let url = if status == "pending_approval" {
+            "/admin/affiliate-applications.html".to_string()
+        } else {
+            format!("/admin/affiliate-finance.html?affiliate_id={}", row.get::<String, _>("id"))
+        };
+        let subtitle = if !company_name.is_empty() {
+            format!("{} · {}", email, company_name)
+        } else if !referral_code.is_empty() {
+            format!("{} · {}", email, referral_code)
+        } else {
+            email.clone()
+        };
+        results.push(serde_json::json!({
+            "type": "affiliate",
+            "title": if !referral_code.is_empty() { referral_code } else { email },
+            "subtitle": subtitle,
+            "url": url,
+            "badge": status,
+        }));
+    }
+
     Ok(Json(serde_json::json!({ "results": results })).into_response())
 }
 

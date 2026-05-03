@@ -42,7 +42,7 @@ fn default_asset_type() -> String {
 }
 
 fn default_token_price() -> i64 {
-    50000 // $500 minimum in cents
+    100 // $1 minimum in cents
 }
 
 fn default_tokens_total() -> i64 {

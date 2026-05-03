@@ -12,7 +12,9 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use super::models::{CommodityDisplayData, MarketplaceAsset, PropertyDisplayData};
+use super::models::{
+    AssetPageContent, CommodityDisplayData, MarketplaceAsset, PropertyDisplayData,
+};
 use crate::auth::routes::AppState;
 
 #[derive(Debug, Serialize)]
@@ -558,6 +560,26 @@ pub async fn page_property(
 
     // Convert to display-friendly data with pre-computed values
     let mut display_data = PropertyDisplayData::from_asset(&asset);
+
+    // Pull editable property-page content (migration 116) and merge in.
+    if let Ok(Some(cms)) = sqlx::query_as::<_, AssetPageContent>(
+        r#"SELECT investment_type, investment_type_description,
+                  leasing_strategy_type, leasing_strategy_description,
+                  risk_notification,
+                  default_investment_amount_cents,
+                  default_value_growth_bps,
+                  default_rental_yield_bps,
+                  developer_logo_url, developer_name, developer_description,
+                  developer_website, developer_facebook,
+                  developer_instagram, developer_youtube
+           FROM assets WHERE id = $1"#,
+    )
+    .bind(asset.id)
+    .fetch_optional(&state.db)
+    .await
+    {
+        cms.apply_to(&mut display_data);
+    }
 
     let platform_fee_pct: f64 = sqlx::query_scalar(
         "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",

@@ -174,8 +174,13 @@ function renderSubmission(data) {
   // Image gallery
   renderImages(images || []);
 
-  // Milestones
-  renderMilestones(milestones || []);
+  // Editable property-page content
+  hydratePageContentForm(asset);
+  wirePageContentSave(asset);
+
+  // Milestones (editable)
+  renderMilestones(milestones || [], asset.id);
+  wireMilestoneAddButton(asset.id);
 
   // Admin notes history
   loadNotes();
@@ -882,52 +887,223 @@ const SAMPLE_MILESTONES = [
   { month_index: 24, title: "Performance Review & Revaluation", description: "Independent appraisal conducted, token value updated.", milestone_date: null, is_completed: false },
 ];
 
-function renderMilestones(milestones) {
+function renderMilestones(milestones, assetId) {
   const container = document.getElementById("milestones-container");
   if (!container) return;
 
-  const rows = (milestones && milestones.length > 0) ? milestones : SAMPLE_MILESTONES;
-  const isSample = !milestones || milestones.length === 0;
+  // Remove any prior sample-milestone-note (now that this list is editable)
+  const card = container.closest(".review-card");
+  card?.querySelector(".sample-milestone-note")?.remove();
 
-  if (isSample) {
-    // Add a note above the table via a sibling element
-    const card = container.closest(".review-card");
-    const existingNote = card?.querySelector(".sample-milestone-note");
-    if (card && !existingNote) {
-      const note = document.createElement("div");
-      note.className = "sample-milestone-note";
-      note.style.cssText = "padding:10px 28px;background:rgba(245,158,11,.07);border-bottom:1px solid rgba(245,158,11,.2);font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px;";
-      note.innerHTML = `<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='10'/><path d='M12 8v4M12 16h.01'/></svg>
-        No milestones submitted yet — showing a sample roadmap template.`;
-      const header = card.querySelector(".review-card-header");
-      if (header) header.insertAdjacentElement("afterend", note);
-    }
+  if (!milestones || milestones.length === 0) {
+    container.innerHTML = `<tr><td colspan="6" style="padding:20px 28px;text-align:center;color:var(--admin-text-muted);font-size:12px;">
+      No milestones yet. Click "Add milestone" to create the project roadmap.
+    </td></tr>`;
+    return;
   }
 
-  container.innerHTML = rows
-    .map(
-      (m) => `
-        <tr>
-            <td style="font-size:13px;color:var(--admin-text-muted);">
-                ${m.month_index != null ? `M${m.month_index}` : "—"}
-            </td>
-            <td>
-                <div style="font-weight:600;font-size:13px;">${esc(m.title)}</div>
-                ${m.description ? `<div style="font-size:11px;color:var(--admin-text-muted);margin-top:2px;">${esc(m.description)}</div>` : ""}
-            </td>
-            <td style="font-size:12px;color:var(--admin-text-muted);">
-                ${m.milestone_date ? formatDate(m.milestone_date) : "—"}
-            </td>
-            <td>
-                ${m.is_completed
-          ? '<span class="admin-badge admin-badge--success">Completed</span>'
-          : '<span class="admin-badge admin-badge--neutral">Pending</span>'
-        }
-            </td>
-        </tr>
-    `,
-    )
+  container.innerHTML = milestones
+    .map((m) => milestoneRowHtml(m))
     .join("");
+
+  container.querySelectorAll("[data-milestone-id]").forEach((row) => {
+    wireMilestoneRow(row, assetId);
+  });
+}
+
+function milestoneRowHtml(m) {
+  const id = esc(m.id || "");
+  const month = m.month_index != null ? m.month_index : "";
+  const dateVal = m.milestone_date ? toDateInputValue(m.milestone_date) : "";
+  return `
+    <tr data-milestone-id="${id}">
+      <td><input class="pc-input ms-month" type="number" min="0" step="1" value="${esc(String(month))}" style="width:60px;padding:6px 8px;font-size:12px;" /></td>
+      <td><input class="pc-input ms-title" value="${esc(m.title || "")}" maxlength="255" style="font-size:13px;font-weight:600;" /></td>
+      <td><input class="pc-input ms-desc" value="${esc(m.description || "")}" style="font-size:12px;" /></td>
+      <td><input class="pc-input ms-date" type="date" value="${esc(dateVal)}" style="font-size:12px;" /></td>
+      <td style="text-align:center;"><input type="checkbox" class="ms-done" ${m.is_completed ? "checked" : ""} style="width:16px;height:16px;cursor:pointer;" /></td>
+      <td style="text-align:right;">
+        <button type="button" class="admin-btn admin-btn--secondary ms-save-btn" style="padding:4px 8px;font-size:11px;margin-right:4px;display:none;">Save</button>
+        <button type="button" class="ms-delete-btn" title="Delete" style="background:transparent;border:none;color:var(--admin-danger);cursor:pointer;padding:4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </td>
+    </tr>
+  `;
+}
+
+function wireMilestoneRow(row, assetId) {
+  const milestoneId = row.dataset.milestoneId;
+  const saveBtn = row.querySelector(".ms-save-btn");
+  const showSave = () => { if (saveBtn) saveBtn.style.display = "inline-block"; };
+  row.querySelectorAll("input").forEach((inp) => {
+    inp.addEventListener("input", showSave);
+    inp.addEventListener("change", showSave);
+  });
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async () => {
+      const payload = collectMilestoneInputs(row);
+      try {
+        const res = await fetch(`/api/admin/assets/${assetId}/milestones/${milestoneId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+        saveBtn.style.display = "none";
+        showToast("Milestone updated", "success");
+      } catch (e) {
+        showToast(`Failed to save milestone: ${e.message}`, "error");
+      }
+    });
+  }
+  const deleteBtn = row.querySelector(".ms-delete-btn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async () => {
+      if (!confirm("Delete this milestone?")) return;
+      try {
+        const res = await fetch(`/api/admin/assets/${assetId}/milestones/${milestoneId}`, {
+          method: "DELETE",
+          headers: { "X-CSRF-Token": getCsrfToken() },
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+        row.remove();
+        showToast("Milestone deleted", "success");
+      } catch (e) {
+        showToast(`Failed to delete: ${e.message}`, "error");
+      }
+    });
+  }
+}
+
+function collectMilestoneInputs(row) {
+  const month = row.querySelector(".ms-month").value.trim();
+  const title = row.querySelector(".ms-title").value.trim();
+  const desc = row.querySelector(".ms-desc").value.trim();
+  const date = row.querySelector(".ms-date").value;
+  const done = row.querySelector(".ms-done").checked;
+  return {
+    title: title || null,
+    description: desc === "" ? null : desc,
+    month_index: month === "" ? null : Number(month),
+    milestone_date: date ? new Date(date).toISOString() : null,
+    is_completed: done,
+  };
+}
+
+function wireMilestoneAddButton(assetId) {
+  const btn = document.getElementById("btn-milestone-add");
+  if (!btn || !assetId) return;
+  btn.onclick = async () => {
+    const title = prompt("Milestone title:");
+    if (!title || !title.trim()) return;
+    try {
+      const res = await fetch(`/api/admin/assets/${assetId}/milestones`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
+        body: JSON.stringify({ title: title.trim() }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      const created = await res.json();
+      const tbody = document.getElementById("milestones-container");
+      // Clear empty-state row if present
+      if (tbody.querySelector("td[colspan]")) tbody.innerHTML = "";
+      tbody.insertAdjacentHTML("beforeend", milestoneRowHtml(created));
+      const row = tbody.querySelector(`[data-milestone-id="${created.id}"]`);
+      if (row) wireMilestoneRow(row, assetId);
+      showToast("Milestone added", "success");
+    } catch (e) {
+      showToast(`Failed to add milestone: ${e.message}`, "error");
+    }
+  };
+}
+
+function toDateInputValue(iso) {
+  // iso may be a postgres timestamp string; take YYYY-MM-DD prefix
+  const m = String(iso).match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : "";
+}
+
+// ─── Property Page Content Form ──────────────────────────────────────────────
+function hydratePageContentForm(asset) {
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v == null ? "" : v;
+  };
+  set("pc-location-description", asset.location_description);
+  set("pc-investment-type", asset.investment_type);
+  set("pc-investment-type-description", asset.investment_type_description);
+  set("pc-leasing-strategy-type", asset.leasing_strategy_type);
+  set("pc-leasing-strategy-description", asset.leasing_strategy_description);
+  // Calculator: cents → USD; bps → percent
+  set(
+    "pc-default-investment-amount",
+    asset.default_investment_amount_cents != null
+      ? Math.round(asset.default_investment_amount_cents / 100)
+      : ""
+  );
+  set(
+    "pc-default-value-growth",
+    asset.default_value_growth_bps != null ? asset.default_value_growth_bps / 100 : ""
+  );
+  set(
+    "pc-default-rental-yield",
+    asset.default_rental_yield_bps != null ? asset.default_rental_yield_bps / 100 : ""
+  );
+  set("pc-developer-name", asset.developer_name);
+  set("pc-developer-logo-url", asset.developer_logo_url);
+  set("pc-developer-description", asset.developer_description);
+  set("pc-developer-website", asset.developer_website);
+  set("pc-developer-facebook", asset.developer_facebook);
+  set("pc-developer-instagram", asset.developer_instagram);
+  set("pc-developer-youtube", asset.developer_youtube);
+  set("pc-risk-notification", asset.risk_notification);
+}
+
+function wirePageContentSave(asset) {
+  const btn = document.getElementById("btn-save-page-content");
+  const status = document.getElementById("page-content-status");
+  if (!btn || !asset.id) return;
+  btn.onclick = async () => {
+    const body = collectPageContentPayload();
+    btn.disabled = true;
+    if (status) status.textContent = "Saving…";
+    try {
+      const res = await fetch(`/api/admin/assets/${asset.id}/page-content`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      const data = await res.json();
+      if (status) status.textContent = `Saved ${data.fields_updated?.length ?? 0} fields`;
+      showToast("Property page content saved", "success");
+    } catch (e) {
+      if (status) status.textContent = "";
+      showToast(`Save failed: ${e.message}`, "error");
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+function collectPageContentPayload() {
+  const form = document.getElementById("page-content-form");
+  if (!form) return {};
+  const out = {};
+  form.querySelectorAll("[data-field]").forEach((el) => {
+    const field = el.dataset.field;
+    const unit = el.dataset.unit;
+    const raw = el.value;
+    if (unit === "cents") {
+      out[field] = raw === "" ? null : Math.round(Number(raw) * 100);
+    } else if (unit === "bps") {
+      out[field] = raw === "" ? null : Math.round(Number(raw) * 100);
+    } else {
+      out[field] = raw.trim() === "" ? null : raw.trim();
+    }
+  });
+  return out;
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────────────

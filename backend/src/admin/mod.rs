@@ -514,6 +514,18 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/assets/:asset_id/images/reorder",
             put(api_admin_asset_images_reorder),
         )
+        .route(
+            "/api/admin/assets/:asset_id/page-content",
+            patch(api_admin_asset_page_content),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/milestones",
+            post(api_admin_asset_milestone_create),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/milestones/:milestone_id",
+            patch(api_admin_asset_milestone_update).delete(api_admin_asset_milestone_delete),
+        )
         // Treasury & Rewards
         .route("/api/admin/treasury", get(api_admin_treasury))
         .route("/api/admin/rewards", get(api_admin_rewards))
@@ -546,6 +558,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/rewards/affiliates/:id/reject",
             post(api_admin_affiliate_reject),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/:id/request-info",
+            post(crate::admin::rewards::api_admin_affiliate_request_info),
         )
         .route(
             "/api/admin/rewards/affiliates/:id/suspend",

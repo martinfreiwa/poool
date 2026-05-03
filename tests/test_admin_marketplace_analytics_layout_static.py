@@ -10,6 +10,7 @@ def test_analytics_page_uses_scoped_full_width_admin_shell():
 
     assert 'class="admin-body dom-ready mp-analytics-page"' in html
     assert ".mp-analytics-page .admin-main" in html
+    assert "margin-left: 0" in html
     assert "width: calc(100% - var(--admin-sidebar-width, 260px))" in html
     assert "body.admin-sidebar-collapsed.mp-analytics-page .admin-main" in html
     assert ".mp-analytics-page .admin-content" in html

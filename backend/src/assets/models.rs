@@ -91,6 +91,108 @@ pub struct PropertyDisplayData {
     pub token_price_usd: i64,              // per-share price in whole dollars
     pub is_public_preview: bool,
     pub public_data_notice: Option<String>,
+
+    // ── CMS fields populated from migration 116 columns ────────────────────
+    /// Short label for property investment type (e.g. "Fractional ownership").
+    pub investment_type: Option<String>,
+    /// Long-form description shown in the Investment Type section.
+    pub investment_type_description: Option<String>,
+    /// Short label for leasing strategy (e.g. "Long-term rental").
+    pub leasing_strategy_type: Option<String>,
+    /// Long-form description shown in the Leasing Strategy section.
+    pub leasing_strategy_description: Option<String>,
+    /// Asset-specific risk disclosure shown in the Risk Notification section.
+    pub risk_notification: Option<String>,
+    /// Calculator slider default amount, in whole USD (already converted).
+    pub default_investment_amount_usd: Option<i64>,
+    /// Calculator default annual property value growth as percent string (e.g. "10").
+    pub default_value_growth_percent: Option<String>,
+    /// Calculator default annual rental yield as percent string (e.g. "12").
+    pub default_rental_yield_percent: Option<String>,
+    /// Property Developer card logo URL.
+    pub developer_logo_url: Option<String>,
+    /// Property Developer card name.
+    pub developer_name: Option<String>,
+    /// Property Developer card description.
+    pub developer_description: Option<String>,
+    /// Property Developer card website URL.
+    pub developer_website: Option<String>,
+    /// Property Developer card Facebook URL.
+    pub developer_facebook: Option<String>,
+    /// Property Developer card Instagram URL.
+    pub developer_instagram: Option<String>,
+    /// Property Developer card YouTube URL.
+    pub developer_youtube: Option<String>,
+}
+
+/// Editable property-page content fetched separately from the core asset row.
+/// Populated from columns added in migration 116.
+#[derive(Debug, sqlx::FromRow)]
+pub struct AssetPageContent {
+    /// Investment type label.
+    pub investment_type: Option<String>,
+    /// Investment type long-form description.
+    pub investment_type_description: Option<String>,
+    /// Leasing strategy label.
+    pub leasing_strategy_type: Option<String>,
+    /// Leasing strategy long-form description.
+    pub leasing_strategy_description: Option<String>,
+    /// Risk-notification text.
+    pub risk_notification: Option<String>,
+    /// Calculator default investment amount, in cents.
+    pub default_investment_amount_cents: Option<i64>,
+    /// Calculator default value growth, basis points.
+    pub default_value_growth_bps: Option<i32>,
+    /// Calculator default rental yield, basis points.
+    pub default_rental_yield_bps: Option<i32>,
+    /// Developer card logo URL.
+    pub developer_logo_url: Option<String>,
+    /// Developer card name.
+    pub developer_name: Option<String>,
+    /// Developer card description.
+    pub developer_description: Option<String>,
+    /// Developer card website URL.
+    pub developer_website: Option<String>,
+    /// Developer card Facebook URL.
+    pub developer_facebook: Option<String>,
+    /// Developer card Instagram URL.
+    pub developer_instagram: Option<String>,
+    /// Developer card YouTube URL.
+    pub developer_youtube: Option<String>,
+}
+
+impl AssetPageContent {
+    /// Format a basis-points value as a percent string with no trailing zeros (e.g. 1050 → "10.5").
+    fn bps_to_percent(bps: i32) -> String {
+        let v = bps as f64 / 100.0;
+        if v == v.floor() {
+            format!("{:.0}", v)
+        } else {
+            format!("{:.1}", v)
+        }
+    }
+
+    /// Apply this CMS content to a built `PropertyDisplayData`.
+    pub fn apply_to(self, display: &mut PropertyDisplayData) {
+        display.investment_type = self.investment_type;
+        display.investment_type_description = self.investment_type_description;
+        display.leasing_strategy_type = self.leasing_strategy_type;
+        display.leasing_strategy_description = self.leasing_strategy_description;
+        display.risk_notification = self.risk_notification;
+        display.default_investment_amount_usd =
+            self.default_investment_amount_cents.map(|c| c / 100);
+        display.default_value_growth_percent =
+            self.default_value_growth_bps.map(Self::bps_to_percent);
+        display.default_rental_yield_percent =
+            self.default_rental_yield_bps.map(Self::bps_to_percent);
+        display.developer_logo_url = self.developer_logo_url;
+        display.developer_name = self.developer_name;
+        display.developer_description = self.developer_description;
+        display.developer_website = self.developer_website;
+        display.developer_facebook = self.developer_facebook;
+        display.developer_instagram = self.developer_instagram;
+        display.developer_youtube = self.developer_youtube;
+    }
 }
 
 impl PropertyDisplayData {
@@ -210,6 +312,21 @@ impl PropertyDisplayData {
             token_price_usd: asset.token_price_cents / 100,
             is_public_preview: false,
             public_data_notice: None,
+            investment_type: None,
+            investment_type_description: None,
+            leasing_strategy_type: None,
+            leasing_strategy_description: None,
+            risk_notification: None,
+            default_investment_amount_usd: None,
+            default_value_growth_percent: None,
+            default_rental_yield_percent: None,
+            developer_logo_url: None,
+            developer_name: None,
+            developer_description: None,
+            developer_website: None,
+            developer_facebook: None,
+            developer_instagram: None,
+            developer_youtube: None,
         }
     }
 

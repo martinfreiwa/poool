@@ -8,6 +8,7 @@
   let pendingApps = [];
   let currentAppId = null;
   let lastFocusedBeforeModal = null;
+  let auditLog = [];
 
   const REFERRAL_CODE_PATTERN = /^[A-Z0-9_-]{3,20}$/;
   const REJECTION_REASON_MAX_LENGTH = 1000;
@@ -47,7 +48,7 @@
 
     if (!pendingApps.length) {
       tbody.innerHTML =
-        '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No pending applications 🎉</td></tr>';
+        '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No pending applications 🎉</td></tr>';
       countEl.textContent = '0 pending';
       return;
     }
@@ -61,6 +62,7 @@
       const row = document.createElement('tr');
       row.append(
         buildApplicantCell(app),
+        buildRiskCell(app),
         buildTrafficCell(app),
         buildTextCell(app.audience_size || '—', 'color:var(--admin-text-secondary);font-size:13px;'),
         buildUrlCell(app.main_url),
@@ -70,6 +72,31 @@
       );
       tbody.appendChild(row);
     });
+  }
+
+  // ── Risk cell from backend fraud_signals ─────────────────────
+  function buildRiskCell(app) {
+    const cell = document.createElement('td');
+    const signals = Array.isArray(app.fraud_signals) ? app.fraud_signals : [];
+    if (!signals.length) {
+      const ok = applyStyle(document.createElement('span'), 'font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.12);color:var(--admin-success);font-weight:600;');
+      ok.textContent = 'Clean';
+      ok.title = 'No backend risk signals detected';
+      cell.appendChild(ok);
+      return cell;
+    }
+    const score = signals.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
+    let color = 'var(--admin-text-secondary)';
+    let label = `Minor (${score})`;
+    if (score >= 50) { color = 'var(--admin-danger)'; label = `High (${score})`; }
+    else if (score >= 25) { color = 'var(--admin-warning)'; label = `Suspicious (${score})`; }
+
+    const badge = applyStyle(document.createElement('span'),
+      `font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;cursor:help;background:${color}1a;color:${color};`);
+    badge.textContent = label;
+    badge.title = signals.map(s => `• ${s.label}`).join('\n');
+    cell.appendChild(badge);
+    return cell;
   }
 
   // ── KPI Update ───────────────────────────────────────────────
@@ -128,6 +155,7 @@
 
       closeApproveModal();
       loadPending(); // Refresh the list
+      loadAuditLog();
     } catch (err) {
       alert('Error: ' + err.message);
     } finally {
@@ -183,6 +211,7 @@
 
       closeRejectModal();
       loadPending();
+      loadAuditLog();
     } catch (err) {
       alert('Error: ' + err.message);
     } finally {
@@ -211,7 +240,7 @@
     const tbody = document.getElementById('pending-body');
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.style.cssText = `text-align:center;padding:${padding}px;color:var(--admin-text-muted);`;
     cell.textContent = message;
     row.appendChild(cell);
@@ -339,12 +368,13 @@
   }
 
   function closeActiveModal() {
-    const activeModal = document.querySelector('#details-modal[style*="display: flex"], #approve-modal[style*="display: flex"], #reject-modal[style*="display: flex"]');
+    const activeModal = document.querySelector('#details-modal[style*="display: flex"], #approve-modal[style*="display: flex"], #reject-modal[style*="display: flex"], #info-modal[style*="display: flex"]');
     if (!activeModal) return false;
 
     if (activeModal.id === 'details-modal') closeDetailsModal();
     if (activeModal.id === 'approve-modal') closeApproveModal();
     if (activeModal.id === 'reject-modal') closeRejectModal();
+    if (activeModal.id === 'info-modal') closeInfoModal();
     return true;
   }
 
@@ -393,16 +423,190 @@
     document.getElementById('details-company').textContent = app.company_name || '—';
     document.getElementById('details-tax').textContent = app.tax_id || '—';
     document.getElementById('details-phone').textContent = app.phone_number || '—';
-    
+
+    // Backend fraud signals
+    const fraudSection = document.getElementById('details-fraud-section');
+    const fraudSignals = document.getElementById('details-fraud-signals');
+    const signals = Array.isArray(app.fraud_signals) ? app.fraud_signals : [];
+    if (signals.length) {
+      fraudSection.style.display = 'block';
+      fraudSignals.replaceChildren();
+      signals.forEach(s => {
+        const tag = document.createElement('span');
+        tag.className = 'admin-badge admin-badge--warning';
+        tag.style.cssText = 'font-size: 11px;';
+        tag.textContent = `${s.label} (+${s.score})`;
+        fraudSignals.appendChild(tag);
+      });
+    } else {
+      fraudSection.style.display = 'none';
+    }
+
     const approveBtn = document.getElementById('details-approve-btn');
     const rejectBtn = document.getElementById('details-reject-btn');
-    
+    const infoBtn = document.getElementById('details-info-btn');
+
     // Unbind and rebind to prevent stale listeners
     approveBtn.onclick = () => { closeDetailsModal(); openApproveModal(app.id, app.email || ''); };
     rejectBtn.onclick = () => { closeDetailsModal(); openRejectModal(app.id, app.email || ''); };
+    infoBtn.onclick = () => { closeDetailsModal(); openInfoModal(app.id, app.email || ''); };
 
     openModal(document.getElementById('details-modal'));
   };
+
+  // ── Request More Info Modal ──────────────────────────────────
+  window.openInfoModal = function (appId, email) {
+    currentAppId = appId;
+    document.getElementById('info-modal-email').textContent = email;
+    document.getElementById('info-message').value = '';
+    document.getElementById('info-template').value = '';
+    clearFieldError('info-message-error');
+    openModal(document.getElementById('info-modal'));
+  };
+
+  window.closeInfoModal = function () {
+    closeModal(document.getElementById('info-modal'));
+    currentAppId = null;
+  };
+
+  window.confirmInfoRequest = async function () {
+    const message = document.getElementById('info-message').value.trim();
+    clearFieldError('info-message-error');
+
+    if (!message) {
+      setFieldError('info-message-error', 'A message is required.');
+      document.getElementById('info-message').focus();
+      return;
+    }
+    if (message.length > 1000) {
+      setFieldError('info-message-error', 'Message must be 1000 characters or fewer.');
+      document.getElementById('info-message').focus();
+      return;
+    }
+
+    const btn = document.getElementById('info-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+      const res = await fetch(`/api/admin/rewards/affiliates/${currentAppId}/request-info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to send request');
+      }
+      closeInfoModal();
+      loadAuditLog();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4l6 4 6-4M2 4v8h12V4"/></svg> Send Request';
+    }
+  };
+
+  // ── Audit log loader ─────────────────────────────────────────
+  async function loadAuditLog() {
+    const tbody = document.getElementById('audit-body');
+    if (!tbody) return;
+    try {
+      const res = await fetch('/api/admin/audit-logs?action_prefix=affiliate.&per_page=20');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      auditLog = Array.isArray(data.logs) ? data.logs : [];
+      renderAuditLog();
+    } catch (err) {
+      console.error('Failed to load audit log:', err);
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--admin-text-muted);font-size:12px;">Failed to load audit log.</td></tr>';
+    }
+  }
+
+  function renderAuditLog() {
+    const tbody = document.getElementById('audit-body');
+    if (!tbody) return;
+    if (!auditLog.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--admin-text-muted);font-size:12px;">No recent affiliate actions.</td></tr>';
+      return;
+    }
+    tbody.replaceChildren();
+    auditLog.forEach(entry => {
+      const row = document.createElement('tr');
+      row.append(
+        buildAuditWhenCell(entry.created_at),
+        buildAuditActionCell(entry.action),
+        buildAuditAffiliateCell(entry.entity_id),
+        buildTextCell(entry.actor_email || '—', 'font-size:12px;color:var(--admin-text-secondary);'),
+        buildAuditDetailCell(entry)
+      );
+      tbody.appendChild(row);
+    });
+  }
+
+  function buildAuditWhenCell(createdAt) {
+    const cell = document.createElement('td');
+    cell.style.cssText = 'font-size:12px;color:var(--admin-text-muted);';
+    if (!createdAt) { cell.textContent = '—'; return cell; }
+    const d = new Date(createdAt);
+    cell.textContent = formatRelative(d);
+    cell.title = d.toLocaleString();
+    return cell;
+  }
+
+  function buildAuditActionCell(action) {
+    const cell = document.createElement('td');
+    const map = {
+      'affiliate.approved': { color: 'var(--admin-success)', text: 'Approved' },
+      'affiliate.rejected': { color: 'var(--admin-danger)', text: 'Rejected' },
+      'affiliate.info_requested': { color: 'var(--admin-accent)', text: 'Info requested' },
+      'affiliate.suspended': { color: 'var(--admin-warning)', text: 'Suspended' },
+    };
+    const cfg = map[action] || { color: 'var(--admin-text-secondary)', text: action || '—' };
+    const badge = applyStyle(document.createElement('span'),
+      `font-size:11px;padding:2px 8px;border-radius:10px;background:${cfg.color}1a;color:${cfg.color};font-weight:600;`);
+    badge.textContent = cfg.text;
+    cell.appendChild(badge);
+    return cell;
+  }
+
+  function buildAuditAffiliateCell(entityId) {
+    const cell = document.createElement('td');
+    cell.style.cssText = 'font-size:12px;color:var(--admin-text-secondary);';
+    if (!entityId) { cell.textContent = '—'; return cell; }
+    const match = pendingApps.find(a => a.id === entityId);
+    if (match) {
+      cell.textContent = match.email || entityId;
+    } else {
+      cell.style.fontFamily = 'monospace';
+      cell.textContent = `${String(entityId).substring(0, 8)}…`;
+      cell.title = entityId;
+    }
+    return cell;
+  }
+
+  function buildAuditDetailCell(entry) {
+    const cell = document.createElement('td');
+    cell.style.cssText = 'font-size:12px;color:var(--admin-text-muted);max-width:320px;';
+    let detail = '';
+    if (entry.new_state && typeof entry.new_state === 'object') {
+      if (entry.new_state.reason) detail = `Reason: ${entry.new_state.reason}`;
+      else if (entry.new_state.message) detail = `Asked: ${entry.new_state.message}`;
+      else if (entry.new_state.referral_code) detail = `Code: ${entry.new_state.referral_code}`;
+    }
+    cell.textContent = detail.length > 120 ? detail.substring(0, 120) + '…' : detail;
+    if (detail.length > 120) cell.title = detail;
+    return cell;
+  }
+
+  function formatRelative(date) {
+    const sec = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (sec < 60) return `${sec}s ago`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+    if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+    return `${Math.floor(sec / 86400)}d ago`;
+  }
 
   window.closeDetailsModal = function () {
     closeModal(document.getElementById('details-modal'));
@@ -432,6 +636,14 @@
   document.getElementById('approve-confirm-btn').addEventListener('click', confirmApprove);
   document.getElementById('reject-cancel-btn').addEventListener('click', closeRejectModal);
   document.getElementById('reject-confirm-btn').addEventListener('click', confirmReject);
+  document.getElementById('info-cancel-btn')?.addEventListener('click', closeInfoModal);
+  document.getElementById('info-confirm-btn')?.addEventListener('click', confirmInfoRequest);
+  document.getElementById('info-template')?.addEventListener('change', e => {
+    if (e.target.value) {
+      const opt = e.target.options[e.target.selectedIndex];
+      document.getElementById('info-message').value = opt.textContent;
+    }
+  });
   document.getElementById('approve-modal').addEventListener('click', function (e) {
     if (e.target === this) closeApproveModal();
   });
@@ -441,8 +653,13 @@
   document.getElementById('details-modal').addEventListener('click', function (e) {
     if (e.target === this) closeDetailsModal();
   });
+  document.getElementById('info-modal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeInfoModal();
+  });
+  document.getElementById('audit-refresh-btn')?.addEventListener('click', loadAuditLog);
   document.addEventListener('keydown', trapFocus);
 
   // ── Init ─────────────────────────────────────────────────────
   loadPending();
+  loadAuditLog();
 })();

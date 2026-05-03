@@ -592,6 +592,47 @@ pub async fn api_admin_affiliates_pending(
         ApiError::Database(e)
     })?;
 
+    // Per-application backend fraud signals: detect re-use of phone, tax ID,
+    // company name, and email domain across other affiliates. Cheap aggregate
+    // counts; complements the frontend heuristics (disposable domains, etc.).
+    let dupe_rows = sqlx::query!(
+        r#"WITH siblings AS (
+              SELECT a.user_id, a.phone_number, a.tax_id, a.company_name,
+                     LOWER(SPLIT_PART(u.email, '@', 2)) AS email_domain
+              FROM affiliates a
+              JOIN users u ON u.id = a.user_id
+           )
+           SELECT s.user_id::text AS id,
+                  COALESCE((SELECT COUNT(*) FROM siblings s2
+                            WHERE s2.phone_number IS NOT NULL
+                              AND s2.phone_number = s.phone_number
+                              AND s2.user_id <> s.user_id), 0) AS "phone_dupe!",
+                  COALESCE((SELECT COUNT(*) FROM siblings s2
+                            WHERE s2.tax_id IS NOT NULL
+                              AND s2.tax_id = s.tax_id
+                              AND s2.user_id <> s.user_id), 0) AS "tax_dupe!",
+                  COALESCE((SELECT COUNT(*) FROM siblings s2
+                            WHERE s2.company_name IS NOT NULL
+                              AND LOWER(s2.company_name) = LOWER(s.company_name)
+                              AND s2.user_id <> s.user_id), 0) AS "company_dupe!",
+                  COALESCE((SELECT COUNT(*) FROM siblings s2
+                            WHERE s2.email_domain = s.email_domain
+                              AND s2.user_id <> s.user_id), 0) AS "domain_count!"
+           FROM siblings s
+           WHERE s.user_id IN (SELECT a.user_id FROM affiliates a WHERE a.status = 'pending_approval')"#
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Admin affiliate dupe scan failed: {e}");
+        ApiError::Database(e)
+    })?;
+
+    let dupes: std::collections::HashMap<String, &_> = dupe_rows
+        .iter()
+        .map(|r| (r.id.clone().unwrap_or_default(), r))
+        .collect();
+
     let pending: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {
@@ -602,11 +643,29 @@ pub async fn api_admin_affiliates_pending(
             )
             .trim()
             .to_string();
+
+            let mut signals: Vec<serde_json::Value> = Vec::new();
+            if let Some(d) = r.id.as_ref().and_then(|id| dupes.get(id)) {
+                if d.phone_dupe > 0 {
+                    signals.push(serde_json::json!({ "kind": "phone_dupe", "score": 35, "label": format!("Phone reused by {} other affiliate(s)", d.phone_dupe) }));
+                }
+                if d.tax_dupe > 0 {
+                    signals.push(serde_json::json!({ "kind": "tax_dupe", "score": 50, "label": format!("Tax ID reused by {} other affiliate(s)", d.tax_dupe) }));
+                }
+                if d.company_dupe > 0 {
+                    signals.push(serde_json::json!({ "kind": "company_dupe", "score": 15, "label": format!("Company name matches {} other affiliate(s)", d.company_dupe) }));
+                }
+                if d.domain_count >= 5 {
+                    signals.push(serde_json::json!({ "kind": "domain_volume", "score": 10, "label": format!("Email domain has {} affiliates already", d.domain_count) }));
+                }
+            }
+
             serde_json::json!({
                 "id": r.id, "email": r.email, "user_name": if user_name.is_empty() { r.email.clone() } else { user_name },
                 "traffic_source": r.traffic_source,
                 "audience_size": r.audience_size, "main_url": r.main_url, "phone_number": r.phone_number,
-                "company_name": r.company_name, "tax_id": r.tax_id, "created_at": r.created_at
+                "company_name": r.company_name, "tax_id": r.tax_id, "created_at": r.created_at,
+                "fraud_signals": signals
             })
         })
         .collect();
@@ -954,6 +1013,93 @@ pub async fn api_admin_affiliate_reject(
             Err(ApiError::Internal("Database error".to_string()))
         }
     }
+}
+
+/// Payload for requesting more info from a pending affiliate.
+#[derive(serde::Deserialize)]
+pub struct AdminRequestInfoPayload {
+    /// The questions / additional info requested from the applicant.
+    pub message: String,
+}
+
+/// POST /api/admin/rewards/affiliates/:id/request-info
+///
+/// Sends a clarification email to a pending applicant without changing status.
+/// Logs an audit entry so the request is visible in the audit trail.
+pub async fn api_admin_affiliate_request_info(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    Json(payload): Json<AdminRequestInfoPayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
+    let uid = ApiError::parse_uuid(&id)?;
+    let message = crate::common::sanitize::sanitize_text(payload.message.trim());
+    if message.is_empty() {
+        return Err(ApiError::BadRequest("A message is required.".to_string()));
+    }
+    if message.chars().count() > AFFILIATE_REJECTION_REASON_MAX_CHARS {
+        return Err(ApiError::BadRequest(format!(
+            "Message must be {} characters or fewer.",
+            AFFILIATE_REJECTION_REASON_MAX_CHARS
+        )));
+    }
+
+    let row = sqlx::query!(
+        r#"SELECT u.email, a.status FROM affiliates a
+           JOIN users u ON u.id = a.user_id
+           WHERE a.user_id = $1"#,
+        uid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to fetch affiliate for request-info: {e}");
+        ApiError::Internal("Database error".to_string())
+    })?;
+
+    let Some(row) = row else {
+        return Err(ApiError::NotFound(
+            "Affiliate application not found".to_string(),
+        ));
+    };
+
+    let status = row.status.as_deref().unwrap_or("");
+    if status != "pending_approval" {
+        return Err(ApiError::BadRequest(format!(
+            "Cannot request more info for affiliate in '{}' status",
+            status
+        )));
+    }
+
+    sqlx::query!(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)",
+        admin.user.id,
+        "affiliate.info_requested",
+        "affiliate",
+        uid,
+        serde_json::json!({ "message": message.clone() })
+    )
+    .execute(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to log info-requested audit: {e}");
+        ApiError::Internal("Database error".to_string())
+    })?;
+
+    let _ = crate::common::email::send_email(
+        &row.email,
+        "More information needed for your POOOL Affiliate Application",
+        &format!(
+            "<h3>Additional Information Requested</h3><p>Thank you for applying to the POOOL Affiliate Partner Syndicate.</p><p>Before we can complete the review of your application, we need a bit more information:</p><blockquote style=\"border-left:3px solid #ddd;padding-left:12px;color:#444;\">{}</blockquote><p>Please reply to this email with the requested details. Your application will remain on file in pending status.</p>",
+            message
+        )
+    ).await;
+
+    Ok(Json(serde_json::json!({ "status": "info_requested" })).into_response())
 }
 
 /// Payload for suspending an affiliate

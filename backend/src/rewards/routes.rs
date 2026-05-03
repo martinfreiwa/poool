@@ -869,6 +869,23 @@ pub async fn submit_affiliate_onboarding_handler(
             "Your POOOL Affiliate Application has been received",
             "<h3>Application Received</h3><p>We have successfully received your application for the POOOL Affiliate Partner Syndicate.</p><p>Our compliance team will review your application shortly. You will receive another email once your account has been approved.</p>"
         ).await;
+
+        // Slack notify ops channel (env-gated; non-blocking).
+        if let Ok(webhook) = std::env::var("SLACK_AFFILIATE_WEBHOOK_URL") {
+            let payload = serde_json::json!({
+                "text": format!(
+                    ":wave: New affiliate application from `{}`. <https://platform.poool.app/admin/affiliate-applications.html|Review in admin>",
+                    user_record.email
+                )
+            });
+            tokio::spawn(async move {
+                let _ = reqwest::Client::new()
+                    .post(&webhook)
+                    .json(&payload)
+                    .send()
+                    .await;
+            });
+        }
     }
 
     Json(serde_json::json!({"success": true, "status": "pending_approval"})).into_response()

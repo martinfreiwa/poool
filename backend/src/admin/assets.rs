@@ -807,3 +807,453 @@ fn admin_mime_matches(client_mime: &str, sniffed: &str) -> bool {
                 | ("application/octet-stream", _)
         )
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Editable Property-Page Content  (migration 116)
+//
+//  Admin endpoints that let staff populate the CMS-style fields rendered on
+//  the property detail page (location description, investment type, leasing
+//  strategy, calculator defaults, developer card, risk notification) plus
+//  full CRUD for the roadmap / funding-timeline milestones.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Partial update payload for `PATCH /api/admin/assets/:asset_id/page-content`.
+///
+/// All fields are optional; only those present in the JSON body are written.
+/// Use `null` to clear a field, omit it to leave it untouched.
+#[allow(missing_docs)]
+#[derive(Debug, Deserialize)]
+pub struct AssetPageContentPayload {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub location_description: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub investment_type: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub investment_type_description: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub leasing_strategy_type: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub leasing_strategy_description: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub risk_notification: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_investment_amount_cents: Option<Option<i64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_value_growth_bps: Option<Option<i32>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_rental_yield_bps: Option<Option<i32>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub developer_logo_url: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub developer_name: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub developer_description: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub developer_website: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub developer_facebook: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub developer_instagram: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub developer_youtube: Option<Option<String>>,
+}
+
+const TEXT_MAX_SHORT: usize = 255;
+const TEXT_MAX_LONG: usize = 8_000;
+const URL_MAX: usize = 512;
+
+fn clean_opt_text(v: Option<Option<String>>, max: usize) -> Result<Option<Option<String>>, ApiError> {
+    match v {
+        None => Ok(None),
+        Some(None) => Ok(Some(None)),
+        Some(Some(s)) => {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                return Ok(Some(None));
+            }
+            if trimmed.chars().count() > max {
+                return Err(ApiError::BadRequest(format!(
+                    "Field exceeds {} character limit",
+                    max
+                )));
+            }
+            Ok(Some(Some(trimmed.to_string())))
+        }
+    }
+}
+
+fn validate_bps(v: Option<Option<i32>>) -> Result<Option<Option<i32>>, ApiError> {
+    if let Some(Some(n)) = v {
+        if !(0..=20_000).contains(&n) {
+            return Err(ApiError::BadRequest(
+                "Basis-points value must be between 0 and 20000".to_string(),
+            ));
+        }
+    }
+    Ok(v)
+}
+
+fn validate_cents(v: Option<Option<i64>>) -> Result<Option<Option<i64>>, ApiError> {
+    if let Some(Some(n)) = v {
+        if n < 0 {
+            return Err(ApiError::BadRequest(
+                "Amount in cents cannot be negative".to_string(),
+            ));
+        }
+    }
+    Ok(v)
+}
+
+/// PATCH /api/admin/assets/:asset_id/page-content
+pub async fn api_admin_asset_page_content(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(asset_id): axum::extract::Path<String>,
+    Json(mut payload): Json<AssetPageContentPayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+    let aid = ApiError::parse_uuid(&asset_id)?;
+
+    payload.location_description = clean_opt_text(payload.location_description, TEXT_MAX_LONG)?;
+    payload.investment_type = clean_opt_text(payload.investment_type, TEXT_MAX_SHORT)?;
+    payload.investment_type_description =
+        clean_opt_text(payload.investment_type_description, TEXT_MAX_LONG)?;
+    payload.leasing_strategy_type = clean_opt_text(payload.leasing_strategy_type, TEXT_MAX_SHORT)?;
+    payload.leasing_strategy_description =
+        clean_opt_text(payload.leasing_strategy_description, TEXT_MAX_LONG)?;
+    payload.risk_notification = clean_opt_text(payload.risk_notification, TEXT_MAX_LONG)?;
+    payload.default_investment_amount_cents =
+        validate_cents(payload.default_investment_amount_cents)?;
+    payload.default_value_growth_bps = validate_bps(payload.default_value_growth_bps)?;
+    payload.default_rental_yield_bps = validate_bps(payload.default_rental_yield_bps)?;
+    payload.developer_logo_url = clean_opt_text(payload.developer_logo_url, URL_MAX)?;
+    payload.developer_name = clean_opt_text(payload.developer_name, TEXT_MAX_SHORT)?;
+    payload.developer_description = clean_opt_text(payload.developer_description, TEXT_MAX_LONG)?;
+    payload.developer_website = clean_opt_text(payload.developer_website, URL_MAX)?;
+    payload.developer_facebook = clean_opt_text(payload.developer_facebook, URL_MAX)?;
+    payload.developer_instagram = clean_opt_text(payload.developer_instagram, URL_MAX)?;
+    payload.developer_youtube = clean_opt_text(payload.developer_youtube, URL_MAX)?;
+
+    // Build dynamic UPDATE — only touch columns the client sent.
+    let mut sets: Vec<String> = Vec::new();
+    let mut idx = 1usize;
+    let mut q = sqlx::QueryBuilder::<sqlx::Postgres>::new("UPDATE assets SET ");
+
+    macro_rules! push_text {
+        ($field:expr, $col:literal) => {
+            if let Some(v) = $field {
+                if !sets.is_empty() {
+                    q.push(", ");
+                }
+                idx += 1;
+                q.push(concat!($col, " = "));
+                q.push_bind(v);
+                sets.push($col.to_string());
+            }
+        };
+    }
+    macro_rules! push_int {
+        ($field:expr, $col:literal, $ty:ty) => {
+            if let Some(v) = $field {
+                if !sets.is_empty() {
+                    q.push(", ");
+                }
+                idx += 1;
+                q.push(concat!($col, " = "));
+                q.push_bind::<Option<$ty>>(v);
+                sets.push($col.to_string());
+            }
+        };
+    }
+
+    push_text!(payload.location_description, "location_description");
+    push_text!(payload.investment_type, "investment_type");
+    push_text!(
+        payload.investment_type_description,
+        "investment_type_description"
+    );
+    push_text!(payload.leasing_strategy_type, "leasing_strategy_type");
+    push_text!(
+        payload.leasing_strategy_description,
+        "leasing_strategy_description"
+    );
+    push_text!(payload.risk_notification, "risk_notification");
+    push_int!(
+        payload.default_investment_amount_cents,
+        "default_investment_amount_cents",
+        i64
+    );
+    push_int!(
+        payload.default_value_growth_bps,
+        "default_value_growth_bps",
+        i32
+    );
+    push_int!(
+        payload.default_rental_yield_bps,
+        "default_rental_yield_bps",
+        i32
+    );
+    push_text!(payload.developer_logo_url, "developer_logo_url");
+    push_text!(payload.developer_name, "developer_name");
+    push_text!(payload.developer_description, "developer_description");
+    push_text!(payload.developer_website, "developer_website");
+    push_text!(payload.developer_facebook, "developer_facebook");
+    push_text!(payload.developer_instagram, "developer_instagram");
+    push_text!(payload.developer_youtube, "developer_youtube");
+
+    if sets.is_empty() {
+        return Err(ApiError::BadRequest("No fields to update".to_string()));
+    }
+    let _ = idx;
+
+    q.push(", updated_at = NOW() WHERE id = ");
+    q.push_bind(aid);
+
+    let result = q
+        .build()
+        .execute(&state.db)
+        .await
+        .map_err(ApiError::Database)?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Asset not found".to_string()));
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'asset.page_content_updated', 'assets', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({ "fields": sets }))
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "status": "success",
+        "fields_updated": sets,
+    }))
+    .into_response())
+}
+
+// ── Milestones (Roadmap / Funding Timeline) CRUD ─────────────────────────────
+
+/// Payload for creating a milestone via `POST /api/admin/assets/:asset_id/milestones`.
+#[allow(missing_docs)]
+#[derive(Debug, Deserialize)]
+pub struct MilestoneCreatePayload {
+    pub title: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub month_index: Option<i32>,
+    #[serde(default)]
+    pub milestone_date: Option<String>,
+    #[serde(default)]
+    pub is_completed: Option<bool>,
+}
+
+/// Payload for updating a milestone via `PATCH /api/admin/assets/:asset_id/milestones/:milestone_id`.
+#[allow(missing_docs)]
+#[derive(Debug, Deserialize)]
+pub struct MilestoneUpdatePayload {
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub month_index: Option<Option<i32>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub milestone_date: Option<Option<String>>,
+    #[serde(default)]
+    pub is_completed: Option<bool>,
+}
+
+/// POST /api/admin/assets/:asset_id/milestones
+pub async fn api_admin_asset_milestone_create(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(asset_id): axum::extract::Path<String>,
+    Json(payload): Json<MilestoneCreatePayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+    let aid = ApiError::parse_uuid(&asset_id)?;
+
+    let title = payload.title.trim();
+    if title.is_empty() {
+        return Err(ApiError::BadRequest("Title is required".to_string()));
+    }
+    if title.chars().count() > TEXT_MAX_SHORT {
+        return Err(ApiError::BadRequest(format!(
+            "Title exceeds {} character limit",
+            TEXT_MAX_SHORT
+        )));
+    }
+
+    let description = payload
+        .description
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
+    let date_ts = match payload.milestone_date.as_deref().map(str::trim) {
+        None | Some("") => None,
+        Some(s) => Some(
+            chrono::DateTime::parse_from_rfc3339(s)
+                .map_err(|_| ApiError::BadRequest("Invalid milestone_date".to_string()))?
+                .with_timezone(&chrono::Utc),
+        ),
+    };
+
+    let row = sqlx::query(
+        r#"INSERT INTO asset_milestones
+              (asset_id, title, description, milestone_date, month_index, is_completed)
+           VALUES ($1, $2, $3, $4, $5, COALESCE($6, false))
+           RETURNING id::text, title, description, milestone_date::text, month_index, is_completed"#,
+    )
+    .bind(aid)
+    .bind(title)
+    .bind(description.as_deref())
+    .bind(date_ts)
+    .bind(payload.month_index)
+    .bind(payload.is_completed)
+    .fetch_one(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "id": row.get::<String, _>("id"),
+        "title": row.get::<String, _>("title"),
+        "description": row.get::<Option<String>, _>("description"),
+        "milestone_date": row.get::<Option<String>, _>("milestone_date"),
+        "month_index": row.get::<Option<i32>, _>("month_index"),
+        "is_completed": row.get::<bool, _>("is_completed"),
+    }))
+    .into_response())
+}
+
+/// PATCH /api/admin/assets/:asset_id/milestones/:milestone_id
+pub async fn api_admin_asset_milestone_update(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path((asset_id, milestone_id)): axum::extract::Path<(String, String)>,
+    Json(payload): Json<MilestoneUpdatePayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let mid = ApiError::parse_uuid(&milestone_id)?;
+
+    let mut sets: Vec<String> = Vec::new();
+    let mut q = sqlx::QueryBuilder::<sqlx::Postgres>::new("UPDATE asset_milestones SET ");
+
+    if let Some(t) = payload.title.as_ref() {
+        let trimmed = t.trim();
+        if trimmed.is_empty() {
+            return Err(ApiError::BadRequest("Title cannot be empty".to_string()));
+        }
+        if trimmed.chars().count() > TEXT_MAX_SHORT {
+            return Err(ApiError::BadRequest("Title too long".to_string()));
+        }
+        q.push("title = ");
+        q.push_bind(trimmed.to_string());
+        sets.push("title".to_string());
+    }
+
+    if let Some(d) = payload.description {
+        let cleaned = d
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        q.push("description = ");
+        q.push_bind(cleaned);
+        sets.push("description".to_string());
+    }
+
+    if let Some(m) = payload.month_index {
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        q.push("month_index = ");
+        q.push_bind::<Option<i32>>(m);
+        sets.push("month_index".to_string());
+    }
+
+    if let Some(d) = payload.milestone_date {
+        let parsed = match d.as_deref().map(str::trim) {
+            None | Some("") => None,
+            Some(s) => Some(
+                chrono::DateTime::parse_from_rfc3339(s)
+                    .map_err(|_| ApiError::BadRequest("Invalid milestone_date".to_string()))?
+                    .with_timezone(&chrono::Utc),
+            ),
+        };
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        q.push("milestone_date = ");
+        q.push_bind(parsed);
+        sets.push("milestone_date".to_string());
+    }
+
+    if let Some(c) = payload.is_completed {
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        q.push("is_completed = ");
+        q.push_bind(c);
+        sets.push("is_completed".to_string());
+    }
+
+    if sets.is_empty() {
+        return Err(ApiError::BadRequest("No fields to update".to_string()));
+    }
+
+    q.push(" WHERE id = ");
+    q.push_bind(mid);
+    q.push(" AND asset_id = ");
+    q.push_bind(aid);
+
+    let result = q
+        .build()
+        .execute(&state.db)
+        .await
+        .map_err(ApiError::Database)?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Milestone not found".to_string()));
+    }
+
+    Ok(Json(serde_json::json!({
+        "status": "success",
+        "fields_updated": sets,
+    }))
+    .into_response())
+}
+
+/// DELETE /api/admin/assets/:asset_id/milestones/:milestone_id
+pub async fn api_admin_asset_milestone_delete(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path((asset_id, milestone_id)): axum::extract::Path<(String, String)>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let mid = ApiError::parse_uuid(&milestone_id)?;
+
+    let result =
+        sqlx::query("DELETE FROM asset_milestones WHERE id = $1 AND asset_id = $2")
+            .bind(mid)
+            .bind(aid)
+            .execute(&state.db)
+            .await
+            .map_err(ApiError::Database)?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Milestone not found".to_string()));
+    }
+
+    Ok(Json(serde_json::json!({ "status": "success" })).into_response())
+}

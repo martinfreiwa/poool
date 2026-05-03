@@ -120,6 +120,7 @@
               <thead>
                 <tr>
                   <th>Email</th>
+                  <th>Risk</th>
                   <th>Traffic Source</th>
                   <th>Audience Size</th>
                   <th>Website / URL</th>
@@ -130,11 +131,37 @@
               </thead>
               <tbody id="pending-body">
                 <tr>
-                  <td colspan="7" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                  <td colspan="8" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
                     <div style="margin: 0 auto 12px; width: 24px; height: 24px; border: 2px solid var(--admin-border); border-top-color: var(--admin-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
                     Loading affiliate applications…
                   </td>
                 </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Decisions (audit log) -->
+        <div class="admin-card" style="margin-top: 20px;">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Recent Decisions</h3>
+            <button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" id="audit-refresh-btn" aria-label="Refresh audit log">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            </button>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width: 130px;">When</th>
+                  <th style="width: 140px;">Action</th>
+                  <th>Affiliate</th>
+                  <th>Admin</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="audit-body">
+                <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--admin-text-muted);font-size:12px;">Loading audit log…</td></tr>
               </tbody>
             </table>
           </div>
@@ -205,14 +232,59 @@
         </div>
       </div>
 
-      <div style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--admin-border); padding-top: 20px;">
-        <button class="admin-btn admin-btn--danger" id="details-reject-btn">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
-          Reject
+      <div id="details-fraud-section" style="display: none; background: var(--admin-bg-main); border: 1px solid var(--admin-border); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+        <div style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px;">Backend Risk Signals</div>
+        <div id="details-fraud-signals" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid var(--admin-border); padding-top: 20px; flex-wrap: wrap;">
+        <button class="admin-btn admin-btn--secondary" id="details-info-btn" type="button">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 11V7M8 5h.01"/></svg>
+          Request More Info
         </button>
-        <button class="admin-btn admin-btn--primary" id="details-approve-btn">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l3.5 3.5L13 4" /></svg>
-          Approve
+        <div style="display: flex; gap: 12px;">
+          <button class="admin-btn admin-btn--danger" id="details-reject-btn">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+            Reject
+          </button>
+          <button class="admin-btn admin-btn--primary" id="details-approve-btn">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l3.5 3.5L13 4" /></svg>
+            Approve
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Request Info Modal -->
+  <div id="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title" tabindex="-1" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+    <div style="background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl); padding: 28px; max-width: 480px; width: 90%; animation: admin-fadeIn 0.2s ease-out;">
+      <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0 0 8px;" id="info-modal-title">Request More Information</h3>
+      <p style="font-size: 13px; color: var(--admin-text-secondary); margin: 0 0 16px;" id="info-modal-email">—</p>
+      <p style="font-size: 12px; color: var(--admin-text-muted); margin: 0 0 16px;">An email will be sent to the applicant. Application stays in pending status.</p>
+      <div class="admin-form-group" style="margin-bottom: 12px">
+        <label class="admin-form-label" for="info-template">Quick template</label>
+        <select id="info-template" class="admin-select" style="width: 100%;">
+          <option value="">— Select a template (optional) —</option>
+          <option value="audience">Could you provide verifiable audience metrics (analytics screenshot, public stats, or platform handles with subscriber counts)?</option>
+          <option value="content">Could you share 2-3 examples of recent content that would feature POOOL or financial-services products?</option>
+          <option value="tax">The tax ID provided could not be verified. Please confirm the country and resubmit if necessary.</option>
+          <option value="company">Could you confirm the legal company name as registered, plus a website or registration number?</option>
+          <option value="url">The website URL did not load. Please confirm or provide an alternative URL.</option>
+          <option value="kyc">Please complete identity verification (KYC) on your account before we can finalize the affiliate review.</option>
+        </select>
+      </div>
+      <div class="admin-form-group" style="margin-bottom: 20px">
+        <label class="admin-form-label" for="info-message">Message *</label>
+        <textarea class="admin-textarea" id="info-message" placeholder="What additional information do you need from the applicant?" rows="4" maxlength="1000" aria-describedby="info-message-help info-message-error"></textarea>
+        <span id="info-message-help" style="font-size: 11px; color: var(--admin-text-muted);">Maximum 1000 characters.</span>
+        <span id="info-message-error" role="alert" style="display: none; font-size: 11px; color: var(--admin-danger); margin-top: 4px;"></span>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end">
+        <button type="button" class="admin-btn admin-btn--secondary" id="info-cancel-btn">Cancel</button>
+        <button type="button" class="admin-btn admin-btn--primary" id="info-confirm-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4l6 4 6-4M2 4v8h12V4"/></svg>
+          Send Request
         </button>
       </div>
     </div>

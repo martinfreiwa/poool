@@ -7,8 +7,8 @@
   <div class="strategy-card">
     <div class="strategy-header">
       <div class="strategy-text">
-        <h3>{{ asset.lease_type | default('Standard Leasehold') | title }}</h3>
-        <p>A safe strategy blending consistent income, strong appreciation, and capital protection.</p>
+        <h3>{{ asset.investment_type | default(asset.lease_type | default('Standard Leasehold') | title, true) }}</h3>
+        <p>{{ asset.investment_type_description | default('A safe strategy blending consistent income, strong appreciation, and capital protection.', true) }}</p>
       </div>
     </div>
     <div class="strategy-content">

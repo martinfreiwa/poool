@@ -14,7 +14,7 @@ use axum_extra::extract::cookie::CookieJar;
 
 // ─── Page Handlers ──────────────────────────────────────────
 
-const MIN_TOKEN_PRICE_CENTS: i64 = 50_000;
+const MIN_TOKEN_PRICE_CENTS: i64 = 100;
 const MAX_TOKENS_TOTAL: i64 = i32::MAX as i64;
 
 fn normalize_asset_type(value: &str) -> Result<String, AppError> {
@@ -94,7 +94,7 @@ fn derive_tokens_total(total_value_cents: i64, token_price_cents: i64) -> Result
     }
     if token_price_cents < MIN_TOKEN_PRICE_CENTS {
         return Err(AppError::BadRequest(
-            "Minimum share price is $500.".to_string(),
+            "Minimum share price is $1.".to_string(),
         ));
     }
 

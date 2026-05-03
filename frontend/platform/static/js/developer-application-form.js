@@ -100,8 +100,8 @@ async function saveAndExitStep2(btn) {
   };
 
   const purchasePrice = parseFloat(getVal('purchase-price').replace(/[^0-9.]/g, '')) || 0;
-  let tokenPrice = parseFloat(getVal('minimum-share-price').replace(/[^0-9.]/g, '')) || 500;
-  if (tokenPrice < 500) tokenPrice = 500; // enforce minimum
+  let tokenPrice = parseFloat(getVal('minimum-share-price').replace(/[^0-9.]/g, '')) || 1;
+  if (tokenPrice < 1) tokenPrice = 1; // enforce minimum
   const totalValueCents = Math.round(purchasePrice * 100);
   const tokenPriceCents = Math.round(tokenPrice * 100);
 
@@ -115,7 +115,7 @@ async function saveAndExitStep2(btn) {
     title: title || 'Untitled Draft',
     asset_type: assetTypeMap[assetType] || 'real_estate',
     total_value_cents: totalValueCents || 0,
-    token_price_cents: tokenPriceCents || 50000,
+    token_price_cents: tokenPriceCents || 100,
     tokens_total: tokenPriceCents > 0 ? (Math.ceil(totalValueCents / tokenPriceCents) || 1) : 1,
   };
 
@@ -283,8 +283,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Financials
       const purchasePrice = parseFloat(getVal("purchase-price").replace(/[^0-9.]/g, "")) || 0;
-      let tokenPrice = parseFloat(getVal("minimum-share-price").replace(/[^0-9.]/g, "")) || 500;
-      if (tokenPrice < 500) tokenPrice = 500; // enforce $500 minimum
+      let tokenPrice = parseFloat(getVal("minimum-share-price").replace(/[^0-9.]/g, "")) || 1;
+      if (tokenPrice < 1) tokenPrice = 1; // enforce $1 minimum
 
       // Convert dollars to cents
       const totalValueCents = Math.round(purchasePrice * 100);
@@ -361,8 +361,8 @@ document.addEventListener("DOMContentLoaded", function () {
         hasErrors = true;
       }
 
-      if (tokenPriceCents < 50000) {
-        showFieldError("minimum-share-price", "Minimum share price is $500");
+      if (tokenPriceCents < 100) {
+        showFieldError("minimum-share-price", "Minimum share price is $1");
         hasErrors = true;
       }
 
@@ -547,11 +547,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (el.id === 'minimum-share-price') {
       el.addEventListener('blur', function () {
         var raw = parseInt(stripFormatting(this.value), 10) || 0;
-        if (raw < 500 && raw > 0) {
-          this.value = '500';
-          showFieldError('minimum-share-price', 'Minimum share price is $500');
+        if (raw < 1 && raw > 0) {
+          this.value = '1';
+          showFieldError('minimum-share-price', 'Minimum share price is $1');
         } else if (raw === 0) {
-          this.value = '500';
+          this.value = '1';
         }
         if (this.value && !this.value.includes(',')) {
           var n = parseInt(stripFormatting(this.value), 10);

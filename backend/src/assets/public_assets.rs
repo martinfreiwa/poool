@@ -421,6 +421,21 @@ impl PublicPropertySpec {
                 "Public preview based on landing-page marketing data. Sign up to see live availability, documents, and final investment terms."
                     .to_string(),
             ),
+            investment_type: None,
+            investment_type_description: None,
+            leasing_strategy_type: None,
+            leasing_strategy_description: None,
+            risk_notification: None,
+            default_investment_amount_usd: None,
+            default_value_growth_percent: None,
+            default_rental_yield_percent: None,
+            developer_logo_url: None,
+            developer_name: None,
+            developer_description: None,
+            developer_website: None,
+            developer_facebook: None,
+            developer_instagram: None,
+            developer_youtube: None,
         }
     }
 }
