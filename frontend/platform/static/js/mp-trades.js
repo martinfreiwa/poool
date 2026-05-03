@@ -1080,10 +1080,164 @@
 
     body.appendChild(dl);
 
+    // Mutation actions: Cancel (pending|failed) / Retry (failed only).
+    const actions = renderTradeMutationActions(trade);
+    if (actions) body.appendChild(actions);
+
     drawer.hidden = false;
     if (backdrop) backdrop.hidden = false;
     requestAnimationFrame(() => drawer.classList.add('is-open'));
     $('trade-drawer-close')?.focus();
+  }
+
+  function renderTradeMutationActions(trade) {
+    const status = trade.on_chain_status;
+    const canCancel = status === 'pending' || status === 'failed';
+    const canRetry = status === 'failed';
+    if (!canCancel && !canRetry) return null;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'mp-trade-actions';
+
+    const note = document.createElement('p');
+    note.className = 'mp-trade-actions-note';
+    note.textContent = 'Mutations write to the audit log and cannot be undone.';
+    wrap.appendChild(note);
+
+    const buttons = document.createElement('div');
+    buttons.className = 'mp-trade-actions-row';
+
+    if (canRetry) {
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'admin-btn admin-btn--secondary admin-btn--sm';
+      retry.textContent = 'Retry settlement';
+      retry.addEventListener('click', () => onRetryTrade(trade));
+      buttons.appendChild(retry);
+    }
+    if (canCancel) {
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'admin-btn admin-btn--danger admin-btn--sm';
+      cancel.textContent = 'Cancel trade…';
+      cancel.addEventListener('click', () => onCancelTrade(trade));
+      buttons.appendChild(cancel);
+    }
+
+    wrap.appendChild(buttons);
+    return wrap;
+  }
+
+  async function onRetryTrade(trade) {
+    if (!confirm(`Retry settlement for trade ${compactId(trade.id)}?\n\nThis flips its status from 'failed' back to 'pending'. The settlement worker will re-attempt onchain submission.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/marketplace/trades/${encodeURIComponent(trade.id)}/retry-settlement`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      if (typeof mpToast === 'function') mpToast('Trade requeued for settlement', 'success');
+      closeTradeDrawer();
+      loadTrades();
+    } catch (err) {
+      if (typeof mpToast === 'function') mpToast(err.message || 'Retry failed', 'error');
+    }
+  }
+
+  async function onCancelTrade(trade) {
+    const reason = window.prompt(
+      `Cancel trade ${compactId(trade.id)}?\n\nThis is irreversible and writes to the audit log.\n\nProvide a reason (1–500 chars):`,
+    );
+    if (reason == null) return;
+    const trimmed = reason.trim();
+    if (trimmed.length === 0) {
+      if (typeof mpToast === 'function') mpToast('Cancellation reason is required', 'warning');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/marketplace/trades/${encodeURIComponent(trade.id)}/cancel`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: trimmed }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      if (typeof mpToast === 'function') mpToast('Trade cancelled', 'success');
+      closeTradeDrawer();
+      loadTrades();
+    } catch (err) {
+      if (typeof mpToast === 'function') mpToast(err.message || 'Cancel failed', 'error');
+    }
+  }
+
+  async function onBulkCancel() {
+    const ids = Array.from(selectedTradeIds);
+    if (ids.length === 0) return;
+    const reason = window.prompt(
+      `Cancel ${ids.length} selected trades?\n\nOnly trades currently in 'pending' or 'failed' will be affected. This is irreversible.\n\nProvide a reason (1–500 chars):`,
+    );
+    if (reason == null) return;
+    const trimmed = reason.trim();
+    if (trimmed.length === 0) {
+      if (typeof mpToast === 'function') mpToast('Cancellation reason is required', 'warning');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/marketplace/trades/bulk-cancel', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trade_ids: ids, reason: trimmed }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (typeof mpToast === 'function') {
+        mpToast(`Cancelled ${data.cancelled} of ${data.requested} (${data.eligible} eligible)`, 'success');
+      }
+      selectedTradeIds.clear();
+      loadTrades();
+    } catch (err) {
+      if (typeof mpToast === 'function') mpToast(err.message || 'Bulk cancel failed', 'error');
+    }
+  }
+
+  async function onBulkRetry() {
+    const ids = Array.from(selectedTradeIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Retry settlement for ${ids.length} selected trades?\n\nOnly trades currently in 'failed' will be affected.`)) {
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/marketplace/trades/bulk-retry-onchain', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trade_ids: ids }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (typeof mpToast === 'function') {
+        mpToast(`Requeued ${data.reset} of ${data.requested}`, 'success');
+      }
+      selectedTradeIds.clear();
+      loadTrades();
+    } catch (err) {
+      if (typeof mpToast === 'function') mpToast(err.message || 'Bulk retry failed', 'error');
+    }
   }
 
   function closeTradeDrawer() {
@@ -1288,6 +1442,8 @@
       const text = Array.from(selectedTradeIds).join('\n');
       copyToClipboard(text);
     });
+    $('btn-bulk-retry')?.addEventListener('click', onBulkRetry);
+    $('btn-bulk-cancel')?.addEventListener('click', onBulkCancel);
     $('btn-bulk-export')?.addEventListener('click', () => {
       if (selectedTradeIds.size === 0) return;
       // Bulk export is currently client-side: just trigger a CSV from the

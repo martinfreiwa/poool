@@ -954,6 +954,106 @@
     .mp-health-dot--ok    { background: #16a34a; }
     .mp-health-dot--warn  { background: #d97706; }
     .mp-health-dot--alert { background: #dc2626; }
+
+    /* Audit-log panel */
+    .mp-audit-panel {
+      margin-top: 20px;
+      background: var(--admin-bg-card, #fff);
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .mp-audit-panel summary {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; cursor: pointer;
+      font-size: 14px; font-weight: 600; list-style: none; user-select: none;
+    }
+    .mp-audit-panel summary::-webkit-details-marker { display: none; }
+    .mp-audit-panel summary::after {
+      content: "▾"; font-size: 12px; color: #555a63; margin-left: 8px;
+      transition: transform .15s ease;
+    }
+    .mp-audit-panel[open] summary::after { transform: rotate(180deg); }
+    .mp-audit-panel summary:hover { background: rgba(0,0,255,.02); }
+    .mp-audit-meta {
+      font-size: 11px; font-weight: 500; color: #555a63;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .mp-audit-row {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr 1fr 90px 70px;
+      gap: 8px;
+      padding: 8px 16px;
+      border-top: 1px solid var(--admin-border, #e5e7eb);
+      font-size: 12px;
+      align-items: center;
+    }
+    .mp-audit-row:hover { background: rgba(0,0,0,.015); }
+    .mp-audit-action {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px; color: var(--admin-primary, #0000FF);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mp-audit-actor { color: #555a63; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mp-audit-entity { color: #181d27; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mp-audit-time {
+      font-variant-numeric: tabular-nums; color: #555a63; text-align: right;
+    }
+    .mp-audit-details-btn {
+      background: none; border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 6px; padding: 2px 8px;
+      font-size: 11px; cursor: pointer; color: #555a63; justify-self: end;
+    }
+    .mp-audit-details-btn:hover { border-color: var(--admin-primary, #0000FF); color: var(--admin-primary, #0000FF); }
+    .mp-audit-details {
+      grid-column: 1 / -1;
+      padding: 8px 12px;
+      background: #fafafa;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      white-space: pre-wrap; word-break: break-all;
+      margin-top: 4px;
+    }
+
+    /* Stale data + offline indicators */
+    .mp-stale-badge {
+      display: none;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .mp-stale-badge.active { display: inline-flex; align-items: center; gap: 4px; }
+    .mp-analytics-updated-dot.stale   { background: #f59e0b; animation: none; box-shadow: none; }
+    .mp-analytics-updated-dot.offline { background: #ef4444; animation: none; box-shadow: none; }
+
+    .mp-offline-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .mp-offline-banner.active { display: flex; }
+    .mp-offline-banner button {
+      margin-left: auto;
+      background: #fff;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -1090,6 +1190,13 @@
         <!-- Built-in Analytics (fallback + supplementary) -->
         <div id="analytics-fallback" style="margin-top: 20px;">
 
+          <!-- Offline / connection banner -->
+          <div class="mp-offline-banner" id="mp-offline-banner" role="status" aria-live="polite">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            <span id="mp-offline-banner-text">Connection lost — last data may be stale.</span>
+            <button type="button" id="mp-offline-banner-retry">Retry</button>
+          </div>
+
           <!-- Action Required Zone -->
           <h2 style="font-size: 14px; font-weight: 600; color: var(--admin-text-secondary, #717680); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; display:flex; align-items:center; gap:8px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1103,6 +1210,7 @@
           <div class="mp-analytics-updated" id="analytics-updated">
             <span class="mp-analytics-updated-dot" aria-hidden="true"></span>
             <span id="analytics-updated-text">Updated just now</span>
+            <span class="mp-stale-badge" id="mp-stale-badge" title="Data may be out of date — last refresh failed">⚠ stale</span>
             <span aria-hidden="true" style="margin: 0 6px;">·</span>
             <span>Auto-refresh <span id="analytics-autorefresh-state">on</span></span>
             <button type="button" id="analytics-refresh-btn" class="admin-btn admin-btn--secondary admin-btn--sm" style="margin-left: 8px;" title="Refresh now (R)">
@@ -1220,6 +1328,19 @@
               <div class="mp-analytics-empty">Loading orders…</div>
             </div>
           </div>
+
+          <!-- Recent Admin Actions (audit log) -->
+          <details class="mp-audit-panel" id="mp-audit-panel">
+            <summary>
+              <span>Recent admin actions</span>
+              <span class="mp-audit-meta" id="mp-audit-meta">marketplace.* events</span>
+            </summary>
+            <div id="mp-audit-list">
+              <div class="mp-trades-skel-row"></div>
+              <div class="mp-trades-skel-row"></div>
+              <div class="mp-trades-skel-row"></div>
+            </div>
+          </details>
 
           <!-- Metabase Quick Links (only shown if Metabase configured) -->
           <div class="mp-quick-links" id="analytics-quick-links" style="display:none;">

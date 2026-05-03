@@ -587,3 +587,97 @@ def test_trades_css_has_kebab_menu_styles():
     assert ".mp-kebab-btn" in css
     assert ".mp-kebab-menu" in css
     assert ".mp-kebab-item" in css
+
+
+# ── Critical #3a — Force-Settle / Cancel mutations ───────────────────
+
+
+MIGRATION = REPO_ROOT / "database/111_trade_cancellation.sql"
+ADMIN_MOD = REPO_ROOT / "backend/src/admin/mod.rs"
+
+
+def test_migration_extends_status_check_with_cancelled():
+    sql = _read(MIGRATION)
+    assert "DROP CONSTRAINT IF EXISTS trade_history_on_chain_status_check" in sql
+    assert "'pending', 'submitted', 'confirmed', 'failed', 'cancelled'" in sql
+    assert "ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ" in sql
+    assert "ADD COLUMN IF NOT EXISTS cancelled_by UUID REFERENCES users(id)" in sql
+    assert "ADD COLUMN IF NOT EXISTS cancellation_reason TEXT" in sql
+
+
+def test_backend_cancel_endpoint_guards_status_and_writes_audit():
+    src = _read(ADMIN_MARKETPLACE)
+    assert "pub async fn api_admin_marketplace_cancel_trade" in src
+    # status guard prevents cancelling confirmed trades
+    assert "matches!(prev_status.as_str(), \"pending\" | \"failed\")" in src
+    # mandatory reason via shared helper
+    assert "normalize_admin_cancel_reason(body.reason)" in src
+    # audit entry
+    assert "'marketplace.trade.cancelled'" in src
+
+
+def test_backend_retry_endpoint_only_accepts_failed_status():
+    src = _read(ADMIN_MARKETPLACE)
+    assert "pub async fn api_admin_marketplace_retry_trade_settlement" in src
+    assert "if prev_status != \"failed\"" in src
+    assert "'marketplace.trade.retry_settlement'" in src
+
+
+def test_backend_bulk_cancel_endpoint_caps_at_500_and_audits():
+    src = _read(ADMIN_MARKETPLACE)
+    assert "pub async fn api_admin_marketplace_trades_bulk_cancel" in src
+    assert "trade_ids exceeds limit of 500" in src
+    assert "'marketplace.trade.bulk_cancel'" in src
+
+
+def test_backend_status_filter_now_accepts_cancelled():
+    src = _read(ADMIN_MARKETPLACE)
+    assert "\"pending\" | \"submitted\" | \"confirmed\" | \"failed\" | \"cancelled\"" in src
+
+
+def test_routes_register_per_id_and_bulk_cancel_endpoints():
+    src = _read(ADMIN_MOD)
+    assert "/api/admin/marketplace/trades/:trade_id/cancel" in src
+    assert "/api/admin/marketplace/trades/:trade_id/retry-settlement" in src
+    assert "/api/admin/marketplace/trades/bulk-cancel" in src
+    assert "api_admin_marketplace_cancel_trade" in src
+    assert "api_admin_marketplace_retry_trade_settlement" in src
+    assert "api_admin_marketplace_trades_bulk_cancel" in src
+
+
+def test_drawer_renders_cancel_and_retry_buttons_for_eligible_status():
+    js = _read(TRADES_JS)
+    assert "function renderTradeMutationActions" in js
+    # Cancel for pending or failed; Retry for failed only
+    assert "canCancel = status === 'pending' || status === 'failed'" in js
+    assert "canRetry = status === 'failed'" in js
+    # confirmation prompts mention irreversibility / audit log
+    assert "irreversible" in js
+    assert "audit log" in js
+
+
+def test_drawer_actions_post_to_per_id_endpoints():
+    js = _read(TRADES_JS)
+    assert "function onCancelTrade" in js
+    assert "function onRetryTrade" in js
+    assert "/cancel" in js
+    assert "/retry-settlement" in js
+    assert "method: 'POST'" in js
+
+
+def test_bulk_bar_wires_cancel_and_retry_buttons():
+    html = _read(TRADES_HTML)
+    assert 'id="btn-bulk-retry"' in html
+    assert 'id="btn-bulk-cancel"' in html
+    js = _read(TRADES_JS)
+    assert "function onBulkCancel" in js
+    assert "function onBulkRetry" in js
+    assert "/api/admin/marketplace/trades/bulk-cancel" in js
+    assert "/api/admin/marketplace/trades/bulk-retry-onchain" in js
+
+
+def test_drawer_action_styles_present():
+    css = _read(ADMIN_MP_CSS)
+    assert ".mp-trade-actions" in css
+    assert ".mp-trade-actions-note" in css
+    assert ".mp-trade-actions-row" in css

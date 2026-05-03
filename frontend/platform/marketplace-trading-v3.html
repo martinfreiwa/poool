@@ -797,13 +797,42 @@
                                         </select>
                                     </div>
 
+                                    <!-- Live depth ladder.
+                                         Shows the opposing-side stack the user
+                                         will actually fill against. Buyer sees
+                                         asks (cheapest first); seller sees bids
+                                         (highest first). Rows highlight as the
+                                         user types the quantity — they see
+                                         price-by-price what they'll get. -->
+                                    <div class="tv3-depth-ladder" id="tv3-depth-ladder" style="
+                                        margin: 12px 0; padding: 10px 12px;
+                                        background: var(--tv3-surface, #f9fafb);
+                                        border: 1px solid var(--tv3-border, #eaecf0);
+                                        border-radius: 10px;
+                                    ">
+                                        <div style="
+                                            display:flex; justify-content:space-between; align-items:center;
+                                            font-size:11px; font-weight:700; letter-spacing:0.04em;
+                                            text-transform:uppercase; color:#667085; margin-bottom:6px;
+                                        ">
+                                            <span id="tv3-depth-ladder-title">Order Book</span>
+                                            <span id="tv3-depth-ladder-vwap" style="font-weight:600; color:#101828; text-transform:none; letter-spacing:0;"></span>
+                                        </div>
+                                        <div id="tv3-depth-ladder-rows" style="font-size:13px; font-variant-numeric:tabular-nums;">
+                                            <!-- Filled by JS -->
+                                        </div>
+                                        <div id="tv3-depth-ladder-empty" style="font-size:12px; color:#98a2b3; font-style:italic;" hidden>
+                                            No counterparties — your order will rest until matched.
+                                        </div>
+                                    </div>
+
                                     <!-- Cost summary -->
                                     <div class="tv3-order-summary">
                                         <div class="tv3-sum-row"><span>Subtotal</span><span
                                                 id="tv3-subtotal">$0.00</span></div>
                                         <div class="tv3-sum-row"><span>Platform Fee ({{ fee_pct_display | default("5") }}%)</span><span
                                                 id="tv3-fee">$0.00</span></div>
-                                        <div class="tv3-sum-row tv3-sum-row--total"><span>Total</span><span
+                                        <div class="tv3-sum-row tv3-sum-row--total"><span id="tv3-order-summary-total-label">Total</span><span
                                                 id="tv3-total">$0.00</span></div>
                                     </div>
 

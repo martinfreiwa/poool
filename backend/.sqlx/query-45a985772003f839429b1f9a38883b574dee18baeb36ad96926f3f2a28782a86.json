@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT DISTINCT escrow_agent as \"agent!\"\n        FROM assets\n        WHERE escrow_agent IS NOT NULL AND escrow_agent <> 'unassigned'\n        ORDER BY 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "agent!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "45a985772003f839429b1f9a38883b574dee18baeb36ad96926f3f2a28782a86"
+}

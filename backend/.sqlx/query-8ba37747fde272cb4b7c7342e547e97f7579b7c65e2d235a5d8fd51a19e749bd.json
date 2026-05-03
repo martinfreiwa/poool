@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT al.id, al.action, al.created_at, al.previous_state, al.new_state, u.email as \"email?\"\n        FROM audit_logs al\n        LEFT JOIN users u ON u.id = al.actor_user_id\n        WHERE al.entity_type = 'assets'\n          AND al.entity_id = $1\n          AND al.action LIKE 'primary_escrow.%'\n        ORDER BY al.created_at DESC\n        LIMIT 100\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "action",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "previous_state",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "new_state",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "email?",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "8ba37747fde272cb4b7c7342e547e97f7579b7c65e2d235a5d8fd51a19e749bd"
+}

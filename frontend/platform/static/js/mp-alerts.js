@@ -11,6 +11,8 @@
   const API = '/api/admin/marketplace/alerts';
   const API_RULES = '/api/admin/marketplace/alert-rules';
   const API_WATCH = '/api/admin/marketplace/watchlist/v2';
+  const API_VIEWS = '/api/admin/marketplace/alert-views';
+  const API_HISTORY = '/api/admin/marketplace/alerts/history';
   const REFRESH_MS = 30000;
 
   async function jfetch(url, opts) {
@@ -212,6 +214,26 @@
   }
 
   // ── Sparklines ──────────────────────────────────────────────────
+  // History from server-side matview, falls back to in-memory bucketing.
+  let historyCache = null;
+  async function loadHistory() {
+    try {
+      const rows = await jfetch(`${API_HISTORY}?days=7`);
+      if (Array.isArray(rows)) historyCache = rows;
+    } catch (e) { historyCache = null; }
+  }
+  function bucketsFromHistory(severityFilter) {
+    if (!historyCache) return null;
+    const buckets = new Array(7).fill(0);
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    historyCache.forEach(r => {
+      if (severityFilter && r.severity !== severityFilter) return;
+      const day = new Date(r.day);
+      const idx = 6 - Math.floor((now - day) / 86400000);
+      if (idx >= 0 && idx < 7) buckets[idx] += r.count;
+    });
+    return buckets;
+  }
   function dailyBuckets(filterFn) {
     const buckets = new Array(7).fill(0);
     const now = Date.now();
@@ -288,8 +310,8 @@
     const critCard = document.querySelector('.admin-kpi-card[data-filter="critical"]');
     if (critCard) critCard.classList.toggle('admin-kpi-card--alarm', critUnack > 0);
 
-    renderSpark('spark-total', dailyBuckets(() => true), '#001dca');
-    renderSpark('spark-critical', dailyBuckets(a => (a.severity || '').toLowerCase() === 'critical'), '#ff5252');
+    renderSpark('spark-total', bucketsFromHistory(null) || dailyBuckets(() => true), '#001dca');
+    renderSpark('spark-critical', bucketsFromHistory('critical') || dailyBuckets(a => (a.severity || '').toLowerCase() === 'critical'), '#ff5252');
     renderSpark('spark-unresolved', dailyBuckets(a => !['resolved', 'false_positive'].includes(a.status)), '#ffaa00');
     renderDonut();
     populateTypeFilter();
@@ -489,9 +511,27 @@
       });
     });
     document.querySelectorAll('.alerts-expand-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        if (expanded.has(id)) expanded.delete(id); else expanded.add(id);
+        if (expanded.has(id)) {
+          expanded.delete(id);
+        } else {
+          expanded.add(id);
+          // Fetch server audit trail when expanding
+          if (!usingMockData) {
+            try {
+              const trail = await jfetch(`${API}/${id}/audit`);
+              if (Array.isArray(trail)) {
+                audit[id] = trail.map(t => ({
+                  at: t.created_at,
+                  by: t.by_user_email || t.by_user_id,
+                  action: t.action,
+                }));
+                saveJSON(LS_AUDIT, audit);
+              }
+            } catch (e) { /* keep local */ }
+          }
+        }
         render();
       });
     });
@@ -681,9 +721,15 @@
       el.addEventListener('click', () => loadView(savedViews[parseInt(el.parentElement.dataset.viewIdx)]));
     });
     list.querySelectorAll('.alerts-view-chip-x').forEach(el => {
-      el.addEventListener('click', e => {
+      el.addEventListener('click', async e => {
         e.stopPropagation();
-        savedViews.splice(parseInt(el.dataset.delIdx), 1);
+        const idx = parseInt(el.dataset.delIdx);
+        const v = savedViews[idx];
+        if (v && v.id) {
+          try { await jfetch(`${API_VIEWS}/${v.id}`, { method: 'DELETE' }); }
+          catch (err) { console.warn('view delete API failed, removing locally:', err); }
+        }
+        savedViews.splice(idx, 1);
         saveJSON(LS_VIEWS, savedViews);
         renderSavedViews();
       });
@@ -701,17 +747,43 @@
     if (get('alerts-filter-status')) get('alerts-filter-status').value = state.status;
     if (get('alerts-filter-assignee')) get('alerts-filter-assignee').value = state.assignee;
   }
-  function saveCurrentView() {
+  async function saveCurrentView() {
     const name = prompt('Name this view:', '');
     if (!name) return;
-    savedViews.push({ name: name.slice(0, 40), state: { ...state } });
+    const entry = { name: name.slice(0, 40), state: { ...state } };
+    try {
+      const r = await jfetch(API_VIEWS, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: entry.name, state: entry.state }),
+      });
+      if (r && r.id) entry.id = r.id;
+    } catch (e) { console.warn('save-view API failed, kept local:', e); }
+    savedViews.push(entry);
     saveJSON(LS_VIEWS, savedViews);
     renderSavedViews();
     if (typeof mpToast === 'function') mpToast(`Saved view "${name}"`, 'success');
   }
+  async function loadViewsFromApi() {
+    try {
+      const list = await jfetch(API_VIEWS);
+      if (Array.isArray(list)) {
+        savedViews = list.map(v => ({ id: v.id, name: v.name, state: v.state }));
+        saveJSON(LS_VIEWS, savedViews);
+        renderSavedViews();
+      }
+    } catch (e) { console.warn('views API unavailable, using local:', e); }
+  }
 
   // ── Notifications + favicon ─────────────────────────────────────
   function checkNewCriticals(prevIds) {
+    // Watchlist banner: any new alert hitting a watched entity
+    const newWatched = alerts.filter(a => !prevIds.has(a.id) && isWatched(a));
+    if (newWatched.length > 0) {
+      const sample = newWatched[0];
+      if (typeof mpToast === 'function') {
+        mpToast(`👁 Watched entity in new alert: ${sample.alert_type}`, 'warning', 6000);
+      }
+    }
     const newCrits = alerts.filter(a =>
       (a.severity || '').toLowerCase() === 'critical'
       && !['resolved', 'false_positive'].includes(a.status)
@@ -727,7 +799,13 @@
       } catch { /* blocked */ }
     }
     const chime = document.getElementById('alerts-chime');
-    if (chime) { try { chime.currentTime = 0; chime.play().catch(() => { }); } catch { } }
+    if (chime) {
+      try {
+        const vol = parseInt(localStorage.getItem('poool.alerts.volume') || '60');
+        chime.volume = Math.max(0, Math.min(100, vol)) / 100;
+        if (chime.volume > 0) { chime.currentTime = 0; chime.play().catch(() => { }); }
+      } catch { }
+    }
     newCrits.forEach(a => seenIds.add(a.id));
     saveJSON(LS_SEEN, [...seenIds]);
   }
@@ -739,7 +817,32 @@
       mpToast && mpToast('Notifications enabled', 'success');
       const btn = document.getElementById('alerts-btn-notify');
       if (btn) btn.style.display = 'none';
+      subscribeWebPush();
     }
+  }
+  async function subscribeWebPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/static/sw-alerts.js');
+      // VAPID public key env-injected at build/deploy. Fetch from server endpoint.
+      let vapid = null;
+      try { vapid = (await jfetch('/api/admin/marketplace/push-vapid-key')).key; } catch { /* not configured */ }
+      if (!vapid) { console.info('[mp-alerts] web-push not configured server-side; SW registered for future use'); return; }
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapid),
+      });
+      await jfetch('/api/admin/marketplace/push-subscriptions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      });
+    } catch (e) { console.warn('[mp-alerts] web-push subscribe failed:', e); }
+  }
+  function urlBase64ToUint8Array(b64) {
+    const padding = '='.repeat((4 - b64.length % 4) % 4);
+    const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
   }
   function updateFavicon() {
     const unresolved = alerts.filter(a => !['resolved', 'false_positive'].includes(a.status) && !isSnoozed(a)).length;
@@ -826,7 +929,7 @@
       return;
     }
     tbody.innerHTML = watchlist.map((w, i) => {
-      const linked = alerts.filter(a => isWatched(a) && (
+      const linked = w.linked_alerts != null ? w.linked_alerts : alerts.filter(a => isWatched(a) && (
         (w.type === 'user' && a.user_id === w.identifier)
         || (w.type === 'asset' && (a.alert_type || '').includes(w.identifier))
         || (w.type === 'wallet' && JSON.stringify(a.metadata || {}).includes(w.identifier))
@@ -867,9 +970,19 @@
       }
     } catch (e) { console.warn('rules API unavailable, using local:', e); }
     try {
-      const w = await jfetch(API_WATCH);
+      // Prefer enriched endpoint (linked-alerts count + added_by_email)
+      let w = null;
+      try { w = await jfetch(`${API_WATCH}/enriched`); } catch { w = await jfetch(API_WATCH); }
       if (Array.isArray(w) && w.length) {
-        watchlist = w.map(x => ({ id: x.id, type: x.entity_type, identifier: x.entity_identifier, reason: x.reason, added_at: x.created_at, added_by: x.user_email || '' }));
+        watchlist = w.map(x => ({
+          id: x.id,
+          type: x.entity_type,
+          identifier: x.entity_identifier,
+          reason: x.reason,
+          added_at: x.created_at,
+          added_by: x.added_by_email || x.user_email || '',
+          linked_alerts: x.linked_alerts || 0,
+        }));
         saveJSON(LS_WATCH, watchlist);
       }
     } catch (e) { console.warn('watchlist API unavailable, using local:', e); }
@@ -942,21 +1055,48 @@
     mpToast && mpToast(`Rule "${r.name}" test fired`, 'success');
     state.pane = 'alerts'; switchPane(); render();
   }
+  function expandHourRange(s) {
+    if (!s || !s.trim()) return [];
+    const out = new Set();
+    s.split(',').forEach(part => {
+      part = part.trim();
+      if (!part) return;
+      if (part.includes('-')) {
+        const [a, b] = part.split('-').map(n => parseInt(n));
+        if (!isNaN(a) && !isNaN(b)) {
+          if (a <= b) for (let i = a; i <= b; i++) out.add(i);
+          else { for (let i = a; i < 24; i++) out.add(i); for (let i = 0; i <= b; i++) out.add(i); }
+        }
+      } else {
+        const n = parseInt(part);
+        if (!isNaN(n)) out.add(n);
+      }
+    });
+    return [...out].filter(h => h >= 0 && h < 24).sort((a, b) => a - b);
+  }
+  function compactHours(arr) { return (arr || []).join(','); }
+
   function openRuleModal(idx) {
     editingRuleIdx = idx == null ? -1 : idx;
-    const r = idx != null && idx >= 0 ? rules[idx] : { name: '', category: 'trading', severity: 'warning', threshold: '', escalate: '', channel: 'none', enabled: true };
+    const r = idx != null && idx >= 0 ? rules[idx] : { name: '', category: 'trading', severity: 'warning', threshold: '', escalate: '', channel: 'none', enabled: true, mute_schedule: null };
     document.getElementById('rule-modal-title').textContent = idx >= 0 ? 'Edit detection rule' : 'New detection rule';
     document.getElementById('rule-name').value = r.name || '';
     document.getElementById('rule-category').value = r.category || 'trading';
     document.getElementById('rule-severity').value = r.severity || 'warning';
-    document.getElementById('rule-threshold').value = r.threshold || '';
-    document.getElementById('rule-escalate').value = r.escalate || '';
+    document.getElementById('rule-threshold').value = r.threshold || r.threshold_text || '';
+    document.getElementById('rule-escalate').value = r.escalate || r.escalate_after_min || '';
     document.getElementById('rule-channel').value = r.channel || 'none';
     document.getElementById('rule-enabled').checked = r.enabled !== false;
+    const m = r.mute_schedule || {};
+    document.getElementById('rule-mute-weekends').checked = !!m.weekends;
+    document.getElementById('rule-mute-hours').value = compactHours(m.hours);
     document.getElementById('rule-modal').classList.add('is-open');
   }
   function closeRuleModal() { document.getElementById('rule-modal').classList.remove('is-open'); editingRuleIdx = -1; }
   async function saveRule() {
+    const muteHours = expandHourRange(document.getElementById('rule-mute-hours').value);
+    const muteWeekends = document.getElementById('rule-mute-weekends').checked;
+    const mute_schedule = (muteWeekends || muteHours.length) ? { weekends: muteWeekends, hours: muteHours } : null;
     const ui = {
       name: document.getElementById('rule-name').value.trim(),
       category: document.getElementById('rule-category').value,
@@ -965,6 +1105,7 @@
       escalate_after_min: parseInt(document.getElementById('rule-escalate').value) || 0,
       channel: document.getElementById('rule-channel').value,
       enabled: document.getElementById('rule-enabled').checked,
+      mute_schedule,
     };
     if (!ui.name) { mpToast && mpToast('Rule name required', 'error'); return; }
 
@@ -1138,6 +1279,11 @@
     on('alerts-btn-test', 'click', fireTestAlert);
     on('alerts-auto-refresh', 'change', e => { if (e.target.checked) startAutoRefresh(); else stopAutoRefresh(); });
     on('alerts-btn-notify', 'click', requestNotifyPermission);
+    const vol = document.getElementById('alerts-volume');
+    if (vol) {
+      vol.value = localStorage.getItem('poool.alerts.volume') || '60';
+      vol.addEventListener('input', () => { try { localStorage.setItem('poool.alerts.volume', vol.value); } catch { } });
+    }
     on('alerts-btn-save-view', 'click', saveCurrentView);
     on('alerts-btn-cmdk', 'click', openPalette);
 
@@ -1166,6 +1312,16 @@
     on('rule-modal-close', 'click', closeRuleModal);
     on('rule-modal-cancel', 'click', closeRuleModal);
     on('rule-modal-save', 'click', saveRule);
+    on('rule-modal-backtest', 'click', async () => {
+      const r = editingRuleIdx >= 0 ? rules[editingRuleIdx] : null;
+      if (!r || !r.id) { mpToast && mpToast('Save rule first to backtest', 'info'); return; }
+      try {
+        const res = await jfetch(`${API_RULES}/${r.id}/backtest?days=30`, { method: 'POST' });
+        mpToast && mpToast(`Backtest: ${res.matched_alerts} matches in ${res.days}d (${res.critical_matches} critical, avg ${res.avg_per_day.toFixed(2)}/day)`, 'info', 8000);
+      } catch (e) {
+        mpToast && mpToast('Backtest endpoint unavailable', 'error');
+      }
+    });
     on('rule-modal-test', 'click', () => {
       // fire a one-shot test using current form state
       const r = {
@@ -1221,7 +1377,11 @@
     wire();
     loadAlerts();
     loadRulesAndWatchFromApi();
+    loadViewsFromApi();
+    loadHistory().then(render);
     startAutoRefresh();
     tickTimer = setInterval(tickLastUpdated, 5000);
+    // Refresh history every 5 min
+    setInterval(() => loadHistory().then(render), 5 * 60 * 1000);
   });
 })();

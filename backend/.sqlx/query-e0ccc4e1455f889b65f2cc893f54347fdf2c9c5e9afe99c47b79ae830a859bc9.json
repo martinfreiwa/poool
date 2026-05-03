@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE assets\n        SET escrow_agent = $1, updated_at = NOW()\n        WHERE id = ANY($2)\n          AND funding_status IN ('funding_open', 'funding_in_progress')\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e0ccc4e1455f889b65f2cc893f54347fdf2c9c5e9afe99c47b79ae830a859bc9"
+}

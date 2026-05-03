@@ -2102,4 +2102,193 @@
       });
     });
   };
+
+  // ════════════════════════════════════════════════════════════════
+  // Tier-4 Features
+  // ════════════════════════════════════════════════════════════════
+
+  // ── T4-F: Audit search/filter inside drawer ───────────────────────
+  // Inject filter input above audit list, send `q`/`actor` params to backend.
+  const _origLoadAuditPage = loadAuditPage;
+  loadAuditPage = async function (orderId, container) {
+    if (!container.dataset.auditEnhanced) {
+      container.dataset.auditEnhanced = '1';
+      const filter = document.createElement('div');
+      filter.className = 'mp-audit-filter';
+      filter.innerHTML = `
+        <input type="search" class="admin-input admin-input--sm" placeholder="Filter actions… (e.g. cancel)" id="mp-audit-q" style="margin-bottom:6px; width:100%;">
+      `;
+      container.parentElement?.insertBefore(filter, container);
+      const inp = filter.querySelector('#mp-audit-q');
+      let dt;
+      inp.addEventListener('input', () => {
+        clearTimeout(dt);
+        dt = setTimeout(() => {
+          auditState.page = 1;
+          auditState.q = inp.value.trim();
+          _origLoadAuditPage(orderId, container);
+        }, 200);
+      });
+    }
+    return _origLoadAuditPage(orderId, container);
+  };
+  // Augment fetch URL with q param when present
+  const _origFetch = window.fetch;
+  window.fetch = function (url, opts) {
+    if (typeof url === 'string' && url.startsWith('/api/admin/audit-logs?') && auditState.q) {
+      url = url + `&q=${encodeURIComponent(auditState.q)}`;
+    }
+    return _origFetch.call(this, url, opts);
+  };
+
+  // ── T4-G: Bulk-cancel preflight (preview before confirm) ──────────
+  const _origOpenBulkCancel = openBulkCancelModal;
+  openBulkCancelModal = function () {
+    const ids = Array.from(state.selectedIds);
+    if (!ids.length) { mpToast('No orders selected', 'error'); return; }
+    const orders = loadedOrdersCache.filter((o) => ids.includes(o.id));
+    if (!orders.length) return _origOpenBulkCancel();
+
+    // Aggregate per-asset summary
+    const totalHeld = orders.reduce((s, o) => s + heldCents(o), 0);
+    const buyN = orders.filter((o) => o.side === 'buy').length;
+    const sellN = orders.filter((o) => o.side === 'sell').length;
+    const userN = new Set(orders.map((o) => o.user_id)).size;
+    const assetN = new Set(orders.map((o) => o.asset_id)).size;
+    const flagged = orders.filter((o) => anomalyFlags(o).length).length;
+
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div class="mp-preflight-summary">
+        <h4>Preflight Summary</h4>
+        <ul>
+          <li><strong>${orders.length}</strong> orders selected — ${buyN} BUY · ${sellN} SELL</li>
+          <li>Across <strong>${userN}</strong> user(s) and <strong>${assetN}</strong> asset(s)</li>
+          <li>Total held to release: <strong>${formatMoney(totalHeld)}</strong></li>
+          ${flagged ? `<li class="mp-preflight-warn">⚠ <strong>${flagged}</strong> flagged for anomaly — review first</li>` : ''}
+        </ul>
+        <details class="mp-preflight-details">
+          <summary>Show ${orders.length} order IDs</summary>
+          <pre>${orders.map((o) => `${shortId(o.id)} · ${o.side.toUpperCase()} ${o.quantity} ${o.asset_name || ''} — ${formatMoney(heldCents(o))}`).join('\n')}</pre>
+        </details>
+      </div>
+      <hr style="border:0; border-top:1px solid var(--admin-border); margin:12px 0;">
+    `;
+    const reasonGroup = buildBulkCancelBody(orders.length);
+    body.appendChild(reasonGroup);
+
+    mpModal({
+      title: `Cancel ${orders.length} Orders — Preflight`,
+      subtitle: 'Review aggregate impact before committing',
+      bodyNode: body,
+      confirmLabel: `Confirm Cancel ${orders.length}`,
+      confirmClass: 'admin-btn--danger',
+      onConfirm: async (overlay) => {
+        const reason = overlay.querySelector('#bulk-cancel-reason')?.value?.trim();
+        const confirmBtn = overlay.querySelector('.mp-modal-confirm');
+        if (!reason) { mpToast('Please provide a cancellation reason', 'error'); return false; }
+        try {
+          if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Cancelling…'; }
+          const token = csrfToken();
+          const res = await fetch(`${API}/bulk-cancel`, {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', ...(token ? { 'X-CSRF-Token': token } : {}) },
+            body: JSON.stringify({ order_ids: ids, reason }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || err.message || `HTTP ${res.status}`);
+          }
+          const data = await res.json();
+          mpToast(`Cancelled ${data.succeeded_count}, failed ${data.failed_count}`, data.failed_count ? 'warning' : 'success');
+          state.selectedIds.clear();
+          await loadOrders();
+          return true;
+        } catch (err) {
+          mpToast(`Bulk cancel failed: ${err.message}`, 'error');
+          if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = `Confirm Cancel ${orders.length}`; }
+          return false;
+        }
+      },
+    });
+  };
+
+  // ── T4-C: Saved views server-sync (with localStorage fallback) ────
+  const VIEWS_API = '/api/admin/marketplace/saved-views';
+  const VIEWS_SCOPE = 'marketplace_orders';
+  let serverViewsAvailable = true;
+  async function loadServerViews() {
+    try {
+      const res = await fetch(`${VIEWS_API}?scope=${VIEWS_SCOPE}`, { credentials: 'same-origin' });
+      if (!res.ok) { serverViewsAvailable = false; return null; }
+      return await res.json();
+    } catch (_) { serverViewsAvailable = false; return null; }
+  }
+  async function saveServerView(name, preset) {
+    if (!serverViewsAvailable) return false;
+    try {
+      const token = csrfToken();
+      const res = await fetch(VIEWS_API, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'X-CSRF-Token': token } : {}) },
+        body: JSON.stringify({ scope: VIEWS_SCOPE, name, preset }),
+      });
+      return res.ok;
+    } catch (_) { return false; }
+  }
+  async function deleteServerView(id) {
+    if (!serverViewsAvailable) return false;
+    try {
+      const token = csrfToken();
+      const res = await fetch(`${VIEWS_API}/${encodeURIComponent(id)}`, {
+        method: 'DELETE', credentials: 'same-origin',
+        headers: token ? { 'X-CSRF-Token': token } : {},
+      });
+      return res.ok;
+    } catch (_) { return false; }
+  }
+  // Augment renderCustomViews to merge server views
+  const _origRenderCustomViews = renderCustomViews;
+  renderCustomViews = async function () {
+    _origRenderCustomViews();
+    const host = document.getElementById('orders-saved-views-custom');
+    if (!host) return;
+    const server = await loadServerViews();
+    if (!server || !server.length) return;
+    server.forEach((v) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'mp-chip mp-chip--custom mp-chip--server';
+      chip.textContent = v.name;
+      chip.title = `Server-saved: ${v.name}`;
+      chip.addEventListener('click', () => applyPreset(v.preset));
+      const del = document.createElement('span');
+      del.className = 'mp-chip-del';
+      del.textContent = '×';
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (await deleteServerView(v.id)) renderCustomViews();
+      });
+      chip.appendChild(del);
+      host.appendChild(chip);
+    });
+  };
+  // Augment save action to also push to server
+  document.addEventListener('click', async (e) => {
+    if (e.target?.id === 'orders-save-view') {
+      // Wait one tick for prompt to fire then sync from localStorage to server
+      setTimeout(async () => {
+        try {
+          const arr = JSON.parse(localStorage.getItem('mp_orders_views') || '[]');
+          const last = arr[arr.length - 1];
+          if (last) {
+            const ok = await saveServerView(last.name, last.preset);
+            if (ok) renderCustomViews();
+          }
+        } catch (_) {}
+      }, 100);
+    }
+  });
+  // Auto-load server views on init
+  setTimeout(() => renderCustomViews(), 200);
 })();

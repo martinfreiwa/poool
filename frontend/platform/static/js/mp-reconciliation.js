@@ -83,8 +83,100 @@
   // FX rates (mock — backend would push real rates)
   const FX = { USD: 1, EUR: 0.93, CHF: 0.88, GBP: 0.79 };
   const TOUR_KEY = 'poool.recon.tour-seen.v1';
+  const WATCH_KEY = 'poool.recon.watch.v1';
+  const TAGS_KEY = 'poool.recon.tags.v1';
+  const THEME_KEY = 'poool.recon.theme.v1';
+  const SOUND_KEY = 'poool.recon.sound.v1';
+  const COL_WIDTH_KEY = 'poool.recon.col-widths.v1';
+  const CHANGELOG_KEY = 'poool.recon.changelog-seen.v1';
+  const CHANGELOG_VERSION = '2026-05-03';
+  const SNOOZE_KEY = 'poool.recon.snooze.v1';
+  const COMMENTS_KEY = 'poool.recon.comments.v1';
+  const PINNED_KEY = 'poool.recon.pinned.v1';
+  const LOCALE_KEY = 'poool.recon.locale.v1';
+
+  function loadSnoozes() { try { return JSON.parse(localStorage.getItem(SNOOZE_KEY) || '{}'); } catch { return {}; } }
+  function saveSnoozes(s) { localStorage.setItem(SNOOZE_KEY, JSON.stringify(s)); }
+  function loadComments() { try { return JSON.parse(localStorage.getItem(COMMENTS_KEY) || '{}'); } catch { return {}; } }
+  function saveComments(c) { localStorage.setItem(COMMENTS_KEY, JSON.stringify(c)); }
+  function loadPinned() { try { return new Set(JSON.parse(localStorage.getItem(PINNED_KEY) || '[]')); } catch { return new Set(); } }
+  function savePinned(s) { localStorage.setItem(PINNED_KEY, JSON.stringify([...s])); }
+
+  let snoozes = loadSnoozes();
+  let comments = loadComments();
+  let pinned = loadPinned();
+
+  let sortState = { col: 'severity', dir: 'desc' };
+  let minScoreFilter = 0;
+  let currentLocale = localStorage.getItem(LOCALE_KEY) || 'en-US';
+
+  const TEMPLATES_KEY = 'poool.recon.tpl.v1';
+  const DIGEST_KEY = 'poool.recon.digest.v1';
+  const ACHIEVEMENT_KEY = 'poool.recon.allclear-since.v1';
+  const SUGGEST_DISMISS_KEY = 'poool.recon.suggest-dismiss.v1';
+
+  function loadTemplates() {
+    const defaults = { ...REASON_TEMPLATES_DEFAULTS };
+    try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(TEMPLATES_KEY) || '{}')); }
+    catch { return defaults; }
+  }
+  const REASON_TEMPLATES_DEFAULTS = {
+    'manual-credit': 'Manually credited via support ticket. Ledger now matches wallet.',
+    'onchain-confirmed': 'On-chain transaction confirmed late. Re-sync brought balances into agreement.',
+    'ledger-correction': 'Ledger correction applied to match on-chain truth.',
+    'false-positive': 'False positive — wallet balance refreshed and matches ledger.',
+    'rounding-acceptable': 'Rounding error within accepted tolerance band.',
+    'custom': '',
+  };
+  function saveTemplates(t) { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(t)); }
+
+  function fmtNumLocale(n, opts = {}) {
+    return n.toLocaleString(currentLocale, { maximumFractionDigits: 4, ...opts });
+  }
+
+  const RULE_TEMPLATES = {
+    'mica-eu': { critical: 50, warning: 1, onCritical: true, onWarning: true, _label: 'MiCA / EU' },
+    'finma-ch': { critical: 100, warning: 5, onCritical: true, onWarning: false, _label: 'FINMA / CH' },
+    'fca-uk': { critical: 75, warning: 2, onCritical: true, onWarning: true, _label: 'FCA / UK' },
+    'dev': { critical: 1000, warning: 50, onCritical: false, onWarning: false, _label: 'Dev / Sandbox' },
+  };
+
+  const CHANGELOG = [
+    { v: '2026-05-03', items: ['Added watch (★) — pinned to top of table', 'Custom tags + click-to-filter', '14d burn-down + asset×hour heatmap', 'Side-by-side wallet↔ledger trace in detail modal', 'Manual theme toggle', 'Webhook retry buttons', 'Compliance rule templates (MiCA/FINMA/FCA)', 'Custom KPI builder', 'Dependency clusters', 'ML anomaly score per row'] },
+    { v: '2026-05-02', items: ['Onboarding tour', 'CSV spot-check import', 'Cmd+K command palette', 'Right-click context menu', 'Multi-currency exposure'] },
+  ];
 
   let lastSeenMismatchIds = new Set();
+
+  function loadWatch() { try { return new Set(JSON.parse(localStorage.getItem(WATCH_KEY) || '[]')); } catch { return new Set(); } }
+  function saveWatch(s) { localStorage.setItem(WATCH_KEY, JSON.stringify([...s])); }
+  function loadTagMap() { try { return JSON.parse(localStorage.getItem(TAGS_KEY) || '{}'); } catch { return {}; } }
+  function saveTagMap(m) { localStorage.setItem(TAGS_KEY, JSON.stringify(m)); }
+  let watchSet = loadWatch();
+  let tagMap = loadTagMap();
+
+  // Levenshtein-lite for fuzzy match (cap text length)
+  function fuzzyMatch(needle, hay) {
+    if (!needle) return true;
+    needle = needle.toLowerCase(); hay = hay.toLowerCase();
+    if (hay.includes(needle)) return true;
+    // Token-prefix match
+    const tokens = needle.split(/\s+/).filter(Boolean);
+    return tokens.every(t => hay.includes(t));
+  }
+  function fuzzyDidYouMean(q, candidates) {
+    if (!q || q.length < 3) return null;
+    q = q.toLowerCase();
+    let best = null, bestScore = Infinity;
+    for (const c of candidates) {
+      const cl = c.toLowerCase();
+      // Simple: count chars from q present in c
+      let score = 0;
+      for (const ch of q) if (!cl.includes(ch)) score++;
+      if (score < bestScore && score < q.length / 2) { bestScore = score; best = c; }
+    }
+    return best;
+  }
 
   function loadAudit() { try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]'); } catch { return []; } }
   function saveAudit() { localStorage.setItem(AUDIT_KEY, JSON.stringify(state.audit.slice(0, 50))); }
@@ -120,8 +212,8 @@
   }
 
   // ── Helpers ─────────────────────────────────────────────────────
-  const fmtNum = n => n.toLocaleString('en-US', { maximumFractionDigits: 4 });
-  const fmtUsd = n => (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  const fmtNum = n => n.toLocaleString(currentLocale, { maximumFractionDigits: 4 });
+  const fmtUsd = n => (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(currentLocale, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 
   function severityOf(m) {
     const abs = Math.abs(m.diffUsd);
@@ -206,10 +298,43 @@
       if (f.severity && severityOf(m) !== f.severity) return false;
       if (state._minAgeHours && ageMs(m.firstDetectedAt) < state._minAgeHours * 3600000) return false;
       if (f.q) {
-        const hay = `${m.user} ${m.asset} ${m.wallet} ${m.id} ${m.cause}`.toLowerCase();
-        if (!hay.includes(f.q.toLowerCase())) return false;
+        const tags = (tagMap[m.id] || []).join(' ');
+        const hay = `${m.user} ${m.asset} ${m.wallet} ${m.id} ${m.cause} ${tags}`;
+        if (!fuzzyMatch(f.q, hay)) return false;
       }
       return true;
+    }).filter(m => {
+      // Snooze filter (hide silenced unless filter says all)
+      const until = snoozes[m.id];
+      if (until && Date.now() < until && state.filter.status !== 'all') return false;
+      // Min score
+      if (minScoreFilter > 0 && anomalyScore(m) < minScoreFilter) return false;
+      return true;
+    }).sort((a, b) => {
+      // Pinned first, watched second
+      const ap = pinned.has(a.id) ? 0 : 1;
+      const bp = pinned.has(b.id) ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      const aw = watchSet.has(a.id) ? 0 : 1;
+      const bw = watchSet.has(b.id) ? 0 : 1;
+      if (aw !== bw) return aw - bw;
+
+      const dir = sortState.dir === 'asc' ? 1 : -1;
+      const get = (m) => {
+        switch (sortState.col) {
+          case 'severity': return { critical: 0, warning: 1, info: 2 }[severityOf(m)];
+          case 'diff': return Math.abs(m.diffUsd);
+          case 'age': return ageMs(m.firstDetectedAt);
+          case 'score': return anomalyScore(m);
+          case 'asset': return m.asset;
+          case 'user': return m.user;
+          default: return 0;
+        }
+      };
+      const va = get(a), vb = get(b);
+      if (va < vb) return sortState.col === 'severity' ? -dir : -dir;
+      if (va > vb) return sortState.col === 'severity' ? dir : dir;
+      return 0;
     });
   }
 
@@ -221,14 +346,37 @@
 
     if (rows.length === 0) {
       const allClear = state.data.mismatches.filter(m => m.status === 'open').length === 0;
+      let dym = '';
+      if (!allClear && state.filter.q) {
+        const candidates = state.data.mismatches.flatMap(m => [m.user, m.asset, m.wallet, m.id]);
+        const sug = fuzzyDidYouMean(state.filter.q, candidates);
+        if (sug) dym = `<div style="font-size:12px; margin-top:8px; color:var(--admin-text-muted);">Did you mean <a href="#" id="dym-link" style="color:var(--admin-primary, #4f46e5);">${sug}</a>?</div>`;
+      }
       tbody.innerHTML = `
-        <tr><td colspan="10" style="text-align:center; padding:32px; color:var(--admin-success);">
+        <tr><td colspan="12" style="text-align:center; padding:40px;">
           ${allClear
-            ? `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px; opacity:0.8;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-               <div>No open mismatches — all balances verified</div>`
-            : '<div style="color:var(--admin-text-muted);">No mismatches match current filter</div>'}
+            ? `<div class="recon-allclear-illust">
+                 <svg width="80" height="80" viewBox="0 0 120 120" aria-hidden="true">
+                   <circle cx="60" cy="60" r="50" fill="var(--admin-success-bg)" stroke="var(--admin-success)" stroke-width="2"/>
+                   <path d="M40 62 L54 76 L82 46" fill="none" stroke="var(--admin-success)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                   <circle cx="30" cy="30" r="3" fill="var(--admin-success)" opacity="0.5"/>
+                   <circle cx="95" cy="35" r="2" fill="var(--admin-success)" opacity="0.4"/>
+                   <circle cx="90" cy="90" r="2.5" fill="var(--admin-success)" opacity="0.5"/>
+                   <circle cx="25" cy="85" r="2" fill="var(--admin-success)" opacity="0.4"/>
+                 </svg>
+                 <div style="margin-top:14px; font-weight:600; font-size:15px; color:var(--admin-success);">All balances verified</div>
+                 <div style="margin-top:4px; font-size:12px; color:var(--admin-text-muted);">Last run completed clean. Next scheduled run: ${nextRunFromCron(SEVERITY_THRESHOLDS.cron || '0 4 * * *')?.toLocaleTimeString() || '04:00 UTC'}</div>
+               </div>`
+            : `<div style="color:var(--admin-text-muted);">No mismatches match current filter${dym}</div>`}
         </td></tr>`;
       updateBulkBar();
+      const dymLink = document.getElementById('dym-link');
+      dymLink?.addEventListener('click', e => {
+        e.preventDefault();
+        state.filter.q = dymLink.textContent;
+        document.getElementById('recon-search').value = state.filter.q;
+        renderMismatches();
+      });
       return;
     }
 
@@ -245,7 +393,7 @@
           <td><input type="checkbox" class="recon-row-check" data-id="${m.id}" ${checked} ${isResolved ? 'disabled' : ''} aria-label="Select ${m.id}" /></td>
           <td><a href="/admin/users.html?id=${encodeURIComponent(m.user)}" class="recon-deep" data-stop>${`<code class="recon-code">${m.user}</code>`}</a><div style="font-size:11px; color:var(--admin-text-muted); margin-top:2px;">${m.wallet}</div></td>
           <td style="font-weight:600;"><a href="/admin/assets.html?symbol=${encodeURIComponent(m.asset)}" class="recon-deep" data-stop>${m.asset}</a></td>
-          <td>${sevBadge}</td>
+          <td>${sevBadge}<div class="recon-anom" title="Anomaly score (0–100) — heuristic blend of USD impact, age, asset rarity"><span class="recon-anom-bar" style="width:${anomalyScore(m)}%"></span><span class="recon-anom-num">${anomalyScore(m)}</span></div></td>
           <td style="text-align:right; font-variant-numeric:tabular-nums;">${state.normalize ? fmtUsd(m.walletBal * (m.diffUsd / m.diff || 1)) : fmtNum(m.walletBal)}</td>
           <td style="text-align:right; font-variant-numeric:tabular-nums;">${state.normalize ? fmtUsd(m.ledgerBal * (m.diffUsd / m.diff || 1)) : fmtNum(m.ledgerBal)}</td>
           <td style="text-align:right;">
@@ -253,8 +401,16 @@
             <div style="font-size:11px; color:var(--admin-text-muted); font-variant-numeric:tabular-nums;">${state.normalize ? `${m.diff > 0 ? '+' : ''}${fmtNum(m.diff)} ${m.asset}` : fmtUsd(m.diffUsd)}</div>
           </td>
           <td>${ageBadge}</td>
+          <td style="max-width:140px;">
+            <div class="recon-tag-list" data-id="${m.id}">
+              ${(tagMap[m.id] || []).map(t => `<span class="recon-tag" data-tag="${t}">${t}<button class="recon-tag-x" data-id="${m.id}" data-tag="${t}" title="Remove tag">×</button></span>`).join('')}
+              <button class="recon-tag-add" data-id="${m.id}" title="Add tag">+</button>
+            </div>
+          </td>
           <td style="font-size:12px; color:var(--admin-text-muted); max-width:260px;">
             <span class="recon-cause-tag recon-cause-${classifyCause(m.cause).tag}">${classifyCause(m.cause).label}</span>
+            ${pinned.has(m.id) ? '<span class="recon-cause-tag" style="background:rgba(245,158,11,0.15); color:#f59e0b;">📌 pinned</span>' : ''}
+            ${snoozes[m.id] && Date.now() < snoozes[m.id] ? `<span class="recon-cause-tag" style="background:rgba(99,102,241,0.15); color:#6366f1;">😴 ${fmtAge(snoozes[m.id] - Date.now())}</span>` : ''}
             <div style="margin-top:2px;">${m.cause}</div>
             ${m.notes ? `<div class="recon-note" title="Admin note">📝 ${m.notes}</div>` : ''}
           </td>
@@ -263,8 +419,9 @@
             ${isResolved
               ? `<span class="admin-badge admin-badge--success">${m.status}</span>`
               : `
+                <button class="admin-btn admin-btn--sm admin-btn--ghost recon-act recon-watch ${watchSet.has(m.id) ? 'is-watching' : ''}" data-id="${m.id}" data-act="watch" title="Watch / unwatch">${watchSet.has(m.id) ? '★' : '☆'}</button>
                 <button class="admin-btn admin-btn--sm admin-btn--ghost recon-act" data-id="${m.id}" data-act="detail" title="View tx history (Enter)">Detail</button>
-                <button class="admin-btn admin-btn--sm admin-btn--ghost recon-act" data-id="${m.id}" data-act="note" title="Add note">📝</button>
+                <button class="admin-btn admin-btn--sm admin-btn--ghost recon-act" data-id="${m.id}" data-act="comments" title="Comments (${(comments[m.id] || []).length})">💬${(comments[m.id] || []).length ? `<sup>${comments[m.id].length}</sup>` : ''}</button>
                 <button class="admin-btn admin-btn--sm admin-btn--ghost recon-act" data-id="${m.id}" data-act="force-sync" title="Re-fetch on-chain balance">Force-Sync</button>
                 <button class="admin-btn admin-btn--sm admin-btn--success recon-act" data-id="${m.id}" data-act="resolve">Resolve</button>
                 <button class="admin-btn admin-btn--sm admin-btn--ghost recon-act" data-id="${m.id}" data-act="dismiss" title="Mark false positive">Dismiss</button>
@@ -276,6 +433,8 @@
 
     bindMismatchRowEvents();
     updateBulkBar();
+    updateStickyBulk();
+    applyColResize();
   }
 
   function bindMismatchRowEvents() {
@@ -284,10 +443,41 @@
         const id = e.target.dataset.id;
         if (e.target.checked) state.selected.add(id); else state.selected.delete(id);
         updateBulkBar();
+        updateStickyBulk();
       });
     });
     document.querySelectorAll('.recon-act').forEach(btn => {
       btn.addEventListener('click', () => actOnMismatch(btn.dataset.id, btn.dataset.act));
+    });
+    document.querySelectorAll('.recon-tag-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const t = prompt('Add tag (e.g. vip, legal-hold, watching):');
+        if (!t) return;
+        const tag = t.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        if (!tag) return;
+        tagMap[id] = [...new Set([...(tagMap[id] || []), tag])];
+        saveTagMap(tagMap);
+        renderMismatches();
+      });
+    });
+    document.querySelectorAll('.recon-tag-x').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const { id, tag } = btn.dataset;
+        tagMap[id] = (tagMap[id] || []).filter(t => t !== tag);
+        if (tagMap[id].length === 0) delete tagMap[id];
+        saveTagMap(tagMap);
+        renderMismatches();
+      });
+    });
+    document.querySelectorAll('.recon-tag').forEach(span => {
+      span.addEventListener('click', e => {
+        if (e.target.classList.contains('recon-tag-x')) return;
+        state.filter.q = span.dataset.tag;
+        document.getElementById('recon-search').value = span.dataset.tag;
+        renderMismatches();
+      });
     });
   }
 
@@ -295,6 +485,12 @@
     const m = state.data.mismatches.find(x => x.id === id);
     if (!m) return;
     if (act === 'detail') { openDetail(m); return; }
+    if (act === 'watch') {
+      if (watchSet.has(id)) watchSet.delete(id); else { watchSet.add(id); toast(`Watching ${id}`, 'success'); }
+      saveWatch(watchSet);
+      renderMismatches();
+      return;
+    }
     if (act === 'note') {
       const cur = m.notes || '';
       const next = prompt(`Note for ${id}:`, cur);
@@ -330,6 +526,11 @@
     const n = state.selected.size;
     btn.disabled = n === 0;
     btn.textContent = n === 0 ? 'Bulk action…' : `Bulk action (${n})…`;
+    const tagBtn = document.getElementById('btn-bulk-tag');
+    if (tagBtn) {
+      tagBtn.disabled = n === 0;
+      tagBtn.textContent = n === 0 ? 'Bulk tag…' : `Bulk tag (${n})…`;
+    }
   }
 
   function bindBulkActions() {
@@ -362,9 +563,9 @@
   // ── Filters ─────────────────────────────────────────────────────
   function bindFilters() {
     const search = document.getElementById('recon-search');
-    search?.addEventListener('input', e => { state.filter.q = e.target.value; renderMismatches(); });
-    document.getElementById('recon-severity-filter')?.addEventListener('change', e => { state.filter.severity = e.target.value; renderMismatches(); });
-    document.getElementById('recon-status-filter')?.addEventListener('change', e => { state.filter.status = e.target.value; renderMismatches(); });
+    search?.addEventListener('input', e => { state.filter.q = e.target.value; renderMismatches(); syncUrlFromState(); });
+    document.getElementById('recon-severity-filter')?.addEventListener('change', e => { state.filter.severity = e.target.value; renderMismatches(); syncUrlFromState(); });
+    document.getElementById('recon-status-filter')?.addEventListener('change', e => { state.filter.status = e.target.value; renderMismatches(); syncUrlFromState(); });
 
     // KPI cards as filter shortcuts
     document.getElementById('kpi-mismatches')?.addEventListener('click', () => {
@@ -709,6 +910,8 @@
       { id: 'run', label: 'Run reconciliation', act: () => document.getElementById('btn-run-recon').click() },
       { id: 'export', label: 'Export mismatches CSV', act: () => document.getElementById('btn-export-csv').click() },
       { id: 'export-hist', label: 'Export history CSV', act: () => document.getElementById('btn-export-history').click() },
+      { id: 'export-json', label: 'Export time-series JSON', act: downloadTimeSeries },
+      { id: 'merge', label: 'Merge selected mismatches', act: () => openMergeModal(null) },
       { id: 'filter-crit', label: 'Filter: Critical only', act: () => { document.getElementById('recon-severity-filter').value = 'critical'; state.filter.severity = 'critical'; renderMismatches(); } },
       { id: 'filter-clear', label: 'Filter: Clear', act: () => { ['recon-search', 'recon-severity-filter'].forEach(id => document.getElementById(id).value = ''); state.filter = { q: '', severity: '', status: 'open' }; renderMismatches(); } },
       { id: 'rules', label: 'Edit alert rules', act: () => document.getElementById('thr-critical')?.scrollIntoView({ behavior: 'smooth' }) },
@@ -777,27 +980,23 @@
         <dt>Likely cause</dt><dd>${classifyCause(m.cause).label} — ${m.cause}</dd>
         ${m.notes ? `<dt>Note</dt><dd>${m.notes}</dd>` : ''}
       </div>
-      <div style="margin-bottom:8px; font-weight:600; font-size:13px;">Balance trend (7d)</div>
-      <div style="margin-bottom:14px; color:var(--admin-text-muted);">${sparkline(m.balanceHistory || [], 280, 40)}</div>
+      <div style="margin-bottom:8px; font-weight:600; font-size:13px;">Lifecycle</div>
+      <div style="margin-bottom:14px;">${buildLifecycle(m)}</div>
+      <div style="margin-bottom:8px; font-weight:600; font-size:13px;">Balance trend (7d, annotated)</div>
+      <div style="margin-bottom:14px; color:var(--admin-text-muted);">${annotatedSparkline(m.balanceHistory || [], m.txHistory || [], 280, 40)}</div>
       <div style="margin-bottom:8px; font-weight:600; font-size:13px;">Recent on-chain events</div>
       <table class="admin-table">
         <thead><tr><th>Timestamp</th><th>Kind</th><th style="text-align:right">Δ</th><th>Tx</th></tr></thead>
         <tbody>${txRows || '<tr><td colspan="4" style="text-align:center; color:var(--admin-text-muted); padding:12px;">No tx history available</td></tr>'}</tbody>
-      </table>`;
+      </table>
+      ${buildSideBySide(m)}`;
     overlay.hidden = false;
   }
   function closeDetail() { document.getElementById('mm-detail-overlay').hidden = true; }
 
   // ── Resolve modal w/ reason templates ───────────────────────────
   let resolveTarget = null;
-  const REASON_TEMPLATES = {
-    'manual-credit': 'Manually credited via support ticket. Ledger now matches wallet.',
-    'onchain-confirmed': 'On-chain transaction confirmed late. Re-sync brought balances into agreement.',
-    'ledger-correction': 'Ledger correction applied to match on-chain truth.',
-    'false-positive': 'False positive — wallet balance refreshed and matches ledger.',
-    'rounding-acceptable': 'Rounding error within accepted tolerance band.',
-    'custom': '',
-  };
+  let REASON_TEMPLATES = loadTemplates();
   function openResolveModal(m) {
     resolveTarget = m;
     document.getElementById('mm-reason-subtitle').textContent = `${m.id} · ${m.user} / ${m.asset} · diff ${m.diff > 0 ? '+' : ''}${fmtNum(m.diff)} (${fmtUsd(m.diffUsd)})`;
@@ -836,8 +1035,14 @@
     host.innerHTML = channels.map(c => {
       const dot = !c.enabled ? 'recon-wh-off' : c.ok ? 'recon-wh-ok' : 'recon-wh-err';
       const status = !c.enabled ? 'Not configured' : c.ok ? `Last sent ${fmtRelative(new Date(c.lastSent).toISOString())}` : 'Last attempt failed';
-      return `<div class="recon-wh-row"><span class="recon-wh-dot ${dot}"></span><span style="font-weight:600; min-width:90px;">${c.name}</span><span style="color:var(--admin-text-muted); font-size:12px;">${status}</span></div>`;
+      const buttons = c.enabled ? `<div style="margin-left:auto; display:flex; gap:4px;">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm recon-wh-preview" data-ch="${c.name}" style="font-size:11px;" title="Preview JSON payload">👁</button>
+        <button class="admin-btn admin-btn--ghost admin-btn--sm recon-wh-retry" data-ch="${c.name}" style="font-size:11px;">↻ Retry</button>
+      </div>` : '';
+      return `<div class="recon-wh-row"><span class="recon-wh-dot ${dot}"></span><span style="font-weight:600; min-width:90px;">${c.name}</span><span style="color:var(--admin-text-muted); font-size:12px;">${status}</span>${buttons}</div>`;
     }).join('');
+    host.querySelectorAll('.recon-wh-retry').forEach(b => b.addEventListener('click', () => retryWebhook(b.dataset.ch)));
+    host.querySelectorAll('.recon-wh-preview').forEach(b => b.addEventListener('click', () => showWebhookPreview(b.dataset.ch)));
   }
 
   // ── Skeleton loaders ────────────────────────────────────────────
@@ -980,6 +1185,938 @@
     mq.addEventListener?.('change', apply);
   }
 
+  // ── Cron history viz ────────────────────────────────────────────
+  function renderCronHistory() {
+    const host = document.getElementById('recon-cronhist');
+    if (!host) return;
+    const expr = SEVERITY_THRESHOLDS.cron || '0 4 * * *';
+    const parts = expr.trim().split(/\s+/);
+    const m = parseInt(parts[0]) || 0, h = parseInt(parts[1]) || 0;
+    // Generate last 30 expected daily runs
+    const slots = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() - i);
+      d.setUTCHours(h, m, 0, 0);
+      const histRun = state.data.history.find(r => Math.abs(new Date(r.time) - d) < 6 * 3600000);
+      let status = 'missing';
+      if (histRun) {
+        const drift = Math.abs(new Date(histRun.time) - d) / 60000;
+        if (drift < 5) status = 'ontime';
+        else if (drift < 30) status = 'late';
+        else status = 'drift';
+      }
+      slots.push({ d, histRun, status });
+    }
+    const counts = { ontime: 0, late: 0, drift: 0, missing: 0 };
+    slots.forEach(s => counts[s.status]++);
+    host.innerHTML = `
+      <div class="recon-cron-grid">
+        ${slots.map(s => `<span class="recon-cron-slot recon-cron-${s.status}" title="${s.d.toLocaleString()}: ${s.status}${s.histRun ? ` (${s.histRun.durationSec}s)` : ''}"></span>`).join('')}
+      </div>
+      <div style="display:flex; gap:14px; margin-top:8px; font-size:11px; color:var(--admin-text-muted);">
+        <span><span class="recon-cron-slot recon-cron-ontime" style="display:inline-block;"></span> on-time ${counts.ontime}</span>
+        <span><span class="recon-cron-slot recon-cron-late" style="display:inline-block;"></span> late ${counts.late}</span>
+        <span><span class="recon-cron-slot recon-cron-drift" style="display:inline-block;"></span> drift ${counts.drift}</span>
+        <span><span class="recon-cron-slot recon-cron-missing" style="display:inline-block;"></span> missing ${counts.missing}</span>
+      </div>`;
+    const adherence = (counts.ontime / 30 * 100).toFixed(0);
+    document.getElementById('cronhist-meta').textContent = `${adherence}% on-time adherence (last 30 days)`;
+  }
+
+  // ── Lifecycle timeline ──────────────────────────────────────────
+  function buildLifecycle(m) {
+    const stages = [
+      { key: 'detected', label: 'Detected', ts: m.firstDetectedAt, done: true },
+      { key: 'acknowledged', label: 'Acknowledged', ts: state.audit.find(a => a.target.includes(m.id) && a.action === 'investigate')?.ts, done: false },
+      { key: 'investigated', label: 'Investigated', ts: state.audit.find(a => a.target.includes(m.id) && (a.action === 'force-sync' || a.action === 'comment'))?.ts, done: false },
+      { key: 'resolved', label: 'Resolved', ts: m.status === 'resolved' ? state.audit.find(a => a.target.includes(m.id) && a.action === 'resolve')?.ts : null, done: m.status === 'resolved' || m.status === 'dismissed' },
+    ];
+    stages.forEach((s, i) => { if (s.ts) s.done = true; });
+    return `<div class="recon-lifecycle">
+      ${stages.map((s, i) => `
+        <div class="recon-lifecycle-step ${s.done ? 'is-done' : ''} ${i === stages.findIndex(x => !x.done) ? 'is-current' : ''}">
+          <div class="recon-lifecycle-dot"></div>
+          <div class="recon-lifecycle-label">${s.label}</div>
+          <div class="recon-lifecycle-ts">${s.ts ? fmtRelative(s.ts) : '—'}</div>
+        </div>`).join('<div class="recon-lifecycle-line"></div>')}
+    </div>`;
+  }
+
+  // ── Suggestions ─────────────────────────────────────────────────
+  function buildSuggestions() {
+    const open = state.data.mismatches.filter(m => m.status === 'open');
+    if (open.length === 0) return [];
+    const sugg = [];
+    const oldCritical = open.filter(m => severityOf(m) === 'critical' && ageMs(m.firstDetectedAt) > 4 * 3600000);
+    if (oldCritical.length > 0) sugg.push({
+      icon: '🔥',
+      text: `${oldCritical.length} critical mismatch${oldCritical.length > 1 ? 'es' : ''} aged ≥4h. Escalate to on-call?`,
+      action: () => { state.filter.severity = 'critical'; state._minAgeHours = 4; document.getElementById('recon-severity-filter').value = 'critical'; renderMismatches(); },
+      label: 'Show them',
+    });
+    // Single-asset cluster
+    const byAsset = {};
+    open.forEach(m => { byAsset[m.asset] = (byAsset[m.asset] || 0) + 1; });
+    const dom = Object.entries(byAsset).find(([, n]) => n >= 3);
+    if (dom) sugg.push({
+      icon: '📊',
+      text: `${dom[1]} mismatches on ${dom[0]} — likely indexer drift. Check blockchain-sync.`,
+      action: () => location.href = '/admin/blockchain-sync.html?asset=' + encodeURIComponent(dom[0]),
+      label: 'Open sync',
+    });
+    // Settlement-cause concentration
+    const settle = open.filter(m => /settlement|callback|pending/i.test(m.cause));
+    if (settle.length >= 2) sugg.push({
+      icon: '⏱',
+      text: `${settle.length} mismatches caused by settlement lag. Review pending settlements queue.`,
+      action: () => location.href = '/admin/marketplace/pending-settlements.html',
+      label: 'Open settlements',
+    });
+    // Webhook unconfigured but critical present
+    if (open.some(m => severityOf(m) === 'critical') && !SEVERITY_THRESHOLDS.slack && !SEVERITY_THRESHOLDS.pagerduty) {
+      sugg.push({
+        icon: '🔔',
+        text: 'Critical mismatches present but no alert channel configured. Wire Slack/PagerDuty.',
+        action: () => document.getElementById('alert-slack')?.scrollIntoView({ behavior: 'smooth' }),
+        label: 'Configure',
+      });
+    }
+    // Duplicates
+    const dups = detectDuplicates();
+    if (dups.length > 0) sugg.push({
+      icon: '👥',
+      text: `${dups.length} likely duplicate group${dups.length > 1 ? 's' : ''} (same wallet+asset within 1min).`,
+      action: () => openMergeModal(dups[0]),
+      label: 'Review',
+    });
+    return sugg;
+  }
+  function renderSuggestions() {
+    const card = document.getElementById('suggestions-card');
+    const body = document.getElementById('suggestions-body');
+    if (!card || !body) return;
+    if (localStorage.getItem(SUGGEST_DISMISS_KEY) === '1') { card.hidden = true; return; }
+    const list = buildSuggestions();
+    if (list.length === 0) { card.hidden = true; return; }
+    card.hidden = false;
+    body.innerHTML = list.map((s, i) => `
+      <div class="recon-suggestion">
+        <span class="recon-suggestion-icon">${s.icon}</span>
+        <span class="recon-suggestion-text">${s.text}</span>
+        <button class="admin-btn admin-btn--primary admin-btn--sm recon-suggestion-act" data-i="${i}">${s.label}</button>
+      </div>`).join('');
+    body.querySelectorAll('.recon-suggestion-act').forEach(b => b.addEventListener('click', () => list[parseInt(b.dataset.i)].action()));
+  }
+
+  // ── Duplicate detection ─────────────────────────────────────────
+  function detectDuplicates() {
+    const open = state.data.mismatches.filter(m => m.status === 'open');
+    const groups = {};
+    open.forEach(m => {
+      const k = `${m.wallet}|${m.asset}`;
+      groups[k] = groups[k] || [];
+      groups[k].push(m);
+    });
+    return Object.values(groups).filter(g => g.length > 1).map(g =>
+      g.sort((a, b) => new Date(a.firstDetectedAt) - new Date(b.firstDetectedAt))
+    );
+  }
+
+  // ── Mismatch merge ──────────────────────────────────────────────
+  function openMergeModal(group) {
+    const overlay = document.getElementById('merge-overlay');
+    const list = group || [...state.selected].map(id => state.data.mismatches.find(m => m.id === id)).filter(Boolean);
+    if (list.length < 2) { toast('Select 2+ mismatches to merge', 'error'); return; }
+    overlay.dataset.ids = list.map(m => m.id).join(',');
+    document.getElementById('merge-list').innerHTML = list.map(m => `
+      <div style="padding:6px 10px; border-bottom:1px solid var(--admin-border); font-size:12px;">
+        <code class="recon-code">${m.id}</code> · ${m.user} / ${m.asset} · ${fmtUsd(m.diffUsd)}
+      </div>`).join('');
+    document.getElementById('merge-reason').value = 'Merged duplicate detection — ' + list.length + ' related mismatches resolved together.';
+    overlay.hidden = false;
+  }
+  function bindMerge() {
+    document.getElementById('merge-cancel')?.addEventListener('click', () => document.getElementById('merge-overlay').hidden = true);
+    document.getElementById('merge-confirm')?.addEventListener('click', () => {
+      const ids = document.getElementById('merge-overlay').dataset.ids.split(',');
+      const reason = document.getElementById('merge-reason').value.trim();
+      ids.forEach(id => {
+        const m = state.data.mismatches.find(x => x.id === id);
+        if (!m) return;
+        m.status = 'resolved';
+        m.resolveReason = 'merged';
+        m.notes = reason;
+        logAudit('merge-resolve', `${id} (${m.user}/${m.asset})`, reason);
+      });
+      toast(`Merged ${ids.length} mismatches`, 'success');
+      document.getElementById('merge-overlay').hidden = true;
+      renderKpis(); renderMismatches();
+    });
+  }
+
+  // ── Resolve template editor ─────────────────────────────────────
+  function renderTemplateList() {
+    const inline = document.getElementById('resolve-template-list');
+    if (inline) inline.innerHTML = Object.keys(REASON_TEMPLATES).map(k => `<li><span class="recon-tag">${k}</span></li>`).join('');
+    const editor = document.getElementById('tpl-editor-list');
+    if (editor) {
+      editor.innerHTML = Object.entries(REASON_TEMPLATES).map(([k, v]) => `
+        <li style="padding:8px 10px; border-bottom:1px solid var(--admin-border); display:flex; justify-content:space-between; gap:8px;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; font-size:12px;">${k}</div>
+            <div style="font-size:11px; color:var(--admin-text-muted); margin-top:2px;">${v || '<em>(empty)</em>'}</div>
+          </div>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" data-tpl-del="${k}" style="font-size:11px;">Delete</button>
+        </li>`).join('');
+      editor.querySelectorAll('[data-tpl-del]').forEach(b => b.addEventListener('click', () => {
+        const k = b.dataset.tplDel;
+        if (k === 'custom') { toast('Cannot delete "custom"', 'error'); return; }
+        delete REASON_TEMPLATES[k];
+        saveTemplates(REASON_TEMPLATES);
+        renderTemplateList();
+      }));
+    }
+    // Refresh resolve modal select
+    const sel = document.getElementById('mm-reason-template');
+    if (sel) {
+      const cur = sel.value;
+      sel.innerHTML = Object.keys(REASON_TEMPLATES).map(k => `<option value="${k}">${k}</option>`).join('');
+      if (REASON_TEMPLATES[cur]) sel.value = cur;
+    }
+  }
+  function bindTemplateEditor() {
+    document.getElementById('btn-edit-templates')?.addEventListener('click', () => {
+      renderTemplateList();
+      document.getElementById('tpl-editor-overlay').hidden = false;
+    });
+    document.getElementById('tpl-editor-close')?.addEventListener('click', () => document.getElementById('tpl-editor-overlay').hidden = true);
+    document.getElementById('tpl-editor-add')?.addEventListener('click', () => {
+      const k = document.getElementById('tpl-editor-key').value.trim();
+      const v = document.getElementById('tpl-editor-text').value.trim();
+      if (!k || !v) { toast('Key and text required', 'error'); return; }
+      REASON_TEMPLATES[k] = v;
+      saveTemplates(REASON_TEMPLATES);
+      document.getElementById('tpl-editor-key').value = '';
+      document.getElementById('tpl-editor-text').value = '';
+      renderTemplateList();
+    });
+    renderTemplateList();
+  }
+
+  // ── Daily digest config ─────────────────────────────────────────
+  function loadDigest() { try { return JSON.parse(localStorage.getItem(DIGEST_KEY) || '{}'); } catch { return {}; } }
+  function saveDigest(d) { localStorage.setItem(DIGEST_KEY, JSON.stringify(d)); }
+  function bindDigest() {
+    const d = loadDigest();
+    if (document.getElementById('alert-digest')) document.getElementById('alert-digest').value = d.recipients || '';
+    if (document.getElementById('alert-digest-time')) document.getElementById('alert-digest-time').value = d.time || '08:00';
+    if (document.getElementById('alert-digest-only-changes')) document.getElementById('alert-digest-only-changes').checked = !!d.skipEmpty;
+  }
+  // Hook into existing rules-save (extend bindRules already-bound 'btn-save-rules')
+  document.addEventListener('click', e => {
+    if (e.target?.id !== 'btn-save-rules') return;
+    saveDigest({
+      recipients: document.getElementById('alert-digest')?.value.trim() || '',
+      time: document.getElementById('alert-digest-time')?.value || '08:00',
+      skipEmpty: !!document.getElementById('alert-digest-only-changes')?.checked,
+    });
+  });
+
+  // ── Time-series JSON download ───────────────────────────────────
+  function downloadTimeSeries() {
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      walletsChecked: state.data.walletsChecked,
+      history: state.data.history,
+      mismatches: state.data.mismatches.map(m => ({
+        id: m.id, asset: m.asset, severity: severityOf(m),
+        diff: m.diff, diffUsd: m.diffUsd, age: ageMs(m.firstDetectedAt),
+        anomalyScore: anomalyScore(m), status: m.status,
+        balanceHistory: m.balanceHistory,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `reconciliation-timeseries-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Time-series JSON downloaded', 'success');
+  }
+
+  // ── Balance annotations (in detail modal) ───────────────────────
+  function annotatedSparkline(values, txHist, w = 280, h = 40) {
+    if (!values?.length) return '';
+    const max = Math.max(...values, 1);
+    const min = Math.min(...values, 0);
+    const range = (max - min) || 1;
+    const step = w / Math.max(values.length - 1, 1);
+    const pts = values.map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`).join(' ');
+    // Detect spikes: jump > 20% of range
+    const spikes = [];
+    for (let i = 1; i < values.length; i++) {
+      const jump = Math.abs(values[i] - values[i - 1]);
+      if (jump > range * 0.2) spikes.push({ i, val: values[i] });
+    }
+    const annotations = spikes.map(sp => {
+      const x = (sp.i * step).toFixed(1);
+      const y = (h - ((sp.val - min) / range) * h).toFixed(1);
+      const tx = txHist?.[Math.min(sp.i, (txHist.length || 1) - 1)];
+      return `<g><circle cx="${x}" cy="${y}" r="4" fill="var(--admin-warning)" /><title>Spike: ${tx?.kind || 'unknown'} (Δ ${tx?.delta || '?'})</title></g>`;
+    }).join('');
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${pts}"/>${annotations}</svg>`;
+  }
+
+  // ── Confetti for all-clear achievement ──────────────────────────
+  function checkAllClearAchievement() {
+    const open = state.data.mismatches.filter(m => m.status === 'open').length;
+    if (open === 0) {
+      const since = parseInt(localStorage.getItem(ACHIEVEMENT_KEY) || '0');
+      if (!since) {
+        localStorage.setItem(ACHIEVEMENT_KEY, String(Date.now()));
+      } else {
+        const days = (Date.now() - since) / 86400000;
+        if (days >= 7 && !sessionStorage.getItem('recon.confetti.shown')) {
+          fireConfetti();
+          sessionStorage.setItem('recon.confetti.shown', '1');
+          toast(`🎉 ${Math.floor(days)} days all-clear!`, 'success');
+        }
+      }
+    } else {
+      localStorage.removeItem(ACHIEVEMENT_KEY);
+    }
+  }
+  function fireConfetti() {
+    const cv = document.getElementById('confetti-canvas');
+    if (!cv) return;
+    cv.hidden = false;
+    cv.width = window.innerWidth; cv.height = window.innerHeight;
+    const ctx = cv.getContext('2d');
+    const colors = ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
+    const N = 120;
+    const parts = Array.from({ length: N }, () => ({
+      x: cv.width / 2,
+      y: cv.height / 3,
+      vx: (Math.random() - 0.5) * 14,
+      vy: (Math.random() - 1) * 10,
+      g: 0.25,
+      size: 4 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.3,
+    }));
+    let frames = 0;
+    function tick() {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      parts.forEach(p => {
+        p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save();
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      });
+      frames++;
+      if (frames < 180) requestAnimationFrame(tick);
+      else { ctx.clearRect(0, 0, cv.width, cv.height); cv.hidden = true; }
+    }
+    tick();
+  }
+
+  // ── Sortable columns ────────────────────────────────────────────
+  function bindSortHeaders() {
+    const map = { 'User': 'user', 'Asset': 'asset', 'Severity': 'severity', 'Difference': 'diff', 'Age': 'age' };
+    document.querySelectorAll('#recon-body')[0]?.closest('table')?.querySelectorAll('thead th').forEach(th => {
+      const label = th.textContent.trim().split(' ')[0];
+      const col = map[label];
+      if (!col) return;
+      th.style.cursor = 'pointer';
+      th.title = 'Click to sort';
+      th.addEventListener('click', e => {
+        if (e.target.classList.contains('recon-col-resizer')) return;
+        if (sortState.col === col) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+        else { sortState.col = col; sortState.dir = 'desc'; }
+        renderSortIndicators();
+        renderMismatches();
+      });
+    });
+    renderSortIndicators();
+  }
+  function renderSortIndicators() {
+    document.querySelectorAll('#recon-body')[0]?.closest('table')?.querySelectorAll('thead th').forEach(th => {
+      th.querySelector('.recon-sort-ind')?.remove();
+      const label = th.textContent.trim().split(' ')[0];
+      const map = { 'User': 'user', 'Asset': 'asset', 'Severity': 'severity', 'Difference': 'diff', 'Age': 'age' };
+      const col = map[label];
+      if (col === sortState.col) {
+        const ind = document.createElement('span');
+        ind.className = 'recon-sort-ind';
+        ind.textContent = sortState.dir === 'asc' ? ' ▲' : ' ▼';
+        ind.style.cssText = 'font-size:10px; color:var(--admin-primary, #4f46e5); margin-left:4px;';
+        th.appendChild(ind);
+      }
+    });
+  }
+
+  // ── Snooze ──────────────────────────────────────────────────────
+  function snoozeMismatch(id, hours) {
+    snoozes[id] = Date.now() + hours * 3600000;
+    saveSnoozes(snoozes);
+    logAudit('snooze', id, `${hours}h`);
+    toast(`Snoozed ${id} for ${hours}h`, 'success');
+    renderMismatches();
+  }
+
+  // ── Comments ────────────────────────────────────────────────────
+  function openComments(id) {
+    document.getElementById('comments-title').textContent = `${id} — Comments`;
+    document.getElementById('comments-overlay').dataset.target = id;
+    renderCommentsList(id);
+    document.getElementById('comments-overlay').hidden = false;
+    document.getElementById('comments-input').focus();
+  }
+  function renderCommentsList(id) {
+    const list = document.getElementById('comments-list');
+    const arr = comments[id] || [];
+    if (arr.length === 0) { list.innerHTML = '<div style="color:var(--admin-text-muted); text-align:center; padding:16px;">No comments yet</div>'; return; }
+    list.innerHTML = arr.map((c, i) => `
+      <div style="padding:8px 10px; border-bottom:1px solid var(--admin-border);">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <strong style="font-size:12px;">${c.actor}</strong>
+          <span style="font-size:10px; color:var(--admin-text-muted);">${fmtRelative(c.ts)}</span>
+        </div>
+        <div style="font-size:13px; margin-top:4px; white-space:pre-wrap;">${c.body.replace(/</g, '&lt;')}</div>
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" data-del="${i}" style="font-size:10px; margin-top:4px;">Delete</button>
+      </div>`).join('');
+    list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+      arr.splice(parseInt(b.dataset.del), 1);
+      comments[id] = arr;
+      saveComments(comments);
+      renderCommentsList(id);
+    }));
+  }
+  function bindComments() {
+    document.getElementById('comments-add')?.addEventListener('click', () => {
+      const id = document.getElementById('comments-overlay').dataset.target;
+      const body = document.getElementById('comments-input').value.trim();
+      if (!body) return;
+      comments[id] = comments[id] || [];
+      comments[id].push({ ts: new Date().toISOString(), actor: 'jonas@poool.dev', body });
+      saveComments(comments);
+      document.getElementById('comments-input').value = '';
+      renderCommentsList(id);
+      logAudit('comment', id, body.slice(0, 60));
+      renderMismatches();
+    });
+    document.getElementById('comments-close')?.addEventListener('click', () => document.getElementById('comments-overlay').hidden = true);
+  }
+
+  // ── Pinned ──────────────────────────────────────────────────────
+  function togglePin(id) {
+    if (pinned.has(id)) pinned.delete(id); else pinned.add(id);
+    savePinned(pinned);
+    renderPinned();
+    renderMismatches();
+  }
+  function renderPinned() {
+    const card = document.getElementById('pinned-card');
+    const body = document.getElementById('pinned-body');
+    if (!card || !body) return;
+    const list = [...pinned].map(id => state.data.mismatches.find(m => m.id === id)).filter(Boolean);
+    if (list.length === 0) { card.hidden = true; return; }
+    card.hidden = false;
+    body.innerHTML = list.map(m => `
+      <div class="recon-pin-card">
+        <div style="display:flex; justify-content:space-between; align-items:start; gap:6px;">
+          <div>
+            <div style="font-weight:600; font-size:13px;">${m.id} · ${m.asset}</div>
+            <div style="font-size:11px; color:var(--admin-text-muted);">${m.user}</div>
+          </div>
+          <button class="recon-pin-x" data-id="${m.id}" title="Unpin">×</button>
+        </div>
+        <div style="margin-top:6px; font-size:12px;">
+          <span class="admin-badge recon-sev recon-sev--${severityOf(m)}">${severityOf(m)}</span>
+          <span style="color:var(--admin-danger); font-weight:600; margin-left:6px;">${fmtUsd(m.diffUsd)}</span>
+        </div>
+      </div>`).join('');
+    body.querySelectorAll('.recon-pin-x').forEach(b => b.addEventListener('click', () => togglePin(b.dataset.id)));
+    document.getElementById('pinned-meta').textContent = `${list.length} pinned`;
+  }
+
+  // ── Share view ──────────────────────────────────────────────────
+  function shareView() {
+    syncUrlFromState();
+    copyToClipboard(location.href, 'View URL');
+  }
+
+  // ── Bulk-tag ────────────────────────────────────────────────────
+  function bindBulkTag() {
+    const btn = document.getElementById('btn-bulk-tag');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      if (state.selected.size === 0) return;
+      const t = prompt(`Add tag to ${state.selected.size} mismatches:`);
+      if (!t) return;
+      const tag = t.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      if (!tag) return;
+      [...state.selected].forEach(id => {
+        tagMap[id] = [...new Set([...(tagMap[id] || []), tag])];
+      });
+      saveTagMap(tagMap);
+      logAudit('bulk-tag', `${state.selected.size} mismatches`, tag);
+      toast(`Tagged ${state.selected.size} mismatches with "${tag}"`, 'success');
+      renderMismatches();
+    });
+  }
+
+  // ── Webhook test preview ────────────────────────────────────────
+  function buildWebhookPayload(channel) {
+    const open = state.data.mismatches.filter(m => m.status === 'open');
+    const critical = open.filter(m => severityOf(m) === 'critical');
+    if (channel === 'Slack') {
+      return JSON.stringify({
+        text: `:warning: ${critical.length} critical mismatch${critical.length !== 1 ? 'es' : ''} on POOOL`,
+        attachments: critical.slice(0, 3).map(m => ({
+          color: '#dc2626',
+          title: `${m.id} · ${m.user} / ${m.asset}`,
+          fields: [
+            { title: 'Diff', value: `${m.diff > 0 ? '+' : ''}${m.diff} ${m.asset} (${fmtUsd(m.diffUsd)})`, short: true },
+            { title: 'Age', value: fmtAge(ageMs(m.firstDetectedAt)), short: true },
+          ],
+          actions: [{ type: 'button', text: 'Open in admin', url: location.href }],
+        })),
+      }, null, 2);
+    }
+    if (channel === 'PagerDuty') {
+      return JSON.stringify({
+        routing_key: '<integration_key>',
+        event_action: 'trigger',
+        dedup_key: 'reconciliation-critical',
+        payload: {
+          summary: `${critical.length} critical mismatches detected`,
+          severity: 'critical',
+          source: 'POOOL/reconciliation',
+          custom_details: { mismatches: critical.map(m => ({ id: m.id, user: m.user, asset: m.asset, diffUsd: m.diffUsd })) },
+        },
+      }, null, 2);
+    }
+    return JSON.stringify({ summary: `${critical.length} critical mismatches`, channel }, null, 2);
+  }
+  function bindWebhookPreview() {
+    document.getElementById('webhook-preview-cancel')?.addEventListener('click', () => document.getElementById('webhook-preview-overlay').hidden = true);
+    document.getElementById('webhook-preview-send')?.addEventListener('click', () => {
+      document.getElementById('webhook-preview-overlay').hidden = true;
+      const ch = document.getElementById('webhook-preview-channel').textContent;
+      toast(`Test dispatched: ${ch}`, 'success');
+      logAudit('webhook-test', ch, '');
+    });
+  }
+  function showWebhookPreview(channel) {
+    document.getElementById('webhook-preview-channel').textContent = channel;
+    document.getElementById('webhook-preview-body').textContent = buildWebhookPayload(channel);
+    document.getElementById('webhook-preview-overlay').hidden = false;
+  }
+
+  // ── Diff vs previous run (extends compare-runs) ─────────────────
+  function diffVsPrevRun() {
+    const cur = state.data.history[0];
+    const prev = state.data.history[1];
+    if (!cur || !prev) return null;
+    return {
+      walletDelta: cur.wallets - prev.wallets,
+      mismatchDelta: cur.mismatches - prev.mismatches,
+      durationDelta: cur.durationSec - prev.durationSec,
+      cur, prev,
+    };
+  }
+  function renderDiffVsPrev() {
+    const d = diffVsPrevRun();
+    if (!d) return;
+    const sub = document.getElementById('kpi-mismatches-delta');
+    if (sub && state.data.mismatches.filter(m => m.status === 'open').length > 0) {
+      const arrow = d.mismatchDelta > 0 ? '▲' : d.mismatchDelta < 0 ? '▼' : '–';
+      const col = d.mismatchDelta > 0 ? 'var(--admin-danger)' : d.mismatchDelta < 0 ? 'var(--admin-success)' : 'var(--admin-text-muted)';
+      const existing = sub.innerHTML;
+      sub.innerHTML = existing + ` <span style="color:${col}; font-weight:600;">${arrow} ${Math.abs(d.mismatchDelta)} vs prev</span>`;
+    }
+  }
+
+  // ── ML-style anomaly score ──────────────────────────────────────
+  // Heuristic 0–100: weighted by USD impact + age + asset rarity
+  function anomalyScore(m) {
+    const usdScore = Math.min(60, Math.log10(Math.abs(m.diffUsd) + 1) * 20);
+    const ageHr = ageMs(m.firstDetectedAt) / 3600000;
+    const ageScore = Math.min(25, ageHr / 24 * 25);
+    // Asset rarity: how few mismatches on same asset
+    const assetCount = state.data.mismatches.filter(x => x.asset === m.asset).length;
+    const rarityScore = Math.min(15, 15 / Math.max(assetCount, 1));
+    return Math.round(usdScore + ageScore + rarityScore);
+  }
+
+  // ── Dependency clusters ─────────────────────────────────────────
+  function renderClusters() {
+    const host = document.getElementById('recon-clusters');
+    if (!host) return;
+    const open = state.data.mismatches.filter(m => m.status === 'open');
+    const groups = {};
+    open.forEach(m => {
+      const keys = [
+        ['user', m.user],
+        ['asset', m.asset],
+        ['cause', classifyCause(m.cause).tag],
+      ];
+      keys.forEach(([k, v]) => {
+        const id = `${k}:${v}`;
+        groups[id] = groups[id] || { key: k, val: v, ids: [] };
+        groups[id].ids.push(m.id);
+      });
+    });
+    const clusters = Object.values(groups).filter(g => g.ids.length > 1).sort((a, b) => b.ids.length - a.ids.length).slice(0, 6);
+    if (clusters.length === 0) {
+      host.innerHTML = '<div style="color:var(--admin-text-muted); text-align:center; padding:8px;">No multi-mismatch clusters detected.</div>';
+      document.getElementById('clusters-meta').textContent = '';
+      return;
+    }
+    host.innerHTML = `<div class="recon-cluster-list">
+      ${clusters.map(c => `
+        <button class="recon-cluster" data-key="${c.key}" data-val="${c.val}">
+          <span class="recon-cluster-key">${c.key}</span>
+          <span class="recon-cluster-val">${c.val}</span>
+          <span class="recon-cluster-count">${c.ids.length}</span>
+        </button>`).join('')}
+    </div>`;
+    host.querySelectorAll('.recon-cluster').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.filter.q = btn.dataset.val;
+        document.getElementById('recon-search').value = btn.dataset.val;
+        renderMismatches();
+      });
+    });
+    document.getElementById('clusters-meta').textContent = `${clusters.length} clusters · ${open.length} open mismatches`;
+  }
+
+  // ── Custom KPI builder ──────────────────────────────────────────
+  function evalCustomKpi() {
+    const formula = document.getElementById('custom-kpi-formula').value;
+    const arg = document.getElementById('custom-kpi-arg').value.trim();
+    const open = state.data.mismatches.filter(m => m.status === 'open');
+    let result;
+    if (formula === 'count-critical') result = open.filter(m => severityOf(m) === 'critical').length;
+    else if (formula === 'count-by-asset') result = open.filter(m => m.asset.toUpperCase() === arg.toUpperCase()).length;
+    else if (formula === 'sum-usd-by-asset') result = fmtUsd(open.filter(m => m.asset.toUpperCase() === arg.toUpperCase()).reduce((s, m) => s + Math.abs(m.diffUsd), 0));
+    else if (formula === 'oldest-age') result = open.length === 0 ? '—' : fmtAge(Math.max(...open.map(m => ageMs(m.firstDetectedAt))));
+    else if (formula === 'watched') result = open.filter(m => watchSet.has(m.id)).length;
+    document.getElementById('custom-kpi-result').textContent = result ?? '—';
+  }
+
+  // ── Rule templates ──────────────────────────────────────────────
+  function applyRuleTemplate(key) {
+    const tpl = RULE_TEMPLATES[key];
+    if (!tpl) return;
+    if (!confirm(`Apply "${tpl._label}" template? This overwrites Critical/Warning thresholds + alert flags.`)) return;
+    document.getElementById('thr-critical').value = tpl.critical;
+    document.getElementById('thr-critical-slider').value = Math.min(tpl.critical, 1000);
+    document.getElementById('thr-warning').value = tpl.warning;
+    document.getElementById('thr-warning-slider').value = Math.min(tpl.warning, 100);
+    document.getElementById('alert-on-critical').checked = tpl.onCritical;
+    document.getElementById('alert-on-warning').checked = tpl.onWarning;
+    document.getElementById('thr-critical-readout').textContent = '$' + tpl.critical;
+    document.getElementById('thr-warning-readout').textContent = '$' + tpl.warning;
+    renderThresholdHistogram();
+    toast(`Template applied: ${tpl._label}. Click "Save rules" to persist.`, 'success');
+  }
+
+  // ── Inline threshold from row (set Critical from this diff) ─────
+  function setThresholdFromMismatch(m) {
+    const v = Math.abs(m.diffUsd);
+    if (!confirm(`Set Critical threshold to $${v.toFixed(2)} (this mismatch's USD impact)?`)) return;
+    document.getElementById('thr-critical').value = v.toFixed(2);
+    document.getElementById('thr-critical-slider').value = Math.min(v, 1000);
+    document.getElementById('thr-critical-readout').textContent = '$' + v.toFixed(2);
+    renderThresholdHistogram();
+    toast(`Critical = $${v.toFixed(2)}. Save rules to persist.`, 'success');
+  }
+
+  // ── Sticky table headers ────────────────────────────────────────
+  function applyStickyHeaders() {
+    document.querySelectorAll('.admin-card .admin-table thead').forEach(thead => {
+      thead.classList.add('recon-sticky-thead');
+    });
+  }
+
+  // ── Column resize ───────────────────────────────────────────────
+  function loadColWidths() { try { return JSON.parse(localStorage.getItem(COL_WIDTH_KEY) || '{}'); } catch { return {}; } }
+  function saveColWidths(w) { localStorage.setItem(COL_WIDTH_KEY, JSON.stringify(w)); }
+  function applyColResize() {
+    const widths = loadColWidths();
+    const table = document.getElementById('recon-body')?.closest('table');
+    if (!table) return;
+    table.style.tableLayout = 'fixed';
+    table.querySelectorAll('thead th').forEach((th, i) => {
+      const key = th.dataset.col || `c${i}`;
+      if (widths[key]) th.style.width = widths[key] + 'px';
+      // Resizer handle
+      if (!th.querySelector('.recon-col-resizer')) {
+        const handle = document.createElement('span');
+        handle.className = 'recon-col-resizer';
+        th.style.position = 'relative';
+        th.appendChild(handle);
+        handle.addEventListener('mousedown', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const startX = e.clientX;
+          const startW = th.offsetWidth;
+          const onMove = ev => {
+            const w = Math.max(40, startW + (ev.clientX - startX));
+            th.style.width = w + 'px';
+          };
+          const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            const widths = loadColWidths();
+            widths[key] = th.offsetWidth;
+            saveColWidths(widths);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        });
+      }
+    });
+  }
+
+  // ── Sound notification ──────────────────────────────────────────
+  let soundCtx;
+  function playCriticalBeep() {
+    if (localStorage.getItem(SOUND_KEY) !== '1') return;
+    try {
+      soundCtx = soundCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = soundCtx.createOscillator();
+      const g = soundCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 880;
+      g.gain.value = 0.0001;
+      o.connect(g); g.connect(soundCtx.destination);
+      const now = soundCtx.currentTime;
+      g.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+      o.frequency.exponentialRampToValueAtTime(660, now + 0.4);
+      o.start(now); o.stop(now + 0.42);
+    } catch {}
+  }
+
+  // ── URL state persistence ───────────────────────────────────────
+  function syncUrlFromState() {
+    const params = new URLSearchParams();
+    if (state.filter.q) params.set('q', state.filter.q);
+    if (state.filter.severity) params.set('sev', state.filter.severity);
+    if (state.filter.status && state.filter.status !== 'open') params.set('status', state.filter.status);
+    if (state.normalize) params.set('norm', '1');
+    const qs = params.toString();
+    history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+  }
+  function loadStateFromUrl() {
+    const p = new URLSearchParams(location.search);
+    if (p.has('q')) { state.filter.q = p.get('q'); const i = document.getElementById('recon-search'); if (i) i.value = state.filter.q; }
+    if (p.has('sev')) { state.filter.severity = p.get('sev'); const i = document.getElementById('recon-severity-filter'); if (i) i.value = state.filter.severity; }
+    if (p.has('status')) { state.filter.status = p.get('status'); const i = document.getElementById('recon-status-filter'); if (i) i.value = state.filter.status; }
+    if (p.has('norm')) { state.normalize = true; const i = document.getElementById('recon-normalize'); if (i) i.checked = true; }
+  }
+
+  // ── Sticky bulk-action bar ──────────────────────────────────────
+  function updateStickyBulk() {
+    const bar = document.getElementById('bulk-bar');
+    const cnt = document.getElementById('bulk-bar-count');
+    if (!bar) return;
+    if (state.selected.size === 0) { bar.hidden = true; return; }
+    bar.hidden = false;
+    cnt.textContent = `${state.selected.size} selected`;
+  }
+  function bindStickyBulk() {
+    document.querySelectorAll('#bulk-bar [data-bulk]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const act = btn.dataset.bulk;
+        if (!confirm(`Apply "${act}" to ${state.selected.size} mismatches?`)) return;
+        const ids = [...state.selected];
+        ids.forEach(id => {
+          const m = state.data.mismatches.find(x => x.id === id);
+          if (!m) return;
+          if (act === 'resolve') { m.status = 'resolved'; logAudit('resolve', `${id} (${m.user}/${m.asset})`, '[bulk]'); }
+          else if (act === 'dismiss') { m.status = 'dismissed'; logAudit('dismiss', `${id} (${m.user}/${m.asset})`, '[bulk]'); }
+          else if (act === 'force-sync') { logAudit('force-sync', m.wallet, '[bulk]'); }
+        });
+        state.selected.clear();
+        toast(`${ids.length} mismatches updated`, 'success');
+        renderKpis(); renderMismatches();
+      });
+    });
+    document.getElementById('bulk-bar-clear')?.addEventListener('click', () => {
+      state.selected.clear(); renderMismatches();
+    });
+  }
+
+  // ── User history modal ──────────────────────────────────────────
+  function openUserHistory(user) {
+    const all = state.data.mismatches.filter(m => m.user === user);
+    document.getElementById('user-history-title').textContent = `${user} — Mismatch history`;
+    const body = document.getElementById('user-history-body');
+    if (all.length === 0) { body.innerHTML = '<div style="color:var(--admin-text-muted);">No mismatches</div>'; }
+    else {
+      body.innerHTML = `
+        <div style="font-size:12px; color:var(--admin-text-muted); margin-bottom:8px;">${all.length} total · ${all.filter(m => m.status === 'open').length} open</div>
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>Asset</th><th style="text-align:right">Diff</th><th>Status</th><th>First seen</th></tr></thead>
+          <tbody>${all.map(m => `
+            <tr>
+              <td><code class="recon-code">${m.id}</code></td>
+              <td>${m.asset}</td>
+              <td style="text-align:right; font-variant-numeric:tabular-nums; color:var(--admin-danger);">${fmtUsd(m.diffUsd)}</td>
+              <td><span class="admin-badge ${m.status === 'open' ? 'admin-badge--warning' : 'admin-badge--success'}">${m.status}</span></td>
+              <td style="font-size:11px; color:var(--admin-text-muted);">${fmtAge(ageMs(m.firstDetectedAt))} ago</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:12px;"><a href="/admin/users.html?id=${encodeURIComponent(user)}" class="admin-btn admin-btn--primary admin-btn--sm">Open user page →</a></div>`;
+    }
+    document.getElementById('user-history-overlay').hidden = false;
+  }
+
+  // ── Changelog ───────────────────────────────────────────────────
+  function openChangelog() {
+    const list = document.getElementById('changelog-list');
+    list.innerHTML = CHANGELOG.map(rel => `
+      <li><strong>${rel.v}</strong>
+        <ul style="padding-left:14px; margin-top:4px;">${rel.items.map(it => `<li>${it}</li>`).join('')}</ul>
+      </li>`).join('');
+    document.getElementById('changelog-overlay').hidden = false;
+    localStorage.setItem(CHANGELOG_KEY, CHANGELOG_VERSION);
+  }
+
+  // ── Burn-down chart ─────────────────────────────────────────────
+  function renderBurndown() {
+    const host = document.getElementById('recon-burndown');
+    if (!host) return;
+    // Synthesize 14d series from history mismatches (cumulative open)
+    const days = 14;
+    const series = [];
+    let running = 0;
+    for (let i = days - 1; i >= 0; i--) {
+      const day = new Date(Date.now() - i * 86400000);
+      const histRun = state.data.history.find(h => new Date(h.time).toDateString() === day.toDateString());
+      if (histRun) running = Math.max(0, running + histRun.mismatches - Math.floor(running * 0.4));
+      series.push({ day, count: running });
+    }
+    const max = Math.max(...series.map(s => s.count), 1);
+    const w = 320, h = 100, pad = 4;
+    const stepX = (w - pad * 2) / (series.length - 1);
+    const pts = series.map((s, i) => `${(pad + i * stepX).toFixed(1)},${(h - pad - (s.count / max) * (h - pad * 2)).toFixed(1)}`).join(' ');
+    const area = `M ${pad},${h - pad} L ${pts.split(' ').join(' L ')} L ${(w - pad).toFixed(1)},${h - pad} Z`;
+    host.innerHTML = `
+      <svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="14-day open mismatch burn-down">
+        <path d="${area}" fill="var(--admin-warning-bg)" />
+        <polyline fill="none" stroke="var(--admin-warning)" stroke-width="1.5" points="${pts}"/>
+        ${series.map((s, i) => `<circle cx="${(pad + i * stepX).toFixed(1)}" cy="${(h - pad - (s.count / max) * (h - pad * 2)).toFixed(1)}" r="2" fill="var(--admin-warning)"><title>${s.day.toLocaleDateString()}: ${s.count} open</title></circle>`).join('')}
+      </svg>
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--admin-text-muted); margin-top:4px;">
+        <span>${series[0].day.toLocaleDateString()}</span>
+        <span>Today (${series[series.length - 1].count} open)</span>
+      </div>`;
+    document.getElementById('burndown-meta').textContent = `Peak: ${max} · Trend: ${series[series.length - 1].count > series[0].count ? '↑ up' : '↓ down'}`;
+  }
+
+  // ── Heatmap hour × asset ────────────────────────────────────────
+  function renderHeatmap() {
+    const host = document.getElementById('recon-heatmap');
+    if (!host) return;
+    const assets = [...new Set(state.data.mismatches.map(m => m.asset))];
+    if (assets.length === 0) { host.innerHTML = '<div style="color:var(--admin-text-muted); text-align:center; padding:16px;">No data</div>'; return; }
+    // Build grid: assets × 24 hours, count detections
+    const grid = {};
+    assets.forEach(a => { grid[a] = new Array(24).fill(0); });
+    state.data.mismatches.forEach(m => {
+      const h = new Date(m.firstDetectedAt).getUTCHours();
+      grid[m.asset][h]++;
+    });
+    // Synthesize background distribution for visual density (mock)
+    assets.forEach(a => {
+      for (let h = 0; h < 24; h++) {
+        if (grid[a][h] === 0) grid[a][h] = Math.random() < 0.15 ? 1 : 0;
+      }
+    });
+    const max = Math.max(1, ...assets.flatMap(a => grid[a]));
+    host.innerHTML = `
+      <div class="recon-heatmap">
+        <div class="recon-heatmap-row recon-heatmap-axis">
+          <span></span>
+          ${[0, 6, 12, 18].map(h => `<span style="grid-column: ${h + 2} / span 6;">${h}h</span>`).join('')}
+        </div>
+        ${assets.map(a => `
+          <div class="recon-heatmap-row">
+            <span class="recon-heatmap-label">${a}</span>
+            ${grid[a].map((v, h) => `<span class="recon-heatmap-cell" style="background: rgba(220, 38, 38, ${(v / max).toFixed(2)});" title="${a} @ ${h}h: ${v} detections"></span>`).join('')}
+          </div>`).join('')}
+      </div>`;
+    document.getElementById('heatmap-meta').textContent = `${assets.length} assets · ${state.data.mismatches.length} detections (UTC)`;
+  }
+
+  // ── Manual theme toggle ─────────────────────────────────────────
+  function applyTheme() {
+    const t = localStorage.getItem(THEME_KEY);
+    if (t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem('admin.theme.user-set', '1');
+    }
+    const btn = document.getElementById('btn-theme');
+    if (btn) btn.textContent = t === 'dark' ? '☀' : t === 'light' ? '◐' : '◑';
+  }
+  function bindTheme() {
+    document.getElementById('btn-theme')?.addEventListener('click', () => {
+      const cur = localStorage.getItem(THEME_KEY) || 'system';
+      const next = cur === 'system' ? 'dark' : cur === 'dark' ? 'light' : 'system';
+      if (next === 'system') {
+        localStorage.removeItem(THEME_KEY);
+        localStorage.removeItem('admin.theme.user-set');
+        syncColorScheme();
+      } else {
+        localStorage.setItem(THEME_KEY, next);
+      }
+      applyTheme();
+      toast(`Theme: ${next}`, 'success');
+    });
+    applyTheme();
+  }
+
+  // ── Webhook retry ───────────────────────────────────────────────
+  function retryWebhook(channel) {
+    toast(`Retry queued for ${channel}`, 'success');
+    logAudit('webhook-retry', channel, '');
+    setTimeout(renderWebhookStatus, 1200);
+  }
+
+  // ── Side-by-side trace (extends detail modal) ───────────────────
+  function buildSideBySide(m) {
+    const tx = (m.txHistory || []).slice().sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    let walletRunning = (m.walletBal || 0) - tx.reduce((s, t) => s + (t.delta || 0), 0);
+    let ledgerRunning = (m.ledgerBal || 0) - tx.reduce((s, t) => s + (t.kind === 'settle' || t.kind === 'detect' ? 0 : (t.delta || 0)), 0);
+    const rows = tx.map(t => {
+      walletRunning += (t.delta || 0);
+      if (t.kind !== 'detect') ledgerRunning += (t.delta || 0);
+      const drift = walletRunning - ledgerRunning;
+      return `
+        <tr>
+          <td style="font-size:11px; font-variant-numeric:tabular-nums; color:var(--admin-text-muted);">${new Date(t.ts).toLocaleTimeString()}</td>
+          <td style="text-align:right; font-variant-numeric:tabular-nums;">${fmtNum(walletRunning)}</td>
+          <td style="text-align:right; font-variant-numeric:tabular-nums;">${fmtNum(ledgerRunning)}</td>
+          <td style="text-align:right; font-variant-numeric:tabular-nums; color:${Math.abs(drift) > 0.001 ? 'var(--admin-danger)' : 'var(--admin-success)'};">${drift > 0 ? '+' : ''}${fmtNum(drift)}</td>
+        </tr>`;
+    }).join('');
+    return `<div style="margin-top:12px; font-weight:600; font-size:13px;">Wallet ↔ Ledger trace</div>
+      <table class="admin-table" style="margin-top:6px;">
+        <thead><tr><th>Time</th><th style="text-align:right">Wallet</th><th style="text-align:right">Ledger</th><th style="text-align:right">Drift</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" style="text-align:center; padding:12px; color:var(--admin-text-muted);">No tx history</td></tr>'}</tbody>
+      </table>`;
+  }
+
   // ── Backend integration ─────────────────────────────────────────
   // ── Multi-currency exposure ─────────────────────────────────────
   function renderExposure() {
@@ -1002,6 +2139,7 @@
     const newCritical = newOnes.filter(m => severityOf(m) === 'critical');
     if (newCritical.length > 0 && lastSeenMismatchIds.size > 0) {
       toast(`⚠ ${newCritical.length} new CRITICAL mismatch${newCritical.length > 1 ? 'es' : ''} detected`, 'error');
+      playCriticalBeep();
       // Highlight new rows
       setTimeout(() => newCritical.forEach(m => {
         const row = document.getElementById(`row-${m.id}`);
@@ -1151,8 +2289,15 @@
       if (!m || m.status !== 'open') return;
       e.preventDefault();
       const actions = [
-        ['Detail', 'detail'], ['Note', 'note'], ['Force-Sync', 'force-sync'],
+        ['Detail', 'detail'], ['Comments', 'comments'], ['Force-Sync', 'force-sync'],
         ['Resolve', 'resolve'], ['Dismiss', 'dismiss'],
+        ['—', null],
+        [watchSet.has(id) ? 'Unwatch' : 'Watch', 'watch'],
+        [pinned.has(id) ? 'Unpin' : 'Pin to dashboard', 'pin'],
+        ['Snooze 1h', 'snooze-1'],
+        ['Snooze 24h', 'snooze-24'],
+        ['User history', 'user-history'],
+        ['Set Critical = this diff', 'set-threshold'],
         ['—', null],
         [`Copy wallet (${m.wallet})`, 'copy-wallet'],
         [`Copy ID (${m.id})`, 'copy-id'],
@@ -1170,6 +2315,12 @@
         menu.hidden = true;
         if (act === 'copy-wallet') copyToClipboard(m.wallet, 'Wallet');
         else if (act === 'copy-id') copyToClipboard(m.id, 'Mismatch ID');
+        else if (act === 'user-history') openUserHistory(m.user);
+        else if (act === 'set-threshold') setThresholdFromMismatch(m);
+        else if (act === 'comments') openComments(id);
+        else if (act === 'pin') togglePin(id);
+        else if (act === 'snooze-1') snoozeMismatch(id, 1);
+        else if (act === 'snooze-24') snoozeMismatch(id, 24);
         else actOnMismatch(id, act);
       };
     });
@@ -1350,6 +2501,14 @@
     renderXref();
     renderWebhookStatus();
     renderThresholdHistogram();
+    renderBurndown();
+    renderHeatmap();
+    renderClusters();
+    renderPinned();
+    renderDiffVsPrev();
+    renderCronHistory();
+    renderSuggestions();
+    checkAllClearAchievement();
     bindHistoryHover();
     detectNewMismatches();
     checkStale();
@@ -1380,6 +2539,98 @@
     bindSheet();
     bindThresholdSliders();
     startLiveSim();
+    bindTheme();
+    bindStickyBulk();
+    applyStickyHeaders();
+    loadStateFromUrl();
+    bindSortHeaders();
+    bindBulkTag();
+    bindComments();
+    bindWebhookPreview();
+    bindMerge();
+    bindTemplateEditor();
+    bindDigest();
+
+    document.getElementById('btn-dismiss-suggestions')?.addEventListener('click', () => {
+      localStorage.setItem(SUGGEST_DISMISS_KEY, '1');
+      document.getElementById('suggestions-card').hidden = true;
+    });
+    document.getElementById('bulk-bar-merge')?.addEventListener('click', () => openMergeModal(null));
+
+    // Min anomaly score filter
+    document.getElementById('recon-min-score')?.addEventListener('input', e => {
+      minScoreFilter = parseInt(e.target.value) || 0;
+      renderMismatches();
+    });
+
+    // Locale switch
+    const localeSel = document.getElementById('recon-locale');
+    if (localeSel) {
+      localeSel.value = currentLocale;
+      localeSel.addEventListener('change', e => {
+        currentLocale = e.target.value;
+        localStorage.setItem(LOCALE_KEY, currentLocale);
+        renderMismatches();
+        renderKpis();
+        renderExposure();
+        toast(`Locale: ${currentLocale}`, 'success');
+      });
+    }
+
+    // Share view
+    document.getElementById('btn-share-view')?.addEventListener('click', shareView);
+
+    // Snooze cleanup tick
+    setInterval(() => {
+      const now = Date.now();
+      let changed = false;
+      Object.keys(snoozes).forEach(id => { if (snoozes[id] < now) { delete snoozes[id]; changed = true; } });
+      if (changed) { saveSnoozes(snoozes); renderMismatches(); }
+    }, 60000);
+
+    // Sound toggle
+    const soundBtn = document.getElementById('btn-sound');
+    if (soundBtn) {
+      const sync = () => {
+        const on = localStorage.getItem(SOUND_KEY) === '1';
+        soundBtn.textContent = on ? '🔊' : '🔇';
+        soundBtn.setAttribute('aria-pressed', on);
+        soundBtn.title = on ? 'Sound: ON' : 'Sound: OFF';
+      };
+      sync();
+      soundBtn.addEventListener('click', () => {
+        const on = localStorage.getItem(SOUND_KEY) === '1';
+        localStorage.setItem(SOUND_KEY, on ? '0' : '1');
+        sync();
+        if (!on) playCriticalBeep();
+      });
+    }
+
+    // Rule template
+    document.getElementById('rule-template')?.addEventListener('change', e => {
+      if (e.target.value) { applyRuleTemplate(e.target.value); e.target.value = ''; }
+    });
+
+    // Custom KPI
+    document.getElementById('btn-eval-kpi')?.addEventListener('click', evalCustomKpi);
+    document.getElementById('btn-close-custom-kpi')?.addEventListener('click', () => document.getElementById('custom-kpi-card').hidden = true);
+
+    // Changelog
+    document.getElementById('btn-changelog')?.addEventListener('click', openChangelog);
+    document.getElementById('changelog-close')?.addEventListener('click', () => document.getElementById('changelog-overlay').hidden = true);
+    if (localStorage.getItem(CHANGELOG_KEY) !== CHANGELOG_VERSION) setTimeout(() => {
+      const dot = document.getElementById('btn-changelog');
+      if (dot) dot.classList.add('recon-pulse');
+    }, 800);
+
+    // User history close
+    document.getElementById('user-history-close')?.addEventListener('click', () => document.getElementById('user-history-overlay').hidden = true);
+
+    // KPI dblclick → open custom KPI builder
+    document.querySelectorAll('.admin-kpi-card').forEach(c => c.addEventListener('dblclick', () => {
+      document.getElementById('custom-kpi-card').hidden = false;
+      document.getElementById('custom-kpi-card').scrollIntoView({ behavior: 'smooth' });
+    }));
 
     // Exposure currency switch
     document.getElementById('kpi-exposure-ccy')?.addEventListener('change', renderExposure);

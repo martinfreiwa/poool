@@ -494,14 +494,23 @@ pub async fn run_alert_escalation_worker(pool: &PgPool) {
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
     interval.tick().await;
+    let mut tick_n: u32 = 0;
 
     loop {
         interval.tick().await;
+        tick_n = tick_n.wrapping_add(1);
 
         match crate::admin::marketplace::escalate_overdue_alerts(pool).await {
             Ok(0) => tracing::trace!("🚨 No alerts to escalate"),
             Ok(n) => tracing::info!("🚨 Escalated {} overdue alerts", n),
             Err(e) => tracing::error!("🚨 Alert escalation failed: {}", e),
+        }
+
+        // Refresh sparkline matview every 10th tick (~10 minutes)
+        if tick_n % 10 == 0 {
+            if let Err(e) = crate::admin::marketplace::refresh_alert_daily_counts(pool).await {
+                tracing::warn!("🚨 Failed to refresh alert daily-counts matview: {}", e);
+            }
         }
     }
 }

@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH offerings AS (\n            SELECT\n                a.id,\n                a.tokens_total,\n                a.tokens_available,\n                a.min_funding_tokens,\n                a.token_price_cents,\n                a.created_at,\n                a.funding_end_at,\n                COALESCE(a.escrow_agent, 'unassigned') as escrow_agent,\n                COALESCE((\n                    SELECT SUM(i.purchase_value_cents)::bigint\n                    FROM investments i\n                    WHERE i.asset_id = a.id\n                      AND i.status IN ('funding_in_progress', 'active')\n                ), 0)::bigint as escrow_cents\n            FROM assets a\n            WHERE a.funding_status IN ('funding_open', 'funding_in_progress')\n        )\n        SELECT\n            COUNT(*)::bigint as \"active_offerings!\",\n            COALESCE(SUM(escrow_cents), 0)::bigint as \"total_locked_cents!\",\n            COALESCE(SUM(tokens_total::bigint * token_price_cents), 0)::bigint as \"total_target_cents!\",\n            COUNT(*) FILTER (\n                WHERE tokens_total > 0\n                  AND ((tokens_total - tokens_available)::float / tokens_total::float) >= 0.8\n            )::bigint as \"near_cap_count!\",\n            COUNT(*) FILTER (WHERE escrow_agent = 'unassigned')::bigint as \"unassigned_agent_count!\",\n            COUNT(*) FILTER (\n                WHERE (tokens_total - tokens_available) > 0\n                  AND escrow_cents > 0\n                  AND ABS((tokens_total - tokens_available)::bigint * token_price_cents - escrow_cents)::float\n                      / NULLIF((tokens_total - tokens_available)::bigint * token_price_cents, 0)::float > 0.05\n            )::bigint as \"reconciliation_warnings!\",\n            COALESCE(MAX(EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400)::bigint, 0) as \"stalest_days_open!\",\n            COUNT(*) FILTER (WHERE funding_end_at IS NOT NULL AND funding_end_at < NOW())::bigint as \"overdue_count!\"\n        FROM offerings\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "active_offerings!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "total_locked_cents!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "total_target_cents!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "near_cap_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "unassigned_agent_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "reconciliation_warnings!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "stalest_days_open!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "overdue_count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "11a42da6abfe46b2f0c528ea4d82fe3d9a39cff857062bbf865e4a3d8b23bdec"
+}

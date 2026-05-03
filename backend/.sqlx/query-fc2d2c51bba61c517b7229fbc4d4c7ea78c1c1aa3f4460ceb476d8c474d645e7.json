@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            a.id, a.title, a.asset_type, a.funding_status, a.funding_end_at, a.created_at,\n            a.tokens_total, a.tokens_available, a.min_funding_tokens,\n            a.token_price_cents, COALESCE(a.escrow_agent, 'unassigned') as escrow_agent,\n            COALESCE((\n                SELECT SUM(i.purchase_value_cents)::bigint\n                FROM investments i\n                WHERE i.asset_id = a.id\n                  AND i.status IN ('funding_in_progress', 'active')\n            ), 0)::bigint as \"current_escrow_cents!\",\n            (\n                SELECT id FROM admin_approval_requests r\n                WHERE r.action_type = 'primary_escrow.release'\n                  AND r.entity_type = 'assets'\n                  AND r.entity_id = a.id\n                  AND r.status = 'pending'\n                LIMIT 1\n            ) as \"pending_release_request_id?\"\n        FROM assets a\n        WHERE ($1 AND a.funding_status IN ('funding_open', 'funding_in_progress', 'aborted', 'funded'))\n           OR (NOT $1 AND a.funding_status IN ('funding_open', 'funding_in_progress'))\n        ORDER BY a.created_at DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "asset_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "funding_end_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "min_funding_tokens",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "token_price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "escrow_agent",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "current_escrow_cents!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 12,
+        "name": "pending_release_request_id?",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "fc2d2c51bba61c517b7229fbc4d4c7ea78c1c1aa3f4460ceb476d8c474d645e7"
+}

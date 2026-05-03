@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            a.id,\n            a.title,\n            a.slug,\n            a.short_description,\n            a.description,\n            a.asset_type,\n            a.location_city,\n            a.location_country,\n            a.total_value_cents,\n            a.token_price_cents,\n            a.tokens_total,\n            a.tokens_available,\n            a.annual_yield_bps,\n            a.capital_appreciation_bps,\n            a.funding_status,\n            ARRAY(\n                SELECT image_url\n                FROM asset_images\n                WHERE asset_id = a.id\n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls?\",\n            a.term_months,\n            a.area,\n            a.land_size_sqm,\n            a.google_maps_url,\n            a.video_url,\n            (\n                SELECT COUNT(DISTINCT o.user_id)\n                FROM order_items oi\n                JOIN orders o ON oi.order_id = o.id\n                WHERE oi.asset_id = a.id\n                  AND o.status = 'completed'\n            ) AS \"investor_count?\",\n            a.operator_name,\n            a.fixed_roi_bps,\n            a.revenue_min_cents,\n            a.revenue_max_cents,\n            a.expenses_cents,\n            a.net_profit_min_cents,\n            a.net_profit_max_cents,\n            a.investor_payout_cents,\n            a.operator_split_pct,\n            a.poool_split_pct,\n            a.location_description\n        FROM assets a\n        WHERE a.slug = $1\n          AND a.published = true\n          AND a.asset_type = 'commodity'\n        ",
+  "query": "\n        SELECT\n            a.id,\n            a.title,\n            a.slug,\n            a.short_description,\n            a.description,\n            a.asset_type,\n            a.location_city,\n            a.location_country,\n            a.total_value_cents,\n            a.token_price_cents,\n            a.tokens_total,\n            a.tokens_available,\n            a.annual_yield_bps,\n            a.capital_appreciation_bps,\n            a.funding_status,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, sort_order ASC, created_at ASC\n            ) AS \"image_urls?\",\n            a.term_months,\n            a.area,\n            a.land_size_sqm,\n            (\n                SELECT COUNT(DISTINCT o.user_id)\n                FROM order_items oi\n                JOIN orders o ON oi.order_id = o.id\n                WHERE oi.asset_id = a.id\n                  AND o.status = 'completed'\n            ) AS \"investor_count?\",\n            a.video_url,\n            a.google_maps_url,\n            a.operator_name,\n            a.fixed_roi_bps,\n            a.revenue_min_cents,\n            a.revenue_max_cents,\n            a.expenses_cents,\n            a.net_profit_min_cents,\n            a.net_profit_max_cents,\n            a.investor_payout_cents,\n            a.operator_split_pct,\n            a.poool_split_pct,\n            a.location_description\n        FROM assets a\n        \n        WHERE a.published = true\n          AND a.asset_type = 'commodity'\n          AND a.funding_status IN ('funding_open', 'funding_in_progress')\n        ORDER BY a.featured DESC, a.created_at DESC\n        ",
   "describe": {
     "columns": [
       {
@@ -100,8 +100,8 @@
       },
       {
         "ordinal": 19,
-        "name": "google_maps_url",
-        "type_info": "Varchar"
+        "name": "investor_count?",
+        "type_info": "Int8"
       },
       {
         "ordinal": 20,
@@ -110,8 +110,8 @@
       },
       {
         "ordinal": 21,
-        "name": "investor_count?",
-        "type_info": "Int8"
+        "name": "google_maps_url",
+        "type_info": "Varchar"
       },
       {
         "ordinal": 22,
@@ -170,9 +170,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Text"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -194,9 +192,9 @@
       true,
       true,
       true,
-      true,
-      true,
       null,
+      true,
+      true,
       true,
       true,
       true,
@@ -210,5 +208,5 @@
       true
     ]
   },
-  "hash": "bea787138f0497f0ffc1bef487639ccad85789757b6c57169bea4c8dd5a350ab"
+  "hash": "58549cc49d832a3657281bb06184c2c6cc61b2910d1501147f22f67e932d8a4a"
 }

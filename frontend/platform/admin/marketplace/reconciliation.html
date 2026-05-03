@@ -126,6 +126,83 @@
           </div>
         </div>
 
+        <!-- Pinned Mismatches -->
+        <div class="admin-card" id="pinned-card" style="margin-bottom:16px;" hidden>
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title">📌 Pinned</h3>
+            <span style="font-size:11px; color:var(--admin-text-muted);" id="pinned-meta"></span>
+          </div>
+          <div class="admin-card-body" id="pinned-body" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+        </div>
+
+        <!-- Custom KPI Builder -->
+        <div class="admin-card" id="custom-kpi-card" style="margin-bottom:16px;" hidden>
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title">Custom KPI</h3>
+            <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-close-custom-kpi">Close</button>
+          </div>
+          <div class="admin-card-body">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+              <input type="text" id="custom-kpi-label" class="admin-input admin-input--sm" placeholder="Label (e.g. EU exposure)" style="max-width:220px;" />
+              <select id="custom-kpi-formula" class="admin-select admin-select--sm">
+                <option value="count-critical">Count of critical mismatches</option>
+                <option value="count-by-asset">Count for asset…</option>
+                <option value="sum-usd-by-asset">Σ |diff USD| for asset…</option>
+                <option value="oldest-age">Oldest open age (hours)</option>
+                <option value="watched">Count of watched mismatches</option>
+              </select>
+              <input type="text" id="custom-kpi-arg" class="admin-input admin-input--sm" placeholder="Asset symbol (if needed)" style="max-width:160px;" />
+              <button class="admin-btn admin-btn--primary admin-btn--sm" id="btn-eval-kpi">Evaluate</button>
+            </div>
+            <div id="custom-kpi-result" style="font-size:18px; font-weight:600; padding:10px; border-radius:8px; background:var(--admin-bg-muted, rgba(0,0,0,0.04));">—</div>
+          </div>
+        </div>
+
+        <!-- Dependency Clusters -->
+        <div class="admin-card" style="margin-bottom:16px;">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title">Dependency Clusters</h3>
+            <span style="font-size:11px; color:var(--admin-text-muted);" id="clusters-meta"></span>
+          </div>
+          <div class="admin-card-body" id="recon-clusters" style="min-height:60px;"></div>
+        </div>
+
+        <!-- Suggested Actions -->
+        <div class="admin-card" id="suggestions-card" style="margin-bottom:16px;" hidden>
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title">💡 Suggested actions</h3>
+            <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-dismiss-suggestions">Dismiss</button>
+          </div>
+          <div class="admin-card-body" id="suggestions-body" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+        <!-- Cron history -->
+        <div class="admin-card" style="margin-bottom:16px;">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="admin-card-title">Schedule adherence — last 30 expected runs</h3>
+            <span style="font-size:11px; color:var(--admin-text-muted);" id="cronhist-meta"></span>
+          </div>
+          <div class="admin-card-body" id="recon-cronhist" style="min-height:60px;"></div>
+        </div>
+
+        <!-- Burn-down + Heatmap -->
+        <div class="recon-trends-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div class="admin-card">
+            <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 class="admin-card-title">Open Mismatches — 14d burn-down</h3>
+              <span style="font-size:11px; color:var(--admin-text-muted);" id="burndown-meta"></span>
+            </div>
+            <div class="admin-card-body" id="recon-burndown" style="min-height:120px;"></div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 class="admin-card-title">Mismatch Heatmap (hour × asset)</h3>
+              <span style="font-size:11px; color:var(--admin-text-muted);" id="heatmap-meta"></span>
+            </div>
+            <div class="admin-card-body" id="recon-heatmap" style="min-height:120px;"></div>
+          </div>
+        </div>
+
         <!-- Per-Asset Breakdown + Cross-links -->
         <div class="recon-secondary-grid" id="recon-secondary" style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-bottom:16px;">
           <div class="admin-card">
@@ -162,6 +239,16 @@
             <input type="checkbox" id="recon-normalize" />
             <span>Normalize (USD)</span>
           </label>
+          <label class="recon-toggle" title="Filter by anomaly score">
+            <span>Min score</span>
+            <input type="number" id="recon-min-score" min="0" max="100" step="5" placeholder="0" style="width:60px;" class="admin-input admin-input--sm" />
+          </label>
+          <select id="recon-locale" class="admin-select admin-select--sm" aria-label="Locale" title="Number formatting locale">
+            <option value="en-US">en-US</option>
+            <option value="de-DE">de-DE</option>
+            <option value="fr-FR">fr-FR</option>
+            <option value="ch-DE">de-CH</option>
+          </select>
           <select id="recon-severity-filter" class="admin-select" aria-label="Filter by severity">
             <option value="">All severities</option>
             <option value="critical">Critical</option>
@@ -176,9 +263,14 @@
           </select>
           <div style="flex:1"></div>
           <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-bulk-action" disabled>Bulk action…</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-bulk-tag" disabled>Bulk tag…</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-share-view" title="Copy shareable URL">🔗 Share</button>
           <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-import-csv" title="Paste/upload wallet list to spot-check">Import CSV</button>
           <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-export-csv" title="Export current view as CSV">Export CSV</button>
           <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-print" title="Print / Save as PDF">Print</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-theme" title="Toggle theme">◐</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-sound" title="Sound on critical" aria-pressed="false">🔇</button>
+          <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-changelog" title="What's new">★</button>
           <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-tour" title="Restart onboarding">?</button>
         </div>
 
@@ -191,17 +283,18 @@
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th style="width:32px;"><input type="checkbox" id="recon-select-all" aria-label="Select all" /></th>
-                  <th>User</th>
-                  <th>Asset</th>
-                  <th>Severity</th>
-                  <th style="text-align:right">Wallet</th>
-                  <th style="text-align:right">Ledger</th>
-                  <th style="text-align:right">Difference</th>
-                  <th>Age</th>
-                  <th>Likely Cause</th>
-                  <th style="width:90px;">Trend (7d)</th>
-                  <th style="text-align:right">Actions</th>
+                  <th data-col="select" style="width:32px;"><input type="checkbox" id="recon-select-all" aria-label="Select all" /></th>
+                  <th data-col="user">User</th>
+                  <th data-col="asset">Asset</th>
+                  <th data-col="severity">Severity</th>
+                  <th data-col="wallet" style="text-align:right">Wallet</th>
+                  <th data-col="ledger" style="text-align:right">Ledger</th>
+                  <th data-col="diff" style="text-align:right">Difference</th>
+                  <th data-col="age">Age</th>
+                  <th data-col="tags">Tags</th>
+                  <th data-col="cause">Likely Cause</th>
+                  <th data-col="trend" style="width:90px;">Trend (7d)</th>
+                  <th data-col="actions" style="text-align:right">Actions</th>
                 </tr>
               </thead>
               <tbody id="recon-body">
@@ -256,6 +349,16 @@
           </div>
           <div class="admin-card-body">
             <div class="recon-rules-grid">
+              <label class="recon-field" style="grid-column: span 2;">
+                <span>Compliance template</span>
+                <select id="rule-template" class="admin-select">
+                  <option value="">— Custom (current) —</option>
+                  <option value="mica-eu">MiCA (EU) — Strict ≥ €50</option>
+                  <option value="finma-ch">FINMA (CH) — Conservative ≥ CHF 100</option>
+                  <option value="fca-uk">FCA (UK) — Standard ≥ £75</option>
+                  <option value="dev">Dev / Sandbox — Permissive ≥ $1000</option>
+                </select>
+              </label>
               <label class="recon-field">
                 <span>Critical threshold (USD) — <span id="thr-critical-readout" style="font-weight:600; color:var(--admin-danger);">$100</span></span>
                 <input type="range" id="thr-critical-slider" min="1" max="1000" step="1" value="100" />
@@ -296,6 +399,26 @@
                 <input type="checkbox" id="alert-on-anomaly" checked />
                 <span>Alert on duration anomaly (&gt;25% baseline)</span>
               </label>
+              <label class="recon-field" style="grid-column: span 2;">
+                <span>Daily digest recipients (comma-separated emails)</span>
+                <input type="text" id="alert-digest" class="admin-input" placeholder="ops@poool.dev, finance@poool.dev" />
+              </label>
+              <label class="recon-field">
+                <span>Digest send time (HH:MM UTC)</span>
+                <input type="time" id="alert-digest-time" class="admin-input" value="08:00" />
+              </label>
+              <label class="recon-field recon-field--inline">
+                <input type="checkbox" id="alert-digest-only-changes" />
+                <span>Skip digest if zero new mismatches</span>
+              </label>
+
+              <div class="recon-field" style="grid-column: span 2;">
+                <span style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>Resolve reason templates</span>
+                  <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-edit-templates">Edit list</button>
+                </span>
+                <ul id="resolve-template-list" style="list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:4px;"></ul>
+              </div>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
               <button class="admin-btn admin-btn--ghost admin-btn--sm" id="btn-reset-rules">Reset</button>
@@ -368,6 +491,100 @@
 
   <!-- Context Menu -->
   <ul id="recon-ctxmenu" class="recon-ctxmenu" hidden role="menu"></ul>
+
+  <!-- Merge Modal -->
+  <div id="merge-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:520px;">
+      <h2 class="mp-modal-title">Merge mismatches</h2>
+      <p class="mp-modal-subtitle">Combine 2+ selected mismatches into one resolution. Selected mismatches will be marked resolved with a shared reason.</p>
+      <div id="merge-list" style="margin:12px 0; max-height:240px; overflow-y:auto;"></div>
+      <textarea id="merge-reason" class="admin-input" rows="2" style="width:100%; resize:vertical;" placeholder="Resolution reason applied to all…"></textarea>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="merge-cancel">Cancel</button>
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="merge-confirm">Merge & resolve all</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resolve template editor -->
+  <div id="tpl-editor-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:520px;">
+      <h2 class="mp-modal-title">Resolve reason templates</h2>
+      <ul id="tpl-editor-list" style="list-style:none; margin:12px 0; padding:0; max-height:280px; overflow-y:auto;"></ul>
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <input id="tpl-editor-key" class="admin-input admin-input--sm" placeholder="key (e.g. dust-write-off)" style="width:140px;" />
+        <input id="tpl-editor-text" class="admin-input admin-input--sm" placeholder="Template text…" style="flex:1;" />
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="tpl-editor-add">Add</button>
+      </div>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="tpl-editor-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confetti canvas -->
+  <canvas id="confetti-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:99999;" hidden></canvas>
+
+  <!-- Comments Modal -->
+  <div id="comments-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:520px;">
+      <h2 class="mp-modal-title" id="comments-title">Comments</h2>
+      <div id="comments-list" style="margin:12px 0; max-height:300px; overflow-y:auto;"></div>
+      <div style="display:flex; gap:6px; align-items:flex-end;">
+        <textarea id="comments-input" class="admin-input" rows="2" style="flex:1; resize:vertical;" placeholder="Add comment…"></textarea>
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="comments-add">Post</button>
+      </div>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="comments-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Webhook Preview Modal -->
+  <div id="webhook-preview-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:520px;">
+      <h2 class="mp-modal-title">Webhook test preview</h2>
+      <p class="mp-modal-subtitle" id="webhook-preview-channel"></p>
+      <pre id="webhook-preview-body" style="background:var(--admin-bg-muted, rgba(0,0,0,0.04)); padding:12px; border-radius:8px; font-size:11px; max-height:280px; overflow:auto; font-family:ui-monospace,monospace;"></pre>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="webhook-preview-cancel">Cancel</button>
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="webhook-preview-send">Send test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Changelog Drawer -->
+  <div id="changelog-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:520px;">
+      <h2 class="mp-modal-title">What's new</h2>
+      <ul style="margin:12px 0; padding-left:18px; font-size:13px; line-height:1.7;" id="changelog-list"></ul>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--primary admin-btn--sm" id="changelog-close">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User History Modal -->
+  <div id="user-history-overlay" class="mp-modal-overlay" hidden role="dialog" aria-modal="true">
+    <div class="mp-modal" style="max-width:560px;">
+      <h2 class="mp-modal-title" id="user-history-title">User history</h2>
+      <div id="user-history-body" style="margin-top:12px;"></div>
+      <div class="mp-modal-actions">
+        <button class="admin-btn admin-btn--ghost admin-btn--sm" id="user-history-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky bulk action bar -->
+  <div id="bulk-bar" class="recon-bulk-bar" hidden role="region" aria-label="Bulk actions">
+    <span id="bulk-bar-count">0 selected</span>
+    <span style="flex:1"></span>
+    <button class="admin-btn admin-btn--success admin-btn--sm" data-bulk="resolve">Resolve</button>
+    <button class="admin-btn admin-btn--ghost admin-btn--sm" data-bulk="dismiss">Dismiss</button>
+    <button class="admin-btn admin-btn--ghost admin-btn--sm" data-bulk="force-sync">Force-Sync</button>
+    <button class="admin-btn admin-btn--ghost admin-btn--sm" id="bulk-bar-merge">Merge…</button>
+    <button class="admin-btn admin-btn--ghost admin-btn--sm" id="bulk-bar-clear">Clear</button>
+  </div>
 
   <!-- Mobile Action Sheet -->
   <div id="recon-sheet-overlay" class="recon-sheet-overlay" hidden>

@@ -1735,6 +1735,230 @@ mark.mp-p2p-hit {
   .recon-sheet-overlay { display: none !important; }
 }
 
+.recon-tag-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.recon-tag {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--admin-bg-muted, rgba(0, 0, 0, 0.06));
+  color: var(--admin-text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.recon-tag:hover { background: var(--admin-bg-hover, rgba(79, 70, 229, 0.12)); }
+.recon-tag-x {
+  background: none; border: none; cursor: pointer;
+  color: var(--admin-text-muted); padding: 0 2px; font-size: 12px; line-height: 1;
+}
+.recon-tag-x:hover { color: var(--admin-danger); }
+.recon-tag-add {
+  background: none;
+  border: 1px dashed var(--admin-border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--admin-text-muted);
+}
+.recon-tag-add:hover { border-color: var(--admin-primary, #4f46e5); color: var(--admin-primary, #4f46e5); }
+
+.recon-watch.is-watching { color: #f59e0b !important; }
+
+.recon-allclear-illust { display: flex; flex-direction: column; align-items: center; }
+
+.recon-heatmap { display: flex; flex-direction: column; gap: 2px; }
+.recon-heatmap-row {
+  display: grid;
+  grid-template-columns: 60px repeat(24, 1fr);
+  gap: 1px;
+  align-items: center;
+}
+.recon-heatmap-axis { font-size: 9px; color: var(--admin-text-muted); }
+.recon-heatmap-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  padding-right: 6px;
+}
+.recon-heatmap-cell {
+  height: 18px;
+  border-radius: 2px;
+  background: var(--admin-bg-muted, rgba(0,0,0,0.04));
+}
+.recon-heatmap-cell:hover { outline: 1px solid var(--admin-text-muted); }
+
+@media (max-width: 900px) {
+  .recon-trends-grid { grid-template-columns: 1fr !important; }
+}
+
+.recon-anom {
+  display: flex; align-items: center; gap: 4px;
+  margin-top: 3px; height: 14px; position: relative;
+}
+.recon-anom-bar {
+  height: 4px;
+  background: linear-gradient(90deg, var(--admin-success), var(--admin-warning), var(--admin-danger));
+  border-radius: 2px;
+  transition: width 0.3s;
+  flex: 1;
+  max-width: 60px;
+}
+.recon-anom-num {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-muted);
+  font-weight: 600;
+}
+
+.recon-cluster-list {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.recon-cluster {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: var(--admin-bg-muted, rgba(0,0,0,0.05));
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+.recon-cluster:hover { background: var(--admin-bg-hover, rgba(79, 70, 229, 0.08)); border-color: var(--admin-primary, #4f46e5); }
+.recon-cluster-key {
+  text-transform: uppercase; font-size: 9px; letter-spacing: 0.4px;
+  color: var(--admin-text-muted); font-weight: 700;
+}
+.recon-cluster-val { font-weight: 600; }
+.recon-cluster-count {
+  background: var(--admin-warning); color: white;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 999px;
+}
+
+.recon-sticky-thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--admin-bg-card);
+  box-shadow: 0 1px 0 var(--admin-border);
+}
+
+.recon-col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+}
+.recon-col-resizer:hover { background: var(--admin-primary, #4f46e5); opacity: 0.4; }
+
+.recon-pulse {
+  animation: recon-pulse-anim 1.6s ease-in-out infinite;
+}
+@keyframes recon-pulse-anim {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); color: var(--admin-warning); }
+}
+
+.recon-bulk-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  font-size: 13px;
+  z-index: 8000;
+  animation: bulk-bar-in 0.3s ease both;
+}
+@keyframes bulk-bar-in {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.recon-pin-card {
+  flex: 0 1 220px;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-border);
+  border-left: 3px solid var(--admin-warning);
+  border-radius: 8px;
+  background: var(--admin-bg-card);
+}
+.recon-pin-x {
+  background: none; border: none; cursor: pointer;
+  color: var(--admin-text-muted);
+  font-size: 16px; line-height: 1;
+}
+.recon-pin-x:hover { color: var(--admin-danger); }
+
+.recon-sort-ind { display: inline-block; }
+
+.recon-cron-grid {
+  display: grid;
+  grid-template-columns: repeat(30, 1fr);
+  gap: 3px;
+}
+.recon-cron-slot {
+  display: inline-block;
+  width: 100%;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--admin-bg-muted, rgba(0,0,0,0.05));
+}
+.recon-cron-ontime { background: var(--admin-success); }
+.recon-cron-late { background: var(--admin-warning); }
+.recon-cron-drift { background: #f59e0b; opacity: 0.7; }
+.recon-cron-missing { background: var(--admin-danger); opacity: 0.6; }
+
+.recon-lifecycle {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.recon-lifecycle-step {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  opacity: 0.45;
+}
+.recon-lifecycle-step.is-done { opacity: 1; }
+.recon-lifecycle-step.is-current .recon-lifecycle-dot {
+  box-shadow: 0 0 0 4px var(--admin-warning-bg);
+}
+.recon-lifecycle-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--admin-text-muted);
+}
+.recon-lifecycle-step.is-done .recon-lifecycle-dot { background: var(--admin-success); }
+.recon-lifecycle-label { font-size: 11px; font-weight: 600; }
+.recon-lifecycle-ts { font-size: 10px; color: var(--admin-text-muted); }
+.recon-lifecycle-line {
+  flex: 1; height: 2px;
+  background: var(--admin-border);
+}
+
+.recon-suggestion {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--admin-bg-muted, rgba(0,0,0,0.04));
+  border-radius: 8px;
+  border-left: 3px solid var(--admin-warning);
+}
+.recon-suggestion-icon { font-size: 18px; }
+.recon-suggestion-text { flex: 1; font-size: 13px; }
+
 .recon-skeleton-row {
   height: 36px;
   border-radius: 6px;
@@ -2655,6 +2879,25 @@ mark.mp-p2p-hit {
 .mp-status-icon {
   margin-right: 4px;
   vertical-align: -1px;
+}
+
+/* Drawer mutation actions (Cancel / Retry) */
+.mp-trade-actions {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-hover-overlay, rgba(0,0,0,0.03));
+}
+.mp-trade-actions-note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--admin-text-muted);
+}
+.mp-trade-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* ===========================

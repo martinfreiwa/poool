@@ -668,6 +668,196 @@
         }
     }
 
+    // Fetch user's holdings + open sell orders for the current asset, then
+    // recompute `userSellable`. Called on asset load and after each
+    // orderbook_update WS event (which fires after the user's own orders too,
+    // so held figure stays fresh). Falls back to 0 sellable if the user is
+    // not authenticated — backend will reject anyway.
+    async function refreshUserHoldings() {
+        if (!currentAsset || !currentAsset.id) return;
+        try {
+            const [portfolio, myOrders] = await Promise.all([
+                fetch('/api/portfolio', { credentials: 'same-origin' }).then(r =>
+                    r.ok ? r.json() : null),
+                fetch('/api/marketplace/orders/mine?limit=200', { credentials: 'same-origin' })
+                    .then(r => (r.ok ? r.json() : [])),
+            ]);
+            const inv = portfolio?.investments?.find(i => i.asset_id === currentAsset.id);
+            userOwnedTokens = inv ? Number(inv.tokens_owned) : 0;
+
+            // Sum remaining qty on this user's open SELL orders for this asset.
+            // Use only open / partially_filled rows (others are terminal).
+            const orders = Array.isArray(myOrders) ? myOrders : (myOrders?.orders || []);
+            userHeldFromSells = orders
+                .filter(o =>
+                    o.asset_id === currentAsset.id &&
+                    o.side === 'sell' &&
+                    (o.status === 'open' || o.status === 'partially_filled'))
+                .reduce((s, o) => s + (Number(o.quantity) - Number(o.quantity_filled || 0)), 0);
+
+            userSellable = Math.max(0, userOwnedTokens - userHeldFromSells);
+        } catch (e) {
+            userOwnedTokens = 0;
+            userHeldFromSells = 0;
+            userSellable = 0;
+        }
+        applySellQtyCap();
+        updateSummary();
+        renderDepthLadder();
+    }
+
+    // Apply ownership cap to the qty input + render an inline holdings hint.
+    // Only enforces the cap on the SELL side; buyer cap is handled by balance.
+    function applySellQtyCap() {
+        const qtyInput = document.getElementById('tv3-qty');
+        if (!qtyInput) return;
+
+        if (currentSide === 'sell') {
+            // Hard cap input attribute so browser validation kicks in too.
+            qtyInput.max = String(Math.max(1, userSellable));
+            const cur = parseInt(qtyInput.value, 10) || 0;
+            if (userSellable === 0) {
+                // No sellable shares — clamp to 0 and let updateSummary disable submit.
+                qtyInput.value = '0';
+            } else if (cur > userSellable) {
+                qtyInput.value = String(userSellable);
+            }
+        } else {
+            // On buy side, remove the cap (use a large default).
+            qtyInput.max = '';
+        }
+        renderHoldingsHint();
+    }
+
+    // Inline "Owned: 100 · 30 in open sell orders · 70 sellable" line so
+    // sellers see at a glance what they actually have to work with. Mirrors
+    // FINRA position-disclosure norms — always show the user their position
+    // before they enter a quantity.
+    function renderHoldingsHint() {
+        let hint = document.getElementById('tv3-holdings-hint');
+        const sharesField = document.querySelector('.tv3-shares-field');
+        if (!sharesField) return;
+
+        if (currentSide !== 'sell') {
+            if (hint) hint.hidden = true;
+            return;
+        }
+
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'tv3-holdings-hint';
+            hint.style.cssText =
+                'font-size:12px; color:#475467; margin-top:4px; line-height:1.4;';
+            sharesField.appendChild(hint);
+        }
+        hint.hidden = false;
+
+        if (userOwnedTokens <= 0) {
+            hint.innerHTML =
+                '<span style="color:#b91c1c; font-weight:600;">⚠ You don\'t own any shares of this asset.</span>';
+            return;
+        }
+        const heldTxt = userHeldFromSells > 0
+            ? ` · <span style="color:#b54708;">${userHeldFromSells.toLocaleString()} held in open sells</span>`
+            : '';
+        hint.innerHTML =
+            `<strong>${userOwnedTokens.toLocaleString()}</strong> owned${heldTxt} · ` +
+            `<strong>${userSellable.toLocaleString()}</strong> sellable now`;
+    }
+
+    // Render the live depth ladder above the cost summary. Shows the opposing
+    // side the user will actually fill against (buyer sees asks; seller sees
+    // bids). Rows that the chosen quantity consumes are highlighted, with a
+    // running cumulative total + VWAP. This is the FINRA Rule 5310 / MiFID II
+    // best-execution disclosure done in-line, not buried in a confirmation
+    // modal — sellers see "9 @ $800, then 10 @ $700, then 10 @ $600..."
+    // before they ever click sell.
+    function renderDepthLadder() {
+        const wrap = document.getElementById('tv3-depth-ladder');
+        const title = document.getElementById('tv3-depth-ladder-title');
+        const vwapEl = document.getElementById('tv3-depth-ladder-vwap');
+        const rowsEl = document.getElementById('tv3-depth-ladder-rows');
+        const emptyEl = document.getElementById('tv3-depth-ladder-empty');
+        if (!wrap || !rowsEl || !currentAsset) return;
+
+        const data = getMarketData(currentAsset, currentSide);
+        const orders = data.orders || [];
+        const isBuy = currentSide === 'buy';
+
+        // Title reflects the side the user is acting against.
+        if (title) {
+            title.textContent = isBuy
+                ? `Asks (sellers) · ${orders.length} ${orders.length === 1 ? 'level' : 'levels'}`
+                : `Bids (buyers) · ${orders.length} ${orders.length === 1 ? 'level' : 'levels'}`;
+        }
+
+        if (!orders.length) {
+            rowsEl.innerHTML = '';
+            if (emptyEl) {
+                emptyEl.hidden = false;
+                emptyEl.textContent = isBuy
+                    ? 'No asks — sellers will see your bid; rest until matched.'
+                    : 'No bids — buyers will see your ask; rest until matched.';
+            }
+            if (vwapEl) vwapEl.textContent = '';
+            return;
+        }
+        if (emptyEl) emptyEl.hidden = true;
+
+        const requestedQty = parseInt(document.getElementById('tv3-qty')?.value, 10) || 0;
+        const fill = simulateFill(orders, requestedQty);
+        const fillByPrice = new Map();
+        fill.tiers.forEach(t => fillByPrice.set(t.price, (fillByPrice.get(t.price) || 0) + t.qty));
+
+        // Show top 8 levels max — keeps the widget compact, deeper book is
+        // visible in the admin orderbook page.
+        const visible = orders.slice(0, 8);
+        let cumQty = 0;
+        const html = visible.map((o, i) => {
+            cumQty += o.tokens;
+            const fillsAtThis = fillByPrice.get(o.price) || 0;
+            const isHit = fillsAtThis > 0;
+            const isExhausted = fillsAtThis >= o.tokens;
+            const partialFill = isHit && !isExhausted;
+            const priceColor = isBuy ? '#ef4444' : '#15803d'; // red ask / green bid
+            const rowBg = isHit
+                ? (isBuy ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.10)')
+                : 'transparent';
+            const fillTag = isHit
+                ? `<span style="font-size:10px; padding:1px 6px; border-radius:8px; background:${priceColor}; color:#fff; font-weight:700; margin-left:6px;">${
+                    isExhausted ? 'FILL' : `${fillsAtThis}/${o.tokens}`
+                }</span>`
+                : '';
+            return `
+                <div style="
+                    display:grid; grid-template-columns: 1fr auto auto; gap:8px;
+                    padding:4px 6px; border-radius:6px; background:${rowBg};
+                    align-items:center;
+                ">
+                    <span style="color:${priceColor}; font-weight:700;">${fmt(o.price)}${fillTag}</span>
+                    <span style="color:#475467;">${o.tokens.toLocaleString()} sh</span>
+                    <span style="color:#98a2b3; font-size:11px;">cum ${cumQty.toLocaleString()}</span>
+                </div>
+            `;
+        }).join('');
+        rowsEl.innerHTML = html;
+
+        // Show VWAP across the consumed tiers + unfilled note when applicable.
+        if (vwapEl) {
+            if (fill.filledQty > 0) {
+                const vwap = fmt(fill.vwap);
+                const unfilled = fill.unfilledQty > 0
+                    ? ` · ${fill.unfilledQty} unfilled (would rest)`
+                    : '';
+                vwapEl.textContent = `Avg ${vwap} for ${fill.filledQty}${unfilled}`;
+            } else {
+                vwapEl.textContent = requestedQty > 0
+                    ? 'No matching depth at your price'
+                    : '';
+            }
+        }
+    }
+
     // Walk the opposing book greedily for `qty` shares. Returns tier breakdown,
     // VWAP, filled/unfilled split. Used for multi-level fill preview + worst-case
     // (limit) cost. Pre-trade cost transparency required by FINRA 15c3-5.
@@ -746,6 +936,13 @@
     let currentSide = 'buy';
     let priceMode = 'market'; // 'market' or 'custom'
     let currentAsset = null;
+    // User's holdings for the current asset, used to cap sell quantity at the
+    // shares the user actually owns minus shares already locked in open sell
+    // orders. Backend re-validates inside the create_order tx (FOR UPDATE on
+    // the investments row) so this is UX guidance, not a security boundary.
+    let userOwnedTokens = 0;       // total tokens user holds for this asset
+    let userHeldFromSells = 0;     // sum of remaining qty across user's open sells
+    let userSellable = 0;          // = userOwnedTokens - userHeldFromSells
 
     function getActivePrice() {
         if (priceMode === 'market') {
@@ -825,6 +1022,20 @@
             return;
         }
 
+        // Sell-side ownership gate: can't sell more than you actually hold
+        // (minus shares already locked in your open sell orders). Backend
+        // enforces this transactionally; UI gate prevents rejection round-trip.
+        if (currentSide === 'sell') {
+            if (userOwnedTokens <= 0) {
+                setDisabled('You don\'t own shares of this asset');
+                return;
+            }
+            if (qty > userSellable) {
+                setDisabled(`Max ${userSellable.toLocaleString()} sellable (${userHeldFromSells.toLocaleString()} held in open sells)`);
+                return;
+            }
+        }
+
         const shareText = qty === 1 ? 'Share' : 'Shares';
         // "Place bid/ask" framing when this order will rest (no opposing liquidity).
         // "Buy/Sell" framing when order will (likely) match instantly.
@@ -832,6 +1043,9 @@
             ? (currentSide === 'buy' ? 'Place Bid for' : 'Place Ask for')
             : (currentSide === 'buy' ? 'Buy' : 'Sell');
         setEnabled(action + ' ' + qty + ' ' + shareText + ' · ' + fmt(total));
+
+        // Re-render depth ladder so highlighted rows reflect current qty.
+        try { renderDepthLadder(); } catch (_) { /* widget may not be present */ }
     }
 
     // ── Set Buy/Sell Side ──
@@ -850,6 +1064,7 @@
 
         // Update market info for the active side
         updateMarketInfo();
+        applySellQtyCap();
         updateSummary();
 
         // Update disclaimer
@@ -1072,6 +1287,16 @@
         // Initialize trade widget
         updateMarketInfo();
         updateSummary();
+        renderDepthLadder();
+
+        // Fetch user holdings + open orders so we can cap sell qty at what
+        // the user actually owns (minus shares already locked in open sells).
+        // Backend re-validates inside the create_order tx — this is UX-only.
+        try {
+            await refreshUserHoldings();
+        } catch (e) {
+            console.warn('[tv3] Could not fetch user holdings:', e);
+        }
 
         // ── Live orderbook via WebSocket ──
         // Server-pushed orderbook_update events replace the prior 5-second
@@ -1099,6 +1324,11 @@
                 populateTradeWidget(currentAsset);
                 updateMarketInfo();
                 updateSummary();
+
+                // Refresh holdings — fills against this user's resting orders
+                // change `held_tokens`, so sellable cap can drift between
+                // matches. Don't await; UI updates async when it lands.
+                refreshUserHoldings().catch(() => { /* silent */ });
 
                 // Hero "shares available" derives from sellOrders depth.
                 const available =

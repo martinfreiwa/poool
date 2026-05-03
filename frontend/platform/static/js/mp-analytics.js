@@ -896,6 +896,15 @@
         if (tradesResult.ok) buildFraudGrid(fraudEl, state.trades);
         else renderMessage(fraudEl, `Risk signals unavailable: ${tradesResult.message}`, true);
       }
+      // Track consecutive failures for stale/offline detection.
+      if (statsResult.ok && tradesResult.ok) {
+        state.consecutiveFailures = 0;
+        setOnlineState('online');
+      } else {
+        state.consecutiveFailures = (state.consecutiveFailures || 0) + 1;
+        if (state.consecutiveFailures >= 3) setOnlineState('offline');
+        else setOnlineState('stale');
+      }
       tickUpdated();
     } finally {
       if (refreshBtn) {
@@ -1859,6 +1868,150 @@
       resetHiddenCards();
       const g = document.getElementById('analytics-stats-grid');
       if (g && state.stats) buildStatsCards(g, state.stats);
+    });
+  });
+
+  // ─── ONLINE / STALE STATE ──────────────────────────
+
+  function setOnlineState(s) {
+    const dot = document.querySelector('.mp-analytics-updated-dot');
+    const badge = document.getElementById('mp-stale-badge');
+    const banner = document.getElementById('mp-offline-banner');
+    if (dot) {
+      dot.classList.remove('stale', 'offline');
+      if (s === 'stale')   dot.classList.add('stale');
+      if (s === 'offline') dot.classList.add('offline');
+    }
+    if (badge) badge.classList.toggle('active', s === 'stale');
+    if (banner) banner.classList.toggle('active', s === 'offline');
+  }
+
+  // Browser-level offline event also triggers banner.
+  window.addEventListener('offline', () => setOnlineState('offline'));
+  window.addEventListener('online',  () => { state.consecutiveFailures = 0; setOnlineState('online'); refresh(); });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const retry = document.getElementById('mp-offline-banner-retry');
+    if (retry) retry.addEventListener('click', () => refresh());
+  });
+
+  // ─── AUDIT-LOG VIEWER ──────────────────────────────
+
+  async function fetchAuditLogs() {
+    const r = await fetchJson(`/api/admin/audit-logs?action_prefix=marketplace.&per_page=20`);
+    if (!r.ok) return r;
+    return { ok: true, data: r.data && r.data.logs ? r.data.logs : [] };
+  }
+  function buildAuditList(container, logs) {
+    if (!logs.length) {
+      renderMessage(container, 'No recent admin actions in marketplace.*');
+      return;
+    }
+    container.replaceChildren();
+    logs.forEach(log => {
+      const row = document.createElement('div');
+      row.className = 'mp-audit-row';
+      const action = log.action || '—';
+      const actor = log.actor_email || '—';
+      const entity = log.entity_id ? `${log.entity_type}/${String(log.entity_id).slice(0, 8)}` : log.entity_type;
+      const when = log.created_at ? fmtRelative(log.created_at) : '—';
+      row.innerHTML = `
+        <span class="mp-audit-action" title="${action}">${action.replace(/^marketplace\./, '')}</span>
+        <span class="mp-audit-entity" title="${entity}">${entity || '—'}</span>
+        <span class="mp-audit-actor" title="${actor}">${actor}</span>
+        <span class="mp-audit-time" title="${log.created_at}">${when}</span>
+        <button type="button" class="mp-audit-details-btn">details</button>`;
+      const detailsBtn = row.querySelector('.mp-audit-details-btn');
+      detailsBtn.addEventListener('click', () => {
+        let dt = row.querySelector('.mp-audit-details');
+        if (dt) { dt.remove(); return; }
+        dt = document.createElement('pre');
+        dt.className = 'mp-audit-details';
+        dt.textContent = JSON.stringify({
+          action: log.action,
+          actor: log.actor_email,
+          entity_type: log.entity_type,
+          entity_id: log.entity_id,
+          previous_state: log.previous_state,
+          new_state: log.new_state,
+          ip_address: log.ip_address,
+          created_at: log.created_at,
+        }, null, 2);
+        row.appendChild(dt);
+      });
+      container.appendChild(row);
+    });
+  }
+
+  async function refreshAuditLogs() {
+    const list = document.getElementById('mp-audit-list');
+    const meta = document.getElementById('mp-audit-meta');
+    if (!list) return;
+    const r = await fetchAuditLogs();
+    if (r.ok) {
+      buildAuditList(list, r.data);
+      if (meta) meta.textContent = `${r.data.length} marketplace.* events`;
+    } else {
+      renderMessage(list, `Audit log unavailable: ${r.message}`, true);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const panel = document.getElementById('mp-audit-panel');
+    if (!panel) return;
+    // Lazy fetch — on first open + thereafter on each open.
+    panel.addEventListener('toggle', () => {
+      if (panel.open) refreshAuditLogs();
+    });
+  });
+
+  // ─── PRESET CHIP PERSISTENCE + P-KEY SHORTCUT ─────
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Restore active preset chip if customRange matches a known preset.
+    const cr = state.customRange;
+    if (!cr || !cr.start || !cr.end) return;
+    document.querySelectorAll('.mp-daterange-presets button').forEach(btn => {
+      const r = presetRange(btn.dataset.preset);
+      if (r && r.start === cr.start && r.end === cr.end) btn.classList.add('active');
+    });
+  });
+
+  // P-key opens saved-preset dropdown.
+  document.addEventListener('keydown', (e) => {
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    if (e.key === 'p' || e.key === 'P') {
+      const sel = document.getElementById('mp-saved-preset-select');
+      if (sel) {
+        e.preventDefault();
+        sel.focus();
+        // Most browsers require user interaction to open — focus is best we can do.
+        try { sel.showPicker && sel.showPicker(); } catch (_) { /* noop */ }
+      }
+    }
+  });
+
+  // Wrap save-preset to confirm overwrite (override original if defined).
+  document.addEventListener('DOMContentLoaded', () => {
+    const saveBtn = document.getElementById('mp-saved-preset-save');
+    if (!saveBtn) return;
+    // Replace listener: clone+replace strips parallel-agent's prior handler so we can confirm overwrite.
+    const fresh = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(fresh, saveBtn);
+    fresh.addEventListener('click', () => {
+      const name = window.prompt('Preset name?');
+      if (!name) return;
+      const trimmed = name.trim();
+      const presets = loadSavedPresets();
+      if (presets[trimmed]) {
+        if (!window.confirm(`Preset "${trimmed}" exists. Overwrite?`)) return;
+      }
+      presets[trimmed] = snapshotFilters();
+      saveSavedPresets(presets);
+      refreshPresetSelect();
+      const sel = document.getElementById('mp-saved-preset-select');
+      if (sel) sel.value = trimmed;
+      if (window.mpToast) window.mpToast.success(`Preset "${trimmed}" ${presets[trimmed] ? 'saved' : 'created'}.`);
     });
   });
 

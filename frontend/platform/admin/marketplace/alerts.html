@@ -260,7 +260,9 @@
             <span class="separator">›</span>
             <a href="/admin/marketplace/">Marketplace</a>
             <span class="separator">›</span>
-            <span class="current">Alerts</span>
+            <span style="color:var(--admin-text-muted);font-size:11px;" title="Alerts also surface in Compliance — same data, different lens">Compliance·Alerts</span>
+            <span class="separator">›</span>
+            <span class="current">Alerts &amp; Watchlist</span>
           </nav>
         </div>
         <div class="admin-topbar-right">
@@ -268,6 +270,9 @@
             ⚠ Syndicate Fraud <span id="fraud-link-count" style="background:var(--admin-warning);color:#fff;padding:0 5px;border-radius:8px;font-size:10px;">—</span>
           </a>
           <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-cmdk" title="Open command palette (⌘K)">⌘K</button>
+          <label style="font-size:11px;color:var(--admin-text-muted);display:inline-flex;align-items:center;gap:4px;margin-right:8px;" title="Play sound on new critical alerts">
+            🔊 <input type="range" id="alerts-volume" min="0" max="100" value="60" style="width:70px;" />
+          </label>
           <button class="admin-btn admin-btn--secondary admin-btn--sm" id="alerts-btn-notify" title="Enable browser notifications for new critical alerts">🔔 Enable alerts</button>
         </div>
       </header>
@@ -560,8 +565,18 @@
         <div class="alerts-form-row">
           <label><input type="checkbox" id="rule-enabled" checked /> Enabled</label>
         </div>
+        <div class="alerts-form-row">
+          <label>Mute schedule</label>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--admin-text-secondary);">
+            <label><input type="checkbox" id="rule-mute-weekends" /> Mute weekends (Sat/Sun)</label>
+            <label>Mute hours (UTC, comma-list e.g. 22,23,0-6):
+              <input type="text" id="rule-mute-hours" placeholder="22-6" style="width:120px;font-size:12px;padding:4px 8px;" />
+            </label>
+          </div>
+        </div>
       </div>
       <div class="alerts-modal-footer">
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="rule-modal-backtest" title="Count past matches for this rule">⏪ Backtest 30d</button>
         <button class="admin-btn admin-btn--secondary admin-btn--sm" id="rule-modal-test">Send test alert</button>
         <button class="admin-btn admin-btn--secondary admin-btn--sm" id="rule-modal-cancel">Cancel</button>
         <button class="admin-btn admin-btn--primary admin-btn--sm" id="rule-modal-save">Save rule</button>

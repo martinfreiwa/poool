@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            a.id,\n            a.title,\n            a.slug,\n            a.short_description,\n            a.description,\n            a.asset_type,\n            a.location_city,\n            a.location_country,\n            a.total_value_cents,\n            a.token_price_cents,\n            a.tokens_total,\n            a.tokens_available,\n            a.annual_yield_bps,\n            a.capital_appreciation_bps,\n            a.funding_status,\n            ARRAY(\n                SELECT image_url\n                FROM asset_images\n                WHERE asset_id = a.id\n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls?\",\n            a.bedrooms,\n            a.bathrooms,\n            a.building_size_sqm,\n            a.lease_type,\n            a.term_months,\n            a.area,\n            a.land_size_sqm,\n            (\n                SELECT COUNT(DISTINCT o.user_id)\n                FROM order_items oi\n                JOIN orders o ON oi.order_id = o.id\n                WHERE oi.asset_id = a.id\n                  AND o.status = 'completed'\n            ) AS \"investor_count?\",\n            a.video_url,\n            a.google_maps_url,\n            a.location_description\n        FROM assets a\n        WHERE a.published = true\n          AND a.asset_type = 'commodity'\n          AND a.id != $1\n        ORDER BY a.featured DESC, a.created_at DESC\n        LIMIT 4\n        ",
+  "query": "\n        SELECT\n            a.id,\n            a.title,\n            a.slug,\n            a.short_description,\n            a.description,\n            a.asset_type,\n            a.location_city,\n            a.location_country,\n            a.total_value_cents,\n            a.token_price_cents,\n            a.tokens_total,\n            a.tokens_available,\n            a.annual_yield_bps,\n            a.capital_appreciation_bps,\n            a.funding_status,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, sort_order ASC, created_at ASC\n            ) AS \"image_urls?\",\n            a.bedrooms,\n            a.bathrooms,\n            a.building_size_sqm,\n            a.lease_type,\n            a.term_months,\n            a.area,\n            a.land_size_sqm,\n            (\n                SELECT COUNT(DISTINCT o.user_id)\n                FROM order_items oi\n                JOIN orders o ON oi.order_id = o.id\n                WHERE oi.asset_id = a.id\n                  AND o.status = 'completed'\n            ) AS \"investor_count?\",\n            a.video_url,\n            a.google_maps_url,\n            a.location_description\n        FROM assets a\n        \n        WHERE a.published = true\n          AND a.asset_type != 'commodity'\n          AND a.funding_status IN ('funding_open', 'funding_in_progress')\n        ORDER BY a.featured DESC, a.created_at DESC\n        ",
   "describe": {
     "columns": [
       {
@@ -140,9 +140,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -174,5 +172,5 @@
       true
     ]
   },
-  "hash": "6b65b334e507c175b7cdb93f3b7963c0aab469ab70ac70aa1e953e8fd7bbbeac"
+  "hash": "f7dc7a42921d5752941730b12e60649e588e504d3de045173c1c0372b27799c0"
 }
