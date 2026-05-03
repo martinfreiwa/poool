@@ -890,12 +890,22 @@ document.addEventListener("DOMContentLoaded", function () {
     return returns;
   }
 
-  // Get current input values from native sliders
+  // Get current input values from native sliders (or manual override via dataset)
+  function readSliderValue(slider, fallback) {
+    if (!slider) return fallback;
+    const override = slider.dataset.actualValue;
+    if (override !== undefined && override !== "") {
+      const parsed = parseFloat(override);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return parseFloat(slider.value) || fallback;
+  }
+
   function getCurrentValues() {
     return {
-      investment: investmentSlider ? parseFloat(investmentSlider.value) || 100000 : 100000,
-      growth: growthSlider ? parseFloat(growthSlider.value) || 10 : 10,
-      yield: yieldSlider ? parseFloat(yieldSlider.value) || 12 : 12,
+      investment: readSliderValue(investmentSlider, 100000),
+      growth: readSliderValue(growthSlider, 10),
+      yield: readSliderValue(yieldSlider, 12),
     };
   }
 
@@ -1127,12 +1137,97 @@ document.addEventListener("DOMContentLoaded", function () {
     updateStatisticsCard(calculationData);
   }
 
+  // Parse a user-entered number from text (strips $, USD, %, commas, spaces)
+  function parseManualNumber(text) {
+    if (!text) return NaN;
+    const cleaned = String(text).replace(/[^0-9.\-]/g, "");
+    if (cleaned === "" || cleaned === "-" || cleaned === ".") return NaN;
+    return parseFloat(cleaned);
+  }
+
+  // Wire a contenteditable value span to its slider for manual entry
+  function attachEditableValue(valueEl, slider, opts) {
+    if (!valueEl || !slider) return;
+    const { isCurrency, min, max, allowAboveMax } = opts;
+
+    valueEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        valueEl.blur();
+      }
+    });
+
+    valueEl.addEventListener("blur", function () {
+      const num = parseManualNumber(valueEl.textContent);
+      if (isNaN(num)) {
+        // Restore from current slider
+        valueEl.textContent = isCurrency
+          ? "USD " + new Intl.NumberFormat("en-US").format(parseFloat(slider.value) || 0)
+          : (parseFloat(slider.value) || 0) + "%";
+        return;
+      }
+      let actual = num;
+      if (actual < min) actual = min;
+      if (!allowAboveMax && actual > max) actual = max;
+
+      // Slider thumb clamps to its min/max; store the true value separately
+      const thumbValue = Math.min(Math.max(actual, min), max);
+      slider.value = thumbValue;
+      slider.dataset.actualValue = String(actual);
+
+      valueEl.textContent = isCurrency
+        ? "USD " + new Intl.NumberFormat("en-US").format(Math.round(actual))
+        : (Number.isInteger(actual) ? actual : actual.toFixed(1)) + "%";
+
+      updateSliderTrack(slider);
+      updateCalculator();
+    });
+  }
+
+  // Clear manual override when the user drags the slider
+  function clearOverrideOnSliderInput(slider) {
+    if (!slider) return;
+    slider.addEventListener("input", function () {
+      delete slider.dataset.actualValue;
+    });
+  }
+
+  // Re-expose updateSliderTrack used inside initializeSliders scope
+  function updateSliderTrack(slider) {
+    if (!slider) return;
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const val = parseFloat(slider.value) || 0;
+    const pct = ((val - min) / (max - min)) * 100;
+    slider.style.background = `linear-gradient(to right, #fff 0%, #fff ${pct}%, rgba(255,255,255,0.2) ${pct}%, rgba(255,255,255,0.2) 100%)`;
+  }
+
   // Event listeners for real-time updates
   function attachCalculatorListeners() {
     [investmentSlider, growthSlider, yieldSlider].forEach((slider) => {
       if (slider) {
         slider.addEventListener("input", updateCalculator);
+        clearOverrideOnSliderInput(slider);
       }
+    });
+
+    attachEditableValue(investmentValue, investmentSlider, {
+      isCurrency: true,
+      min: 0,
+      max: 100000,
+      allowAboveMax: true,
+    });
+    attachEditableValue(growthValue, growthSlider, {
+      isCurrency: false,
+      min: 0,
+      max: 100,
+      allowAboveMax: true,
+    });
+    attachEditableValue(yieldValue, yieldSlider, {
+      isCurrency: false,
+      min: 0,
+      max: 100,
+      allowAboveMax: true,
     });
   }
 

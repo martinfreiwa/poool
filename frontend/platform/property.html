@@ -209,9 +209,10 @@
                     </div>
                     <!-- Sliders -->
                     <div class="calc-slider-section slider-1">
-                      <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1">USD 100,000</span></div>
-                      <input type="range" class="calc-slider" id="calc-slider-1" min="500" max="100000" value="100000" />
-                      <div class="calc-slider-limits"><span>$500</span><span>${{ asset.total_value_usd | default("100,000") }}</span></div>
+                      <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1" contenteditable="true" data-placeholder="USD 100,000" spellcheck="false">USD 100,000</span></div>
+                      <input type="range" class="calc-slider" id="calc-slider-1" min="0" max="100000" value="100000" />
+                      <div class="calc-slider-limits"><span>$0</span><span>$100,000</span></div>
+                      <div class="calc-slider-total-value">Total property value: ${{ asset.total_value_usd | default("100,000") }}</div>
                     </div>
                     <div class="calc-slider-section slider-2">
                       <div class="calc-slider-labels">
@@ -225,7 +226,7 @@
                             <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">Estimated annual rate at which the property value is expected to increase based on market data.</span></span>
                           </span>
                         </span>
-                        <span class="calc-slider-value" id="calc-slider-value-2">10%</span>
+                        <span class="calc-slider-value" id="calc-slider-value-2" contenteditable="true" data-placeholder="10%" spellcheck="false">10%</span>
                       </div>
                       <input type="range" class="calc-slider" id="calc-slider-2" min="1" max="20" value="10" step="0.5" />
                       <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
@@ -242,7 +243,7 @@
                             <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">The projected annual rental income as a percentage of the property value.</span></span>
                           </span>
                         </span>
-                        <span class="calc-slider-value" id="calc-slider-value-3">12%</span>
+                        <span class="calc-slider-value" id="calc-slider-value-3" contenteditable="true" data-placeholder="12%" spellcheck="false">12%</span>
                       </div>
                       <input type="range" class="calc-slider" id="calc-slider-3" min="1" max="20" value="12" step="0.5" />
                       <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
