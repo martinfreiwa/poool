@@ -251,12 +251,18 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
             a.area,
             a.land_size_sqm,
             (
-                SELECT COUNT(DISTINCT o.user_id)
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.id
-                WHERE oi.asset_id = a.id
-                  AND o.status = 'completed'
+                SELECT COUNT(DISTINCT user_id)
+                FROM investments
+                WHERE asset_id = a.id
+                  AND tokens_owned > 0
+                  AND status != 'exited'
             ) AS "investor_count?",
+            COALESCE((
+                SELECT SUM(tokens_owned)::bigint
+                FROM investments
+                WHERE asset_id = a.id
+                  AND status != 'exited'
+            ), 0) AS "tokens_sold_actual?",
             a.video_url,
             a.google_maps_url,
             a.location_description
@@ -374,12 +380,18 @@ pub async fn page_property(
                 a.area,
                 a.land_size_sqm,
                 (
-                    SELECT COUNT(DISTINCT o.user_id)
-                    FROM order_items oi
-                    JOIN orders o ON oi.order_id = o.id
-                    WHERE oi.asset_id = a.id
-                      AND o.status = 'completed'
+                    SELECT COUNT(DISTINCT user_id)
+                    FROM investments
+                    WHERE asset_id = a.id
+                      AND tokens_owned > 0
+                      AND status != 'exited'
                 ) AS "investor_count?",
+                COALESCE((
+                    SELECT SUM(tokens_owned)::bigint
+                    FROM investments
+                    WHERE asset_id = a.id
+                      AND status != 'exited'
+                ), 0) AS "tokens_sold_actual?",
                 a.video_url,
                 a.google_maps_url,
                 a.location_description
@@ -472,12 +484,18 @@ pub async fn page_property(
                 a.area,
                 a.land_size_sqm,
                 (
-                    SELECT COUNT(DISTINCT o.user_id)
-                    FROM order_items oi
-                    JOIN orders o ON oi.order_id = o.id
-                    WHERE oi.asset_id = a.id
-                      AND o.status = 'completed'
+                    SELECT COUNT(DISTINCT user_id)
+                    FROM investments
+                    WHERE asset_id = a.id
+                      AND tokens_owned > 0
+                      AND status != 'exited'
                 ) AS "investor_count?",
+                COALESCE((
+                    SELECT SUM(tokens_owned)::bigint
+                    FROM investments
+                    WHERE asset_id = a.id
+                      AND status != 'exited'
+                ), 0) AS "tokens_sold_actual?",
                 a.video_url,
                 a.google_maps_url,
                 a.location_description
@@ -685,12 +703,18 @@ pub async fn page_property_public(
             a.area,
             a.land_size_sqm,
             (
-                SELECT COUNT(DISTINCT o.user_id)
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.id
-                WHERE oi.asset_id = a.id
-                  AND o.status = 'completed'
+                SELECT COUNT(DISTINCT user_id)
+                FROM investments
+                WHERE asset_id = a.id
+                  AND tokens_owned > 0
+                  AND status != 'exited'
             ) AS "investor_count?",
+            COALESCE((
+                SELECT SUM(tokens_owned)::bigint
+                FROM investments
+                WHERE asset_id = a.id
+                  AND status != 'exited'
+            ), 0) AS "tokens_sold_actual?",
             a.video_url,
             a.google_maps_url,
             a.location_description
@@ -894,12 +918,18 @@ pub async fn page_commodity(
             a.google_maps_url,
             a.video_url,
             (
-                SELECT COUNT(DISTINCT o.user_id)
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.id
-                WHERE oi.asset_id = a.id
-                  AND o.status = 'completed'
+                SELECT COUNT(DISTINCT user_id)
+                FROM investments
+                WHERE asset_id = a.id
+                  AND tokens_owned > 0
+                  AND status != 'exited'
             ) AS "investor_count?",
+            COALESCE((
+                SELECT SUM(tokens_owned)::bigint
+                FROM investments
+                WHERE asset_id = a.id
+                  AND status != 'exited'
+            ), 0) AS "tokens_sold_actual?",
             a.operator_name,
             a.fixed_roi_bps,
             a.revenue_min_cents,
@@ -1047,12 +1077,18 @@ pub async fn page_commodity(
             a.area,
             a.land_size_sqm,
             (
-                SELECT COUNT(DISTINCT o.user_id)
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.id
-                WHERE oi.asset_id = a.id
-                  AND o.status = 'completed'
+                SELECT COUNT(DISTINCT user_id)
+                FROM investments
+                WHERE asset_id = a.id
+                  AND tokens_owned > 0
+                  AND status != 'exited'
             ) AS "investor_count?",
+            COALESCE((
+                SELECT SUM(tokens_owned)::bigint
+                FROM investments
+                WHERE asset_id = a.id
+                  AND status != 'exited'
+            ), 0) AS "tokens_sold_actual?",
             a.video_url,
             a.google_maps_url,
             a.location_description
@@ -1423,12 +1459,18 @@ pub async fn page_commodities_marketplace(
             a.area,
             a.land_size_sqm,
             (
-                SELECT COUNT(DISTINCT o.user_id)
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.id
-                WHERE oi.asset_id = a.id
-                  AND o.status = 'completed'
+                SELECT COUNT(DISTINCT user_id)
+                FROM investments
+                WHERE asset_id = a.id
+                  AND tokens_owned > 0
+                  AND status != 'exited'
             ) AS "investor_count?",
+            COALESCE((
+                SELECT SUM(tokens_owned)::bigint
+                FROM investments
+                WHERE asset_id = a.id
+                  AND status != 'exited'
+            ), 0) AS "tokens_sold_actual?",
             a.video_url,
             a.google_maps_url,
             a.operator_name,
@@ -1560,12 +1602,18 @@ pub async fn api_commodities_tab(
             a.google_maps_url,
             a.video_url,
             (
-                SELECT COUNT(DISTINCT o.user_id)
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.id
-                WHERE oi.asset_id = a.id
-                  AND o.status = 'completed'
+                SELECT COUNT(DISTINCT user_id)
+                FROM investments
+                WHERE asset_id = a.id
+                  AND tokens_owned > 0
+                  AND status != 'exited'
             ) AS "investor_count?",
+            COALESCE((
+                SELECT SUM(tokens_owned)::bigint
+                FROM investments
+                WHERE asset_id = a.id
+                  AND status != 'exited'
+            ), 0) AS "tokens_sold_actual?",
             a.operator_name,
             a.fixed_roi_bps,
             a.revenue_min_cents,

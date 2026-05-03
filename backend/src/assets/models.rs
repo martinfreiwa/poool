@@ -31,8 +31,11 @@ pub struct MarketplaceAsset {
     pub area: Option<String>,
     pub building_size_sqm: Option<rust_decimal::Decimal>,
     pub land_size_sqm: Option<rust_decimal::Decimal>,
-    /// Number of unique investors who completed orders for this asset
+    /// Number of unique active holders (from `investments`, tokens_owned > 0, status != 'exited')
     pub investor_count: Option<i64>,
+    /// Sum of tokens currently held across all active investments (single source of truth).
+    /// When `Some`, overrides drift in `assets.tokens_available`.
+    pub tokens_sold_actual: Option<i64>,
     pub video_url: Option<String>,
     pub google_maps_url: Option<String>,
     pub location_description: Option<String>,
@@ -234,14 +237,20 @@ impl AssetPageContent {
 
 impl PropertyDisplayData {
     pub fn from_asset(asset: &MarketplaceAsset) -> Self {
-        let tokens_sold = asset.tokens_total - asset.tokens_available;
+        // Prefer dynamic count from `investments` (single source of truth) over drift-prone
+        // `assets.tokens_available`. Falls back to stored field if subquery absent.
+        let tokens_sold = asset
+            .tokens_sold_actual
+            .map(|n| n.clamp(0, asset.tokens_total as i64) as i32)
+            .unwrap_or(asset.tokens_total - asset.tokens_available);
+        let tokens_available_dyn = (asset.tokens_total - tokens_sold).max(0);
         let funded_pct = if asset.tokens_total > 0 {
             ((tokens_sold as f64 / asset.tokens_total as f64) * 100.0) as i32
         } else {
             0
         };
 
-        let available_cents = asset.tokens_available as i64 * asset.token_price_cents;
+        let available_cents = tokens_available_dyn as i64 * asset.token_price_cents;
         let total_value_dollars = asset.total_value_cents / 100;
         let available_dollars = available_cents / 100;
 
@@ -330,7 +339,7 @@ impl PropertyDisplayData {
             total_value_usd: format_number(total_value_dollars),
             total_value_cents: asset.total_value_cents,
             tokens_total: asset.tokens_total,
-            tokens_available: asset.tokens_available,
+            tokens_available: tokens_available_dyn,
             tokens_sold,
             funded_percentage: funded_pct,
             funded_percentage_display: format!("{}", funded_pct),
@@ -474,8 +483,10 @@ pub struct CommodityAsset {
     pub land_size_sqm: Option<rust_decimal::Decimal>,
     pub google_maps_url: Option<String>,
     pub video_url: Option<String>,
-    /// Number of unique investors who completed orders for this asset
+    /// Number of unique active holders (from `investments`, tokens_owned > 0, status != 'exited')
     pub investor_count: Option<i64>,
+    /// Sum of tokens currently held across all active investments.
+    pub tokens_sold_actual: Option<i64>,
 
     // Commodity-specific fields
     pub operator_name: Option<String>,
@@ -567,14 +578,18 @@ pub struct CommodityDisplayData {
 impl CommodityDisplayData {
     /// Build a template-friendly `CommodityDisplayData` from a raw `CommodityAsset`.
     pub fn from_asset(asset: &CommodityAsset) -> Self {
-        let tokens_sold = asset.tokens_total - asset.tokens_available;
+        let tokens_sold = asset
+            .tokens_sold_actual
+            .map(|n| n.clamp(0, asset.tokens_total as i64) as i32)
+            .unwrap_or(asset.tokens_total - asset.tokens_available);
+        let tokens_available_dyn = (asset.tokens_total - tokens_sold).max(0);
         let funded_pct = if asset.tokens_total > 0 {
             ((tokens_sold as f64 / asset.tokens_total as f64) * 100.0) as i32
         } else {
             0
         };
 
-        let available_cents = asset.tokens_available as i64 * asset.token_price_cents;
+        let available_cents = tokens_available_dyn as i64 * asset.token_price_cents;
         let total_value_dollars = asset.total_value_cents / 100;
         let available_dollars = available_cents / 100;
         let min_investment_dollars = asset.token_price_cents / 100;
@@ -671,7 +686,7 @@ impl CommodityDisplayData {
             total_value_usd: format_number(total_value_dollars),
             total_value_cents: asset.total_value_cents,
             tokens_total: asset.tokens_total,
-            tokens_available: asset.tokens_available,
+            tokens_available: tokens_available_dyn,
             tokens_sold,
             funded_percentage: funded_pct,
             funded_percentage_display: format!("{}", funded_pct),
@@ -763,6 +778,7 @@ mod tests {
             google_maps_url: Some("https://maps.google.com/test".to_string()),
             video_url: None,
             investor_count: Some(42),
+            tokens_sold_actual: None,
             operator_name: Some("PT. NEO AGRO SOLUTIONS".to_string()),
             fixed_roi_bps: Some(3500),
             revenue_min_cents: Some(540_000_000), // $5.4M

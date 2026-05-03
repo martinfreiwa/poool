@@ -1914,10 +1914,14 @@ async fn render_login(
                 a.bedrooms, a.bathrooms, a.building_size_sqm, a.lease_type,
                 a.term_months, a.area, a.land_size_sqm,
                 (
-                    SELECT COUNT(DISTINCT o.user_id)
-                    FROM order_items oi JOIN orders o ON oi.order_id = o.id
-                    WHERE oi.asset_id = a.id AND o.status = 'completed'
+                    SELECT COUNT(DISTINCT user_id)
+                    FROM investments
+                    WHERE asset_id = a.id AND tokens_owned > 0 AND status != 'exited'
                 ) AS "investor_count?",
+                COALESCE((
+                    SELECT SUM(tokens_owned)::bigint FROM investments
+                    WHERE asset_id = a.id AND status != 'exited'
+                ), 0) AS "tokens_sold_actual?",
                 a.video_url, a.google_maps_url, a.location_description
             FROM assets a
             WHERE a.slug = $1 AND a.published = true AND a.asset_type != 'commodity'
@@ -2005,11 +2009,14 @@ async fn render_signup(
                 a.area,
                 a.land_size_sqm,
                 (
-                    SELECT COUNT(DISTINCT o.user_id)
-                    FROM order_items oi
-                    JOIN orders o ON oi.order_id = o.id
-                    WHERE oi.asset_id = a.id AND o.status = 'completed'
+                    SELECT COUNT(DISTINCT user_id)
+                    FROM investments
+                    WHERE asset_id = a.id AND tokens_owned > 0 AND status != 'exited'
                 ) AS "investor_count?",
+                COALESCE((
+                    SELECT SUM(tokens_owned)::bigint FROM investments
+                    WHERE asset_id = a.id AND status != 'exited'
+                ), 0) AS "tokens_sold_actual?",
                 a.video_url,
                 a.google_maps_url,
                 a.location_description
