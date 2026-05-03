@@ -11,9 +11,9 @@ Repository: `/Users/martin/Projects/poool`
 Read if present:
 
 1. `AGENTS.md`
-2. `docs/page-review-tracker.yml`
-3. `docs/PAGE_REVIEW_TRACKER.md`
-4. `docs/E2E_COVERAGE_TRACKER.md`
+2. `docs/issue-tracking/page-review-tracker.yml`
+3. `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`
+4. `docs/automation-coverage/E2E_COVERAGE_TRACKER.md`
 5. `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md`
 6. `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`
 
@@ -52,7 +52,7 @@ Document whether tests cover:
 
 Update or create:
 
-`docs/E2E_COVERAGE_TRACKER.md`
+`docs/automation-coverage/E2E_COVERAGE_TRACKER.md`
 
 Also write a dated report:
 

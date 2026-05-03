@@ -49,4 +49,4 @@ No functional/security/accessibility issue from this page audit remains open.
 - `cargo fmt`
 - `cargo fmt --check`
 - `CARGO_TARGET_DIR=/tmp/poool-commodities-run CARGO_INCREMENTAL=0 cargo check --quiet`
-- `python3 scripts/audit_page_review_tracker.py --write-md` regenerated `docs/PAGE_REVIEW_TRACKER.md`; passed with 0 missing tracker routes.
+- `python3 scripts/audit_page_review_tracker.py --write-md` regenerated `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`; passed with 0 missing tracker routes.

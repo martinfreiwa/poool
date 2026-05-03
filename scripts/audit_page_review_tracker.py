@@ -2,7 +2,7 @@
 """Audit and render the POOOL page review tracker.
 
 Source of truth:
-    docs/page-review-tracker.yml
+    docs/issue-tracking/page-review-tracker.yml
 
 The audit intentionally stays repo-native and dependency-light. PyYAML is used
 because the tracker is YAML; no app code, database, or web server is required.
@@ -26,8 +26,8 @@ except ImportError:  # pragma: no cover - local developer environment guard
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TRACKER_PATH = REPO_ROOT / "docs" / "page-review-tracker.yml"
-REPORT_PATH = REPO_ROOT / "docs" / "PAGE_REVIEW_TRACKER.md"
+TRACKER_PATH = REPO_ROOT / "docs" / "issue-tracking" / "page-review-tracker.yml"
+REPORT_PATH = REPO_ROOT / "docs" / "issue-tracking" / "PAGE_REVIEW_TRACKER.md"
 FRONTEND_ROOT = REPO_ROOT / "frontend" / "platform"
 BACKEND_ROOT = REPO_ROOT / "backend" / "src"
 
@@ -419,13 +419,13 @@ def render_markdown(tracker: dict[str, Any], results: dict[str, Any]) -> str:
             "# Page Review Tracker",
             (
                 "## Purpose\n"
-                "This document is the human-readable view of `docs/page-review-tracker.yml`. "
+                "This document is the human-readable view of `docs/issue-tracking/page-review-tracker.yml`. "
                 "It tracks every known page route, frontend page template, and supporting HTML template "
                 "that should be considered during security, accessibility, E2E, and functional reviews."
             ),
             (
                 "## How To Update\n"
-                "- Update `docs/page-review-tracker.yml`; do not hand-edit generated tables in this report.\n"
+                "- Update `docs/issue-tracking/page-review-tracker.yml`; do not hand-edit generated tables in this report.\n"
                 "- Add a new page entry whenever a new Axum page route or `frontend/platform` page template is added.\n"
                 "- Set `url_path`, `source_template`, `backend_route`, `related_js`, `related_css`, access level, sensitivity, risk, `last_tested_date`, owner, and notes.\n"
                 "- Record a review by updating the relevant review category with status, reviewer, date, commit SHA, due date, evidence, and findings summary.\n"
@@ -521,7 +521,7 @@ def print_results(results: dict[str, Any]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tracker", type=Path, default=TRACKER_PATH)
-    parser.add_argument("--write-md", action="store_true", help="Regenerate docs/PAGE_REVIEW_TRACKER.md")
+    parser.add_argument("--write-md", action="store_true", help="Regenerate docs/issue-tracking/PAGE_REVIEW_TRACKER.md")
     parser.add_argument("--report", type=Path, default=REPORT_PATH)
     args = parser.parse_args()
 

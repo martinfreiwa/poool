@@ -9,7 +9,15 @@ name: E2E Tests
 
 on:
   pull_request:
-    branches: [main, staging]
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'database/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'Dockerfile'
+      - '.github/workflows/e2e-tests.yml'
   # Allow manual trigger from GitHub UI
   workflow_dispatch:
     inputs:

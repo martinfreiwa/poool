@@ -472,6 +472,110 @@ mod tests {
         assert_eq!(pubkey_to_address(&pk), expected_addr);
     }
 
+    /// One-shot bootstrap: distribute Villa Pillada Horadada tokens from
+    /// the KMS settler to the 5 historical owners on Polygon mainnet.
+    /// Brings on-chain ledger in sync with the off-chain `investments`
+    /// table after the Amoy → mainnet migration.
+    /// Run with: `cargo test --bin poool-backend -- --ignored bootstrap_villa_distribution`
+    #[tokio::test]
+    #[ignore = "one-shot mainnet bootstrap, requires CHAIN_KMS_KEY + GCP auth"]
+    async fn bootstrap_villa_distribution() {
+        use reqwest::Client;
+        let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
+        let key = std::env::var("CHAIN_KMS_KEY").expect("CHAIN_KMS_KEY not set");
+        let signer = KmsSigner::new(key).await.expect("KmsSigner::new failed");
+        let settler = super::super::signing::format_address(&signer.address());
+        println!("Settler: {}", settler);
+
+        // Bootstrap distribution: (recipient, amount).
+        let dist: Vec<(&str, u128)> = vec![
+            ("0xfD32FA370F2951e22c5Ce4c381f1eE88f9869fF0", 1223), // support@traffic-creator.com
+            ("0x482035530fFa865DEf841c2F19b82526341FC67d", 674),  // admin@poool.app
+            ("0xCaD52994B74F0A76df664486efC1294ACbe15e6b", 92),   // jonas.freiwald@poool.app
+            ("0xE8C2F2b4fBe6584d5f2b987BE5d8F8E85dCAC16A", 10),   // martin.freiwald.work@gmail.com
+            ("0xB074f9C09FEA4eEc56CB50dB946ff15D5c87Aa5c", 1),    // poool.test+...
+        ];
+
+        let clone = "0xf92814f3538e5604bc2f18c5bf5bc5cd2dbcd978";
+        let chain_id: u64 = 137;
+        let rpc = "https://polygon-bor.publicnode.com";
+
+        // ABI-encode settleBatch(address[],address[],uint256[]).
+        let pad_addr = |a: &str| {
+            let clean = a.strip_prefix("0x").unwrap_or(a).to_lowercase();
+            format!("{:0>64}", clean)
+        };
+        let pad_u256 = |n: u128| format!("{:064x}", n);
+        let n = dist.len();
+        let array_size = 32 + n * 32;
+        let off_froms = 3 * 32;
+        let off_tos = off_froms + array_size;
+        let off_amts = off_tos + array_size;
+        let settler_unprefixed = settler.trim_start_matches("0x").to_lowercase();
+        let mut calldata = String::from("fc4b731c");
+        calldata.push_str(&pad_u256(off_froms as u128));
+        calldata.push_str(&pad_u256(off_tos as u128));
+        calldata.push_str(&pad_u256(off_amts as u128));
+        // froms array (settler × n)
+        calldata.push_str(&pad_u256(n as u128));
+        for _ in &dist {
+            calldata.push_str(&format!("{:0>64}", settler_unprefixed));
+        }
+        // tos array
+        calldata.push_str(&pad_u256(n as u128));
+        for (addr, _) in &dist {
+            calldata.push_str(&pad_addr(addr));
+        }
+        // amounts array
+        calldata.push_str(&pad_u256(n as u128));
+        for (_, amt) in &dist {
+            calldata.push_str(&pad_u256(*amt));
+        }
+        let calldata = format!("0x{}", calldata);
+
+        // Fetch nonce + gas price.
+        let http = Client::new();
+        let rpc_call = |method: &'static str, params: serde_json::Value| {
+            let body = serde_json::json!({"jsonrpc":"2.0","id":1,"method":method,"params":params});
+            let http = http.clone();
+            async move {
+                let r = http.post(rpc).json(&body).send().await.unwrap();
+                let v: serde_json::Value = r.json().await.unwrap();
+                v["result"].as_str().unwrap().to_string()
+            }
+        };
+        let nonce_hex = rpc_call("eth_getTransactionCount", serde_json::json!([&settler, "pending"])).await;
+        let nonce = u64::from_str_radix(nonce_hex.trim_start_matches("0x"), 16).unwrap();
+        let gas_price_hex = rpc_call("eth_gasPrice", serde_json::json!([])).await;
+        let gas_price = u64::from_str_radix(gas_price_hex.trim_start_matches("0x"), 16).unwrap();
+        println!("nonce={} gas_price={} gwei", nonce, gas_price as f64 / 1e9);
+
+        // Estimate gas.
+        let est_body = serde_json::json!({
+            "jsonrpc":"2.0","id":1,"method":"eth_estimateGas",
+            "params":[{"from":&settler,"to":clone,"data":&calldata}]
+        });
+        let est: serde_json::Value = http.post(rpc).json(&est_body).send().await.unwrap().json().await.unwrap();
+        println!("eth_estimateGas: {:?}", est);
+        let gas_est = u64::from_str_radix(est["result"].as_str().unwrap().trim_start_matches("0x"), 16).unwrap();
+        let gas_limit = gas_est + (gas_est / 5);
+
+        // Sign via KMS.
+        let signed_hex = super::super::signing::sign_legacy_transaction_with(
+            &signer, chain_id, nonce, gas_price, gas_limit, clone, 0, &calldata,
+        ).await.unwrap();
+
+        // Broadcast.
+        let send_body = serde_json::json!({
+            "jsonrpc":"2.0","id":1,"method":"eth_sendRawTransaction","params":[signed_hex]
+        });
+        let send: serde_json::Value = http.post(rpc).json(&send_body).send().await.unwrap().json().await.unwrap();
+        println!("eth_sendRawTransaction: {}", serde_json::to_string_pretty(&send).unwrap());
+        let tx_hash = send["result"].as_str().expect("broadcast failed");
+        println!("✅ Broadcast tx_hash: {}", tx_hash);
+    }
+
     #[tokio::test]
     async fn local_signer_round_trip_via_recovery() {
         let signer = LocalKeySigner::from_hex(TEST_KEY).unwrap();

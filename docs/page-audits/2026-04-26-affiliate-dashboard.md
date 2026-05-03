@@ -23,7 +23,7 @@ The authenticated affiliate dashboard is route-registered and has real backend A
 - Static review of `frontend/platform/static/js/affiliate-dashboard.js`
 - Backend route/API review in `backend/src/rewards/mod.rs`, `backend/src/rewards/routes.rs`, and `backend/src/rewards/service.rs`
 - Schema dependency review from affiliate migrations and `docs/DATABASE_SCHEMA.md`
-- Shared standards review from `AGENTS.md`, `docs/AGENT_DEVELOPMENT_PROMPT.md`, `docs/DESIGN.md`, `docs/IMPLEMENTATION_ROADMAP.md`, `docs/BROKEN_LOGICS.md`, `docs/FRONTEND_COMPONENTS.md`, `docs/TECH_STACK.md`, `docs/SECURITY.md`, and `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`
+- Shared standards review from `AGENTS.md`, `docs/AGENT_DEVELOPMENT_PROMPT.md`, `docs/DESIGN.md`, `docs/IMPLEMENTATION_ROADMAP.md`, `docs/issue-tracking/BROKEN_LOGICS.md`, `docs/design/FRONTEND_COMPONENTS.md`, `docs/TECH_STACK.md`, `docs/SECURITY.md`, and `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`
 - JavaScript syntax check with `node --check`
 
 ---

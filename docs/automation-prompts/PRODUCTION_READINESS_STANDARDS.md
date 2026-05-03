@@ -7,8 +7,8 @@ These standards apply to all POOOL production-readiness automations.
 - Repository: `/Users/martin/Projects/poool`
 - Mandatory project context: `AGENTS.md`
 - Mandatory development rules: `docs/AGENT_DEVELOPMENT_PROMPT.md`
-- Tracker source of truth: `docs/page-review-tracker.yml`
-- Generated page tracker: `docs/PAGE_REVIEW_TRACKER.md`
+- Tracker source of truth: `docs/issue-tracking/page-review-tracker.yml`
+- Generated page tracker: `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`
 - Shared automation coverage tracker: `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md`
 
 If a generated Markdown tracker says to update a YAML source first, update the YAML source and regenerate the Markdown with the documented script.

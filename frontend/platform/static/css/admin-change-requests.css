@@ -162,33 +162,6 @@
   50% { opacity: 0.7; }
 }
 
-/* ── Anomaly banner ───────────────────────────────────────────────────── */
-.cr-anomaly-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  border-radius: 8px;
-  color: #92400e;
-  font-size: 13px;
-}
-.cr-anomaly-icon { font-size: 16px; }
-.cr-anomaly-dismiss {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-.cr-anomaly-dismiss:hover { background: rgba(0,0,0,0.05); }
-
 /* ── Saved views ─────────────────────────────────────────────────────── */
 .cr-views {
   display: flex;
@@ -374,7 +347,17 @@
   align-items: center;
   gap: 8px;
 }
-.cr-empty-icon { font-size: 32px; opacity: 0.6; margin-bottom: 4px; }
+.cr-empty-icon {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 4px;
+  color: var(--admin-primary, #4f46e5);
+}
+.cr-empty-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 .cr-empty-title { font-weight: 600; color: var(--admin-text, #111827); font-size: 15px; }
 .cr-empty-sub { font-size: 13px; color: var(--admin-text-muted, #6b7280); }
 
@@ -634,12 +617,6 @@
 }
 
 /* ── Dark mode ───────────────────────────────────────────────────────── */
-[data-theme="dark"] .cr-anomaly-banner,
-.admin-body.dark .cr-anomaly-banner {
-  background: rgba(252, 211, 77, 0.1);
-  border-color: rgba(252, 211, 77, 0.3);
-  color: #fcd34d;
-}
 [data-theme="dark"] .cr-diff-old,
 .admin-body.dark .cr-diff-old {
   background: rgba(239, 68, 68, 0.1) !important;

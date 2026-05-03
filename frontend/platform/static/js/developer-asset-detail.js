@@ -266,10 +266,123 @@ function renderMedia(a) {
     hint.textContent = "Drag images or use the arrow buttons to set the display order. Image 1 is used as the cover.";
   }
 
-  if (a.video_url) {
-    document.getElementById("video-section").hidden = false;
-    document.getElementById("video-link").href = a.video_url;
+  renderVideoEmbed(a.video_url);
+}
+
+function renderVideoEmbed(rawUrl) {
+  const section = document.getElementById("video-section");
+  const embed = document.getElementById("video-embed");
+  const link = document.getElementById("video-link");
+  if (!section || !embed || !link) return;
+
+  embed.textContent = "";
+  const video = normalizeVideoUrl(rawUrl);
+  if (!video) {
+    section.hidden = true;
+    link.removeAttribute("href");
+    return;
   }
+
+  section.hidden = false;
+  link.href = video.href;
+
+  if (video.kind === "iframe") {
+    const iframe = document.createElement("iframe");
+    iframe.src = video.embedUrl;
+    iframe.title = "Asset video tour";
+    iframe.loading = "lazy";
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    embed.appendChild(iframe);
+    return;
+  }
+
+  if (video.kind === "file") {
+    const player = document.createElement("video");
+    player.controls = true;
+    player.preload = "metadata";
+    const source = document.createElement("source");
+    source.src = video.href;
+    source.type = video.mime;
+    player.appendChild(source);
+    embed.appendChild(player);
+    return;
+  }
+
+  const fallback = document.createElement("div");
+  fallback.className = "ad-video-fallback";
+  fallback.textContent = "Preview unavailable for this provider. Open the video in a new tab.";
+  embed.appendChild(fallback);
+}
+
+function normalizeVideoUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== "string") return null;
+  let url;
+  try {
+    url = new URL(rawUrl.trim(), window.location.origin);
+  } catch {
+    return null;
+  }
+  if (!["http:", "https:"].includes(url.protocol)) return null;
+
+  const youtubeId = getYouTubeVideoId(url);
+  if (youtubeId) {
+    return {
+      kind: "iframe",
+      href: url.href,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}`,
+    };
+  }
+
+  const vimeoId = getVimeoVideoId(url);
+  if (vimeoId) {
+    return {
+      kind: "iframe",
+      href: url.href,
+      embedUrl: `https://player.vimeo.com/video/${encodeURIComponent(vimeoId)}`,
+    };
+  }
+
+  const ext = url.pathname.split(".").pop()?.toLowerCase();
+  const videoTypes = {
+    mp4: "video/mp4",
+    webm: "video/webm",
+    ogv: "video/ogg",
+    ogg: "video/ogg",
+    mov: "video/quicktime",
+  };
+  if (ext && videoTypes[ext]) {
+    return { kind: "file", href: url.href, mime: videoTypes[ext] };
+  }
+
+  return { kind: "link", href: url.href };
+}
+
+function getYouTubeVideoId(url) {
+  const host = url.hostname.replace(/^www\./, "").toLowerCase();
+  if (host === "youtu.be") return cleanVideoId(url.pathname.slice(1));
+  if (!["youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com"].includes(host)) return "";
+
+  const fromQuery = cleanVideoId(url.searchParams.get("v"));
+  if (fromQuery) return fromQuery;
+
+  const parts = url.pathname.split("/").filter(Boolean);
+  const marker = parts.findIndex((part) => ["embed", "shorts", "live"].includes(part));
+  return marker >= 0 ? cleanVideoId(parts[marker + 1]) : "";
+}
+
+function getVimeoVideoId(url) {
+  const host = url.hostname.replace(/^www\./, "").toLowerCase();
+  if (!["vimeo.com", "player.vimeo.com"].includes(host)) return "";
+  const parts = url.pathname.split("/").filter(Boolean);
+  const id = parts[0] === "video" ? parts[1] : parts[0];
+  return /^\d+$/.test(id || "") ? id : "";
+}
+
+function cleanVideoId(value) {
+  const id = String(value || "").trim();
+  return /^[A-Za-z0-9_-]{6,64}$/.test(id) ? id : "";
 }
 
 function renderMediaGrid() {
@@ -429,29 +542,102 @@ async function syncDetailImageOrder() {
 // ─── Tab: Documents ───────────────────────────────────────────
 function renderDocuments(a) {
   const docs = a.documents || [];
-  if (docs.length === 0) return;
+  const list = document.getElementById("documents-list");
+  if (!list) return;
 
-  const docIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--label-color, #475467);"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+  list.textContent = "";
+  if (docs.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "ad-empty";
+    empty.textContent = "No documents uploaded.";
+    list.appendChild(empty);
+    return;
+  }
 
-  document.getElementById("documents-list").innerHTML = docs
-    .map((d) => {
-      const size = d.file_size
-        ? `${(d.file_size / 1024 / 1024).toFixed(2)} MB`
-        : "—";
-      return `
-            <div class="document-item">
-                <div style="display:flex;align-items:center;gap:12px;">
-                    ${docIcon}
-                    <div>
-                        <span class="document-type-badge">${esc(d.document_type.replace(/_/g, " "))}</span>
-                        <span style="font-size:12px;color:var(--label-color, #475467);margin-left:8px;">${size}</span>
-                    </div>
-                </div>
-                <a href="#" class="admin-btn admin-btn--secondary admin-btn--sm">View</a>
-            </div>
-        `;
-    })
-    .join("");
+  docs.forEach((doc) => {
+    list.appendChild(createDocumentItem(doc));
+  });
+}
+
+function createDocumentItem(doc) {
+  const item = document.createElement("div");
+  item.className = "document-item";
+
+  const meta = document.createElement("div");
+  meta.className = "document-item__meta";
+  meta.appendChild(createDocumentIcon());
+
+  const text = document.createElement("div");
+  text.className = "document-item__text";
+
+  const title = document.createElement("span");
+  title.className = "document-title";
+  title.textContent = documentTitle(doc);
+  text.appendChild(title);
+
+  const details = document.createElement("span");
+  details.className = "document-details";
+  details.textContent = `${formatDocumentType(doc.document_type)} · ${formatFileSize(doc.file_size)}`;
+  text.appendChild(details);
+
+  meta.appendChild(text);
+  item.appendChild(meta);
+
+  const href = documentDownloadUrl(doc);
+  if (href) {
+    const action = document.createElement("a");
+    action.href = href;
+    action.target = "_blank";
+    action.rel = "noopener noreferrer";
+    action.className = "document-icon-action";
+    action.setAttribute("aria-label", `View ${documentTitle(doc)}`);
+    action.title = "View document";
+    action.appendChild(createViewIcon());
+    item.appendChild(action);
+  }
+
+  return item;
+}
+
+function createDocumentIcon() {
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  icon.setAttribute("focusable", "false");
+  icon.classList.add("document-file-icon");
+  icon.innerHTML = '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>';
+  return icon;
+}
+
+function createViewIcon() {
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  icon.setAttribute("focusable", "false");
+  icon.innerHTML = '<path d="M1.5 12s3.8-7 10.5-7 10.5 7 10.5 7-3.8 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/>';
+  return icon;
+}
+
+function documentDownloadUrl(doc) {
+  if (doc?.download_url) return String(doc.download_url);
+  if (doc?.id) return `/api/documents/${encodeURIComponent(doc.id)}/download`;
+  return "";
+}
+
+function documentTitle(doc) {
+  return String(doc?.title || "").trim() || formatDocumentType(doc?.document_type) || "Document";
+}
+
+function formatDocumentType(value) {
+  return String(value || "document")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatFileSize(bytes) {
+  return typeof bytes === "number" && bytes > 0
+    ? `${(bytes / 1024 / 1024).toFixed(2)} MB`
+    : "Size unavailable";
 }
 
 // ─── Tab: Financials ──────────────────────────────────────────
@@ -495,9 +681,20 @@ function renderFinancials(a) {
 // ─── Tab: Milestones ──────────────────────────────────────────
 function renderMilestones(a) {
   const milestones = a.milestones || [];
-  if (milestones.length === 0) return;
+  const list = document.getElementById("milestones-list");
+  if (!list) return;
 
-  document.getElementById("milestones-list").innerHTML = milestones
+  if (milestones.length === 0) {
+    list.textContent = "";
+    list.appendChild(createBrandedEmptyState({
+      icon: "flag",
+      title: "No milestones yet",
+      text: "Project roadmap updates will appear here once milestones are added.",
+    }));
+    return;
+  }
+
+  list.innerHTML = milestones
     .map(
       (m, i) => `
         <div class="milestone-item">
@@ -524,9 +721,26 @@ function renderMilestones(a) {
 // ─── Tab: Cap Table ───────────────────────────────────────────
 function renderCapTable(a) {
   const investors = a.investors || [];
-  if (investors.length === 0) return;
+  const tbody = document.getElementById("captable-tbody");
+  if (!tbody) return;
 
-  document.getElementById("captable-tbody").innerHTML = investors
+  if (investors.length === 0) {
+    tbody.textContent = "";
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 6;
+    cell.className = "ad-empty-cell";
+    cell.appendChild(createBrandedEmptyState({
+      icon: "investors",
+      title: "No investors yet",
+      text: "Ownership details will appear here after investors join this asset.",
+    }));
+    row.appendChild(cell);
+    tbody.appendChild(row);
+    return;
+  }
+
+  tbody.innerHTML = investors
     .map(
       (inv) => `
         <tr>
@@ -547,9 +761,26 @@ function renderCapTable(a) {
 // ─── Tab: Orders ──────────────────────────────────────────────
 function renderOrders(a) {
   const orders = a.orders || [];
-  if (orders.length === 0) return;
+  const tbody = document.getElementById("orders-tbody");
+  if (!tbody) return;
 
-  document.getElementById("orders-tbody").innerHTML = orders
+  if (orders.length === 0) {
+    tbody.textContent = "";
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 6;
+    cell.className = "ad-empty-cell";
+    cell.appendChild(createBrandedEmptyState({
+      icon: "cart",
+      title: "No orders yet",
+      text: "Investor orders for this asset will appear here once activity starts.",
+    }));
+    row.appendChild(cell);
+    tbody.appendChild(row);
+    return;
+  }
+
+  tbody.innerHTML = orders
     .map(
       (o) => `
         <tr>
@@ -563,6 +794,47 @@ function renderOrders(a) {
     `,
     )
     .join("");
+}
+
+function createBrandedEmptyState({ icon, title, text }) {
+  const wrap = document.createElement("div");
+  wrap.className = "ad-branded-empty";
+
+  const mark = document.createElement("div");
+  mark.className = "ad-branded-empty__mark";
+  mark.textContent = "POOOL";
+  wrap.appendChild(mark);
+
+  const iconEl = document.createElement("div");
+  iconEl.className = "ad-branded-empty__icon";
+  iconEl.appendChild(createEmptyStateIcon(icon));
+  wrap.appendChild(iconEl);
+
+  const titleEl = document.createElement("div");
+  titleEl.className = "ad-branded-empty__title";
+  titleEl.textContent = title;
+  wrap.appendChild(titleEl);
+
+  const textEl = document.createElement("div");
+  textEl.className = "ad-branded-empty__text";
+  textEl.textContent = text;
+  wrap.appendChild(textEl);
+
+  return wrap;
+}
+
+function createEmptyStateIcon(name) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const paths = {
+    flag: '<path d="M5 21V4"/><path d="M5 4h10l-1.5 4L15 12H5"/>',
+    cart: '<path d="M3 4h2l2.2 10.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 8H7"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/>',
+    investors: '<path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  };
+  svg.innerHTML = paths[name] || paths.flag;
+  return svg;
 }
 
 // ─── Tab: Settings ────────────────────────────────────────────

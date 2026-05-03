@@ -1,7 +1,7 @@
 -- ============================================================
 -- Migration 076: Affiliate System Gap Fixes
 -- Date: 2026-03-31
--- Closes: GAP-08, GAP-10, GAP-11 from affiliate_system_fix_plan.md
+-- Closes: GAP-08, GAP-10, GAP-11 from docs/affiliate/affiliate_system_fix_plan.md
 -- ============================================================
 
 -- ── GAP-08: Policy Versioning ─────────────────────────────────────────────────

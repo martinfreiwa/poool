@@ -85,11 +85,11 @@ def property_asset():
         )
         cur.execute(
             """
-            INSERT INTO asset_documents (asset_id, document_type, title, file_url, file_size_bytes)
+            INSERT INTO asset_documents (asset_id, document_type, title, file_url, file_size_bytes, is_investor_visible)
             VALUES
-                (%s, 'expose', 'E2E Investment Expose', '/static/images/seed/villa1.webp', 12345),
-                (%s, 'appraisal', 'E2E Appraisal Report', '/static/images/seed/villa2.webp', 23456),
-                (%s, 'tax_npwp', 'E2E Private Tax Document', '/docs/e2e-private-tax.pdf', 34567)
+                (%s, 'expose', 'E2E Investment Expose', '/static/images/seed/villa1.webp', 12345, TRUE),
+                (%s, 'appraisal', 'E2E Appraisal Report', '/static/images/seed/villa2.webp', 23456, TRUE),
+                (%s, 'tax_npwp', 'E2E Private Tax Document', '/docs/e2e-private-tax.pdf', 34567, FALSE)
             RETURNING id, document_type
             """,
             (asset_id, asset_id, asset_id),

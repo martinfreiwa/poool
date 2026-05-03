@@ -30,5 +30,5 @@ def test_admin_orders_filters_share_compact_search_row():
         assert selector in css
 
     assert "height: 34px" in css
-    assert "width: 148px" in css
-    assert "width: 132px" in css
+    assert css.count("width: 178px") >= 3
+    assert css.count("min-width: 178px") >= 3

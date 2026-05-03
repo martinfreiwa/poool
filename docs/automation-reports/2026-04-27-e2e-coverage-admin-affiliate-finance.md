@@ -21,7 +21,7 @@ Related documentation evidence:
 
 - `docs/page-audits/2026-04-25-admin-affiliate-finance.md`
 - `docs/route-contract-audits/2026-04-27-route-contract-admin-affiliate-finance.md`
-- `docs/page-review-tracker.yml` issues `PAGE-ISSUE-0034` through `PAGE-ISSUE-0038`
+- `docs/issue-tracking/page-review-tracker.yml` issues `PAGE-ISSUE-0034` through `PAGE-ISSUE-0038`
 
 ## Missing Coverage
 
@@ -106,6 +106,6 @@ sed -n '250,330p' tests/test_e2e_affiliate_full_funnel.py
 sed -n '1,210p' tests/test_e2e_affiliate.py
 sed -n '210,250p' tests/admin/test_admin_features.py
 sed -n '1,80p' tests/admin/test_affiliate_route_contract_static.py
-sed -n '744,900p' docs/page-review-tracker.yml
+sed -n '744,900p' docs/issue-tracking/page-review-tracker.yml
 sed -n '1,220p' docs/page-audits/2026-04-25-admin-affiliate-finance.md
 ```

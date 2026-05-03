@@ -12,12 +12,12 @@ const SUBMISSIONS_APPROVE_PERMISSION: &str = "submissions.approve";
 const REQUIRED_APPROVAL_CHECKS: &[&str] = &[
     "chk-kyc",
     "chk-legal",
-    "chk-tax",
-    "chk-fin",
-    "chk-spv",
+    "chk-investor-docs",
+    "chk-financials",
     "chk-math",
-    "chk-loc",
-    "chk-fields",
+    "chk-media",
+    "chk-property-content",
+    "chk-risk",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -282,8 +282,10 @@ pub async fn api_admin_developer_project_detail(
                a.leasing_items,
                -- Developer
                COALESCE(u.email,'')    AS developer_email,
+               u.avatar_url AS developer_avatar_url,
                COALESCE(up.first_name,'') AS dev_first,
                COALESCE(up.last_name,'')  AS dev_last,
+               dprof.logo_url AS developer_profile_logo_url,
                (SELECT kr.status FROM kyc_records kr
                 WHERE kr.user_id = dp.developer_id
                 ORDER BY kr.created_at DESC LIMIT 1) AS kyc_status,
@@ -293,6 +295,7 @@ pub async fn api_admin_developer_project_detail(
            LEFT JOIN assets a ON a.id = dp.asset_id
            LEFT JOIN users u ON u.id = dp.developer_id
            LEFT JOIN user_profiles up ON up.user_id = dp.developer_id
+           LEFT JOIN developer_profiles dprof ON dprof.user_id = dp.developer_id
            WHERE dp.id = $1"#,
     )
     .bind(pid)
@@ -354,11 +357,11 @@ pub async fn api_admin_developer_project_detail(
     };
 
     // Fetch documents (with file_url for viewing)
-    let docs: Vec<(String, String, String, String, Option<i64>, String)> =
+    let docs: Vec<(String, String, String, String, Option<i64>, String, bool)> =
         if let Some(aid) = asset_id_opt {
             sqlx::query_as(
                 r#"SELECT id::text, document_type, COALESCE(title,''), file_url,
-                      file_size_bytes, created_at::text
+                      file_size_bytes, created_at::text, COALESCE(is_investor_visible, false)
                FROM asset_documents WHERE asset_id = $1 ORDER BY document_type, created_at"#,
             )
             .bind(aid)
@@ -428,6 +431,9 @@ pub async fn api_admin_developer_project_detail(
             "first_name": &first,
             "last_name": &last,
             "name": if dev_name.is_empty() { dev_email.clone() } else { dev_name },
+            "avatar_url": crate::storage::service::rewrite_gcs_url_opt(row.get::<Option<String>, _>("developer_avatar_url").as_deref()),
+            "logo_url": crate::storage::service::rewrite_gcs_url_opt(row.get::<Option<String>, _>("developer_profile_logo_url").as_deref()),
+            "asset_developer_logo_url": crate::storage::service::rewrite_gcs_url_opt(row.get::<Option<String>, _>("developer_logo_url").as_deref()),
             "kyc_status": row.get::<Option<String>, _>("kyc_status"),
             "other_projects_count": row.get::<i64, _>("other_projects_count"),
         },
@@ -500,13 +506,15 @@ pub async fn api_admin_developer_project_detail(
             "id": d.0,
             "document_type": d.1,
             "title": d.2,
-            "file_url": d.3,
+            "file_url": crate::storage::service::rewrite_gcs_url(&d.3),
+            "download_url": format!("/api/documents/{}/download", d.0),
             "file_size_bytes": d.4,
             "created_at": d.5,
+            "is_investor_visible": d.6,
         })).collect::<Vec<_>>(),
         "images": images.iter().map(|i| serde_json::json!({
             "id": i.0,
-            "image_url": i.1,
+            "image_url": crate::storage::service::rewrite_gcs_url(&i.1),
             "alt_text": i.2,
             "is_cover": i.3,
             "sort_order": i.4,

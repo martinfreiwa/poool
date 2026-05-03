@@ -1,15 +1,13 @@
 /**
  * Admin — Asset Change Requests
  * Features: aging KPI, clickable KPI filters, sortable cols, multi-filter,
- * auto-refresh + last-updated, anomaly detection, bulk approve/reject,
+ * auto-refresh + last-updated, bulk approve/reject,
  * diff side-panel, keyboard shortcuts, CSV export.
  */
 (function () {
   "use strict";
 
   const REFRESH_MS = 30_000;
-  const ANOMALY_WINDOW_MS = 60 * 60 * 1000; // 1h
-  const ANOMALY_THRESHOLD = 8;
   const PAGE_SIZES = [25, 50, 100];
 
   const state = {
@@ -21,7 +19,6 @@
     lastFetched: null,
     autoRefresh: true,
     timer: null,
-    anomalyDismissed: false,
     page: 1,
     pageSize: parseInt(localStorage.getItem("cr_page_size") || "25", 10),
     currentAdminId: null,
@@ -216,11 +213,6 @@
       else stopTimer();
     });
 
-    $("anomaly-dismiss").addEventListener("click", () => {
-      state.anomalyDismissed = true;
-      $("anomaly-banner").hidden = true;
-    });
-
     // Drawer
     document.querySelectorAll("[data-drawer-close]").forEach((el) =>
       el.addEventListener("click", closeDrawer)
@@ -266,7 +258,6 @@
       state.lastFetched = new Date();
       populateDeveloperFilter();
       renderKpis(data);
-      detectAnomalies();
       render();
       updateLastUpdated();
     } catch (err) {
@@ -373,27 +364,6 @@
     sel.innerHTML = `<option value="all">All developers</option>` +
       devs.map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
     if (devs.includes(cur)) sel.value = cur;
-  }
-
-  // ── Anomaly detection ─────────────────────────────────────────────────────
-  function detectAnomalies() {
-    if (state.anomalyDismissed) return;
-    const now = Date.now();
-    const recentByDev = new Map();
-    state.items.forEach((i) => {
-      const t = new Date(i.created_at).getTime();
-      if (now - t > ANOMALY_WINDOW_MS) return;
-      recentByDev.set(i.developer_name, (recentByDev.get(i.developer_name) || 0) + 1);
-    });
-    const offenders = [...recentByDev.entries()].filter(([, n]) => n >= ANOMALY_THRESHOLD);
-    const banner = $("anomaly-banner");
-    if (offenders.length === 0) {
-      banner.hidden = true;
-      return;
-    }
-    banner.hidden = false;
-    $("anomaly-text").textContent =
-      `Unusual activity: ${offenders.map(([d, n]) => `${d} (${n} changes/h)`).join(", ")}`;
   }
 
   // ── Filtering / sorting ───────────────────────────────────────────────────
@@ -579,7 +549,14 @@
     }
     return `<tr><td colspan="9" class="cr-state">
       <div class="cr-empty">
-        <div class="cr-empty-icon" aria-hidden="true">📭</div>
+        <div class="cr-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" focusable="false">
+            <path d="M14 12h20a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V15a3 3 0 0 1 3-3Z" fill="#eef2ff" stroke="#64748b" stroke-width="2"/>
+            <path d="M11 28h8l2 4h6l2-4h8" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 19h12M18 24h8" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+            <path d="M34 32h6v5h-6z" fill="#34d399"/>
+          </svg>
+        </div>
         <div class="cr-empty-title">No change requests</div>
         <div class="cr-empty-sub">Developers' edits to live assets appear here for review.</div>
         <a href="/admin/developer-submissions.html" class="admin-btn admin-btn--ghost admin-btn--sm">View submissions →</a>

@@ -4,12 +4,22 @@
     <div class="strategy-header">
       <div class="strategy-text">
         <h3>Risk notification</h3>
-        {% if not asset.risk_notification %}
+        {% if not asset.risk_notification_items and not asset.risk_notification %}
         <p>While we strive to deliver the best for our customers, it's important to be aware of certain risks of full or partial loss of your investment that may be beyond our control:</p>
         {% endif %}
       </div>
     </div>
-    {% if asset.risk_notification %}
+    {% if asset.risk_notification_items %}
+      <div class="strategy-content">
+        {% for item in asset.risk_notification_items %}
+          {% if not loop.first %}<div class="strategy-divider"></div>{% endif %}
+          <div class="strategy-item">
+            {% if item.title %}<h4>{{ item.title }}</h4>{% endif %}
+            {% if item.body %}<p>{{ item.body }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% elif asset.risk_notification %}
       <div class="strategy-content">
         {% for line in asset.risk_notification | split("\n") %}
           {% if line | trim %}

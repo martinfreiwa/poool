@@ -547,7 +547,8 @@ pub async fn page_property(
                   developer_logo_url, developer_name, developer_description,
                   developer_website, developer_facebook,
                   developer_instagram, developer_youtube,
-                  info_badges, leasing_items
+                  info_badges, leasing_items,
+                  risk_notification_items
            FROM assets WHERE id = $1"#,
     )
     .bind(asset.id)
@@ -555,6 +556,42 @@ pub async fn page_property(
     .await
     {
         cms.apply_to(&mut display_data);
+    }
+
+    // Roadmap milestones drive the Funding Timeline. Empty list → template
+    // falls back to legacy hardcoded steps.
+    match sqlx::query_as::<_, (String, Option<String>, Option<chrono::DateTime<chrono::Utc>>, Option<i32>, bool)>(
+        r#"SELECT title, description, milestone_date, month_index,
+                  COALESCE(is_completed, false)
+           FROM asset_milestones
+           WHERE asset_id = $1
+           ORDER BY COALESCE(month_index, 9999), milestone_date NULLS LAST"#,
+    )
+    .bind(asset.id)
+    .fetch_all(&state.db)
+    .await
+    {
+        Ok(rows) if !rows.is_empty() => {
+            display_data.milestones = Some(
+                rows.into_iter()
+                    .map(|(title, description, date, month_index, is_completed)| {
+                        MilestoneDisplay {
+                            title,
+                            description,
+                            milestone_date: date.map(|d| d.format("%b %-d, %Y").to_string()),
+                            month_index,
+                            is_completed,
+                        }
+                    })
+                    .collect(),
+            );
+        }
+        Ok(_) => {}
+        Err(e) => tracing::warn!(
+            "Failed to load milestones for property {}: {}",
+            asset.id,
+            e
+        ),
     }
 
     let platform_fee_pct: f64 = sqlx::query_scalar(
@@ -692,7 +729,8 @@ pub async fn page_property_public(
                       developer_logo_url, developer_name, developer_description,
                       developer_website, developer_facebook,
                       developer_instagram, developer_youtube,
-                      info_badges, leasing_items
+                      info_badges, leasing_items,
+                      risk_notification_items
                FROM assets WHERE id = $1"#,
         )
         .bind(asset.id)
@@ -703,7 +741,7 @@ pub async fn page_property_public(
         }
         // Roadmap milestones drive the public Funding Timeline. Empty list →
         // template falls back to legacy hardcoded steps.
-        match sqlx::query_as::<_, (String, Option<String>, Option<chrono::NaiveDate>, Option<i32>, bool)>(
+        match sqlx::query_as::<_, (String, Option<String>, Option<chrono::DateTime<chrono::Utc>>, Option<i32>, bool)>(
             r#"SELECT title, description, milestone_date, month_index,
                       COALESCE(is_completed, false)
                FROM asset_milestones

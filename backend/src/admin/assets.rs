@@ -155,7 +155,8 @@ pub async fn api_admin_asset_detail(
                 a.developer_logo_url, a.developer_name, a.developer_description,
                 a.developer_website, a.developer_facebook,
                 a.developer_instagram, a.developer_youtube,
-                a.info_badges, a.leasing_items
+                a.info_badges, a.leasing_items,
+                a.risk_notification_items, a.google_maps_url
          FROM assets a WHERE a.id = $1",
     )
     .bind(aid)
@@ -207,17 +208,23 @@ pub async fn api_admin_asset_detail(
 
     // Milestones (include id so the editor can patch/delete by row)
     #[allow(clippy::type_complexity)]
-    let milestones: Vec<(String, String, Option<String>, Option<String>, Option<i32>, bool)> =
-        sqlx::query_as(
-            "SELECT id::text, title, description, milestone_date::text, month_index,
+    let milestones: Vec<(
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        Option<i32>,
+        bool,
+    )> = sqlx::query_as(
+        "SELECT id::text, title, description, milestone_date::text, month_index,
                     COALESCE(is_completed,false)
              FROM asset_milestones WHERE asset_id = $1
              ORDER BY COALESCE(month_index, 9999), milestone_date",
-        )
-        .bind(aid)
-        .fetch_all(&state.db)
-        .await
-        .map_err(ApiError::Database)?;
+    )
+    .bind(aid)
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
 
     // Orders referencing this asset
     let orders: Vec<(String, String, i32, i64, String, String)> = sqlx::query_as(
@@ -273,6 +280,8 @@ pub async fn api_admin_asset_detail(
         "developer_youtube": row.get::<Option<String>, _>("developer_youtube"),
         "info_badges": row.get::<Option<serde_json::Value>, _>("info_badges"),
         "leasing_items": row.get::<Option<serde_json::Value>, _>("leasing_items"),
+        "risk_notification_items": row.get::<Option<serde_json::Value>, _>("risk_notification_items"),
+        "google_maps_url": row.get::<Option<String>, _>("google_maps_url"),
         "investors": investors.iter().map(|i| serde_json::json!({
             "name": i.0, "email": i.1, "user_id": i.2, "tokens_owned": i.3,
             "purchase_value_cents": i.4, "current_value_cents": i.5,
@@ -379,6 +388,20 @@ pub struct AdminImageOrderUpdate {
     pub sort_order: i32,
     /// Whether this image should be the cover image.
     pub is_cover: bool,
+}
+
+/// Payload for renaming or reclassifying an uploaded asset document.
+#[derive(Debug, Deserialize)]
+pub struct AdminDocumentUpdatePayload {
+    /// New display title for the document.
+    #[serde(default)]
+    pub title: Option<String>,
+    /// New document category, using the asset_documents document_type enum.
+    #[serde(default)]
+    pub document_type: Option<String>,
+    /// Whether this document appears on the investor-facing property page.
+    #[serde(default)]
+    pub is_investor_visible: Option<bool>,
 }
 
 /// PATCH /api/admin/assets/:asset_id/funding-status
@@ -669,6 +692,225 @@ pub async fn api_admin_asset_images_reorder(
     Ok(Json(serde_json::json!({"status": "success"})).into_response())
 }
 
+/// POST /api/admin/assets/:asset_id/documents
+pub async fn api_admin_asset_document_upload(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(asset_id): Path<String>,
+    multipart: Multipart,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    ensure_asset_exists(&state, aid).await?;
+
+    let upload = read_admin_asset_document_multipart(multipart).await?;
+    let file_id = Uuid::new_v4();
+    let object_path = format!(
+        "properties/{}/documents/{}.{}",
+        aid,
+        file_id,
+        crate::storage::service::extension_for_doc_mime(&upload.mime_type)
+    );
+
+    let file_url =
+        upload_admin_asset_document(&state, &object_path, &upload.bytes, &upload.mime_type)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to upload admin asset document for {aid}: {e}");
+                ApiError::Internal("Failed to upload document".to_string())
+            })?;
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    let doc_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO asset_documents (asset_id, document_type, title, file_url, file_size_bytes, is_investor_visible)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id",
+    )
+    .bind(aid)
+    .bind(&upload.document_type)
+    .bind(&upload.title)
+    .bind(&file_url)
+    .bind(upload.bytes.len() as i64)
+    .bind(upload.is_investor_visible)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'asset.document_uploaded', 'assets', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({
+        "document_id": doc_id,
+        "document_type": upload.document_type,
+        "title": upload.title,
+        "file_size_bytes": upload.bytes.len() as i64,
+        "is_investor_visible": upload.is_investor_visible,
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "status": "success",
+        "id": doc_id,
+        "document_id": doc_id,
+        "document_type": upload.document_type,
+        "title": upload.title,
+        "file_url": crate::storage::service::rewrite_gcs_url(&file_url),
+        "download_url": format!("/api/documents/{}/download", doc_id),
+        "file_size_bytes": upload.bytes.len() as i64,
+        "is_investor_visible": upload.is_investor_visible,
+    }))
+    .into_response())
+}
+
+/// PATCH /api/admin/assets/:asset_id/documents/:document_id
+pub async fn api_admin_asset_document_update(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path((asset_id, document_id)): Path<(String, String)>,
+    Json(payload): Json<AdminDocumentUpdatePayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let did = ApiError::parse_uuid(&document_id)?;
+
+    let mut sets = Vec::new();
+    let mut q = sqlx::QueryBuilder::<sqlx::Postgres>::new("UPDATE asset_documents SET ");
+
+    if let Some(title) = payload.title {
+        let cleaned = crate::common::sanitize::sanitize_text(&title);
+        if cleaned.trim().is_empty() {
+            return Err(ApiError::BadRequest(
+                "Document title is required".to_string(),
+            ));
+        }
+        if cleaned.chars().count() > TEXT_MAX_SHORT {
+            return Err(ApiError::BadRequest(
+                "Document title is too long".to_string(),
+            ));
+        }
+        q.push("title = ");
+        q.push_bind(cleaned);
+        sets.push("title".to_string());
+    }
+
+    if let Some(document_type) = payload.document_type {
+        let normalized = normalize_admin_asset_document_type(&document_type)?;
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        q.push("document_type = ");
+        q.push_bind(normalized);
+        sets.push("document_type".to_string());
+    }
+
+    if let Some(is_investor_visible) = payload.is_investor_visible {
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        q.push("is_investor_visible = ");
+        q.push_bind(is_investor_visible);
+        sets.push("is_investor_visible".to_string());
+    }
+
+    if sets.is_empty() {
+        return Err(ApiError::BadRequest("No fields to update".to_string()));
+    }
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    q.push(" WHERE id = ");
+    q.push_bind(did);
+    q.push(" AND asset_id = ");
+    q.push_bind(aid);
+
+    let result = q
+        .build()
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Document not found".to_string()));
+    }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'asset.document_updated', 'assets', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({ "document_id": did, "fields": sets }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({ "status": "success", "fields_updated": sets })).into_response())
+}
+
+/// DELETE /api/admin/assets/:asset_id/documents/:document_id
+pub async fn api_admin_asset_document_delete(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path((asset_id, document_id)): Path<(String, String)>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let did = ApiError::parse_uuid(&document_id)?;
+
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    let previous = sqlx::query(
+        "SELECT document_type, title, file_url, file_size_bytes
+         FROM asset_documents
+         WHERE id = $1 AND asset_id = $2
+         FOR UPDATE",
+    )
+    .bind(did)
+    .bind(aid)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Document not found".to_string()))?;
+
+    sqlx::query("DELETE FROM asset_documents WHERE id = $1 AND asset_id = $2")
+        .bind(did)
+        .bind(aid)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state)
+           VALUES ($1, 'asset.document_deleted', 'assets', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({
+        "document_id": did,
+        "document_type": previous.get::<String, _>("document_type"),
+        "title": previous.get::<String, _>("title"),
+        "file_url": previous.get::<String, _>("file_url"),
+        "file_size_bytes": previous.get::<Option<i64>, _>("file_size_bytes"),
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({ "status": "success" })).into_response())
+}
+
 struct AdminAssetImageUpload {
     bytes: Vec<u8>,
     mime_type: String,
@@ -677,7 +919,16 @@ struct AdminAssetImageUpload {
     alt_text: Option<String>,
 }
 
+struct AdminAssetDocumentUpload {
+    bytes: Vec<u8>,
+    mime_type: String,
+    document_type: String,
+    title: String,
+    is_investor_visible: bool,
+}
+
 const MAX_ADMIN_ASSET_IMAGE_BYTES: usize = 20 * 1024 * 1024;
+const MAX_ADMIN_ASSET_DOCUMENT_BYTES: usize = 20 * 1024 * 1024;
 
 async fn ensure_asset_exists(state: &AppState, asset_id: Uuid) -> Result<(), ApiError> {
     let exists: bool = sqlx::query_scalar(
@@ -787,6 +1038,118 @@ async fn read_admin_asset_image_multipart(
     })
 }
 
+async fn read_admin_asset_document_multipart(
+    mut multipart: Multipart,
+) -> Result<AdminAssetDocumentUpload, ApiError> {
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut client_mime = "application/octet-stream".to_string();
+    let mut document_type = "other".to_string();
+    let mut title = String::new();
+    let mut is_investor_visible = false;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| ApiError::BadRequest("Failed to read multipart data".to_string()))?
+    {
+        let field_name = field.name().unwrap_or("").to_string();
+        match field_name.as_str() {
+            "document_type" => {
+                let text = field
+                    .text()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid document_type".to_string()))?;
+                document_type = text;
+            }
+            "title" => {
+                let text = field
+                    .text()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid title".to_string()))?;
+                title = text;
+            }
+            "is_investor_visible" => {
+                let text = field
+                    .text()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid visibility flag".to_string()))?;
+                is_investor_visible = matches!(
+                    text.trim().to_ascii_lowercase().as_str(),
+                    "true" | "1" | "on"
+                );
+            }
+            "file" => {
+                client_mime = field
+                    .content_type()
+                    .unwrap_or("application/octet-stream")
+                    .to_string();
+                let file_name = field.file_name().unwrap_or("document").to_string();
+                if title.trim().is_empty() {
+                    title = file_name;
+                }
+                let bytes = field
+                    .bytes()
+                    .await
+                    .map_err(|_| {
+                        ApiError::BadRequest("Failed to read uploaded document".to_string())
+                    })?
+                    .to_vec();
+                if bytes.len() > MAX_ADMIN_ASSET_DOCUMENT_BYTES {
+                    return Err(ApiError::BadRequest(
+                        "Document must be <= 20 MB".to_string(),
+                    ));
+                }
+                file_bytes = Some(bytes);
+            }
+            _ => {}
+        }
+    }
+
+    let bytes =
+        file_bytes.ok_or_else(|| ApiError::BadRequest("No file field in request".to_string()))?;
+    let sniffed = sniff_admin_document_mime(&bytes).ok_or_else(|| {
+        ApiError::BadRequest("Unsupported or unrecognized document format".to_string())
+    })?;
+
+    if !admin_document_mime_matches(&client_mime, sniffed) {
+        return Err(ApiError::BadRequest(
+            "File content does not match declared type".to_string(),
+        ));
+    }
+
+    let canonical_mime = canonical_admin_document_mime(&client_mime, sniffed);
+    crate::storage::service::validate_asset_doc_mime(&canonical_mime).map_err(|_| {
+        ApiError::BadRequest(
+            "Only JPEG, PNG, WebP, PDF, DOC, DOCX, and ZIP files are accepted".to_string(),
+        )
+    })?;
+
+    let normalized_type = normalize_admin_asset_document_type(&document_type)?;
+    let cleaned_title = crate::common::sanitize::sanitize_text(&title);
+    let title = if cleaned_title.trim().is_empty() {
+        format!(
+            "{}.{}",
+            normalized_type,
+            crate::storage::service::extension_for_doc_mime(&canonical_mime)
+        )
+    } else {
+        cleaned_title
+    };
+    if title.chars().count() > TEXT_MAX_SHORT {
+        return Err(ApiError::BadRequest(
+            "Document title must be 255 characters or fewer".to_string(),
+        ));
+    }
+
+    Ok(AdminAssetDocumentUpload {
+        bytes,
+        mime_type: canonical_mime,
+        document_type: normalized_type.to_string(),
+        title,
+        is_investor_visible,
+    })
+}
+
 async fn upload_admin_asset_image(
     state: &AppState,
     object_path: &str,
@@ -811,6 +1174,39 @@ async fn upload_admin_asset_image(
             }
             Err(_) => {
                 tracing::warn!("Admin asset image GCS upload timed out; falling back to local");
+            }
+        }
+    }
+
+    crate::storage::service::upload_local(object_path, file_bytes.to_vec()).await
+}
+
+async fn upload_admin_asset_document(
+    state: &AppState,
+    object_path: &str,
+    file_bytes: &[u8],
+    mime_type: &str,
+) -> Result<String, crate::error::AppError> {
+    if let Some(bucket) = &state.config.gcs_bucket {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            crate::storage::service::upload_private(
+                bucket,
+                object_path,
+                file_bytes.to_vec(),
+                mime_type,
+            ),
+        )
+        .await
+        {
+            Ok(Ok(url)) => return Ok(url),
+            Ok(Err(e)) => {
+                tracing::warn!(
+                    "Admin asset document GCS upload failed: {e}; falling back to local"
+                );
+            }
+            Err(_) => {
+                tracing::warn!("Admin asset document GCS upload timed out; falling back to local");
             }
         }
     }
@@ -847,6 +1243,89 @@ fn admin_mime_matches(client_mime: &str, sniffed: &str) -> bool {
                 | ("image/pjpeg", "image/jpeg")
                 | ("application/octet-stream", _)
         )
+}
+
+fn normalize_admin_asset_document_type(value: &str) -> Result<&'static str, ApiError> {
+    match value.trim() {
+        "proof_of_title" => Ok("proof_of_title"),
+        "legal_basis" => Ok("legal_basis"),
+        "building_permit" => Ok("building_permit"),
+        "license_nib" => Ok("license_nib"),
+        "id_card" => Ok("id_card"),
+        "tax_npwp" => Ok("tax_npwp"),
+        "tax_pbb" => Ok("tax_pbb"),
+        "tax_bphtb" => Ok("tax_bphtb"),
+        "owner_npwp" => Ok("owner_npwp"),
+        "site_plan" => Ok("site_plan"),
+        "floor_plan" => Ok("floor_plan"),
+        "expose" => Ok("expose"),
+        "appraisal" => Ok("appraisal"),
+        "financial" => Ok("financial"),
+        "other" => Ok("other"),
+        _ => Err(ApiError::BadRequest("Invalid document type".to_string())),
+    }
+}
+
+fn sniff_admin_document_mime(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.len() < 4 {
+        return None;
+    }
+    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        Some("image/jpeg")
+    } else if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+        Some("image/png")
+    } else if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        Some("image/webp")
+    } else if bytes.starts_with(b"%PDF-") {
+        Some("application/pdf")
+    } else if bytes.starts_with(b"PK\x03\x04")
+        || bytes.starts_with(b"PK\x05\x06")
+        || bytes.starts_with(b"PK\x07\x08")
+    {
+        Some("application/zip")
+    } else if bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
+        Some("application/msword")
+    } else {
+        None
+    }
+}
+
+fn admin_document_mime_matches(client_mime: &str, sniffed: &str) -> bool {
+    let declared = client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+
+    declared == sniffed
+        || matches!(
+            (declared.as_str(), sniffed),
+            ("image/jpg", "image/jpeg")
+                | ("image/pjpeg", "image/jpeg")
+                | (
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/zip",
+                )
+                | ("application/octet-stream", _)
+        )
+}
+
+fn canonical_admin_document_mime(client_mime: &str, sniffed: &str) -> String {
+    let declared = client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+
+    if declared == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        && sniffed == "application/zip"
+    {
+        declared
+    } else {
+        sniffed.to_string()
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -901,13 +1380,20 @@ pub struct AssetPageContentPayload {
     pub info_badges: Option<Option<serde_json::Value>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub leasing_items: Option<Option<serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub risk_notification_items: Option<Option<serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub google_maps_url: Option<Option<String>>,
 }
 
 const TEXT_MAX_SHORT: usize = 255;
 const TEXT_MAX_LONG: usize = 8_000;
 const URL_MAX: usize = 512;
 
-fn clean_opt_text(v: Option<Option<String>>, max: usize) -> Result<Option<Option<String>>, ApiError> {
+fn clean_opt_text(
+    v: Option<Option<String>>,
+    max: usize,
+) -> Result<Option<Option<String>>, ApiError> {
     match v {
         None => Ok(None),
         Some(None) => Ok(Some(None)),
@@ -978,10 +1464,38 @@ pub async fn api_admin_asset_page_content(
     payload.developer_facebook = clean_opt_text(payload.developer_facebook, URL_MAX)?;
     payload.developer_instagram = clean_opt_text(payload.developer_instagram, URL_MAX)?;
     payload.developer_youtube = clean_opt_text(payload.developer_youtube, URL_MAX)?;
-    if let Some(Some(ref v)) = payload.info_badges {
+    payload.google_maps_url = clean_opt_text(payload.google_maps_url, URL_MAX)?;
+    if let Some(Some(ref v)) = payload.risk_notification_items {
         let arr = v.as_array().ok_or_else(|| {
-            ApiError::BadRequest("info_badges must be a JSON array".to_string())
+            ApiError::BadRequest("risk_notification_items must be a JSON array".to_string())
         })?;
+        if arr.len() > 12 {
+            return Err(ApiError::BadRequest(
+                "risk_notification_items supports at most 12 entries".to_string(),
+            ));
+        }
+        for item in arr {
+            let obj = item.as_object().ok_or_else(|| {
+                ApiError::BadRequest(
+                    "risk_notification_items entries must be objects with title/body".to_string(),
+                )
+            })?;
+            for (key, limit) in [("title", TEXT_MAX_SHORT), ("body", TEXT_MAX_LONG)] {
+                if let Some(s) = obj.get(key).and_then(|v| v.as_str()) {
+                    if s.chars().count() > limit {
+                        return Err(ApiError::BadRequest(format!(
+                            "risk_notification_items.{} exceeds {} character limit",
+                            key, limit
+                        )));
+                    }
+                }
+            }
+        }
+    }
+    if let Some(Some(ref v)) = payload.info_badges {
+        let arr = v
+            .as_array()
+            .ok_or_else(|| ApiError::BadRequest("info_badges must be a JSON array".to_string()))?;
         if arr.len() > 12 {
             return Err(ApiError::BadRequest(
                 "info_badges supports at most 12 entries".to_string(),
@@ -990,13 +1504,16 @@ pub async fn api_admin_asset_page_content(
         for item in arr {
             let obj = item.as_object().ok_or_else(|| {
                 ApiError::BadRequest(
-                    "info_badges entries must be objects with icon_url/title/subtitle"
-                        .to_string(),
+                    "info_badges entries must be objects with icon_url/title/subtitle".to_string(),
                 )
             })?;
             for key in ["icon_url", "title", "subtitle"] {
                 if let Some(s) = obj.get(key).and_then(|v| v.as_str()) {
-                    let limit = if key == "icon_url" { URL_MAX } else { TEXT_MAX_LONG };
+                    let limit = if key == "icon_url" {
+                        URL_MAX
+                    } else {
+                        TEXT_MAX_LONG
+                    };
                     if s.chars().count() > limit {
                         return Err(ApiError::BadRequest(format!(
                             "info_badges.{} exceeds {} character limit",
@@ -1019,8 +1536,7 @@ pub async fn api_admin_asset_page_content(
         for item in arr {
             let obj = item.as_object().ok_or_else(|| {
                 ApiError::BadRequest(
-                    "leasing_items entries must be objects with title/description"
-                        .to_string(),
+                    "leasing_items entries must be objects with title/description".to_string(),
                 )
             })?;
             for key in ["title", "description"] {
@@ -1102,6 +1618,16 @@ pub async fn api_admin_asset_page_content(
     push_text!(payload.developer_facebook, "developer_facebook");
     push_text!(payload.developer_instagram, "developer_instagram");
     push_text!(payload.developer_youtube, "developer_youtube");
+    push_text!(payload.google_maps_url, "google_maps_url");
+    if let Some(v) = payload.risk_notification_items {
+        if !sets.is_empty() {
+            q.push(", ");
+        }
+        idx += 1;
+        q.push("risk_notification_items = ");
+        q.push_bind::<Option<serde_json::Value>>(v);
+        sets.push("risk_notification_items".to_string());
+    }
     if let Some(v) = payload.info_badges {
         if !sets.is_empty() {
             q.push(", ");
@@ -1281,9 +1807,7 @@ pub async fn api_admin_asset_milestone_update(
     }
 
     if let Some(d) = payload.description {
-        let cleaned = d
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty());
+        let cleaned = d.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
         if !sets.is_empty() {
             q.push(", ");
         }
@@ -1363,13 +1887,12 @@ pub async fn api_admin_asset_milestone_delete(
     let aid = ApiError::parse_uuid(&asset_id)?;
     let mid = ApiError::parse_uuid(&milestone_id)?;
 
-    let result =
-        sqlx::query("DELETE FROM asset_milestones WHERE id = $1 AND asset_id = $2")
-            .bind(mid)
-            .bind(aid)
-            .execute(&state.db)
-            .await
-            .map_err(ApiError::Database)?;
+    let result = sqlx::query("DELETE FROM asset_milestones WHERE id = $1 AND asset_id = $2")
+        .bind(mid)
+        .bind(aid)
+        .execute(&state.db)
+        .await
+        .map_err(ApiError::Database)?;
 
     if result.rows_affected() == 0 {
         return Err(ApiError::NotFound("Milestone not found".to_string()));

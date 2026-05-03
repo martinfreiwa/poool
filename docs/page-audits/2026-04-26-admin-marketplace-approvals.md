@@ -61,7 +61,7 @@ Runtime result: targeted authenticated HTTP/DB E2E passed (`1 passed`). Local Re
 ## Tested Scope
 
 - Read required automation and project standards.
-- Selected exactly one page from `docs/page-review-tracker.yml`: `admin.marketplace.approvals`.
+- Selected exactly one page from `docs/issue-tracking/page-review-tracker.yml`: `admin.marketplace.approvals`.
 - Reviewed the page template, shared admin sidebar/permission behavior, page JS, toast helper, backend page route, backend API routes, marketplace order creation/hold logic, migrations, and existing tests.
 - Ran JavaScript syntax checks for the page scripts.
 - Attempted local runtime page/API smoke tests on `localhost:8888`; blocked because no backend was listening.

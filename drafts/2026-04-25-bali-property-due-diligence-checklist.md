@@ -284,7 +284,7 @@ Review POOOL's curated Bali property opportunities and compare each listing's do
 - [Government Regulation No. 28 of 2025](https://peraturan.bpk.go.id/Details/319773/pp-no-28-tahun-2025) - source lead for current risk-based business licensing framework replacing PP No. 5 of 2021.
 - [BPS Bali 2025 foreign arrival release](https://bali.bps.go.id/en/news/2026/02/02/347/kunjungan-wisman-langsung-ke-bali-jan-des-2025-naik--dengan-australia-menjadi-negara-asal-terbanyak-.html) - cited for 2025 direct foreign tourist arrivals and year-over-year growth.
 - [BPS Bali February 2026 tourism release](https://bali.bps.go.id/en/news/2026/04/01/354/kunjungan-wisman-ke-bali-pada-februari-2026-meningkat.html) - cited for February 2026 direct foreign visits and year-over-year growth.
-- POOOL whitepaper, `docs/01_POOOL_RegulatoryBusinessTechnical_Whitepaper_2025_EN.md` - internal source for issuer due-diligence, SPV, ERSA, risk, and monitoring language; requires product/legal approval before publication.
+- POOOL whitepaper, `docs/business/01_POOOL_RegulatoryBusinessTechnical_Whitepaper_2025_EN.md` - internal source for issuer due-diligence, SPV, ERSA, risk, and monitoring language; requires product/legal approval before publication.
 
 ## Compliance Notes
 

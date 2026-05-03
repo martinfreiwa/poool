@@ -128,6 +128,17 @@
     'rounding-acceptable': 'Rounding error within accepted tolerance band.',
     'custom': '',
   };
+  const REASON_TEMPLATE_LABELS = {
+    'manual-credit': 'Manually credited via support',
+    'onchain-confirmed': 'On-chain tx confirmed late',
+    'ledger-correction': 'Ledger correction applied',
+    'false-positive': 'False positive — re-sync resolved',
+    'rounding-acceptable': 'Rounding within tolerance',
+    'custom': 'Custom…',
+  };
+  function reasonTemplateLabel(key) {
+    return REASON_TEMPLATE_LABELS[key] || key;
+  }
   function saveTemplates(t) { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(t)); }
 
   function fmtNumLocale(n, opts = {}) {
@@ -1358,17 +1369,45 @@
   // ── Resolve template editor ─────────────────────────────────────
   function renderTemplateList() {
     const inline = document.getElementById('resolve-template-list');
-    if (inline) inline.innerHTML = Object.keys(REASON_TEMPLATES).map(k => `<li><span class="recon-tag">${k}</span></li>`).join('');
+    if (inline) {
+      inline.replaceChildren();
+      Object.keys(REASON_TEMPLATES).forEach(k => {
+        const item = document.createElement('li');
+        const tag = document.createElement('span');
+        tag.className = 'recon-tag';
+        tag.textContent = k;
+        item.appendChild(tag);
+        inline.appendChild(item);
+      });
+    }
     const editor = document.getElementById('tpl-editor-list');
     if (editor) {
-      editor.innerHTML = Object.entries(REASON_TEMPLATES).map(([k, v]) => `
-        <li style="padding:8px 10px; border-bottom:1px solid var(--admin-border); display:flex; justify-content:space-between; gap:8px;">
-          <div style="flex:1; min-width:0;">
-            <div style="font-weight:600; font-size:12px;">${k}</div>
-            <div style="font-size:11px; color:var(--admin-text-muted); margin-top:2px;">${v || '<em>(empty)</em>'}</div>
-          </div>
-          <button class="admin-btn admin-btn--ghost admin-btn--sm" data-tpl-del="${k}" style="font-size:11px;">Delete</button>
-        </li>`).join('');
+      editor.replaceChildren();
+      Object.entries(REASON_TEMPLATES).forEach(([k, v]) => {
+        const item = document.createElement('li');
+        item.style.cssText = 'padding:8px 10px; border-bottom:1px solid var(--admin-border); display:flex; justify-content:space-between; gap:8px;';
+
+        const body = document.createElement('div');
+        body.style.cssText = 'flex:1; min-width:0;';
+
+        const keyEl = document.createElement('div');
+        keyEl.style.cssText = 'font-weight:600; font-size:12px;';
+        keyEl.textContent = k;
+
+        const valueEl = document.createElement('div');
+        valueEl.style.cssText = 'font-size:11px; color:var(--admin-text-muted); margin-top:2px;';
+        valueEl.textContent = v || '(empty)';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'admin-btn admin-btn--ghost admin-btn--sm';
+        deleteBtn.dataset.tplDel = k;
+        deleteBtn.style.fontSize = '11px';
+        deleteBtn.textContent = 'Delete';
+
+        body.append(keyEl, valueEl);
+        item.append(body, deleteBtn);
+        editor.appendChild(item);
+      });
       editor.querySelectorAll('[data-tpl-del]').forEach(b => b.addEventListener('click', () => {
         const k = b.dataset.tplDel;
         if (k === 'custom') { toast('Cannot delete "custom"', 'error'); return; }
@@ -1381,8 +1420,14 @@
     const sel = document.getElementById('mm-reason-template');
     if (sel) {
       const cur = sel.value;
-      sel.innerHTML = Object.keys(REASON_TEMPLATES).map(k => `<option value="${k}">${k}</option>`).join('');
-      if (REASON_TEMPLATES[cur]) sel.value = cur;
+      sel.replaceChildren();
+      Object.keys(REASON_TEMPLATES).forEach(k => {
+        const option = document.createElement('option');
+        option.value = k;
+        option.textContent = reasonTemplateLabel(k);
+        sel.appendChild(option);
+      });
+      sel.value = REASON_TEMPLATES[cur] !== undefined ? cur : 'custom';
     }
   }
   function bindTemplateEditor() {
@@ -2514,7 +2559,16 @@
   }
 
   // ── Init ────────────────────────────────────────────────────────
+  function ensureModalOverlaysClosedOnLoad() {
+    document.querySelectorAll('.mp-modal-overlay, .recon-sheet-overlay, .recon-tour-overlay, .cmdk-overlay').forEach(overlay => {
+      overlay.hidden = true;
+      overlay.classList.remove('closing');
+    });
+    resolveTarget = null;
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    ensureModalOverlaysClosedOnLoad();
     bindFilters();
     bindBulkActions();
     bindExports();

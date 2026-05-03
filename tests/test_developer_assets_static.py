@@ -74,3 +74,24 @@ def test_developer_assets_design_system_density_styles_are_present():
     assert ".dev-assets-location-line" in css
     assert "background: #FFFFFF;" in css
     assert "border: 1px solid var(--dev-assets-border);" in css
+
+
+def test_developer_assets_empty_metrics_use_quiet_card_style():
+    css = read("frontend/platform/static/css/developer-assets.css")
+
+    metrics_start = css.index(".dae-empty__metric {")
+    metrics_end = css.index(".dae-empty__metric-label", metrics_start)
+    metric_css = css[metrics_start:metrics_end]
+
+    assert "background: var(--card-bg, #FFFFFF);" in metric_css
+    assert "border: 1px solid var(--card-border-color, #E5E7EB);" in metric_css
+    assert "box-shadow: var(--card-shadow" in metric_css
+    assert "border-image" not in metric_css
+    assert "linear-gradient" not in metric_css
+    assert "border-top: 3px" not in metric_css
+
+    value_start = css.index(".dae-empty__metric-value {")
+    value_end = css.index(".dae-empty__metric-hint", value_start)
+    value_css = css[value_start:value_end]
+    assert "font-size: 22px;" in value_css
+    assert "font-size: 28px;" not in value_css

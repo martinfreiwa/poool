@@ -342,8 +342,8 @@
         .anim-in, .anim-delay-2 { animation: none !important; opacity: 1 !important; transform: none !important; }
       }
       .hero-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
-      .hero-video-wrap { display: flex; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; border-radius: 24px; background: url('/static/images/ui/hero_video_poster.jpg') center / cover no-repeat; }
-      .hero-video-bg { display: block; width: 100%; max-width: 700px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 24px; animation: heroVideoZoom 20s ease-out forwards; }
+      .hero-video-wrap { display: flex; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; border-radius: 24px; }
+      .hero-video-bg { display: block; width: 100%; max-width: 700px; aspect-ratio: 1248 / 996; object-fit: contain; border-radius: 24px; animation: heroVideoZoom 20s ease-out forwards; }
       @media (max-width: 1100px) { .hero-two-col { grid-template-columns: 1fr; } .hero-video-wrap { display: none !important; } }
     </style>
 
@@ -378,8 +378,8 @@
       <!-- Right column: villa video -->
       <div class="hero-video-wrap">
         <video autoplay loop muted playsinline class="hero-video-bg" aria-hidden="true" poster="/static/images/ui/hero_video_poster.jpg" onerror="this.closest('.hero-video-wrap').classList.add('hero-video-wrap--fallback')">
-          <source src="/static/images/ui/hero_video.mp4" type="video/mp4">
-          <source src="/static/webm/webm_villa_no-bg.webm" type="video/webm">
+          <source src="/static/mov/webm_villa_alpha.mp4" type="video/mp4; codecs=hvc1">
+          <source src="/static/webm/webm_villa_alpha.webm" type="video/webm">
         </video>
       </div>
       </div><!-- end hero-two-col -->

@@ -382,10 +382,10 @@ INSERT INTO asset_milestones (asset_id, title, description, milestone_date, mont
 
 -- ── 5. Asset Documents ───────────────────────────────────────
 
-INSERT INTO asset_documents (asset_id, document_type, title, file_url, file_size_bytes) VALUES
-    (v_asset1, 'expose', 'Investment Expose – Clifftop Villa', '/docs/expose-clifftop-villa.pdf', 2456780),
-    (v_asset1, 'appraisal', 'Independent Appraisal Report', '/docs/appraisal-clifftop-villa.pdf', 1234567),
-    (v_asset2, 'expose', 'Investment Expose – Surf Villa Canggu', '/docs/expose-surf-villa.pdf', 1987654);
+INSERT INTO asset_documents (asset_id, document_type, title, file_url, file_size_bytes, is_investor_visible) VALUES
+    (v_asset1, 'expose', 'Investment Expose – Clifftop Villa', '/docs/expose-clifftop-villa.pdf', 2456780, TRUE),
+    (v_asset1, 'appraisal', 'Independent Appraisal Report', '/docs/appraisal-clifftop-villa.pdf', 1234567, TRUE),
+    (v_asset2, 'expose', 'Investment Expose – Surf Villa Canggu', '/docs/expose-surf-villa.pdf', 1987654, TRUE);
 
 -- ── 6. Asset Financials ──────────────────────────────────────
 

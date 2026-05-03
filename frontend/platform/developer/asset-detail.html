@@ -262,12 +262,13 @@ extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'mobile-navigation', '
                 </div>
                 <div style="margin-top: 24px" id="video-section" hidden>
                   <h4 class="ad-card__subtitle">Video Tour</h4>
-                  <a href="#" target="_blank" class="ad-btn ad-btn--outline" id="video-link">
+                  <div class="ad-video-embed" id="video-embed"></div>
+                  <a href="#" target="_blank" rel="noopener noreferrer" class="ad-btn ad-btn--outline ad-video-link" id="video-link">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
                       stroke-width="1.7">
                       <polygon points="6,3 13,8 6,13" />
                     </svg>
-                    Watch Video
+                    Open video
                   </a>
                 </div>
               </div>

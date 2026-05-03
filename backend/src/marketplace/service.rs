@@ -1041,11 +1041,6 @@ pub async fn get_secondary_assets(
         FROM assets a
         WHERE a.published = true
           AND a.asset_type != 'commodity'
-          -- Only include assets that are actually TRADABLE on the secondary
-          -- market. `funding_in_progress` / `funding_open` belong on the
-          -- PRIMARY listing pages — surfacing them here led to users
-          -- clicking "Trade" only to be rejected by `check_asset_tradable`.
-          AND a.funding_status = 'funded'
         "#
     )
     .fetch_all(pool)

@@ -60,8 +60,8 @@ Remaining recheck:
 
 ## Tested Scope
 
-- Read `AGENTS.md`, `docs/AGENT_DEVELOPMENT_PROMPT.md`, `docs/IMPLEMENTATION_ROADMAP.md`, `BROKEN_LOGICS.md`, `docs/DATABASE_SCHEMA.md`, `docs/FRONTEND_COMPONENTS.md`, `docs/TECH_STACK.md`, `docs/SECURITY.md`, `docs/DESIGN.md`, and `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`.
-- Reviewed `docs/page-review-tracker.yml` and selected the first fully unreviewed page according to tracker order.
+- Read `AGENTS.md`, `docs/AGENT_DEVELOPMENT_PROMPT.md`, `docs/IMPLEMENTATION_ROADMAP.md`, `docs/issue-tracking/BROKEN_LOGICS.md`, `docs/DATABASE_SCHEMA.md`, `docs/design/FRONTEND_COMPONENTS.md`, `docs/TECH_STACK.md`, `docs/SECURITY.md`, `docs/DESIGN.md`, and `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`.
+- Reviewed `docs/issue-tracking/page-review-tracker.yml` and selected the first fully unreviewed page according to tracker order.
 - Reviewed the AMA admin template, inline JavaScript, backend page route, backend API route registration, community AMA service functions, and AMA migration.
 - Checked for existing tests covering admin AMA routes.
 - Ran inline JavaScript syntax validation with `node --check`.
@@ -337,7 +337,7 @@ Wrap status/answer/feature changes in service-level logic that captures previous
 
 | Test | Steps | Expected | Actual | Result |
 |------|-------|----------|--------|--------|
-| Tracker selection | Parsed `docs/page-review-tracker.yml` for in-progress and not-reviewed pages. | Select exactly one first unreviewed page. | Selected `admin.community.amas`. | Pass |
+| Tracker selection | Parsed `docs/issue-tracking/page-review-tracker.yml` for in-progress and not-reviewed pages. | Select exactly one first unreviewed page. | Selected `admin.community.amas`. | Pass |
 | Static template review | Inspected `frontend/platform/admin/community/amas.html`. | Inventory all visible controls and JS hooks. | Controls and inline fetches documented. | Pass |
 | Backend route review | Inspected `backend/src/admin/mod.rs`, `backend/src/community/routes.rs`, `backend/src/community/amas.rs`. | Verify page route and API support. | Routes exist; permission, CSRF integration, audit, and validation gaps found. | Issues found |
 | Database review | Inspected `database/community/009_amas.sql` and audit log references. | Verify AMA tables and constraints. | Core AMA tables exist; community audit table exists but is unused by AMA mutations. | Issues found |

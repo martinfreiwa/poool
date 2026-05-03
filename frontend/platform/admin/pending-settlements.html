@@ -119,11 +119,25 @@
     }
 
     .settlements-filter-bar {
-      padding: 14px 20px;
+      padding: 12px 20px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .settlements-filter-control {
+      flex: 0 0 190px;
+      width: 190px;
+      min-width: 190px;
+      max-width: 100%;
+    }
+
+    .settlements-filter-bar .admin-search,
+    .settlements-filter-bar .admin-select {
+      height: 36px;
+      padding-block: 5px;
+      font-size: 12.5px;
     }
 
     .settlements-filter-count {
@@ -181,9 +195,11 @@
 
       .settlements-filter-bar .admin-search,
       .settlements-filter-bar .admin-select,
+      .settlements-filter-control,
       .settlements-filter-count {
         width: 100%;
         max-width: none;
+        flex-basis: 100%;
       }
 
       .settlements-filter-count {
@@ -325,7 +341,7 @@
         <!-- Filters -->
         <div class="admin-card" style="margin-bottom: 16px;">
           <div class="settlements-filter-bar">
-            <div class="admin-search" style="width: 220px;">
+            <div class="admin-search settlements-filter-control">
               <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="6" />
@@ -334,13 +350,13 @@
               <input type="text" placeholder="Search by user, reference…" id="settlement-search"
                 aria-label="Search settlements" />
             </div>
-            <select id="filter-match-status" class="admin-select" aria-label="Filter by match status">
+            <select id="filter-match-status" class="admin-select settlements-filter-control" aria-label="Filter by match status">
               <option value="">All Match Status</option>
               <option value="api_matched">API Matched (Plaid)</option>
               <option value="manual_pending">Manual — Needs 2nd Admin</option>
               <option value="unmatched">Unmatched</option>
             </select>
-            <select id="filter-asset" class="admin-select" aria-label="Filter by asset">
+            <select id="filter-asset" class="admin-select settlements-filter-control" aria-label="Filter by asset">
               <option value="">All Assets</option>
               <option value="villa-mallorca">Villa Mallorca</option>
               <option value="apartment-berlin">Apartment Berlin Mitte</option>

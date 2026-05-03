@@ -82,12 +82,7 @@
     const sc = statusConfig[status] || statusConfig.pending;
 
     // ── Header ──
-    let headerHTML = `
-      <div class="pip-status-badge pip-status-badge--${sc.cssClass}">
-        <span class="pip-status-badge__dot"></span>
-        ${esc(sc.label)}
-      </div>
-    `;
+    let headerHTML = "";
 
     if (status === "completed" || status === "paid") {
       headerHTML += `
@@ -149,29 +144,24 @@
       </div>
     `;
 
-    // Card 2: Order Items
+    // Card 2: Purchased item summary
     if (order.items && order.items.length > 0) {
-      let itemsHTML = order.items.map(item => `
-        <div class="pip-detail-row">
-          <span class="pip-detail-row__label">${esc(item.asset_title || 'Asset')}</span>
-          <span class="pip-detail-row__value">
-            ${item.tokens_quantity} shares × ${symbol}${formatCents(item.token_price_cents)}
-            = <strong>${symbol}${formatCents(item.total_cents || (item.tokens_quantity * item.token_price_cents))}</strong>
-          </span>
-        </div>
-      `).join('');
+      const itemsHTML = order.items
+        .map(item => renderPurchasedItemCard(item, symbol, sc.label, sc.cssClass))
+        .join('');
+      const itemLabel = order.items.length === 1 ? "Purchased Item" : "Purchased Items";
 
       cardsHTML += `
-        <div class="pip-card">
+        <div class="pip-card pip-purchased-section">
           <div class="pip-card__title">
             <span class="pip-card__title-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
               </svg>
             </span>
-            Order Items
+            ${itemLabel}
           </div>
-          ${itemsHTML}
+          <div class="pip-purchased-list">${itemsHTML}</div>
         </div>
       `;
     }
@@ -236,23 +226,6 @@
       `;
     }
 
-    // Card 5: Support Info
-    cardsHTML += `
-      <div class="pip-support-card">
-        <div class="pip-support-card__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-          </svg>
-        </div>
-        <div class="pip-support-card__content">
-          <p class="pip-support-card__title">Questions or Problems?</p>
-          <p class="pip-support-card__desc">
-            Our support team is happy to help. Give us a call or send us a message via the <a href="/support">Support Portal</a>.
-          </p>
-        </div>
-      </div>
-    `;
-
     dynamicContainer.innerHTML = cardsHTML;
 
     // ── Actions ──
@@ -306,12 +279,7 @@
           : "1-3 business days (bank wire)";
 
     // ── Header ──
-    let headerHTML = `
-      <div class="pip-status-badge pip-status-badge--${sc.cssClass}">
-        <span class="pip-status-badge__dot"></span>
-        ${esc(sc.label)}
-      </div>
-    `;
+    let headerHTML = "";
 
     if (status === "pending" || status === "processing") {
       if (isBankTransfer) {
@@ -519,23 +487,6 @@
       `;
     }
 
-    // Support Info
-    cardsHTML += `
-      <div class="pip-support-card">
-        <div class="pip-support-card__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-          </svg>
-        </div>
-        <div class="pip-support-card__content">
-          <p class="pip-support-card__title">Questions or Problems?</p>
-          <p class="pip-support-card__desc">
-            Our support team is happy to help. Give us a call or send us a message via the <a href="/support">Support Portal</a>.
-          </p>
-        </div>
-      </div>
-    `;
-
     dynamicContainer.innerHTML = cardsHTML;
 
     // Actions
@@ -635,6 +586,89 @@
 
   function methodLabel(method) {
     return { bank: "Bank Transfer", manual: "Bank Transfer", wallet: "Wallet", stripe: "Stripe", ocbc: "OCBC" }[method] || method;
+  }
+
+  function renderPurchasedItemCard(item, symbol, statusLabel, statusClass) {
+    const title = item.asset_title || item.title || "Purchased asset";
+    const quantity = Number(item.tokens_quantity || item.quantity || 0);
+    const priceCents = Number(item.token_price_cents || item.price_cents || 0);
+    const totalCents = Number(item.total_cents || item.subtotal_cents || (quantity * priceCents));
+    const imageUrl = firstText(item.cover_image_url, item.image_url, item.thumbnail_url);
+    const assetType = firstText(item.asset_type, "property");
+    const location = [item.location_city, item.location_country].filter(Boolean).join(", ");
+    const shortDescription = firstText(item.short_description, "Fractional ownership position");
+    const fundingStatus = firstText(item.funding_status, "Reserved");
+    const assetUrl = buildAssetUrl(item);
+    const imageHTML = imageUrl
+      ? `<img src="${esc(imageUrl)}" alt="${esc(title)}" class="pip-purchased-card__image" loading="lazy">`
+      : `<div class="pip-purchased-card__image-fallback" aria-hidden="true">OOO</div>`;
+    const linkHTML = assetUrl
+      ? `<a class="pip-purchased-card__link" href="${esc(assetUrl)}">View asset</a>`
+      : "";
+
+    return `
+      <article class="pip-purchased-card">
+        <div class="pip-purchased-card__media">
+          ${imageHTML}
+          <span class="pip-purchased-card__status pip-purchased-card__status--${esc(statusClass)}">
+            ${esc(statusLabel)}
+          </span>
+        </div>
+        <div class="pip-purchased-card__body">
+          <div class="pip-purchased-card__eyebrow">
+            <span>${esc(formatAssetType(assetType))}</span>
+            ${location ? `<span>${esc(location)}</span>` : ""}
+          </div>
+          <h2 class="pip-purchased-card__title">${esc(title)}</h2>
+          <p class="pip-purchased-card__desc">${esc(shortDescription)}</p>
+          <div class="pip-purchased-card__stats" aria-label="Purchased item details">
+            <div>
+              <span>Shares</span>
+              <strong>${quantity.toLocaleString("en-US")}</strong>
+            </div>
+            <div>
+              <span>Price/share</span>
+              <strong>${symbol}${formatCents(priceCents)}</strong>
+            </div>
+            <div>
+              <span>Total</span>
+              <strong>${symbol}${formatCents(totalCents)}</strong>
+            </div>
+          </div>
+          <div class="pip-purchased-card__footer">
+            <span class="pip-purchased-card__funding">${esc(formatStatusText(fundingStatus))}</span>
+            ${linkHTML}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function firstText(...values) {
+    for (const value of values) {
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+    return "";
+  }
+
+  function buildAssetUrl(item) {
+    const slug = firstText(item.slug, item.asset_slug);
+    if (!slug) return "";
+    const assetType = firstText(item.asset_type).toLowerCase();
+    const base = assetType === "commodity" ? "/commodity/" : "/property/";
+    return `${base}${encodeURIComponent(slug)}`;
+  }
+
+  function formatAssetType(assetType) {
+    return formatStatusText(assetType || "Property");
+  }
+
+  function formatStatusText(value) {
+    return String(value || "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, char => char.toUpperCase());
   }
 
   function formatCents(cents) {

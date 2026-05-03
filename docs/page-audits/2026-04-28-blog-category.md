@@ -24,7 +24,7 @@ Reviewed:
 - `backend/src/blog/service.rs`
 - `backend/src/blog/sanity.rs`
 - `database/024_blog.sql`
-- `docs/page-review-tracker.yml`
+- `docs/issue-tracking/page-review-tracker.yml`
 - `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md`
 
 Commands run:
@@ -33,7 +33,7 @@ Commands run:
 python3 - <<'PY'
 import yaml
 from pathlib import Path
-data = yaml.safe_load(Path('docs/page-review-tracker.yml').read_text())
+data = yaml.safe_load(Path('docs/issue-tracking/page-review-tracker.yml').read_text())
 print(next(page['id'] for page in data['pages'] if page['id'] == 'blog.category'))
 PY
 ```
@@ -90,7 +90,7 @@ Initial result: blocked by unrelated existing compile errors. Follow-up result w
 python3 scripts/audit_page_review_tracker.py --write-md
 ```
 
-Result: regenerated `docs/PAGE_REVIEW_TRACKER.md`; script reported one unrelated missing reference: `affiliate.settings: frontend/platform/static/js/affiliate-settings.js`.
+Result: regenerated `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`; script reported one unrelated missing reference: `affiliate.settings: frontend/platform/static/js/affiliate-settings.js`.
 
 Follow-up tracker result after script/source updates: passed with 0 missing routes, 0 missing page template entries, 0 missing supporting template entries, and 0 missing file references.
 
@@ -223,8 +223,8 @@ Initial runtime verification was blocked because no backend was running on port 
 
 Updated:
 
-- `docs/page-review-tracker.yml`
-- `docs/PAGE_REVIEW_TRACKER.md`
+- `docs/issue-tracking/page-review-tracker.yml`
+- `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`
 - `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md`
 
 Severity counts:

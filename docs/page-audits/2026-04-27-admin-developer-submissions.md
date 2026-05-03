@@ -6,7 +6,7 @@ URL: `/admin/developer-submissions`
 Template: `frontend/platform/admin/developer-submissions.html`
 Primary JS: `frontend/platform/static/js/admin-submissions.js`
 Backend: `backend/src/admin/mod.rs`, `backend/src/admin/pages.rs`, `backend/src/admin/developer_projects.rs`
-Tracker: `docs/page-review-tracker.yml`
+Tracker: `docs/issue-tracking/page-review-tracker.yml`
 Status: fixed, needs authenticated runtime recheck
 
 ## Scope
@@ -171,10 +171,10 @@ Result: `000`; local backend was not running on port 8888, so authenticated brow
 Static review commands:
 
 ```bash
-sed -n '1,260p' docs/DAILY_PAGE_AUDIT_PROMPT.md
+sed -n '1,260p' docs/automation-prompts/DAILY_PAGE_AUDIT_PROMPT.md
 sed -n '1,260p' docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md
 sed -n '1,180p' docs/AGENT_DEVELOPMENT_PROMPT.md
-sed -n '1,260p' docs/page-review-tracker.yml
+sed -n '1,260p' docs/issue-tracking/page-review-tracker.yml
 sed -n '1,340p' frontend/platform/admin/developer-submissions.html
 sed -n '1,380p' frontend/platform/static/js/admin-submissions.js
 rg -n "developer-submissions|developer-projects" backend/src/admin backend/src/main.rs tests

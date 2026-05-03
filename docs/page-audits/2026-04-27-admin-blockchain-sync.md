@@ -47,7 +47,7 @@ Remaining issues:
 - Reviewed blockchain sync handlers in `backend/src/admin/blockchain.rs`.
 - Reviewed admin permission helper behavior in `backend/src/admin/extractors.rs` and sidebar permission mapping in `frontend/platform/static/js/admin-permission-guard.js`.
 - Reviewed schema support in `database/006_admin_settings.sql`, `database/058_blockchain_integration.sql`, and `database/059_onchain_balances.sql`.
-- Checked existing coverage references in `docs/E2E_COVERAGE_TRACKER.md`.
+- Checked existing coverage references in `docs/automation-coverage/E2E_COVERAGE_TRACKER.md`.
 
 ---
 
@@ -253,7 +253,7 @@ Propagate DB errors for `chain_indexer_cursor`, `onchain_balances`, `trade_histo
 | Authenticated browser/API E2E | `python3 -m pytest tests/e2e/test_admin_blockchain_sync.py -q` | Permission denial, unauthenticated denial, CSRF rejection, missing `blockchain.manage`, ineligible approved-KYC rejection, successful Force Sync wallet/audit persistence, repeat rejection, page render, empty/count badge, and console health are covered. | 1 passed. | Pass |
 | Rust check | `CARGO_TARGET_DIR=/tmp/poool-page-audit-target cargo check` | Compile the backend in isolated build state. | Passed. | Pass |
 | Rust format | `cd backend && cargo fmt --check` | Rust formatting passes. | Passed with no output. | Pass |
-| Scoped diff whitespace | `git diff --check -- backend/src/admin/blockchain.rs backend/src/admin/pages.rs frontend/platform/admin/blockchain-sync.html frontend/platform/static/js/admin-blockchain-sync.js frontend/platform/static/js/admin-permission-guard.js tests/admin/test_blockchain_sync_static.py tests/e2e/test_admin_blockchain_sync.py docs/page-audits/2026-04-27-admin-blockchain-sync.md docs/page-review-tracker.yml docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md` | No whitespace errors in touched files. | Passed with no output. | Pass |
+| Scoped diff whitespace | `git diff --check -- backend/src/admin/blockchain.rs backend/src/admin/pages.rs frontend/platform/admin/blockchain-sync.html frontend/platform/static/js/admin-blockchain-sync.js frontend/platform/static/js/admin-permission-guard.js tests/admin/test_blockchain_sync_static.py tests/e2e/test_admin_blockchain_sync.py docs/page-audits/2026-04-27-admin-blockchain-sync.md docs/issue-tracking/page-review-tracker.yml docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md` | No whitespace errors in touched files. | Passed with no output. | Pass |
 | Static page route review | Reviewed `backend/src/admin/mod.rs` and `backend/src/admin/pages.rs`. | Page route exists and auth behavior is identifiable. | Routes exist; generic admin-only gate found. | Pass |
 | Static API route review | Reviewed `backend/src/admin/mod.rs` and `backend/src/admin/blockchain.rs`. | API routes exist and auth/validation behavior is identifiable. | Routes exist; permission and validation gaps found. | Pass |
 | Mutation runtime test | Submit Force Sync against seeded E2E users. | Eligible active approved-KYC user gets one wallet assignment and one audit row; ineligible and repeated submissions do not mutate. | Covered by `tests/e2e/test_admin_blockchain_sync.py`. | Pass |

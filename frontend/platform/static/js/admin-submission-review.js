@@ -194,9 +194,6 @@ function renderSubmission(data) {
     }
   }
 
-  // Conditionally show/hide video and maps checklist items
-  toggleConditionalChecklist(asset);
-
   // Restore saved checklist state from DB (overrides auto-checks where applicable)
   _restoreChecklist();
 
@@ -234,21 +231,28 @@ function renderDeveloperCard(dev) {
 
   const name =
     [dev.first_name, dev.last_name].filter(Boolean).join(" ") || dev.email;
+  const initial = name.charAt(0).toUpperCase();
+  const avatarUrl = dev.avatar_url || dev.logo_url || dev.asset_developer_logo_url || "";
+  const avatar = `
+    <div class="dev-profile-avatar" aria-hidden="true">
+      ${avatarUrl
+        ? `<img src="${esc(avatarUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';this.onerror=null;" />
+           <div class="dev-profile-avatar-fallback" style="display:none;">${esc(initial)}</div>`
+        : `<div class="dev-profile-avatar-fallback">${esc(initial)}</div>`
+      }
+    </div>`;
 
   container.innerHTML = `
-        <div style="display:flex;align-items:center;gap:16px;">
-            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--admin-primary),var(--admin-accent));
-                        display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;flex-shrink:0;">
-                ${esc(name.charAt(0).toUpperCase())}
-            </div>
-            <div style="flex:1;min-width:0;">
-                <div style="font-weight:700;font-size:16px;color:var(--admin-text-primary);">${esc(name)}</div>
-                <div style="font-size:13px;color:var(--admin-text-muted);margin-top:2px;">${esc(dev.email)}</div>
-                <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="dev-profile-row">
+            ${avatar}
+            <div class="dev-profile-main">
+                <div class="dev-profile-headline">
+                    <span class="dev-profile-name">${esc(name)}</span>
                     ${getKycBadge(dev.kyc_status)}
-                    <span style="font-size:12px;color:var(--admin-text-muted);">
-                        ${dev.other_projects_count || 0} project(s) submitted total
-                    </span>
+                </div>
+                <div class="dev-profile-meta">
+                    <span>${esc(dev.email)}</span>
+                    <span>${dev.other_projects_count || 0} project(s) submitted</span>
                 </div>
             </div>
             <a href="/admin/user-details?id=${esc(dev.user_id)}"
@@ -418,14 +422,6 @@ function validateTokenMath(asset) {
   }
 }
 
-// ─── Conditional Checklist Items ──────────────────────────────────────────────
-function toggleConditionalChecklist(asset) {
-  const videoRow = document.getElementById("chk-video-row");
-  const gmapRow = document.getElementById("chk-gmap-row");
-  if (videoRow) videoRow.style.display = asset.video_url ? "" : "none";
-  if (gmapRow) gmapRow.style.display = asset.google_maps_url ? "" : "none";
-}
-
 // ─── Document Data Room ───────────────────────────────────────────────────────
 const DOC_CATEGORIES = {
   Legal: [
@@ -441,21 +437,29 @@ const DOC_CATEGORIES = {
   Other: ["other"],
 };
 
+let _adminDocuments = [];
+let _adminDocumentUploadInitialized = false;
+
 function renderDocuments(docs) {
   const container = document.getElementById("documents-container");
   if (!container) return;
+  _adminDocuments = (docs || []).slice();
+  _initAdminDocumentUpload();
 
-  if (docs.length === 0) {
+  if (_adminDocuments.length === 0) {
     container.innerHTML = `<div style="color:var(--admin-danger);font-size:13px;padding:16px;
             border:1px solid var(--admin-danger);border-radius:8px;background:rgba(239,68,68,.05);">
-            ⚠ No documents uploaded for this submission.
+            <div style="margin-bottom:10px;">No documents uploaded for this submission.</div>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" onclick="adminOpenDocumentUpload('proof_of_title')">
+              Upload document
+            </button>
         </div>`;
     return;
   }
 
   // Group ALL docs by type (array, not single item)
   const docsByType = {};
-  docs.forEach((d) => {
+  _adminDocuments.forEach((d) => {
     if (!docsByType[d.document_type]) docsByType[d.document_type] = [];
     docsByType[d.document_type].push(d);
   });
@@ -464,21 +468,43 @@ function renderDocuments(docs) {
   const renderedTypes = new Set();
   const catCounts = {};
 
+  const icon = {
+    view: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    download: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>`,
+    edit: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>`,
+    trash: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+    visible: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    hidden: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a17.8 17.8 0 0 1-2.1 3.1"/><path d="M6.6 6.6C3.7 8.5 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.2-.9"/></svg>`,
+  };
+
+  const documentUrl = (d) => d.download_url || (d.id ? `/api/documents/${encodeURIComponent(d.id)}/download` : d.file_url || "#");
   const renderDocItem = (d) => `
     <div class="document-item">
         <div class="document-info">
             <span class="document-type">${(d.document_type || "").replace(/_/g, " ").toUpperCase()}</span>
             <span class="document-meta">${esc(d.title || "")}${d.file_size_bytes ? " · " + formatFileSize(d.file_size_bytes) : ""}</span>
+            <span class="document-visibility-pill ${d.is_investor_visible ? "is-visible" : "is-hidden"}">
+              ${d.is_investor_visible ? "Visible on property page" : "Hidden from property page"}
+            </span>
         </div>
-        <div style="display:flex;gap:6px;">
-            <a href="${esc(d.file_url || `/api/documents/${d.id}/download`)}" target="_blank" rel="noopener"
-               class="admin-btn admin-btn--secondary admin-btn--sm">
-               📄 View
+        <div class="document-actions">
+            <button type="button"
+                    class="document-icon-action ${d.is_investor_visible ? "document-icon-action--success" : ""}"
+                    onclick="adminToggleDocumentVisibility('${esc(d.id)}')"
+                    aria-label="${d.is_investor_visible ? "Hide" : "Show"} ${esc(d.title || 'document')} on property page"
+                    title="${d.is_investor_visible ? "Hide from property page" : "Show on property page"}">
+              ${d.is_investor_visible ? icon.visible : icon.hidden}
+            </button>
+            <a href="${esc(documentUrl(d))}" target="_blank" rel="noopener"
+               class="document-icon-action" aria-label="View ${esc(d.title || 'document')}" title="View">
+               ${icon.view}
             </a>
-            <a href="${esc(d.file_url || `/api/documents/${d.id}/download`)}" download
-               class="admin-btn admin-btn--secondary admin-btn--sm">
-               ↓
+            <a href="${esc(documentUrl(d))}" download
+               class="document-icon-action" aria-label="Download ${esc(d.title || 'document')}" title="Download">
+               ${icon.download}
             </a>
+            <button type="button" class="document-icon-action" onclick="adminEditDocument('${esc(d.id)}')" aria-label="Edit ${esc(d.title || 'document')}" title="Edit details">${icon.edit}</button>
+            <button type="button" class="document-icon-action document-icon-action--danger" onclick="adminDeleteDocument('${esc(d.id)}')" aria-label="Delete ${esc(d.title || 'document')}" title="Delete">${icon.trash}</button>
         </div>
     </div>`;
 
@@ -490,6 +516,7 @@ function renderDocuments(docs) {
       });
       const hasDocs = catDocs.length > 0;
       catCounts[catName] = catDocs.length;
+      const defaultType = types[0] || "other";
 
       return `
         <div style="margin-bottom:20px;">
@@ -504,9 +531,11 @@ function renderDocuments(docs) {
             </div>
             <div class="document-list">
                 ${!hasDocs
-                  ? `<div style="font-size:12px;color:var(--admin-text-muted);padding:8px 12px;
-                                 border:1px dashed var(--admin-border);border-radius:6px;">
-                        No ${catName.toLowerCase()} documents uploaded
+                  ? `<div class="document-missing-row">
+                        <span>No ${catName.toLowerCase()} documents uploaded</span>
+                        <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" onclick="adminOpenDocumentUpload('${esc(defaultType)}')">
+                          Upload ${catName.toLowerCase()} document
+                        </button>
                     </div>`
                   : catDocs.map(renderDocItem).join("")
                 }
@@ -516,7 +545,7 @@ function renderDocuments(docs) {
     .join("");
 
   // Catch-all: any docs with types not in DOC_CATEGORIES
-  const extraDocs = docs.filter((d) => !renderedTypes.has(d.document_type));
+  const extraDocs = _adminDocuments.filter((d) => !renderedTypes.has(d.document_type));
   const extraSection = extraDocs.length > 0 ? `
     <div style="margin-bottom:20px;">
         <div style="font-size:11px;font-weight:700;color:var(--admin-text-muted);
@@ -531,20 +560,188 @@ function renderDocuments(docs) {
     </div>` : "";
 
   container.innerHTML = categorySections + extraSection;
-  autoCheckDocs(catCounts);
+  autoCheckDocs(catCounts, _adminDocuments);
 }
 
-function autoCheckDocs(counts) {
+function _initAdminDocumentUpload() {
+  if (_adminDocumentUploadInitialized) return;
+  const panel = document.getElementById("admin-document-upload-panel");
+  const toggle = document.getElementById("toggle-document-upload-btn");
+  const uploadBtn = document.getElementById("admin-document-upload-btn");
+  const fileInput = document.getElementById("admin-document-file");
+  const titleInput = document.getElementById("admin-document-title");
+  if (!panel || !toggle || !uploadBtn || !fileInput) return;
+  _adminDocumentUploadInitialized = true;
+
+  toggle.addEventListener("click", () => {
+    const visible = !panel.classList.contains("is-visible");
+    panel.classList.toggle("is-visible", visible);
+    panel.setAttribute("aria-hidden", visible ? "false" : "true");
+    toggle.textContent = visible ? "Close upload" : "Upload file";
+  });
+
+  fileInput.addEventListener("change", () => {
+    if (titleInput && !titleInput.value.trim() && fileInput.files[0]) {
+      titleInput.value = fileInput.files[0].name;
+    }
+  });
+
+  uploadBtn.addEventListener("click", adminUploadDocument);
+}
+
+function adminOpenDocumentUpload(documentType = "other") {
+  _initAdminDocumentUpload();
+  const panel = document.getElementById("admin-document-upload-panel");
+  const toggle = document.getElementById("toggle-document-upload-btn");
+  const typeInput = document.getElementById("admin-document-type");
+  const fileInput = document.getElementById("admin-document-file");
+  if (typeInput && documentType) typeInput.value = documentType;
+  if (panel) {
+    panel.classList.add("is-visible");
+    panel.setAttribute("aria-hidden", "false");
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  if (toggle) toggle.textContent = "Close upload";
+  fileInput?.focus();
+}
+
+async function adminUploadDocument() {
+  const assetId = _getAssetIdForImages();
+  const typeInput = document.getElementById("admin-document-type");
+  const titleInput = document.getElementById("admin-document-title");
+  const fileInput = document.getElementById("admin-document-file");
+  const visibilityInput = document.getElementById("admin-document-visible");
+  const status = document.getElementById("admin-document-upload-status");
+  const btn = document.getElementById("admin-document-upload-btn");
+  if (!assetId) { showToast("Could not determine asset ID", "error"); return; }
+  if (!fileInput?.files?.[0]) { showToast("Choose a document to upload", "warning"); return; }
+
+  const file = fileInput.files[0];
+  if (file.size > 20 * 1024 * 1024) { showToast("Document must be 20 MB or smaller", "warning"); return; }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("document_type", typeInput?.value || "other");
+  formData.append("title", titleInput?.value?.trim() || file.name);
+  formData.append("is_investor_visible", visibilityInput?.checked ? "true" : "false");
+
+  if (btn) btn.disabled = true;
+  if (status) status.textContent = "Uploading document...";
+  try {
+    const res = await fetch(`/api/admin/assets/${assetId}/documents`, {
+      method: "POST",
+      headers: { "X-CSRF-Token": getCsrfToken() },
+      body: formData,
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+    const doc = await res.json();
+    _adminDocuments.push({
+      id: doc.id || doc.document_id,
+      document_type: doc.document_type,
+      title: doc.title,
+      file_url: doc.file_url,
+      download_url: doc.download_url,
+      file_size_bytes: doc.file_size_bytes,
+      is_investor_visible: Boolean(doc.is_investor_visible),
+    });
+    fileInput.value = "";
+    if (titleInput) titleInput.value = "";
+    if (visibilityInput) visibilityInput.checked = false;
+    renderDocuments(_adminDocuments);
+    if (status) status.textContent = "";
+    showToast("Document uploaded", "success");
+  } catch (e) {
+    if (status) status.textContent = "";
+    showToast(`Upload failed: ${e.message}`, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function adminEditDocument(docId) {
+  const assetId = _getAssetIdForImages();
+  const doc = _adminDocuments.find((d) => String(d.id) === String(docId));
+  if (!assetId || !doc) return;
+  const title = prompt("Document display name:", doc.title || "");
+  if (title == null) return;
+  const trimmed = title.trim();
+  if (!trimmed) { showToast("Document name is required", "warning"); return; }
+  const type = prompt("Document type:", doc.document_type || "other");
+  if (type == null) return;
+  const documentType = type.trim();
+  try {
+    const res = await adminUpdateDocumentRequest(assetId, docId, { title: trimmed, document_type: documentType });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+    doc.title = trimmed;
+    doc.document_type = documentType;
+    renderDocuments(_adminDocuments);
+    showToast("Document updated", "success");
+  } catch (e) {
+    showToast(`Update failed: ${e.message}`, "error");
+  }
+}
+
+async function adminToggleDocumentVisibility(docId) {
+  const assetId = _getAssetIdForImages();
+  const doc = _adminDocuments.find((d) => String(d.id) === String(docId));
+  if (!assetId || !doc) return;
+
+  const nextVisible = !Boolean(doc.is_investor_visible);
+  try {
+    const res = await adminUpdateDocumentRequest(assetId, docId, { is_investor_visible: nextVisible });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+    doc.is_investor_visible = nextVisible;
+    renderDocuments(_adminDocuments);
+    showToast(nextVisible ? "Document visible on property page" : "Document hidden from property page", "success");
+  } catch (e) {
+    showToast(`Visibility update failed: ${e.message}`, "error");
+  }
+}
+
+async function adminUpdateDocumentRequest(assetId, docId, payload) {
+  const endpoint = `/api/admin/assets/${assetId}/documents/${docId}`;
+  const request = (method) => fetch(endpoint, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": getCsrfToken(),
+    },
+    body: JSON.stringify(payload),
+  });
+  const res = await request("PATCH");
+  return res.status === 405 ? request("POST") : res;
+}
+
+async function adminDeleteDocument(docId) {
+  const assetId = _getAssetIdForImages();
+  const doc = _adminDocuments.find((d) => String(d.id) === String(docId));
+  if (!assetId || !doc) return;
+  if (!await pooolConfirm({ title: "Delete document", message: `Delete ${doc.title || "this document"}? This cannot be undone.`, confirmText: "Delete", type: "danger" })) return;
+  try {
+    const res = await fetch(`/api/admin/assets/${assetId}/documents/${docId}`, {
+      method: "DELETE",
+      headers: { "X-CSRF-Token": getCsrfToken() },
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+    _adminDocuments = _adminDocuments.filter((d) => String(d.id) !== String(docId));
+    renderDocuments(_adminDocuments);
+    showToast("Document deleted", "success");
+  } catch (e) {
+    showToast(`Delete failed: ${e.message}`, "error");
+  }
+}
+
+function autoCheckDocs(counts, docs = []) {
   if (counts.Legal > 0) {
     const chk = document.getElementById("chk-legal");
     if (chk) { chk.checked = true; updateApproveButtonState(); }
   }
-  if (counts.Tax > 0) {
-    const chk = document.getElementById("chk-tax");
+  if (docs.some((doc) => doc.is_investor_visible)) {
+    const chk = document.getElementById("chk-investor-docs");
     if (chk) { chk.checked = true; updateApproveButtonState(); }
   }
   if (counts.Financial > 0) {
-     const chk = document.getElementById("chk-fin");
+     const chk = document.getElementById("chk-financials");
      if (chk) { chk.checked = true; updateApproveButtonState(); }
   }
 }
@@ -557,6 +754,10 @@ function renderImages(images) {
   _adminImages = images.slice();
   _renderImageGrid();
   _initAdminImageUpload();
+  if (_adminImages.length > 0) {
+    const chk = document.getElementById("chk-media");
+    if (chk) { chk.checked = true; updateApproveButtonState(); }
+  }
 }
 
 function _renderImageGrid() {

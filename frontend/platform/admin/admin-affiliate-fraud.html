@@ -12,91 +12,151 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 
     <style>
+        .fraud-page {
+            display: grid;
+            gap: 20px;
+        }
+
         .fraud-visualizer-container {
             width: 100%;
-            height: 600px;
-            background: rgba(10, 10, 15, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            height: 520px;
+            background: var(--admin-surface, #fff);
+            border: 1px solid var(--admin-border);
+            border-radius: 8px;
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(10px);
         }
+
         #cy {
             width: 100%;
-            height: 100%;
+            height: calc(100% - 56px);
             position: absolute;
-            top: 0; left: 0;
+            top: 56px;
+            left: 0;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(0, 29, 202, 0.06), transparent 36%),
+                var(--admin-bg-subtle, #f8fafc);
         }
+
         .fraud-header {
-            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
         }
+
         .fraud-header h1 {
-            color: #fff;
+            color: var(--admin-text-primary);
             margin-bottom: 8px;
         }
+
         .fraud-header p {
-            color: var(--text-tertiary);
+            color: var(--admin-text-secondary);
+            margin: 0;
         }
+
         .fraud-toolbar {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--admin-surface, #fff);
+            border-bottom: 1px solid var(--admin-border);
             position: relative;
             z-index: 10;
         }
+
         .fraud-status {
             margin-left: auto;
             align-self: center;
-            color: var(--text-tertiary);
+            color: var(--admin-text-muted);
             font-size: 13px;
             min-height: 18px;
         }
+
         .fraud-status.is-error {
             color: #EF4444;
         }
+
         .fraud-results {
-            margin-top: 16px;
             display: grid;
             gap: 8px;
         }
+
         .fraud-result {
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--admin-border);
             border-radius: 8px;
             padding: 12px;
-            color: var(--text-secondary);
-            background: rgba(255, 255, 255, 0.03);
+            color: var(--admin-text-secondary);
+            background: var(--admin-surface, #fff);
         }
+
         .fraud-result strong {
-            color: #fff;
+            color: var(--admin-text-primary);
             display: block;
             margin-bottom: 4px;
         }
+
+        @media (max-width: 720px) {
+            .fraud-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .fraud-visualizer-container {
+                height: 420px;
+            }
+
+            .fraud-status {
+                width: 100%;
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
-<body class="admin-body dom-ready dark-theme">
+<body class="admin-body dom-ready">
     <div class="admin-wrapper">
         {% include 'admin/components/sidebar.html' %}
 
         <main class="admin-main">
             <div class="admin-content">
-            <div class="fraud-header">
-                <h1 class="ds-h3">Syndicate Fraud Visualizer</h1>
-                <p>Detect Circular Referral Rings (A &rarr; B &rarr; A) and registration IP overlaps visually.</p>
-            </div>
+                <div class="fraud-page">
+                    <div class="fraud-header">
+                        <div>
+                            <h1 class="admin-page-title">Syndicate Fraud Visualizer</h1>
+                            <p>Detect circular referral rings and registration IP overlaps visually.</p>
+                        </div>
+                    </div>
 
-            <div class="fraud-visualizer-container">
-                <div class="fraud-toolbar">
-                    <button id="scan-circular" type="button" class="ds-btn ds-btn--outline ds-btn--sm" data-scan-type="circular">Scan Circular Rings</button>
-                    <button id="scan-ip-overlap" type="button" class="ds-btn ds-btn--outline ds-btn--sm" data-scan-type="ip_overlap">Scan IP Overlaps</button>
-                    <span id="fraud-status" class="fraud-status" role="status" aria-live="polite">Ready</span>
+                    <div class="fraud-visualizer-container admin-card">
+                        <div class="fraud-toolbar">
+                            <button id="scan-circular" type="button" class="admin-btn admin-btn--secondary admin-btn--sm" data-scan-type="circular">
+                                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 2v5h-5" />
+                                    <path d="M7 22v-5h5" />
+                                    <path d="M20 12a8 8 0 0 0-13.5-5.8L2 10" />
+                                    <path d="M4 12a8 8 0 0 0 13.5 5.8L22 14" />
+                                </svg>
+                                Scan Circular Rings
+                            </button>
+                            <button id="scan-ip-overlap" type="button" class="admin-btn admin-btn--secondary admin-btn--sm" data-scan-type="ip_overlap">
+                                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M12 2v4" />
+                                    <path d="M12 18v4" />
+                                    <path d="m4.93 4.93 2.83 2.83" />
+                                    <path d="m16.24 16.24 2.83 2.83" />
+                                    <path d="M2 12h4" />
+                                    <path d="M18 12h4" />
+                                </svg>
+                                Scan IP Overlaps
+                            </button>
+                            <span id="fraud-status" class="fraud-status" role="status" aria-live="polite">Ready</span>
+                        </div>
+                        <div id="cy" aria-label="Affiliate fraud graph"></div>
+                    </div>
+                    <div id="fraud-results" class="fraud-results" aria-live="polite"></div>
                 </div>
-                <div id="cy" aria-label="Affiliate fraud graph"></div>
-            </div>
-            <div id="fraud-results" class="fraud-results" aria-live="polite"></div>
             </div>
         </main>
     </div>
@@ -147,7 +207,7 @@
                             style: {
                                 'background-color': '#1E58FB',
                                 'label': 'data(label)',
-                                'color': '#fff',
+                                'color': '#111827',
                                 'text-valign': 'bottom',
                                 'text-halign': 'center',
                                 'text-margin-y': 8,
@@ -163,7 +223,7 @@
                                 'target-arrow-shape': 'triangle',
                                 'curve-style': 'bezier',
                                 'label': 'data(label)',
-                                'color': '#A4A7AE',
+                                'color': '#6B7280',
                                 'font-size': '10px',
                                 'text-rotation': 'autorotate'
                             }

@@ -1006,8 +1006,6 @@
 
         // Submit button state machine
         const btn = document.getElementById('tv3-submit-btn');
-        const isFunded = currentAsset.fundingStatus === 'funded';
-        const isAdmin = currentUserEmail === 'support@traffic-creator.com';
         const opposingHasLiquidity = hasOpposingLiquidity(currentAsset, currentSide);
         const isMarketWithoutLiquidity = priceMode === 'market' && !opposingHasLiquidity;
 
@@ -1026,10 +1024,6 @@
             btn.style.fontSize = '';
         };
 
-        if (!isFunded && !isAdmin) {
-            setDisabled('Trading unavailable: Asset is not yet fully funded');
-            return;
-        }
         if (isMarketWithoutLiquidity) {
             setDisabled(currentSide === 'buy'
                 ? 'No asks available — switch to Custom Price to place a bid'

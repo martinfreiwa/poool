@@ -31,6 +31,9 @@
     }
     .mp-analytics-page .admin-topbar {
       align-items: center;
+      position: static;
+      top: auto;
+      z-index: auto;
     }
     .mp-analytics-page .admin-topbar-left,
     .mp-analytics-page .admin-topbar-right {
@@ -748,7 +751,15 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 12px;
-      margin-top: 20px;
+      margin-top: 12px;
+      margin-bottom: 20px;
+    }
+    .mp-fraud-grid .mp-analytics-empty {
+      padding: 14px 16px;
+      text-align: left;
+      background: var(--admin-bg-card, #fff);
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 10px;
     }
     .mp-fraud-card {
       padding: 14px 16px;
@@ -1381,7 +1392,7 @@
           </div>
 
           <!-- Risk / Fraud signals -->
-          <h2 style="font-size: 14px; font-weight: 600; color: var(--admin-text-secondary, #717680); margin: 24px 0 8px; text-transform: uppercase; letter-spacing: .04em; display:flex; align-items:center; gap:8px;">
+          <h2 class="mp-risk-heading" style="font-size: 14px; font-weight: 600; color: var(--admin-text-secondary, #717680); margin: 24px 0 8px; text-transform: uppercase; letter-spacing: .04em; display:flex; align-items:center; gap:8px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Risk Signals
           </h2>

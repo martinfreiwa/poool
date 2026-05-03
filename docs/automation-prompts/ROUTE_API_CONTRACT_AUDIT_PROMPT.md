@@ -12,8 +12,8 @@ Read if present:
 
 1. `AGENTS.md`
 2. `docs/AGENT_DEVELOPMENT_PROMPT.md`
-3. `docs/page-review-tracker.yml`
-4. `docs/PAGE_REVIEW_TRACKER.md`
+3. `docs/issue-tracking/page-review-tracker.yml`
+4. `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`
 5. `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md`
 6. `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`
 
@@ -90,6 +90,6 @@ Update:
 
 Record the selected page/group, report path, date, status, and missing coverage.
 
-If the page is represented in `docs/page-review-tracker.yml`, update its route-contract notes/status according to the existing schema and regenerate `docs/PAGE_REVIEW_TRACKER.md` if required.
+If the page is represented in `docs/issue-tracking/page-review-tracker.yml`, update its route-contract notes/status according to the existing schema and regenerate `docs/issue-tracking/PAGE_REVIEW_TRACKER.md` if required.
 
 Final response must include selected scope, report path, issue counts, and coverage update.

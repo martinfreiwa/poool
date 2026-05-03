@@ -25,7 +25,7 @@ Related documentation evidence:
 
 - `docs/page-audits/2026-04-25-admin-approvals.md`
 - `docs/route-contract-audits/2026-04-25-route-contract-admin-approvals.md`
-- `docs/page-review-tracker.yml` issues `PAGE-ISSUE-0044` through `PAGE-ISSUE-0048`
+- `docs/issue-tracking/page-review-tracker.yml` issues `PAGE-ISSUE-0044` through `PAGE-ISSUE-0048`
 
 ## Missing Coverage
 

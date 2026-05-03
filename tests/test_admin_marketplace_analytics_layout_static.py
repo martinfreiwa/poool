@@ -42,3 +42,21 @@ def test_analytics_header_uses_responsive_two_column_layout():
     assert "text-align: right" in html
     assert "@media (max-width: 1100px)" in html
     assert "text-align: left" in html
+
+
+def test_analytics_scroll_layout_does_not_overlay_chart_controls():
+    html = ANALYTICS_HTML.read_text(encoding="utf-8")
+
+    assert ".mp-analytics-page .admin-topbar" in html
+    assert "position: static" in html
+    assert "top: auto" in html
+    assert "z-index: auto" in html
+
+
+def test_analytics_risk_empty_state_is_compact():
+    html = ANALYTICS_HTML.read_text(encoding="utf-8")
+
+    assert 'class="mp-risk-heading"' in html
+    assert ".mp-fraud-grid .mp-analytics-empty" in html
+    assert "padding: 14px 16px" in html
+    assert "text-align: left" in html

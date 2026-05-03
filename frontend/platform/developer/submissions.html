@@ -204,35 +204,115 @@
       </div>
 
       <!-- Empty State -->
-      <div id="submissions-empty-state" class="dev-empty-state" style="display: none;">
-        <h2 class="dev-empty-state__title">No submissions yet</h2>
-        <p class="dev-empty-state__description">
-          Start by adding a new asset. You can save your progress at any time and come back to finish later.
-        </p>
+      <div id="submissions-empty-state" class="dae-empty" role="region" aria-labelledby="dae-empty-title" style="display: none;">
 
-        <!-- Feature hints -->
-        <div class="dev-empty-state__features">
-          <div class="dev-empty-state__feature">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            <span>Save your progress anytime</span>
+        <!-- Hero: left copy + right art -->
+        <div class="dae-empty__hero">
+          <div class="dae-empty__hero-copy">
+            <span class="dae-empty__eyebrow">POOOL Developer</span>
+            <h2 id="dae-empty-title" class="dae-empty__title">No submissions yet.<br>Start your first one.</h2>
+            <p class="dae-empty__lede">
+              Submit asset details, save progress anytime, and track review status from this dashboard.
+              Submissions stay editable until POOOL approval, then go live on the marketplace.
+            </p>
+            <div class="dae-empty__actions">
+              <a href="/developer/add-asset" class="ds-btn ds-btn--primary dae-empty__cta-primary" id="empty-state-add-asset-btn">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
+                <span>Add your first asset</span>
+              </a>
+              <a href="/developer/assets" class="ds-btn dae-empty__cta-secondary">View assets</a>
+            </div>
           </div>
-          <div class="dev-empty-state__feature">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Track submission status</span>
-          </div>
-          <div class="dev-empty-state__feature">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span>Manage revisions</span>
+
+          <div class="dae-empty__hero-art" aria-hidden="true">
+            <svg viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="dae-bg-sub" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#EEF4FF"/>
+                  <stop offset="1" stop-color="#F0FFF6"/>
+                </linearGradient>
+                <linearGradient id="dae-card-sub" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#FFFFFF"/>
+                  <stop offset="1" stop-color="#F8FAFF"/>
+                </linearGradient>
+                <linearGradient id="dae-bar-sub" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#0000FF"/>
+                  <stop offset="1" stop-color="#03FF88"/>
+                </linearGradient>
+              </defs>
+              <rect width="320" height="240" rx="16" fill="url(#dae-bg-sub)"/>
+              <circle cx="260" cy="48" r="48" fill="#D7E3FF" opacity="0.65"/>
+              <circle cx="64" cy="196" r="34" fill="#C6F7D9" opacity="0.55"/>
+              <!-- Submission form card -->
+              <rect x="40" y="40" width="200" height="160" rx="12" fill="url(#dae-card-sub)" stroke="#D7E3FF" stroke-width="1.5"/>
+              <rect x="56" y="58" width="80" height="8" rx="4" fill="#0000FF" opacity="0.25"/>
+              <rect x="56" y="74" width="120" height="6" rx="3" fill="#E5E7EB"/>
+              <!-- Form rows -->
+              <rect x="56" y="94" width="168" height="22" rx="6" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
+              <rect x="56" y="124" width="168" height="22" rx="6" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
+              <rect x="56" y="154" width="80" height="22" rx="6" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
+              <!-- Status pill -->
+              <rect x="148" y="154" width="76" height="22" rx="11" fill="#03FF88" opacity="0.2" stroke="#03FF88" stroke-width="1"/>
+              <text x="186" y="169" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="9" fill="#0A0D12">IN REVIEW</text>
+              <!-- Progress card -->
+              <rect x="232" y="80" width="64" height="80" rx="10" fill="#FFFFFF" stroke="#D7E3FF" stroke-width="1.5"/>
+              <text x="264" y="104" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="9" fill="#717680">PROGRESS</text>
+              <rect x="244" y="116" width="40" height="6" rx="3" fill="#E5E7EB"/>
+              <rect x="244" y="116" width="28" height="6" rx="3" fill="url(#dae-bar-sub)"/>
+              <text x="264" y="142" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="14" fill="#0000FF">70%</text>
+            </svg>
           </div>
         </div>
 
-        <a href="/developer/add-asset" class="dev-empty-state__cta" id="empty-state-add-asset-btn">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#98FB96" stroke-width="2"
-            stroke-linecap="round">
-            <path d="M10 4v12M4 10h12" />
-          </svg>
-          <span>Add your first asset</span>
-        </a>
+        <!-- Metric placeholders -->
+        <div class="dae-empty__metrics" role="list" aria-label="Submissions preview">
+          <div class="ds-card ds-stat-card dae-empty__metric" role="listitem">
+            <span class="ds-stat-card__label">Drafts</span>
+            <span class="ds-stat-card__value">—</span>
+            <span class="dae-empty__metric-hint">Saved & editable</span>
+          </div>
+          <div class="ds-card ds-stat-card dae-empty__metric" role="listitem">
+            <span class="ds-stat-card__label">In review</span>
+            <span class="ds-stat-card__value">—</span>
+            <span class="dae-empty__metric-hint">1–3 business days</span>
+          </div>
+          <div class="ds-card ds-stat-card dae-empty__metric" role="listitem">
+            <span class="ds-stat-card__label">Approved</span>
+            <span class="ds-stat-card__value">—</span>
+            <span class="dae-empty__metric-hint">Live on marketplace</span>
+          </div>
+        </div>
+
+        <!-- Onboarding steps -->
+        <ol class="dae-empty__steps" aria-label="How submissions work">
+          <li class="dae-empty__step">
+            <span class="dae-empty__step-num">01</span>
+            <div class="dae-empty__step-body">
+              <h4 class="dae-empty__step-title">Submit asset details</h4>
+              <p class="dae-empty__step-desc">Property info, financials, legal documents, and photos — saved as a draft you can revisit anytime.</p>
+              <a href="/developer/add-asset" class="dae-empty__step-link">Start submission →</a>
+            </div>
+          </li>
+          <li class="dae-empty__step">
+            <span class="dae-empty__step-num">02</span>
+            <div class="dae-empty__step-body">
+              <h4 class="dae-empty__step-title">Track review status</h4>
+              <p class="dae-empty__step-desc">Watch each submission move through due diligence, legal check, and tokenomics audit in real time.</p>
+              <span class="dae-empty__step-link" style="opacity:0.6;">Status updates here</span>
+            </div>
+          </li>
+          <li class="dae-empty__step">
+            <span class="dae-empty__step-num">03</span>
+            <div class="dae-empty__step-body">
+              <h4 class="dae-empty__step-title">Manage revisions</h4>
+              <p class="dae-empty__step-desc">Address reviewer feedback, resubmit, and keep a full history of edits per asset.</p>
+              <a href="/developer/assets" class="dae-empty__step-link">View assets →</a>
+            </div>
+          </li>
+        </ol>
+
       </div>
 
       <!-- Loading State -->

@@ -126,6 +126,10 @@
   animation: mp-modal-bg-in 0.25s ease both;
 }
 
+.mp-modal-overlay[hidden] {
+  display: none !important;
+}
+
 .mp-modal-overlay.closing {
   animation: mp-modal-bg-out 0.2s ease both;
 }

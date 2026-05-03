@@ -129,6 +129,9 @@ pub struct PropertyDisplayData {
     /// Leasing strategy items (JSONB array of {title,description}). None
     /// falls back to the legacy hardcoded three items.
     pub leasing_items: Option<serde_json::Value>,
+    /// Risk notification items (JSONB array of {title,body}). None / empty
+    /// falls back to splitting `risk_notification` text, then hardcoded.
+    pub risk_notification_items: Option<serde_json::Value>,
     /// Roadmap milestones populated from `asset_milestones`. None / empty
     /// falls back to the legacy hardcoded Funding Timeline.
     pub milestones: Option<Vec<MilestoneDisplay>>,
@@ -182,6 +185,8 @@ pub struct AssetPageContent {
     pub info_badges: Option<serde_json::Value>,
     /// Leasing strategy items JSONB array.
     pub leasing_items: Option<serde_json::Value>,
+    /// Risk notification items JSONB array of {title, body}.
+    pub risk_notification_items: Option<serde_json::Value>,
 }
 
 impl AssetPageContent {
@@ -219,6 +224,9 @@ impl AssetPageContent {
             v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
         });
         display.leasing_items = self.leasing_items.filter(|v| {
+            v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
+        });
+        display.risk_notification_items = self.risk_notification_items.filter(|v| {
             v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
         });
     }
@@ -358,6 +366,7 @@ impl PropertyDisplayData {
             developer_youtube: None,
             info_badges: None,
             leasing_items: None,
+            risk_notification_items: None,
             milestones: None,
         }
     }

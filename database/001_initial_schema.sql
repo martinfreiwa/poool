@@ -272,9 +272,13 @@ CREATE TABLE asset_documents (
     title           VARCHAR(255) NOT NULL,
     file_url        VARCHAR(512) NOT NULL,
     file_size_bytes BIGINT,
+    is_investor_visible BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_asset_docs_asset ON asset_documents(asset_id);
+CREATE INDEX idx_asset_docs_asset_investor_visible
+  ON asset_documents(asset_id, is_investor_visible)
+  WHERE is_investor_visible = TRUE;
 
 -- ============================================================
 -- 12. asset_financials

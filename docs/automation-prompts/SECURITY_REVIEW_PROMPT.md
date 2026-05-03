@@ -14,7 +14,7 @@ Read if present:
 2. `docs/AGENT_DEVELOPMENT_PROMPT.md`
 3. `docs/SECURITY.md`
 4. `docs/DATABASE_SCHEMA.md`
-5. `docs/page-review-tracker.yml`
+5. `docs/issue-tracking/page-review-tracker.yml`
 6. `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md`
 7. `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`
 
@@ -88,6 +88,6 @@ Update:
 
 Record selected scope, report path, date, status, and missing coverage.
 
-If related pages are represented in `docs/page-review-tracker.yml`, update security review status/notes according to the existing schema and regenerate `docs/PAGE_REVIEW_TRACKER.md` if required.
+If related pages are represented in `docs/issue-tracking/page-review-tracker.yml`, update security review status/notes according to the existing schema and regenerate `docs/issue-tracking/PAGE_REVIEW_TRACKER.md` if required.
 
 Final response must include selected scope, report path, critical/high findings, and coverage update.

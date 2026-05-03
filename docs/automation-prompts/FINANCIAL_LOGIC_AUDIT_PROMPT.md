@@ -12,9 +12,9 @@ Read if present:
 
 1. `AGENTS.md`
 2. `docs/AGENT_DEVELOPMENT_PROMPT.md`
-3. `docs/FINANCIAL_FLOW.md`
+3. `docs/finance/FINANCIAL_FLOW.md`
 4. `docs/DATABASE_SCHEMA.md`
-5. `docs/BROKEN_LOGICS.md`
+5. `docs/issue-tracking/BROKEN_LOGICS.md`
 6. `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md`
 7. `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`
 

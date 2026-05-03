@@ -35,6 +35,13 @@ def test_affiliate_fraud_clean_route_is_canonical_and_permissioned():
     assert "Freeze Node" not in legacy_template
     assert 'role="status"' in legacy_template
     assert "data-scan-type=\"ip_overlap\"" in legacy_template
+    assert 'class="admin-body dom-ready"' in legacy_template
+    assert "dark-theme" not in legacy_template
+    assert "fraud-page" in legacy_template
+    assert "admin-page-title" in legacy_template
+    assert "admin-btn admin-btn--secondary admin-btn--sm" in legacy_template
+    assert "rgba(10, 10, 15, 0.4)" not in legacy_template
+    assert "color: #fff" not in legacy_template
 
 
 def test_affiliate_nav_items_are_permission_mapped():

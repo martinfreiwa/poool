@@ -201,7 +201,11 @@ pub async fn page_admin_generic(
 
     // 301 redirect .html → clean URL (#28 — keep canonical URLs).
     if let Some(stem) = relative.strip_suffix(".html") {
-        let q = req.uri().query().map(|s| format!("?{}", s)).unwrap_or_default();
+        let q = req
+            .uri()
+            .query()
+            .map(|s| format!("?{}", s))
+            .unwrap_or_default();
         return Redirect::permanent(&format!("/{}{}", stem, q)).into_response();
     }
 

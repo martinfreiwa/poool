@@ -21,7 +21,7 @@ Follow-up fix applied 2026-04-25: CSRF headers, community RBAC gates, force-tran
 
 ## Tested Scope
 
-- Reviewed `docs/DAILY_PAGE_AUDIT_PROMPT.md`, `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`, `AGENTS.md`, `docs/AGENT_DEVELOPMENT_PROMPT.md`, `docs/IMPLEMENTATION_ROADMAP.md`, `BROKEN_LOGICS.md`, `docs/DATABASE_SCHEMA.md`, `docs/FRONTEND_COMPONENTS.md`, `docs/TECH_STACK.md`, `docs/SECURITY.md`, and `docs/DESIGN.md`.
+- Reviewed `docs/automation-prompts/DAILY_PAGE_AUDIT_PROMPT.md`, `docs/automation-prompts/PRODUCTION_READINESS_STANDARDS.md`, `AGENTS.md`, `docs/AGENT_DEVELOPMENT_PROMPT.md`, `docs/IMPLEMENTATION_ROADMAP.md`, `docs/issue-tracking/BROKEN_LOGICS.md`, `docs/DATABASE_SCHEMA.md`, `docs/design/FRONTEND_COMPONENTS.md`, `docs/TECH_STACK.md`, `docs/SECURITY.md`, and `docs/DESIGN.md`.
 - Static-reviewed the page template, inline JavaScript, admin page routing, community admin API routes, circle service functions, community circle migrations, and current tracker records.
 - Ran inline JavaScript syntax check and `cargo check`.
 - Did not execute mutating admin actions because this was a documentation-only audit and no safe authenticated admin fixture was established for destructive circle operations.

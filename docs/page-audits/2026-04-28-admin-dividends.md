@@ -6,7 +6,7 @@ Route: `/admin/dividends` and `/admin/dividends.html`
 Template: `frontend/platform/admin/dividends.html`
 Primary JS: `frontend/platform/static/js/admin-dividends.js`
 Backend: `backend/src/admin/mod.rs`, `backend/src/admin/treasury.rs`, `backend/src/dividends/service.rs`
-Tracker: `docs/page-review-tracker.yml`
+Tracker: `docs/issue-tracking/page-review-tracker.yml`
 Final status: `fixed_needs_runtime_recheck`
 
 ## Executive Summary
@@ -196,7 +196,7 @@ Recommended fix: add authenticated HTTP/DB tests for create/approve/execute/canc
 | `python3 -m py_compile tests/e2e/test_admin_dividends.py` | Pass | New E2E test syntax is valid. |
 | `python3 -m pytest tests/e2e/test_admin_dividends.py -q` | Blocked | Backend health gate exited before test execution because `http://localhost:8888/health` was unreachable. |
 | `CARGO_TARGET_DIR=/tmp/poool-dividends-current cargo run` | Blocked | Temporary backend start failed with `No space left on device` while writing Cargo incremental build files. |
-| `python3 scripts/audit_page_review_tracker.py --write-md` | Pass | Regenerated `docs/PAGE_REVIEW_TRACKER.md`; tracker audit reported no missing route/template/file references. |
+| `python3 scripts/audit_page_review_tracker.py --write-md` | Pass | Regenerated `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`; tracker audit reported no missing route/template/file references. |
 
 Authenticated browser and mutating runtime coverage is committed but was not executed because no local backend was reachable, and the temporary backend start hit local disk exhaustion. The high-risk payout path should be verified by running the committed E2E against a live backend after disk space is available.
 

@@ -4,14 +4,14 @@ This file tracks coverage across recurring production-readiness automations.
 
 Source trackers and reports:
 
-- Page review tracker: `docs/page-review-tracker.yml`
-- Human-readable page tracker: `docs/PAGE_REVIEW_TRACKER.md`
+- Page review tracker: `docs/issue-tracking/page-review-tracker.yml`
+- Human-readable page tracker: `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`
 - Daily page audit reports: `docs/page-audits/`
 - Build/test reports: `docs/build-test-reports/`
 - Route/API contract audits: `docs/route-contract-audits/`
 - Financial audits: `docs/financial-audits/`
 - Security audits: `docs/security-audits/`
-- E2E coverage tracker: `docs/E2E_COVERAGE_TRACKER.md`
+- E2E coverage tracker: `docs/automation-coverage/E2E_COVERAGE_TRACKER.md`
 
 ## Automation Status
 

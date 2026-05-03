@@ -45,7 +45,7 @@
       this._hydrateForm(asset || {});
       this._hydrateInfoBadges(asset?.info_badges || []);
       this._hydrateLeasingItems(asset?.leasing_items || []);
-      this._hydrateRiskNotifications(asset?.risk_notification || "");
+      this._hydrateRiskNotifications(asset?.risk_notification_items, asset?.risk_notification);
       this._renderMilestones(milestones || []);
     },
 
@@ -58,6 +58,8 @@
       set("pc-location-description", asset.location_description);
       set("pc-investment-type", asset.investment_type);
       set("pc-investment-type-description", asset.investment_type_description);
+      set("pc-leasing-strategy-type", asset.leasing_strategy_type);
+      set("pc-leasing-strategy-description", asset.leasing_strategy_description);
       set(
         "pc-default-investment-amount",
         asset.default_investment_amount_cents != null
@@ -79,6 +81,7 @@
       set("pc-developer-facebook", asset.developer_facebook);
       set("pc-developer-instagram", asset.developer_instagram);
       set("pc-developer-youtube", asset.developer_youtube);
+      set("pc-google-maps-url", asset.google_maps_url);
     },
 
     _wireSave() {
@@ -136,7 +139,10 @@
       }
       out.info_badges = this._collectInfoBadges();
       out.leasing_items = this._collectLeasingItems();
-      out.risk_notification = this._collectRiskNotifications();
+      out.risk_notification_items = this._collectRiskNotifications();
+      // Legacy text field is superseded by structured items; clear so the
+      // template prefers the new array.
+      out.risk_notification = null;
       return out;
     },
 
@@ -226,53 +232,50 @@
     },
 
     // ─── Risk Notifications list ──────────────────────────────────────────
-    _hydrateRiskNotifications(value) {
+    _hydrateRiskNotifications(items, legacyText) {
       const list = document.getElementById("pc-risk-notifications-list");
       if (!list) return;
       list.innerHTML = "";
-      const rows = this._parseRiskNotificationRows(value);
+      let rows = [];
+      if (Array.isArray(items)) {
+        rows = items
+          .map((it) => ({
+            title: String(it?.title ?? "").trim(),
+            body: String(it?.body ?? "").trim(),
+          }))
+          .filter((r) => r.title || r.body);
+      }
+      if (rows.length === 0 && legacyText) {
+        rows = String(legacyText)
+          .split(/\n+/)
+          .map((line) => line.replace(/^[-*]\s+/, "").trim())
+          .filter(Boolean)
+          .map((body) => ({ title: "", body }));
+      }
       if (rows.length === 0) {
-        list.appendChild(this._riskNotificationRow(""));
+        list.appendChild(this._riskNotificationRow({}));
         return;
       }
-      rows.forEach((text) => list.appendChild(this._riskNotificationRow(text)));
+      rows.forEach((r) => list.appendChild(this._riskNotificationRow(r)));
     },
 
-    _parseRiskNotificationRows(value) {
-      if (!value) return [];
-      const raw = String(value).trim();
-      if (!raw) return [];
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          return parsed
-            .map((item) => String(item || "").trim())
-            .filter(Boolean);
-        }
-      } catch (_) {
-        // Existing content is plain text; keep using newline-separated rows.
-      }
-      return raw
-        .split(/\n+/)
-        .map((line) => line.replace(/^[-*]\s+/, "").trim())
-        .filter(Boolean);
-    },
-
-    _riskNotificationRow(text) {
+    _riskNotificationRow(item) {
       const row = document.createElement("div");
       row.className = "pc-list-row";
       row.dataset.kind = "risk-notifications";
       row.innerHTML = `
-        <textarea class="pc-input" data-key="text" rows="2" maxlength="1200" placeholder="Asset-specific risk disclosure shown on the property page."></textarea>
+        <input class="pc-input" data-key="title" maxlength="255" placeholder="Title (e.g. Developer Issues)" />
+        <textarea class="pc-input" data-key="body" rows="2" maxlength="8000" placeholder="Risk description shown on the property page."></textarea>
         <button type="button" class="pc-row-delete" title="Remove">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
         </button>
       `;
-      row.querySelector('[data-key="text"]').value = text || "";
+      row.querySelector('[data-key="title"]').value = item?.title || "";
+      row.querySelector('[data-key="body"]').value = item?.body || "";
       row.querySelector(".pc-row-delete").onclick = () => {
         row.remove();
         const list = document.getElementById("pc-risk-notifications-list");
-        if (list && list.children.length === 0) list.appendChild(this._riskNotificationRow(""));
+        if (list && list.children.length === 0) list.appendChild(this._riskNotificationRow({}));
       };
       return row;
     },
@@ -281,10 +284,13 @@
       const list = document.getElementById("pc-risk-notifications-list");
       if (!list) return null;
       const rows = Array.from(list.querySelectorAll('[data-kind="risk-notifications"]'));
-      const values = rows
-        .map((row) => row.querySelector('[data-key="text"]')?.value?.trim() || "")
-        .filter(Boolean);
-      return values.length === 0 ? null : values.join("\n");
+      const items = rows
+        .map((row) => ({
+          title: row.querySelector('[data-key="title"]')?.value?.trim() || "",
+          body: row.querySelector('[data-key="body"]')?.value?.trim() || "",
+        }))
+        .filter((r) => r.title || r.body);
+      return items.length === 0 ? null : items;
     },
 
     _wireAddRowButtons() {

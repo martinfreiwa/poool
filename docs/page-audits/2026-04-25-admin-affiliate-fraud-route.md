@@ -66,7 +66,7 @@ The fraud visualizer contract is now aligned: the backend requires `affiliates.m
 
 Location:
 
-- Tracker: `docs/page-review-tracker.yml`
+- Tracker: `docs/issue-tracking/page-review-tracker.yml`
 - Backend: `backend/src/admin/mod.rs:207-210`
 - Renderer: `backend/src/admin/pages.rs:93-102`
 - Existing template: `frontend/platform/admin/admin-affiliate-fraud.html`

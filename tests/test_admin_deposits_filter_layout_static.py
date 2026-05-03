@@ -30,5 +30,5 @@ def test_admin_deposits_filters_share_compact_search_row():
         assert selector in css
 
     assert "height: 34px" in css
-    assert "width: 142px" in css
-    assert "width: 152px" in css
+    assert css.count("width: 178px") >= 7
+    assert css.count("min-width: 178px") >= 7

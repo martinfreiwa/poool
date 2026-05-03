@@ -22,7 +22,7 @@ Remaining issue: authenticated runtime/browser verification is still needed for 
 | Backend routes | `backend/src/rewards/routes.rs` |
 | Backend router | `backend/src/rewards/mod.rs` |
 | Static regression tests | `tests/admin/test_affiliate_route_contract_static.py` |
-| Tracker | `docs/page-review-tracker.yml`, `docs/PAGE_REVIEW_TRACKER.md` |
+| Tracker | `docs/issue-tracking/page-review-tracker.yml`, `docs/issue-tracking/PAGE_REVIEW_TRACKER.md` |
 | Coverage | `docs/automation-coverage/PRODUCTION_READINESS_COVERAGE.md` |
 
 ## Fixed Issues

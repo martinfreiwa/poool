@@ -163,61 +163,55 @@
 
         <!-- Filters -->
         <div class="admin-card" style="margin-bottom: 16px">
-          <div style="
-                padding: 14px 20px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-              ">
-            <div class="admin-search" style="width: 220px">
-              <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="6" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-              <input type="text" placeholder="Filter assets in list…" id="asset-search" aria-label="Filter assets in list" />
+          <div class="admin-assets-filter-row">
+            <div class="admin-assets-filter-primary">
+              <div class="admin-search admin-assets-filter-search">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" placeholder="Filter assets in list…" id="asset-search" aria-label="Filter assets in list" />
+              </div>
+              <select id="filter-type" class="admin-select admin-assets-filter-select">
+                <option value="">All Types</option>
+                <option value="real_estate">Real Estate</option>
+                <option value="commercial_property">Commercial</option>
+                <option value="commodity">Commodity</option>
+                <option value="business">Business</option>
+                <option value="startup">Startup</option>
+                <option value="land_plot">Land</option>
+              </select>
+              <select id="filter-status" class="admin-select admin-assets-filter-select">
+                <option value="">All Status</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="funding_open">Funding Open</option>
+                <option value="funding_in_progress">In Progress</option>
+                <option value="funded">Funded</option>
+                <option value="rented">Rented</option>
+                <option value="payout_pending">Payout Pending</option>
+                <option value="exited">Exited</option>
+              </select>
+              <label class="admin-assets-filter-check"><input type="checkbox" id="filter-featured" style="accent-color: var(--admin-accent)" /> Featured only <span id="featured-count"></span></label>
+              <span class="admin-assets-count" id="asset-count-label">0 assets</span>
             </div>
-            <select id="filter-type" class="admin-select">
-              <option value="">All Types</option>
-              <option value="real_estate">Real Estate</option>
-              <option value="commercial_property">Commercial</option>
-              <option value="commodity">Commodity</option>
-              <option value="business">Business</option>
-              <option value="startup">Startup</option>
-              <option value="land_plot">Land</option>
-            </select>
-            <select id="filter-status" class="admin-select">
-              <option value="">All Status</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="funding_open">Funding Open</option>
-              <option value="funding_in_progress">In Progress</option>
-              <option value="funded">Funded</option>
-              <option value="rented">Rented</option>
-              <option value="payout_pending">Payout Pending</option>
-              <option value="exited">Exited</option>
-            </select>
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--admin-text-secondary);cursor:pointer;margin-left:8px;white-space:nowrap"><input type="checkbox" id="filter-featured" style="accent-color: var(--admin-accent)" /> Featured only <span id="featured-count" style="color:var(--admin-text-muted);font-size:11px"></span></label>
-            <span style="
-                  margin-left: auto;
-                  font-size: 12px;
-                  color: var(--admin-text-muted);
-                " id="asset-count-label">0 assets</span>
-            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="toggle-filters-btn" title="Show advanced filters" aria-expanded="false" aria-controls="advanced-filter-panel">
-              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
-              Filters
-            </button>
-            <select id="saved-views" class="admin-select" title="Saved filter views" style="max-width:160px"><option value="">— Saved views —</option></select>
-            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="save-view-btn" title="Save current filters as view">Save view</button>
-            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="refresh-btn" title="Refresh now">
-              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v4h-4M2 14v-4h4"/><path d="M13.5 6a6 6 0 00-11 1.5M2.5 10a6 6 0 0011-1.5"/></svg>
-            </button>
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--admin-text-muted);cursor:pointer;white-space:nowrap"><input type="checkbox" id="auto-refresh" style="accent-color: var(--admin-accent)" checked /> Auto 30s</label>
-            <span id="last-updated-label" style="font-size:11px;color:var(--admin-text-muted);white-space:nowrap" title="Last fetched">—</span>
-            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="export-csv-btn" title="Export filtered assets as CSV">
-              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M8 1v9m0 0l-3-3m3 3l3-3M2 13v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
-              Export CSV
-            </button>
+            <div class="admin-assets-filter-actions">
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="toggle-filters-btn" title="Show advanced filters" aria-expanded="false" aria-controls="advanced-filter-panel">
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+                Filters
+              </button>
+              <select id="saved-views" class="admin-select admin-assets-saved-views" title="Saved filter views"><option value="">— Saved views —</option></select>
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="save-view-btn" title="Save current filters as view">Save view</button>
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="refresh-btn" title="Refresh now">
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v4h-4M2 14v-4h4"/><path d="M13.5 6a6 6 0 00-11 1.5M2.5 10a6 6 0 0011-1.5"/></svg>
+              </button>
+              <label class="admin-assets-filter-check admin-assets-filter-check--muted"><input type="checkbox" id="auto-refresh" style="accent-color: var(--admin-accent)" checked /> Auto 30s</label>
+              <span id="last-updated-label" class="admin-assets-updated" title="Last fetched">—</span>
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="export-csv-btn" title="Export filtered assets as CSV">
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M8 1v9m0 0l-3-3m3 3l3-3M2 13v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
+                Export CSV
+              </button>
+            </div>
           </div>
           <div class="admin-filter-panel" id="advanced-filter-panel" role="region" aria-label="Advanced filters">
             <div class="admin-filter-group">

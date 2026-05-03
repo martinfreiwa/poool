@@ -15,5 +15,5 @@ Shared coverage tracker:
 
 Existing page automations:
 
-- Audit prompt: `docs/DAILY_PAGE_AUDIT_PROMPT.md`
-- Safe fix prompt: `docs/DAILY_PAGE_FIX_PROMPT.md`
+- Audit prompt: `docs/automation-prompts/DAILY_PAGE_AUDIT_PROMPT.md`
+- Safe fix prompt: `docs/automation-prompts/DAILY_PAGE_FIX_PROMPT.md`

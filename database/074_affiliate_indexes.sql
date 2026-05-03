@@ -1,5 +1,5 @@
 -- Migration 074: Affiliate System — Performance Indexes & Payout Operations
--- Step 7 from AFFILIATE_ONBOARDING_GAPS.md
+-- Step 7 from docs/affiliate/AFFILIATE_ONBOARDING_GAPS.md
 --
 -- 1. Partial B-Tree index for the holdback worker (scans expiring holdbacks nightly)
 -- 2. Composite index on affiliate_commissions for payout batching

@@ -622,7 +622,8 @@ fn normalize_trade_filters(filters: &TradeFilters) -> Result<ValidatedTradeFilte
             "pending" | "submitted" | "confirmed" | "failed" | "cancelled"
         ) {
             return Err(ApiError::BadRequest(
-                "on_chain_status must be pending, submitted, confirmed, failed, or cancelled".to_string(),
+                "on_chain_status must be pending, submitted, confirmed, failed, or cancelled"
+                    .to_string(),
             ));
         }
     }
@@ -952,7 +953,11 @@ pub async fn api_admin_marketplace_trades_bulk_retry_onchain(
     let db = &state.db;
 
     if req.trade_ids.is_empty() {
-        return Ok(Json(BulkRetryResponse { requested: 0, eligible: 0, reset: 0 }));
+        return Ok(Json(BulkRetryResponse {
+            requested: 0,
+            eligible: 0,
+            reset: 0,
+        }));
     }
     if req.trade_ids.len() > 500 {
         return Err(ApiError::BadRequest(
@@ -1066,17 +1071,18 @@ pub async fn api_admin_marketplace_cancel_trade(
     Path(trade_id): Path<Uuid>,
     Json(body): Json<AdminTradeCancelRequest>,
 ) -> Result<Json<AdminTradeMutationResponse>, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     let reason = normalize_admin_cancel_reason(body.reason)?;
     let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
 
-    let prev: Option<(String,)> = sqlx::query_as(
-        "SELECT on_chain_status FROM trade_history WHERE id = $1 FOR UPDATE",
-    )
-    .bind(trade_id)
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(ApiError::Database)?;
+    let prev: Option<(String,)> =
+        sqlx::query_as("SELECT on_chain_status FROM trade_history WHERE id = $1 FOR UPDATE")
+            .bind(trade_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
 
     let prev_status = match prev {
         Some((s,)) => s,
@@ -1098,8 +1104,12 @@ pub async fn api_admin_marketplace_cancel_trade(
             WHERE id = $1
         RETURNING id, on_chain_status, cancelled_at, cancellation_reason"#,
     )
-    .bind(trade_id).bind(admin.user.id).bind(&reason)
-    .fetch_one(&mut *tx).await.map_err(ApiError::Database)?;
+    .bind(trade_id)
+    .bind(admin.user.id)
+    .bind(&reason)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
 
     sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
@@ -1121,14 +1131,17 @@ pub async fn api_admin_marketplace_retry_trade_settlement(
     State(state): State<AppState>,
     Path(trade_id): Path<Uuid>,
 ) -> Result<Json<AdminTradeMutationResponse>, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
 
-    let prev: Option<(String,)> = sqlx::query_as(
-        "SELECT on_chain_status FROM trade_history WHERE id = $1 FOR UPDATE",
-    )
-    .bind(trade_id)
-    .fetch_optional(&mut *tx).await.map_err(ApiError::Database)?;
+    let prev: Option<(String,)> =
+        sqlx::query_as("SELECT on_chain_status FROM trade_history WHERE id = $1 FOR UPDATE")
+            .bind(trade_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
 
     let prev_status = match prev {
         Some((s,)) => s,
@@ -1152,7 +1165,9 @@ pub async fn api_admin_marketplace_retry_trade_settlement(
         RETURNING id, on_chain_status, cancelled_at, cancellation_reason"#,
     )
     .bind(trade_id)
-    .fetch_one(&mut *tx).await.map_err(ApiError::Database)?;
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
 
     sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
@@ -1191,12 +1206,20 @@ pub async fn api_admin_marketplace_trades_bulk_cancel(
     State(state): State<AppState>,
     Json(req): Json<BulkCancelRequest>,
 ) -> Result<Json<BulkCancelResponse>, ApiError> {
-    admin.require_permission(&state.db, "marketplace.manage").await?;
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     if req.trade_ids.is_empty() {
-        return Ok(Json(BulkCancelResponse { requested: 0, eligible: 0, cancelled: 0 }));
+        return Ok(Json(BulkCancelResponse {
+            requested: 0,
+            eligible: 0,
+            cancelled: 0,
+        }));
     }
     if req.trade_ids.len() > 500 {
-        return Err(ApiError::BadRequest("trade_ids exceeds limit of 500".to_string()));
+        return Err(ApiError::BadRequest(
+            "trade_ids exceeds limit of 500".to_string(),
+        ));
     }
     let reason = normalize_admin_cancel_reason(req.reason.clone())?;
 
@@ -1205,7 +1228,9 @@ pub async fn api_admin_marketplace_trades_bulk_cancel(
             WHERE id = ANY($1) AND on_chain_status IN ('pending', 'failed')"#,
     )
     .bind(&req.trade_ids)
-    .fetch_one(&state.db).await.map_err(ApiError::Database)?;
+    .fetch_one(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
 
     let result = sqlx::query(
         r#"UPDATE trade_history SET
@@ -1216,8 +1241,12 @@ pub async fn api_admin_marketplace_trades_bulk_cancel(
             WHERE id = ANY($1)
               AND on_chain_status IN ('pending', 'failed')"#,
     )
-    .bind(&req.trade_ids).bind(admin.user.id).bind(&reason)
-    .execute(&state.db).await.map_err(ApiError::Database)?;
+    .bind(&req.trade_ids)
+    .bind(admin.user.id)
+    .bind(&reason)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
     let cancelled = result.rows_affected() as usize;
 
     let _ = sqlx::query(
@@ -1232,7 +1261,8 @@ pub async fn api_admin_marketplace_trades_bulk_cancel(
         "trade_ids": &req.trade_ids,
         "reason": reason,
     }))
-    .execute(&state.db).await;
+    .execute(&state.db)
+    .await;
 
     tracing::info!(admin_id = %admin.user.id, requested = req.trade_ids.len(), cancelled, "Admin bulk-cancelled marketplace trades");
     Ok(Json(BulkCancelResponse {
@@ -3697,8 +3727,8 @@ pub async fn api_admin_marketplace_settings_for_asset(
             .fetch_optional(&state.db)
             .await
             .map_err(ApiError::Database)?;
-    let (asset_title, asset_slug) = asset_row
-        .ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
+    let (asset_title, asset_slug) =
+        asset_row.ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
 
     // Reuse the global resolver — Redis-backed, falls back to defaults.
     let mut global = default_marketplace_settings();
@@ -3847,7 +3877,8 @@ pub async fn api_admin_marketplace_save_asset_settings(
         "asset_id": asset_uuid,
         "overrides": body,
         "etag": new_etag,
-    })).into_response();
+    }))
+    .into_response();
     resp.headers_mut().insert(
         axum::http::header::ETAG,
         axum::http::HeaderValue::from_str(&format!("\"{new_etag}\""))
@@ -3897,11 +3928,9 @@ static MATCH_PREVIEW_LIMITER: std::sync::OnceLock<
     tokio::sync::Mutex<std::collections::HashMap<Uuid, (std::time::Instant, u32)>>,
 > = std::sync::OnceLock::new();
 
-fn match_preview_limiter()
-    -> &'static tokio::sync::Mutex<std::collections::HashMap<Uuid, (std::time::Instant, u32)>>
-{
-    MATCH_PREVIEW_LIMITER
-        .get_or_init(|| tokio::sync::Mutex::new(std::collections::HashMap::new()))
+fn match_preview_limiter(
+) -> &'static tokio::sync::Mutex<std::collections::HashMap<Uuid, (std::time::Instant, u32)>> {
+    MATCH_PREVIEW_LIMITER.get_or_init(|| tokio::sync::Mutex::new(std::collections::HashMap::new()))
 }
 
 const MATCH_PREVIEW_WINDOW: std::time::Duration = std::time::Duration::from_secs(10);
@@ -4329,16 +4358,19 @@ pub async fn api_admin_marketplace_list_scheduled_settings(
         ));
     }
 
-    let rows = sqlx::query_as::<_, (
-        String,
-        serde_json::Value,
-        String,
-        String,
-        Option<String>,
-        String,
-        Option<String>,
-        Option<String>,
-    )>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            serde_json::Value,
+            String,
+            String,
+            Option<String>,
+            String,
+            Option<String>,
+            Option<String>,
+        ),
+    >(
         r#"
         SELECT s.id::text,
                s.scheduled_state,
@@ -4391,8 +4423,7 @@ pub async fn api_admin_marketplace_cancel_scheduled_settings(
         .require_permission(&state.db, "marketplace.manage")
         .await?;
 
-    let uuid = uuid::Uuid::parse_str(&id)
-        .map_err(|_| ApiError::BadRequest("Invalid id".into()))?;
+    let uuid = uuid::Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("Invalid id".into()))?;
 
     let rows = sqlx::query(
         "UPDATE marketplace_settings_schedule \
@@ -4415,10 +4446,7 @@ pub async fn api_admin_marketplace_cancel_scheduled_settings(
 }
 
 /// Worker: apply due scheduled settings changes. Run via run_as_leader.
-pub async fn run_settings_scheduler(
-    pool: sqlx::PgPool,
-    redis: Option<deadpool_redis::Pool>,
-) {
+pub async fn run_settings_scheduler(pool: sqlx::PgPool, redis: Option<deadpool_redis::Pool>) {
     use std::time::Duration;
     let mut interval = tokio::time::interval(Duration::from_secs(30));
     loop {
@@ -4517,7 +4545,11 @@ async fn apply_due_scheduled_settings(
                     .arg(&json_str)
                     .query_async::<()>(&mut *conn)
                     .await;
-                let enabled_val = if new_settings.trading_enabled { "1" } else { "0" };
+                let enabled_val = if new_settings.trading_enabled {
+                    "1"
+                } else {
+                    "0"
+                };
                 let _: Result<(), _> = redis::cmd("SET")
                     .arg("marketplace:trading_enabled")
                     .arg(enabled_val)
@@ -5997,7 +6029,11 @@ fn quarter_before(label: &str) -> Result<String, ApiError> {
     let qi: u32 = q
         .parse()
         .map_err(|_| ApiError::BadRequest("invalid quarter num".into()))?;
-    let (py, pq) = if qi == 1 { (yi - 1, 4u32) } else { (yi, qi - 1) };
+    let (py, pq) = if qi == 1 {
+        (yi - 1, 4u32)
+    } else {
+        (yi, qi - 1)
+    };
     Ok(format!("{}-Q{}", py, pq))
 }
 
@@ -6314,7 +6350,11 @@ pub async fn api_admin_marketplace_snooze_alert(
         db,
         alert_uuid,
         admin.user.id,
-        if body.minutes == 0 { "unsnooze" } else { "snooze" },
+        if body.minutes == 0 {
+            "unsnooze"
+        } else {
+            "snooze"
+        },
         Some(serde_json::json!({ "minutes": body.minutes })),
     )
     .await;
@@ -6371,7 +6411,14 @@ pub async fn api_admin_marketplace_alerts_bulk(
     .map_err(|e| ApiError::Internal(format!("Bulk update failed: {}", e)))?;
 
     for id in &uuids {
-        record_alert_audit(db, *id, admin.user.id, &format!("bulk_{}", body.action), None).await;
+        record_alert_audit(
+            db,
+            *id,
+            admin.user.id,
+            &format!("bulk_{}", body.action),
+            None,
+        )
+        .await;
     }
 
     Ok(Json(
@@ -6466,9 +6513,7 @@ fn validate_rule(r: &AlertRuleUpsert) -> Result<(), ApiError> {
         return Err(ApiError::BadRequest("invalid channel".into()));
     }
     if !(0..=10080).contains(&r.escalate_after_min) {
-        return Err(ApiError::BadRequest(
-            "escalate_after_min 0..10080".into(),
-        ));
+        return Err(ApiError::BadRequest("escalate_after_min 0..10080".into()));
     }
     Ok(())
 }
@@ -6560,9 +6605,7 @@ pub async fn api_admin_marketplace_delete_rule(
         .execute(&state.db)
         .await
         .map_err(|e| ApiError::Internal(format!("Failed to delete rule: {}", e)))?;
-    Ok(Json(
-        serde_json::json!({ "deleted": res.rows_affected() }),
-    ))
+    Ok(Json(serde_json::json!({ "deleted": res.rows_affected() })))
 }
 
 /// POST /api/admin/marketplace/alert-rules/:id/test
@@ -6715,9 +6758,7 @@ pub async fn api_admin_marketplace_delete_watchlist_v2(
         .execute(&state.db)
         .await
         .map_err(|e| ApiError::Internal(format!("Failed to delete watchlist entry: {}", e)))?;
-    Ok(Json(
-        serde_json::json!({ "deleted": res.rows_affected() }),
-    ))
+    Ok(Json(serde_json::json!({ "deleted": res.rows_affected() })))
 }
 
 // ── Escalation worker (called from background.rs) ──────────────────
@@ -6752,7 +6793,10 @@ pub async fn escalate_overdue_alerts(db: &sqlx::PgPool) -> Result<u64, sqlx::Err
     for (id, alert_type, message, severity, channel, mute) in &rows {
         // Skip if mute_schedule active right now
         if let Some(mute) = mute {
-            let weekends = mute.get("weekends").and_then(|v| v.as_bool()).unwrap_or(false);
+            let weekends = mute
+                .get("weekends")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             if weekends && is_weekend {
                 continue;
             }
@@ -6844,8 +6888,12 @@ fn dispatch_alert_notification(
                 Ok(r) if r.status().is_success() => {
                     tracing::info!(channel, alert_id, "Alert notification dispatched");
                 }
-                Ok(r) => tracing::warn!(channel, alert_id, status = %r.status(), "Notification webhook returned non-2xx"),
-                Err(e) => tracing::warn!(channel, alert_id, err = %e, "Notification webhook failed"),
+                Ok(r) => {
+                    tracing::warn!(channel, alert_id, status = %r.status(), "Notification webhook returned non-2xx")
+                }
+                Err(e) => {
+                    tracing::warn!(channel, alert_id, err = %e, "Notification webhook failed")
+                }
             }
         }
     });
@@ -6991,7 +7039,11 @@ pub async fn api_admin_marketplace_backtest_rule(
     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<RuleBacktestResult>, ApiError> {
     let id = Uuid::parse_str(&rule_id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
-    let days: i32 = q.get("days").and_then(|s| s.parse().ok()).unwrap_or(30).clamp(1, 365);
+    let days: i32 = q
+        .get("days")
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(30)
+        .clamp(1, 365);
 
     let rule: Option<AlertRule> = sqlx::query_as(
         "SELECT id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_at, updated_at
@@ -7240,12 +7292,11 @@ pub async fn dispatch_web_push(
         match client.send(msg).await {
             Ok(_) => {}
             Err(WebPushError::EndpointNotValid) | Err(WebPushError::EndpointNotFound) => {
-                let _ = sqlx::query(
-                    "DELETE FROM marketplace_alert_push_subscriptions WHERE id = $1",
-                )
-                .bind(sub_id)
-                .execute(db)
-                .await;
+                let _ =
+                    sqlx::query("DELETE FROM marketplace_alert_push_subscriptions WHERE id = $1")
+                        .bind(sub_id)
+                        .execute(db)
+                        .await;
                 tracing::info!("Removed stale push subscription {}", sub_id);
             }
             Err(e) => tracing::warn!(endpoint, "Push send failed: {}", e),

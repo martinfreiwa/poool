@@ -515,6 +515,16 @@ pub fn router() -> axum::Router<AppState> {
             put(api_admin_asset_images_reorder),
         )
         .route(
+            "/api/admin/assets/:asset_id/documents",
+            post(api_admin_asset_document_upload),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/documents/:document_id",
+            patch(api_admin_asset_document_update)
+                .post(api_admin_asset_document_update)
+                .delete(api_admin_asset_document_delete),
+        )
+        .route(
             "/api/admin/assets/:asset_id/page-content",
             patch(api_admin_asset_page_content),
         )

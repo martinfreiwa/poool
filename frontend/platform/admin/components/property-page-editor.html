@@ -25,6 +25,10 @@
       <label class="pc-label">Location description (long-form)</label>
       <textarea class="pc-input" id="pc-location-description" rows="3" data-field="location_description"
         placeholder="Describes the surrounding area on the Location section."></textarea>
+      <label class="pc-label" style="margin-top:8px;">Google Maps URL</label>
+      <input class="pc-input" id="pc-google-maps-url" data-field="google_maps_url"
+        maxlength="512" placeholder="https://www.google.com/maps/embed?pb=…" />
+      <p class="pc-hint">Embed URL or share link. Used for the map preview in the Location section.</p>
 
       <div class="section-tag">Info badges (icons row above the overview)</div>
       <p class="pc-hint">Each badge has an icon URL, title, and subtitle. Leave the list empty to fall back to the legacy four hardcoded badges.</p>
@@ -45,8 +49,20 @@
         </div>
       </div>
 
-      <div class="section-tag">Leasing Strategy items</div>
-      <p class="pc-hint">Add as many leasing items as you need. Leave the list empty to fall back to the legacy three hardcoded items.</p>
+      <div class="section-tag">Leasing Strategy</div>
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;">
+        <div>
+          <label class="pc-label">Type label</label>
+          <input class="pc-input" id="pc-leasing-strategy-type" data-field="leasing_strategy_type"
+            placeholder="e.g. Long-term rental" maxlength="255" />
+        </div>
+        <div>
+          <label class="pc-label">Description</label>
+          <textarea class="pc-input" id="pc-leasing-strategy-description" rows="2"
+            data-field="leasing_strategy_description"></textarea>
+        </div>
+      </div>
+      <p class="pc-hint" style="margin-top:8px;">Add as many leasing items as you need. Leave the list empty to fall back to the legacy three hardcoded items.</p>
       <div id="pc-leasing-items-list" class="pc-list"></div>
       <button type="button" class="admin-btn admin-btn--secondary pc-add-row-btn" data-list="leasing-items">+ Add leasing item</button>
 
@@ -222,7 +238,7 @@
   .pc-list-row{display:grid;gap:8px;padding:10px;border:1px solid var(--admin-border);border-radius:10px;background:var(--admin-bg);}
   .pc-list-row[data-kind="info-badges"]{grid-template-columns:1fr 1fr 2fr 32px;align-items:center;}
   .pc-list-row[data-kind="leasing-items"]{grid-template-columns:1fr 2fr 32px;align-items:center;}
-  .pc-list-row[data-kind="risk-notifications"]{grid-template-columns:1fr 32px;align-items:start;}
+  .pc-list-row[data-kind="risk-notifications"]{grid-template-columns:1fr 2fr 32px;align-items:start;}
   .pc-list-row .pc-row-delete{background:transparent;border:none;color:var(--admin-danger);cursor:pointer;padding:4px;}
   .pc-add-row-btn{font-size:12px;padding:6px 12px;margin-bottom:16px;}
   #milestones-card .admin-table{table-layout:fixed;}

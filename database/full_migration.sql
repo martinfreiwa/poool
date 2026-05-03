@@ -272,9 +272,13 @@ CREATE TABLE asset_documents (
     title           VARCHAR(255) NOT NULL,
     file_url        VARCHAR(512) NOT NULL,
     file_size_bytes BIGINT,
+    is_investor_visible BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_asset_docs_asset ON asset_documents(asset_id);
+CREATE INDEX idx_asset_docs_asset_investor_visible
+  ON asset_documents(asset_id, is_investor_visible)
+  WHERE is_investor_visible = TRUE;
 
 -- ============================================================
 -- 12. asset_financials
@@ -1002,16 +1006,16 @@ INSERT INTO asset_milestones (asset_id, title, description, milestone_date, mont
 
 -- ── 8. Insert Asset Documents ────────────────────────────────
 
-INSERT INTO asset_documents (asset_id, document_type, title, file_url, file_size_bytes) VALUES
-    (v_asset1, 'expose', 'Investment Expose – Clifftop Villa', '/docs/expose-clifftop-villa.pdf', 2456780),
-    (v_asset1, 'appraisal', 'Independent Appraisal Report', '/docs/appraisal-clifftop-villa.pdf', 1234567),
-    (v_asset1, 'proof_of_title', 'Certificate of Leasehold', '/docs/title-clifftop-villa.pdf', 345678),
+INSERT INTO asset_documents (asset_id, document_type, title, file_url, file_size_bytes, is_investor_visible) VALUES
+    (v_asset1, 'expose', 'Investment Expose – Clifftop Villa', '/docs/expose-clifftop-villa.pdf', 2456780, TRUE),
+    (v_asset1, 'appraisal', 'Independent Appraisal Report', '/docs/appraisal-clifftop-villa.pdf', 1234567, TRUE),
+    (v_asset1, 'proof_of_title', 'Certificate of Leasehold', '/docs/title-clifftop-villa.pdf', 345678, TRUE),
 
-    (v_asset2, 'expose', 'Investment Expose – Surf Villa Canggu', '/docs/expose-surf-villa.pdf', 1987654),
-    (v_asset2, 'financial', 'Financial Projections 5-Year', '/docs/financials-surf-villa.pdf', 567890),
+    (v_asset2, 'expose', 'Investment Expose – Surf Villa Canggu', '/docs/expose-surf-villa.pdf', 1987654, TRUE),
+    (v_asset2, 'financial', 'Financial Projections 5-Year', '/docs/financials-surf-villa.pdf', 567890, TRUE),
 
-    (v_asset5, 'expose', 'Renovation Project Plan', '/docs/expose-renovation-flip.pdf', 3456789),
-    (v_asset5, 'floor_plan', 'Proposed Floor Plans', '/docs/floorplan-renovation.pdf', 987654);
+    (v_asset5, 'expose', 'Renovation Project Plan', '/docs/expose-renovation-flip.pdf', 3456789, TRUE),
+    (v_asset5, 'floor_plan', 'Proposed Floor Plans', '/docs/floorplan-renovation.pdf', 987654, TRUE);
 
 
 -- ── 9. Insert Asset Financials ───────────────────────────────

@@ -2,10 +2,29 @@ name: CI
 
 on:
   push:
-    branches: [main, staging, develop]
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'database/**'
+      - 'scripts/**'
+      - 'Dockerfile'
+      - '.github/workflows/ci.yml'
   pull_request:
-    branches: [main, staging]
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'database/**'
+      - 'scripts/**'
+      - 'Dockerfile'
+      - '.github/workflows/ci.yml'
   workflow_call:
+
+# Cancel superseded runs on the same branch — saves minutes when you push twice in quick succession
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always

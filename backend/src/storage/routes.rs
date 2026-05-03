@@ -27,21 +27,6 @@ const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024; // 5 MB
 const MAX_KYC_BYTES: usize = 10 * 1024 * 1024; // 10 MB
 const MAX_DEVELOPER_LOGO_BYTES: usize = 2 * 1024 * 1024; // 2 MB
 
-fn is_investor_visible_asset_document(document_type: &str) -> bool {
-    matches!(
-        document_type,
-        "proof_of_title"
-            | "legal_basis"
-            | "building_permit"
-            | "site_plan"
-            | "expose"
-            | "appraisal"
-            | "financial"
-            | "floor_plan"
-            | "other"
-    )
-}
-
 // ─── Avatar ────────────────────────────────────────────────────
 
 /// POST /api/upload/avatar
@@ -1508,10 +1493,10 @@ pub async fn download_asset_document(
     };
 
     // Find the document and the owner/visibility state of the asset.
-    let doc_meta: Option<(String, Option<Uuid>, String, bool)> = sqlx::query_as(
-        "SELECT d.file_url, a.developer_user_id, d.document_type, COALESCE(a.published, false)
-         FROM asset_documents d 
-         JOIN assets a ON d.asset_id = a.id 
+    let doc_meta: Option<(String, Option<Uuid>, bool, bool, String)> = sqlx::query_as(
+        "SELECT d.file_url, a.developer_user_id, COALESCE(d.is_investor_visible, false), COALESCE(a.published, false), COALESCE(d.title, '')
+         FROM asset_documents d
+         JOIN assets a ON d.asset_id = a.id
          WHERE d.id = $1",
     )
     .bind(doc_id)
@@ -1519,7 +1504,7 @@ pub async fn download_asset_document(
     .await
     .unwrap_or(None);
 
-    let (file_url, owner_id, document_type, asset_published) = match doc_meta {
+    let (file_url, owner_id, is_investor_visible, asset_published, doc_title) = match doc_meta {
         Some(m) => m,
         None => return (StatusCode::NOT_FOUND, "Document not found").into_response(),
     };
@@ -1527,8 +1512,7 @@ pub async fn download_asset_document(
     // Check authorization: must be the asset owner, an admin, or an
     // authenticated investor viewing a published asset's public diligence doc.
     let is_admin = middleware::is_admin(&jar, &state.db).await;
-    let investor_visible =
-        asset_published && is_investor_visible_asset_document(document_type.as_str());
+    let investor_visible = asset_published && is_investor_visible;
     if owner_id != Some(user.id) && !is_admin && !investor_visible {
         return (
             StatusCode::FORBIDDEN,
@@ -1537,9 +1521,12 @@ pub async fn download_asset_document(
             .into_response();
     }
 
-    // Generate response (Redirect for signed URL or static path)
+    // Generate response. For private GCS objects we stream the bytes
+    // through the API rather than redirecting to a signed URL — the
+    // Cloud Run service account does not have `iam.serviceAccounts.signBlob`,
+    // so signed-URL generation fails. Streaming uses standard ADC and only
+    // requires `storage.objects.get`.
     if file_url.starts_with("gs://") {
-        // e.g. gs://bucket-name/properties/uuid/documents/uuid.pdf
         let parts: Vec<&str> = file_url.splitn(4, '/').collect();
         if parts.len() < 4 {
             return (
@@ -1551,13 +1538,38 @@ pub async fn download_asset_document(
         let bucket = parts[2];
         let object_path = parts[3];
 
-        match service::generate_signed_url(bucket, object_path, 15).await {
-            Ok(signed_url) => axum::response::Redirect::temporary(&signed_url).into_response(),
+        match service::download_object(bucket, object_path).await {
+            Ok((content_type, data)) => {
+                let mut headers = axum::http::HeaderMap::new();
+                if let Ok(v) = content_type.parse() {
+                    headers.insert(axum::http::header::CONTENT_TYPE, v);
+                }
+                headers.insert(
+                    axum::http::header::HeaderName::from_static("x-content-type-options"),
+                    "nosniff".parse().unwrap(),
+                );
+                headers.insert(
+                    axum::http::header::CACHE_CONTROL,
+                    "private, max-age=0, no-store".parse().unwrap(),
+                );
+                let raw_filename = if !doc_title.is_empty() {
+                    doc_title.clone()
+                } else {
+                    object_path.rsplit('/').next().unwrap_or("document").to_string()
+                };
+                let safe_filename = raw_filename.replace(['"', '\r', '\n'], "");
+                if let Ok(v) =
+                    format!("attachment; filename=\"{}\"", safe_filename).parse()
+                {
+                    headers.insert(axum::http::header::CONTENT_DISPOSITION, v);
+                }
+                (headers, data).into_response()
+            }
             Err(e) => {
-                tracing::error!("Failed to generate signed url: {}", e);
+                tracing::error!("Failed to download asset document {}: {}", doc_id, e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to generate download link",
+                    "Failed to fetch document",
                 )
                     .into_response()
             }

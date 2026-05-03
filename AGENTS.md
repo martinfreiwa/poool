@@ -199,7 +199,7 @@ poool/
 
 ## ⚠️ Known Issues
 
-See `BROKEN_LOGICS.md` for the full tracker.
+See `docs/issue-tracking/BROKEN_LOGICS.md` for the full tracker.
 - No critical (P0/P1) blockers at this time.
 - 41 non-critical compilation warnings pending `cargo fix`.
 

@@ -4,7 +4,7 @@
 >
 > Sources used:
 > - `docs/brand/01_POOOL brand book (2).pdf`
-> - `docs/FRONTEND_COMPONENTS.md`
+> - `docs/design/FRONTEND_COMPONENTS.md`
 > - `frontend/platform/static/css/dashboard-tokens.css`
 > - `frontend/platform/static/css/ds-*.css`
 > - Existing platform UI patterns
@@ -844,7 +844,7 @@ Product UI copy should:
 Before changing UI:
 
 1. Read this file.
-2. Check `docs/FRONTEND_COMPONENTS.md`.
+2. Check `docs/design/FRONTEND_COMPONENTS.md`.
 3. Inspect relevant `frontend/platform/static/css/ds-*.css`.
 4. Inspect the existing page/component pattern.
 5. Confirm any backend route needed for the UI actually exists.

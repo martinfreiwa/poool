@@ -438,6 +438,7 @@ impl PublicPropertySpec {
             developer_youtube: None,
             info_badges: None,
             leasing_items: None,
+            risk_notification_items: None,
             milestones: None,
         }
     }

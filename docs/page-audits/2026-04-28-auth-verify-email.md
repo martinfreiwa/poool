@@ -173,7 +173,7 @@ The resend endpoint is CSRF-protected by global middleware, requires a valid ses
 | Post-fix JS syntax | Extract inline verify-email script and run `node --check` | Script parses | Passed | Pass |
 | Post-fix static regression | `python3 -m pytest tests/test_auth_verify_email_static.py -q` | Verify documented auth verify-email protections | 4 passed | Pass |
 | Post-fix backend compile | `CARGO_TARGET_DIR=/tmp/poool-verify-email-check cargo check -q` | Successful compile | Passed | Pass |
-| Tracker regeneration | `python3 scripts/audit_page_review_tracker.py --write-md` | Regenerate Markdown tracker cleanly | Wrote `docs/PAGE_REVIEW_TRACKER.md`; no missing routes/templates reported | Pass |
+| Tracker regeneration | `python3 scripts/audit_page_review_tracker.py --write-md` | Regenerate Markdown tracker cleanly | Wrote `docs/issue-tracking/PAGE_REVIEW_TRACKER.md`; no missing routes/templates reported | Pass |
 
 ---
 

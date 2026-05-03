@@ -453,7 +453,10 @@ pub async fn api_admin_search(
         let url = if status == "pending_approval" {
             "/admin/affiliate-applications.html".to_string()
         } else {
-            format!("/admin/affiliate-finance.html?affiliate_id={}", row.get::<String, _>("id"))
+            format!(
+                "/admin/affiliate-finance.html?affiliate_id={}",
+                row.get::<String, _>("id")
+            )
         };
         let subtitle = if !company_name.is_empty() {
             format!("{} · {}", email, company_name)

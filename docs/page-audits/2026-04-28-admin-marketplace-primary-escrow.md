@@ -6,7 +6,7 @@ Route: `/admin/marketplace/primary-escrow` and `/admin/marketplace/primary-escro
 Template: `frontend/platform/admin/marketplace/primary-escrow.html`
 Primary JS: inline script in the template, plus `frontend/platform/static/js/mp-toast.js`
 Backend: `backend/src/admin/mod.rs`, `backend/src/admin/pages.rs`, `backend/src/admin/primary_escrow.rs`
-Tracker: `docs/page-review-tracker.yml`
+Tracker: `docs/issue-tracking/page-review-tracker.yml`
 Final status: `fixed_verified`
 
 ## Executive Summary

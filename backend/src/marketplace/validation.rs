@@ -127,15 +127,16 @@ pub async fn check_kyc_verified(pool: &PgPool, user_id: Uuid) -> Result<(), Orde
 
 /// Check that the asset is available for trading.
 ///
-/// An asset must be in `funding_status = 'funded'` and `published = true`
-/// to be tradable on the secondary market.
+/// Asset must be `published = true`. `funding_status` no longer gates
+/// secondary-market trading — buys and sells are allowed pre-funding so
+/// holders can exit before a project reaches 100%.
 pub async fn check_asset_tradable(
     pool: &PgPool,
     asset_id: Uuid,
-    user_id: Uuid,
+    _user_id: Uuid,
 ) -> Result<i32, OrderRejection> {
     let row = sqlx::query!(
-        r#"SELECT tokens_total, funding_status, published
+        r#"SELECT tokens_total, published
            FROM assets
            WHERE id = $1"#,
         asset_id
@@ -145,51 +146,9 @@ pub async fn check_asset_tradable(
     .ok()
     .flatten();
 
-    // Super-admin / admin bypass via the RBAC `user_roles` + `roles` tables
-    // (replaces the previous hardcoded email comparison). Bypass is logged so
-    // every use is auditable.
-    let is_super_admin: bool = sqlx::query_scalar(
-        "SELECT EXISTS(
-            SELECT 1 FROM user_roles ur
-            JOIN roles r ON r.id = ur.role_id
-            WHERE ur.user_id = $1
-              AND r.name IN ('admin', 'super_admin')
-              AND COALESCE(ur.is_active, TRUE) = TRUE
-        )",
-    )
-    .bind(user_id)
-    .fetch_one(pool)
-    .await
-    .unwrap_or(false);
-
     match row {
-        Some(r) => {
-            let is_funded = r.funding_status == "funded";
-            let is_published = r.published;
-
-            if !is_funded || !is_published {
-                if !is_super_admin {
-                    return Err(OrderRejection::AssetNotTradable);
-                }
-                tracing::warn!(
-                    "🛡️ Admin tradable bypass: user={} asset={} (funded={}, published={})",
-                    user_id,
-                    asset_id,
-                    is_funded,
-                    is_published
-                );
-                sentry::capture_message(
-                    &format!(
-                        "Admin tradable bypass: user={} asset={} (funded={}, published={})",
-                        user_id, asset_id, is_funded, is_published
-                    ),
-                    sentry::Level::Info,
-                );
-            }
-
-            Ok(r.tokens_total)
-        }
-        None => Err(OrderRejection::AssetNotTradable),
+        Some(r) if r.published => Ok(r.tokens_total),
+        _ => Err(OrderRejection::AssetNotTradable),
     }
 }
 
