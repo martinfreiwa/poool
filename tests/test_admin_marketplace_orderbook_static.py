@@ -54,6 +54,7 @@ def test_orderbook_html_has_combobox_toolbar_and_footer():
     source = ORDERBOOK_HTML.read_text(encoding="utf-8")
     # Combobox + KPI strip + live indicator.
     assert 'id="asset-combobox"' in source
+    assert 'class="admin-page-header mp-ob-page-header"' in source
     assert 'id="ob-stats"' in source
     assert 'id="ob-live-indicator"' in source
     # Toolbar controls.
@@ -110,6 +111,9 @@ def test_orderbook_css_has_aging_status_pill_and_history_styles():
     assert ".mp-ob-empty-cta" in source
     assert ".mp-ob-combo-item.is-cursor" in source
     assert ".mp-ob-reason-overlay[hidden]" in source
+    assert ".mp-ob-page-header" in source
+    assert "grid-template-columns: repeat(3, minmax(0, 1fr))" in source
+    assert "@media (max-width: 1180px)" in source
 
 
 def test_orderbook_html_has_depth_chart_offline_banner_reason_overlay():

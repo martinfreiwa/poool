@@ -77,15 +77,34 @@
   color: var(--admin-text-muted);
 }
 
+.mp-ob-page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(480px, 640px);
+  align-items: start;
+  gap: 24px;
+}
+
+.mp-ob-title-block {
+  min-width: 0;
+}
+
 /* Stats bar top right */
 .mp-ob-stats {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  justify-self: end;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+  width: min(100%, 640px);
+  padding: 10px 12px;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  box-shadow: var(--admin-shadow-sm, 0 1px 2px rgba(10, 13, 18, 0.05));
 }
 
 .mp-ob-stat {
-  text-align: right;
+  min-width: 0;
+  text-align: left;
 }
 
 .mp-ob-stat-label {
@@ -97,10 +116,13 @@
 }
 
 .mp-ob-stat-value {
-  font-size: 18px;
+  margin-top: 2px;
+  font-size: 16px;
+  line-height: 1.15;
   font-weight: 700;
   color: var(--admin-text-primary);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* Orderbook divider */
@@ -1032,6 +1054,9 @@ html.admin-dark .mp-ob-depth-chart {
 
 /* Mobile breakpoint */
 @media (max-width: 720px) {
+  .mp-ob-page-header {
+    grid-template-columns: 1fr;
+  }
   .mp-ob-toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -1043,11 +1068,23 @@ html.admin-dark .mp-ob-depth-chart {
     width: 100vw;
     border-left: 0;
   }
-  .mp-ob-stats { flex-wrap: wrap; gap: 12px; }
+  .mp-ob-stats {
+    justify-self: stretch;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .mp-ob-spread-bar { flex-wrap: wrap; gap: 12px; }
   .mp-ob-shortcuts { gap: 6px; }
   .mp-orderbook-grid { display: block; }
   .mp-orderbook-side--bids { border-right: 0; border-bottom: 1px solid var(--admin-border); }
+}
+
+@media (max-width: 1180px) {
+  .mp-ob-page-header {
+    grid-template-columns: 1fr;
+  }
+  .mp-ob-stats {
+    justify-self: stretch;
+  }
 }
 
 
