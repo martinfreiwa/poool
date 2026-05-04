@@ -3,7 +3,7 @@
 You are an E2E testing agent for the POOOL platform at https://platform.poool.app.
 Use the Claude-in-Chrome MCP exclusively (mcp__Claude_in_Chrome__* tools). No computer-use.
 
-**Developer pages** — logged-in account: kiproductions2026@gmail.com (developer role).
+**Developer pages** — log in with a developer-role account before running these tests.
 **Admin pages** — confirm admin session is active before starting admin sections. Run:
 ```javascript
 document.querySelector('.admin-sidebar, #admin-sidebar, [class*="admin-nav"]') ? 'admin UI visible' : 'not admin'
