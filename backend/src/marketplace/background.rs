@@ -429,6 +429,41 @@ async fn snapshot_last_prices(redis: &RedisPool, pool: &PgPool) -> Result<u32, A
     Ok(count)
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ── WORKER 4: ALERT ESCALATION (EVERY 60 SECONDS) ────────────
+// ═══════════════════════════════════════════════════════════════
+
+/// Polls marketplace_alerts for un-ack'd alerts that have crossed their
+/// rule.escalate_after_min threshold and dispatches notifications.
+///
+/// Runs every 60s (alerts are time-sensitive). Single-leader to avoid
+/// duplicate pages.
+pub async fn run_alert_escalation_worker(pool: &PgPool) {
+    tracing::info!("🚨 Alert escalation worker started (runs every 60s)");
+
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+    interval.tick().await;
+    let mut tick_n: u32 = 0;
+
+    loop {
+        interval.tick().await;
+        tick_n = tick_n.wrapping_add(1);
+
+        match crate::admin::marketplace::escalate_overdue_alerts(pool).await {
+            Ok(0) => tracing::trace!("🚨 No alerts to escalate"),
+            Ok(n) => tracing::info!("🚨 Escalated {} overdue alerts", n),
+            Err(e) => tracing::error!("🚨 Alert escalation failed: {}", e),
+        }
+
+        // Refresh sparkline matview every 10th tick (~10 minutes)
+        if tick_n % 10 == 0 {
+            if let Err(e) = crate::admin::marketplace::refresh_alert_daily_counts(pool).await {
+                tracing::warn!("🚨 Failed to refresh alert daily-counts matview: {}", e);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -477,40 +512,5 @@ mod tests {
         assert_eq!(expiry_interval, 60 * 60);
         assert_eq!(sync_interval, 5 * 60);
         assert_eq!(price_interval, 5 * 60);
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ── WORKER 4: ALERT ESCALATION (EVERY 60 SECONDS) ────────────
-// ═══════════════════════════════════════════════════════════════
-
-/// Polls marketplace_alerts for un-ack'd alerts that have crossed their
-/// rule.escalate_after_min threshold and dispatches notifications.
-///
-/// Runs every 60s (alerts are time-sensitive). Single-leader to avoid
-/// duplicate pages.
-pub async fn run_alert_escalation_worker(pool: &PgPool) {
-    tracing::info!("🚨 Alert escalation worker started (runs every 60s)");
-
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
-    interval.tick().await;
-    let mut tick_n: u32 = 0;
-
-    loop {
-        interval.tick().await;
-        tick_n = tick_n.wrapping_add(1);
-
-        match crate::admin::marketplace::escalate_overdue_alerts(pool).await {
-            Ok(0) => tracing::trace!("🚨 No alerts to escalate"),
-            Ok(n) => tracing::info!("🚨 Escalated {} overdue alerts", n),
-            Err(e) => tracing::error!("🚨 Alert escalation failed: {}", e),
-        }
-
-        // Refresh sparkline matview every 10th tick (~10 minutes)
-        if tick_n % 10 == 0 {
-            if let Err(e) = crate::admin::marketplace::refresh_alert_daily_counts(pool).await {
-                tracing::warn!("🚨 Failed to refresh alert daily-counts matview: {}", e);
-            }
-        }
     }
 }

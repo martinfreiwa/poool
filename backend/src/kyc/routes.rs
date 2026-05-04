@@ -273,14 +273,16 @@ pub struct WalletBindRequest {
     pub signature: String,
 }
 
-fn normalize_address(addr: &str) -> Result<String, axum::response::Response> {
+fn normalize_address(addr: &str) -> Result<String, Box<axum::response::Response>> {
     let clean = addr.strip_prefix("0x").unwrap_or(addr).to_lowercase();
     if clean.len() != 40 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({"error": "Invalid Ethereum address"})),
-        )
-            .into_response());
+        return Err(Box::new(
+            (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Invalid Ethereum address"})),
+            )
+                .into_response(),
+        ));
     }
     Ok(format!("0x{}", clean))
 }
@@ -312,7 +314,7 @@ pub async fn wallet_challenge(
 
     let address = match normalize_address(&req.address) {
         Ok(a) => a,
-        Err(r) => return r,
+        Err(r) => return *r,
     };
 
     // Generate a 32-byte random nonce, hex-encoded.
@@ -371,7 +373,7 @@ pub async fn wallet_bind(
 
     let address = match normalize_address(&req.address) {
         Ok(a) => a,
-        Err(r) => return r,
+        Err(r) => return *r,
     };
 
     // Look up the active challenge.
