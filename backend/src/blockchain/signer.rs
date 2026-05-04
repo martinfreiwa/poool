@@ -324,9 +324,7 @@ pub async fn build_signer_from_env() -> Option<Result<Box<dyn Signer>, String>> 
     }
     if let Ok(pk) = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY") {
         if !pk.is_empty() {
-            return Some(
-                LocalKeySigner::from_hex(&pk).map(|s| Box::new(s) as Box<dyn Signer>),
-            );
+            return Some(LocalKeySigner::from_hex(&pk).map(|s| Box::new(s) as Box<dyn Signer>));
         }
     }
     None
@@ -357,12 +355,9 @@ mod tests {
         let signer = KmsSigner::new(key).await.expect("KmsSigner::new failed");
         let hash = keccak256(b"poool kms round trip test");
         let signed = signer.sign_prehash(&hash).await.expect("sign failed");
-        let recovered = VerifyingKey::recover_from_prehash(
-            &hash,
-            &signed.signature,
-            signed.recovery_id,
-        )
-        .expect("recover failed");
+        let recovered =
+            VerifyingKey::recover_from_prehash(&hash, &signed.signature, signed.recovery_id)
+                .expect("recover failed");
         assert_eq!(
             pubkey_to_address(&recovered),
             signer.address(),
@@ -383,10 +378,10 @@ mod tests {
 
         let signed_hex = super::super::signing::sign_legacy_transaction_with(
             &signer,
-            80002,                    // Amoy chain id
-            0,                        // nonce
-            30_000_000_000,           // 30 gwei
-            21_000,                   // simple transfer gas
+            80002,                                                     // Amoy chain id
+            0,                                                         // nonce
+            30_000_000_000,                                            // 30 gwei
+            21_000,                                                    // simple transfer gas
             &super::super::signing::format_address(&signer.address()), // self-tx
             0,
             "0x",
@@ -460,7 +455,10 @@ mod tests {
 
         // Sanity: the flipped s really is high.
         use k256::elliptic_curve::scalar::IsHigh;
-        assert!(bool::from(s_high_scalar.is_high()), "test setup: s should be high");
+        assert!(
+            bool::from(s_high_scalar.is_high()),
+            "test setup: s should be high"
+        );
 
         let (recovered_sig, recovered_recid) =
             recover_signature(&hash, &r_bytes, &s_high_bytes, &expected_addr)
@@ -545,7 +543,11 @@ mod tests {
                 v["result"].as_str().unwrap().to_string()
             }
         };
-        let nonce_hex = rpc_call("eth_getTransactionCount", serde_json::json!([&settler, "pending"])).await;
+        let nonce_hex = rpc_call(
+            "eth_getTransactionCount",
+            serde_json::json!([&settler, "pending"]),
+        )
+        .await;
         let nonce = u64::from_str_radix(nonce_hex.trim_start_matches("0x"), 16).unwrap();
         let gas_price_hex = rpc_call("eth_gasPrice", serde_json::json!([])).await;
         let gas_price = u64::from_str_radix(gas_price_hex.trim_start_matches("0x"), 16).unwrap();
@@ -556,22 +558,45 @@ mod tests {
             "jsonrpc":"2.0","id":1,"method":"eth_estimateGas",
             "params":[{"from":&settler,"to":clone,"data":&calldata}]
         });
-        let est: serde_json::Value = http.post(rpc).json(&est_body).send().await.unwrap().json().await.unwrap();
+        let est: serde_json::Value = http
+            .post(rpc)
+            .json(&est_body)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
         println!("eth_estimateGas: {:?}", est);
-        let gas_est = u64::from_str_radix(est["result"].as_str().unwrap().trim_start_matches("0x"), 16).unwrap();
+        let gas_est =
+            u64::from_str_radix(est["result"].as_str().unwrap().trim_start_matches("0x"), 16)
+                .unwrap();
         let gas_limit = gas_est + (gas_est / 5);
 
         // Sign via KMS.
         let signed_hex = super::super::signing::sign_legacy_transaction_with(
             &signer, chain_id, nonce, gas_price, gas_limit, clone, 0, &calldata,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // Broadcast.
         let send_body = serde_json::json!({
             "jsonrpc":"2.0","id":1,"method":"eth_sendRawTransaction","params":[signed_hex]
         });
-        let send: serde_json::Value = http.post(rpc).json(&send_body).send().await.unwrap().json().await.unwrap();
-        println!("eth_sendRawTransaction: {}", serde_json::to_string_pretty(&send).unwrap());
+        let send: serde_json::Value = http
+            .post(rpc)
+            .json(&send_body)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        println!(
+            "eth_sendRawTransaction: {}",
+            serde_json::to_string_pretty(&send).unwrap()
+        );
         let tx_hash = send["result"].as_str().expect("broadcast failed");
         println!("✅ Broadcast tx_hash: {}", tx_hash);
     }
@@ -590,8 +615,8 @@ mod tests {
 
 #[cfg(test)]
 mod stress_tests {
-    use super::*;
     use super::tests::*;
+    use super::*;
 
     /// Hammer KMS with 10 signs to exercise both low-s and high-s
     /// recovery paths (ECDSA k is random, ~50% chance of high-s per call).
@@ -604,7 +629,9 @@ mod stress_tests {
         for i in 0..10 {
             let hash = keccak256(format!("kms hammer {}", i).as_bytes());
             let signed = signer.sign_prehash(&hash).await.unwrap();
-            let pk = VerifyingKey::recover_from_prehash(&hash, &signed.signature, signed.recovery_id).unwrap();
+            let pk =
+                VerifyingKey::recover_from_prehash(&hash, &signed.signature, signed.recovery_id)
+                    .unwrap();
             assert_eq!(pubkey_to_address(&pk), signer.address(), "iteration {}", i);
         }
     }

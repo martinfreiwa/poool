@@ -223,15 +223,15 @@ impl AssetPageContent {
         display.developer_facebook = self.developer_facebook;
         display.developer_instagram = self.developer_instagram;
         display.developer_youtube = self.developer_youtube;
-        display.info_badges = self.info_badges.filter(|v| {
-            v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
-        });
-        display.leasing_items = self.leasing_items.filter(|v| {
-            v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
-        });
-        display.risk_notification_items = self.risk_notification_items.filter(|v| {
-            v.as_array().map(|a| !a.is_empty()).unwrap_or(false)
-        });
+        display.info_badges = self
+            .info_badges
+            .filter(|v| v.as_array().map(|a| !a.is_empty()).unwrap_or(false));
+        display.leasing_items = self
+            .leasing_items
+            .filter(|v| v.as_array().map(|a| !a.is_empty()).unwrap_or(false));
+        display.risk_notification_items = self
+            .risk_notification_items
+            .filter(|v| v.as_array().map(|a| !a.is_empty()).unwrap_or(false));
     }
 }
 
@@ -424,8 +424,7 @@ fn normalize_maps_embed_url(url: Option<&str>) -> Option<String> {
     if url.contains("/maps/embed") || url.contains("output=embed") {
         return Some(url.to_string());
     }
-    if url.contains("google.com/maps") || url.contains("google.com/maps/place")
-    {
+    if url.contains("google.com/maps") || url.contains("google.com/maps/place") {
         let sep = if url.contains('?') { '&' } else { '?' };
         return Some(format!("{}{}output=embed", url, sep));
     }

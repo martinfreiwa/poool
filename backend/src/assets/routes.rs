@@ -13,8 +13,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use super::models::{
-    AssetPageContent, CommodityDisplayData, MarketplaceAsset, MilestoneDisplay,
-    PropertyDisplayData,
+    AssetPageContent, CommodityDisplayData, MarketplaceAsset, MilestoneDisplay, PropertyDisplayData,
 };
 use crate::auth::routes::AppState;
 
@@ -578,7 +577,16 @@ pub async fn page_property(
 
     // Roadmap milestones drive the Funding Timeline. Empty list → template
     // falls back to legacy hardcoded steps.
-    match sqlx::query_as::<_, (String, Option<String>, Option<chrono::DateTime<chrono::Utc>>, Option<i32>, bool)>(
+    match sqlx::query_as::<
+        _,
+        (
+            String,
+            Option<String>,
+            Option<chrono::DateTime<chrono::Utc>>,
+            Option<i32>,
+            bool,
+        ),
+    >(
         r#"SELECT title, description, milestone_date, month_index,
                   COALESCE(is_completed, false)
            FROM asset_milestones
@@ -592,24 +600,20 @@ pub async fn page_property(
         Ok(rows) if !rows.is_empty() => {
             display_data.milestones = Some(
                 rows.into_iter()
-                    .map(|(title, description, date, month_index, is_completed)| {
-                        MilestoneDisplay {
+                    .map(
+                        |(title, description, date, month_index, is_completed)| MilestoneDisplay {
                             title,
                             description,
                             milestone_date: date.map(|d| d.format("%b %-d, %Y").to_string()),
                             month_index,
                             is_completed,
-                        }
-                    })
+                        },
+                    )
                     .collect(),
             );
         }
         Ok(_) => {}
-        Err(e) => tracing::warn!(
-            "Failed to load milestones for property {}: {}",
-            asset.id,
-            e
-        ),
+        Err(e) => tracing::warn!("Failed to load milestones for property {}: {}", asset.id, e),
     }
 
     let platform_fee_pct: f64 = sqlx::query_scalar(
@@ -765,7 +769,16 @@ pub async fn page_property_public(
         }
         // Roadmap milestones drive the public Funding Timeline. Empty list →
         // template falls back to legacy hardcoded steps.
-        match sqlx::query_as::<_, (String, Option<String>, Option<chrono::DateTime<chrono::Utc>>, Option<i32>, bool)>(
+        match sqlx::query_as::<
+            _,
+            (
+                String,
+                Option<String>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<i32>,
+                bool,
+            ),
+        >(
             r#"SELECT title, description, milestone_date, month_index,
                       COALESCE(is_completed, false)
                FROM asset_milestones

@@ -24,7 +24,7 @@ pub mod reconciler;
 /// 🔴 FINANCIAL CODE — All monetary logic uses integer math (cents/wei).
 ///    No floating-point math anywhere in this module.
 pub mod service;
-/// In-process Ethereum signing + EIP-191 verification (replaces `cast` subprocess).
-pub mod signing;
 /// Pluggable signer abstraction — local raw key vs HSM-backed GCP KMS.
 pub mod signer;
+/// In-process Ethereum signing + EIP-191 verification (replaces `cast` subprocess).
+pub mod signing;

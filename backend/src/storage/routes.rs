@@ -1555,12 +1555,14 @@ pub async fn download_asset_document(
                 let raw_filename = if !doc_title.is_empty() {
                     doc_title.clone()
                 } else {
-                    object_path.rsplit('/').next().unwrap_or("document").to_string()
+                    object_path
+                        .rsplit('/')
+                        .next()
+                        .unwrap_or("document")
+                        .to_string()
                 };
                 let safe_filename = raw_filename.replace(['"', '\r', '\n'], "");
-                if let Ok(v) =
-                    format!("attachment; filename=\"{}\"", safe_filename).parse()
-                {
+                if let Ok(v) = format!("attachment; filename=\"{}\"", safe_filename).parse() {
                     headers.insert(axum::http::header::CONTENT_DISPOSITION, v);
                 }
                 (headers, data).into_response()

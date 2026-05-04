@@ -242,7 +242,10 @@ pub async fn sign_legacy_transaction_with(
 ) -> Result<String, String> {
     let to_bytes = parse_hex(to)?;
     if to_bytes.len() != 20 {
-        return Err(format!("to-address must be 20 bytes, got {}", to_bytes.len()));
+        return Err(format!(
+            "to-address must be 20 bytes, got {}",
+            to_bytes.len()
+        ));
     }
     let data_bytes = parse_hex(data)?;
 

@@ -543,9 +543,7 @@ async fn sweep_ioc_orders(redis: &RedisPool, pool: &PgPool, asset_id: Uuid) -> R
         //    the 5-min sync worker reconciles. The DB row is `cancelled` so
         //    any incoming match referencing this order will hit the
         //    OrderTerminal path in settlement and drop cleanly.
-        if let Err(e) =
-            super::orderbook::remove_member(redis, asset_id, book_side, &member).await
-        {
+        if let Err(e) = super::orderbook::remove_member(redis, asset_id, book_side, &member).await {
             tracing::warn!(
                 order_id = %order.id,
                 "ioc/fok ZREM failed (will be reconciled by sync worker): {}",

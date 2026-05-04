@@ -205,8 +205,12 @@ pub async fn api_admin_asset_detail(
         "SELECT COALESCE(image_url,''), COALESCE(is_cover,false), COALESCE(sort_order,0)
          FROM asset_images WHERE asset_id = $1
            AND COALESCE(image_url,'') <> ''
-         ORDER BY sort_order"
-    ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
+         ORDER BY sort_order",
+    )
+    .bind(aid)
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
 
     // Milestones (include id so the editor can patch/delete by row)
     #[allow(clippy::type_complexity)]
