@@ -283,6 +283,30 @@
   padding: 0;
 }
 
+/* Upload spinner overlay — shown on local preview placeholders during upload */
+.upload-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: img-spin 0.75s linear infinite;
+}
+
+@keyframes img-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ===========================
    5. Financial Inputs
    =========================== */

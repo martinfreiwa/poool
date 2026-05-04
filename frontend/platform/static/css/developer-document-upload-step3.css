@@ -283,34 +283,92 @@
 }
 
 /* ===========================
-   4. Important Note Section
+   4. Document Sections 2-col Grid
+   =========================== */
+.doc-sections-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 1096px;
+  margin-bottom: 16px;
+}
+
+.doc-sections-grid .document-section {
+  margin-bottom: 0;
+  max-width: none;
+  padding: 20px;
+  gap: 12px;
+}
+
+.doc-sections-grid .document-section .file-upload-area {
+  min-height: 80px;
+  padding: 12px 16px;
+}
+
+.doc-sections-grid .document-section .upload-content {
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .doc-sections-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===========================
+   5. Important Note Section
    =========================== */
 .documents-note-section {
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
-  gap: 16px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
   width: 100%;
   max-width: 1096px;
-  background: var(--accent-color);
-  border: 1px solid var(--table-border-color);
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-  border-radius: 12px;
+  background: rgba(0, 0, 255, 0.04);
+  border: 1px solid rgba(0, 0, 255, 0.15);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 10px;
   margin-bottom: 16px;
+}
+
+.documents-note-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(0, 0, 255, 0.08);
+  color: var(--primary-color);
+  margin-top: 1px;
+}
+
+.documents-note-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.documents-note-title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--primary-color);
+  margin: 0;
 }
 
 .documents-note-text {
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  font-weight: 500;
+  font-weight: 400;
   font-size: 13px;
   line-height: 20px;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
-  color: var(--primary-color);
-  text-align: left;
+  color: var(--text-secondary);
   margin: 0;
 }
 

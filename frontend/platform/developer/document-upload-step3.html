@@ -12,6 +12,8 @@
       {% with dev_nav_title="Documents", dev_nav_flow_step="documents" %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
+      <!-- Document Sections Grid -->
+      <div class="doc-sections-grid">
       <!-- Document Section 1: Proof of Title -->
       <div id="documents-section-1" class="document-section">
         <h2 class="document-section-title">1. Proof of title</h2>
@@ -489,13 +491,23 @@
           </div>
         </div>
       </div>
+      </div><!-- /doc-sections-grid -->
+
       <!-- Important Note Section -->
       <div id="documents-note-section" class="documents-note-section">
-        <p class="documents-note-text">
-          Please upload all the documents you have available, as this will
-          directly impact the speed of listing your property on our platform
-          and completing its tokenization process
-        </p>
+        <div class="documents-note-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="documents-note-body">
+          <p class="documents-note-title">Upload all available documents</p>
+          <p class="documents-note-text">
+            This directly impacts the speed of listing your property and completing its tokenization process.
+          </p>
+        </div>
       </div>
       <!-- Action Buttons -->
       <div id="form-actions" class="form-actions">

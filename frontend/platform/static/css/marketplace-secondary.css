@@ -331,6 +331,13 @@ body.mp-secondary-body {
     text-align: center;
 }
 
+.mp-sec__empty-logo {
+    display: block;
+    width: 96px;
+    height: auto;
+    margin: 0 auto 8px;
+}
+
 .mp-sec__empty-title {
     font-size: 18px;
     font-weight: 600;

@@ -409,6 +409,31 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      // Show local previews immediately so the user sees instant feedback
+      const placeholders = arr.map((file, idx) => {
+        const tempId = `uploading-${Date.now()}-${idx}`;
+        const localUrl = URL.createObjectURL(file);
+
+        const item = document.createElement("div");
+        item.id = tempId;
+        item.className = "uploaded-image-item";
+
+        const img = document.createElement("img");
+        img.className = "uploaded-image";
+        img.src = localUrl;
+        img.alt = file.name;
+        item.appendChild(img);
+
+        const overlay = document.createElement("div");
+        overlay.className = "upload-spinner-overlay";
+        overlay.innerHTML = '<div class="upload-spinner"></div>';
+        item.appendChild(overlay);
+
+        if (galleryEl) galleryEl.appendChild(item);
+        updateImageSubtitle();
+        return { tempId, localUrl };
+      });
+
       // Upload all files in parallel for speed
       activeImageUploadCount += arr.length;
       const uploadPromises = arr.map((file, idx) => {
@@ -439,6 +464,11 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .finally(() => {
           activeImageUploadCount = Math.max(0, activeImageUploadCount - 1);
+          // Remove this file's placeholder once upload finishes
+          const p = placeholders[idx];
+          const el = document.getElementById(p.tempId);
+          if (el) el.remove();
+          URL.revokeObjectURL(p.localUrl);
         });
       });
 

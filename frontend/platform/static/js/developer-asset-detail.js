@@ -391,10 +391,10 @@ function renderMediaGrid() {
 
   grid.textContent = "";
   if (detailAssetImages.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "ad-empty";
-    empty.textContent = "No images uploaded.";
-    grid.appendChild(empty);
+    grid.appendChild(createBrandedEmptyState({
+      title: "No images uploaded",
+      text: "Upload images to showcase this asset to investors.",
+    }));
     return;
   }
 
@@ -547,10 +547,10 @@ function renderDocuments(a) {
 
   list.textContent = "";
   if (docs.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "ad-empty";
-    empty.textContent = "No documents uploaded.";
-    list.appendChild(empty);
+    list.appendChild(createBrandedEmptyState({
+      title: "No documents uploaded",
+      text: "Upload offering documents, financials, or legal files for this asset.",
+    }));
     return;
   }
 
@@ -796,19 +796,15 @@ function renderOrders(a) {
     .join("");
 }
 
-function createBrandedEmptyState({ icon, title, text }) {
+function createBrandedEmptyState({ title, text }) {
   const wrap = document.createElement("div");
   wrap.className = "ad-branded-empty";
 
-  const mark = document.createElement("div");
-  mark.className = "ad-branded-empty__mark";
-  mark.textContent = "POOOL";
-  wrap.appendChild(mark);
-
-  const iconEl = document.createElement("div");
-  iconEl.className = "ad-branded-empty__icon";
-  iconEl.appendChild(createEmptyStateIcon(icon));
-  wrap.appendChild(iconEl);
+  const logo = document.createElement("img");
+  logo.src = "/static/images/logos/logo-blue.svg";
+  logo.alt = "POOOL";
+  logo.className = "ad-branded-empty__logo";
+  wrap.appendChild(logo);
 
   const titleEl = document.createElement("div");
   titleEl.className = "ad-branded-empty__title";
