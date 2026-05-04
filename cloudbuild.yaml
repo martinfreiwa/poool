@@ -37,7 +37,9 @@ steps:
       # Required env vars — must be repeated on every deploy because
       # `update --image` preserves existing env vars but `--update-env-vars`
       # is the only way to guarantee they exist on freshly-replicated revisions.
-      - '--update-env-vars=GCS_BUCKET_NAME=poool-assets-primary'
+      - '--update-env-vars=GCS_BUCKET_NAME=poool-assets-primary,CHAIN_CONTRACT_ADDRESS=0xeAd7b2eD1CcD81b8a0004312C21Cd99930d4c1ca'
+      # Private key pulled from Secret Manager — never stored in source
+      - '--update-secrets=CHAIN_SETTLEMENT_PRIVATE_KEY=CHAIN_SETTLEMENT_PRIVATE_KEY:latest'
       - '--quiet'
     id: Deploy
 

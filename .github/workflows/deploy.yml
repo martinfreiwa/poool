@@ -85,6 +85,13 @@ jobs:
             --set-env-vars "SERVER_PORT=8080" \
             --set-env-vars "RUST_LOG=warn" \
             --set-env-vars "GCS_BUCKET_NAME=poool-assets-primary" \
+            --set-env-vars "CHAIN_RPC_URL=https://rpc-amoy.polygon.technology" \
+            --set-env-vars "CHAIN_ID=80002" \
+            --set-env-vars "CHAIN_CONTRACT_ADDRESS=0xeAd7b2eD1CcD81b8a0004312C21Cd99930d4c1ca" \
+            --set-env-vars "CHAIN_IDENTITY_REGISTRY_ADDRESS=0xE9DBbDC87928eAeD9c3c5A9F737365a3D7230306" \
+            --set-env-vars "CHAIN_IMPLEMENTATION_ADDRESS=0xb61CCe33B546a5C7c36F0B58119e7F4B3D1D04e5" \
+            --set-env-vars "CHAIN_SETTLEMENT_ADDRESS=0x021F6B0029125B3924FF5Ba3e0FF59e1FA39B88a" \
+            --set-env-vars "CHAIN_MAX_BATCH_SIZE=50" \
             --set-secrets "DATABASE_URL=poool-database-url:latest" \
             --set-secrets "JWT_SECRET=poool-jwt-secret:latest" \
             --set-secrets "SESSION_SECRET=poool-jwt-secret:latest" \
@@ -92,7 +99,8 @@ jobs:
             --set-secrets "TOTP_SECRET_ENCRYPTION_KEY=poool-encryption-key:latest" \
             --set-secrets "GOOGLE_CLIENT_ID=poool-google-client-id:latest" \
             --set-secrets "GOOGLE_CLIENT_SECRET=poool-google-client-secret:latest" \
-            --set-secrets "REDIS_URL=poool-redis-url:latest"
+            --set-secrets "REDIS_URL=poool-redis-url:latest" \
+            --set-secrets "CHAIN_SETTLEMENT_PRIVATE_KEY=CHAIN_SETTLEMENT_PRIVATE_KEY:latest"
 
       - name: Verify deployment
         run: |
