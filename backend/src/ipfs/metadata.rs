@@ -19,6 +19,13 @@ pub struct AssetMetadata {
     pub name: String,
     /// Short description of the tokenized asset
     pub description: String,
+    /// Cover image URL — picked up by wallets, marketplaces, and
+    /// blockchain explorers (Polygonscan, OpenSea, MetaMask) to render
+    /// the NFT thumbnail. Pulled from the asset's `is_cover=true` row
+    /// in `asset_images`, falling back to lowest sort_order, falling
+    /// back to None.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
     /// URL to the asset detail page on POOOL
     pub external_url: String,
     /// Structured properties
@@ -213,9 +220,33 @@ pub async fn build_metadata(pool: &PgPool, asset_id: uuid::Uuid) -> Result<Asset
         .clone()
         .unwrap_or_else(|| "polygon".to_string());
 
+    // Cover image: prefer is_cover=true; fall back to lowest sort_order.
+    // Promote relative paths to absolute URLs so off-platform fetchers
+    // (Polygonscan, MetaMask, OpenSea) can resolve them.
+    let raw_image: Option<String> = sqlx::query_scalar(
+        r#"SELECT image_url FROM asset_images
+           WHERE asset_id = $1
+           ORDER BY is_cover DESC, sort_order ASC, created_at ASC
+           LIMIT 1"#,
+    )
+    .bind(asset_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("DB error fetching asset image: {}", e))?;
+    let image = raw_image.map(|u| {
+        if u.starts_with("http://") || u.starts_with("https://") || u.starts_with("ipfs://") {
+            u
+        } else if let Some(stripped) = u.strip_prefix('/') {
+            format!("{}/{}", base_url.trim_end_matches('/'), stripped)
+        } else {
+            format!("{}/{}", base_url.trim_end_matches('/'), u)
+        }
+    });
+
     let metadata = AssetMetadata {
         name: row.title.clone(),
         description: row.description.clone(),
+        image,
         external_url: format!("{}/property/{}", base_url, asset_id),
         properties: AssetProperties {
             issuer: "PT POOOL Indonesia".to_string(),
