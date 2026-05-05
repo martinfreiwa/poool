@@ -56,6 +56,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Resolve optional chain settlement secret
+        run: |
+          if gcloud secrets describe CHAIN_SETTLEMENT_PRIVATE_KEY >/dev/null 2>&1; then
+            echo "CHAIN_SECRET_ARG=--set-secrets=CHAIN_SETTLEMENT_PRIVATE_KEY=CHAIN_SETTLEMENT_PRIVATE_KEY:latest" >> "$GITHUB_ENV"
+          else
+            echo "CHAIN_SETTLEMENT_PRIVATE_KEY secret not found; deploying with on-chain settlement disabled."
+            echo "CHAIN_SECRET_ARG=" >> "$GITHUB_ENV"
+          fi
+
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -100,7 +109,7 @@ jobs:
             --set-secrets "GOOGLE_CLIENT_ID=poool-google-client-id:latest" \
             --set-secrets "GOOGLE_CLIENT_SECRET=poool-google-client-secret:latest" \
             --set-secrets "REDIS_URL=poool-redis-url:latest" \
-            --set-secrets "CHAIN_SETTLEMENT_PRIVATE_KEY=CHAIN_SETTLEMENT_PRIVATE_KEY:latest"
+            $CHAIN_SECRET_ARG
 
       - name: Verify deployment
         run: |
