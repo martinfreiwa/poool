@@ -591,19 +591,18 @@ async fn broadcast(
     }
 }
 
-/// Resolve the on-chain address that holds the asset supply (= the
-/// `mintTo` parameter at deployAsset time). In our deploy flow that
-/// equals the `CHAIN_SETTLEMENT_ADDRESS` env var; the actual signer
-/// (whose key signs the settleBatch tx) may be a *different* address —
-/// e.g. KMS-backed signer paired with an explicit ops wallet that
-/// holds funds. Treat env as truth, fall back to signer's own address.
+/// Resolve the on-chain address that holds the asset supply.
+///
+/// **Key-derived only.** The signer's address IS the treasury — they're
+/// the same wallet by construction: `mintTo` at `deployAsset()` is now
+/// also locked to the signer's address (see `admin::blockchain::resolve
+/// _settlement_address`). This invariant guarantees the signer can
+/// always move tokens it just minted.
+///
+/// Reading env `CHAIN_SETTLEMENT_ADDRESS` here was a regression — it
+/// allowed env to silently override key-derivation, leading to mintTo
+/// addresses whose key was never persisted. We don't repeat that.
 fn resolve_treasury_address(config: &ChainConfig) -> String {
-    if let Ok(addr) = std::env::var("CHAIN_SETTLEMENT_ADDRESS") {
-        let trimmed = addr.trim();
-        if !trimmed.is_empty() {
-            return trimmed.to_lowercase();
-        }
-    }
     super::signing::format_address(&config.signer.address())
 }
 

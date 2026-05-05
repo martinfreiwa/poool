@@ -9,17 +9,26 @@ const BLOCKCHAIN_CONTROL_PERMISSION: &str = "blockchain.manage";
 const BLOCKCHAIN_READ_PERMISSION: &str = "treasury.read";
 const BLOCKCHAIN_TOKENIZE_PERMISSION: &str = "blockchain.tokenize";
 
-/// Resolve settlement wallet address: prefer explicit `CHAIN_SETTLEMENT_ADDRESS`,
-/// fall back to deriving from `CHAIN_SETTLEMENT_PRIVATE_KEY` so the UI doesn't
-/// show "Not configured" when the signer is actually live.
+/// Resolve settlement wallet address.
+///
+/// **Key-first** — derive from the actual private key whenever possible.
+/// Env `CHAIN_SETTLEMENT_ADDRESS` is consulted only as a *display* fallback
+/// when no key is configured. This is intentional: when the env var was
+/// allowed to override key-derivation, ops accidentally set it to a
+/// throwaway address and used it as `mintTo` at deploy — minting 2,000
+/// Demo Villa tokens to a wallet whose private key was never saved.
+/// Defensive default: address always matches the active signer, so the
+/// signer can always operate on funds it just minted.
 fn resolve_settlement_address() -> String {
-    if let Ok(addr) = std::env::var("CHAIN_SETTLEMENT_ADDRESS") {
-        if !addr.is_empty() {
+    if let Ok(pk) = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY") {
+        if let Ok(addr) = crate::blockchain::signing::address_from_private_key(&pk) {
             return addr;
         }
     }
-    if let Ok(pk) = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY") {
-        if let Ok(addr) = crate::blockchain::signing::address_from_private_key(&pk) {
+    // KMS-backed signer — env var holds the pre-computed display address
+    // because we can't synchronously derive without an RPC roundtrip.
+    if let Ok(addr) = std::env::var("CHAIN_SETTLEMENT_ADDRESS") {
+        if !addr.is_empty() {
             return addr;
         }
     }
@@ -1254,6 +1263,27 @@ pub async fn api_admin_blockchain_tokenize(
     .map_err(ApiError::from)?;
 
     tx.commit().await.map_err(ApiError::from)?;
+
+    // Lift any of this asset's already-completed primary order_items
+    // from NULL → 'pending' so the settlement worker picks them up next
+    // cycle. Common path: re-tokenization after a broken first deploy.
+    match crate::blockchain::primary_settlement::mark_asset_eligible_after_tokenization(
+        pool, asset_id,
+    )
+    .await
+    {
+        Ok(0) => {}
+        Ok(n) => tracing::info!(
+            "⛓️ Tokenization: lifted {} order_items to settlement-eligible for asset {}",
+            n,
+            asset_id
+        ),
+        Err(e) => tracing::error!(
+            "⛓️ Tokenization: failed to lift order_items for asset {}: {}",
+            asset_id,
+            e
+        ),
+    }
 
     tracing::info!(
         "⛓️ ✅ Asset {} tokenized: token_id=1, contract={}, tx={}",

@@ -106,13 +106,33 @@ impl ChainConfig {
     /// nor CHAIN_SETTLEMENT_PRIVATE_KEY set).
     pub async fn from_env() -> Option<Self> {
         let signer_result = super::signer::build_signer_from_env().await?;
-        let signer = match signer_result {
+        let signer: std::sync::Arc<dyn super::signer::Signer> = match signer_result {
             Ok(s) => std::sync::Arc::from(s),
             Err(e) => {
                 tracing::error!("⛓️ Settlement signer init failed: {}", e);
                 return None;
             }
         };
+
+        // Sanity check: env-advertised settlement address must match the
+        // address derived from the actual signing key. A mismatch here is
+        // exactly what stranded the original Demo Villa supply (mintTo
+        // pointed at an address whose key was never saved). Loud warning,
+        // not a hard fail — KMS rotations briefly desync this.
+        let signer_addr = super::signing::format_address(&signer.address());
+        if let Ok(env_addr) = std::env::var("CHAIN_SETTLEMENT_ADDRESS") {
+            if !env_addr.is_empty()
+                && env_addr.trim().to_lowercase() != signer_addr.trim().to_lowercase()
+            {
+                tracing::warn!(
+                    "⛓️ ⚠️ CHAIN_SETTLEMENT_ADDRESS env ({}) does not match signing key's derived address ({}). \
+                     mintTo at deploy will use the signer address — env is for display only. \
+                     Update env or rotate the key to silence this warning.",
+                    env_addr,
+                    signer_addr
+                );
+            }
+        }
 
         let rpc_url = std::env::var("CHAIN_RPC_URL")
             .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
