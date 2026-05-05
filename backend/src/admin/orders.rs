@@ -64,7 +64,9 @@ pub async fn api_admin_order_detail(
                     }
                 }
             } else {
-                tracing::error!("GCS_BUCKET_NAME not configured — cannot sign proof of transfer URL");
+                tracing::error!(
+                    "GCS_BUCKET_NAME not configured — cannot sign proof of transfer URL"
+                );
                 None
             }
         }
