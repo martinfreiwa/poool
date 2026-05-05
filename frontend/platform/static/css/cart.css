@@ -1123,15 +1123,19 @@
 
 .cart-empty__step-num {
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--btn-primary-bg, #0000FF);
-  background: var(--badge-info-bg, #EEF4FF);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #03FF88;
+  background: linear-gradient(135deg, #0000FF 0%, #3344FF 100%);
   border-radius: 8px;
-  padding: 6px 10px;
   line-height: 1;
   flex-shrink: 0;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 .cart-empty__step-body {

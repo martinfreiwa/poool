@@ -106,6 +106,33 @@
   justify-content: flex-end;
 }
 
+.portfolio-assets-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: #475467;
+  background: #FFFFFF;
+  border: 1px solid #E9EAEB;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.portfolio-assets-detail-btn:hover,
+.portfolio-assets-detail-btn:focus-visible {
+  color: #101828;
+  background: #F9FAFB;
+  border-color: #D5D7DA;
+  outline: none;
+}
+
+.portfolio-assets-detail-btn svg {
+  flex-shrink: 0;
+}
+
 /* Property Column Styles */
 .portfolio-assets-property {
   display: flex;

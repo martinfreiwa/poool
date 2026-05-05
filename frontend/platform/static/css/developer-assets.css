@@ -306,31 +306,62 @@
 /* Metrics row */
 .dae-empty__metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 0 0 24px;
 }
 
 .dae-empty__metric {
-  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  padding: 20px 22px 18px;
+  border-radius: 12px !important;
+  gap: 6px;
+}
+
+.dae-empty__metric::before {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+}
+
+.dae-empty__metric .ds-stat-card__label {
+  display: block;
+  margin-bottom: 6px;
+  color: #717680;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .dae-empty__metric .ds-stat-card__value {
-  font-size: 30px;
-  line-height: 38px;
+  margin-bottom: 6px;
+  color: #0A0D12;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .dae-empty__metric-hint {
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--text-secondary, #475467);
+  color: #717680;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 /* Steps row */
 .dae-empty__steps {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -339,25 +370,34 @@
 .dae-empty__step {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   background: var(--card-bg, #FFFFFF);
   border: 1px solid var(--card-border-color, #E5E7EB);
   border-radius: 12px;
-  padding: 20px 24px;
+  padding: 24px;
   box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 .dae-empty__step:hover {
-  border-color: rgba(0, 0, 255, 0.18);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 255, 0.14);
+  box-shadow: 0 6px 20px rgba(0, 0, 255, 0.07);
+  transform: translateY(-2px);
 }
 
 .dae-empty__step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0000FF 0%, #3344FF 100%);
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  font-size: 13px;
+  color: #03FF88;
+  font-size: 11px;
   font-weight: 800;
-  color: #0000FF;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .dae-empty__step-title {

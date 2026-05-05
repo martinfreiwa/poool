@@ -80,27 +80,8 @@ extra_js=['htmx-init',
               </div>
               <!-- Actions -->
               <div id="portfolio-value-actions" class="portfolio-value-actions">
-                <button class="portfolio-show-more-btn ds-btn ds-btn--secondary" onclick="togglePortfolioExpand(this)">
-                  <span class="portfolio-show-more-label">Show more</span>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="portfolio-show-more-chevron">
-                    <path d="M5 7.5L10 12.5L15 7.5" stroke="#414651" stroke-width="1.66667" stroke-linecap="round"
-                      stroke-linejoin="round"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <!-- Expandable Chart Section -->
-            <div id="portfolio-chart-section" class="portfolio-chart-section portfolio-expand-content" style="display:none;overflow: visible">
-              <!-- Chart Header -->
-              <div id="portfolio-chart-header" class="portfolio-chart-header">
-                <div id="portfolio-chart-title" class="portfolio-chart-title">
-                  <span class="chart-title-text">All time</span>
-                  <span class="chart-title-percentage" id="portfolio-chart-pct">--</span>
-                </div>
-                <!-- Tabs and Filter -->
-                <div id="portfolio-chart-controls" class="portfolio-chart-controls">
-                  <!-- Time Period Tabs -->
-                  <div id="portfolio-chart-tabs" class="portfolio-chart-tabs">
+                <div id="portfolio-chart-controls" class="portfolio-chart-controls" aria-label="Portfolio chart controls">
+                  <div id="portfolio-chart-tabs" class="portfolio-chart-tabs" aria-label="Chart time range">
                     <button class="chart-tab active" data-tab="twelveMonths"
                       onclick="setPortfolioTab(this, 'twelveMonths')">
                       12 months
@@ -118,13 +99,30 @@ extra_js=['htmx-init',
                       24 hours
                     </button>
                   </div>
-                  <!-- Filter Button --><button id="portfolio-chart-filter" class="portfolio-chart-filter ds-btn ds-btn--secondary">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <button id="portfolio-chart-filter" class="portfolio-chart-filter ds-btn ds-btn--secondary">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                       <path d="M5 10h10M2.5 5h15m-10 10h5" stroke="#414651" stroke-width="1.66667"
                         stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
                     <span>Filters</span>
                   </button>
+                </div>
+                <button class="portfolio-show-more-btn ds-btn ds-btn--secondary" onclick="togglePortfolioExpand(this)">
+                  <span class="portfolio-show-more-label">Show more</span>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="portfolio-show-more-chevron">
+                    <path d="M5 7.5L10 12.5L15 7.5" stroke="#414651" stroke-width="1.66667" stroke-linecap="round"
+                      stroke-linejoin="round"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- Expandable Chart Section -->
+            <div id="portfolio-chart-section" class="portfolio-chart-section portfolio-expand-content" style="display:none;overflow: visible">
+              <!-- Chart Header -->
+              <div id="portfolio-chart-header" class="portfolio-chart-header">
+                <div id="portfolio-chart-title" class="portfolio-chart-title">
+                  <span class="chart-title-text">All time</span>
+                  <span class="chart-title-percentage" id="portfolio-chart-pct">--</span>
                 </div>
               </div>
               <!-- Chart Container -->
@@ -314,9 +312,6 @@ extra_js=['htmx-init',
         </div>
 
         <div id="key-financials-section" class="key-financials-section hidden">
-          <h2 id="key-financials-title" class="section-title">
-            Key financials
-          </h2>
           <div id="key-financials-grid" class="key-financials-grid">
             <!-- Monthly Income Card -->
             <div id="key-financials-card-monthly-income-gradient" class="quick-insights-card">
@@ -557,7 +552,6 @@ extra_js=['htmx-init',
 
         <!-- Assets Table -->
         <div id="assets-section" class="assets-section hidden">
-          <h2 id="assets-title" class="section-title">My Assets</h2>
           <div id="portfolio-assets-table" class="portfolio-assets-table ds-table-container">
             <!-- Table Header -->
             <div id="portfolio-assets-header" class="portfolio-assets-header">

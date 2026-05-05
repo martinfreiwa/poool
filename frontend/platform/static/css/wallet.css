@@ -155,6 +155,25 @@ body.kyc-hidden .wallet-main {
   /* Allow auto height */
   min-height: 112px;
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.wallet-balance-card::before,
+#transactions-table::before,
+.wallet-payment-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+}
+
+#transactions-table::before {
+  border-radius: var(--card-border-radius, 12px) var(--card-border-radius, 12px) 0 0;
 }
 
 .wallet-cash-balance .wallet-balance-card {
@@ -263,7 +282,7 @@ body.kyc-hidden .wallet-main {
   grid-template-columns: 1fr 1fr !important;
   gap: 32px !important;
   width: 100% !important;
-  margin-top: 48px !important;
+  margin-top: 0 !important;
   align-items: start !important;
 }
 
@@ -277,16 +296,29 @@ body.kyc-hidden .wallet-main {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--table-border-color);
 }
 
 .wallet-transactions-title {
   font-family: var(--font-family, "TT Norms Pro", sans-serif);
   font-style: normal;
   font-weight: 700;
-  font-size: 24px;
-  line-height: 32px;
+  font-size: 20px;
+  line-height: 28px;
   color: var(--page-title-color);
+  margin: 0;
+}
+
+#transactions-table .ds-table-flex__head {
+  border-radius: 0;
+}
+
+#transactions-table {
+  position: relative;
 }
 
 /* Transactions Table */
@@ -828,7 +860,7 @@ body.kyc-hidden .wallet-main {
   flex-direction: column;
   align-items: flex-start;
   padding: 0px;
-  gap: 12px;
+  gap: 0;
 }
 
 .wallet-cards-section,
@@ -851,10 +883,11 @@ body.kyc-hidden .wallet-main {
   font-family: var(--font-family, "TT Norms Pro", sans-serif);
   font-style: normal;
   font-weight: 700;
-  font-size: 24px;
-  line-height: 32px;
+  font-size: 20px;
+  line-height: 28px;
   color: var(--page-title-color);
-  align-self: stretch;
+  align-self: auto;
+  margin: 0;
 }
 
 .wallet-payment-title-row {
@@ -889,13 +922,68 @@ body.kyc-hidden .wallet-main {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 16px;
+  justify-content: space-between;
+  padding: 20px;
   gap: 16px;
-  min-height: 124px;
+  min-height: 176px;
   background: #ffffff;
   border: 1px solid var(--table-border-color);
   border-radius: 12px;
   align-self: stretch;
+  position: relative;
+  overflow: hidden;
+}
+
+.wallet-payment-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 28px;
+}
+
+#wallet-payment-cards-add-button,
+#wallet-payment-banks-add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  gap: 8px;
+  color: #414651;
+  background: #FFFFFF !important;
+  border: 1px solid #D5D7DA !important;
+  border-radius: 8px;
+  box-shadow: none !important;
+  font-weight: 600;
+}
+
+#wallet-payment-cards-add-button:hover,
+#wallet-payment-banks-add-button:hover {
+  color: #414651;
+  background: #FFFFFF !important;
+  border-color: #D5D7DA !important;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05)) !important;
+  transform: none;
+}
+
+#wallet-payment-cards-add-button svg,
+#wallet-payment-banks-add-button svg {
+  width: 18px;
+  height: 18px;
+  color: #0000FF;
+  flex-shrink: 0;
+}
+
+#wallet-payment-cards-add-button span {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+#wallet-payment-banks-add-button span {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .wallet-payment-header {
@@ -1605,14 +1693,23 @@ body.kyc-hidden .wallet-main {
 }
 
 .wallet-payment-empty-state {
-  padding: 24px 16px;
+  padding: 18px 16px 12px;
+  min-height: 72px;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: #667085;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 18px;
   text-align: center;
+}
+
+.wallet-payment-empty-state svg {
+  width: 22px;
+  height: 22px;
 }
 
 @keyframes slideIn {

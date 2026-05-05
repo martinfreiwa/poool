@@ -654,16 +654,18 @@
 .refer-input-group {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .refer-input-wrapper {
   flex: 1;
   display: flex;
   align-items: center;
+  min-height: 40px;
   background: #ffffff;
   border: 1px solid var(--table-border-color);
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 0 14px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -694,13 +696,14 @@
 }
 
 .copy-link-btn {
+  min-height: 40px;
   background: var(--primary-color);
   border: 1px solid var(--primary-color);
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
   border-radius: 8px;
-  padding: 10px 16px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2322,12 +2325,37 @@
 /* --- COMMISSIONS TAB STYLES --- */
 /* ============================================================ */
 
+.commissions-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--section-gap, 24px);
+}
+
+.commissions-summary-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 112px;
+}
+
+.commissions-summary-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commissions-summary-card__label {
+  color: #667085;
+  font-size: 14px;
+}
+
 .commissions-card {
   background: #ffffff;
   border: 1px solid var(--card-border-color);
   border-radius: 12px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   padding: 24px;
+  position: relative;
+  overflow: hidden;
 }
 
 .commissions-card-header {
@@ -2446,9 +2474,10 @@
   background: var(--primary-color, var(--btn-primary-bg));
   border: none;
   border-radius: 8px;
-  padding: 10px 24px;
+  min-height: 40px;
+  padding: 0 24px;
   cursor: pointer;
-  width: fit-content;
+  width: 100%;
   transition: all 0.2s ease;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
 }
@@ -2594,6 +2623,10 @@
 
 /* --- Responsive --- */
 @media (max-width: 768px) {
+  .commissions-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
   .commissions-card {
     padding: 16px;
   }
@@ -2685,6 +2718,7 @@ body#rewards-body .campaign-link-generator-card,
 body#rewards-body .marketing-section,
 body#rewards-body .marketing-asset-card,
 body#rewards-body .marketing-color-swatch,
+body#rewards-body .commissions-summary-card,
 body#rewards-body .commissions-card,
 body#rewards-body .quick-insights-card,
 body#rewards-body .rewards-error-layer,
@@ -2703,6 +2737,7 @@ body#rewards-body .refer-earn-card,
 body#rewards-body .tier-card,
 body#rewards-body .metric-card,
 body#rewards-body .marketing-section,
+body#rewards-body .commissions-summary-card,
 body#rewards-body .commissions-card,
 body#rewards-body .rewards-error-layer,
 body#rewards-body .rewards-empty-layer {
@@ -2720,7 +2755,9 @@ body#rewards-body .tier-progress-card.intro-style {
 body#rewards-body .tier-card--active::before,
 body#rewards-body .tier-progress-card::before,
 body#rewards-body .rewards-summary-card::before,
-body#rewards-body .metric-card::before {
+body#rewards-body .metric-card::before,
+body#rewards-body .commissions-summary-card::before,
+body#rewards-body .commissions-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
@@ -2732,7 +2769,9 @@ body#rewards-body .metric-card::before {
 
 body#rewards-body .tier-progress-card,
 body#rewards-body .rewards-summary-card,
-body#rewards-body .metric-card {
+body#rewards-body .metric-card,
+body#rewards-body .commissions-summary-card,
+body#rewards-body .commissions-card {
   position: relative;
   overflow: hidden;
 }
@@ -2854,7 +2893,7 @@ body#rewards-body .copy-link-btn,
 body#rewards-body .retry-btn,
 body#rewards-body .chart-date-apply-btn,
 body#rewards-body .ds-btn--primary {
-  min-height: 42px;
+  min-height: 40px;
   border-radius: 8px !important;
   border: 1px solid var(--btn-primary-bg, #0000FF) !important;
   background: var(--btn-primary-bg, #0000FF) !important;
@@ -2921,7 +2960,7 @@ body#rewards-body .settings-input,
 body#rewards-body .ds-select,
 body#rewards-body .commissions-input,
 body#rewards-body .commissions-select {
-  min-height: 42px;
+  min-height: 40px;
   border: 1px solid var(--input-border-color, #D5D7DA) !important;
   border-radius: 8px !important;
   background: #FFFFFF !important;

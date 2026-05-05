@@ -482,7 +482,7 @@
 
 .key-financials-section {
     position: relative;
-    margin-top: var(--section-gap);
+    margin-top: 0;
 }
 
 
@@ -490,7 +490,7 @@
 .key-financials-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: var(--section-gap);
     width: 100%;
 }
 
@@ -710,7 +710,7 @@
 
 .assets-section {
     position: relative;
-    margin-top: var(--section-gap);
+    margin-top: 0;
     width: 100%;
 }
 

@@ -231,13 +231,13 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
         <!-- Transactions Section (full width) -->
         <div class="wallet-transactions-full">
-          <div id="wallet-transactions-title-wrapper" class="wallet-transactions-header">
-            <h2 id="wallet-transactions-title" class="wallet-transactions-title">
-              Transactions
-            </h2>
-          </div>
           <div id="wallet-transactions-section" class="wallet-transactions-section">
             <div id="transactions-table" class="ds-table-container table__wrapper--wallet">
+              <div id="wallet-transactions-title-wrapper" class="wallet-transactions-header">
+                <h2 id="wallet-transactions-title" class="wallet-transactions-title">
+                  Transactions
+                </h2>
+              </div>
               <div id="wallet-transactions-container" class="ds-table-flex">
                 <div id="wallet-transactions-header" class="ds-table-flex__head">
                   <div class="ds-table-th table__header-cell--type">
@@ -371,8 +371,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         <div class="wallet-payment-methods-row">
           <div id="wallet-cards-section" class="wallet-cards-section">
             <div id="wallet-payment-cards-section" class="wallet-payment-section">
-              <h3 id="wallet-payment-cards-title" class="wallet-payment-title">Cards</h3>
               <div id="wallet-payment-cards-card" class="ds-card wallet-payment-card">
+                <div class="wallet-payment-card-header">
+                  <h3 id="wallet-payment-cards-title" class="wallet-payment-title">Cards</h3>
+                </div>
                 <div id="wallet-payment-cards-items" class="wallet-payment-items">
                   {{ cards_html | safe }}
                 </div>
@@ -392,8 +394,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
           <div id="wallet-banks-section" class="wallet-banks-section">
             <div id="wallet-payment-banks-section" class="wallet-payment-section">
-              <h3 id="wallet-payment-banks-title" class="wallet-payment-title">Banks</h3>
               <div id="wallet-payment-banks-card" class="ds-card wallet-payment-card">
+                <div class="wallet-payment-card-header">
+                  <h3 id="wallet-payment-banks-title" class="wallet-payment-title">Banks</h3>
+                </div>
                 <div id="wallet-payment-banks-items" class="wallet-payment-items">
                   {{ banks_html | safe }}
                 </div>

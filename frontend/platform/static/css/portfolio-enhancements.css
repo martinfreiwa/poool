@@ -22,7 +22,7 @@
 .portfolio-container {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--section-gap, 24px);
     padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
     width: 100%;
     max-width: var(--page-max-width, 1200px) !important;
@@ -86,6 +86,7 @@
 .portfolio-value-card {
     width: 100% !important;
     max-width: 100%;
+    margin-bottom: 0 !important;
     background: #ffffff;
     border: 1px solid rgba(233, 234, 235, 0.8);
     box-shadow:
@@ -290,7 +291,7 @@
 
 /* ─── Key Financials – Refined Cards ─────────────────────────── */
 .key-financials-section {
-    margin-top: 36px !important;
+    margin-top: 0 !important;
 }
 
 .key-financials-section h2,
@@ -307,7 +308,7 @@
     width: 100% !important;
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 16px !important;
+    gap: var(--section-gap, 24px) !important;
 }
 
 .key-financials-card {
@@ -595,7 +596,7 @@
 
 /* ─── Assets Table – Premium ─────────────────────────────────── */
 .assets-section {
-    margin-top: 40px !important;
+    margin-top: 0 !important;
 }
 
 .portfolio-assets-table {
@@ -1264,6 +1265,131 @@
     color: var(--portfolio-neutral-strong) !important;
     border: 0 !important;
     box-shadow: inset 0 -2px 0 var(--primary-color, #0000FF) !important;
+}
+
+#portfolio-body .portfolio-value-actions {
+    width: auto !important;
+    height: auto !important;
+    min-height: 40px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+#portfolio-body .portfolio-chart-controls {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    position: relative;
+    flex-shrink: 1;
+}
+
+#portfolio-body .portfolio-expandable[data-expanded="true"] .portfolio-chart-controls {
+    display: flex;
+}
+
+#portfolio-body .portfolio-chart-tabs {
+    min-width: 0 !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    gap: 4px !important;
+}
+
+#portfolio-body .portfolio-chart-tabs .chart-tab,
+#portfolio-body .chart-tab {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 6px 10px !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    color: var(--portfolio-neutral) !important;
+    box-shadow: none !important;
+}
+
+#portfolio-body .chart-tab:hover:not(.active) {
+    background: #F5F7FA !important;
+}
+
+#portfolio-body .chart-tab.active {
+    background: #F5F7FA !important;
+    color: var(--portfolio-neutral-strong) !important;
+    box-shadow: none !important;
+}
+
+#portfolio-body .portfolio-chart-filter {
+    min-height: 32px;
+    height: 32px;
+    padding: 6px 10px !important;
+    gap: 6px;
+}
+
+#portfolio-body .portfolio-chart-filter svg {
+    width: 18px;
+    height: 18px;
+}
+
+#portfolio-body .portfolio-chart-header {
+    min-height: 28px;
+}
+
+#portfolio-body .portfolio-chart-title {
+    width: 100% !important;
+}
+
+#portfolio-body .portfolio-chart-container {
+    height: 220px;
+    min-height: 220px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+#portfolio-body .chart-grid {
+    left: 0;
+    right: 0;
+    top: 4px;
+    width: auto !important;
+    height: 196px;
+}
+
+#portfolio-body .chart-bars {
+    left: 52px;
+    right: 12px;
+    top: 10px;
+    bottom: 30px;
+    width: auto !important;
+    padding: 0 !important;
+    gap: clamp(4px, 0.8vw, 10px) !important;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#portfolio-body .chart-bar-week {
+    width: 8px;
+    max-width: 8px;
+    min-width: 4px;
+    flex: 1 1 0;
+}
+
+#portfolio-body .chart-trend-line {
+    left: 52px;
+    right: 12px;
+    top: 18px;
+    width: auto !important;
+    height: 160px;
+}
+
+#portfolio-body .chart-x-axis {
+    left: 52px;
+    right: 12px;
+    width: auto !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    box-sizing: border-box;
 }
 
 #portfolio-body .quick-insights-card .p-bg,

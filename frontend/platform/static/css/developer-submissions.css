@@ -1698,3 +1698,154 @@ body#developer-submissions-body .account-email {
     justify-content: space-between;
   }
 }
+
+
+/* ── Empty State Improvements ──────────────────────────── */
+body#developer-submissions-body .dae-empty {
+  max-width: var(--sub-page-width);
+  width: min(100%, var(--sub-page-width));
+  gap: 32px;
+  padding-bottom: 48px;
+}
+
+/* Hero: premium gradient surface */
+body#developer-submissions-body .dae-empty__hero {
+  background: linear-gradient(135deg, #FAFBFF 0%, #F5FFF8 100%);
+  border-color: #E5E7EB;
+  padding: 36px 40px;
+  gap: 40px;
+  margin-bottom: 24px;
+}
+
+body#developer-submissions-body .dae-empty__eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  margin-bottom: 12px;
+}
+
+body#developer-submissions-body .dae-empty__title {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+body#developer-submissions-body .dae-empty__lede {
+  font-size: 14px;
+  margin-bottom: 28px;
+  color: #535862;
+}
+
+body#developer-submissions-body .dae-empty__metrics,
+body#developer-submissions-body .dae-empty__steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+body#developer-submissions-body .dae-empty__metrics {
+  margin: 0 0 24px;
+}
+
+/* Metric cards: colored top accent + tighter padding */
+body#developer-submissions-body .dae-empty__metric {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 22px 18px;
+  border-radius: 12px !important;
+  gap: 6px;
+}
+
+body#developer-submissions-body .dae-empty__metric::before {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+}
+
+body#developer-submissions-body .dae-empty__metric .ds-stat-card__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #717680;
+  margin-bottom: 6px;
+  display: block;
+}
+
+body#developer-submissions-body .dae-empty__metric .ds-stat-card__value {
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 700;
+  color: #0A0D12;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+body#developer-submissions-body .dae-empty__metric-hint {
+  font-size: 12px;
+  color: #717680;
+  font-weight: 500;
+}
+
+/* Steps: badge numbers, lift on hover */
+body#developer-submissions-body .dae-empty__step {
+  padding: 24px;
+  gap: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+body#developer-submissions-body .dae-empty__step:hover {
+  border-color: rgba(0, 0, 255, 0.14);
+  box-shadow: 0 6px 20px rgba(0, 0, 255, 0.07);
+  transform: translateY(-2px);
+}
+
+body#developer-submissions-body .dae-empty__step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0000FF 0%, #3344FF 100%);
+  color: #03FF88;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+body#developer-submissions-body .dae-empty__step-title {
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+body#developer-submissions-body .dae-empty__step-link {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+body#developer-submissions-body .dae-empty__step-link:hover {
+  text-decoration: none;
+  opacity: 0.75;
+}
+
+@media (max-width: 768px) {
+  body#developer-submissions-body .dae-empty__hero {
+    padding: 24px;
+    gap: 0;
+  }
+  body#developer-submissions-body .dae-empty__metrics,
+  body#developer-submissions-body .dae-empty__steps {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  body#developer-submissions-body .dae-empty__step:hover {
+    transform: none;
+  }
+}

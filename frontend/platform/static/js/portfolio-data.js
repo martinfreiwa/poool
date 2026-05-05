@@ -256,10 +256,14 @@
           ${buildStatusBadgeHtml(statusCss, statusLabel)}
         </div>
         <div class="portfolio-assets-cell actions-col" onclick="event.stopPropagation();">
-          <button class="ds-btn ds-btn--ghost ds-btn--sm"
-            style="border: 1px solid #E9EAEB; border-radius: 8px; font-weight: 600; color: #475467; background:#FFFFFF;"
+          <button class="portfolio-assets-detail-btn"
+            type="button"
+            aria-label="View details for ${title}"
+            title="View details"
             onclick="window.location.href='/property/${slug}'">
-            See Details
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
           </button>
         </div>
       </div>`;}).join("");

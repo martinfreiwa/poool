@@ -107,3 +107,14 @@ def test_developer_submissions_design_alignment_overrides_are_present():
     assert "grid-template-columns: repeat(4, minmax(0, 1fr));" in css
     assert "min-height: 86px;" in css
     assert "background: #F5F5FF;" in css
+
+
+def test_developer_submissions_empty_state_cards_have_room_to_breathe():
+    css = read("frontend/platform/static/css/developer-submissions.css")
+
+    assert "body#developer-submissions-body .dae-empty__metrics,\nbody#developer-submissions-body .dae-empty__steps" in css
+    assert "gap: 24px;" in css
+    assert "body#developer-submissions-body .dae-empty__hero {\n  background: linear-gradient(135deg, #FAFBFF 0%, #F5FFF8 100%);" in css
+    assert "margin-bottom: 24px;" in css
+    assert "body#developer-submissions-body .dae-empty__metrics {\n  margin: 0 0 24px;" in css
+    assert "body#developer-submissions-body .dae-empty__steps {\n    grid-template-columns: 1fr;\n    gap: 16px;" in css
