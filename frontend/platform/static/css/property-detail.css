@@ -3289,11 +3289,11 @@ body.youtube-modal-active {
 }
 
 .calc-slider-section.slider-2 {
-  top: 545px;
+  top: 570px;
 }
 
 .calc-slider-section.slider-3 {
-  top: 630px;
+  top: 655px;
 }
 
 /* Slider labels row (label on left, value on right) */
@@ -3400,6 +3400,15 @@ body.youtube-modal-active {
   font-weight: 500;
   font-size: 12px;
   line-height: normal;
+  color: #A4A7AE;
+}
+
+.calc-slider-total-value {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
   color: #A4A7AE;
 }
 
@@ -3792,7 +3801,7 @@ body.youtube-modal-active {
   width: 584px;
   height: 32px;
   left: 16px;
-  top: 725px;
+  top: 745px;
 
   background: #f5f5f5;
   border-radius: 8px;
