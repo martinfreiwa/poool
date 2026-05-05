@@ -669,6 +669,41 @@ pub async fn execute_primary_escrow_release(
     .await
     .map_err(|e| format!("Failed to write release audit log: {e}"))?;
 
+    // Mark every order just transitioned to 'completed' eligible for
+    // primary on-chain settlement. Best-effort — never blocks release.
+    let delay_secs = sqlx::query_scalar::<_, String>(
+        "SELECT value FROM platform_settings WHERE key = 'chain_primary_settle_delay_secs'",
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v| v.parse::<i64>().ok())
+    .unwrap_or(86_400);
+    let just_completed: Vec<Uuid> = sqlx::query_scalar(
+        r#"SELECT DISTINCT o.id FROM orders o
+           JOIN order_items oi ON oi.order_id = o.id
+           WHERE oi.asset_id = $1
+             AND o.status = 'completed'
+             AND o.settle_eligible_at IS NULL"#,
+    )
+    .bind(asset_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to enumerate completed orders: {e}"))?;
+    for oid in &just_completed {
+        if let Err(e) =
+            crate::blockchain::primary_settlement::mark_order_eligible(&mut tx, *oid, delay_secs)
+                .await
+        {
+            tracing::error!(
+                "Escrow release: failed to mark order {} eligible for primary settlement: {}",
+                oid,
+                e
+            );
+        }
+    }
+
     tx.commit()
         .await
         .map_err(|e| format!("Commit error: {e}"))?;

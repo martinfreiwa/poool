@@ -19,6 +19,7 @@ use uuid::Uuid;
 
 /// Configuration for the blockchain settlement service.
 #[derive(Debug, Clone)]
+#[allow(missing_docs)]
 pub struct ChainConfig {
     /// RPC endpoint (e.g., "https://rpc-amoy.polygon.technology")
     pub rpc_url: String,
@@ -82,17 +83,17 @@ struct JsonRpcError {
 /// Transaction receipt from a confirmed transaction.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct TxReceipt {
+pub(crate) struct TxReceipt {
     /// Transaction hash
-    transaction_hash: String,
+    pub(crate) transaction_hash: String,
     /// Block number (hex)
-    block_number: String,
+    pub(crate) block_number: String,
     /// Status: "0x1" = success, "0x0" = reverted
-    status: String,
+    pub(crate) status: String,
     /// Gas used (hex)
-    gas_used: String,
+    pub(crate) gas_used: String,
     /// Effective gas price (hex)
-    effective_gas_price: Option<String>,
+    pub(crate) effective_gas_price: Option<String>,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -281,7 +282,7 @@ async fn process_pending_settlements(
         );
 
         let trade_ids: Vec<Uuid> = group.iter().map(|t| t.trade_id).collect();
-        let batch_id = create_batch_record(pool, group.len() as i32).await?;
+        let batch_id = create_batch_record(pool, group.len() as i32, "p2p").await?;
 
         // Phase 1 — Reserve.
         match reserve_trades(pool, &trade_ids, batch_id).await {
@@ -483,11 +484,21 @@ async fn fetch_pending_trades(pool: &PgPool, limit: usize) -> Result<Vec<Pending
 }
 
 /// Create a settlement batch record in the database.
-async fn create_batch_record(pool: &PgPool, batch_size: i32) -> Result<Uuid, String> {
+///
+/// `batch_type` is `"p2p"` for marketplace P2P settlement (default of the
+/// `chain_settlement_batches.batch_type` column) or `"primary"` for
+/// primary-issuance treasury → buyer transfers. Distinct types let the
+/// admin UI and reconciler treat the two flows separately.
+pub(crate) async fn create_batch_record(
+    pool: &PgPool,
+    batch_size: i32,
+    batch_type: &str,
+) -> Result<Uuid, String> {
     sqlx::query_scalar::<_, Uuid>(
-        "INSERT INTO chain_settlement_batches (batch_size) VALUES ($1) RETURNING id",
+        "INSERT INTO chain_settlement_batches (batch_size, batch_type) VALUES ($1, $2) RETURNING id",
     )
     .bind(batch_size)
+    .bind(batch_type)
     .fetch_one(pool)
     .await
     .map_err(|e| format!("Failed to create batch record: {}", e))
@@ -495,7 +506,7 @@ async fn create_batch_record(pool: &PgPool, batch_size: i32) -> Result<Uuid, Str
 
 /// Update batch status with receipt details.
 #[allow(clippy::too_many_arguments)]
-async fn update_batch_status(
+pub(crate) async fn update_batch_status(
     pool: &PgPool,
     batch_id: Uuid,
     status: &str,
@@ -609,7 +620,7 @@ async fn reset_trades_to_pending(pool: &PgPool, trade_ids: &[Uuid]) -> Result<()
 /// Reserve the next nonce for the signer. Uses SELECT … FOR UPDATE on a
 /// single row so concurrent broadcasters serialize. On first call for a
 /// signer, seeds from `eth_getTransactionCount("pending")`.
-async fn reserve_nonce(
+pub(crate) async fn reserve_nonce(
     pool: &PgPool,
     client: &Client,
     rpc_url: &str,
@@ -673,7 +684,7 @@ async fn reserve_nonce(
 /// Roll a reserved-but-unused nonce back. Only safe to call if no TX with
 /// this nonce was actually broadcast — otherwise we'd reuse it and the
 /// later TX would replace the earlier one in the mempool.
-async fn release_nonce(pool: &PgPool, signer: &str, nonce: u64) -> Result<(), String> {
+pub(crate) async fn release_nonce(pool: &PgPool, signer: &str, nonce: u64) -> Result<(), String> {
     let signer_lower = signer.to_lowercase();
     // Only roll back if the slot still points one past us. If something
     // else already grabbed a higher nonce, leaving the gap is correct
@@ -776,46 +787,52 @@ async fn send_settle_batch_and_get_hash(
 /// - 32 bytes × 3: offsets to each dynamic array
 /// - For each array: 32 bytes length + 32 bytes per element
 fn encode_settle_batch_calldata(trades: &[PendingTrade]) -> Result<String, String> {
-    // Function selector: settleBatch(address[],address[],uint256[])
-    // keccak256 of the signature → first 4 bytes
-    // Verified: cast sig "settleBatch(address[],address[],uint256[])" → 0xfc4b731c
+    let triples: Vec<(&str, &str, i32)> = trades
+        .iter()
+        .map(|t| (t.seller_wallet.as_str(), t.buyer_wallet.as_str(), t.quantity))
+        .collect();
+    encode_settle_batch_calldata_raw(&triples)
+}
+
+/// Encode `settleBatch(address[],address[],uint256[])` calldata from raw
+/// (from, to, amount) triples. Reused by primary-issuance settlement,
+/// where `from` is always the treasury address.
+///
+/// Function selector: keccak256("settleBatch(address[],address[],uint256[])")[..4]
+/// = 0xfc4b731c
+pub(crate) fn encode_settle_batch_calldata_raw(
+    triples: &[(&str, &str, i32)],
+) -> Result<String, String> {
     let selector = "fc4b731c";
+    let n = triples.len();
 
-    let n = trades.len();
-
-    // Build the 3 arrays
-    let froms: Vec<String> = trades
+    let froms: Vec<String> = triples
         .iter()
-        .map(|t| pad_address(&t.seller_wallet))
+        .map(|(f, _, _)| pad_address(f))
         .collect::<Result<Vec<_>, _>>()?;
-    let tos: Vec<String> = trades
+    let tos: Vec<String> = triples
         .iter()
-        .map(|t| pad_address(&t.buyer_wallet))
+        .map(|(_, t, _)| pad_address(t))
         .collect::<Result<Vec<_>, _>>()?;
-    let amounts: Vec<String> = trades
+    let amounts: Vec<String> = triples
         .iter()
-        .map(|t| pad_uint256(&t.quantity.to_string()))
+        .map(|(_, _, q)| pad_uint256(&q.to_string()))
         .collect::<Result<Vec<_>, _>>()?;
 
-    // Calculate offsets (each offset points to the start of the array data)
-    // 3 offset slots × 32 bytes = 96 bytes (0x60)
-    let offset_base = 3 * 32; // 96
-    let array_size = 32 + n * 32; // length word + elements
+    let offset_base = 3 * 32;
+    let array_size = 32 + n * 32;
 
     let offset_froms = offset_base;
     let offset_tos = offset_froms + array_size;
     let offset_amounts = offset_tos + array_size;
 
     let mut data = String::from(selector);
-
-    // Encode 3 offsets
     data.push_str(&pad_uint256(&offset_froms.to_string())?);
     data.push_str(&pad_uint256(&offset_tos.to_string())?);
     data.push_str(&pad_uint256(&offset_amounts.to_string())?);
 
-    // Encode each array: [length, element0, element1, ...]
     for array in &[&froms, &tos, &amounts] {
-        data.push_str(&pad_uint256(&n.to_string())?); // length
+        data.push_str(&pad_uint256(&n.to_string())?);
         for element in array.iter() {
             data.push_str(element);
         }
@@ -825,7 +842,7 @@ fn encode_settle_batch_calldata(trades: &[PendingTrade]) -> Result<String, Strin
 }
 
 /// Pad an Ethereum address to 32 bytes (left-pad with zeros).
-fn pad_address(addr: &str) -> Result<String, String> {
+pub(crate) fn pad_address(addr: &str) -> Result<String, String> {
     let clean = addr.strip_prefix("0x").unwrap_or(addr).to_lowercase();
     if clean.len() != 40 {
         return Err(format!("Invalid address length: {}", addr));
@@ -838,7 +855,7 @@ fn pad_address(addr: &str) -> Result<String, String> {
 }
 
 /// Pad a decimal number to a 32-byte uint256 (hex).
-fn pad_uint256(decimal: &str) -> Result<String, String> {
+pub(crate) fn pad_uint256(decimal: &str) -> Result<String, String> {
     let n: u128 = decimal
         .parse()
         .map_err(|_| format!("Invalid uint256: {}", decimal))?;
@@ -864,7 +881,7 @@ async fn get_nonce(client: &Client, rpc_url: &str, address: &str) -> Result<u64,
 }
 
 /// Get the current gas price.
-async fn get_gas_price(client: &Client, rpc_url: &str) -> Result<u64, String> {
+pub(crate) async fn get_gas_price(client: &Client, rpc_url: &str) -> Result<u64, String> {
     let resp = rpc_call(client, rpc_url, "eth_gasPrice", serde_json::json!([])).await?;
     let hex = resp.as_str().ok_or("Invalid gas price response")?;
     u64::from_str_radix(hex.trim_start_matches("0x"), 16)
@@ -872,7 +889,7 @@ async fn get_gas_price(client: &Client, rpc_url: &str) -> Result<u64, String> {
 }
 
 /// Estimate gas for a transaction.
-async fn estimate_gas(
+pub(crate) async fn estimate_gas(
     client: &Client,
     rpc_url: &str,
     from: &str,
@@ -891,7 +908,7 @@ async fn estimate_gas(
 }
 
 /// Send a raw signed transaction.
-async fn send_raw_transaction(
+pub(crate) async fn send_raw_transaction(
     client: &Client,
     rpc_url: &str,
     signed_tx: &str,
@@ -909,7 +926,7 @@ async fn send_raw_transaction(
 }
 
 /// Wait for a transaction receipt by polling.
-async fn wait_for_receipt(
+pub(crate) async fn wait_for_receipt(
     client: &Client,
     rpc_url: &str,
     tx_hash: &str,
@@ -949,7 +966,7 @@ async fn wait_for_receipt(
 }
 
 /// Generic JSON-RPC call helper.
-async fn rpc_call(
+pub(crate) async fn rpc_call(
     client: &Client,
     rpc_url: &str,
     method: &str,
@@ -995,7 +1012,7 @@ async fn rpc_call(
 /// - ~10x faster than spawning a subprocess.
 /// - Address derivation actually matches the key (the old `cast` path
 ///   relied on an env var being correct; this one can't lie).
-async fn sign_and_send_in_process(
+pub(crate) async fn sign_and_send_in_process(
     config: &ChainConfig,
     client: &Client,
     target_contract: &str,

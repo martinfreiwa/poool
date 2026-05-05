@@ -5,9 +5,11 @@
 (function () {
   'use strict';
 
-  const TREASURY_API = '/api/admin/blockchain/treasury';
-  const PAUSE_API   = '/api/admin/blockchain/pause';
-  const UNPAUSE_API = '/api/admin/blockchain/unpause';
+  const TREASURY_API        = '/api/admin/blockchain/treasury';
+  const PAUSE_API           = '/api/admin/blockchain/pause';
+  const UNPAUSE_API         = '/api/admin/blockchain/unpause';
+  const PRIMARY_QUEUE_API   = '/api/admin/blockchain/primary-settle/queue';
+  const PRIMARY_RUN_API     = '/api/admin/blockchain/primary-settle/run';
 
   // ── DOM references ──────────────────────────────────────────
   const el = (id) => document.getElementById(id);
@@ -25,6 +27,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     loadTreasury();
+    loadPrimaryQueue();
   });
 
   async function loadTreasury() {
@@ -247,6 +250,109 @@
       </div>
     `;
   }
+
+  // ── Primary-issuance settlement panel ─────────────────────
+  async function loadPrimaryQueue() {
+    try {
+      const res = await fetch(PRIMARY_QUEUE_API, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderPrimaryQueue(data);
+    } catch (err) {
+      console.error('Failed to load primary settlement queue:', err);
+      const tbody = el('primary-upcoming-tbody');
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:var(--admin-danger);">Failed to load: ${esc(err.message)}</td></tr>`;
+      }
+    }
+  }
+
+  function renderPrimaryQueue(data) {
+    const counts = data.counts || {};
+    setKpi('primary-count-pending',   counts.pending   || 0);
+    setKpi('primary-count-submitted', counts.submitted || 0);
+    setKpi('primary-count-confirmed', counts.confirmed || 0);
+    setKpi('primary-count-failed',    counts.failed    || 0);
+
+    const tbody = el('primary-upcoming-tbody');
+    if (!tbody) return;
+    const upcoming = data.upcoming || [];
+    if (upcoming.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align:center; padding:20px; color:var(--admin-text-muted);">
+            No primary order items pending on-chain settlement.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+    tbody.innerHTML = upcoming.map(item => {
+      const eligible = item.settle_eligible_at ? new Date(item.settle_eligible_at).toLocaleString() : '—';
+      const statusBadge = item.ready_now
+        ? '<span class="admin-badge admin-badge--success">Ready</span>'
+        : '<span class="admin-badge admin-badge--warning">Waiting</span>';
+      const attempts = item.attempt_count || 0;
+      const attemptStyle = attempts > 0 ? 'color: var(--admin-danger); font-weight: 700;' : '';
+      return `
+        <tr>
+          <td style="font-family:'SF Mono',monospace; font-size:12px;">${esc(item.order_number)}</td>
+          <td style="font-size:13px;">${esc(item.asset_title || '—')}</td>
+          <td style="font-weight:600;">${fmt(item.tokens)}</td>
+          <td style="font-size:12px; color:var(--admin-text-muted);">${esc(eligible)}</td>
+          <td style="${attemptStyle}">${attempts}</td>
+          <td>${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  window._runPrimarySettlement = async function () {
+    const btn = el('btn-primary-settle-run');
+    const ignoreDelay = el('primary-settle-ignore-delay');
+    const useIgnore = ignoreDelay && ignoreDelay.checked;
+    if (useIgnore) {
+      if (!confirm('⚠️ Ignore T+1 delay?\n\nThis bypasses the bank-wire reversal safety window. Use only for testing or after manual reconciliation.\n\nContinue?')) {
+        return;
+      }
+    } else if (!confirm('Run primary-issuance settlement now?\n\nThis will broadcast a settleBatch() tx for any eligible items.')) {
+      return;
+    }
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Running…';
+    }
+    try {
+      const url = useIgnore ? `${PRIMARY_RUN_API}?ignore_delay=true` : PRIMARY_RUN_API;
+      const res = await fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || data.message || `HTTP ${res.status}`);
+      }
+      alert('✅ ' + (data.message || `Settled ${data.settled || 0} item(s)`));
+      loadPrimaryQueue();
+      loadTreasury();
+    } catch (err) {
+      alert('❌ Run failed: ' + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 3l8 5-8 5V3z" />
+          </svg>
+          Run now
+        `;
+      }
+    }
+  };
 
   // ── Emergency actions ──────────────────────────────────────
   window._blockchainPause = async function () {

@@ -322,6 +322,95 @@
           </div>
         </div>
 
+        <!-- Primary Issuance Settlement -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div>
+              <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-primary); margin: 0;">
+                Primary Issuance Settlement
+              </h3>
+              <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0;">
+                Treasury → buyer transfers for completed primary purchases. Auto-runs every 5 minutes; bypass with the button below.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--admin-text-muted);">
+                <input type="checkbox" id="primary-settle-ignore-delay" />
+                Ignore T+1 delay
+              </label>
+              <button id="btn-primary-settle-run" class="admin-btn admin-btn--primary" onclick="window._runPrimarySettlement()">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 3l8 5-8 5V3z" />
+                </svg>
+                Run now
+              </button>
+            </div>
+          </div>
+          <div class="admin-card-body" style="padding: 16px 20px;">
+            <div class="bt-stat-grid" id="primary-settle-counts" style="margin-bottom: 16px;">
+              <div class="bt-stat">
+                <span class="bt-icon bt-icon--amber" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Pending</div>
+                  <div id="primary-count-pending" style="font-size: 20px; font-weight: 800; color: var(--admin-accent);">—</div>
+                </div>
+              </div>
+              <div class="bt-stat">
+                <span class="bt-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12l4 4 8-8" /><path d="M12 19h7" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Submitted</div>
+                  <div id="primary-count-submitted" style="font-size: 20px; font-weight: 800;">—</div>
+                </div>
+              </div>
+              <div class="bt-stat">
+                <span class="bt-icon bt-icon--green" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12l4 4 4-4 4 4 4-4" /><path d="M8 8l4 4 4-4" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Confirmed</div>
+                  <div id="primary-count-confirmed" style="font-size: 20px; font-weight: 800; color: var(--admin-success);">—</div>
+                </div>
+              </div>
+              <div class="bt-stat">
+                <span class="bt-icon bt-icon--slate" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" />
+                  </svg>
+                </span>
+                <div>
+                  <div class="bt-stat-label">Failed</div>
+                  <div id="primary-count-failed" style="font-size: 20px; font-weight: 800; color: var(--admin-danger);">—</div>
+                </div>
+              </div>
+            </div>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Asset</th>
+                  <th>Tokens</th>
+                  <th>Eligible at</th>
+                  <th>Attempts</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="primary-upcoming-tbody">
+                <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--admin-text-muted);">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Danger Zone -->
         <div class="danger-zone">
           <h3 style="font-size: 16px; font-weight: 700; color: var(--admin-danger); margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">

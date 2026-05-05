@@ -1148,6 +1148,15 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/blockchain/pin-metadata/:asset_id",
             post(blockchain::api_admin_blockchain_pin_metadata),
+        )
+        // ── Primary-issuance settlement (manual trigger + queue) ─────
+        .route(
+            "/api/admin/blockchain/primary-settle/run",
+            post(blockchain::api_admin_blockchain_primary_settle_run),
+        )
+        .route(
+            "/api/admin/blockchain/primary-settle/queue",
+            get(blockchain::api_admin_blockchain_primary_settle_queue),
         );
 
     // Debug-only endpoints: DB seeder is gated so it cannot ship to prod.

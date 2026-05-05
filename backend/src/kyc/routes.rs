@@ -507,6 +507,27 @@ pub async fn wallet_bind(
     .execute(&state.db)
     .await;
 
+    // User now has a wallet — promote any of their already-completed
+    // primary order items from "no destination address" to settlement-
+    // eligible. Best-effort; logged on failure.
+    match crate::blockchain::primary_settlement::mark_user_eligible_after_wallet_bind(
+        &state.db, user_id,
+    )
+    .await
+    {
+        Ok(0) => {}
+        Ok(n) => tracing::info!(
+            "wallet_bind: marked {} order items eligible for primary settlement (user={})",
+            n,
+            user_id
+        ),
+        Err(e) => tracing::error!(
+            "wallet_bind: failed to lift order items for user {}: {}",
+            user_id,
+            e
+        ),
+    }
+
     (
         StatusCode::OK,
         Json(serde_json::json!({"ok": true, "address": address})),

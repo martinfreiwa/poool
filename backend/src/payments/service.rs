@@ -1208,6 +1208,31 @@ pub async fn approve_order(
     .await
     .map_err(|e| format!("Audit log failed: {}", e))?;
 
+    // 4.4 Mark eligible for primary on-chain settlement (T+1 batch).
+    // Best-effort — logging-only on failure so a chain-config issue
+    // never blocks order approval. The worker also has filters that
+    // skip ineligible items, so a missed seed is recoverable later
+    // via the admin "Run primary settlement now" button.
+    let delay_secs = sqlx::query_scalar::<_, String>(
+        "SELECT value FROM platform_settings WHERE key = 'chain_primary_settle_delay_secs'",
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v| v.parse::<i64>().ok())
+    .unwrap_or(86_400);
+    if let Err(e) =
+        crate::blockchain::primary_settlement::mark_order_eligible(&mut tx, order_id, delay_secs)
+            .await
+    {
+        tracing::error!(
+            "Failed to mark order {} eligible for primary settlement: {}",
+            order_id,
+            e
+        );
+    }
+
     // 4.5 Check Referral Qualification
     if let Err(e) = crate::rewards::service::check_and_qualify_referral(&mut tx, user_id).await {
         tracing::error!(

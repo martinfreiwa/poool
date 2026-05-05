@@ -2,7 +2,7 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use axum::{extract::State, Json};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 const BLOCKCHAIN_CONTROL_PERMISSION: &str = "blockchain.manage";
@@ -2086,5 +2086,156 @@ pub async fn api_admin_blockchain_pin_metadata(
         "gateway_url": gateway_url,
         "pin_size": pin_result.pin_size,
         "timestamp": pin_result.timestamp,
+    })))
+}
+
+// ── POST /api/admin/blockchain/primary-settle/run ─────────────
+//
+// Manually trigger one cycle of the primary-issuance settlement worker
+// without waiting for the next scheduled run. Useful for:
+//   1. Confirming a freshly-bound buyer wallet immediately after KYC.
+//   2. Clearing the backlog after fixing a config issue.
+//   3. Demos where T+1 delay would defeat the visualization.
+//
+// The worker still skips items whose `settle_eligible_at` has not yet
+// passed — this endpoint short-circuits the polling sleep, not the
+// reversal-window safety gate. Pass `?ignore_delay=true` to relax even
+// that, for ops use only.
+//
+// Response: { "settled": <usize>, "message": <human readable> }
+//   `settled` is the number of items moved to 'submitted' or 'confirmed'
+//   in this run. Zero is normal when the queue is empty.
+pub async fn api_admin_blockchain_primary_settle_run(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<PrimarySettleRunParams>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let pool = &state.db;
+    admin
+        .require_permission(pool, BLOCKCHAIN_CONTROL_PERMISSION)
+        .await?;
+
+    // Optional: relax the T+1 delay gate. Scoped to orders that ALSO
+    // have an item the worker would otherwise pick up — avoids touching
+    // unrelated orders. Marked in audit log so the override is traceable.
+    if params.ignore_delay.unwrap_or(false) {
+        sqlx::query(
+            r#"UPDATE orders SET settle_eligible_at = NOW()
+               WHERE status = 'completed'
+                 AND settle_eligible_at IS NOT NULL
+                 AND settle_eligible_at > NOW()
+                 AND id IN (
+                     SELECT order_id FROM order_items
+                     WHERE on_chain_status = 'pending' AND on_chain_batch_id IS NULL
+                 )"#,
+        )
+        .execute(pool)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to relax delay gate: {}", e)))?;
+    }
+
+    let settled =
+        crate::blockchain::primary_settlement::run_primary_settlement_once(pool)
+            .await
+            .map_err(ApiError::Internal)?;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)
+           VALUES ($1, 'primary_settlement.manual_run', 'system', NULL, $2)"#,
+    )
+    .bind(admin.user.id)
+    .bind(serde_json::json!({
+        "items_settled": settled,
+        "ignore_delay": params.ignore_delay.unwrap_or(false),
+    }))
+    .execute(pool)
+    .await;
+
+    Ok(Json(serde_json::json!({
+        "settled": settled,
+        "message": format!("Settled {} primary-issuance order item(s) on-chain", settled),
+    })))
+}
+
+#[derive(Deserialize)]
+pub struct PrimarySettleRunParams {
+    #[serde(default)]
+    pub ignore_delay: Option<bool>,
+}
+
+// ── GET /api/admin/blockchain/primary-settle/queue ────────────
+//
+// Read-only inspection of the primary-settlement queue. Returns counts
+// per status + the next 50 pending items with eligibility timing. Fuels
+// the admin "Primary settlement queue" panel.
+pub async fn api_admin_blockchain_primary_settle_queue(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let pool = &state.db;
+    admin.require_permission(pool, BLOCKCHAIN_READ_PERMISSION).await?;
+
+    let counts = sqlx::query_as::<_, (Option<String>, i64)>(
+        r#"SELECT on_chain_status, COUNT(*)
+           FROM order_items
+           GROUP BY on_chain_status"#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?;
+
+    let mut counts_obj = serde_json::Map::new();
+    for (status, n) in counts {
+        counts_obj.insert(
+            status.unwrap_or_else(|| "null".to_string()),
+            serde_json::Value::from(n),
+        );
+    }
+
+    let upcoming = sqlx::query_as::<_, (
+        uuid::Uuid,
+        String,
+        i32,
+        Option<chrono::DateTime<chrono::Utc>>,
+        i32,
+        String,
+    )>(
+        r#"SELECT
+              oi.id,
+              o.order_number,
+              oi.tokens_quantity,
+              o.settle_eligible_at,
+              oi.settle_attempt_count,
+              COALESCE(a.title, '')
+           FROM order_items oi
+           JOIN orders o ON o.id = oi.order_id
+           JOIN assets a ON a.id = oi.asset_id
+           WHERE oi.on_chain_status = 'pending'
+             AND oi.on_chain_batch_id IS NULL
+           ORDER BY o.completed_at ASC NULLS LAST, oi.id ASC
+           LIMIT 50"#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?;
+
+    let upcoming_arr: Vec<serde_json::Value> = upcoming
+        .into_iter()
+        .map(|(id, order_num, qty, eligible_at, attempts, asset_title)| {
+            serde_json::json!({
+                "order_item_id": id,
+                "order_number": order_num,
+                "asset_title": asset_title,
+                "tokens": qty,
+                "settle_eligible_at": eligible_at,
+                "attempt_count": attempts,
+                "ready_now": eligible_at.map(|t| t <= chrono::Utc::now()).unwrap_or(true),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "counts": serde_json::Value::Object(counts_obj),
+        "upcoming": upcoming_arr,
     })))
 }

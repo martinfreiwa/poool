@@ -754,6 +754,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     ));
 
+    let primary_chain_pool = pool.clone();
+    tokio::spawn(common::leader::run_as_leader(
+        pool.clone(),
+        common::leader::LockKey::BlockchainPrimarySettlement,
+        move || {
+            let p = primary_chain_pool.clone();
+            async move {
+                blockchain::primary_settlement::run_primary_settlement_worker(&p).await
+            }
+        },
+    ));
+
     let indexer_pool = pool.clone();
     tokio::spawn(common::leader::run_as_leader(
         pool.clone(),

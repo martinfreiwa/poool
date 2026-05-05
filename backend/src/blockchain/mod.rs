@@ -1,6 +1,10 @@
 pub mod event_indexer;
 pub mod gas_monitor;
 pub mod kyc_whitelist;
+/// Primary-issuance on-chain settlement (treasury → buyer transfers
+/// for completed primary purchases). Mirrors `service` but reads
+/// `order_items` instead of `trade_history`.
+pub mod primary_settlement;
 pub mod reconciler;
 /// Blockchain integration module — on-chain settlement via POOOLProperty1155 contract.
 ///
