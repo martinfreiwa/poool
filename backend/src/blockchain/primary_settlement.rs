@@ -390,16 +390,30 @@ async fn fetch_pending_primary_items(
     pool: &PgPool,
     limit: usize,
 ) -> Result<Vec<PendingPrimaryItem>, String> {
+    // Net-of-P2P settlement quantity:
+    //   tokens_to_send = LEAST(oi.tokens_quantity, investments.tokens_owned)
+    // Reason: between the primary purchase being recorded and chain
+    // settlement firing, the buyer may have sold some tokens via the
+    // P2P marketplace. Their `investments.tokens_owned` already nets
+    // those sells. Sending the full original primary qty (1,882 in the
+    // launch case) would push the recipient over the contract's 80%
+    // ownership cap and revert the entire batch.
+    //
+    // The `tokens_to_send <= 0` rows are filtered out (HAVING) so the
+    // worker doesn't broadcast a no-op transfer.
     let rows = sqlx::query_as::<_, (Uuid, String, String, i32)>(
         r#"SELECT
             oi.id,
             buyer.chain_wallet_address,
             a.chain_contract_address,
-            oi.tokens_quantity
+            LEAST(oi.tokens_quantity, COALESCE(inv.tokens_owned, oi.tokens_quantity))::int4
+                AS tokens_to_send
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         JOIN users buyer ON buyer.id = o.user_id
         JOIN assets a ON a.id = oi.asset_id
+        LEFT JOIN investments inv
+               ON inv.user_id = o.user_id AND inv.asset_id = oi.asset_id
         WHERE oi.on_chain_status = 'pending'
           AND oi.on_chain_batch_id IS NULL
           AND o.status = 'completed'
@@ -408,6 +422,7 @@ async fn fetch_pending_primary_items(
           AND buyer.chain_wallet_address <> ''
           AND a.chain_contract_address IS NOT NULL
           AND a.chain_contract_address <> ''
+          AND LEAST(oi.tokens_quantity, COALESCE(inv.tokens_owned, oi.tokens_quantity)) > 0
         ORDER BY o.completed_at ASC NULLS LAST, oi.id ASC
         LIMIT $1
         FOR UPDATE OF oi SKIP LOCKED"#,
