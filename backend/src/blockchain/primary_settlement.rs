@@ -28,9 +28,9 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::service::{
-    create_batch_record, encode_settle_batch_calldata_raw, estimate_gas, get_gas_price, pad_address,
-    release_nonce, reserve_nonce, rpc_call, sign_and_send_in_process, update_batch_status,
-    wait_for_receipt, ChainConfig,
+    create_batch_record, encode_settle_batch_calldata_raw, estimate_gas, get_gas_price,
+    pad_address, release_nonce, reserve_nonce, rpc_call, sign_and_send_in_process,
+    update_batch_status, wait_for_receipt, ChainConfig,
 };
 
 /// One pending primary-issuance order item ready for chain settlement.
@@ -71,9 +71,7 @@ pub async fn run_primary_settlement_worker(pool: &PgPool) {
             return;
         }
         None => {
-            tracing::info!(
-                "⛓️ Primary settlement: no signer configured. Worker idle."
-            );
+            tracing::info!("⛓️ Primary settlement: no signer configured. Worker idle.");
             return;
         }
     };
@@ -94,11 +92,12 @@ pub async fn run_primary_settlement_worker(pool: &PgPool) {
         let enabled = read_setting_bool(pool, "chain_primary_settlement_enabled", true).await;
         let interval_secs =
             read_setting_u64(pool, "chain_primary_settlement_interval_secs", 300, 5, 3600).await;
-        let batch_size =
-            read_setting_usize(pool, "chain_primary_max_batch_size", 50, 1, 200).await;
+        let batch_size = read_setting_usize(pool, "chain_primary_max_batch_size", 50, 1, 200).await;
 
         if !enabled {
-            tracing::debug!("⛓️ Primary settlement disabled via platform_settings — skipping cycle");
+            tracing::debug!(
+                "⛓️ Primary settlement disabled via platform_settings — skipping cycle"
+            );
         } else if let Err(e) =
             process_pending_primary(pool, &config, &client, &treasury_address, batch_size).await
         {
@@ -217,9 +216,14 @@ async fn process_pending_primary(
 
         // Validate treasury can cover every transfer in the group before
         // we burn a nonce. Cheap insurance vs. a revert mid-batch.
-        if let Err(e) =
-            check_treasury_balance(client, &config.rpc_url, &contract_address, treasury_address, &group)
-                .await
+        if let Err(e) = check_treasury_balance(
+            client,
+            &config.rpc_url,
+            &contract_address,
+            treasury_address,
+            &group,
+        )
+        .await
         {
             tracing::error!(
                 "⛓️ Treasury balance check failed for {}: {} — leaving items pending for next cycle",
@@ -243,8 +247,14 @@ async fn process_pending_primary(
             }
         };
 
-        if let Err(e) =
-            simulate(client, &config.rpc_url, treasury_address, &contract_address, &calldata).await
+        if let Err(e) = simulate(
+            client,
+            &config.rpc_url,
+            treasury_address,
+            &contract_address,
+            &calldata,
+        )
+        .await
         {
             tracing::warn!(
                 "⛓️ Pre-broadcast simulation failed for primary contract {}: {} — releasing reservation",
@@ -523,8 +533,14 @@ async fn broadcast(
     contract_address: &str,
     calldata: &str,
 ) -> Result<String, String> {
-    let gas_estimate =
-        estimate_gas(client, &config.rpc_url, treasury, contract_address, calldata).await?;
+    let gas_estimate = estimate_gas(
+        client,
+        &config.rpc_url,
+        treasury,
+        contract_address,
+        calldata,
+    )
+    .await?;
     let gas_limit = gas_estimate + (gas_estimate / 5); // +20% headroom
     let gas_price = get_gas_price(client, &config.rpc_url).await?;
 
@@ -595,8 +611,8 @@ async fn check_treasury_balance(
         .as_str()
         .ok_or_else(|| "balanceOf: bad RPC reply".to_string())?;
     let trimmed = hex.trim_start_matches("0x");
-    let balance = u128::from_str_radix(trimmed, 16)
-        .map_err(|e| format!("balanceOf parse: {}", e))?;
+    let balance =
+        u128::from_str_radix(trimmed, 16).map_err(|e| format!("balanceOf parse: {}", e))?;
 
     let needed: u128 = group.iter().map(|i| i.quantity as u128).sum();
     if balance < needed {
@@ -730,7 +746,14 @@ pub async fn mark_asset_eligible_after_tokenization(
 /// Read `chain_primary_settle_delay_secs` from `platform_settings`.
 /// Used by `mark_order_eligible` callers that don't already have it.
 pub async fn read_settle_delay_secs(pool: &PgPool) -> i64 {
-    read_setting_u64(pool, "chain_primary_settle_delay_secs", 86_400, 0, 7 * 86_400).await as i64
+    read_setting_u64(
+        pool,
+        "chain_primary_settle_delay_secs",
+        86_400,
+        0,
+        7 * 86_400,
+    )
+    .await as i64
 }
 
 async fn read_setting_bool(pool: &PgPool, key: &str, default: bool) -> bool {

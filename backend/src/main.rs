@@ -760,9 +760,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         common::leader::LockKey::BlockchainPrimarySettlement,
         move || {
             let p = primary_chain_pool.clone();
-            async move {
-                blockchain::primary_settlement::run_primary_settlement_worker(&p).await
-            }
+            async move { blockchain::primary_settlement::run_primary_settlement_worker(&p).await }
         },
     ));
 

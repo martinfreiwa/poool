@@ -2134,10 +2134,9 @@ pub async fn api_admin_blockchain_primary_settle_run(
         .map_err(|e| ApiError::Internal(format!("Failed to relax delay gate: {}", e)))?;
     }
 
-    let settled =
-        crate::blockchain::primary_settlement::run_primary_settlement_once(pool)
-            .await
-            .map_err(ApiError::Internal)?;
+    let settled = crate::blockchain::primary_settlement::run_primary_settlement_once(pool)
+        .await
+        .map_err(ApiError::Internal)?;
 
     let _ = sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)
@@ -2173,7 +2172,9 @@ pub async fn api_admin_blockchain_primary_settle_queue(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
-    admin.require_permission(pool, BLOCKCHAIN_READ_PERMISSION).await?;
+    admin
+        .require_permission(pool, BLOCKCHAIN_READ_PERMISSION)
+        .await?;
 
     let counts = sqlx::query_as::<_, (Option<String>, i64)>(
         r#"SELECT on_chain_status, COUNT(*)
@@ -2192,14 +2193,17 @@ pub async fn api_admin_blockchain_primary_settle_queue(
         );
     }
 
-    let upcoming = sqlx::query_as::<_, (
-        uuid::Uuid,
-        String,
-        i32,
-        Option<chrono::DateTime<chrono::Utc>>,
-        i32,
-        String,
-    )>(
+    let upcoming = sqlx::query_as::<
+        _,
+        (
+            uuid::Uuid,
+            String,
+            i32,
+            Option<chrono::DateTime<chrono::Utc>>,
+            i32,
+            String,
+        ),
+    >(
         r#"SELECT
               oi.id,
               o.order_number,

@@ -789,7 +789,13 @@ async fn send_settle_batch_and_get_hash(
 fn encode_settle_batch_calldata(trades: &[PendingTrade]) -> Result<String, String> {
     let triples: Vec<(&str, &str, i32)> = trades
         .iter()
-        .map(|t| (t.seller_wallet.as_str(), t.buyer_wallet.as_str(), t.quantity))
+        .map(|t| {
+            (
+                t.seller_wallet.as_str(),
+                t.buyer_wallet.as_str(),
+                t.quantity,
+            )
+        })
         .collect();
     encode_settle_batch_calldata_raw(&triples)
 }
