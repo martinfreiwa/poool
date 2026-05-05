@@ -50,6 +50,28 @@ pub async fn api_admin_order_detail(
     let user_name = format!("{} {}", first, last).trim().to_string();
     let user_email: String = order_row.get("user_email");
 
+    // Convert gs:// proof URL to a time-limited signed URL the admin can open in the browser.
+    let proof_raw: Option<String> = order_row.get("proof_of_transfer_url");
+    let proof_signed: Option<String> = match proof_raw.as_deref() {
+        Some(p) if p.starts_with("gs://") => {
+            if let Some(bucket) = state.config.gcs_bucket.as_deref() {
+                let storage = crate::storage::service::GcsService::new(bucket).await;
+                match storage.generate_signed_url(p, 3600).await {
+                    Ok(url) => Some(url),
+                    Err(e) => {
+                        tracing::error!(order_id = %order_uuid, path = %p, error = %e, "Failed to sign proof of transfer URL");
+                        None
+                    }
+                }
+            } else {
+                tracing::error!("GCS_BUCKET_NAME not configured — cannot sign proof of transfer URL");
+                None
+            }
+        }
+        Some(p) => Some(p.to_string()),
+        None => None,
+    };
+
     let order_json = serde_json::json!({
         "id":                  order_row.get::<String, _>("id"),
         "order_number":        order_row.get::<String, _>("order_number"),
@@ -62,7 +84,7 @@ pub async fn api_admin_order_detail(
         "payment_currency":    order_row.get::<Option<String>, _>("payment_currency"),
         "fx_rate":             order_row.get::<Option<String>, _>("fx_rate"),
         "fx_provider":         order_row.get::<Option<String>, _>("fx_provider"),
-        "proof_of_transfer_url": order_row.get::<Option<String>, _>("proof_of_transfer_url"),
+        "proof_of_transfer_url": proof_signed,
         "created_at":          order_row.get::<String, _>("created_at"),
         "completed_at":        order_row.get::<Option<String>, _>("completed_at"),
         "user_email":          &user_email,
