@@ -277,6 +277,8 @@
     setKpi('primary-count-confirmed', counts.confirmed || 0);
     setKpi('primary-count-failed',    counts.failed    || 0);
 
+    renderPrimaryFailures(data.recent_failures || [], data.blockers || {});
+
     const tbody = el('primary-upcoming-tbody');
     if (!tbody) return;
     const upcoming = data.upcoming || [];
@@ -308,6 +310,61 @@
         </tr>
       `;
     }).join('');
+  }
+
+  function renderPrimaryFailures(failures, blockers) {
+    const host = el('primary-failures-host');
+    if (!host) return;
+
+    const blockerLines = [];
+    if (blockers.no_buyer_wallet) {
+      blockerLines.push(`<li>${blockers.no_buyer_wallet} item(s) have no buyer wallet bound (user must complete SIWE wallet binding)</li>`);
+    }
+    if (blockers.no_asset_contract) {
+      blockerLines.push(`<li>${blockers.no_asset_contract} item(s) target an asset that has no on-chain contract yet</li>`);
+    }
+    if (blockers.wallet_not_whitelisted) {
+      blockerLines.push(`<li>${blockers.wallet_not_whitelisted} item(s) have a bound wallet but the on-chain whitelist hasn't synced yet (KYC whitelist worker)</li>`);
+    }
+
+    if (failures.length === 0 && blockerLines.length === 0) {
+      host.innerHTML = '';
+      return;
+    }
+
+    const failureRows = failures.map(f => {
+      const when = f.created_at ? new Date(f.created_at).toLocaleString() : '—';
+      const err = f.error_message || '(no message recorded)';
+      const txCell = f.tx_hash ? truncateAddr(f.tx_hash) : '<em>not broadcast</em>';
+      return `
+        <tr>
+          <td style="font-size:12px; color:var(--admin-text-muted); white-space:nowrap;">${esc(when)}</td>
+          <td style="font-weight:600;">${f.batch_size}</td>
+          <td style="font-size:12px;">${txCell}</td>
+          <td style="font-size:12px; color:var(--admin-danger); font-family:'SF Mono',monospace;">${esc(err)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    host.innerHTML = `
+      ${blockerLines.length ? `
+        <div style="border:1px solid rgba(245,158,11,0.3); background:rgba(245,158,11,0.05); border-radius:var(--admin-radius-md); padding:12px 16px; margin-bottom:16px;">
+          <div style="font-weight:600; font-size:13px; color:#b45309; margin-bottom:6px;">Eligibility blockers (items stuck NULL)</div>
+          <ul style="margin:0; padding-left:18px; font-size:12px; color:var(--admin-text-secondary);">${blockerLines.join('')}</ul>
+        </div>
+      ` : ''}
+      ${failures.length ? `
+        <div style="border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.04); border-radius:var(--admin-radius-md); padding:12px 16px; margin-bottom:16px;">
+          <div style="font-weight:600; font-size:13px; color:var(--admin-danger); margin-bottom:8px;">Recent failed batches (last 5)</div>
+          <table class="admin-table" style="margin:0;">
+            <thead>
+              <tr><th>When</th><th>Size</th><th>Tx</th><th>Error</th></tr>
+            </thead>
+            <tbody>${failureRows}</tbody>
+          </table>
+        </div>
+      ` : ''}
+    `;
   }
 
   window._runPrimarySettlement = async function () {

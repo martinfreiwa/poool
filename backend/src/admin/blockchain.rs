@@ -2238,8 +2238,74 @@ pub async fn api_admin_blockchain_primary_settle_queue(
         })
         .collect();
 
+    // Recent failed primary-settlement batches with full error_message —
+    // surfaces simulation reverts (NotWhitelisted, MaxOwnershipExceeded,
+    // treasury balance, pause) so the operator can act without DB access.
+    let failures = sqlx::query_as::<
+        _,
+        (
+            uuid::Uuid,
+            i32,
+            Option<String>,
+            Option<String>,
+            Option<chrono::DateTime<chrono::Utc>>,
+        ),
+    >(
+        r#"SELECT id, batch_size, tx_hash, error_message, created_at
+           FROM chain_settlement_batches
+           WHERE batch_type = 'primary' AND status = 'failed'
+           ORDER BY created_at DESC
+           LIMIT 5"#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?;
+
+    let failures_arr: Vec<serde_json::Value> = failures
+        .into_iter()
+        .map(|(id, size, tx, err, created)| {
+            serde_json::json!({
+                "batch_id":      id,
+                "batch_size":    size,
+                "tx_hash":       tx,
+                "error_message": err,
+                "created_at":    created,
+            })
+        })
+        .collect();
+
+    // Eligibility-blocker breakdown — count completed-order items that
+    // have on_chain_status NULL grouped by reason. Helps explain why
+    // counts.pending is lower than expected (e.g. wallet not bound,
+    // contract not deployed, KYC not yet whitelisted on-chain).
+    let blockers = sqlx::query_as::<_, (i64, i64, i64, i64)>(
+        r#"SELECT
+              COUNT(*) FILTER (WHERE u.chain_wallet_address IS NULL OR u.chain_wallet_address = ''),
+              COUNT(*) FILTER (WHERE a.chain_contract_address IS NULL OR a.chain_contract_address = ''),
+              COUNT(*) FILTER (WHERE u.chain_whitelisted_at IS NULL
+                                 AND u.chain_wallet_address IS NOT NULL
+                                 AND u.chain_wallet_address <> ''),
+              COUNT(*)
+           FROM order_items oi
+           JOIN orders o ON o.id = oi.order_id
+           JOIN users u  ON u.id = o.user_id
+           JOIN assets a ON a.id = oi.asset_id
+           WHERE o.status = 'completed'
+             AND oi.on_chain_status IS NULL"#,
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?;
+
     Ok(Json(serde_json::json!({
         "counts": serde_json::Value::Object(counts_obj),
         "upcoming": upcoming_arr,
+        "recent_failures": failures_arr,
+        "blockers": {
+            "no_buyer_wallet":         blockers.0,
+            "no_asset_contract":       blockers.1,
+            "wallet_not_whitelisted":  blockers.2,
+            "total_unsettled_null":    blockers.3,
+        },
     })))
 }
