@@ -37,9 +37,9 @@ steps:
       # Required env vars — must be repeated on every deploy because
       # `update --image` preserves existing env vars but `--update-env-vars`
       # is the only way to guarantee they exist on freshly-replicated revisions.
-      - '--update-env-vars=GCS_BUCKET_NAME=poool-assets-primary,CHAIN_CONTRACT_ADDRESS=0xeAd7b2eD1CcD81b8a0004312C21Cd99930d4c1ca'
+      - '--update-env-vars=GCS_BUCKET_NAME=poool-assets-primary,CHAIN_CONTRACT_ADDRESS=0xeAd7b2eD1CcD81b8a0004312C21Cd99930d4c1ca,CHAIN_SETTLEMENT_ENABLED=true,CHAIN_NETWORK=polygon_amoy,CHAIN_RPC_URL=https://rpc-amoy.polygon.technology,CHAIN_ID=80002,CHAIN_SETTLEMENT_ADDRESS=0x021F6B0029125B3924FF5Ba3e0FF59e1FA39B88a,CHAIN_IDENTITY_REGISTRY_ADDRESS=0xE9DBbDC87928eAeD9c3c5A9F737365a3D7230306,CHAIN_IMPLEMENTATION_ADDRESS=0xb61CCe33B546a5C7c36F0B58119e7F4B3D1D04e5,CHAIN_MAX_BATCH_SIZE=50'
       # Private key pulled from Secret Manager — never stored in source
-      - '--update-secrets=CHAIN_SETTLEMENT_PRIVATE_KEY=CHAIN_SETTLEMENT_PRIVATE_KEY:latest'
+      - '--update-secrets=CHAIN_SETTLEMENT_PRIVATE_KEY=chain-settlement-private-key:latest'
       - '--quiet'
     id: Deploy
 

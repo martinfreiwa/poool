@@ -56,14 +56,23 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Resolve optional chain settlement secret
+      - name: Ensure chain settlement secret exists
         run: |
-          if gcloud secrets describe CHAIN_SETTLEMENT_PRIVATE_KEY >/dev/null 2>&1; then
-            echo "CHAIN_SECRET_ARG=--set-secrets=CHAIN_SETTLEMENT_PRIVATE_KEY=CHAIN_SETTLEMENT_PRIVATE_KEY:latest" >> "$GITHUB_ENV"
-          else
-            echo "CHAIN_SETTLEMENT_PRIVATE_KEY secret not found; deploying with on-chain settlement disabled."
-            echo "CHAIN_SECRET_ARG=" >> "$GITHUB_ENV"
+          set -e
+          SECRET=chain-settlement-private-key
+          if ! gcloud secrets describe "$SECRET" >/dev/null 2>&1; then
+            echo "Secret $SECRET missing — creating placeholder. Populate it via Secret Manager before settlement will work."
+            gcloud secrets create "$SECRET" --replication-policy=automatic
+            printf 'PLACEHOLDER_NOT_CONFIGURED' | gcloud secrets versions add "$SECRET" --data-file=-
           fi
+          # Idempotent accessor grant for the Cloud Run runtime SA (default compute SA)
+          PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+          RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+          gcloud secrets add-iam-policy-binding "$SECRET" \
+            --member="serviceAccount:${RUNTIME_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --condition=None >/dev/null
+          echo "CHAIN_SECRET_ARG=--set-secrets=CHAIN_SETTLEMENT_PRIVATE_KEY=${SECRET}:latest" >> "$GITHUB_ENV"
 
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
@@ -100,6 +109,8 @@ jobs:
             --set-env-vars "CHAIN_IDENTITY_REGISTRY_ADDRESS=0xE9DBbDC87928eAeD9c3c5A9F737365a3D7230306" \
             --set-env-vars "CHAIN_IMPLEMENTATION_ADDRESS=0xb61CCe33B546a5C7c36F0B58119e7F4B3D1D04e5" \
             --set-env-vars "CHAIN_SETTLEMENT_ADDRESS=0x021F6B0029125B3924FF5Ba3e0FF59e1FA39B88a" \
+            --set-env-vars "CHAIN_SETTLEMENT_ENABLED=true" \
+            --set-env-vars "CHAIN_NETWORK=polygon_amoy" \
             --set-env-vars "CHAIN_MAX_BATCH_SIZE=50" \
             --set-secrets "DATABASE_URL=poool-database-url:latest" \
             --set-secrets "JWT_SECRET=poool-jwt-secret:latest" \
