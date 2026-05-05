@@ -76,10 +76,11 @@ pub async fn run_primary_settlement_worker(pool: &PgPool) {
         }
     };
 
-    let treasury_address = super::signing::format_address(&config.signer.address());
+    let treasury_address = resolve_treasury_address(&config);
     tracing::info!(
-        "⛓️ Primary issuance settlement worker starting (treasury={}, chain_id={})",
+        "⛓️ Primary issuance settlement worker starting (treasury={}, signer={}, chain_id={})",
         treasury_address,
+        super::signing::format_address(&config.signer.address()),
         config.chain_id
     );
 
@@ -127,7 +128,7 @@ pub async fn run_primary_settlement_once(pool: &PgPool) -> Result<usize, String>
     if !config.enabled {
         return Err("On-chain settlement is disabled (CHAIN_SETTLEMENT_ENABLED=false)".into());
     }
-    let treasury_address = super::signing::format_address(&config.signer.address());
+    let treasury_address = resolve_treasury_address(&config);
     let batch_size = read_setting_usize(pool, "chain_primary_max_batch_size", 50, 1, 200).await;
     let client = Client::new();
 
@@ -590,6 +591,22 @@ async fn broadcast(
     }
 }
 
+/// Resolve the on-chain address that holds the asset supply (= the
+/// `mintTo` parameter at deployAsset time). In our deploy flow that
+/// equals the `CHAIN_SETTLEMENT_ADDRESS` env var; the actual signer
+/// (whose key signs the settleBatch tx) may be a *different* address —
+/// e.g. KMS-backed signer paired with an explicit ops wallet that
+/// holds funds. Treat env as truth, fall back to signer's own address.
+fn resolve_treasury_address(config: &ChainConfig) -> String {
+    if let Ok(addr) = std::env::var("CHAIN_SETTLEMENT_ADDRESS") {
+        let trimmed = addr.trim();
+        if !trimmed.is_empty() {
+            return trimmed.to_lowercase();
+        }
+    }
+    super::signing::format_address(&config.signer.address())
+}
+
 /// Verify treasury holds enough tokens to cover every transfer in the
 /// group. Calls the standard ERC-1155 `balanceOf(account, id)` view.
 /// Catches the most common cause of revert (attempted re-tokenization
@@ -626,8 +643,18 @@ async fn check_treasury_balance(
         .as_str()
         .ok_or_else(|| "balanceOf: bad RPC reply".to_string())?;
     let trimmed = hex.trim_start_matches("0x");
-    let balance =
-        u128::from_str_radix(trimmed, 16).map_err(|e| format!("balanceOf parse: {}", e))?;
+    // Empty (0x) = call hit an EOA / non-contract / wrong selector. Surface
+    // an actionable error rather than the cryptic Rust parse failure.
+    if trimmed.is_empty() {
+        return Err(format!(
+            "balanceOf returned empty (0x) for treasury {} on contract {} — \
+             treasury_address mismatch (CHAIN_SETTLEMENT_ADDRESS env vs. mintTo \
+             at deploy?) or contract does not implement ERC-1155 at that address",
+            treasury, contract_address
+        ));
+    }
+    let balance = u128::from_str_radix(trimmed, 16)
+        .map_err(|e| format!("balanceOf parse failed (response={}): {}", hex, e))?;
 
     let needed: u128 = group.iter().map(|i| i.quantity as u128).sum();
     if balance < needed {
