@@ -20,10 +20,33 @@
                 <!-- Page Header -->
                 {% with investor_topbar_title="My Trading", investor_topbar_title_id="my-trading-page-title", investor_topbar_badge="Marketplace", investor_topbar_variant="empty-right" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
-                <!-- Summary Stat Cards — matches submissions .sub-stats layout, original holographic icons -->
-                <div class="sub-stats myt-stats-row">
-                    <div class="sub-stat" data-stat="open-orders">
-                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
+                <!-- Hero P/L Block — Total Portfolio Value, 24h, All-Time -->
+                <section class="myt-hero" aria-labelledby="myt-hero-title">
+                    <div class="myt-hero__main">
+                        <span class="myt-hero__label" id="myt-hero-title">Portfolio value</span>
+                        <span class="myt-hero__value" id="hero-portfolio-value">—</span>
+                        <span class="myt-hero__updated" id="myt-last-updated" aria-live="polite"></span>
+                    </div>
+                    <div class="myt-hero__metrics" role="list">
+                        <div class="myt-hero__metric" role="listitem">
+                            <span class="myt-hero__metric-label">All-time return</span>
+                            <span class="myt-hero__metric-value" id="hero-all-time">—</span>
+                        </div>
+                        <div class="myt-hero__metric" role="listitem">
+                            <span class="myt-hero__metric-label">Annual yield</span>
+                            <span class="myt-hero__metric-value" id="hero-yield">—</span>
+                        </div>
+                        <div class="myt-hero__metric" role="listitem">
+                            <span class="myt-hero__metric-label">Monthly income</span>
+                            <span class="myt-hero__metric-value" id="hero-monthly">—</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Summary Stat Cards — clickable buttons mirroring tabs -->
+                <div class="sub-stats myt-stats-row" role="list">
+                    <button type="button" class="sub-stat sub-stat--btn" data-stat="open-orders" aria-controls="tab-open-orders" role="listitem">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);" aria-hidden="true">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
@@ -31,12 +54,12 @@
                             </div>
                         </div>
                         <div class="sub-stat__content">
-                            <span class="sub-stat__count" id="summary-open-orders">3</span>
+                            <span class="sub-stat__count" id="summary-open-orders">—</span>
                             <span class="sub-stat__label">Open Orders</span>
                         </div>
-                    </div>
-                    <div class="sub-stat" data-stat="trades">
-                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
+                    </button>
+                    <button type="button" class="sub-stat sub-stat--btn" data-stat="trades" aria-controls="tab-trade-history" role="listitem">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);" aria-hidden="true">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
@@ -44,12 +67,12 @@
                             </div>
                         </div>
                         <div class="sub-stat__content">
-                            <span class="sub-stat__count" id="summary-trades">12</span>
+                            <span class="sub-stat__count" id="summary-trades">—</span>
                             <span class="sub-stat__label">Completed Trades</span>
                         </div>
-                    </div>
-                    <div class="sub-stat" data-stat="my-assets">
-                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
+                    </button>
+                    <button type="button" class="sub-stat sub-stat--btn" data-stat="my-assets" aria-controls="tab-my-assets" role="listitem">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);" aria-hidden="true">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
@@ -57,12 +80,12 @@
                             </div>
                         </div>
                         <div class="sub-stat__content">
-                            <span class="sub-stat__count" id="summary-assets">0</span>
+                            <span class="sub-stat__count" id="summary-assets">—</span>
                             <span class="sub-stat__label">My Assets</span>
                         </div>
-                    </div>
-                    <div class="sub-stat" data-stat="interests">
-                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
+                    </button>
+                    <button type="button" class="sub-stat sub-stat--btn" data-stat="interests" aria-controls="tab-buy-interests" role="listitem">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);" aria-hidden="true">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
@@ -70,138 +93,235 @@
                             </div>
                         </div>
                         <div class="sub-stat__content">
-                            <span class="sub-stat__count" id="summary-interests">1</span>
+                            <span class="sub-stat__count" id="summary-interests">—</span>
                             <span class="sub-stat__label">Active Buy Interests</span>
                         </div>
-                    </div>
+                    </button>
                 </div>
 
                 <!-- Table Card with integrated header tabs (leaderboard pattern) -->
                 <div class="submissions-table-container myt-table-card">
                     <!-- Card Header: Title + Tabs inline -->
                     <div class="myt-card-header">
-                        <span class="myt-card-title">Orders & Trading</span>
-                        <div class="myt-card-tabs">
-                            <button class="myt-card-tab active" data-tab="open-orders">
+                        <span class="myt-card-title">Orders &amp; Trading</span>
+                        <div class="myt-card-tabs" role="tablist" aria-label="Trading sections">
+                            <button class="myt-card-tab active" id="tabbtn-open-orders" data-tab="open-orders" role="tab" aria-selected="true" aria-controls="tab-open-orders" tabindex="0">
                                 Open Orders
-                                <span class="myt__tab-count" id="tab-count-orders">3</span>
+                                <span class="myt__tab-count" id="tab-count-orders">—</span>
                             </button>
-                            <button class="myt-card-tab" data-tab="buy-interests">
+                            <button class="myt-card-tab" id="tabbtn-buy-interests" data-tab="buy-interests" role="tab" aria-selected="false" aria-controls="tab-buy-interests" tabindex="-1">
                                 Buy Interests
-                                <span class="myt__tab-count" id="tab-count-interests">1</span>
+                                <span class="myt__tab-count" id="tab-count-interests">—</span>
                             </button>
-                            <button class="myt-card-tab" data-tab="my-assets">
+                            <button class="myt-card-tab" id="tabbtn-my-assets" data-tab="my-assets" role="tab" aria-selected="false" aria-controls="tab-my-assets" tabindex="-1">
                                 My Assets
-                                <span class="myt__tab-count" id="tab-count-assets">0</span>
+                                <span class="myt__tab-count" id="tab-count-assets">—</span>
                             </button>
-                            <button class="myt-card-tab" data-tab="trade-history">
+                            <button class="myt-card-tab" id="tabbtn-trade-history" data-tab="trade-history" role="tab" aria-selected="false" aria-controls="tab-trade-history" tabindex="-1">
                                 Trade History
-                                <span class="myt__tab-count" id="tab-count-history">0</span>
+                                <span class="myt__tab-count" id="tab-count-history">—</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Tab: Open Orders -->
-                    <div class="myt__tab-content active" id="tab-open-orders">
-                        <table class="submissions-table myt__table">
+                    <section class="myt__tab-content active" id="tab-open-orders" role="tabpanel" aria-labelledby="tabbtn-open-orders" tabindex="0">
+                        <div class="myt__toolbar">
+                            <input type="search" class="myt__search" id="search-orders" placeholder="Search asset…" aria-label="Search open orders by asset">
+                            <select class="ds-select myt__filter" id="filter-orders-side" aria-label="Filter by side">
+                                <option value="">All sides</option>
+                                <option value="buy">Buy</option>
+                                <option value="sell">Sell</option>
+                            </select>
+                            <select class="ds-select myt__filter" id="filter-orders-status" aria-label="Filter by status">
+                                <option value="">All statuses</option>
+                                <option value="open">Open</option>
+                                <option value="partially_filled">Partially filled</option>
+                                <option value="pending_review">Pending review</option>
+                            </select>
+                            <div class="myt__toolbar-spacer"></div>
+                            <button type="button" class="myt__bulk-btn ds-btn ds-btn--secondary ds-btn--sm" id="bulk-cancel-orders" disabled>
+                                Cancel selected (<span id="bulk-orders-count">0</span>)
+                            </button>
+                            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="export-orders-btn" aria-label="Export open orders to CSV">Export CSV</button>
+                        </div>
+                        <table class="submissions-table myt__table" data-table="orders">
                             <thead>
                                 <tr>
-                                    <th>Order ID</th>
-                                    <th>Asset</th>
-                                    <th>Side</th>
-                                    <th>Price</th>
-                                    <th>Qty</th>
-                                    <th>Filled</th>
-                                    <th>Fee</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
+                                    <th class="myt__th-check"><input type="checkbox" id="select-all-orders" aria-label="Select all orders"></th>
+                                    <th data-sort="id">Order ID</th>
+                                    <th data-sort="asset">Asset</th>
+                                    <th data-sort="side">Side</th>
+                                    <th data-sort="priceCents" class="myt__th-num">Price</th>
+                                    <th data-sort="qty" class="myt__th-num">Qty</th>
+                                    <th data-sort="filled" class="myt__th-num">Filled</th>
+                                    <th data-sort="fee" class="myt__th-num">Fee</th>
+                                    <th data-sort="status">Status</th>
+                                    <th data-sort="createdAt" data-sort-default="desc">Created</th>
                                     <th></th>
                                 </tr>
                             </thead>
-                            <tbody id="open-orders-body">
-                                <!-- JS fills this -->
-                            </tbody>
+                            <tbody id="open-orders-body"><!-- JS fills this --></tbody>
                         </table>
-                    </div>
+                    </section>
 
                     <!-- Tab: Buy Interests -->
-                    <div class="myt__tab-content" id="tab-buy-interests">
-                        <table class="submissions-table myt__table">
+                    <section class="myt__tab-content" id="tab-buy-interests" role="tabpanel" aria-labelledby="tabbtn-buy-interests" hidden tabindex="0">
+                        <div class="myt__toolbar">
+                            <input type="search" class="myt__search" id="search-interests" placeholder="Search asset…" aria-label="Search buy interests by asset">
+                            <select class="ds-select myt__filter" id="filter-interests-status" aria-label="Filter by status">
+                                <option value="">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="countered">Countered</option>
+                                <option value="declined">Declined</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                            <div class="myt__toolbar-spacer"></div>
+                            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="export-interests-btn" aria-label="Export buy interests to CSV">Export CSV</button>
+                        </div>
+                        <table class="submissions-table myt__table" data-table="interests">
                             <thead>
                                 <tr>
-                                    <th>Asset</th>
-                                    <th>Your Offer Price</th>
-                                    <th>Qty</th>
-                                    <th>Total (incl. fee)</th>
-                                    <th>Holders Notified</th>
-                                    <th>Expires</th>
-                                    <th>Status</th>
+                                    <th data-sort="asset">Asset</th>
+                                    <th data-sort="price" class="myt__th-num">
+                                        Your Offer Price
+                                        <span class="myt__th-tip" tabindex="0" aria-label="Per-token price you offered">ⓘ</span>
+                                    </th>
+                                    <th data-sort="qty" class="myt__th-num">Qty</th>
+                                    <th data-sort="total" class="myt__th-num">
+                                        Total (incl. fee)
+                                        <span class="myt__th-tip" tabindex="0" aria-label="Price × quantity plus platform fee">ⓘ</span>
+                                    </th>
+                                    <th data-sort="holders" class="myt__th-num">Holders Notified</th>
+                                    <th data-sort="expires" data-sort-default="asc">Expires</th>
+                                    <th data-sort="status">Status</th>
                                     <th></th>
                                 </tr>
                             </thead>
-                            <tbody id="buy-interests-body">
-                                <!-- JS fills this -->
-                            </tbody>
+                            <tbody id="buy-interests-body"><!-- JS fills this --></tbody>
                         </table>
-                    </div>
+                    </section>
 
                     <!-- Tab: My Assets -->
-                    <div class="myt__tab-content" id="tab-my-assets">
-                        <table class="submissions-table myt__table">
+                    <section class="myt__tab-content" id="tab-my-assets" role="tabpanel" aria-labelledby="tabbtn-my-assets" hidden tabindex="0">
+                        <div class="myt__toolbar">
+                            <input type="search" class="myt__search" id="search-assets" placeholder="Search asset…" aria-label="Search my assets">
+                            <select class="ds-select myt__filter" id="filter-assets-status" aria-label="Filter by status">
+                                <option value="">All statuses</option>
+                                <option value="active">Active</option>
+                                <option value="settled">Settled</option>
+                                <option value="exited">Exited</option>
+                            </select>
+                            <div class="myt__toolbar-spacer"></div>
+                            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="export-assets-btn" aria-label="Export my assets to CSV">Export CSV</button>
+                        </div>
+                        <table class="submissions-table myt__table" data-table="assets">
                             <thead>
                                 <tr>
-                                    <th>Asset</th>
-                                    <th>Shares Owned</th>
-                                    <th>Total Invested</th>
-                                    <th>Current Value</th>
-                                    <th>P/L</th>
-                                    <th>Yield</th>
-                                    <th>Status</th>
+                                    <th data-sort="asset_title">Asset</th>
+                                    <th data-sort="tokens_owned" class="myt__th-num">Shares Owned</th>
+                                    <th data-sort="purchase_value_cents" class="myt__th-num">Total Invested</th>
+                                    <th data-sort="current_value_cents" class="myt__th-num" data-sort-default="desc">Current Value</th>
+                                    <th data-sort="pl" class="myt__th-num">
+                                        P/L
+                                        <span class="myt__th-tip" tabindex="0" aria-label="Profit/loss = current value − invested">ⓘ</span>
+                                    </th>
+                                    <th data-sort="yield" class="myt__th-num">
+                                        Yield
+                                        <span class="myt__th-tip" tabindex="0" aria-label="Annualized appreciation">ⓘ</span>
+                                    </th>
+                                    <th data-sort="status">Status</th>
                                     <th></th>
                                 </tr>
                             </thead>
-                            <tbody id="my-assets-body">
-                                <!-- JS fills this -->
-                            </tbody>
+                            <tbody id="my-assets-body"><!-- JS fills this --></tbody>
                         </table>
-                    </div>
+                    </section>
 
                     <!-- Tab: Trade History -->
-                    <div class="myt__tab-content" id="tab-trade-history">
+                    <section class="myt__tab-content" id="tab-trade-history" role="tabpanel" aria-labelledby="tabbtn-trade-history" hidden tabindex="0">
                         <div class="myt__table-header">
                             <div class="myt__table-filter">
+                                <input type="search" class="myt__search" id="search-trades" placeholder="Search asset…" aria-label="Search trade history">
                                 <select id="trade-filter-asset" class="ds-select" aria-label="Filter by asset" style="min-width: 140px;">
                                     <option value="">All Assets</option>
+                                </select>
+                                <select id="trade-filter-side" class="ds-select" aria-label="Filter by side">
+                                    <option value="">All sides</option>
+                                    <option value="buy">Buy</option>
+                                    <option value="sell">Sell</option>
                                 </select>
                                 <select id="trade-filter-period" class="ds-select" aria-label="Filter by time period" style="min-width: 140px;">
                                     <option value="30d">Last 30 Days</option>
                                     <option value="90d">Last 90 Days</option>
-                                    <option value="1y">Last Year</option>
+                                    <option value="1y" selected>Last Year</option>
+                                    <option value="ytd">Year to date</option>
                                     <option value="all">All Time</option>
                                 </select>
                             </div>
-                            <div class="myt__table-summary" id="trade-summary">
-                                Net P/L: <strong class="myt__pnl myt__pnl--positive">+$1,245.30</strong>
+                            <div class="myt__table-actions">
+                                <span class="myt__table-summary" id="trade-summary">Net P/L: <strong class="myt__pnl">—</strong></span>
+                                <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="export-trades-btn" aria-label="Export filtered trades to CSV">Export CSV</button>
+                                <button type="button" class="ds-btn ds-btn--primary ds-btn--sm" id="btn-export-tax">Tax Report…</button>
                             </div>
                         </div>
-                        <table class="submissions-table myt__table">
+                        <table class="submissions-table myt__table" data-table="trades">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Asset</th>
-                                    <th>Side</th>
-                                    <th>Price</th>
-                                    <th>Qty</th>
-                                    <th>Total</th>
-                                    <th>Fee ({{ fee_pct_display | default("5") }}%)</th>
-                                    <th>Net Amount</th>
-                                    <th>P/L</th>
+                                    <th data-sort="date" data-sort-default="desc">Date</th>
+                                    <th data-sort="asset">Asset</th>
+                                    <th data-sort="side">Side</th>
+                                    <th data-sort="price" class="myt__th-num">Price</th>
+                                    <th data-sort="qty" class="myt__th-num">Qty</th>
+                                    <th data-sort="total" class="myt__th-num">Total</th>
+                                    <th data-sort="fee" class="myt__th-num">
+                                        Fee ({{ fee_pct_display | default("5") }}%)
+                                        <span class="myt__th-tip" tabindex="0" aria-label="Platform fee, deducted on sells, added on buys">ⓘ</span>
+                                    </th>
+                                    <th data-sort="net" class="myt__th-num">
+                                        Net Amount
+                                        <span class="myt__th-tip" tabindex="0" aria-label="Total adjusted by fee">ⓘ</span>
+                                    </th>
+                                    <th data-sort="pl" class="myt__th-num">P/L</th>
                                 </tr>
                             </thead>
-                            <tbody id="trade-history-body">
-                                <!-- JS fills this -->
-                            </tbody>
+                            <tbody id="trade-history-body"><!-- JS fills this --></tbody>
                         </table>
+                    </section>
+                </div>
+
+                <!-- Drill-down Drawer -->
+                <aside class="myt-drawer" id="myt-drawer" role="dialog" aria-modal="true" aria-labelledby="myt-drawer-title" aria-hidden="true">
+                    <div class="myt-drawer__backdrop" data-drawer-close></div>
+                    <div class="myt-drawer__panel">
+                        <header class="myt-drawer__header">
+                            <h3 class="myt-drawer__title" id="myt-drawer-title">Detail</h3>
+                            <button type="button" class="myt-drawer__close" data-drawer-close aria-label="Close drawer">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </header>
+                        <div class="myt-drawer__body" id="myt-drawer-body"></div>
+                    </div>
+                </aside>
+
+                <!-- Keyboard shortcuts cheatsheet -->
+                <div class="myt-shortcuts" id="myt-shortcuts" role="dialog" aria-modal="true" aria-labelledby="myt-shortcuts-title" aria-hidden="true">
+                    <div class="myt-shortcuts__backdrop" data-shortcuts-close></div>
+                    <div class="myt-shortcuts__panel">
+                        <header class="myt-shortcuts__header">
+                            <h3 id="myt-shortcuts-title">Keyboard shortcuts</h3>
+                            <button type="button" class="myt-drawer__close" data-shortcuts-close aria-label="Close shortcuts">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </header>
+                        <ul class="myt-shortcuts__list">
+                            <li><kbd>1</kbd>–<kbd>4</kbd><span>Switch tab</span></li>
+                            <li><kbd>/</kbd><span>Focus search</span></li>
+                            <li><kbd>r</kbd><span>Refresh data</span></li>
+                            <li><kbd>e</kbd><span>Export current tab</span></li>
+                            <li><kbd>?</kbd><span>Show shortcuts</span></li>
+                            <li><kbd>Esc</kbd><span>Close drawer / dialog</span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -228,39 +348,26 @@
                 </div>
                 <div class="mkt-field">
                     <label for="tax-year">Tax Year</label>
-                    <select id="tax-year" class="myt__select" style="width:100%;">
-                        <option value="2026">2026</option>
-                        <option value="2025">2025</option>
+                    <select id="tax-year" class="ds-select" style="width:100%;">
+                        <!-- JS populates options based on first/last trade year + current year -->
                     </select>
                 </div>
                 <div class="mkt-field">
                     <label for="tax-format">Format</label>
-                    <select id="tax-format" class="myt__select" style="width:100%;">
+                    <select id="tax-format" class="ds-select" style="width:100%;">
                         <option value="csv">CSV (Excel-compatible)</option>
                         <option value="pdf">PDF Report</option>
                     </select>
                 </div>
-                <div class="myt__tax-preview">
-                    <div class="myt__tax-row">
-                        <span>Total Trades</span>
-                        <strong>12</strong>
-                    </div>
-                    <div class="myt__tax-row">
-                        <span>Total Buy Volume</span>
-                        <strong>$8,450.00</strong>
-                    </div>
-                    <div class="myt__tax-row">
-                        <span>Total Sell Volume</span>
-                        <strong>$9,695.30</strong>
-                    </div>
+                <div class="myt__tax-preview" id="tax-preview" aria-live="polite">
+                    <div class="myt__tax-row"><span>Total Trades</span><strong id="tax-preview-trades">—</strong></div>
+                    <div class="myt__tax-row"><span>Total Buy Volume</span><strong id="tax-preview-buy">—</strong></div>
+                    <div class="myt__tax-row"><span>Total Sell Volume</span><strong id="tax-preview-sell">—</strong></div>
                     <div class="myt__tax-row myt__tax-row--highlight">
                         <span>Realized Profit/Loss</span>
-                        <strong class="myt__pnl myt__pnl--positive">+$1,245.30</strong>
+                        <strong id="tax-preview-pl" class="myt__pnl">—</strong>
                     </div>
-                    <div class="myt__tax-row">
-                        <span>Total Fees Paid</span>
-                        <strong>$342.50</strong>
-                    </div>
+                    <div class="myt__tax-row"><span>Total Fees Paid</span><strong id="tax-preview-fees">—</strong></div>
                 </div>
             </div>
             <div class="ds-modal__footer ds-modal__footer--bordered">
