@@ -966,6 +966,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(support::router(state.clone()))
         // ── User-facing utility API ────────────────────────────────────
         .route("/api/me", get(api_me))
+        .route("/api/me/chain-wallet", get(api_me_chain_wallet))
         .route("/api/user/legal-status", get(api_user_legal_status))
         .route("/api/user/legal-accept", post(api_user_legal_accept))
         // ── Deposit & order status polling ────────────────────────────
@@ -3085,6 +3086,77 @@ async fn api_me(jar: CookieJar, State(state): State<AppState>) -> axum::response
         )
             .into_response(),
     }
+}
+
+/// GET /api/me/chain-wallet — current user's bound on-chain wallet.
+///
+/// Used by the Settings → Web3 Wallet card. Returns the address the
+/// user has SIWE-bound (if any) plus whitelisted_at timestamp so the
+/// UI can show "Connect" vs. "Connected, awaiting whitelist" vs.
+/// "Whitelisted" states.
+async fn api_me_chain_wallet(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let session_token = match jar.get(auth::middleware::SESSION_COOKIE) {
+        Some(cookie) => cookie.value().to_string(),
+        None => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Not authenticated"})),
+            )
+                .into_response();
+        }
+    };
+
+    // Resolve the user_id via the session, then read the wallet columns.
+    let user_id: Option<uuid::Uuid> = sqlx::query_scalar(
+        r#"SELECT u.id FROM user_sessions s
+           JOIN users u ON u.id = s.user_id
+           WHERE s.session_token = $1
+             AND s.expires_at > NOW()"#,
+    )
+    .bind(&session_token)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+    let Some(user_id) = user_id else {
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "Session expired"})),
+        )
+            .into_response();
+    };
+
+    let row = sqlx::query_as::<_, (Option<String>, Option<chrono::DateTime<chrono::Utc>>)>(
+        "SELECT chain_wallet_address, chain_whitelisted_at FROM users WHERE id = $1",
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await;
+
+    let (address, whitelisted_at) = match row {
+        Ok((a, w)) => (a, w),
+        Err(e) => {
+            tracing::error!("/api/me/chain-wallet DB error: {}", e);
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "DB error"})),
+            )
+                .into_response();
+        }
+    };
+
+    let chain_network =
+        std::env::var("CHAIN_NETWORK").unwrap_or_else(|_| "polygon_amoy".to_string());
+
+    Json(serde_json::json!({
+        "address": address,
+        "whitelisted_at": whitelisted_at,
+        "chain_network": chain_network,
+    }))
+    .into_response()
 }
 
 // NOTE: KYC submission is now handled by the `kyc` module's own router.

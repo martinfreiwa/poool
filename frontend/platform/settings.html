@@ -1,4 +1,4 @@
-{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'cards-template', 'ds-cards', 'developer-leaderboard-navbar', 'settings', 'developer-ui'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'poool-confirm', 'settings'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'cards-template', 'ds-cards', 'developer-leaderboard-navbar', 'settings', 'developer-ui'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'poool-confirm', 'settings', 'settings-web3'] %}{% include "components/head.html" %}{% endwith %}
 {% import "components/macros.html" as macros %}
 
 <div id="marketplace-page" class="marketplace-page">
@@ -68,6 +68,7 @@
                         <a href="#sec-address" class="settings-nav__link">Address</a>
                         <a href="#sec-identity" class="settings-nav__link">Identity</a>
                         <a href="#sec-security" class="settings-nav__link">Security</a>
+                        <a href="#sec-web3" class="settings-nav__link">Web3 Wallet</a>
                         <a href="#sec-preferences" class="settings-nav__link">Preferences</a>
                         <a href="#sec-leaderboard" class="settings-nav__link">Leaderboard</a>
                         <a href="#sec-social" class="settings-nav__link">Social</a>
@@ -672,6 +673,67 @@
                     </div>
                 </div>
             </div>
+
+            <span id="sec-web3" class="settings-anchor" aria-hidden="true"></span>
+            <section class="ds-card settings-card" id="settings-web3-card" aria-labelledby="settings-web3-title">
+                {% call macros.holo_card_header('Web3 Wallet', 'Connect a self-custody wallet to receive your property NFTs on the blockchain.', 'blue', 'p-icon--md') %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                        <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
+                    </svg>
+                {% endcall %}
+
+                <div id="web3-loading" class="settings-empty-inline" style="padding: 24px;">Loading wallet status…</div>
+
+                <!-- State: not connected -->
+                <div id="web3-disconnected" hidden>
+                    <div class="settings-form-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                        <p style="margin: 0; color: #475467; font-size: 14px; line-height: 1.6;">
+                            Bind a wallet (MetaMask, Coinbase Wallet, or any EIP-1193 browser wallet) to receive your property tokens on Polygon. We'll ask you to sign a one-time message to prove ownership — no transaction, no gas.
+                        </p>
+                        <div id="web3-error" class="settings-empty-inline" style="color: #B42318; padding: 8px 0;" hidden></div>
+                        <div>
+                            <button id="btn-web3-connect" type="button" class="ds-btn ds-btn--primary">
+                                <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden="true" style="margin-right: 6px; vertical-align: middle;">
+                                    <path d="M28.8 3.2 17.6 11.4l2.1-4.9z" fill="#E2761B"/>
+                                    <path d="M3.2 3.2 14.3 11.5 12.3 6.5z" fill="#E4761B"/>
+                                    <path d="M24.5 21.6l-3 4.6 6.4 1.8 1.8-6.3z" fill="#E4761B"/>
+                                    <path d="M2.4 21.7l1.8 6.3 6.4-1.8-3-4.6z" fill="#E4761B"/>
+                                    <path d="M10.2 14.4 8.5 17l6.3.3-.2-6.8z" fill="#E4761B"/>
+                                    <path d="M21.8 14.4 17.4 10.4l-.1 6.9 6.3-.3z" fill="#E4761B"/>
+                                    <path d="M10.6 26.2 14.4 24.3 11.1 21.8z" fill="#E4761B"/>
+                                    <path d="M17.6 24.3 21.4 26.2 20.9 21.8z" fill="#E4761B"/>
+                                </svg>
+                                Connect Wallet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- State: connected -->
+                <div id="web3-connected" hidden>
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label">Wallet address</label>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <code id="web3-address" style="font-family: 'SF Mono', monospace; font-size: 13px; background: #F9FAFB; padding: 6px 10px; border: 1px solid #E9EAEB; border-radius: 6px; word-break: break-all;"></code>
+                            <button type="button" id="btn-web3-copy" class="ds-btn ds-btn--ghost ds-btn--sm" title="Copy address">Copy</button>
+                            <a id="web3-explorer-link" target="_blank" rel="noopener" class="ds-btn ds-btn--ghost ds-btn--sm">View on explorer ↗</a>
+                        </div>
+                    </div>
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label">On-chain whitelist</label>
+                        <div id="web3-whitelist-status" style="font-size: 14px;"></div>
+                    </div>
+                    <div class="settings-form-row settings-form-row--list" style="border-top: 1px solid #E9EAEB; padding-top: 16px;">
+                        <label class="settings-label">Need a different wallet?</label>
+                        <div>
+                            <button id="btn-web3-rebind" type="button" class="ds-btn ds-btn--ghost ds-btn--sm">Rebind</button>
+                            <span style="font-size: 12px; color: #667085; margin-left: 8px;">Existing tokens will not move automatically.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <span id="sec-preferences" class="settings-anchor" aria-hidden="true"></span>
             <form class="ds-card settings-card" id="form-preferences" autocomplete="on" novalidate>
