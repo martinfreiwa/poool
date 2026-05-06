@@ -78,11 +78,16 @@ async fn reconcile_once(
     // crashes between the status flip and the broadcast call. They are
     // safe to reset to `pending` because no TX was sent — the next worker
     // run will re-batch them cleanly.
+    // `trade_history` has no `updated_at` column — `executed_at` is the
+    // closest proxy and is set at trade creation. If a trade has been
+    // sitting in `submitted` state without a tx_hash for longer than
+    // the orphan threshold past `executed_at`, the worker crashed
+    // between flipping status and broadcasting; safe to reset.
     let orphans = sqlx::query_scalar::<_, Uuid>(
         r#"SELECT id FROM trade_history
            WHERE on_chain_status = 'submitted'
              AND on_chain_tx_hash IS NULL
-             AND updated_at < NOW() - ($1 || ' seconds')::INTERVAL
+             AND executed_at < NOW() - ($1 || ' seconds')::INTERVAL
            LIMIT 200"#,
     )
     .bind(ORPHAN_THRESHOLD_SECS.to_string())
