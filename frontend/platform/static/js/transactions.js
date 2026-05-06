@@ -106,38 +106,9 @@ function processTransactions(transactionsData) {
         if (!btn) return;
         const row = btn.closest('.table__row');
         if (!row) return;
-
-        // Toggle existing detail panel
-        const next = row.nextElementSibling;
-        if (next && next.classList.contains('tx-detail-panel')) {
-            next.remove();
-            btn.setAttribute('aria-expanded', 'false');
-            return;
-        }
-
         const txId = row.getAttribute('data-tx-id') || '';
-        const rawTime = row.getAttribute('data-tx-time') || '';
-        let timeDisplay = rawTime;
-        try {
-            const d = new Date(rawTime);
-            if (!isNaN(d.getTime())) {
-                timeDisplay = d.toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short' });
-            }
-        } catch (_) {}
-
-        const panel = document.createElement('div');
-        panel.className = 'tx-detail-panel';
-        panel.innerHTML =
-            '<div class="tx-detail-row">' +
-                '<span class="tx-detail-label">Transaction ID</span>' +
-                '<span class="tx-detail-value tx-id-mono">' + escHtml(txId) + '</span>' +
-            '</div>' +
-            '<div class="tx-detail-row">' +
-                '<span class="tx-detail-label">Date &amp; time</span>' +
-                '<span class="tx-detail-value">' + escHtml(timeDisplay) + '</span>' +
-            '</div>';
-        row.after(panel);
-        btn.setAttribute('aria-expanded', 'true');
+        if (!txId) return;
+        window.location.href = '/transactions/' + encodeURIComponent(txId);
     };
     listBody.addEventListener('click', listBody._txDetailHandler);
 

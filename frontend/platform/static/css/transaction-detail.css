@@ -1,0 +1,283 @@
+/* ────────────────────────────────────────────────────────────
+   Transaction Detail page
+   Used by: /transactions/:id (transaction-detail.html)
+   ──────────────────────────────────────────────────────────── */
+
+.tx-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+  padding-bottom: 64px;
+}
+
+/* ── Back link ───────────────────────────────────────────── */
+.tx-detail-back {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+.tx-detail-back__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475467;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.tx-detail-back__link:hover {
+  background: #F2F4F7;
+  color: #101828;
+}
+.tx-detail-back__link--muted {
+  color: #98A2B3;
+}
+
+/* ── Hero card ───────────────────────────────────────────── */
+.tx-detail-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+}
+.tx-detail-hero__top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.tx-detail-hero__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #F4F3FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4F46E5;
+  flex-shrink: 0;
+}
+.tx-detail-hero__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.tx-detail-hero__type {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475467;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.tx-detail-hero__amount {
+  font-family: "TT Norms Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.tx-detail-hero__amount.amount-positive { color: #067647; }
+.tx-detail-hero__amount.amount-negative { color: #B42318; }
+.tx-detail-hero__sign {
+  font-size: 32px;
+  font-weight: 600;
+}
+.tx-detail-hero__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #667085;
+}
+.tx-detail-hero__sub > span[aria-hidden] { color: #D0D5DD; }
+.tx-detail-hero__desc {
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  background: #F9FAFB;
+  border-left: 3px solid #D0D5DD;
+  border-radius: 4px;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Detail / wire sections ──────────────────────────────── */
+.tx-detail-section {
+  padding: 24px 28px;
+}
+.tx-detail-section__title {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #101828;
+}
+.tx-detail-rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tx-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #F2F4F7;
+}
+.tx-detail-row:last-child { border-bottom: none; }
+.tx-detail-row__label {
+  margin: 0;
+  font-size: 14px;
+  color: #667085;
+  flex-shrink: 0;
+}
+.tx-detail-row__value {
+  margin: 0;
+  font-size: 14px;
+  color: #101828;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: right;
+  word-break: break-word;
+}
+.tx-detail-row__text {
+  display: inline-block;
+}
+.tx-detail-row__value--mono .tx-detail-row__text {
+  font-family: ui-monospace, "SF Mono", "Monaco", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+/* ── Copy button ─────────────────────────────────────────── */
+.tx-detail-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4F46E5;
+  background: transparent;
+  border: 1px solid #E4E7EC;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.tx-detail-copy-btn:hover {
+  background: #F4F3FF;
+  border-color: #C7D7FE;
+}
+.tx-detail-copy-btn.is-copied {
+  background: #ECFDF3;
+  border-color: #ABEFC6;
+  color: #067647;
+}
+.tx-detail-copy-btn svg { width: 12px; height: 12px; }
+
+/* ── Wire instructions card ──────────────────────────────── */
+.tx-detail-wire {
+  padding: 24px 28px;
+  border: 1px solid #FFE7C7;
+  background: linear-gradient(180deg, #FFFBF3 0%, #FFFFFF 50%);
+}
+.tx-detail-wire__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.tx-detail-wire__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #FCE7BD;
+  flex-shrink: 0;
+}
+.tx-detail-wire__logo img { width: 22px; height: 22px; }
+.tx-detail-wire__kicker {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #B45309;
+}
+.tx-detail-wire__lede {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #344054;
+  line-height: 1.5;
+}
+.tx-detail-rows--wire .tx-detail-row {
+  border-bottom-color: #F4E5C7;
+}
+.tx-detail-wire__warning {
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #FFFAEB;
+  border: 1px solid #FCE7BD;
+  border-radius: 8px;
+  color: #92400E;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.tx-detail-wire__warning svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Help footer ─────────────────────────────────────────── */
+.tx-detail-help {
+  text-align: center;
+  margin-top: 8px;
+}
+.tx-detail-help__link {
+  font-size: 13px;
+  color: #667085;
+  text-decoration: none;
+}
+.tx-detail-help__link:hover {
+  color: #0000FF;
+  text-decoration: underline;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tx-detail-page { padding-top: 12px; gap: 12px; }
+  .tx-detail-hero { padding: 20px; }
+  .tx-detail-hero__amount { font-size: 34px; }
+  .tx-detail-hero__sign { font-size: 24px; }
+  .tx-detail-section,
+  .tx-detail-wire { padding: 18px 18px; }
+  .tx-detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .tx-detail-row__value {
+    text-align: left;
+    flex-wrap: wrap;
+  }
+  .tx-detail-back { gap: 8px; }
+  .tx-detail-back__link { font-size: 13px; padding: 4px 8px; }
+}

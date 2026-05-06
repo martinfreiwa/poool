@@ -175,6 +175,8 @@ impl std::fmt::Display for WalletType {
 pub struct WalletTransaction {
     /// 0-indexed row number for template IDs
     pub index: usize,
+    /// Real transaction UUID (used by detail page links and `data-tx-id`)
+    pub id: Uuid,
     /// Transaction type enum
     pub tx_type: TransactionType,
     /// Display label (e.g. "Deposit", "Investment")
@@ -201,6 +203,62 @@ pub struct WalletTransaction {
     pub amount_prefix: String,
     /// CSS class for the amount ("amount-positive" or "amount-negative")
     pub amount_css: String,
+}
+
+/// Single key/value detail row to render on the transaction detail page.
+#[derive(Debug, Clone, Serialize)]
+pub struct DetailRow {
+    pub label: String,
+    pub value: String,
+    /// Render as monospace (UUIDs, references)
+    pub mono: bool,
+    /// Show a "Copy" button next to the value
+    pub copyable: bool,
+}
+
+/// Section grouping detail rows on the detail page (e.g. "Withdrawal request").
+#[derive(Debug, Clone, Serialize)]
+pub struct DetailSection {
+    pub title: String,
+    pub rows: Vec<DetailRow>,
+}
+
+/// Full context passed to `transaction-detail.html`.
+#[derive(Debug, Serialize)]
+pub struct TransactionDetailContext {
+    pub id: Uuid,
+    /// Type label e.g. "Deposit"
+    pub tx_type_label: String,
+    /// Icon key for SVG selection (deposit/withdrawal/dividend/purchase…)
+    pub tx_type_icon: String,
+    /// Status badge label e.g. "Completed"
+    pub status_label: String,
+    /// Status badge CSS class
+    pub status_css: String,
+    /// Wallet label e.g. "Cash balance"
+    pub wallet_label: String,
+    /// Signed amount in cents
+    pub amount_cents: i64,
+    /// Formatted amount e.g. "USD 175.00"
+    pub amount_display: String,
+    /// "+" or "-"
+    pub amount_prefix: String,
+    /// "amount-positive" | "amount-negative"
+    pub amount_css: String,
+    /// Long-form date "08 February 2026 at 14:32"
+    pub date_full: String,
+    /// ISO datetime for <time>
+    pub date_iso: String,
+    /// Optional description from the DB
+    pub description: Option<String>,
+    /// Detail sections (Overview, Bank wire, Withdrawal request, Order, Metadata)
+    pub sections: Vec<DetailSection>,
+    /// Whether to show the bank-wire instructions block (deposit + pending only)
+    pub show_wire_instructions: bool,
+    /// Pre-formatted wire reference (from external_ref_id or provider_reference)
+    pub wire_reference: String,
+    /// Formatted amount for the wire instructions block (no prefix)
+    pub wire_amount_display: String,
 }
 
 /// The complete wallet page context passed to the MiniJinja template.
