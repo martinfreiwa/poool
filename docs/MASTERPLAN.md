@@ -8,7 +8,7 @@ Dieses Dokument analysiert die bestehende Systemarchitektur, deckt Limitationen 
 
 ## Inhaltsverzeichnis (Table of Contents)
 
-> **Last Updated:** 2026-03-28 | **Chapters:** 0-22 | **Total:** ~10,350 lines
+> **Last Updated:** 2026-05-06 | **Chapters:** 0-22 | **Total:** ~10,350 lines
 
 0. [Stakeholder-Entscheidungen (2026-03-20)](#0-stakeholder-entscheidungen-2026-03-20)
 1. [Analyse der aktuellen Systemstruktur (Ist-Zustand)](#1-analyse-der-aktuellen-systemstruktur)
@@ -59,6 +59,115 @@ Dieses Dokument analysiert die bestehende Systemarchitektur, deckt Limitationen 
 22. [Banking API & 4-Eyes Settlement](#22-banking-api--4-eyes-settlement-extended-financial-core)
     - [22.1. OCBC Direct Banking Integration](#221-ocbc-direct-banking-integration)
     - [22.2. 4-Eyes Settlement Protocol](#222-4-eyes-settlement-protocol)
+
+---
+
+## 🚀 Status — On-Chain Settlement Shipped (2026-05-06)
+
+This section captures the work landed between 2026-05-05 and 2026-05-06.
+It supersedes the "future work" framing in chapters 2.11, 3.2, and 21
+where those topics were still planned.
+
+### What's live on Polygon Amoy testnet
+
+| Layer | Status | Details |
+|---|---|---|
+| `POOOLAssetToken` (ERC-1155 implementation) | ✅ Deployed | `0xb61CCe33B546a5C7c36F0B58119e7F4B3D1D04e5` |
+| `IdentityRegistry` (KYC whitelist) | ✅ Deployed | `0xe9DBbDC87928eAeD9c3c5A9F737365a3D7230306` |
+| `AssetFactory` | ✅ Deployed | `0xeAd7b2eD1CcD81b8a0004312C21Cd99930d4c1ca` |
+| Asset clones | ✅ 3 deployed (Demo Villa, Villa Pillada, Demo Apartment 01) |
+| Primary-issuance settlement worker | ✅ Live, wired into worker registry under `BlockchainPrimarySettlement` lock |
+| KYC whitelist worker | ✅ Live (selector bug 0x9beb20f8 → 0xd38c6523 fixed) |
+| Settlement reconciler (P2P) | ✅ Live |
+| Per-asset reconciler (primary) | ⚠️ Outstanding — see "Pre-mainnet checklist" |
+| User SIWE wallet binding UI | ✅ `/settings` → Web3 Wallet card |
+| "Add NFT to MetaMask" button | ✅ `/portfolio` per-row |
+| ERC-1155 metadata with `image` field | ✅ `/api/assets/:id/metadata.json` (fallback to POOOL logo) |
+
+### What was actually settled in production
+
+- **Demo Villa 01** (`0x8874e8a238a3a56d63f823cb77de03d35a2ad250`): 46 tokens
+  distributed to 2 buyers via `settleBatch` ([tx](https://amoy.polygonscan.com/tx/0xa80cc1314f00d566b5eb528931689fa63d3886b04ff7912d183489dd046d500d)).
+- **Villa Pillada Horadada** (`0x9d581279a039e8f939baf0bdef080b049c464297`):
+  2,000 tokens distributed to 5 buyers ([tx](https://amoy.polygonscan.com/tx/0xb817df3173c4736838ba635e42dd821482b37a35832799da795da2d85d965114)).
+- **Demo Apartment 01** (`0xe9e21d90fac014918c9207d160d9489aa2c89e73`): not
+  yet sold — full 500,000 supply held by treasury (`0x021F6B…B88a`).
+
+### Defenses added against the "lost mintTo key" failure mode
+
+The launch debugging surfaced a critical operational footgun: the
+original Demo Villa supply (2,000 tokens) was minted to a wallet
+(`0x94E1264068d6272D731F994918bC330307EBbeC2`) whose private key was
+never persisted, because `CHAIN_SETTLEMENT_ADDRESS` env was decoupled
+from the actual signing key. Three defenses now block this:
+
+1. **`resolve_settlement_address()` is key-first.** Env is consulted only
+   as a display fallback when no key is configured (KMS-only setups).
+   `mintTo` at `deployAsset()` therefore always equals the signer's
+   address. See `backend/src/admin/blockchain.rs:15`.
+2. **Primary settlement treasury is locked to `signer.address()`** — env
+   override removed. See `backend/src/blockchain/primary_settlement.rs`
+   `resolve_treasury_address()`.
+3. **Startup mismatch warning** — `ChainConfig::from_env()` logs a loud
+   `⚠️` when env-advertised address differs from the signer's derived
+   address. Catches drift in seconds.
+
+### Smart-contract hardening (applies to FUTURE clones)
+
+Existing clones are immutable and continue using the old implementation.
+The new implementation is built but not yet promoted via
+`AssetFactory.setImplementationContract()`. Once promoted:
+
+- `nonReentrant` on `mint` and `settleBatch`
+- `nonReentrant` ordered first in modifier chain (Aderyn convention)
+- Input validation: `ZeroAddress`, `ZeroAmount`, `EmptyURI`, `ZeroSupply`
+- `uri(tokenId)` returns `""` for unknown ids per ERC-1155 spec (was
+  reverting)
+- Pragma pinned `0.8.24` (was `^0.8.24`)
+- CEI ordering in `AssetFactory.deployAsset` (state writes before
+  external `initialize` call)
+- Documented dev note: `settleBatch` bypasses `ERC1155Receiver`
+  acceptance hook; only EOAs / known-good receivers may be whitelisted
+
+### Automated pre-audit pass
+
+| Tool | Result |
+|---|---|
+| Slither (strict) | 0 findings |
+| Slither (full) | 6 informational, all intentional |
+| Aderyn | 1 H (false positive, documented), 4 L (intentional) |
+| Halmos | 5/5 symbolic properties proved |
+| Echidna | 5/5 invariants over 20k call sequences |
+| Mythril | 1 SWC-101 false positive (compiler ABI math) |
+| Forge tests | 64 unit/fuzz, 12 fuzz suites × 10k runs |
+| Branch coverage | 92.9–100% per src file |
+
+### Pre-mainnet checklist (gating real-money launch)
+
+🔴 = blocker, 🟡 = strongly recommended, 🟢 = polish.
+
+- 🔴 External smart-contract audit (Code4rena $15-25k, Sherlock, OZ direct, ToB)
+- 🔴 Deploy fresh hardened contracts on Polygon mainnet via
+  `forge script script/Deploy.s.sol:DeployPOOOL --rpc-url $POLYGON_MAINNET_RPC_URL --broadcast --verify`
+- 🔴 Fund `0x021F6B…B88a` with ~10 mainnet POL
+- 🔴 Switch backend env to mainnet (`CHAIN_NETWORK=polygon`, `CHAIN_ID=137`,
+  paid Alchemy/Infura RPC URL via Secret Manager)
+- 🔴 Reset `assets.chain_*` cols on prod DB; admin re-tokenizes each on
+  mainnet (existing investments stay intact, ledger is the truth source)
+- 🔴 Migrate `CHAIN_SETTLEMENT_PRIVATE_KEY` from raw secret → GCP KMS
+  (`signer.rs::KmsSigner` already supports this; just set `CHAIN_KMS_KEY`)
+- 🔴 Multi-sig `DEFAULT_ADMIN_ROLE` on `IdentityRegistry` + `AssetFactory`
+  via Safe (2-of-3 minimum)
+- 🟡 Per-asset reconciler that recovers primary-settlement orphans
+  (current reconciler only knows `trade_history`)
+- 🟡 IPFS-pin metadata JSON (currently served from
+  `platform.poool.app`; pin via existing `ipfs::service` integration)
+- 🟡 RPC + treasury + gas-spike monitoring → Slack/PagerDuty
+- 🟡 KYC / regulatory sign-off (OJK, MiCA, optional SEC geo-block)
+- 🟡 Insurance on settlement signer (Fireblocks/Anchorage/Nexus Mutual)
+- 🟢 Verify implementation contract on Polygonscan (`forge verify-contract`)
+- 🟢 "Add to MetaMask" button on property detail + post-purchase pages
+- 🟢 Production load-test (1k orders, gas bound, no nonce starvation)
 
 ---
 
