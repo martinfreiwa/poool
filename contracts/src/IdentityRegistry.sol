@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
@@ -15,9 +15,8 @@ contract IdentityRegistry is AccessControl {
 
     mapping(address => bool) public isWhitelisted;
 
-    event AddressWhitelisted(address indexed account, bool status);
+    event AddressWhitelisted(address indexed account, bool indexed status);
 
-    error NotAuthorized();
     error ZeroAddress();
     error ArrayLengthMismatch();
 

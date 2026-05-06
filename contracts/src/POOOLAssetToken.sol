@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {ERC1155Supply} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
@@ -55,7 +55,7 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable, Ree
     uint256 public constant MAX_BPS = 10_000;
 
     event Initialized(address indexed admin, address indexed identityRegistry, string uri);
-    event AssetMinted(address indexed mintTo, uint256 amount);
+    event AssetMinted(address indexed mintTo, uint256 indexed amount);
     event BatchSettled(uint256 indexed batchSize, address indexed caller);
 
     error AlreadyInitialized();
@@ -74,6 +74,26 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable, Ree
      * @param admin The admin address (factory caller)
      * @param identityRegistry_ The address of the central IdentityRegistry
      * @param assetURI_ The URI containing the property's metadata
+     *
+     * @dev SECURITY: protected by the manual `_initialized` flag (line
+     *      below) — equivalent to OpenZeppelin's `initializer` modifier
+     *      but without the upgrade-aware bookkeeping that
+     *      `Initializable` brings (we don't need it; clones are not
+     *      proxy-upgraded). A second call reverts with
+     *      `AlreadyInitialized()`.
+     *
+     *      Front-run safety: the only legitimate caller is
+     *      `AssetFactory.deployAsset()`, which atomically deploys the
+     *      clone via `Clones.clone()` and calls this function in the
+     *      same transaction. There is no time window during which an
+     *      attacker could observe the new clone address and front-run
+     *      its initialization, because the address has no code (and
+     *      therefore no `initialize` selector) until the same tx that
+     *      calls this function.
+     *
+     *      Aderyn flags this as "Unprotected initializer" (H-1) because
+     *      it pattern-matches on the OZ `initializer` modifier
+     *      specifically; this comment is the audit response.
      */
     function initialize(
         address admin,
@@ -146,7 +166,7 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable, Ree
      * @param to Address to mint shares to
      * @param amount The number of fractional shares to mint
      */
-    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
+    function mint(address to, uint256 amount) external nonReentrant onlyRole(MINTER_ROLE) {
         if (to == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
         if (!identityRegistry.checkWhitelisted(to)) revert NotWhitelisted(to);
@@ -165,7 +185,7 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable, Ree
         address[] calldata froms,
         address[] calldata tos,
         uint256[] calldata amounts
-    ) external onlyRole(SETTLEMENT_ROLE) nonReentrant {
+    ) external nonReentrant onlyRole(SETTLEMENT_ROLE) {
         if (froms.length != tos.length || tos.length != amounts.length) revert ArrayLengthMismatch();
 
         for (uint256 i = 0; i < froms.length; ) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -42,7 +42,7 @@ contract AssetFactory is AccessControl {
     event AssetDeployed(
         address indexed cloneAddress,
         string uri,
-        uint256 initialSupply,
+        uint256 indexed initialSupply,
         address indexed mintTo
     );
 
