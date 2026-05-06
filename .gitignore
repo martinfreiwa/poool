@@ -103,3 +103,8 @@ artifacts/
 .tmp/
 .pytest_cache/
 .ruff_cache/
+
+# Audit tool artifacts
+contracts/echidna-corpus/
+contracts/crytic-export/
+contracts/report.md
