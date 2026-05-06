@@ -221,8 +221,13 @@ pub async fn build_metadata(pool: &PgPool, asset_id: uuid::Uuid) -> Result<Asset
         .unwrap_or_else(|| "polygon".to_string());
 
     // Cover image: prefer is_cover=true; fall back to lowest sort_order.
+    // If the asset has no images at all, fall back to the POOOL brand
+    // logo so wallets and explorers (Polygonscan, MetaMask, OpenSea)
+    // always show *something* recognisable instead of the generic
+    // grey "NFT" placeholder.
+    //
     // Promote relative paths to absolute URLs so off-platform fetchers
-    // (Polygonscan, MetaMask, OpenSea) can resolve them.
+    // can resolve them.
     let raw_image: Option<String> = sqlx::query_scalar(
         r#"SELECT image_url FROM asset_images
            WHERE asset_id = $1
@@ -233,7 +238,7 @@ pub async fn build_metadata(pool: &PgPool, asset_id: uuid::Uuid) -> Result<Asset
     .fetch_optional(pool)
     .await
     .map_err(|e| format!("DB error fetching asset image: {}", e))?;
-    let image = raw_image.map(|u| {
+    let absolutize = |u: String| -> String {
         if u.starts_with("http://") || u.starts_with("https://") || u.starts_with("ipfs://") {
             u
         } else if let Some(stripped) = u.strip_prefix('/') {
@@ -241,7 +246,13 @@ pub async fn build_metadata(pool: &PgPool, asset_id: uuid::Uuid) -> Result<Asset
         } else {
             format!("{}/{}", base_url.trim_end_matches('/'), u)
         }
-    });
+    };
+    let image = Some(raw_image.map(absolutize).unwrap_or_else(|| {
+        format!(
+            "{}/static/images/logos/logo.svg",
+            base_url.trim_end_matches('/')
+        )
+    }));
 
     let metadata = AssetMetadata {
         name: row.title.clone(),
