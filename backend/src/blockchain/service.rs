@@ -1,4 +1,4 @@
-/// Blockchain settlement service — calls POOOLProperty1155.settleBatch() on Polygon.
+/// Blockchain settlement service — calls POOOLAssetToken.settleBatch() on Polygon.
 ///
 /// This service runs as a periodic background worker that:
 /// 1. Queries `trade_history` for trades with `on_chain_status = 'pending'`
@@ -23,7 +23,7 @@ use uuid::Uuid;
 pub struct ChainConfig {
     /// RPC endpoint (e.g., "https://rpc-amoy.polygon.technology")
     pub rpc_url: String,
-    /// POOOLProperty1155 contract address (0x-prefixed, 42 chars)
+    /// POOOLAssetToken contract address (0x-prefixed, 42 chars)
     pub contract_address: String,
     /// Settlement signer — local raw key OR HSM-backed GCP KMS key.
     /// Built once at config load; private key material never leaves the

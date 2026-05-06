@@ -5,6 +5,7 @@ import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {ERC1155Supply} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IdentityRegistry} from "./IdentityRegistry.sol";
 
 /**
@@ -13,8 +14,26 @@ import {IdentityRegistry} from "./IdentityRegistry.sol";
  * @notice ERC-1155 Implementation Token designed to be cloned via EIP-1167.
  *         Each instance of this contract represents a single real-world property.
  *         The implementation logic is deployed once to save gas.
+ *
+ * @dev SAFETY NOTES
+ *
+ *  1. `settleBatch()` calls `_update()` directly, bypassing the
+ *     `_doSafeTransferAcceptanceCheck` hook that `safeTransferFrom`
+ *     normally runs. This is intentional — the operator pattern needs
+ *     no recipient-approval gate when the SETTLEMENT_ROLE is the source
+ *     of truth. **Implication:** if an admin ever whitelists a contract
+ *     address that does NOT implement ERC1155Receiver, tokens sent to
+ *     it via settleBatch will be locked there forever. The KYC
+ *     whitelist is curated to humans (EOAs) by policy; do not whitelist
+ *     a smart-contract account without first verifying it implements
+ *     ERC1155Receiver.
+ *
+ *  2. `mint()` and `settleBatch()` are guarded with `nonReentrant`
+ *     defense-in-depth. The KYC whitelist already restricts the
+ *     reentrancy surface, but the cost of the guard is one storage
+ *     slot per call and zero functional change.
  */
-contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable {
+contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant SETTLEMENT_ROLE = keccak256("SETTLEMENT_ROLE");
@@ -44,6 +63,8 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable {
     error MaxOwnershipExceeded(address account, uint256 wouldOwn, uint256 maxAllowed);
     error ArrayLengthMismatch();
     error ZeroAddress();
+    error ZeroAmount();
+    error EmptyURI();
 
     /// @notice Pass an empty string to the base ERC1155 constructor. It's safe for Clones.
     constructor() ERC1155("") {}
@@ -63,6 +84,8 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable {
     ) external {
         if (_initialized) revert AlreadyInitialized();
         if (admin == address(0) || _identityRegistry == address(0) || mintTo == address(0)) revert ZeroAddress();
+        if (initialSupply == 0) revert ZeroAmount();
+        if (bytes(assetURI_).length == 0) revert EmptyURI();
 
         _initialized = true;
 
@@ -86,10 +109,14 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable {
     /**
      * @notice Returns the URI for the asset token.
      *         Overrides standard ERC1155 uri function.
+     * @dev Per ERC-1155 metadata spec, querying an unknown token id
+     *      should return an empty string rather than reverting; reverts
+     *      break wallet/indexer crawlers that probe multiple ids.
+     *      We only ever mint token id 1 (`ASSET_TOKEN_ID`); any other
+     *      id therefore returns "".
      */
     function uri(uint256 tokenId) public view virtual override returns (string memory) {
-        // We only use tokenId = 1 for the main asset
-        require(tokenId == ASSET_TOKEN_ID, "Token ID not 1");
+        if (tokenId != ASSET_TOKEN_ID) return "";
         return _assetURI;
     }
 
@@ -119,9 +146,11 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable {
      * @param to Address to mint shares to
      * @param amount The number of fractional shares to mint
      */
-    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
+        if (to == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
         if (!identityRegistry.checkWhitelisted(to)) revert NotWhitelisted(to);
-        
+
         _mint(to, ASSET_TOKEN_ID, amount, "");
         emit AssetMinted(to, amount);
     }
@@ -136,20 +165,23 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable {
         address[] calldata froms,
         address[] calldata tos,
         uint256[] calldata amounts
-    ) external onlyRole(SETTLEMENT_ROLE) {
+    ) external onlyRole(SETTLEMENT_ROLE) nonReentrant {
         if (froms.length != tos.length || tos.length != amounts.length) revert ArrayLengthMismatch();
 
         for (uint256 i = 0; i < froms.length; ) {
-            // _update bypasses SafeTransferFrom approval checks
+            // _update bypasses SafeTransferFrom approval checks AND the
+            // ERC1155Receiver acceptance hook. See top-of-contract dev
+            // note: only EOAs (or known-good ERC1155Receiver contracts)
+            // should be on the IdentityRegistry whitelist.
             uint256[] memory ids = new uint256[](1);
             ids[0] = ASSET_TOKEN_ID;
             uint256[] memory vals = new uint256[](1);
             vals[0] = amounts[i];
-            
+
             _update(froms[i], tos[i], ids, vals);
             unchecked { ++i; }
         }
-        
+
         emit BatchSettled(froms.length, msg.sender);
     }
 

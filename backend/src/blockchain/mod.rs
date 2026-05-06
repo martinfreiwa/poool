@@ -6,7 +6,7 @@ pub mod kyc_whitelist;
 /// `order_items` instead of `trade_history`.
 pub mod primary_settlement;
 pub mod reconciler;
-/// Blockchain integration module — on-chain settlement via POOOLProperty1155 contract.
+/// Blockchain integration module — on-chain settlement via POOOLAssetToken contract.
 ///
 /// This module is the bridge between the off-chain trading engine and the
 /// on-chain ERC-1155 settlement layer on Polygon.

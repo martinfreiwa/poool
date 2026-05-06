@@ -46,7 +46,7 @@ pub struct BlockchainTreasuryResponse {
     pub wallet_address: String,
     /// Blockchain network name (e.g., "polygon_amoy", "polygon")
     pub network: String,
-    /// Contract address for POOOLProperty1155
+    /// Contract address for POOOLAssetToken
     pub contract_address: String,
     /// Whether on-chain settlement is enabled
     pub settlement_enabled: bool,
@@ -1307,7 +1307,7 @@ pub async fn api_admin_blockchain_tokenize(
 // ── POST /api/admin/blockchain/pause ──────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-/// Emergency pause — calls pause() on the POOOLProperty1155 contract.
+/// Emergency pause — calls pause() on the POOOLAssetToken contract.
 pub async fn api_admin_blockchain_pause(
     admin: AdminUser,
     State(state): State<AppState>,
@@ -1385,7 +1385,7 @@ pub async fn api_admin_blockchain_pause(
     })))
 }
 
-/// Emergency unpause — calls unpause() on the POOOLProperty1155 contract.
+/// Emergency unpause — calls unpause() on the POOOLAssetToken contract.
 pub async fn api_admin_blockchain_unpause(
     admin: AdminUser,
     State(state): State<AppState>,

@@ -1,7 +1,7 @@
 /// KYC → Whitelist Sync Worker
 ///
 /// Monitors for newly KYC-approved users and automatically adds them to the
-/// on-chain whitelist on the POOOLProperty1155 contract.
+/// on-chain whitelist on the POOOLAssetToken contract.
 ///
 /// Flow:
 /// 1. Polls DB every 60 seconds for users with kyc_status='approved' AND no chain_wallet_address

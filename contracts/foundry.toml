@@ -35,12 +35,13 @@ localhost = "http://localhost:8545"
 
 # ──────────────────────────────────────────────────────────────
 #  ETHERSCAN / POLYGONSCAN VERIFICATION
-#  Note: PolygonScan has migrated to Etherscan V2 API.
-#  Get an API key from polygonscan.com/myapikey
-#  Uncomment below when you have a PolygonScan-specific API key.
+#  Set POLYGONSCAN_API_KEY env var (get one from polygonscan.com/myapikey)
+#  to enable `forge script ... --verify` and `forge verify-contract`.
+#  Verifying the implementation contract once auto-verifies all
+#  EIP-1167 clones spawned from it.
 # ──────────────────────────────────────────────────────────────
 
-# [etherscan]
-# polygon_amoy = { key = "${POLYGONSCAN_API_KEY}", url = "https://api-amoy.polygonscan.com/api", chain = 80002 }
-# polygon_mainnet = { key = "${POLYGONSCAN_API_KEY}", url = "https://api.polygonscan.com/api", chain = 137 }
+[etherscan]
+polygon_amoy = { key = "${POLYGONSCAN_API_KEY}", url = "https://api-amoy.polygonscan.com/api", chain = 80002 }
+polygon_mainnet = { key = "${POLYGONSCAN_API_KEY}", url = "https://api.polygonscan.com/api", chain = 137 }
 

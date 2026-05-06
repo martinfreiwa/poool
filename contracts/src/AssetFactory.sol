@@ -43,6 +43,8 @@ contract AssetFactory is AccessControl {
     );
 
     error ZeroAddress();
+    error ZeroSupply();
+    error EmptyURI();
 
     /**
      * @param admin Address to receive roles
@@ -80,6 +82,8 @@ contract AssetFactory is AccessControl {
         address mintTo
     ) external onlyRole(DEPLOYER_ROLE) returns (address cloneAddress) {
         if (adminForClone == address(0) || mintTo == address(0)) revert ZeroAddress();
+        if (initialSupply == 0) revert ZeroSupply();
+        if (bytes(assetURI).length == 0) revert EmptyURI();
 
         // 1. Deploy the precise minimal proxy clone
         cloneAddress = Clones.clone(implementationContract);

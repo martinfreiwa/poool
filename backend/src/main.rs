@@ -40,7 +40,7 @@ pub mod admin;
 pub mod assets;
 mod auth;
 /// Blog module containing handlers for blog articles, authors, and categories.
-/// Blockchain integration module — on-chain settlement via POOOLProperty1155 on Polygon.
+/// Blockchain integration module — on-chain settlement via POOOLAssetToken on Polygon.
 mod blockchain;
 mod blog;
 mod cart;
