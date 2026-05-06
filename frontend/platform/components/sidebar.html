@@ -34,6 +34,8 @@
 
       } else if (path.includes("/leaderboard")) {
         activePage = "leaderboard";
+      } else if (path.includes("/community")) {
+        activePage = "community";
       } else if (path.includes("/developer/dashboard")) {
         activePage = "dashboard";
       } else if (
@@ -490,6 +492,16 @@
                     height="20" />
                 </div>
                 <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-community" class="sidebar__nav-item">
+            <a id="nav-item-community-content" href="/community" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-community" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-community" class="sidebar__nav-icon-wrapper">
+                  <img src="/static/images/icons/users-01.svg" alt="Community" class="nav-icon" width="20" height="20" />
+                </div>
+                <span id="nav-text-community" class="sidebar__nav-text">Community</span>
               </div>
             </a>
           </div>
