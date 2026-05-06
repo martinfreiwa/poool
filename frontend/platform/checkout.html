@@ -173,6 +173,17 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
                   <div class="file-upload-zone__filename" id="upload-filename"></div>
                   <input type="file" name="proof_of_transfer" id="proof-upload" accept="image/*,.pdf" />
                 </div>
+
+                <!-- Upload Progress Bar -->
+                <div class="upload-progress" id="upload-progress" hidden aria-live="polite">
+                  <div class="upload-progress__bar">
+                    <div class="upload-progress__fill" id="upload-progress-fill"></div>
+                  </div>
+                  <div class="upload-progress__label">
+                    <span id="upload-progress-text">Uploading…</span>
+                    <span id="upload-progress-percent">0%</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -799,40 +810,103 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
         btn.disabled = true;
         btn.classList.add("loading");
 
+        // ── Progress bar helpers ─────────────────────────────
+        var progressEl = document.getElementById("upload-progress");
+        var progressFill = document.getElementById("upload-progress-fill");
+        var progressPercent = document.getElementById("upload-progress-percent");
+        var progressText = document.getElementById("upload-progress-text");
+
+        function setProgress(pct, opts) {
+          opts = opts || {};
+          var clamped = Math.max(0, Math.min(100, pct));
+          if (progressFill) progressFill.style.width = clamped + "%";
+          if (progressPercent) progressPercent.textContent = Math.round(clamped) + "%";
+          if (opts.text && progressText) progressText.textContent = opts.text;
+          if (progressEl) {
+            progressEl.classList.toggle("is-done", !!opts.done);
+            progressEl.classList.toggle("is-error", !!opts.error);
+          }
+        }
+
+        function showProgress() {
+          if (!progressEl) return;
+          progressEl.hidden = false;
+          progressEl.classList.remove("is-done", "is-error");
+          setProgress(0, { text: "Uploading…" });
+        }
+
+        function hideProgress() {
+          if (!progressEl) return;
+          progressEl.hidden = true;
+          setProgress(0);
+        }
+
         try {
           var formData = new FormData();
           formData.append("payment_method", selectedPaymentMethod);
           formData.append("payment_currency", selectedCurrency);
 
+          var hasFile = false;
           if (selectedPaymentMethod === "bank") {
             var fileInput = document.getElementById("proof-upload");
             if (fileInput && fileInput.files && fileInput.files[0]) {
               formData.append("proof_of_transfer", fileInput.files[0]);
+              hasFile = true;
             }
           }
 
-          var resp = await fetch("/checkout", {
-            method: "POST",
-            body: formData,
-            headers: {
-              "X-CSRF-Token": typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "",
-            },
+          var csrfToken = typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+
+          var resp = await new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/checkout");
+            if (csrfToken) xhr.setRequestHeader("X-CSRF-Token", csrfToken);
+
+            if (hasFile) {
+              showProgress();
+              xhr.upload.addEventListener("progress", function (e) {
+                if (e.lengthComputable) {
+                  setProgress((e.loaded / e.total) * 100);
+                }
+              });
+              xhr.upload.addEventListener("load", function () {
+                setProgress(100, { text: "Processing…" });
+              });
+              xhr.upload.addEventListener("error", function () {
+                setProgress(100, { text: "Upload failed", error: true });
+              });
+            }
+
+            xhr.onload = function () {
+              resolve({
+                ok: xhr.status >= 200 && xhr.status < 300,
+                status: xhr.status,
+                responseText: xhr.responseText,
+                getHeader: function (name) { return xhr.getResponseHeader(name); },
+                contentType: xhr.getResponseHeader("content-type") || "",
+                redirected: false,
+                url: xhr.responseURL,
+              });
+            };
+            xhr.onerror = function () { reject(new Error("network")); };
+            xhr.onabort = function () { reject(new Error("aborted")); };
+
+            xhr.send(formData);
           });
 
           if (resp.ok) {
+            if (hasFile) setProgress(100, { text: "Done", done: true });
             // Backend returns JSON with redirect_url on success
             var redirectUrl = null;
             try {
-              var data = await resp.json();
+              var data = JSON.parse(resp.responseText);
               if (data && data.redirect_url) {
                 redirectUrl = data.redirect_url;
               }
             } catch (ignored) {
-              // Fallback: try HX-Redirect header
-              redirectUrl = resp.headers.get("HX-Redirect");
+              redirectUrl = resp.getHeader("HX-Redirect");
             }
 
-            // Final fallback based on payment method
             if (!redirectUrl) {
               redirectUrl = selectedPaymentMethod === "wallet"
                 ? "/payment-success"
@@ -841,18 +915,15 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
 
             window.location.href = redirectUrl;
             return; // Early return keeps button disabled and in loading state
-          } else if (resp.redirected) {
-            window.location.href = resp.url;
-            return; // Early return keeps button disabled and in loading state
           } else {
+            if (hasFile) setProgress(100, { text: "Upload failed", error: true });
             // Parse error response
-            var contentType = resp.headers.get("content-type") || "";
-            if (contentType.includes("application/json")) {
-              var err = await resp.json().catch(function () { return {}; });
+            if (resp.contentType.includes("application/json")) {
+              var err = {};
+              try { err = JSON.parse(resp.responseText) || {}; } catch (e2) {}
               showError(err.error || "Checkout failed. Please try again.");
             } else {
-              var html = await resp.text().catch(function () { return ""; });
-              // Backend returns a styled HTML error box — insert it directly
+              var html = resp.responseText || "";
               var errorContainer = document.getElementById("checkout-error");
               if (errorContainer && html.trim()) {
                 errorContainer.classList.remove("visible");
@@ -867,11 +938,15 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
                 showError("Checkout failed. Please try again.");
               }
             }
+            // Reset progress so user can retry
+            setTimeout(hideProgress, 1500);
           }
         } catch (e) {
           console.error("Checkout error:", e);
+          if (progressEl && !progressEl.hidden) setProgress(100, { text: "Network error", error: true });
           showError("Network error. Please check your connection and try again.");
-        } 
+          setTimeout(hideProgress, 1500);
+        }
         
         // Only re-enable the button on error cases
         checkoutInProgress = false;
