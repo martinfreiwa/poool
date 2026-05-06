@@ -1,0 +1,175 @@
+{% with title="Transaction Details", meta_description="View full details for a single POOOL wallet transaction.", no_index=True, extra_css=['wallet', 'transaction-detail', 'bem/table', 'htmx-fixes', 'mobile-wallet'], extra_js=['htmx-init', 'profile-dropdown', 'mobile-navigation'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="wallet-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="wallet-page">
+    <div class="wallet-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main wallet-main">
+      {% with investor_topbar_title="Transaction details" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
+      <div class="wallet-container tx-detail-page">
+        <!-- Back link -->
+        <nav class="tx-detail-back" aria-label="Breadcrumb">
+          <a href="/transactions" class="tx-detail-back__link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5m0 0 7-7m-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Back to transactions</span>
+          </a>
+          <a href="/wallet" class="tx-detail-back__link tx-detail-back__link--muted">Wallet</a>
+        </nav>
+
+        <!-- Hero card -->
+        <section class="ds-card tx-detail-hero" aria-label="Transaction summary">
+          <div class="tx-detail-hero__top">
+            <div class="tx-detail-hero__icon">
+              {% if tx.tx_type_icon == "deposit" %}
+              <svg width="28" height="28" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {% elif tx.tx_type_icon == "withdrawal" %}
+              <svg width="28" height="28" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {% elif tx.tx_type_icon == "dividend" %}
+              <svg width="28" height="28" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2.5 10C2.5 10 5 7.5 10 7.5C15 7.5 17.5 10 17.5 10M2.5 10V15C2.5 16.3807 3.61929 17.5 5 17.5H15C16.3807 17.5 17.5 16.3807 17.5 15V10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="10" cy="5" r="2.5" stroke="currentColor" stroke-width="1.66667"/>
+              </svg>
+              {% else %}
+              <svg width="28" height="28" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2.5 7.5L10 2.5L17.5 7.5V16.25C17.5 16.5815 17.3683 16.8995 17.1339 17.1339C16.8995 17.3683 16.5815 17.5 16.25 17.5H3.75C3.41848 17.5 3.10054 17.3683 2.86612 17.1339C2.6317 16.8995 2.5 16.5815 2.5 16.25V7.5Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7.5 17.5V10H12.5V17.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {% endif %}
+            </div>
+            <div class="tx-detail-hero__meta">
+              <div class="tx-detail-hero__type">{{ tx.tx_type_label }}</div>
+              <span class="{{ tx.status_css }}"><span class="ds-badge__dot"></span>{{ tx.status_label }}</span>
+            </div>
+          </div>
+          <div class="tx-detail-hero__amount {{ tx.amount_css }}">
+            <span class="tx-detail-hero__sign">{{ tx.amount_prefix }}</span>
+            <span>{{ tx.amount_display }}</span>
+          </div>
+          <div class="tx-detail-hero__sub">
+            <span>{{ tx.wallet_label }}</span>
+            <span aria-hidden="true">·</span>
+            <time datetime="{{ tx.date_iso }}">{{ tx.date_full }}</time>
+          </div>
+          {% if tx.description %}
+          <p class="tx-detail-hero__desc">{{ tx.description }}</p>
+          {% endif %}
+        </section>
+
+        <!-- Detail sections -->
+        {% for section in tx.sections %}
+        <section class="ds-card tx-detail-section" aria-label="{{ section.title }}">
+          <h2 class="tx-detail-section__title">{{ section.title }}</h2>
+          <dl class="tx-detail-rows">
+            {% for row in section.rows %}
+            <div class="tx-detail-row">
+              <dt class="tx-detail-row__label">{{ row.label }}</dt>
+              <dd class="tx-detail-row__value{% if row.mono %} tx-detail-row__value--mono{% endif %}">
+                <span class="tx-detail-row__text">{{ row.value }}</span>
+                {% if row.copyable %}
+                <button class="tx-detail-copy-btn" type="button" data-copy="{{ row.value }}" aria-label="Copy {{ row.label }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Copy</span>
+                </button>
+                {% endif %}
+              </dd>
+            </div>
+            {% endfor %}
+          </dl>
+        </section>
+        {% endfor %}
+
+        <!-- Bank wire instructions (deposit + pending only) -->
+        {% if tx.show_wire_instructions %}
+        <section class="ds-card tx-detail-wire" aria-label="Bank wire instructions">
+          <div class="tx-detail-wire__header">
+            <span class="tx-detail-wire__logo" aria-hidden="true">
+              <img src="/static/images/logos/poool-icon.svg" alt="">
+            </span>
+            <div>
+              <p class="tx-detail-wire__kicker">Bank transfer pending</p>
+              <h2 class="tx-detail-section__title">Wire instructions</h2>
+            </div>
+          </div>
+          <p class="tx-detail-wire__lede">Wire <strong>{{ tx.wire_amount_display }}</strong> to the account below. Use the exact reference so we can match your deposit automatically.</p>
+          <dl class="tx-detail-rows tx-detail-rows--wire">
+            <div class="tx-detail-row"><dt class="tx-detail-row__label">Bank</dt><dd class="tx-detail-row__value">Deutsche Bank AG</dd></div>
+            <div class="tx-detail-row"><dt class="tx-detail-row__label">Account name</dt><dd class="tx-detail-row__value">POOOL GmbH</dd></div>
+            <div class="tx-detail-row"><dt class="tx-detail-row__label">IBAN</dt>
+              <dd class="tx-detail-row__value tx-detail-row__value--mono">
+                <span class="tx-detail-row__text">DE89 3704 0044 0532 0130 00</span>
+                <button class="tx-detail-copy-btn" type="button" data-copy="DE89370400440532013000" aria-label="Copy IBAN"><span>Copy</span></button>
+              </dd>
+            </div>
+            <div class="tx-detail-row"><dt class="tx-detail-row__label">BIC / SWIFT</dt>
+              <dd class="tx-detail-row__value tx-detail-row__value--mono">
+                <span class="tx-detail-row__text">DEUTDEDB</span>
+                <button class="tx-detail-copy-btn" type="button" data-copy="DEUTDEDB" aria-label="Copy BIC"><span>Copy</span></button>
+              </dd>
+            </div>
+            <div class="tx-detail-row"><dt class="tx-detail-row__label">Reference</dt>
+              <dd class="tx-detail-row__value tx-detail-row__value--mono">
+                <span class="tx-detail-row__text">{{ tx.wire_reference }}</span>
+                <button class="tx-detail-copy-btn" type="button" data-copy="{{ tx.wire_reference }}" aria-label="Copy reference"><span>Copy</span></button>
+              </dd>
+            </div>
+          </dl>
+          <div class="tx-detail-wire__warning" role="note">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 2.5 18 16.5H2L10 2.5Z" fill="#FFF4D6" stroke="#D97706" stroke-width="1.4"/>
+              <path d="M10 7.25v4.25" stroke="#B45309" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="10" cy="14" r="1" fill="#B45309"/>
+            </svg>
+            <span><strong>Reference required.</strong> Include it in your transfer or we cannot match your deposit.</span>
+          </div>
+        </section>
+        {% endif %}
+
+        <!-- Help footer -->
+        <div class="tx-detail-help">
+          <a href="/support" class="tx-detail-help__link">Need help with this transaction? Contact support →</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      // Copy-to-clipboard for any [data-copy] button
+      document.addEventListener("click", function (e) {
+        var btn = e.target.closest(".tx-detail-copy-btn");
+        if (!btn) return;
+        e.preventDefault();
+        var text = btn.getAttribute("data-copy") || "";
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(function () {
+          var label = btn.querySelector("span");
+          if (!label) return;
+          var orig = label.textContent;
+          label.textContent = "Copied!";
+          btn.classList.add("is-copied");
+          setTimeout(function () {
+            label.textContent = orig;
+            btn.classList.remove("is-copied");
+          }, 1400);
+        });
+      });
+    })();
+  </script>
+</body>
+
+</html>

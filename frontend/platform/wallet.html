@@ -277,7 +277,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 <div id="wallet-transactions-body" class="ds-table-flex__body">
                   {% if has_transactions %}
                   {% for tx in transactions %}
-                  <div id="wallet-transactions-row-{{ tx.index }}" class="ds-table-flex__row">
+                  <div id="wallet-transactions-row-{{ tx.index }}" class="ds-table-flex__row" data-tx-id="{{ tx.id }}">
                     <div class="ds-table-td table__cell--type">
                       <div class="wallet-transaction-type-icon">
                         <div class="featured-icon">
@@ -492,7 +492,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 <div id="mobile-wallet-transactions-body" class="ds-table-flex__body">
                   {% if has_transactions %}
                   {% for tx in transactions %}
-                  <div class="ds-table-flex__row">
+                  <div class="ds-table-flex__row" data-tx-id="{{ tx.id }}">
                     <div class="ds-table-td table__cell--type" style="width: 182px">
                       <div class="wallet-transaction-type-icon">
                         <div class="featured-icon">
@@ -1309,13 +1309,13 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
       document.querySelectorAll("#wallet-payment-cards-add-button, .mobile-add-card-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openCardModal(); }); });
 
-      // "View details" on each transaction row → navigate to /transactions
+      // "View details" on each transaction row → navigate to /transactions/:id
       document.body.addEventListener("click", function (e) {
         var actionBtn = e.target.closest(".ds-btn.ds-btn--ghost, .wallet-transaction-action-btn");
         if (!actionBtn) return;
-        var row = actionBtn.closest("[id^='wallet-transactions-row-']");
-        var rowId = row && row.id ? row.id.replace("wallet-transactions-row-", "") : "";
-        window.location.href = rowId ? "/transactions#tx-" + rowId : "/transactions";
+        var row = actionBtn.closest("[data-tx-id]");
+        var txId = row ? row.getAttribute("data-tx-id") : "";
+        window.location.href = txId ? "/transactions/" + encodeURIComponent(txId) : "/transactions";
       });
 
       // Click-outside-to-close for all modals (replaces Alpine @click.away)

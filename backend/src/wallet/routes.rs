@@ -1,6 +1,7 @@
 /// Wallet route handlers – view balances and execute deposit/withdraw actions.
 use axum::{
-    extract::{Form, Query, State},
+    extract::{Form, Path, Query, State},
+    http::StatusCode,
     response::{Html, IntoResponse, Redirect},
     Json,
 };
@@ -74,6 +75,7 @@ pub async fn ensure_wallets(pool: &sqlx::PgPool, user_id: Uuid) -> Result<(), sq
 /// Build a display-ready `WalletTransaction` from a raw DB row.
 fn build_transaction(
     idx: usize,
+    id: Uuid,
     tx_type_str: &str,
     status_str: &str,
     date: &DateTime<Utc>,
@@ -100,6 +102,7 @@ fn build_transaction(
 
     WalletTransaction {
         index: idx,
+        id,
         tx_type_label: tx_type.display_label().to_string(),
         tx_type_icon: tx_type.icon_key().to_string(),
         tx_type,
@@ -156,9 +159,9 @@ async fn fetch_transactions(
     user_id: Uuid,
     limit: i64,
 ) -> Vec<WalletTransaction> {
-    let rows = sqlx::query_as::<_, (String, String, DateTime<Utc>, String, i64)>(
+    let rows = sqlx::query_as::<_, (Uuid, String, String, DateTime<Utc>, String, i64)>(
         r#"
-        SELECT t.type, t.status, t.created_at, w.wallet_type, t.amount_cents
+        SELECT t.id, t.type, t.status, t.created_at, w.wallet_type, t.amount_cents
         FROM wallet_transactions t
         JOIN wallets w ON w.id = t.wallet_id
         WHERE w.user_id = $1
@@ -174,8 +177,8 @@ async fn fetch_transactions(
 
     rows.iter()
         .enumerate()
-        .map(|(idx, (tx_type, status, date, wallet_t, amount))| {
-            build_transaction(idx, tx_type, status, date, wallet_t, *amount)
+        .map(|(idx, (id, tx_type, status, date, wallet_t, amount))| {
+            build_transaction(idx, *id, tx_type, status, date, wallet_t, *amount)
         })
         .collect()
 }
@@ -749,4 +752,434 @@ pub async fn api_wallet_transactions(
         page_size,
     })
     .into_response()
+}
+
+// ─── Transaction Detail ─────────────────────────────────────────
+
+/// Raw wallet_transactions row joined with the parent wallet for ownership check.
+#[derive(Debug)]
+struct TxRow {
+    id: Uuid,
+    wallet_id: Uuid,
+    wallet_type: String,
+    user_id: Uuid,
+    tx_type: String,
+    status: String,
+    amount_cents: i64,
+    description: Option<String>,
+    external_ref_id: Option<String>,
+    related_order_id: Option<Uuid>,
+    created_at: DateTime<Utc>,
+    completed_at: Option<DateTime<Utc>>,
+}
+
+async fn fetch_owned_transaction(
+    pool: &sqlx::PgPool,
+    user_id: Uuid,
+    tx_id: Uuid,
+) -> Option<TxRow> {
+    sqlx::query_as::<
+        _,
+        (
+            Uuid,
+            Uuid,
+            String,
+            Uuid,
+            String,
+            String,
+            i64,
+            Option<String>,
+            Option<String>,
+            Option<Uuid>,
+            DateTime<Utc>,
+            Option<DateTime<Utc>>,
+        ),
+    >(
+        r#"
+        SELECT t.id, t.wallet_id, w.wallet_type, w.user_id, t.type, t.status,
+               t.amount_cents, t.description, t.external_ref_id, t.related_order_id,
+               t.created_at, t.completed_at
+        FROM wallet_transactions t
+        JOIN wallets w ON w.id = t.wallet_id
+        WHERE t.id = $1 AND w.user_id = $2
+        "#,
+    )
+    .bind(tx_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten()
+    .map(
+        |(
+            id,
+            wallet_id,
+            wallet_type,
+            user_id,
+            tx_type,
+            status,
+            amount_cents,
+            description,
+            external_ref_id,
+            related_order_id,
+            created_at,
+            completed_at,
+        )| TxRow {
+            id,
+            wallet_id,
+            wallet_type,
+            user_id,
+            tx_type,
+            status,
+            amount_cents,
+            description,
+            external_ref_id,
+            related_order_id,
+            created_at,
+            completed_at,
+        },
+    )
+}
+
+fn detail_row(label: &str, value: &str) -> DetailRow {
+    DetailRow {
+        label: label.to_string(),
+        value: value.to_string(),
+        mono: false,
+        copyable: false,
+    }
+}
+
+fn mono_row(label: &str, value: &str, copyable: bool) -> DetailRow {
+    DetailRow {
+        label: label.to_string(),
+        value: value.to_string(),
+        mono: true,
+        copyable,
+    }
+}
+
+/// Format an UTC timestamp as "08 February 2026 at 14:32 UTC".
+fn fmt_full_datetime(dt: &DateTime<Utc>) -> String {
+    dt.format("%d %B %Y at %H:%M UTC").to_string()
+}
+
+async fn build_detail_context(
+    pool: &sqlx::PgPool,
+    row: &TxRow,
+) -> TransactionDetailContext {
+    let tx_type = TransactionType::from_db(&row.tx_type);
+    let status = TransactionStatus::from_db(&row.status);
+    let wallet_type = WalletType::from_db(&row.wallet_type);
+
+    let abs_cents = row.amount_cents.unsigned_abs() as i64;
+    let positive = row.amount_cents >= 0;
+    let amount_display = format_usd(abs_cents);
+    let amount_prefix = if positive { "+".to_string() } else { "-".to_string() };
+    let amount_css = if positive {
+        "amount-positive".to_string()
+    } else {
+        "amount-negative".to_string()
+    };
+
+    // ── Overview section ─────────────────────────────────────────
+    let mut overview = DetailSection {
+        title: "Overview".to_string(),
+        rows: vec![
+            mono_row("Transaction ID", &row.id.to_string(), true),
+            detail_row("Created", &fmt_full_datetime(&row.created_at)),
+        ],
+    };
+    if let Some(c) = &row.completed_at {
+        overview
+            .rows
+            .push(detail_row("Completed", &fmt_full_datetime(c)));
+    }
+    overview
+        .rows
+        .push(detail_row("Wallet", wallet_type.display_label()));
+    overview
+        .rows
+        .push(detail_row("Type", tx_type.display_label()));
+    overview
+        .rows
+        .push(detail_row("Status", status.display_label()));
+
+    let mut sections = vec![overview];
+
+    // ── Type-specific section ────────────────────────────────────
+    let mut wire_reference = String::new();
+    let mut show_wire_instructions = false;
+
+    match tx_type {
+        TransactionType::Deposit => {
+            let mut rows: Vec<DetailRow> = Vec::new();
+            // Look up the matching deposit_request via provider_reference.
+            if let Some(ref_id) = &row.external_ref_id {
+                wire_reference = ref_id.clone();
+                rows.push(mono_row("Reference", ref_id, true));
+
+                let dep = sqlx::query_as::<
+                    _,
+                    (
+                        String,
+                        String,
+                        String,
+                        i64,
+                        Option<String>,
+                        Option<DateTime<Utc>>,
+                        Option<DateTime<Utc>>,
+                    ),
+                >(
+                    r#"
+                    SELECT provider, status, currency, amount_cents, payment_method,
+                           expires_at, paid_at
+                    FROM deposit_requests
+                    WHERE provider_reference = $1 AND user_id = $2
+                    LIMIT 1
+                    "#,
+                )
+                .bind(ref_id)
+                .bind(row.user_id)
+                .fetch_optional(pool)
+                .await
+                .ok()
+                .flatten();
+
+                if let Some((provider, dr_status, currency, dr_amount, pm, expires, paid)) = dep {
+                    rows.push(detail_row("Provider", &provider));
+                    rows.push(detail_row("Request status", &dr_status));
+                    if let Some(method) = pm {
+                        rows.push(detail_row("Method", &method));
+                    }
+                    rows.push(detail_row(
+                        "Requested amount",
+                        &format!("{} {}", currency, format_usd(dr_amount).replace("USD ", "")),
+                    ));
+                    if let Some(p) = paid {
+                        rows.push(detail_row("Paid at", &fmt_full_datetime(&p)));
+                    }
+                    if let Some(e) = expires {
+                        rows.push(detail_row("Expires", &fmt_full_datetime(&e)));
+                    }
+                    show_wire_instructions = matches!(dr_status.as_str(), "pending");
+                } else {
+                    // Fallback: still show wire instructions for unfunded deposit
+                    show_wire_instructions = matches!(row.status.as_str(), "pending" | "processing");
+                }
+            }
+            if !rows.is_empty() {
+                sections.push(DetailSection {
+                    title: "Deposit details".to_string(),
+                    rows,
+                });
+            }
+        }
+        TransactionType::Withdrawal => {
+            let mut rows: Vec<DetailRow> = Vec::new();
+            if let Some(ref_id) = &row.external_ref_id {
+                rows.push(mono_row("Request ID", ref_id, true));
+
+                if let Ok(req_uuid) = Uuid::parse_str(ref_id) {
+                    let wd = sqlx::query_as::<
+                        _,
+                        (
+                            String,
+                            String,
+                            i64,
+                            Option<Uuid>,
+                            Option<String>,
+                            Option<DateTime<Utc>>,
+                        ),
+                    >(
+                        r#"
+                        SELECT status, currency, amount_cents, payment_method_id, admin_notes, approved_at
+                        FROM withdrawal_requests
+                        WHERE id = $1 AND user_id = $2
+                        LIMIT 1
+                        "#,
+                    )
+                    .bind(req_uuid)
+                    .bind(row.user_id)
+                    .fetch_optional(pool)
+                    .await
+                    .ok()
+                    .flatten();
+
+                    if let Some((wd_status, currency, wd_amount, pm_id, notes, approved)) = wd {
+                        rows.push(detail_row("Request status", &wd_status));
+                        rows.push(detail_row(
+                            "Requested amount",
+                            &format!("{} {}", currency, format_usd(wd_amount).replace("USD ", "")),
+                        ));
+                        if let Some(pid) = pm_id {
+                            // Look up payment method label for the destination
+                            if let Ok(Some(pm)) = sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>, String)>(
+                                "SELECT label, brand, last_four, method_type FROM payment_methods WHERE id = $1 AND user_id = $2"
+                            )
+                            .bind(pid)
+                            .bind(row.user_id)
+                            .fetch_optional(pool)
+                            .await
+                            {
+                                let (label, brand, last4, method_type) = pm;
+                                let dest = label.unwrap_or_else(|| {
+                                    if method_type == "bank" {
+                                        brand.unwrap_or_else(|| "Bank Account".to_string())
+                                    } else {
+                                        format!(
+                                            "{} ending in {}",
+                                            brand.unwrap_or_else(|| "Card".into()),
+                                            last4.unwrap_or_else(|| "****".into())
+                                        )
+                                    }
+                                });
+                                rows.push(detail_row("Destination", &dest));
+                            }
+                        }
+                        if let Some(a) = approved {
+                            rows.push(detail_row("Approved at", &fmt_full_datetime(&a)));
+                        }
+                        if let Some(n) = notes {
+                            if !n.trim().is_empty() {
+                                rows.push(detail_row("Admin notes", &n));
+                            }
+                        }
+                    }
+                }
+            }
+            if !rows.is_empty() {
+                sections.push(DetailSection {
+                    title: "Withdrawal request".to_string(),
+                    rows,
+                });
+            }
+        }
+        TransactionType::Purchase | TransactionType::Sale => {
+            if let Some(order_id) = row.related_order_id {
+                sections.push(DetailSection {
+                    title: "Order".to_string(),
+                    rows: vec![mono_row("Order ID", &order_id.to_string(), true)],
+                });
+            }
+        }
+        _ => {
+            if let Some(ref_id) = &row.external_ref_id {
+                sections.push(DetailSection {
+                    title: "Reference".to_string(),
+                    rows: vec![mono_row("External reference", ref_id, true)],
+                });
+            }
+        }
+    }
+
+    let wire_amount_display = format_usd(abs_cents);
+
+    TransactionDetailContext {
+        id: row.id,
+        tx_type_label: tx_type.display_label().to_string(),
+        tx_type_icon: tx_type.icon_key().to_string(),
+        status_label: status.display_label().to_string(),
+        status_css: status.css_class().to_string(),
+        wallet_label: wallet_type.display_label().to_string(),
+        amount_cents: row.amount_cents,
+        amount_display,
+        amount_prefix,
+        amount_css,
+        date_full: fmt_full_datetime(&row.created_at),
+        date_iso: row.created_at.to_rfc3339(),
+        description: row.description.clone(),
+        sections,
+        show_wire_instructions,
+        wire_reference,
+        wire_amount_display,
+    }
+}
+
+/// GET /transactions/:id – render the transaction detail page.
+pub async fn page_transaction_detail(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(tx_id): Path<Uuid>,
+) -> axum::response::Response {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
+
+    let row = match fetch_owned_transaction(&state.db, user.id, tx_id).await {
+        Some(r) if r.user_id == user.id => r,
+        _ => {
+            return (
+                StatusCode::NOT_FOUND,
+                Html("<h1>Transaction not found</h1>".to_string()),
+            )
+                .into_response()
+        }
+    };
+
+    let ctx = build_detail_context(&state.db, &row).await;
+
+    let template = match state.templates.get_template("transaction-detail.html") {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::error!("Failed to load transaction-detail.html template: {}", e);
+            return Html("<h1>Page not found</h1>".to_string()).into_response();
+        }
+    };
+
+    let user_display_name = user
+        .email
+        .split('@')
+        .next()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or("User")
+        .to_string();
+
+    let html = match template.render(minijinja::context! {
+        user => user,
+        user_display_name => user_display_name,
+        is_developer => false,
+        tx => ctx,
+    }) {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("Failed to render transaction-detail.html: {}", e);
+            return Html("<h1>Internal Server Error</h1>".to_string()).into_response();
+        }
+    };
+
+    Html(html).into_response()
+}
+
+/// GET /api/wallet/transactions/:id – JSON view of a single transaction.
+pub async fn api_transaction_detail(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(tx_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Unauthorized"})),
+            )
+                .into_response()
+        }
+    };
+
+    let row = match fetch_owned_transaction(&state.db, user.id, tx_id).await {
+        Some(r) if r.user_id == user.id => r,
+        _ => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"error": "Not found"})),
+            )
+                .into_response()
+        }
+    };
+
+    let ctx = build_detail_context(&state.db, &row).await;
+    Json(ctx).into_response()
 }
