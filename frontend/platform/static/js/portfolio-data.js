@@ -319,10 +319,16 @@
             title="View NFT in MetaMask"
             style="margin-right:4px;"
             onclick="window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}');">
-            <img src="/static/images/icons/metamask.svg"
-                 alt="MetaMask"
-                 width="18" height="18"
-                 onerror="this.outerHTML='<svg width=&quot;18&quot; height=&quot;18&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot;><path d=&quot;M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z&quot;/><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;3&quot;/></svg>'">
+            <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M28.8 3.2 17.6 11.4l2.1-4.9z" fill="#E2761B"/>
+              <path d="M3.2 3.2 14.3 11.5 12.3 6.5z" fill="#E4761B"/>
+              <path d="M24.5 21.6l-3 4.6 6.4 1.8 1.8-6.3z" fill="#E4761B"/>
+              <path d="M2.4 21.7l1.8 6.3 6.4-1.8-3-4.6z" fill="#E4761B"/>
+              <path d="M10.2 14.4 8.5 17l6.3.3-.2-6.8z" fill="#E4761B"/>
+              <path d="M21.8 14.4 17.4 10.4l-.1 6.9 6.3-.3z" fill="#E4761B"/>
+              <path d="M10.6 26.2 14.4 24.3 11.1 21.8z" fill="#E4761B"/>
+              <path d="M17.6 24.3 21.4 26.2 20.9 21.8z" fill="#E4761B"/>
+            </svg>
           </button>
           ` : ''}
           <button class="portfolio-assets-detail-btn"
@@ -411,9 +417,18 @@
           <button type="button"
             aria-label="Add ${title} to MetaMask"
             title="View NFT in MetaMask"
-            style="margin-top:6px; background:none; border:none; padding:2px; cursor:pointer; color:#475467;"
+            style="margin-top:6px; background:none; border:none; padding:2px; cursor:pointer;"
             onclick="event.stopPropagation(); window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}');">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg width="14" height="14" viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M28.8 3.2 17.6 11.4l2.1-4.9z" fill="#E2761B"/>
+              <path d="M3.2 3.2 14.3 11.5 12.3 6.5z" fill="#E4761B"/>
+              <path d="M24.5 21.6l-3 4.6 6.4 1.8 1.8-6.3z" fill="#E4761B"/>
+              <path d="M2.4 21.7l1.8 6.3 6.4-1.8-3-4.6z" fill="#E4761B"/>
+              <path d="M10.2 14.4 8.5 17l6.3.3-.2-6.8z" fill="#E4761B"/>
+              <path d="M21.8 14.4 17.4 10.4l-.1 6.9 6.3-.3z" fill="#E4761B"/>
+              <path d="M10.6 26.2 14.4 24.3 11.1 21.8z" fill="#E4761B"/>
+              <path d="M17.6 24.3 21.4 26.2 20.9 21.8z" fill="#E4761B"/>
+            </svg>
           </button>
           ` : ''}
         </td>
