@@ -20,6 +20,11 @@ pub struct InvestmentItem {
     pub is_within_48h: bool,
     pub chain_contract_address: Option<String>,
     pub chain_tx_hash: Option<String>,
+    /// `polygon` (mainnet, chain id 137) or `polygon_amoy` (testnet, 80002).
+    /// Frontend uses this to ask the user's wallet to switch networks
+    /// before adding the NFT, since `wallet_watchAsset` only succeeds
+    /// when the wallet is on the same chain as the contract.
+    pub chain_network: Option<String>,
 }
 
 #[derive(Serialize)]

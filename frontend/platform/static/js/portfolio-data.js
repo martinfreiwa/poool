@@ -32,31 +32,93 @@
    * add a POOOL property NFT (ERC-1155, token id = 1) to their wallet's
    * NFTs tab. Uses the EIP-747 `wallet_watchAsset` RPC.
    *
-   * Notes:
-   *  - All POOOL property contracts use ASSET_TOKEN_ID = 1.
-   *  - MetaMask's ERC1155 support is patchy across versions: on failure
-   *    (or no extension), copy the contract address to clipboard and
-   *    show a manual-import hint as a fallback.
+   * Pre-flight: ensures the wallet is on the same chain as the contract,
+   * because `wallet_watchAsset` checks `balanceOf(activeAccount, tokenId)`
+   * and rejects with "ownership details don't match" if the wallet sees a
+   * 0 balance (which it does when on a different network).
    *
-   * Exposed as `window._addPropertyToMetaMask(contractAddress, name, image)`.
+   * On failure (no extension, wrong chain unrecoverable, ERC-1155 not
+   * supported by this wallet version, the active account doesn't own
+   * any tokens) we copy the contract address to the clipboard and surface
+   * manual-import instructions so the user is never stuck.
+   *
+   * Exposed as `window._addPropertyToMetaMask(contractAddress, name, image, network)`.
+   * `network` is "polygon" or "polygon_amoy" (matches `assets.chain_network`).
    */
-  window._addPropertyToMetaMask = async function (contractAddress, name, image) {
+  const CHAINS = {
+    polygon: {
+      chainId: "0x89", // 137
+      chainName: "Polygon",
+      nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+      rpcUrls: ["https://polygon-rpc.com"],
+      blockExplorerUrls: ["https://polygonscan.com"],
+    },
+    polygon_amoy: {
+      chainId: "0x13882", // 80002
+      chainName: "Polygon Amoy Testnet",
+      nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+      rpcUrls: ["https://rpc-amoy.polygon.technology"],
+      blockExplorerUrls: ["https://amoy.polygonscan.com"],
+    },
+  };
+
+  async function ensureChain(eth, networkKey) {
+    const target = CHAINS[networkKey] || CHAINS.polygon;
+    let current;
+    try { current = await eth.request({ method: "eth_chainId" }); } catch (_) {}
+    if (current && current.toLowerCase() === target.chainId.toLowerCase()) return target;
+    try {
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: target.chainId }],
+      });
+      return target;
+    } catch (e) {
+      // 4902 = chain not added; add it then retry.
+      if (e && (e.code === 4902 || (e.data && e.data.originalError && e.data.originalError.code === 4902))) {
+        await eth.request({ method: "wallet_addEthereumChain", params: [target] });
+        return target;
+      }
+      throw e;
+    }
+  }
+
+  function manualImportHint(contractAddress, target) {
+    return (
+      "Manual import:\n" +
+      "  → Switch wallet to " + (target ? target.chainName : "the correct network") + "\n" +
+      "  → MetaMask → NFTs tab → Import NFT\n" +
+      "  → Address: " + contractAddress + " (copied to clipboard)\n" +
+      "  → Token ID: 1\n\n" +
+      "Note: your active wallet account must be the one that owns the tokens."
+    );
+  }
+
+  window._addPropertyToMetaMask = async function (contractAddress, name, image, networkKey) {
     if (!contractAddress) return;
     const eth = window.ethereum;
     if (!eth || typeof eth.request !== "function") {
       try { await navigator.clipboard.writeText(contractAddress); } catch (_) {}
       alert(
         "No browser wallet detected.\n\n" +
-        "Install MetaMask, then in your wallet:\n" +
-        "  → NFTs tab → Import NFT\n" +
-        "  → Address: " + contractAddress + " (copied)\n" +
-        "  → Token ID: 1"
+        "Install MetaMask first, then come back and click again.\n\n" +
+        manualImportHint(contractAddress, CHAINS[networkKey] || CHAINS.polygon)
+      );
+      return;
+    }
+    let target;
+    try {
+      target = await ensureChain(eth, networkKey);
+    } catch (e) {
+      const msg = (e && e.message) || String(e);
+      try { await navigator.clipboard.writeText(contractAddress); } catch (_) {}
+      alert(
+        "Could not switch your wallet to the right network (" + msg + ").\n\n" +
+        manualImportHint(contractAddress, CHAINS[networkKey] || CHAINS.polygon)
       );
       return;
     }
     try {
-      // Some MetaMask versions silently fail on ERC1155; offer a clipboard
-      // fallback so the user can finish the import manually.
       const ok = await eth.request({
         method: "wallet_watchAsset",
         params: {
@@ -72,13 +134,14 @@
       if (ok === false) throw new Error("Wallet declined the request.");
     } catch (err) {
       const msg = (err && err.message) || String(err);
+      const ownership = /ownership|owner|balance/i.test(msg);
       try { await navigator.clipboard.writeText(contractAddress); } catch (_) {}
       alert(
-        "Could not add to your wallet automatically (" + msg + ").\n\n" +
-        "Manual import:\n" +
-        "  → MetaMask → NFTs tab → Import NFT\n" +
-        "  → Address: " + contractAddress + " (copied)\n" +
-        "  → Token ID: 1"
+        (ownership
+          ? "MetaMask couldn't add this NFT because the active account doesn't own any tokens of it.\n\n" +
+            "Switch MetaMask to the wallet you bound during KYC (the one that received the property tokens) and try again."
+          : "Could not add to your wallet automatically (" + msg + ")."
+        ) + "\n\n" + manualImportHint(contractAddress, target)
       );
     }
   };
@@ -318,7 +381,7 @@
             aria-label="Add ${title} to MetaMask"
             title="View NFT in MetaMask"
             style="margin-right:4px;"
-            onclick="window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}');">
+            onclick="window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}', '${escHtml(inv.chainNetwork || 'polygon')}');">
             <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
               <path d="M28.8 3.2 17.6 11.4l2.1-4.9z" fill="#E2761B"/>
               <path d="M3.2 3.2 14.3 11.5 12.3 6.5z" fill="#E4761B"/>
@@ -418,7 +481,7 @@
             aria-label="Add ${title} to MetaMask"
             title="View NFT in MetaMask"
             style="margin-top:6px; background:none; border:none; padding:2px; cursor:pointer;"
-            onclick="event.stopPropagation(); window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}');">
+            onclick="event.stopPropagation(); window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}', '${escHtml(inv.chainNetwork || 'polygon')}');">
             <svg width="14" height="14" viewBox="0 0 32 32" aria-hidden="true">
               <path d="M28.8 3.2 17.6 11.4l2.1-4.9z" fill="#E2761B"/>
               <path d="M3.2 3.2 14.3 11.5 12.3 6.5z" fill="#E4761B"/>

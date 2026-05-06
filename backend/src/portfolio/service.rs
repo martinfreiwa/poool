@@ -35,6 +35,7 @@ pub async fn get_portfolio(
             COALESCE(a.annual_yield_bps, 0) AS annual_yield_bps,
             a.chain_contract_address,
             a.chain_tx_hash,
+            a.chain_network,
             a.funding_status
         FROM investments i
         JOIN assets a ON a.id = i.asset_id
@@ -74,6 +75,7 @@ pub async fn get_portfolio(
         let annual_yield_bps: i32 = r.get("annual_yield_bps");
         let chain_contract_address: Option<String> = r.get("chain_contract_address");
         let chain_tx_hash: Option<String> = r.get("chain_tx_hash");
+        let chain_network: Option<String> = r.get("chain_network");
 
         total_value_cents += current_value_cents;
         total_purchase_cents += purchase_value_cents;
@@ -101,6 +103,7 @@ pub async fn get_portfolio(
                 <= chrono::Duration::hours(48),
             chain_contract_address,
             chain_tx_hash,
+            chain_network,
         });
     }
 

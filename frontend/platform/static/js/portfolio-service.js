@@ -267,6 +267,7 @@ const PortfolioDataService = (function () {
                 isWithin48h: inv.is_within_48h ?? false,
                 chainContractAddress: inv.chain_contract_address || null,
                 chainTxHash: inv.chain_tx_hash || null,
+                chainNetwork: inv.chain_network || null,
             };
         });
 
