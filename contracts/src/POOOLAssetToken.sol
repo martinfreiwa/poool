@@ -72,24 +72,24 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable, Ree
     /**
      * @notice Initialize the clone with its specific parameters.
      * @param admin The admin address (factory caller)
-     * @param _identityRegistry The address of the central IdentityRegistry
+     * @param identityRegistry_ The address of the central IdentityRegistry
      * @param assetURI_ The URI containing the property's metadata
      */
     function initialize(
         address admin,
-        address _identityRegistry,
+        address identityRegistry_,
         string calldata assetURI_,
         uint256 initialSupply,
         address mintTo
     ) external {
         if (_initialized) revert AlreadyInitialized();
-        if (admin == address(0) || _identityRegistry == address(0) || mintTo == address(0)) revert ZeroAddress();
+        if (admin == address(0) || identityRegistry_ == address(0) || mintTo == address(0)) revert ZeroAddress();
         if (initialSupply == 0) revert ZeroAmount();
         if (bytes(assetURI_).length == 0) revert EmptyURI();
 
         _initialized = true;
 
-        identityRegistry = IdentityRegistry(_identityRegistry);
+        identityRegistry = IdentityRegistry(identityRegistry_);
         _assetURI = assetURI_;
 
         // Setup Roles
@@ -103,7 +103,7 @@ contract POOOLAssetToken is ERC1155, ERC1155Supply, AccessControl, Pausable, Ree
         _mint(mintTo, ASSET_TOKEN_ID, initialSupply, "");
         emit AssetMinted(mintTo, initialSupply);
 
-        emit Initialized(admin, _identityRegistry, assetURI_);
+        emit Initialized(admin, identityRegistry_, assetURI_);
     }
 
     /**

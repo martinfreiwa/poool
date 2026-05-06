@@ -4,16 +4,20 @@ pragma solidity ^0.8.24;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
-// Interfaces to typecast the initialized clone and call the initialization function
+// Minimal interface for typecasting the freshly-cloned proxy. The real
+// `POOOLAssetToken` contract implements this by virtue of having the
+// same function signature; we don't `inherit` it on the implementation
+// because doing so would force inheritance through the OpenZeppelin
+// stack purely for type-erasure here.
 interface IPOOOLAssetToken {
     function initialize(
         address admin,
-        address _identityRegistry,
+        address identityRegistry_,
         string calldata assetURI_,
         uint256 initialSupply,
         address mintTo
     ) external;
-    
+
     function mint(address to, uint256 amount) external;
 }
 
@@ -85,17 +89,27 @@ contract AssetFactory is AccessControl {
         if (initialSupply == 0) revert ZeroSupply();
         if (bytes(assetURI).length == 0) revert EmptyURI();
 
-        // 1. Deploy the precise minimal proxy clone
+        // 1. Deploy the precise minimal proxy clone (no external code runs).
         cloneAddress = Clones.clone(implementationContract);
 
-        // 2. Initialize the clone's storage variables, roles, AND perform initial minting
-        IPOOOLAssetToken cloneToken = IPOOOLAssetToken(cloneAddress);
-        cloneToken.initialize(adminForClone, identityRegistry, assetURI, initialSupply, mintTo);
-
-        // 3. Keep track of deployed assets
+        // 2. Effects FIRST — bookkeeping + event before the external
+        //    initialize() call. The clone is freshly deployed and the
+        //    bytecode is one we control, but defense-in-depth: any
+        //    malicious implementation could otherwise re-enter
+        //    deployAsset via a callback before the tracking array is
+        //    updated. Caught by Slither's reentrancy-benign detector.
         deployedAssets.push(cloneAddress);
-
         emit AssetDeployed(cloneAddress, assetURI, initialSupply, mintTo);
+
+        // 3. Interaction — initialize the clone (sets roles, mints
+        //    supply to mintTo).
+        IPOOOLAssetToken(cloneAddress).initialize(
+            adminForClone,
+            identityRegistry,
+            assetURI,
+            initialSupply,
+            mintTo
+        );
 
         return cloneAddress;
     }
