@@ -647,6 +647,27 @@ pub(crate) async fn reserve_nonce(
     signer: &str,
 ) -> Result<u64, String> {
     let signer_lower = signer.to_lowercase();
+
+    // Always pull the on-chain pending nonce first. Cheap (~50ms) and
+    // makes the worker resilient to **any** out-of-band bump of the
+    // signer's nonce — manual `cast send`, a CLI runbook, key shared
+    // across two services. Without this auto-heal, the DB cache can
+    // drift below chain (we saw this 2026-05-06: manual deploy/settle
+    // txs from ops laptop pushed chain to 43 while DB stayed at 36
+    // → every subsequent worker tx reverted with "nonce too low").
+    let on_chain_nonce = {
+        let resp = rpc_call(
+            client,
+            rpc_url,
+            "eth_getTransactionCount",
+            serde_json::json!([signer, "pending"]),
+        )
+        .await?;
+        let hex = resp.as_str().ok_or("nonce probe: bad RPC reply")?;
+        u64::from_str_radix(hex.trim_start_matches("0x"), 16)
+            .map_err(|e| format!("nonce probe parse: {}", e))?
+    };
+
     let mut tx = pool
         .begin()
         .await
@@ -660,31 +681,34 @@ pub(crate) async fn reserve_nonce(
     .await
     .map_err(|e| format!("nonce select: {}", e))?;
 
-    let nonce = match row {
-        Some((n,)) => n as u64,
-        None => {
-            // Seed from chain. Use 'pending' so we account for in-flight TXs.
-            let on_chain = rpc_call(
-                client,
-                rpc_url,
-                "eth_getTransactionCount",
-                serde_json::json!([signer, "pending"]),
-            )
-            .await?;
-            let hex = on_chain.as_str().ok_or("nonce seed: bad RPC reply")?;
-            let n = u64::from_str_radix(hex.trim_start_matches("0x"), 16)
-                .map_err(|e| format!("nonce seed parse: {}", e))?;
-            sqlx::query(
-                "INSERT INTO chain_nonce_state (signer_address, next_nonce) VALUES ($1, $2)",
-            )
-            .bind(&signer_lower)
-            .bind(n as i64)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| format!("nonce seed insert: {}", e))?;
-            n
-        }
-    };
+    // Reconcile DB vs. chain — take whichever is HIGHER.
+    //   - chain > db: out-of-band bump (manual cast send, etc.). Heal up.
+    //   - db > chain: in-flight tx hasn't mined yet. Trust DB; chain
+    //                  will catch up when the mempool drains.
+    //   - db == chain: steady state.
+    let cached = row.map(|(n,)| n as u64).unwrap_or(0);
+    let nonce = cached.max(on_chain_nonce);
+
+    if cached < on_chain_nonce {
+        tracing::warn!(
+            "⛓️ Nonce auto-heal: DB cache for {} was {} but chain is at {}. Resyncing.",
+            signer,
+            cached,
+            on_chain_nonce
+        );
+    }
+
+    if row.is_none() {
+        sqlx::query(
+            "INSERT INTO chain_nonce_state (signer_address, next_nonce) VALUES ($1, $2)
+             ON CONFLICT (signer_address) DO UPDATE SET next_nonce = EXCLUDED.next_nonce",
+        )
+        .bind(&signer_lower)
+        .bind(nonce as i64)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("nonce seed insert: {}", e))?;
+    }
 
     sqlx::query(
         "UPDATE chain_nonce_state SET next_nonce = $1, updated_at = NOW() WHERE signer_address = $2",

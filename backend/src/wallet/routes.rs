@@ -773,11 +773,7 @@ struct TxRow {
     completed_at: Option<DateTime<Utc>>,
 }
 
-async fn fetch_owned_transaction(
-    pool: &sqlx::PgPool,
-    user_id: Uuid,
-    tx_id: Uuid,
-) -> Option<TxRow> {
+async fn fetch_owned_transaction(pool: &sqlx::PgPool, user_id: Uuid, tx_id: Uuid) -> Option<TxRow> {
     sqlx::query_as::<
         _,
         (
@@ -864,10 +860,7 @@ fn fmt_full_datetime(dt: &DateTime<Utc>) -> String {
     dt.format("%d %B %Y at %H:%M UTC").to_string()
 }
 
-async fn build_detail_context(
-    pool: &sqlx::PgPool,
-    row: &TxRow,
-) -> TransactionDetailContext {
+async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDetailContext {
     let tx_type = TransactionType::from_db(&row.tx_type);
     let status = TransactionStatus::from_db(&row.status);
     let wallet_type = WalletType::from_db(&row.wallet_type);
@@ -875,7 +868,11 @@ async fn build_detail_context(
     let abs_cents = row.amount_cents.unsigned_abs() as i64;
     let positive = row.amount_cents >= 0;
     let amount_display = format_usd(abs_cents);
-    let amount_prefix = if positive { "+".to_string() } else { "-".to_string() };
+    let amount_prefix = if positive {
+        "+".to_string()
+    } else {
+        "-".to_string()
+    };
     let amount_css = if positive {
         "amount-positive".to_string()
     } else {
@@ -965,7 +962,8 @@ async fn build_detail_context(
                     show_wire_instructions = matches!(dr_status.as_str(), "pending");
                 } else {
                     // Fallback: still show wire instructions for unfunded deposit
-                    show_wire_instructions = matches!(row.status.as_str(), "pending" | "processing");
+                    show_wire_instructions =
+                        matches!(row.status.as_str(), "pending" | "processing");
                 }
             }
             if !rows.is_empty() {
