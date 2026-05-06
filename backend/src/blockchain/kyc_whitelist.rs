@@ -196,7 +196,9 @@ async fn send_batch_whitelist_tx(
 
     // ABI-encode batchSetWhitelisted(address[], bool[]).
     // selector = keccak256("batchSetWhitelisted(address[],bool[])")[..4]
-    // = 0x9beb20f8 (verified via `cast sig`).
+    // = 0xd38c6523 (verified: `cast sig 'batchSetWhitelisted(address[],bool[])'`).
+    // The previous value (0x9beb20f8) was wrong — every call hit a
+    // non-existent function selector and reverted silently for weeks.
     let calldata = encode_batch_set_whitelisted_calldata(addresses)?;
 
     let sender = super::signing::format_address(&config.signer.address());
@@ -269,7 +271,7 @@ async fn send_batch_whitelist_tx(
 
 /// ABI-encode batchSetWhitelisted(address[],bool[]) calldata.
 fn encode_batch_set_whitelisted_calldata(addresses: &[String]) -> Result<String, String> {
-    let selector = "9beb20f8"; // keccak256("batchSetWhitelisted(address[],bool[])")[..4]
+    let selector = "d38c6523"; // keccak256("batchSetWhitelisted(address[],bool[])")[..4]
     let n = addresses.len();
 
     let mut padded_addrs: Vec<String> = Vec::with_capacity(n);
