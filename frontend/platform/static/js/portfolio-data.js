@@ -27,6 +27,62 @@
     return slug.replace(/[^a-zA-Z0-9_-]/g, "");
   }
 
+  /**
+   * Prompt the user's browser wallet (MetaMask, Coinbase Wallet, etc.) to
+   * add a POOOL property NFT (ERC-1155, token id = 1) to their wallet's
+   * NFTs tab. Uses the EIP-747 `wallet_watchAsset` RPC.
+   *
+   * Notes:
+   *  - All POOOL property contracts use ASSET_TOKEN_ID = 1.
+   *  - MetaMask's ERC1155 support is patchy across versions: on failure
+   *    (or no extension), copy the contract address to clipboard and
+   *    show a manual-import hint as a fallback.
+   *
+   * Exposed as `window._addPropertyToMetaMask(contractAddress, name, image)`.
+   */
+  window._addPropertyToMetaMask = async function (contractAddress, name, image) {
+    if (!contractAddress) return;
+    const eth = window.ethereum;
+    if (!eth || typeof eth.request !== "function") {
+      try { await navigator.clipboard.writeText(contractAddress); } catch (_) {}
+      alert(
+        "No browser wallet detected.\n\n" +
+        "Install MetaMask, then in your wallet:\n" +
+        "  → NFTs tab → Import NFT\n" +
+        "  → Address: " + contractAddress + " (copied)\n" +
+        "  → Token ID: 1"
+      );
+      return;
+    }
+    try {
+      // Some MetaMask versions silently fail on ERC1155; offer a clipboard
+      // fallback so the user can finish the import manually.
+      const ok = await eth.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC1155",
+          options: {
+            address: contractAddress,
+            tokenId: "1",
+            name: name || "POOOL Property",
+            image: image || undefined,
+          },
+        },
+      });
+      if (ok === false) throw new Error("Wallet declined the request.");
+    } catch (err) {
+      const msg = (err && err.message) || String(err);
+      try { await navigator.clipboard.writeText(contractAddress); } catch (_) {}
+      alert(
+        "Could not add to your wallet automatically (" + msg + ").\n\n" +
+        "Manual import:\n" +
+        "  → MetaMask → NFTs tab → Import NFT\n" +
+        "  → Address: " + contractAddress + " (copied)\n" +
+        "  → Token ID: 1"
+      );
+    }
+  };
+
   // ─── State Layer IDs ─────────────────────────────────────────
   const SECTION_IDS = [
     "portfolio-value-section",
@@ -256,6 +312,19 @@
           ${buildStatusBadgeHtml(statusCss, statusLabel)}
         </div>
         <div class="portfolio-assets-cell actions-col" onclick="event.stopPropagation();">
+          ${inv.chainContractAddress ? `
+          <button class="portfolio-assets-detail-btn"
+            type="button"
+            aria-label="Add ${title} to MetaMask"
+            title="View NFT in MetaMask"
+            style="margin-right:4px;"
+            onclick="window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}');">
+            <img src="/static/images/icons/metamask.svg"
+                 alt="MetaMask"
+                 width="18" height="18"
+                 onerror="this.outerHTML='<svg width=&quot;18&quot; height=&quot;18&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot;><path d=&quot;M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z&quot;/><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;3&quot;/></svg>'">
+          </button>
+          ` : ''}
           <button class="portfolio-assets-detail-btn"
             type="button"
             aria-label="View details for ${title}"
@@ -338,6 +407,15 @@
             <span class="portfolio-assets-status-icon"></span>
             <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60px;">${statusLabel}</span>
           </div>
+          ${inv.chainContractAddress ? `
+          <button type="button"
+            aria-label="Add ${title} to MetaMask"
+            title="View NFT in MetaMask"
+            style="margin-top:6px; background:none; border:none; padding:2px; cursor:pointer; color:#475467;"
+            onclick="event.stopPropagation(); window._addPropertyToMetaMask('${escHtml(inv.chainContractAddress)}', '${title}', '${cover}');">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          ` : ''}
         </td>
       </tr>`;}).join("");
   }
