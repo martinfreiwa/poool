@@ -67,8 +67,8 @@ body.my-trading-body {
 }
 
 .myt__content-wrapper {
-    max-width: 1200px;
-    margin: 0;
+    max-width: 1600px;
+    margin: 0 auto;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -142,7 +142,7 @@ body.my-trading-body {
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 24px;
-    max-width: 1096px !important;
+    width: 100%;
 }
 
 /* Holographic p-icon inside sub-stat cards — prevent collapse */
@@ -203,9 +203,13 @@ body.my-trading-body {
 /* === Card Header with integrated tabs (leaderboard pattern) === */
 .myt-table-card.submissions-table-container {
     border-radius: 12px;
-    max-width: 1096px !important;
+    width: 100%;
     overflow: hidden;
 }
+
+/* Tab content can scroll horizontally so wide tables don't break layout */
+.myt__tab-content { overflow-x: auto; }
+.myt__tab-content > .submissions-table { min-width: 720px; }
 
 .myt-card-header {
     display: flex;
@@ -513,4 +517,741 @@ body.my-trading-body {
     .myt-card-header { flex-direction: column; align-items: flex-start; }
     .myt-card-tabs { overflow-x: auto; width: 100%; }
     .myt__table-header { flex-direction: column; gap: 10px; }
+}
+
+/* ===========================================================
+   Hero P/L Block
+   =========================================================== */
+.myt-hero {
+    background: linear-gradient(135deg, #ffffff 0%, #f4f6ff 100%);
+    border: 1px solid var(--myt-card-border);
+    border-radius: var(--myt-card-radius);
+    box-shadow: var(--myt-card-shadow);
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+    gap: 24px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+.myt-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--myt-card-accent);
+}
+.myt-hero__main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.myt-hero__label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--myt-text-sec);
+    font-weight: 600;
+}
+.myt-hero__value {
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 700;
+    color: var(--myt-text-bright);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+.myt-hero__updated {
+    font-size: 12px;
+    color: var(--myt-text-sec);
+    margin-top: 4px;
+}
+.myt-hero__metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+.myt-hero__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+.myt-hero__metric-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--myt-text-sec);
+    font-weight: 600;
+}
+.myt-hero__metric-value {
+    font-size: 18px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--myt-text-bright);
+}
+
+/* ===========================================================
+   Sub-stat as button (a11y + click affordance)
+   =========================================================== */
+.sub-stat--btn {
+    appearance: none;
+    background: var(--myt-surface);
+    border: 1px solid var(--myt-card-border);
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.sub-stat--btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--myt-card-shadow-hover);
+    border-color: rgba(0, 0, 255, 0.18);
+}
+.sub-stat--btn:focus-visible {
+    outline: 2px solid var(--myt-blue);
+    outline-offset: 2px;
+}
+.sub-stat--btn.active {
+    border-color: var(--myt-blue);
+    box-shadow: 0 0 0 1px var(--myt-blue), var(--myt-card-shadow);
+}
+
+/* ===========================================================
+   Toolbar (search + filter + bulk + export per tab)
+   =========================================================== */
+.myt__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--myt-border);
+    flex-wrap: nowrap;
+}
+.myt__toolbar-spacer { flex: 1; min-width: 8px; }
+
+/* Search input — compact pill */
+.myt__toolbar .myt__search {
+    flex: 0 1 220px;
+    min-width: 0;
+    width: 220px;
+    height: 34px;
+    padding: 0 12px 0 32px;
+    border: 1px solid var(--myt-input-border);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    background: var(--myt-input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.myt__toolbar .myt__search::placeholder { color: var(--myt-text-sec); }
+.myt__toolbar .myt__search:focus {
+    outline: none;
+    border-color: var(--myt-blue);
+    box-shadow: 0 0 0 3px rgba(0,0,255,0.08);
+}
+/* clear-button cross from search input on Chrome */
+.myt__toolbar .myt__search::-webkit-search-cancel-button { cursor: pointer; }
+
+/* Compact select inside toolbar — overrides global ds-select width:100% + 44px height */
+.myt__toolbar .ds-select,
+.myt__toolbar .myt__filter {
+    width: auto;
+    height: 34px;
+    min-width: 0;
+    flex: 0 0 auto;
+    padding: 0 28px 0 10px;
+    font-size: 13px;
+    border-radius: 8px;
+    background-position: right 8px center;
+    background-size: 10px 7px;
+}
+.myt__toolbar .ds-select:focus,
+.myt__toolbar .myt__filter:focus {
+    box-shadow: 0 0 0 3px rgba(0,0,255,0.08);
+}
+
+/* Compact ds-btn inside toolbar */
+.myt__toolbar .ds-btn,
+.myt__toolbar .ds-btn--sm {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+/* Bulk button — clear neutral state, blue when active */
+.myt__bulk-btn {
+    background: var(--myt-surface);
+    border: 1px solid var(--myt-input-border);
+    color: var(--myt-text);
+}
+.myt__bulk-btn:not([disabled]) {
+    background: var(--myt-blue);
+    border-color: var(--myt-blue);
+    color: #fff;
+}
+.myt__bulk-btn:not([disabled]):hover { filter: brightness(0.95); }
+.myt__bulk-btn[disabled] {
+    opacity: 1;
+    color: #98a1ad;
+    cursor: not-allowed;
+    background: #f5f6f8;
+    border-color: var(--myt-border);
+}
+
+.myt__th-check { width: 32px; }
+.myt__th-num { text-align: right; }
+.myt__row-check { width: 32px; }
+
+/* ── Trade History header — match toolbar look ───────────── */
+.myt__table-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--myt-border);
+    flex-wrap: wrap;
+}
+.myt__table-header .myt__table-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+.myt__table-header .ds-select {
+    width: auto !important;
+    min-width: 0 !important;
+    height: 34px;
+    padding: 0 28px 0 10px;
+    font-size: 13px;
+    border-radius: 8px;
+    background-position: right 8px center;
+    background-size: 10px 7px;
+    flex: 0 0 auto;
+}
+.myt__table-header .myt__search { flex: 0 1 200px; }
+.myt__table-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+.myt__table-actions .ds-btn,
+.myt__table-actions .ds-btn--sm {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+.myt__table-summary {
+    font-size: 12px;
+    color: var(--myt-text-sec);
+    margin-right: 4px;
+    white-space: nowrap;
+}
+.myt__table-summary strong { font-size: 14px; }
+
+/* Sortable headers */
+.submissions-table.myt__table th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    white-space: nowrap;
+}
+.submissions-table.myt__table th[data-sort]:hover { color: var(--myt-blue); }
+.submissions-table.myt__table th[data-sort]::after {
+    content: "";
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 6px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    opacity: 0.25;
+    border-top: 5px solid currentColor;
+    vertical-align: middle;
+}
+.submissions-table.myt__table th[aria-sort="ascending"]::after {
+    border-top: 0;
+    border-bottom: 5px solid var(--myt-blue);
+    opacity: 1;
+}
+.submissions-table.myt__table th[aria-sort="descending"]::after {
+    border-top: 5px solid var(--myt-blue);
+    opacity: 1;
+}
+.myt__th-tip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.06);
+    color: var(--myt-text-sec);
+    font-size: 10px;
+    margin-left: 4px;
+    cursor: help;
+}
+.myt__th-tip:focus-visible { outline: 2px solid var(--myt-blue); outline-offset: 2px; }
+
+/* ===========================================================
+   Skeleton loading rows
+   =========================================================== */
+@keyframes myt-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.myt__skeleton-cell {
+    display: block;
+    height: 12px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #eef0f4 0%, #f7f8fa 50%, #eef0f4 100%);
+    background-size: 200% 100%;
+    animation: myt-shimmer 1.4s linear infinite;
+}
+.myt__skeleton-cell--wide { width: 80%; }
+.myt__skeleton-cell--mid { width: 60%; }
+.myt__skeleton-cell--narrow { width: 40%; }
+
+/* ===========================================================
+   Error banner inside tab
+   =========================================================== */
+.myt__error-banner {
+    margin: 16px;
+    padding: 12px 16px;
+    background: var(--myt-red-bg);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    border-radius: 10px;
+    color: var(--myt-red);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.myt__error-banner button {
+    margin-left: auto;
+    background: var(--myt-red);
+    color: #fff;
+    border: 0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ===========================================================
+   Aging / Anomaly badges
+   =========================================================== */
+.myt__age {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--myt-text-sec);
+}
+.myt__age--warn {
+    background: var(--myt-amber-bg);
+    color: var(--myt-amber);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+.myt__age--danger {
+    background: var(--myt-red-bg);
+    color: var(--myt-red);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+.myt__expiry-soon {
+    background: var(--myt-amber-bg);
+    color: var(--myt-amber);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 11px;
+}
+
+/* ===========================================================
+   Drill-down Drawer
+   =========================================================== */
+.myt-drawer { position: fixed; inset: 0; z-index: 1100; pointer-events: none; }
+.myt-drawer[aria-hidden="false"] { pointer-events: auto; }
+.myt-drawer__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 17, 24, 0.45);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.myt-drawer[aria-hidden="false"] .myt-drawer__backdrop { opacity: 1; }
+.myt-drawer__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(440px, 92vw);
+    background: var(--myt-surface);
+    box-shadow: -8px 0 28px rgba(15, 17, 24, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+.myt-drawer[aria-hidden="false"] .myt-drawer__panel { transform: translateX(0); }
+.myt-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--myt-border);
+}
+.myt-drawer__title { margin: 0; font-size: 16px; font-weight: 600; }
+.myt-drawer__close {
+    background: transparent;
+    border: 0;
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--myt-text-sec);
+}
+.myt-drawer__close:hover { background: var(--myt-hover); color: var(--myt-text); }
+.myt-drawer__body { padding: 20px; overflow-y: auto; flex: 1; }
+.myt-drawer__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--myt-border);
+    font-size: 13px;
+}
+.myt-drawer__row span:first-child { color: var(--myt-text-sec); }
+.myt-drawer__row strong { color: var(--myt-text-bright); font-variant-numeric: tabular-nums; }
+.myt-drawer__section-title {
+    margin: 18px 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--myt-text-sec);
+}
+.myt-drawer__tx {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+.myt-drawer__tx a { color: var(--myt-blue); text-decoration: none; }
+.myt-drawer__tx a:hover { text-decoration: underline; }
+
+/* ===========================================================
+   Keyboard shortcuts cheat-sheet
+   =========================================================== */
+.myt-shortcuts { position: fixed; inset: 0; z-index: 1090; pointer-events: none; }
+.myt-shortcuts[aria-hidden="false"] { pointer-events: auto; }
+.myt-shortcuts__backdrop {
+    position: absolute; inset: 0;
+    background: rgba(15, 17, 24, 0.45);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.myt-shortcuts[aria-hidden="false"] .myt-shortcuts__backdrop { opacity: 1; }
+.myt-shortcuts__panel {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    background: var(--myt-surface);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(15, 17, 24, 0.25);
+    padding: 0;
+    width: min(420px, 92vw);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.myt-shortcuts[aria-hidden="false"] .myt-shortcuts__panel {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+.myt-shortcuts__header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--myt-border);
+}
+.myt-shortcuts__header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.myt-shortcuts__list {
+    list-style: none;
+    margin: 0;
+    padding: 12px 20px 20px;
+}
+.myt-shortcuts__list li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+}
+.myt-shortcuts__list kbd {
+    display: inline-block;
+    min-width: 28px;
+    padding: 2px 6px;
+    background: var(--myt-surface-el);
+    border: 1px solid var(--myt-border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font: 11px ui-monospace, monospace;
+    text-align: center;
+}
+
+/* ===========================================================
+   Trade-history actions group + tab-table actions
+   =========================================================== */
+.myt__table-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ===========================================================
+   Numeric formatting helpers
+   =========================================================== */
+td.myt__cell--num { text-align: right; font-variant-numeric: tabular-nums; }
+td.myt__cell--id { font-family: ui-monospace, monospace; font-size: 12px; }
+td.myt__cell--meta { font-size: 12px; color: var(--myt-text-sec); }
+td.myt__cell--asset { font-weight: 500; }
+td.myt__cell--action { white-space: nowrap; text-align: right; padding-right: 16px; }
+
+/* Compact action pills (Trade / Locked) */
+.myt__pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.myt__pill--trade {
+    color: #fff;
+    background: var(--myt-blue);
+    border-color: var(--myt-blue);
+    cursor: pointer;
+}
+.myt__pill--trade:hover { filter: brightness(0.95); }
+.myt__pill--trade:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,0,255,0.2);
+}
+.myt__pill--locked {
+    color: #6b7280;
+    background: #f1f3f6;
+    border-color: var(--myt-border);
+    cursor: not-allowed;
+}
+.myt__pill--locked::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Improved side tag uniformity */
+.myt__side {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.myt__side--buy { background: var(--myt-green-bg); color: var(--myt-green); }
+.myt__side--sell { background: var(--myt-red-bg); color: var(--myt-red); }
+
+/* Realtime dot */
+.myt__live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--myt-green);
+    margin-right: 6px;
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.6);
+    animation: myt-pulse 2s ease-out infinite;
+    vertical-align: middle;
+}
+@keyframes myt-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+    100% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
+}
+
+/* Pagination footer */
+.myt__pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-top: 1px solid var(--myt-border);
+    font-size: 12px;
+    color: var(--myt-text-sec);
+}
+.myt__pagination button {
+    background: var(--myt-surface);
+    border: 1px solid var(--myt-input-border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+}
+.myt__pagination button[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+/* Sparkline mini */
+.myt__sparkline { width: 60px; height: 18px; vertical-align: middle; }
+
+/* Quick-action menu */
+.myt__action-menu { position: relative; display: inline-block; }
+.myt__action-menu__btn {
+    background: transparent;
+    border: 1px solid var(--myt-input-border);
+    border-radius: 6px;
+    width: 28px; height: 28px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.myt__action-menu__btn:hover { background: var(--myt-hover); }
+.myt__action-menu__list {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--myt-surface);
+    border: 1px solid var(--myt-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(15,17,24,0.12);
+    padding: 4px;
+    min-width: 160px;
+    list-style: none;
+    margin: 0;
+    z-index: 50;
+}
+.myt__action-menu[hidden] { display: none; }
+.myt__action-menu__list[hidden] { display: none; }
+.myt__action-menu__list button {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 8px 10px;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    border-radius: 6px;
+}
+.myt__action-menu__list button:hover { background: var(--myt-hover); }
+.myt__action-menu__list button[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* Hide tab content via [hidden] attribute (a11y) */
+.myt__tab-content[hidden] { display: none; }
+
+/* Reset filters button in empty state */
+.myt__empty-reset {
+    margin-top: 12px;
+    background: var(--myt-blue);
+    color: #fff;
+    border: 0;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* Hide column headers numeric alignment override for thead */
+.submissions-table.myt__table th.myt__th-num { text-align: right; }
+
+/* ==========================================================
+   Unified ds-select look on this page (hero modal + toolbar)
+   ========================================================== */
+.myt-table-card .ds-select,
+#tax-export-modal .ds-select {
+    border-color: var(--myt-input-border);
+}
+.myt-table-card .ds-select:hover,
+#tax-export-modal .ds-select:hover {
+    border-color: #b3b8c2;
+}
+.myt-table-card .ds-select:focus-visible,
+#tax-export-modal .ds-select:focus-visible {
+    border-color: var(--myt-blue);
+    box-shadow: 0 0 0 3px rgba(0,0,255,0.08);
+}
+/* Tax modal selects keep full width but consistent radius / padding */
+#tax-export-modal .ds-select {
+    width: 100%;
+    height: 40px;
+    padding: 0 36px 0 14px;
+    font-size: 14px;
+    border-radius: 10px;
+    background-position: right 14px center;
+}
+
+@media (max-width: 1280px) {
+    .myt-stats-row.sub-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 1024px) {
+    .myt__toolbar { flex-wrap: wrap; }
+    .myt__table-header .myt__table-filter { flex-wrap: wrap; }
+    .myt__toolbar-spacer { flex: 1 1 100%; height: 0; }
+    .myt-card-tabs { gap: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 768px) {
+    .myt-hero {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 18px;
+    }
+    .myt-hero__value { font-size: 28px; }
+    .myt-hero__metrics { grid-template-columns: 1fr; gap: 8px; }
+    .myt-stats-row.sub-stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .myt-card-header { padding: 12px 14px; }
+    .myt-card-title { font-size: 12px; }
+    .myt__toolbar { padding: 10px; gap: 6px; }
+    .myt__table-header { padding: 10px; gap: 6px; }
+    .myt__toolbar .myt__search,
+    .myt__table-header .myt__search { flex: 1 1 100%; width: 100%; }
+    .myt__toolbar .ds-select,
+    .myt__toolbar .myt__filter,
+    .myt__table-header .ds-select { flex: 1 1 calc(50% - 4px); min-width: 0; }
+    .myt__table-actions { width: 100%; flex-wrap: wrap; }
+    .myt__table-actions .ds-btn,
+    .myt__table-actions .ds-btn--sm { flex: 1 1 calc(50% - 4px); }
+    .myt__pagination { flex-direction: column; gap: 8px; align-items: flex-start; }
+    .myt-drawer__panel { width: 100vw; }
+    /* Stack hero metrics horizontally if room remains */
+    @media (min-width: 480px) {
+        .myt-hero__metrics { grid-template-columns: repeat(3, 1fr); }
+    }
+}
+
+@media (max-width: 480px) {
+    .myt-stats-row.sub-stats { grid-template-columns: 1fr; }
+    .myt__content-wrapper { padding: 80px 12px 32px; }
 }
