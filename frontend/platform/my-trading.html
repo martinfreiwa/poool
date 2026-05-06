@@ -20,26 +20,24 @@
                 <!-- Page Header -->
                 {% with investor_topbar_title="My Trading", investor_topbar_title_id="my-trading-page-title", investor_topbar_badge="Marketplace", investor_topbar_variant="empty-right" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
-                <!-- Hero P/L Block — Total Portfolio Value, 24h, All-Time -->
-                <section class="myt-hero" aria-labelledby="myt-hero-title">
-                    <div class="myt-hero__main">
-                        <span class="myt-hero__label" id="myt-hero-title">Portfolio value</span>
-                        <span class="myt-hero__value" id="hero-portfolio-value">—</span>
+                <!-- Hero P/L Row — 4 equal-width metric cards -->
+                <section class="myt-hero" aria-labelledby="myt-hero-title" role="list">
+                    <div class="myt-hero__metric myt-hero__metric--primary" role="listitem">
+                        <span class="myt-hero__metric-label" id="myt-hero-title">Portfolio value</span>
+                        <span class="myt-hero__metric-value" id="hero-portfolio-value">—</span>
                         <span class="myt-hero__updated" id="myt-last-updated" aria-live="polite"></span>
                     </div>
-                    <div class="myt-hero__metrics" role="list">
-                        <div class="myt-hero__metric" role="listitem">
-                            <span class="myt-hero__metric-label">All-time return</span>
-                            <span class="myt-hero__metric-value" id="hero-all-time">—</span>
-                        </div>
-                        <div class="myt-hero__metric" role="listitem">
-                            <span class="myt-hero__metric-label">Annual yield</span>
-                            <span class="myt-hero__metric-value" id="hero-yield">—</span>
-                        </div>
-                        <div class="myt-hero__metric" role="listitem">
-                            <span class="myt-hero__metric-label">Monthly income</span>
-                            <span class="myt-hero__metric-value" id="hero-monthly">—</span>
-                        </div>
+                    <div class="myt-hero__metric" role="listitem">
+                        <span class="myt-hero__metric-label">All-time return</span>
+                        <span class="myt-hero__metric-value" id="hero-all-time">—</span>
+                    </div>
+                    <div class="myt-hero__metric" role="listitem">
+                        <span class="myt-hero__metric-label">Annual yield</span>
+                        <span class="myt-hero__metric-value" id="hero-yield">—</span>
+                    </div>
+                    <div class="myt-hero__metric" role="listitem">
+                        <span class="myt-hero__metric-label">Monthly income</span>
+                        <span class="myt-hero__metric-value" id="hero-monthly">—</span>
                     </div>
                 </section>
 
