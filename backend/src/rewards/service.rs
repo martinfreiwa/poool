@@ -1641,7 +1641,7 @@ pub async fn get_affiliate_dashboard(
         "referral_url": format!("https://app.poool.com/r/{}", profile.referral_code),
         "policy_reacceptance_required": policy_reacceptance_required,
         "current_policy_version": CURRENT_POLICY_VERSION,
-        "tier_thresholds": get_affiliate_tier_thresholds(),
+        "tier_thresholds": get_affiliate_tier_thresholds(pool).await,
         "referrals": {
             "attributed": referral_stats.attributed,
             "registered": referral_stats.registered,
@@ -1769,9 +1769,16 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
             };
 
             // 1. Update the referral status
+            // Set qualified_at when transitioning to 'qualified' so the rolling
+            // 12-month tier-volume lookback has a stable reference timestamp.
             let referral_res = sqlx::query!(
                 r#"UPDATE affiliate_referrals
-                   SET status = $1, updated_at = NOW()
+                   SET status = $1::text,
+                       qualified_at = CASE
+                           WHEN $1::text = 'qualified' AND qualified_at IS NULL THEN NOW()
+                           ELSE qualified_at
+                       END,
+                       updated_at = NOW()
                    WHERE id = $2 AND status = 'under_holdback'"#,
                 new_referral_status,
                 referral.id
@@ -1972,25 +1979,22 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
     }
 }
 
-// ─── Affiliate Tier Thresholds ────────────────────────────────────────────────
-// (qualified_referrals_required, tier_name, commission_rate_bps)
-const AFFILIATE_TIERS: &[(i64, &str, i32)] = &[
-    (0, "Access", 50),
-    (3, "Bronze", 60),
-    (10, "Silver", 75),
-    (25, "Gold", 90),
-    (50, "Platinum", 110),
-    (100, "Diamond", 130),
-    (200, "Elite", 150),
-    (500, "Ambassador", 175),
-];
+// ─── Affiliate Tier Ladder (Phase 1, blueprint Point 7) ──────────────────────
+// Tiers and commission rates are now seeded in the `affiliate_tiers` table
+// (migration 123_affiliate_volume_tiers.sql). Tier eligibility is based on the
+// affiliate's own qualified-referral VOLUME within a rolling 12-month lookback,
+// not lifetime count.
+//
+// Approved ladder (commission_rate_bps): Access 50, Plus 75, Pro 100,
+// Elite 150, Premium 200, Platinum 275, Signature 350, Sovereign 450.
 
-/// Runs once per day, scans all active affiliates and advances their tier based on
-/// the total number of lifetime qualified referrals.
+/// Runs once per day, scans all active affiliates and advances their tier based
+/// on their own qualified-referral volume in the trailing 12 months.
 ///
-/// Tier thresholds (qualified referral count → tier name, commission_rate_bps):
-///   0 → Access (50 bps), 3 → Bronze (60), 10 → Silver (75), 25 → Gold (90),
-///   50 → Platinum (110), 100 → Diamond (130), 200 → Elite (150), 500 → Ambassador (175)
+/// Implements blueprint Point 7:
+///   - Volume-based (sum of qualifying investment values), not count
+///   - Rolling 12-month lookback — older volume falls off automatically
+///   - Single-level: only the affiliate's own direct referrals count
 pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
     // Small startup offset so it doesn't overlap with the holdback worker boot
     tokio::time::sleep(std::time::Duration::from_secs(90)).await;
@@ -2002,12 +2006,25 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
         interval.tick().await;
         tracing::info!("🏆 Affiliate tier progression worker: scanning for tier upgrades...");
 
-        // Fetch all active affiliates and their current qualified referral counts
+        // Fetch all active affiliates with their own qualified-referral volume
+        // over the trailing 12 months. Volume = SUM of qualifying investments'
+        // purchase value where the referral is qualified or paid AND the
+        // qualified_at timestamp falls inside the rolling window.
+        //
+        // qualified_at is set by the holdback worker when status flips to
+        // 'qualified'; older rows without an explicit qualified_at fall back
+        // to updated_at via the migration backfill.
         let affiliates = sqlx::query!(
-            r#"SELECT a.user_id, a.current_tier, a.commission_rate_bps,
-                      COUNT(ar.id) FILTER (WHERE ar.status IN ('qualified', 'paid')) AS qualified_count
+            r#"SELECT a.user_id,
+                      a.current_tier,
+                      a.commission_rate_bps,
+                      COALESCE(SUM(i.purchase_value_cents) FILTER (
+                          WHERE ar.status IN ('qualified', 'paid')
+                            AND COALESCE(ar.qualified_at, ar.updated_at) >= NOW() - INTERVAL '12 months'
+                      ), 0)::bigint AS "volume_12m_cents!"
                FROM affiliates a
                LEFT JOIN affiliate_referrals ar ON ar.affiliate_id = a.user_id
+               LEFT JOIN investments i           ON i.id = ar.qualifying_investment_id
                WHERE a.status = 'active'
                GROUP BY a.user_id, a.current_tier, a.commission_rate_bps"#
         )
@@ -2022,17 +2039,34 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
             }
         };
 
+        // Snapshot the current ladder once per cycle. Cheap (8 rows) and avoids
+        // a per-affiliate roundtrip.
+        let ladder = match sqlx::query!(
+            r#"SELECT name, commission_rate_bps, min_volume_cents
+               FROM affiliate_tiers
+               ORDER BY min_volume_cents DESC"#
+        )
+        .fetch_all(&pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                tracing::error!("Tier progression worker: failed to load affiliate_tiers: {}", e);
+                continue;
+            }
+        };
+
         let mut upgraded = 0u32;
 
         for aff in affiliates {
-            let count = aff.qualified_count.unwrap_or(0);
+            let volume_12m = aff.volume_12m_cents;
 
-            // Determine the highest tier the affiliate qualifies for
-            let (new_tier, new_rate_bps) = AFFILIATE_TIERS
+            // Highest tier whose min_volume_cents threshold is satisfied.
+            // ladder is ordered DESC so the first match wins.
+            let (new_tier, new_rate_bps) = ladder
                 .iter()
-                .rev()
-                .find(|(threshold, _, _)| count >= *threshold)
-                .map(|(_, name, bps)| (*name, *bps))
+                .find(|t| volume_12m >= t.min_volume_cents)
+                .map(|t| (t.name.as_str(), t.commission_rate_bps))
                 .unwrap_or(("Access", 50));
 
             let current = aff.current_tier.as_deref().unwrap_or("Access");
@@ -2073,7 +2107,7 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
                     "new_tier": new_tier,
                     "old_rate_bps": current_bps,
                     "new_rate_bps": new_rate_bps,
-                    "qualified_count": count
+                    "volume_12m_cents": volume_12m
                 })
             )
             .execute(&pool)
@@ -2100,8 +2134,8 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
                     &email,
                     &format!("You've been promoted to {} Affiliate!", new_tier),
                     &format!(
-                        "<h3>Tier Upgrade!</h3><p>Congratulations! Based on your {} qualified referrals, you have been promoted to the <b>{}</b> tier.</p><p>Your new commission rate is <b>{} bps ({:.2}%)</b>. This rate applies to all future commissions.</p><p>Log into your <a href=\"https://poool.app/affiliate/dashboard\">Affiliate Dashboard</a> to see your updated tier.</p>",
-                        count, new_tier, new_rate_bps, (new_rate_bps as f64) / 100.0
+                        "<h3>Tier Upgrade!</h3><p>Congratulations! Based on your qualified referral volume in the last 12 months (${:.2}), you have been promoted to the <b>{}</b> tier.</p><p>Your new commission rate is <b>{} bps ({:.2}%)</b>. This rate applies to all future commissions.</p><p>Log into your <a href=\"https://poool.app/affiliate/dashboard\">Affiliate Dashboard</a> to see your updated tier.</p>",
+                        (volume_12m as f64) / 100.0, new_tier, new_rate_bps, (new_rate_bps as f64) / 100.0
                     )
                 ).await;
             }
@@ -2114,18 +2148,29 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
     }
 }
 
-/// Returns the affiliate tier thresholds table for use in the dashboard response.
-pub fn get_affiliate_tier_thresholds() -> Vec<serde_json::Value> {
-    AFFILIATE_TIERS
-        .iter()
-        .map(|(threshold, name, bps)| {
-            serde_json::json!({
-                "tier": name,
-                "min_qualified_referrals": threshold,
-                "commission_rate_bps": bps
+/// Returns the affiliate tier ladder for the dashboard response.
+/// Reads from `affiliate_tiers` so it stays in sync with the worker.
+pub async fn get_affiliate_tier_thresholds(pool: &PgPool) -> Vec<serde_json::Value> {
+    sqlx::query!(
+        r#"SELECT name, commission_rate_bps, min_volume_cents, sort_order
+           FROM affiliate_tiers
+           ORDER BY sort_order ASC"#
+    )
+    .fetch_all(pool)
+    .await
+    .map(|rows| {
+        rows.into_iter()
+            .map(|r| {
+                serde_json::json!({
+                    "tier": r.name,
+                    "commission_rate_bps": r.commission_rate_bps,
+                    "min_volume_cents": r.min_volume_cents,
+                    "sort_order": r.sort_order,
+                })
             })
-        })
-        .collect()
+            .collect()
+    })
+    .unwrap_or_default()
 }
 
 // ─── Fraud Ring Detection ─────────────────────────────────────────────────────

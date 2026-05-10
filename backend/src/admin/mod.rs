@@ -562,6 +562,11 @@ pub fn router() -> axum::Router<AppState> {
             get(crate::admin::rewards::api_admin_affiliate_fraud_scan),
         )
         .route(
+            "/api/admin/rewards/affiliates/conduct-incidents",
+            get(crate::admin::rewards::api_admin_affiliate_conduct_incident_list)
+                .post(crate::admin::rewards::api_admin_affiliate_conduct_incident_create),
+        )
+        .route(
             "/api/admin/rewards/affiliates/:id/approve",
             post(api_admin_affiliate_approve),
         )

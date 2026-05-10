@@ -23,6 +23,20 @@ pub fn router() -> Router<AppState> {
         .route("/affiliate/referrals", get(page_affiliate_referrals))
         .route("/affiliate/materials", get(page_affiliate_materials))
         .route("/affiliate/settings", get(page_affiliate_settings))
+        // Affiliate program documents (Phase 1 — controlled referral)
+        .route("/affiliate/terms", get(page_affiliate_terms))
+        .route("/affiliate/code-of-conduct", get(page_affiliate_code_of_conduct))
+        .route(
+            "/affiliate/marketing-materials",
+            get(page_affiliate_marketing_materials),
+        )
+        .route(
+            "/affiliate/qualified-referral-payout",
+            get(page_affiliate_qualified_referral_payout),
+        )
+        .route("/affiliate/tax", get(page_affiliate_tax))
+        .route("/affiliate/privacy-notice", get(page_affiliate_privacy_notice))
+        .route("/affiliate/complaints", get(page_affiliate_complaints))
         // API - Affiliate Onboarding
         .route(
             "/api/affiliate/onboarding/submit",
