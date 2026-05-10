@@ -24,15 +24,17 @@
         <button class="lb-topbar-tab rewards-tab-btn" data-tab="commissions-tab" onclick="switchRewardsTab(this)">Commissions</button>
       </div>
       {% elif investor_topbar_variant == 'community' %}
-      <div class="lb-topbar-tabs">
-        <button type="button" class="lb-topbar-tab active community-tab-btn" data-tab="community-feed-tab" hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed" onclick="switchCommunityTab(this)">Feed</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-announcements-tab" hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements" onclick="switchCommunityTab(this)">Announcements</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="switchCommunityTab(this)">My Circle</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="switchCommunityTab(this)">Expert AMAs</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-challenges-tab" hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges" onclick="switchCommunityTab(this)">Challenges</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-search-tab" data-client-tab="search" onclick="switchCommunityTab(this)">Search</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-notifications-tab" data-client-tab="notifications" onclick="switchCommunityTab(this)">Notifications</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-saved-tab" data-client-tab="saved" onclick="switchCommunityTab(this)">Saved</button>
+      <div class="lb-topbar-tabs" role="tablist" aria-label="Community sections">
+        <button type="button" class="lb-topbar-tab active community-tab-btn" role="tab" aria-selected="true" aria-controls="community-content-area" data-tab="community-feed-tab" hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed" onclick="switchCommunityTab(this)">Feed</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-announcements-tab" hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements" onclick="switchCommunityTab(this)">Announcements</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="switchCommunityTab(this)">My Circle</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-challenges-tab" hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges" onclick="switchCommunityTab(this)">Challenges</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="switchCommunityTab(this)">Expert AMAs</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-saved-tab" data-tab="community-saved-tab" data-client-tab="saved" onclick="switchCommunityTab(this)">Saved</button>
+        <!-- Search + Notifications are exposed as right-side topbar utilities; these buttons are
+             retained for JS lookup contract (switchCommunityTab) and deep-link URLs (?tab=…). -->
+        <button type="button" class="community-tab-btn ds-sr-only" data-tab="community-search-tab" data-client-tab="search" onclick="switchCommunityTab(this)" tabindex="-1" aria-hidden="true">Search</button>
+        <button type="button" class="community-tab-btn ds-sr-only" data-tab="community-notifications-tab" data-client-tab="notifications" onclick="switchCommunityTab(this)" tabindex="-1" aria-hidden="true">Notifications</button>
       </div>
       {% endif %}
     </div>
@@ -79,6 +81,16 @@
         </svg>
         <input id="community-topbar-search" type="search" placeholder="Search community..." autocomplete="off" aria-label="Search community" />
       </div>
+      <button type="button" id="community-notifications-btn"
+              class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm community-notif-trigger"
+              aria-label="Notifications"
+              onclick="activateCommunityTab('notifications')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span id="community-notifications-badge" class="community-notif-badge" hidden aria-hidden="true">0</span>
+      </button>
     </div>
     {% elif investor_topbar_variant == 'settings' %}
     <div class="lb-topbar-right">

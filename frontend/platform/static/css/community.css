@@ -2002,3 +2002,28 @@ button.community-tab-btn.active {
     border-radius: 10px;
   }
 }
+
+/* ── Community Topbar Notifications Bell ──────────────────────────── */
+/* Reuses ds-btn ds-btn--icon ds-btn--ghost ds-btn--sm; this rule only
+   positions the unread badge over the bell icon. */
+.community-notif-trigger {
+  position: relative;
+}
+
+.community-notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--btn-primary-bg, #0000FF);
+  color: var(--btn-primary-color, #FFFFFF);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  box-sizing: border-box;
+}

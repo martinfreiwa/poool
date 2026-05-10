@@ -26,19 +26,24 @@ include
       <!-- Sticky Top Bar -->
       {% with investor_topbar_title="Community", investor_topbar_variant="community" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
-      <div class="lb-container" style="padding-top: 16px;">
+      <div class="lb-container">
 
         <!-- Tab Navigation — HTMX-driven via topbar buttons -->
         <script>
           /**
            * switchCommunityTab — activates topbar tabs. HTMX-backed tabs load into
            * #community-content-area; client tabs reveal panels already in this page.
+           * Also syncs aria-selected on all tab buttons for screen-reader users.
            */
           function switchCommunityTab(clickedBtn) {
             if (!clickedBtn) return;
 
-            document.querySelectorAll('.community-tab-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.community-tab-btn').forEach(function (b) {
+              b.classList.remove('active');
+              if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', 'false');
+            });
             clickedBtn.classList.add('active');
+            if (clickedBtn.getAttribute('role') === 'tab') clickedBtn.setAttribute('aria-selected', 'true');
 
             const contentArea = document.getElementById('community-content-area');
             const targetPanel = document.getElementById(clickedBtn.dataset.tab);
@@ -64,6 +69,16 @@ include
 
             if (contentArea) contentArea.style.display = '';
           }
+
+          /**
+           * activateCommunityTab — open a community tab by its short name.
+           * Used by topbar utility triggers (search input, notifications bell) so the
+           * data-tab DOM contract stays the single source of truth.
+           */
+          window.activateCommunityTab = function (tabName) {
+            const btn = document.querySelector('.community-tab-btn[data-tab="community-' + tabName + '-tab"]');
+            if (btn) switchCommunityTab(btn);
+          };
 
           window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -96,10 +111,6 @@ include
             }
           });
         </script>
-        <div style="display: none;" class="community-tab-nav">
-          <!-- Hidden old tab nav to not break any external scripts if they look for this wrapper -->
-        </div>
-
         <!-- ═══════════════════════════════════════════════════════════
              TAB: SEARCH
              ═══════════════════════════════════════════════════════════ -->
