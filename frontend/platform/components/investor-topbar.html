@@ -32,6 +32,8 @@
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="switchCommunityTab(this)">Expert AMAs</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-leaderboard-tab" data-tab="community-leaderboard-tab" data-client-tab="leaderboard" onclick="switchCommunityTab(this)">Leaderboard</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-saved-tab" data-tab="community-saved-tab" data-client-tab="saved" onclick="switchCommunityTab(this)">Saved</button>
+        <!-- 14.8.20 — direct messages tab. Client-rendered (no HTMX partial). -->
+        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-dms-tab" data-tab="community-dms-tab" data-client-tab="dms" onclick="switchCommunityTab(this)">Messages</button>
         <!-- Search + Notifications are exposed as right-side topbar utilities; these buttons are
              retained for JS lookup contract (switchCommunityTab) and deep-link URLs (?tab=…). -->
         <button type="button" class="community-tab-btn ds-sr-only" data-tab="community-search-tab" data-client-tab="search" onclick="switchCommunityTab(this)" tabindex="-1" aria-hidden="true">Search</button>

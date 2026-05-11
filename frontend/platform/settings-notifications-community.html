@@ -1,0 +1,106 @@
+{% with title="Community Notifications – POOOL", meta_description="Manage your community notification preferences.", extra_css=['cards-template', 'ds-cards', 'settings', 'community'], extra_js=['htmx-init', 'profile-dropdown', 'mobile-navigation', 'settings-notifications-community'] %}{% include "components/head.html" %}{% endwith %}
+
+<div id="marketplace-page" class="marketplace-page">
+  <div id="marketplace-sidebar" class="marketplace-sidebar">
+    {% include 'components/sidebar.html' %}
+  </div>
+
+  <main id="settings-main" class="ds-main marketplace-main cards-template-layout settings-main-layout">
+    {% with investor_topbar_title="Community Notifications", investor_topbar_class="settings-topbar", investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
+    <div class="settings-content-wrapper">
+      <section class="settings-cards-section" aria-label="Community notification preferences">
+        <div class="ds-card">
+          <div class="ds-card__header">
+            <h2 class="ds-card__title">Community notifications</h2>
+            <p class="ds-card__subtitle">Toggle which community events trigger a notification for you. Changes save
+              instantly.</p>
+          </div>
+
+          <div class="ds-card__body">
+            <div id="notif-prefs-status" class="ds-helper-text" aria-live="polite"></div>
+            <div id="notif-prefs-grid" class="notif-prefs-grid">
+              <!-- 8 toggle rows populated by JS -->
+              <div class="notif-prefs-grid__loading">Loading preferences...</div>
+            </div>
+            <div style="margin-top:24px;">
+              <a href="/settings" class="ds-btn ds-btn--secondary">← Back to all settings</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<style>
+  .notif-prefs-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .notif-prefs-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--ds-bg-secondary, #F9FAFB);
+    border-radius: 8px;
+    border: 1px solid var(--ds-border, #E5E7EB);
+  }
+  .notif-prefs-row__label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .notif-prefs-row__name {
+    font-weight: 600;
+    color: var(--ds-text-primary, #101828);
+  }
+  .notif-prefs-row__desc {
+    font-size: 13px;
+    color: var(--ds-text-secondary, #475467);
+  }
+  .notif-prefs-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .notif-prefs-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .notif-prefs-toggle__slider {
+    position: absolute;
+    inset: 0;
+    background: #D0D5DD;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 150ms;
+  }
+  .notif-prefs-toggle__slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 150ms;
+  }
+  .notif-prefs-toggle input:checked + .notif-prefs-toggle__slider {
+    background: var(--ds-color-primary, #2E7D32);
+  }
+  .notif-prefs-toggle input:checked + .notif-prefs-toggle__slider::before {
+    transform: translateX(20px);
+  }
+  .notif-prefs-grid__loading {
+    color: var(--ds-text-secondary, #475467);
+    padding: 24px 0;
+    text-align: center;
+  }
+</style>

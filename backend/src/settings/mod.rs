@@ -17,6 +17,11 @@ pub fn router() -> Router<AppState> {
         .route("/settings-2", get(page_settings_2))
         .route("/settings-3", get(page_settings_3))
         .route("/account-deletion", get(page_account_deletion))
+        // 14.8.15 — community notification preferences sub-page.
+        .route(
+            "/settings/notifications/community",
+            get(page_settings_notifications_community),
+        )
         // JSON API
         .route("/api/settings", get(get_settings_handler))
         .route("/api/settings/profile", post(update_profile_handler))

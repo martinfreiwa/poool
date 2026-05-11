@@ -214,6 +214,15 @@ pub fn router() -> axum::Router<AppState> {
         // 14.8.24: admin community settings.
         .route("/admin/community/settings.html", get(page_admin_generic))
         .route("/admin/community/settings", get(page_admin_generic))
+        // 14.8.16: admin verified-owner request review queue.
+        .route(
+            "/admin/community/verified-owner-requests.html",
+            get(page_admin_generic),
+        )
+        .route(
+            "/admin/community/verified-owner-requests",
+            get(page_admin_generic),
+        )
         .route("/admin/community/user-detail.html", get(page_admin_generic))
         .route("/admin/community/user-detail", get(page_admin_generic))
         .route("/admin/community/users.html", get(page_admin_generic))

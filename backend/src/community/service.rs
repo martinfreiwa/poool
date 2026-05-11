@@ -348,17 +348,14 @@ pub async fn create_comment(
 
     if let Some(parent_id) = parent_comment_id {
         // Parent must exist on this post AND be top-level (parent.parent_id IS NULL).
-        let parent: Option<(Uuid, Option<Uuid>)> = sqlx::query_as(
-            "SELECT post_id, parent_comment_id FROM comments WHERE id = $1",
-        )
-        .bind(parent_id)
-        .fetch_optional(&mut *tx)
-        .await?;
+        let parent: Option<(Uuid, Option<Uuid>)> =
+            sqlx::query_as("SELECT post_id, parent_comment_id FROM comments WHERE id = $1")
+                .bind(parent_id)
+                .fetch_optional(&mut *tx)
+                .await?;
         match parent {
             None => {
-                return Err(AppError::NotFound(
-                    "Parent comment not found.".to_string(),
-                ));
+                return Err(AppError::NotFound("Parent comment not found.".to_string()));
             }
             Some((parent_post_id, parent_parent_id)) => {
                 if parent_post_id != post_id {
@@ -954,6 +951,7 @@ pub async fn get_badges_batch(
 
 #[derive(serde::Serialize)]
 pub struct BadgeDisplay {
+    pub id: Uuid,
     pub code: String,
     pub name: String,
     pub icon: String,
@@ -1004,10 +1002,10 @@ pub async fn get_user_profile(
 
     // Load Badges
     let badge_rows = sqlx::query(
-        "SELECT b.code, b.name, b.icon 
-         FROM user_badges ub 
-         JOIN badges b ON ub.badge_id = b.id 
-         WHERE ub.user_id = $1 
+        "SELECT b.id, b.code, b.name, b.icon
+         FROM user_badges ub
+         JOIN badges b ON ub.badge_id = b.id
+         WHERE ub.user_id = $1
          ORDER BY b.display_order ASC",
     )
     .bind(user_id)
@@ -1017,6 +1015,7 @@ pub async fn get_user_profile(
     let badges = badge_rows
         .into_iter()
         .map(|r| BadgeDisplay {
+            id: r.get("id"),
             code: r.get("code"),
             name: r.get("name"),
             icon: r.get("icon"),

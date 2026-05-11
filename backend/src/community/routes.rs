@@ -324,7 +324,8 @@ pub fn map_to_post_display(
                     user, matched
                 )
             }
-        }).into_owned()
+        })
+        .into_owned()
     };
 
     let image_urls = p
@@ -754,13 +755,11 @@ async fn update_own_comment(
     check_user_not_banned(&c_pool, user.id).await?;
 
     use sqlx::Row;
-    let row = sqlx::query(
-        "SELECT user_id, post_id, content FROM comments WHERE id = $1",
-    )
-    .bind(comment_id)
-    .fetch_optional(&c_pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Comment not found".into()))?;
+    let row = sqlx::query("SELECT user_id, post_id, content FROM comments WHERE id = $1")
+        .bind(comment_id)
+        .fetch_optional(&c_pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Comment not found".into()))?;
 
     let author_id: Uuid = row.try_get("user_id")?;
     if author_id != user.id {
@@ -2507,14 +2506,8 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/profile", put(update_profile))
         .route("/api/community/profile/:id", get(get_profile))
         // Phase 3 task 20: followers / following list views.
-        .route(
-            "/api/community/profile/:id/followers",
-            get(list_followers),
-        )
-        .route(
-            "/api/community/profile/:id/following",
-            get(list_following),
-        )
+        .route("/api/community/profile/:id/followers", get(list_followers))
+        .route("/api/community/profile/:id/following", get(list_following))
         // WS3.1 — per-user community profile data.
         .route("/api/community/profile/:id/posts", get(list_user_posts))
         .route(
@@ -2526,10 +2519,7 @@ pub fn router() -> Router<AppState> {
             "/api/community/profile/:id/activity",
             get(list_user_activity),
         )
-        .route(
-            "/api/community/profile/me/analytics",
-            get(get_my_analytics),
-        )
+        .route("/api/community/profile/me/analytics", get(get_my_analytics))
         .route("/api/community/follow/:id", post(follow_user))
         .route("/api/community/follow/:id", delete(unfollow_user))
         // Block / mute self-service (14.8.2)
@@ -2780,14 +2770,8 @@ pub fn router() -> Router<AppState> {
         // 14.8.13: user-facing badge detail
         .route("/api/community/badges/:id", get(get_badge_detail))
         // Phase 3 task 28: autocomplete suggestions for the post composer.
-        .route(
-            "/api/community/mentions/suggest",
-            get(suggest_mentions),
-        )
-        .route(
-            "/api/community/hashtags/suggest",
-            get(suggest_hashtags),
-        )
+        .route("/api/community/mentions/suggest", get(suggest_mentions))
+        .route("/api/community/hashtags/suggest", get(suggest_hashtags))
 }
 
 // ─── Social Handlers ─────────────────────────────────────────────────────────
@@ -2936,7 +2920,9 @@ async fn update_notification_preferences(
     .bind(&payload.prefs)
     .execute(&c_pool)
     .await?;
-    Ok(Json(serde_json::json!({"success": true, "prefs": payload.prefs})))
+    Ok(Json(
+        serde_json::json!({"success": true, "prefs": payload.prefs}),
+    ))
 }
 
 // Phase 3 task 32: verified-owner badge request flow.
@@ -3022,18 +3008,20 @@ async fn admin_list_verification_requests(
 
     let entries: Vec<serde_json::Value> = rows
         .into_iter()
-        .map(|(id, user_id, statement, proof_url, status, notes, created_at, resolved_at)| {
-            serde_json::json!({
-                "id": id,
-                "user_id": user_id,
-                "statement": statement,
-                "proof_url": proof_url,
-                "status": status,
-                "admin_notes": notes,
-                "created_at": created_at,
-                "resolved_at": resolved_at,
-            })
-        })
+        .map(
+            |(id, user_id, statement, proof_url, status, notes, created_at, resolved_at)| {
+                serde_json::json!({
+                    "id": id,
+                    "user_id": user_id,
+                    "statement": statement,
+                    "proof_url": proof_url,
+                    "status": status,
+                    "admin_notes": notes,
+                    "created_at": created_at,
+                    "resolved_at": resolved_at,
+                })
+            },
+        )
         .collect();
 
     Ok(Json(serde_json::json!({ "requests": entries })))
@@ -3074,9 +3062,8 @@ async fn admin_review_verification_request(
     .fetch_optional(&c_pool)
     .await?;
 
-    let target_user_id = target_user_id.ok_or_else(|| {
-        AppError::BadRequest("Request not found or already resolved".into())
-    })?;
+    let target_user_id = target_user_id
+        .ok_or_else(|| AppError::BadRequest("Request not found or already resolved".into()))?;
 
     if status == "approved" {
         // WS1.3: backfill existing posts, then flip the profile flag so any
@@ -3086,13 +3073,11 @@ async fn admin_review_verification_request(
             .execute(&c_pool)
             .await
             .ok();
-        sqlx::query(
-            "UPDATE community_profiles SET is_verified_owner = true WHERE user_id = $1",
-        )
-        .bind(target_user_id)
-        .execute(&c_pool)
-        .await
-        .ok();
+        sqlx::query("UPDATE community_profiles SET is_verified_owner = true WHERE user_id = $1")
+            .bind(target_user_id)
+            .execute(&c_pool)
+            .await
+            .ok();
     } else if status == "rejected" {
         // Don't touch existing badges on reject — only block future
         // auto-inheritance if they were never granted.
@@ -3142,11 +3127,13 @@ async fn get_my_moderation_log(
 
     let entries: Vec<serde_json::Value> = rows
         .into_iter()
-        .map(|(action, details, created_at)| serde_json::json!({
-            "action": action,
-            "details": details,
-            "created_at": created_at,
-        }))
+        .map(|(action, details, created_at)| {
+            serde_json::json!({
+                "action": action,
+                "details": details,
+                "created_at": created_at,
+            })
+        })
         .collect();
     Ok(Json(serde_json::json!({ "entries": entries })))
 }
@@ -3426,7 +3413,8 @@ async fn list_user_posts(
     }
 
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
 
     // Reactions the viewer has placed on these posts.
@@ -3485,10 +3473,7 @@ async fn list_user_comments(
     let page = q.page.unwrap_or(1).max(1);
     let offset = (page - 1) * PROFILE_PAGE_SIZE;
 
-    let rows = sqlx::query_as::<
-        _,
-        (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>, String),
-    >(
+    let rows = sqlx::query_as::<_, (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>, String)>(
         r#"
         SELECT c.id, c.post_id, c.content, c.created_at,
                COALESCE(LEFT(p.content, 80), '')
@@ -3596,10 +3581,7 @@ async fn list_user_activity(
     let limit = PROFILE_PAGE_SIZE + 1;
 
     // Merge posts, comments, and xp_ledger entries into one timeline.
-    let rows = sqlx::query_as::<
-        _,
-        (String, Uuid, Option<String>, chrono::DateTime<chrono::Utc>),
-    >(
+    let rows = sqlx::query_as::<_, (String, Uuid, Option<String>, chrono::DateTime<chrono::Utc>)>(
         r#"
         SELECT 'post' AS kind, id AS entity_id, LEFT(content, 100) AS detail, created_at
         FROM posts WHERE user_id = $1 AND is_hidden = false
@@ -3730,13 +3712,12 @@ pub async fn record_profile_view(
     if Some(profile_user_id) == viewer_user_id {
         return; // Don't count self-views.
     }
-    let _ = sqlx::query(
-        "INSERT INTO profile_views (profile_user_id, viewer_user_id) VALUES ($1, $2)",
-    )
-    .bind(profile_user_id)
-    .bind(viewer_user_id)
-    .execute(pool)
-    .await;
+    let _ =
+        sqlx::query("INSERT INTO profile_views (profile_user_id, viewer_user_id) VALUES ($1, $2)")
+            .bind(profile_user_id)
+            .bind(viewer_user_id)
+            .execute(pool)
+            .await;
 }
 
 // ─── Verified-owner request flow (14.8.16) ──────────────────────────────
@@ -4073,8 +4054,13 @@ async fn list_dm_threads(
     .await?;
 
     let mut other_ids: Vec<Uuid> = Vec::with_capacity(rows.len());
-    let mut pending: Vec<(Uuid, Uuid, Option<chrono::DateTime<chrono::Utc>>, i64, Option<String>)> =
-        Vec::with_capacity(rows.len());
+    let mut pending: Vec<(
+        Uuid,
+        Uuid,
+        Option<chrono::DateTime<chrono::Utc>>,
+        i64,
+        Option<String>,
+    )> = Vec::with_capacity(rows.len());
     for row in rows {
         let id: Uuid = row.try_get("id")?;
         let a: Uuid = row.try_get("participant_a_id")?;
@@ -4192,13 +4178,12 @@ async fn list_dm_messages(
     let c_pool = get_community_pool(&state)?;
 
     use sqlx::Row;
-    let thread = sqlx::query(
-        "SELECT participant_a_id, participant_b_id FROM dm_threads WHERE id = $1",
-    )
-    .bind(thread_id)
-    .fetch_optional(&c_pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Thread not found.".into()))?;
+    let thread =
+        sqlx::query("SELECT participant_a_id, participant_b_id FROM dm_threads WHERE id = $1")
+            .bind(thread_id)
+            .fetch_optional(&c_pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Thread not found.".into()))?;
     let a: Uuid = thread.try_get("participant_a_id")?;
     let b: Uuid = thread.try_get("participant_b_id")?;
     if user.id != a && user.id != b {
@@ -4267,13 +4252,12 @@ async fn post_dm_message(
     check_user_not_banned(&c_pool, user.id).await?;
 
     use sqlx::Row;
-    let thread = sqlx::query(
-        "SELECT participant_a_id, participant_b_id FROM dm_threads WHERE id = $1",
-    )
-    .bind(thread_id)
-    .fetch_optional(&c_pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Thread not found.".into()))?;
+    let thread =
+        sqlx::query("SELECT participant_a_id, participant_b_id FROM dm_threads WHERE id = $1")
+            .bind(thread_id)
+            .fetch_optional(&c_pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Thread not found.".into()))?;
     let a: Uuid = thread.try_get("participant_a_id")?;
     let b: Uuid = thread.try_get("participant_b_id")?;
     if user.id != a && user.id != b {
@@ -4353,13 +4337,11 @@ async fn unblock_user(
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
     let c_pool = get_community_pool(&state)?;
-    sqlx::query(
-        "DELETE FROM block_relationships WHERE actor_user_id = $1 AND target_user_id = $2",
-    )
-    .bind(user.id)
-    .bind(target_id)
-    .execute(&c_pool)
-    .await?;
+    sqlx::query("DELETE FROM block_relationships WHERE actor_user_id = $1 AND target_user_id = $2")
+        .bind(user.id)
+        .bind(target_id)
+        .execute(&c_pool)
+        .await?;
     Ok(Json(serde_json::json!({"success": true, "blocked": false})))
 }
 
@@ -4396,13 +4378,11 @@ async fn unmute_user(
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
     let c_pool = get_community_pool(&state)?;
-    sqlx::query(
-        "DELETE FROM mute_relationships WHERE actor_user_id = $1 AND target_user_id = $2",
-    )
-    .bind(user.id)
-    .bind(target_id)
-    .execute(&c_pool)
-    .await?;
+    sqlx::query("DELETE FROM mute_relationships WHERE actor_user_id = $1 AND target_user_id = $2")
+        .bind(user.id)
+        .bind(target_id)
+        .execute(&c_pool)
+        .await?;
     Ok(Json(serde_json::json!({"success": true, "muted": false})))
 }
 
@@ -5412,10 +5392,7 @@ async fn get_global_leaderboard(
             let is_self = viewer_id == Some(e.user_id);
             let is_hidden = hidden_user_ids.contains(&e.user_id) && !is_self;
             let (display_name, avatar_url) = if is_hidden {
-                (
-                    format!("Investor #{}", &e.user_id.to_string()[..6]),
-                    None,
-                )
+                (format!("Investor #{}", &e.user_id.to_string()[..6]), None)
             } else {
                 (
                     info.map(|a| a.display_name.clone())
@@ -7637,11 +7614,13 @@ async fn suggest_mentions(
     .await?;
     let users: Vec<serde_json::Value> = rows
         .iter()
-        .map(|(id, name, avatar)| serde_json::json!({
-            "user_id": id,
-            "display_name": name.clone().unwrap_or_default(),
-            "avatar_url": avatar,
-        }))
+        .map(|(id, name, avatar)| {
+            serde_json::json!({
+                "user_id": id,
+                "display_name": name.clone().unwrap_or_default(),
+                "avatar_url": avatar,
+            })
+        })
         .collect();
     Ok(Json(serde_json::json!({ "users": users })))
 }
@@ -7721,13 +7700,12 @@ pub async fn get_badge_detail_data(
     .await?
     .ok_or_else(|| AppError::NotFound("Badge not found".into()))?;
 
-    let holder_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM user_badges WHERE badge_id = $1",
-    )
-    .bind(badge_id)
-    .fetch_one(&c_pool)
-    .await
-    .unwrap_or(0);
+    let holder_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM user_badges WHERE badge_id = $1")
+            .bind(badge_id)
+            .fetch_one(&c_pool)
+            .await
+            .unwrap_or(0);
 
     let recent_awards = sqlx::query_as::<_, BadgeAwardRow>(
         "SELECT badge_id, user_id, earned_at FROM user_badges

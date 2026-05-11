@@ -595,3 +595,16 @@ pub async fn page_account_deletion(
 ) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "account-deletion.html").await
 }
+
+/// GET /settings/notifications/community — 14.8.15 community notif prefs sub-page.
+pub async fn page_settings_notifications_community(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "settings-notifications-community.html",
+    )
+    .await
+}
