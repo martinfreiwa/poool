@@ -2467,6 +2467,11 @@ pub fn router() -> Router<AppState> {
             "/api/community/profile/me/moderation-log",
             get(get_my_moderation_log),
         )
+        // Phase 3 task 31: notification preferences.
+        .route(
+            "/api/community/notifications/preferences",
+            get(get_notification_preferences).put(update_notification_preferences),
+        )
         .route("/api/community/profile", put(update_profile))
         .route("/api/community/profile/:id", get(get_profile))
         // Phase 3 task 20: followers / following list views.
@@ -2693,6 +2698,8 @@ pub fn router() -> Router<AppState> {
             get(get_trending_hashtags),
         )
         .route("/api/community/hashtags/:tag", get(get_posts_by_hashtag))
+        // 14.8.13: user-facing badge detail
+        .route("/api/community/badges/:id", get(get_badge_detail))
         // Phase 3 task 28: autocomplete suggestions for the post composer.
         .route(
             "/api/community/mentions/suggest",
@@ -2797,6 +2804,60 @@ async fn get_profile_me(
         "is_shadowbanned": is_shadowbanned,
         "warning_count": warning_count,
     })))
+}
+
+// Phase 3 task 31: notification preferences. Stored as a JSONB blob; the
+// server treats missing keys as "enabled" so adding a new notification type
+// doesn't require a backfill.
+
+async fn get_notification_preferences(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let prefs: Option<serde_json::Value> =
+        sqlx::query_scalar("SELECT prefs FROM notification_preferences WHERE user_id = $1")
+            .bind(user.id)
+            .fetch_optional(&c_pool)
+            .await?;
+    let prefs = prefs.unwrap_or_else(|| serde_json::json!({}));
+    Ok(Json(serde_json::json!({ "prefs": prefs })))
+}
+
+#[derive(Deserialize)]
+struct UpdatePrefsReq {
+    pub prefs: serde_json::Value,
+}
+
+async fn update_notification_preferences(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+    Json(payload): Json<UpdatePrefsReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_csrf_header(&headers, &jar)?;
+    if !payload.prefs.is_object() {
+        return Err(AppError::BadRequest(
+            "prefs must be a JSON object keyed by notification type".into(),
+        ));
+    }
+    let c_pool = get_community_pool(&state)?;
+    sqlx::query(
+        "INSERT INTO notification_preferences (user_id, prefs, updated_at) \
+         VALUES ($1, $2, NOW()) \
+         ON CONFLICT (user_id) DO UPDATE SET prefs = EXCLUDED.prefs, updated_at = NOW()",
+    )
+    .bind(user.id)
+    .bind(&payload.prefs)
+    .execute(&c_pool)
+    .await?;
+    Ok(Json(serde_json::json!({"success": true, "prefs": payload.prefs})))
 }
 
 // Phase 3 task 30: return moderation actions taken against the viewer so
@@ -6275,6 +6336,93 @@ pub async fn get_hashtag_feed_data(
         ));
     }
     Ok((clean_tag, feed))
+}
+
+/// 14.8.13 — user-facing badge detail. Returns badge metadata, holder
+/// count, and a short list of recent holders for SSR + JSON consumers.
+pub async fn get_badge_detail_data(
+    state: &AppState,
+    badge_id: Uuid,
+) -> Result<(serde_json::Value, Vec<serde_json::Value>), AppError> {
+    let c_pool = get_community_pool(state)?;
+
+    let badge = sqlx::query_as::<_, BadgeRow>(
+        "SELECT id, code, name, description, icon, display_order, created_at
+         FROM badges WHERE id = $1",
+    )
+    .bind(badge_id)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Badge not found".into()))?;
+
+    let holder_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM user_badges WHERE badge_id = $1",
+    )
+    .bind(badge_id)
+    .fetch_one(&c_pool)
+    .await
+    .unwrap_or(0);
+
+    let recent_awards = sqlx::query_as::<_, BadgeAwardRow>(
+        "SELECT badge_id, user_id, earned_at FROM user_badges
+         WHERE badge_id = $1 ORDER BY earned_at DESC LIMIT 12",
+    )
+    .bind(badge_id)
+    .fetch_all(&c_pool)
+    .await
+    .unwrap_or_default();
+
+    let holder_ids: Vec<Uuid> = recent_awards.iter().map(|a| a.user_id).collect();
+    let authors = if holder_ids.is_empty() {
+        std::collections::HashMap::new()
+    } else {
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &holder_ids)
+            .await
+            .unwrap_or_default()
+    };
+
+    let recent_holders: Vec<serde_json::Value> = recent_awards
+        .into_iter()
+        .map(|a| {
+            let info = authors.get(&a.user_id);
+            serde_json::json!({
+                "user_id": a.user_id,
+                "display_name": info
+                    .map(|i| i.display_name.clone())
+                    .unwrap_or_else(|| "Anonymous".into()),
+                "avatar_url": info.and_then(|i| i.avatar_url.clone()),
+                "earned_at": a.earned_at,
+            })
+        })
+        .collect();
+
+    let badge_json = serde_json::json!({
+        "id": badge.id,
+        "code": badge.code,
+        "name": badge.name,
+        "description": badge.description,
+        "icon": badge.icon,
+        "display_order": badge.display_order,
+        "created_at": badge.created_at,
+        "holder_count": holder_count,
+    });
+
+    Ok((badge_json, recent_holders))
+}
+
+async fn get_badge_detail(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(badge_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let _user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let (badge, recent_holders) = get_badge_detail_data(&state, badge_id).await?;
+    Ok(Json(serde_json::json!({
+        "badge": badge,
+        "recent_holders": recent_holders,
+    })))
 }
 
 async fn get_posts_by_hashtag(

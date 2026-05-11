@@ -356,7 +356,28 @@ include
                   </svg>
                   Mark all as read
                 </button>
+                <!-- Phase 3 task 31: notification preferences toggle. -->
+                <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" @click="togglePrefs()" aria-label="Notification settings">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                  Preferences
+                </button>
               </div>
+            </div>
+
+            <!-- Preferences panel (Phase 3 task 31). -->
+            <div class="notif-prefs" x-show="prefsOpen" x-cloak>
+              <h3 class="ds-text-md">Notification preferences</h3>
+              <p class="ds-helper-text">Choose which notifications you want to receive. Disabled types are dropped at delivery time.</p>
+              <template x-for="kind in prefsKinds" :key="kind.key">
+                <label class="notif-prefs__row">
+                  <input type="checkbox" :checked="prefIsEnabled(kind.key)" @change="setPref(kind.key, $event.target.checked)">
+                  <span x-text="kind.label"></span>
+                </label>
+              </template>
+              <p class="ds-helper-text" x-show="prefsStatus" x-text="prefsStatus"></p>
             </div>
 
             <!-- Filter pills -->
@@ -448,9 +469,66 @@ include
                 limit: 20,
                 hasMore: true,
                 filter: 'all',
+                // Phase 3 task 31: preferences state.
+                prefsOpen: false,
+                prefs: {},
+                prefsStatus: '',
+                prefsKinds: [
+                  { key: 'mention',      label: 'Mentions' },
+                  { key: 'new_follower', label: 'New followers' },
+                  { key: 'post_like',    label: 'Reactions on your posts' },
+                  { key: 'post_comment', label: 'Comments on your posts' },
+                  { key: 'announcement', label: 'Platform announcements' },
+                  { key: 'reward',       label: 'Rewards' },
+                  { key: 'level_up',     label: 'Level-ups' },
+                  { key: 'system',       label: 'System messages' },
+                ],
 
                 async init() {
                   await this.loadMore();
+                },
+
+                async togglePrefs() {
+                  this.prefsOpen = !this.prefsOpen;
+                  if (this.prefsOpen && Object.keys(this.prefs).length === 0) {
+                    try {
+                      const res = await fetch('/api/community/notifications/preferences', { credentials: 'same-origin' });
+                      if (!res.ok) throw new Error('Failed to load preferences');
+                      const data = await res.json();
+                      this.prefs = (data.prefs && typeof data.prefs === 'object') ? data.prefs : {};
+                    } catch (e) {
+                      console.error('Failed to load notification prefs', e);
+                      this.prefsStatus = 'Failed to load preferences.';
+                    }
+                  }
+                },
+
+                prefIsEnabled(key) {
+                  // Absent keys default to enabled.
+                  if (!Object.prototype.hasOwnProperty.call(this.prefs, key)) return true;
+                  return Boolean(this.prefs[key]);
+                },
+
+                async setPref(key, enabled) {
+                  this.prefs = { ...this.prefs, [key]: Boolean(enabled) };
+                  this.prefsStatus = 'Saving…';
+                  try {
+                    const csrf = document.cookie.match(/csrf_token=([^;]+)/);
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (csrf) headers['X-CSRF-Token'] = decodeURIComponent(csrf[1]);
+                    const res = await fetch('/api/community/notifications/preferences', {
+                      method: 'PUT',
+                      credentials: 'same-origin',
+                      headers,
+                      body: JSON.stringify({ prefs: this.prefs }),
+                    });
+                    if (!res.ok) throw new Error('Failed to save');
+                    this.prefsStatus = 'Saved.';
+                    setTimeout(() => { this.prefsStatus = ''; }, 1500);
+                  } catch (e) {
+                    console.error('Failed to save notification pref', e);
+                    this.prefsStatus = 'Failed to save preference.';
+                  }
                 },
 
                 filteredNotifications() {

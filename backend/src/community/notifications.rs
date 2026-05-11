@@ -36,6 +36,21 @@ pub async fn notify_user(
         return Ok(()); // Don't notify yourself
     }
 
+    // Phase 3 task 31: drop notifications the recipient has disabled.
+    // Absent / null prefs default to enabled.
+    let enabled: bool = sqlx::query_scalar(
+        "SELECT COALESCE((prefs->>$2)::BOOLEAN, TRUE) \
+         FROM notification_preferences WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .bind(type_code)
+    .fetch_optional(pool)
+    .await?
+    .unwrap_or(true);
+    if !enabled {
+        return Ok(());
+    }
+
     sqlx::query(
         r#"
         INSERT INTO notifications (user_id, actor_id, type, entity_id, content, link_url)
