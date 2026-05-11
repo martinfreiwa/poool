@@ -7,7 +7,7 @@ pub mod service;
 
 use crate::auth::routes::AppState;
 use axum::{
-    routing::{get, put},
+    routing::{get, post, put},
     Router,
 };
 
@@ -23,5 +23,8 @@ pub fn router() -> Router<AppState> {
         .route("/api/leaderboard/me", get(get_my_rank))
         .route("/api/leaderboard/preferences", get(get_preferences))
         .route("/api/leaderboard/preferences", put(update_preferences))
-        .route("/api/leaderboard/refresh", get(trigger_refresh))
+        // Manual refresh is admin-only and side-effecting — POST so it can't
+        // be triggered by a casual GET (link prefetch, accidental nav, etc.)
+        // and so CSRF middleware enforces the token.
+        .route("/api/leaderboard/refresh", post(trigger_refresh))
 }

@@ -173,7 +173,7 @@ pub async fn update_preferences(
     }
 }
 
-/// GET /api/leaderboard/refresh — Trigger a score refresh (admin only or rate-limited).
+/// POST /api/leaderboard/refresh — Trigger a score refresh (admin only).
 pub async fn trigger_refresh(
     jar: CookieJar,
     State(state): State<AppState>,
