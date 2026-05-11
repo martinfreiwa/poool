@@ -45,42 +45,12 @@ button .poool-icon-custom {
   box-shadow: none;
 }
 
-/* ── Layout ─────────────────────────────────────────────────────── */
-.community-page {
-  display: flex;
-  width: 100%;
-  min-height: 100vh;
-  background: var(--content-bg);
-}
+/* .community-page / .community-main / .community-container /
+   .community-page-header removed in commit 8 — the page now uses the
+   shared .lb-page / .lb-main / .lb-container shell from leaderboard.css. */
 
-/* ds-main handles margin-left, width, padding — no overrides needed */
-.community-main {
-  z-index: 0;
-}
-
-.community-container {
-  padding: 0;
-  width: 100%;
-  max-width: 1096px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-/* ── Page Header ────────────────────────────────────────────────── */
-.community-page-header {
-  margin-bottom: 24px;
-}
-
-/* ── Tab System (matches rewards-tab-nav pattern) ───────────────── */
-.community-tab-nav {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--card-border-color);
-  margin-bottom: 32px;
-  overflow-x: auto;
-}
+/* .community-tab-nav removed in commit 8 — old in-page tab strip was a
+   dead wrapper deleted in commit 1; topbar now hosts community tabs. */
 
 /* Override global button { border:none } from main.css */
 button.community-tab-btn {
@@ -149,70 +119,8 @@ button.community-tab-btn.active {
   gap: 24px;
 }
 
-/* Create post */
-.community-create-post {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border-color);
-  border-radius: var(--card-border-radius);
-  padding: 20px;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.create-post-input-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.create-post-input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--input-border-color);
-  border-radius: var(--input-border-radius);
-  font-family: var(--font-family);
-  font-size: var(--input-font-size);
-  color: var(--input-placeholder-color);
-  background: #F9FAFB;
-  cursor: pointer;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-
-.create-post-input:hover {
-  border-color: var(--btn-primary-bg);
-}
-
-.create-post-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.create-post-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  font-family: var(--font-family);
-  font-size: 13px;
-  color: var(--label-color);
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.create-post-action-btn:hover {
-  background: #F2F4F7;
-}
-
-.create-post-action-btn svg {
-  flex-shrink: 0;
-}
+/* .community-create-post and .create-post-* removed in commit 8 —
+   replaced by the .community-composer ds-card primitive (commit 2). */
 
 /* Feed posts */
 .feed-post {
@@ -707,68 +615,12 @@ button.community-tab-btn.active {
 
 .ama-btn--primary { background: rgba(3, 255, 136, 1); color: #000; }
 .ama-btn--primary:hover { background: rgba(3, 255, 136, 0.85); }
-.ama-btn--ghost { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
-.ama-btn--ghost:hover { background: rgba(255,255,255,0.2); }
+/* .ama-btn--ghost removed in commit 8 (was on dark-gradient hero buttons,
+   replaced with ds-btn variants in commit 6). */
 
-/* Who to follow */
-.community-follow-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border-color);
-  border-radius: var(--card-border-radius);
-  padding: 20px;
-}
-
-.follow-card-title {
-  font-family: var(--font-family);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--page-title-color);
-  margin-bottom: 16px;
-}
-
-.follow-item {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #F2F4F7;
-}
-
-.follow-item:last-child { border-bottom: none; padding-bottom: 0; }
-
-.follow-item-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: #F2F4F7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: #667085;
-}
-
-.follow-item-info { flex: 1; }
-.follow-item-name { font-size: 13px; font-weight: 600; color: var(--page-title-color); display: flex; align-items: center; gap: 4px; }
-.follow-item-tag { font-size: 12px; color: #667085; display: block; }
-
-.follow-btn {
-  font-family: var(--font-family);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 20px;
-  background: none;
-  border: 1px solid var(--btn-primary-bg);
-  color: var(--btn-primary-bg);
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.follow-btn:hover { background: var(--btn-primary-bg); color: white; }
+/* Suggested-investors card (.community-follow-card / .follow-*) removed
+   in commit 2 — placeholder fake users (Emma W., James R., Lisa M.) were
+   a DESIGN §17 Product Safety violation. CSS removed in commit 8. */
 
 
 
@@ -990,52 +842,8 @@ button.community-tab-btn.active {
   margin-bottom: 16px;
 }
 
-.circle-challenge-name {
-  font-family: var(--font-family);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--page-title-color);
-  margin-bottom: 8px;
-}
-
-.circle-challenge-desc {
-  font-size: 14px;
-  color: var(--body-color);
-  line-height: 1.5;
-  margin: 0 0 16px;
-}
-
-.circle-challenge-progress { margin-bottom: 12px; }
-
-.circle-challenge-progress-bar {
-  height: 8px;
-  background: var(--card-border-color);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 6px;
-}
-
-.circle-challenge-progress-fill {
-  height: 100%;
-  background: var(--progress-fill-bg, #98FB96);
-  border-radius: var(--progress-border-radius, 30px);
-  transition: width 0.6s ease;
-}
-
-.circle-challenge-progress-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--body-color);
-}
-
-.circle-challenge-deadline {
-  font-size: 12px;
-  color: #98A2B3;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 20px;
-}
+/* .circle-challenge-name/desc/progress*/text/deadline removed in
+   commit 8 — replaced by .community-challenge-card primitive (commit 6). */
 
 .circle-leaderboard {
   border-top: 1px solid var(--card-border-color);
@@ -1071,115 +879,9 @@ button.community-tab-btn.active {
 
 .ama-layout { display: flex; flex-direction: column; gap: 24px; }
 
-.ama-hero-card {
-  background: var(--btn-primary-bg, var(--btn-primary-bg));
-  border-radius: var(--card-border-radius);
-  padding: 32px;
-  color: white;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0,0,255,0.1), 0 2px 4px -1px rgba(0,0,255,0.06);
-}
-
-.ama-hero-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
-  pointer-events: none;
-}
-
-.ama-hero-badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: rgba(3, 255, 136, 0.2);
-  color: rgba(3, 255, 136, 1);
-  margin-bottom: 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  position: relative;
-  z-index: 1;
-}
-
-.ama-hero-title {
-  font-family: var(--font-family);
-  font-size: 24px;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 8px;
-  position: relative;
-  z-index: 1;
-}
-
-.ama-hero-expert {
-  font-size: 14px;
-  opacity: 0.8;
-  margin: 0 0 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.ama-hero-meta {
-  display: flex;
-  gap: 20px;
-  font-size: 13px;
-  opacity: 0.8;
-  margin-bottom: 20px;
-  position: relative;
-  z-index: 1;
-}
-
-.ama-hero-date {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ama-hero-actions {
-  display: flex;
-  gap: 12px;
-  position: relative;
-  z-index: 1;
-}
-
-.ama-hero-actions .ds-btn--primary {
-  background: white !important;
-  color: var(--btn-primary-bg, var(--btn-primary-bg)) !important;
-}
-
-.ama-hero-actions .ds-btn--secondary {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-.ama-archive-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.ama-archive-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border-color);
-  border-radius: var(--card-border-radius);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transition: box-shadow 0.2s;
-}
-
-.ama-archive-card:hover { box-shadow: var(--card-shadow-hover, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)); }
-
-.ama-archive-topic { font-family: var(--font-family); font-size: 15px; font-weight: 600; color: var(--page-title-color); line-height: 1.4; }
-.ama-archive-expert { font-size: 13px; color: #667085; }
-.ama-archive-stats { font-size: 12px; color: #98A2B3; display: flex; gap: 6px; }
-.ama-archive-link { font-size: 13px; font-weight: 600; color: var(--btn-primary-bg); text-decoration: none; margin-top: auto; }
-.ama-archive-link:hover { text-decoration: underline; }
+/* .ama-hero-* and .ama-archive-* removed in commit 8 — replaced by
+   the flat .community-ama-hero card with brand accent strip (commit 6)
+   and the AMA archive section is not currently rendered. */
 
 /* ═══════════════════════════════════════════════════════════════════
    TAB 5: REVIEWS
@@ -1357,46 +1059,7 @@ button.community-tab-btn.active {
   position: relative;
 }
 
-.coming-soon-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(var(--card-bg-rgb, 255, 255, 255), 0.85);
-  backdrop-filter: blur(4px);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-}
-
-.coming-soon-content {
-  text-align: center;
-  background: var(--card-bg, #fff);
-  padding: 32px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border: 1px solid var(--card-border-color);
-  max-width: 320px;
-}
-
-.coming-soon-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
-}
-
-.coming-soon-title {
-  font-family: var(--font-family);
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--page-title-color);
-}
-
-.coming-soon-text {
-  font-size: 14px;
-  color: var(--label-color);
-  line-height: 1.5;
-}
+/* .coming-soon-* removed in commit 8 — unused placeholder overlay. */
 
 /* ═══════════════════════════════════════════════════════════════════
    UX.6: BOOKMARKS
