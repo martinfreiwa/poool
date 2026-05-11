@@ -41,6 +41,10 @@ pub struct Comment {
     pub is_hidden: bool,
     pub is_pinned: Option<bool>,
     pub created_at: DateTime<Utc>,
+    // 14.8.5 — populated after migration 028. NULL on comments that have
+    // never been edited; non-NULL drives the "Edited" indicator on the
+    // comment row.
+    pub edited_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

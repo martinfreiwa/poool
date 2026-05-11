@@ -553,6 +553,99 @@ def test_community_block_unblock_and_feed_hides_blocked_author(authenticated_use
             conn.close()
 
 
+def test_community_own_comment_edit_updates_db_and_shows_edited(authenticated_user_page):
+    """14.8.5 — owner edits their comment via PUT /api/community/comments/:id;
+    the row in DB gets edited_at + content; original_content captured on first
+    edit only."""
+    page, tracker, current_user = authenticated_user_page
+    actor_id = current_user["user_id"]
+
+    page.goto(f"{BASE_URL}/community")
+    page.wait_for_load_state("networkidle")
+
+    post_id = _seed_community_post(actor_id, f"edit-fixture-post-{uuid.uuid4().hex}")
+    conn = get_community_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO comments (post_id, user_id, content)
+            VALUES (%s, %s, %s)
+            RETURNING id
+            """,
+            (post_id, str(actor_id), "Original comment body."),
+        )
+        comment_id = cur.fetchone()[0]
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+
+    try:
+        # Edit via API.
+        res = page.request.put(
+            f"{BASE_URL}/api/community/comments/{comment_id}",
+            headers={**_csrf_headers(page), "Content-Type": "application/json"},
+            data='{"content": "Edited comment body after review."}',
+        )
+        assert res.status == 200, f"PUT returned {res.status}: {res.text()}"
+
+        # Verify DB row updated.
+        conn = get_community_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                "SELECT content, original_content, edited_at FROM comments WHERE id = %s",
+                (str(comment_id),),
+            )
+            row = cur.fetchone()
+            assert row is not None
+            assert row[0] == "Edited comment body after review."
+            assert row[1] == "Original comment body."
+            assert row[2] is not None, "edited_at should be set after edit"
+        finally:
+            cur.close()
+            conn.close()
+
+        # Editing someone else's comment is rejected with 403.
+        other = _make_e2e_user_via_db()
+        conn = get_community_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                INSERT INTO comments (post_id, user_id, content)
+                VALUES (%s, %s, %s)
+                RETURNING id
+                """,
+                (post_id, str(other["user_id"]), "Other user comment."),
+            )
+            other_comment_id = cur.fetchone()[0]
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+        forbidden = page.request.put(
+            f"{BASE_URL}/api/community/comments/{other_comment_id}",
+            headers={**_csrf_headers(page), "Content-Type": "application/json"},
+            data='{"content": "Hijack attempt"}',
+        )
+        assert forbidden.status == 403, f"expected 403, got {forbidden.status}"
+
+        tracker.assert_no_critical_errors()
+    finally:
+        conn = get_community_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM comments WHERE post_id = %s", (post_id,))
+            cur.execute("DELETE FROM posts WHERE id = %s", (post_id,))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+
 def test_community_mute_filters_feed(authenticated_user_page):
     """14.8.2 — muting a user removes their posts from the actor's feed
     (one-directional)."""

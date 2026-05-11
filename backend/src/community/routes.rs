@@ -2323,6 +2323,15 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/profile/me", get(get_profile_me))
         .route("/api/community/profile", put(update_profile))
         .route("/api/community/profile/:id", get(get_profile))
+        // Phase 3 task 20: followers / following list views.
+        .route(
+            "/api/community/profile/:id/followers",
+            get(list_followers),
+        )
+        .route(
+            "/api/community/profile/:id/following",
+            get(list_following),
+        )
         .route("/api/community/follow/:id", post(follow_user))
         .route("/api/community/follow/:id", delete(unfollow_user))
         // Block / mute self-service (14.8.2)
@@ -2741,6 +2750,94 @@ async fn unfollow_user(
     crate::community::service::remove_follow(&c_pool, user.id, target_id).await?;
 
     Ok(Json(serde_json::json!({"success": true})))
+}
+
+// Phase 3 task 20: list followers / following for a given profile_id. Returns
+// up to 50 rows per request keyed off the follows table; each row carries
+// display_name, avatar_url, and is_following so the modal can show a Follow/
+// Unfollow button without an extra roundtrip.
+async fn list_relationship(
+    jar: CookieJar,
+    state: &AppState,
+    profile_id: Uuid,
+    direction: &str,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let viewer = middleware::get_current_user(&jar, &state.db).await;
+    let c_pool = get_community_pool(state)?;
+
+    let (sql, _bind) = match direction {
+        "followers" => (
+            "SELECT follower_id AS uid FROM follows WHERE following_id = $1 ORDER BY created_at DESC LIMIT 50",
+            profile_id,
+        ),
+        "following" => (
+            "SELECT following_id AS uid FROM follows WHERE follower_id = $1 ORDER BY created_at DESC LIMIT 50",
+            profile_id,
+        ),
+        _ => return Err(AppError::BadRequest("Invalid direction".into())),
+    };
+
+    let user_ids: Vec<Uuid> = sqlx::query_scalar::<_, Uuid>(sql)
+        .bind(profile_id)
+        .fetch_all(&c_pool)
+        .await?;
+
+    let authors = if user_ids.is_empty() {
+        std::collections::HashMap::new()
+    } else {
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?
+    };
+
+    let following_set: std::collections::HashSet<Uuid> = if let Some(ref v) = viewer {
+        if user_ids.is_empty() {
+            std::collections::HashSet::new()
+        } else {
+            sqlx::query_scalar::<_, Uuid>(
+                "SELECT following_id FROM follows WHERE follower_id = $1 AND following_id = ANY($2)",
+            )
+            .bind(v.id)
+            .bind(&user_ids)
+            .fetch_all(&c_pool)
+            .await?
+            .into_iter()
+            .collect()
+        }
+    } else {
+        std::collections::HashSet::new()
+    };
+
+    let users: Vec<serde_json::Value> = user_ids
+        .iter()
+        .map(|uid| {
+            let info = authors.get(uid);
+            let is_self = viewer.as_ref().map(|v| v.id == *uid).unwrap_or(false);
+            serde_json::json!({
+                "user_id": uid,
+                "display_name": info.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
+                "avatar_url": info.and_then(|a| a.avatar_url.clone()),
+                "is_following": following_set.contains(uid),
+                "is_self": is_self,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "users": users })))
+}
+
+async fn list_followers(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    list_relationship(jar, &state, profile_id, "followers").await
+}
+
+async fn list_following(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    list_relationship(jar, &state, profile_id, "following").await
 }
 
 // ─── Block / mute self-service (14.8.2) ──────────────────────────────────
