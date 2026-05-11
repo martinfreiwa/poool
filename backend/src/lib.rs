@@ -389,13 +389,24 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Leaderboard: Refresh metrics and rankings periodically
+    // Leaderboard: Refresh metrics and rankings periodically.
+    //
+    // Audit P3 follow-up: each instance picks a random 0-300s jitter offset on
+    // startup so multiple horizontally-scaled instances don't all hit the DB on
+    // the same 15-minute tick (thundering herd). The offset is logged once at
+    // startup for ops visibility.
     let leaderboard_pool = pool.clone();
     let leaderboard_cache = leaderboard_last_refresh.clone();
     tokio::spawn(async move {
+        let jitter_secs: u64 = rand::Rng::gen_range(&mut rand::thread_rng(), 0..300);
+        tracing::info!(
+            "Leaderboard refresh worker starting (15min cadence, +{}s jitter)",
+            jitter_secs
+        );
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(15 * 60)); // 15 mins
-                                                                                           // Small initial delay to avoid slamming the DB on immediate startup
-        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                                                                                           // Small initial delay (+ jitter) to avoid slamming the DB on immediate startup
+                                                                                           // and to stagger multiple instances.
+        tokio::time::sleep(std::time::Duration::from_secs(10 + jitter_secs)).await;
         loop {
             match crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await {
                 Ok(()) => {
