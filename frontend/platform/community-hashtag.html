@@ -1,0 +1,39 @@
+{% with title="#" + tag + " | Community", meta_description="Posts tagged #" + tag,
+extra_css=['community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed'] %}{%
+include "components/head.html" %}{% endwith %}
+
+<body id="community-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="lb-page">
+    <div class="lb-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main lb-main">
+      {% with investor_topbar_title="#" + tag, investor_topbar_variant="community" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
+      <div class="lb-container">
+        <div class="community-hashtag-banner" style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
+          <div class="community-hashtag-banner__left">
+            <div class="community-hashtag-banner__icon">#</div>
+            <div>
+              <div class="community-hashtag-banner__title">#{{ tag }}</div>
+              <div class="community-hashtag-banner__count">{{ post_count }} post{% if post_count != 1 %}s{% endif %}</div>
+            </div>
+          </div>
+          <a class="ds-btn ds-btn--secondary ds-btn--sm" href="/community" style="margin-left:auto;">← Back to feed</a>
+        </div>
+
+        <div id="community-feed-container" class="community-feed">
+          {% include 'partials/community_post_list.html' %}
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>

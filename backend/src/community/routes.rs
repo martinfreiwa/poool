@@ -304,8 +304,10 @@ pub fn map_to_post_display(
             let matched = &caps[0];
             if matched.starts_with('#') {
                 let tag = matched[1..].to_lowercase();
+                // Phase 3 task 24: render hashtags as proper links to the
+                // dedicated /community/hashtag/:tag SSR page.
                 format!(
-                    "<span class='hashtag-tag' hx-get='/community/partials/feed/list?hashtag={}' hx-target='#community-feed-container'>{}</span>",
+                    "<a class='hashtag-tag' href='/community/hashtag/{}'>{}</a>",
                     tag, matched
                 )
             } else {
@@ -795,6 +797,92 @@ async fn update_own_comment(
     Ok(Json(serde_json::json!({
         "id": comment_id,
         "edited": true,
+    })))
+}
+
+#[derive(Deserialize)]
+struct ToggleCommentReactionReq {
+    pub reaction_type: String,
+}
+
+/// POST /api/community/comments/:id/reactions — toggle a reaction on a
+/// comment (14.8.6). Same taxonomy as post reactions; the
+/// comment_reactions trigger keeps comments.reaction_count in sync.
+async fn toggle_comment_reaction(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(comment_id): Path<Uuid>,
+    Json(payload): Json<ToggleCommentReactionReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let allowed = ["fire", "insightful", "clap", "green"];
+    if !allowed.contains(&payload.reaction_type.as_str()) {
+        return Err(AppError::BadRequest("Invalid reaction type.".into()));
+    }
+
+    let c_pool = get_community_pool(&state)?;
+    check_user_not_banned(&c_pool, user.id).await?;
+
+    // Comment must exist + not be hidden.
+    use sqlx::Row;
+    let exists: Option<bool> =
+        sqlx::query_scalar("SELECT NOT is_hidden FROM comments WHERE id = $1")
+            .bind(comment_id)
+            .fetch_optional(&c_pool)
+            .await?;
+    if !exists.unwrap_or(false) {
+        return Err(AppError::NotFound("Comment not found".into()));
+    }
+
+    let mut tx = c_pool.begin().await?;
+    let existing: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM comment_reactions
+         WHERE comment_id = $1 AND user_id = $2 AND reaction_type = $3",
+    )
+    .bind(comment_id)
+    .bind(user.id)
+    .bind(&payload.reaction_type)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let added = if existing.is_some() {
+        sqlx::query(
+            "DELETE FROM comment_reactions
+             WHERE comment_id = $1 AND user_id = $2 AND reaction_type = $3",
+        )
+        .bind(comment_id)
+        .bind(user.id)
+        .bind(&payload.reaction_type)
+        .execute(&mut *tx)
+        .await?;
+        false
+    } else {
+        sqlx::query(
+            "INSERT INTO comment_reactions (comment_id, user_id, reaction_type)
+             VALUES ($1, $2, $3)",
+        )
+        .bind(comment_id)
+        .bind(user.id)
+        .bind(&payload.reaction_type)
+        .execute(&mut *tx)
+        .await?;
+        true
+    };
+
+    let count: i32 = sqlx::query("SELECT reaction_count FROM comments WHERE id = $1")
+        .bind(comment_id)
+        .fetch_one(&mut *tx)
+        .await?
+        .try_get("reaction_count")?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "added": added,
+        "reaction_count": count,
     })))
 }
 
@@ -2267,6 +2355,11 @@ pub fn router() -> Router<AppState> {
         )
         // 14.8.5: comment edit (own)
         .route("/api/community/comments/:id", put(update_own_comment))
+        // 14.8.6: comment reactions
+        .route(
+            "/api/community/comments/:id/reactions",
+            post(toggle_comment_reaction),
+        )
         // Admin Stats & Moderation
         .route("/api/admin/community/stats", get(get_admin_stats))
         .route("/api/admin/community/reports", get(get_reports))
@@ -5902,6 +5995,58 @@ async fn get_trending_hashtags(
 #[derive(Deserialize)]
 pub struct HashtagPostsQuery {
     pub page: Option<i64>,
+}
+
+// Phase 3 task 24: shared helper so both the JSON endpoint and the new SSR
+// /community/hashtag/:tag page hit the same query.
+pub async fn get_hashtag_feed_data(
+    state: &AppState,
+    tag: &str,
+    page: Option<i64>,
+) -> Result<(String, Vec<models::PostDisplay>), AppError> {
+    let c_pool = get_community_pool(state)?;
+    let clean_tag = tag.to_lowercase().trim_start_matches('#').to_string();
+    let limit: i64 = 20;
+    let offset = (page.unwrap_or(1).max(1) - 1) * limit;
+
+    let posts = sqlx::query_as::<_, models::Post>(
+        r#"
+        SELECT p.*
+        FROM posts p
+        JOIN post_hashtags ph ON p.id = ph.post_id
+        JOIN hashtags h ON ph.hashtag_id = h.id
+        WHERE h.tag = $1 AND p.is_hidden = false
+        ORDER BY p.created_at DESC
+        LIMIT $2 OFFSET $3
+        "#,
+    )
+    .bind(&clean_tag)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
+
+    let mut feed = Vec::with_capacity(posts.len());
+    for p in posts {
+        let author = authors.get(&p.user_id);
+        let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
+        let author_name = author
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Anonymous".into());
+        feed.push(map_to_post_display(
+            &p,
+            author_name,
+            author.and_then(|a| a.avatar_url.clone()),
+            author_badges,
+            false,
+        ));
+    }
+    Ok((clean_tag, feed))
 }
 
 async fn get_posts_by_hashtag(

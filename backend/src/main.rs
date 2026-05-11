@@ -990,6 +990,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── Community (demo + SSR Post Pages) ─────────────────────────
         .route("/community", get(page_community))
         .route("/community/post/:id", get(page_community_post))
+        .route("/community/hashtag/:tag", get(page_community_hashtag))
         .route(
             "/community/partials/feed/list",
             get(community_feed_list_htmx),
@@ -2813,6 +2814,44 @@ async fn community_announcements_list_htmx(
 /// GET /community — Community demo page (protected).
 async fn page_community(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "community.html").await
+}
+
+/// GET /community/hashtag/:tag — Phase 3 task 24: dedicated hashtag landing
+/// page rendered server-side using the same community_post_list partial as
+/// the feed.
+async fn page_community_hashtag(
+    Path(tag): Path<String>,
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let result = crate::community::routes::get_hashtag_feed_data(&state, &tag, None).await;
+
+    #[derive(serde::Serialize)]
+    struct Context {
+        tag: String,
+        post_count: usize,
+        posts: Vec<crate::community::models::PostDisplay>,
+        base_url: String,
+    }
+
+    let (clean_tag, posts) = match result {
+        Ok(v) => v,
+        Err(e) => return e.into_response(),
+    };
+    let post_count = posts.len();
+
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "community-hashtag.html",
+        Context {
+            tag: clean_tag,
+            post_count,
+            posts,
+            base_url: state.config.base_url.clone(),
+        },
+    )
+    .await
 }
 
 /// GET /community/post/:id — SSR Post Page (Public/Protected mixed)
