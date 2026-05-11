@@ -2408,3 +2408,34 @@ button.community-tab-btn.active {
   height: 40px;
   padding: 0 16px;
 }
+
+/* ── Shared empty + loading states (commit 4) ─────────────────────── */
+.community-loading-state {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary, #98A2B3);
+  font-size: 14px;
+}
+
+.community-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--body-color, #667085);
+}
+
+.community-empty-state__icon {
+  margin-bottom: 16px;
+  color: var(--input-border-color, #D0D5DD);
+}
+
+.community-empty-state__title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--page-title-color, #101828);
+  margin-bottom: 4px;
+}
+
+.community-empty-state__desc {
+  font-size: 14px;
+  color: var(--body-color, #667085);
+}

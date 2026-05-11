@@ -16,9 +16,6 @@
 
   <div class="announcements-list" id="community-announcements-container"
        hx-get="/community/partials/announcements/list" hx-trigger="load">
-    <!-- Populated by HTMX -->
-    <div style="padding: 40px; text-align: center; color: #98A2B3;">
-        Loading announcements...
-    </div>
+    <div class="community-loading-state">Loading announcements...</div>
   </div>
 </div>
