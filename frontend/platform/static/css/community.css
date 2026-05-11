@@ -2439,3 +2439,239 @@ button.community-tab-btn.active {
   font-size: 14px;
   color: var(--body-color, #667085);
 }
+
+/* ── XP overview card (commit 5 — replaces dark gradient hero) ────── */
+.community-xp-overview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: var(--section-gap, 24px);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 3px brand-accent top stripe (Electric Blue → Greeny Green) per DESIGN §2 */
+.community-xp-overview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--btn-primary-bg, #0000FF), #03FF88);
+  border-top-left-radius: var(--card-border-radius, 12px);
+  border-top-right-radius: var(--card-border-radius, 12px);
+}
+
+.community-xp-overview__icon {
+  font-size: 40px;
+  flex-shrink: 0;
+}
+
+.community-xp-overview__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.community-xp-overview__level-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.community-xp-overview__level-name {
+  font-family: var(--font-family);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+}
+
+.community-xp-overview__level-num {
+  font-size: 13px;
+  color: var(--text-secondary, #98A2B3);
+}
+
+.community-xp-overview__value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.community-xp-overview__value {
+  font-family: var(--font-family);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  font-variant-numeric: tabular-nums;
+}
+
+.community-xp-overview__value-unit {
+  font-size: 13px;
+  color: var(--text-secondary, #98A2B3);
+}
+
+.community-xp-overview__progress {
+  margin-top: 4px;
+}
+
+.community-xp-overview__progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: var(--text-secondary, #98A2B3);
+}
+
+.community-xp-overview__streak {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--warning-fg, #B54708);
+  background: var(--warning-bg, #FFFAEB);
+  padding: 2px 10px;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.community-xp-overview__streak[hidden] {
+  display: none;
+}
+
+/* ── Community stat cards (commit 5 — replaces inline-styled circle stats) ── */
+.community-stat-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 20px;
+}
+
+.community-stat-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.community-stat-card__icon--info {
+  background: #EEF4FF;
+}
+
+.community-stat-card__icon--success {
+  background: var(--success-bg, #ECFDF3);
+}
+
+.community-stat-card__icon--warning {
+  background: var(--warning-bg, #FFFAEB);
+}
+
+.community-stat-card__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.community-stat-card__value {
+  font-family: var(--font-family);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.community-stat-card__label {
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  margin-top: 2px;
+}
+
+/* ── No-circle empty state (commit 5) ─────────────────────────────── */
+.community-no-circle {
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.community-no-circle__icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.community-no-circle__title {
+  margin: 0 0 8px;
+}
+
+.community-no-circle__desc {
+  color: var(--text-secondary, #667085);
+  margin: 0 0 20px;
+}
+
+/* ── Circle members card additions (commit 5) ─────────────────────── */
+.circle-members-header__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.circle-members-card__footer {
+  padding: 8px 16px;
+  text-align: center;
+}
+
+.community-leave-circle-btn {
+  color: var(--btn-danger-bg, #F04438);
+  font-size: 12px;
+}
+
+.circle-challenge-header__icon {
+  font-size: 20px;
+}
+
+.circle-challenge-header__title {
+  margin-bottom: 0;
+}
+
+.circle-leaderboard {
+  padding: 12px 16px;
+}
+
+/* ── Community panel (commit 5 — generic section card) ────────────── */
+.community-panel {
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: var(--card-border-radius, 12px);
+  overflow: hidden;
+  margin-top: 24px;
+}
+
+.community-panel__header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.community-panel__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--page-title-color, #101828);
+  margin: 0;
+}
+
+.community-panel__body {
+  padding: 12px 16px;
+}
+
+.community-panel__body--flush {
+  padding: 0;
+}
+
+.community-panel__badge {
+  font-size: 12px;
+  font-weight: 600;
+}

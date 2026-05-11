@@ -1,109 +1,90 @@
 <div id="community-circle-tab" class="community-tab-panel">
   <div class="circle-layout">
 
-    <!-- XP Summary Card -->
-    <div id="xp-summary-card" class="circle-stats-row" style="margin-bottom:var(--section-gap);">
-      <div class="ds-card"
-        style="flex:2;background:linear-gradient(135deg,#0a0b2e 0%,#1a1b4b 100%);border:none;color:#fff;">
-        <div style="display:flex;align-items:center;gap:16px;width:100%;">
-          <div id="xp-level-icon" style="font-size:40px;">🌱</div>
-          <div style="flex:1;">
-            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
-              <span id="xp-level-name"
-                style="font-size:20px;font-weight:700;color:#fff;font-family:var(--font-family);">Seedling</span>
-              <span id="xp-level-num" style="font-size:13px;color:#98a2b3;">Level 1</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span id="xp-total"
-                style="font-size:28px;font-weight:700;color:#03FF88;font-family:var(--font-family);">0</span>
-              <span style="font-size:13px;color:#98a2b3;">XP</span>
-            </div>
-            <div class="ds-progress" style="background:rgba(255,255,255,0.1); margin-top:8px;">
-              <div id="xp-progress-bar" class="ds-progress__fill"
-                style="background:linear-gradient(90deg,#03FF88,#0000FF);width:0%;"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-top:4px;" class="ds-text-caption">
-              <span id="xp-to-next" style="color:#98a2b3;">0 XP to next level</span>
-              <span id="xp-progress-pct" style="color:#98a2b3;">0%</span>
-            </div>
-            <span id="xp-login-streak"
-              style="display:none;font-size:12px;color:#FDB022;background:rgba(253,176,34,0.15);padding:2px 10px;border-radius:12px;margin-top:8px;display:inline-block;">🔥
-              0-day streak</span>
-          </div>
+    <!-- XP Summary Card (flat ds-card, no dark gradient hero) -->
+    <div id="xp-summary-card" class="ds-card community-xp-overview">
+      <div class="community-xp-overview__icon" id="xp-level-icon" aria-hidden="true">🌱</div>
+      <div class="community-xp-overview__body">
+        <div class="community-xp-overview__level-row">
+          <span id="xp-level-name" class="community-xp-overview__level-name">Seedling</span>
+          <span id="xp-level-num" class="community-xp-overview__level-num">Level 1</span>
         </div>
+        <div class="community-xp-overview__value-row">
+          <span id="xp-total" class="community-xp-overview__value">0</span>
+          <span class="community-xp-overview__value-unit">XP</span>
+        </div>
+        <div class="ds-progress community-xp-overview__progress">
+          <div id="xp-progress-bar" class="ds-progress__fill community-xp-overview__progress-fill" style="width:0%;"></div>
+        </div>
+        <div class="community-xp-overview__progress-meta ds-text-caption">
+          <span id="xp-to-next">0 XP to next level</span>
+          <span id="xp-progress-pct">0%</span>
+        </div>
+        <span id="xp-login-streak" class="community-xp-overview__streak" hidden>🔥 0-day streak</span>
       </div>
     </div>
 
     <!-- Circle Stats Row -->
     <div class="circle-stats-row" id="circle-stats-row">
-      <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
-        <div class="circle-stat-icon" style="background:#EEF4FF;">👥</div>
-        <div style="display: flex; flex-direction: column;">
-          <span id="circle-member-count" class="ds-text-xl"
-            style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
-          <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Members</span>
+      <div class="ds-card community-stat-card">
+        <div class="community-stat-card__icon community-stat-card__icon--info" aria-hidden="true">👥</div>
+        <div class="community-stat-card__body">
+          <span id="circle-member-count" class="community-stat-card__value">—</span>
+          <span class="community-stat-card__label">Members</span>
         </div>
       </div>
-      <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
-        <div class="circle-stat-icon" style="background:#ECFDF3;">⚡</div>
-        <div style="display: flex; flex-direction: column;">
-          <span id="circle-total-xp" class="ds-text-xl"
-            style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
-          <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Circle XP</span>
+      <div class="ds-card community-stat-card">
+        <div class="community-stat-card__icon community-stat-card__icon--success" aria-hidden="true">⚡</div>
+        <div class="community-stat-card__body">
+          <span id="circle-total-xp" class="community-stat-card__value">—</span>
+          <span class="community-stat-card__label">Circle XP</span>
         </div>
       </div>
-      <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
-        <div class="circle-stat-icon" style="background:#FFFAEB;">🏆</div>
-        <div style="display: flex; flex-direction: column;">
-          <span id="circle-level" class="ds-text-xl"
-            style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
-          <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Circle
-            Level</span>
+      <div class="ds-card community-stat-card">
+        <div class="community-stat-card__icon community-stat-card__icon--warning" aria-hidden="true">🏆</div>
+        <div class="community-stat-card__body">
+          <span id="circle-level" class="community-stat-card__value">—</span>
+          <span class="community-stat-card__label">Circle Level</span>
         </div>
       </div>
     </div>
 
     <!-- No Circle State -->
-    <div id="no-circle-state" style="display:none;">
-      <div class="ds-card" style="text-align:center;padding:40px 24px;">
-        <div style="font-size:48px;margin-bottom:16px;">🟢</div>
-        <h3 class="ds-text-md" style="margin:0 0 8px;">You're not in a circle yet</h3>
-        <p class="ds-text-body" style="color:var(--text-secondary);margin:0 0 20px;">Create your own circle or
-          browse the leaderboard to find one to join.</p>
-        <button class="ds-btn ds-btn--primary"
-          onclick="openCommunityModal('create-circle-modal', this)">Create a Circle</button>
+    <div id="no-circle-state" hidden>
+      <div class="ds-card community-no-circle">
+        <div class="community-no-circle__icon" aria-hidden="true">🟢</div>
+        <h3 class="ds-text-md community-no-circle__title">You're not in a circle yet</h3>
+        <p class="ds-text-body community-no-circle__desc">Create your own circle or browse the leaderboard to find one to join.</p>
+        <button class="ds-btn ds-btn--primary" onclick="openCommunityModal('create-circle-modal', this)">Create a Circle</button>
       </div>
     </div>
 
     <!-- Circle Content -->
-    <div id="circle-content" style="display:none;">
+    <div id="circle-content" hidden>
       <div class="circle-content-grid">
         <div class="circle-members-card">
           <div class="circle-members-header">
             <h3 class="section-title-std" id="circle-name-header">Your Circle</h3>
-            <div style="display:flex;gap:8px;">
-              <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="openCircleSettings()">⚙️
-                Settings</button>
-              <button class="ds-btn ds-btn--primary ds-btn--sm"
-                onclick="openCommunityModal('invite-modal', this)">Invite</button>
+            <div class="circle-members-header__actions">
+              <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="openCircleSettings()">⚙️ Settings</button>
+              <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="openCommunityModal('invite-modal', this)">Invite</button>
             </div>
           </div>
           <div id="circle-member-list" class="circle-member-list">
             <!-- Dynamically populated -->
           </div>
-          <div style="padding:8px 16px;text-align:center;">
-            <button class="ds-btn ds-btn--ghost ds-btn--sm" id="leave-circle-btn" onclick="handleLeaveCircle()"
-              style="color:#F04438;font-size:12px;">Leave Circle</button>
+          <div class="circle-members-card__footer">
+            <button class="ds-btn ds-btn--ghost ds-btn--sm community-leave-circle-btn" id="leave-circle-btn" onclick="handleLeaveCircle()">Leave Circle</button>
           </div>
         </div>
 
         <!-- Circle Leaderboard -->
         <div class="circle-challenge-card">
           <div class="circle-challenge-header">
-            <span style="font-size:20px;">🏅</span>
-            <h3 class="section-title-std" style="margin-bottom:0;">Circle Leaderboard</h3>
+            <span class="circle-challenge-header__icon" aria-hidden="true">🏅</span>
+            <h3 class="section-title-std circle-challenge-header__title">Circle Leaderboard</h3>
           </div>
-          <div id="circle-leaderboard-list" class="circle-leaderboard" style="padding:12px 16px;">
+          <div id="circle-leaderboard-list" class="circle-leaderboard">
             <!-- Dynamically populated -->
           </div>
         </div>
@@ -111,43 +92,31 @@
     </div>
 
     <!-- XP History Section -->
-    <div style="margin-top:24px;">
-      <div
-        style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
-        <div
-          style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);display:flex;justify-content:space-between;align-items:center;">
-          <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">Recent XP Activity</h3>
-        </div>
-        <div id="xp-history-list" style="padding:0;">
-          <div style="text-align:center;color:#667085;padding:24px;font-size:14px;">Loading XP history...</div>
-        </div>
+    <section class="community-panel">
+      <div class="community-panel__header">
+        <h3 class="community-panel__title">Recent XP Activity</h3>
       </div>
-    </div>
+      <div id="xp-history-list" class="community-panel__body community-panel__body--flush">
+        <div class="community-loading-state">Loading XP history...</div>
+      </div>
+    </section>
 
     <!-- Pending Invites -->
-    <div id="pending-invites-section" style="display:none;margin-top:24px;">
-      <div
-        style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
-        <div style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);">
-          <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">📩 Pending Circle Invites</h3>
-        </div>
-        <div id="invite-list" style="padding:12px 16px;"></div>
+    <section id="pending-invites-section" class="community-panel" hidden>
+      <div class="community-panel__header">
+        <h3 class="community-panel__title">📩 Pending Circle Invites</h3>
       </div>
-    </div>
+      <div id="invite-list" class="community-panel__body"></div>
+    </section>
 
     <!-- Pending Join Requests (for circle owners/admins) -->
-    <div id="pending-requests-section" style="display:none;margin-top:24px;">
-      <div
-        style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
-        <div
-          style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);display:flex;justify-content:space-between;align-items:center;">
-          <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">🔒 Join Requests</h3>
-          <span id="requests-count-badge"
-            style="font-size:12px;background:#FEF0C7;color:#B54708;padding:2px 8px;border-radius:12px;font-weight:600;"></span>
-        </div>
-        <div id="requests-list" style="padding:12px 16px;"></div>
+    <section id="pending-requests-section" class="community-panel" hidden>
+      <div class="community-panel__header">
+        <h3 class="community-panel__title">🔒 Join Requests</h3>
+        <span id="requests-count-badge" class="ds-badge ds-badge--warning community-panel__badge"></span>
       </div>
-    </div>
+      <div id="requests-list" class="community-panel__body"></div>
+    </section>
 
   </div>
 

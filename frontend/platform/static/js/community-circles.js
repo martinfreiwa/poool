@@ -71,9 +71,9 @@ window.initCommunityCircles = function () {
             const streakEl = document.getElementById('xp-login-streak');
             if (streakEl && data.login_streak > 0) {
                 streakEl.textContent = '🔥 ' + data.login_streak + '-day streak';
-                streakEl.style.display = '';
+                streakEl.hidden = false;
             } else if (streakEl) {
-                streakEl.style.display = 'none';
+                streakEl.hidden = true;
             }
         } catch (e) {
             console.error('Failed to load XP summary', e);
