@@ -249,8 +249,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let auth_rate_limiter = auth::rate_limit::RateLimiter::disabled();
     tracing::info!("Rate limiter: disabled");
 
-    let leaderboard_last_refresh =
-        std::sync::Arc::new(tokio::sync::RwLock::new(None::<chrono::DateTime<chrono::Utc>>));
+    let leaderboard_last_refresh = std::sync::Arc::new(tokio::sync::RwLock::new(
+        None::<chrono::DateTime<chrono::Utc>>,
+    ));
 
     let state = AppState {
         db: pool.clone(),
@@ -1003,6 +1004,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/community", get(page_community))
         .route("/community/post/:id", get(page_community_post))
         .route("/community/hashtag/:tag", get(page_community_hashtag))
+        // WS3.2 — full community profile page.
+        .route("/community/me", get(page_community_my_profile))
+        .route("/community/u/:user_id", get(page_community_user_profile))
         .route("/community/badge/:id", get(page_community_badge))
         .route(
             "/community/partials/feed/list",
@@ -2787,7 +2791,11 @@ async fn community_feed_list_htmx(
             current_page,
             next_page: current_page + 1,
             page_size,
-            current_source: if is_bookmarks { "bookmarks".into() } else { String::new() },
+            current_source: if is_bookmarks {
+                "bookmarks".into()
+            } else {
+                String::new()
+            },
             current_category: query.category.clone().unwrap_or_default(),
             current_sort_by: query.sort_by.clone().unwrap_or_default(),
         },
@@ -2899,6 +2907,184 @@ async fn page_community_hashtag(
     .await
 }
 
+/// WS3.2: own profile page. /community/me is just a convenience entry
+/// point that resolves the current user_id and renders the same template
+/// as /community/u/:user_id with is_own=true.
+async fn page_community_my_profile(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db).await;
+    let Some(user) = user else {
+        return axum::response::Redirect::to("/auth/login").into_response();
+    };
+    render_community_profile(jar, state, user.id, true).await
+}
+
+async fn page_community_user_profile(
+    Path(user_id): Path<uuid::Uuid>,
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let viewer = crate::auth::middleware::get_current_user(&jar, &state.db).await;
+    let is_own = viewer.as_ref().map(|v| v.id == user_id).unwrap_or(false);
+    if let Some(c_pool) = state.community_db.as_ref() {
+        let viewer_id = viewer.as_ref().map(|v| v.id);
+        crate::community::routes::record_profile_view(c_pool, user_id, viewer_id).await;
+    }
+    render_community_profile(jar, state, user_id, is_own).await
+}
+
+async fn render_community_profile(
+    jar: CookieJar,
+    state: AppState,
+    target_user_id: uuid::Uuid,
+    is_own: bool,
+) -> axum::response::Response {
+    let Some(c_pool) = state.community_db.as_ref() else {
+        return crate::error::AppError::ServiceUnavailable(
+            "Community DB is offline".into(),
+        )
+        .into_response();
+    };
+    let viewer = crate::auth::middleware::get_current_user(&jar, &state.db).await;
+
+    let bridge_info = crate::community::user_bridge::get_user_info(
+        &state.db,
+        state.redis.as_ref(),
+        target_user_id,
+    )
+    .await
+    .ok();
+
+    let cp_row: Option<(
+        Option<String>,
+        i32,
+        i32,
+        i32,
+        i32,
+        i32,
+        String,
+        i32,
+        bool,
+        bool,
+    )> = sqlx::query_as(
+        "SELECT bio, post_count, follower_count, following_count, xp_total, level, \
+                level_name, login_streak, COALESCE(is_verified_owner, false), \
+                COALESCE(is_shadowbanned, false) \
+         FROM community_profiles WHERE user_id = $1",
+    )
+    .bind(target_user_id)
+    .fetch_optional(c_pool)
+    .await
+    .ok()
+    .flatten();
+    let (
+        bio,
+        post_count,
+        follower_count,
+        following_count,
+        xp_total,
+        level,
+        level_name,
+        login_streak,
+        is_verified_owner,
+        is_shadowbanned,
+    ) = cp_row.unwrap_or((
+        None,
+        0,
+        0,
+        0,
+        0,
+        1,
+        "Seedling".into(),
+        0,
+        false,
+        false,
+    ));
+
+    let is_following = if let Some(ref v) = viewer {
+        crate::community::service::is_following(c_pool, v.id, target_user_id)
+            .await
+            .unwrap_or(false)
+    } else {
+        false
+    };
+
+    #[derive(sqlx::FromRow, serde::Serialize)]
+    struct CircleSummary {
+        id: uuid::Uuid,
+        name: String,
+        avatar_emoji: Option<String>,
+        member_count: i32,
+        total_xp: i64,
+        level: i32,
+        level_name: String,
+    }
+    let circle: Option<CircleSummary> = sqlx::query_as(
+        "SELECT c.id, c.name, c.avatar_emoji, c.member_count, c.total_xp, c.level, c.level_name \
+         FROM circles c JOIN community_profiles cp ON cp.circle_id = c.id \
+         WHERE cp.user_id = $1",
+    )
+    .bind(target_user_id)
+    .fetch_optional(c_pool)
+    .await
+    .ok()
+    .flatten();
+
+    #[derive(serde::Serialize)]
+    struct ProfileContext {
+        is_own: bool,
+        target_user_id: uuid::Uuid,
+        display_name: String,
+        avatar_url: Option<String>,
+        bio: Option<String>,
+        post_count: i32,
+        follower_count: i32,
+        following_count: i32,
+        xp_total: i32,
+        level: i32,
+        level_name: String,
+        login_streak: i32,
+        is_verified_owner: bool,
+        is_shadowbanned: bool,
+        is_following: bool,
+        circle: Option<CircleSummary>,
+        base_url: String,
+    }
+
+    let ctx = ProfileContext {
+        is_own,
+        target_user_id,
+        display_name: bridge_info
+            .as_ref()
+            .map(|b| b.display_name.clone())
+            .unwrap_or_else(|| "Community Member".into()),
+        avatar_url: bridge_info.and_then(|b| b.avatar_url),
+        bio,
+        post_count,
+        follower_count,
+        following_count,
+        xp_total,
+        level,
+        level_name,
+        login_streak,
+        is_verified_owner,
+        is_shadowbanned: if is_own { is_shadowbanned } else { false },
+        is_following,
+        circle,
+        base_url: state.config.base_url.clone(),
+    };
+
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "community-profile.html",
+        ctx,
+    )
+    .await
+}
+
 /// GET /community/badge/:id — 14.8.13: user-facing badge detail page.
 /// Renders badge metadata + holder count via the shared community-badge.html
 /// template.
@@ -2907,8 +3093,7 @@ async fn page_community_badge(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> axum::response::Response {
-    let result =
-        crate::community::routes::get_badge_detail_data(&state, id).await;
+    let result = crate::community::routes::get_badge_detail_data(&state, id).await;
 
     #[derive(serde::Serialize)]
     struct Context {

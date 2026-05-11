@@ -1,7 +1,8 @@
 {% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones,
 and grow together.",
 extra_css=['community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed',
-'community-circles', 'community-challenges', 'community-ban-appeal', 'community-autocomplete', 'community-mobile-tabs'] %}{%
+'community-circles', 'community-challenges', 'community-ban-appeal', 'community-autocomplete', 'community-mobile-tabs',
+'community-dms'] %}{%
 include
 "components/head.html" %}{% endwith %}
 
@@ -107,6 +108,9 @@ include
               }
               if (tab === 'leaderboard') {
                 window.dispatchEvent(new Event('load-global-leaderboard'));
+              }
+              if (tab === 'dms' && typeof window.loadDmThreads === 'function') {
+                window.loadDmThreads();
               }
               if (tab === 'search') {
                 const searchInput = document.querySelector('#community-search-tab input[type="text"]');
@@ -803,6 +807,70 @@ include
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
+             TAB 8: DIRECT MESSAGES (14.8.20)
+             Backend: list_threads/create_thread/list_messages/post_message in
+             community/routes.rs. Block enforcement happens server-side; client
+             just renders + posts.
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="community-dms-tab" class="community-tab-panel hidden">
+          <div class="community-dms">
+            <div class="community-dms__header">
+              <h2 class="ds-text-xl community-dms__title">Messages</h2>
+              <button type="button" id="community-dm-new-btn" class="ds-btn ds-btn--primary ds-btn--sm">
+                New conversation
+              </button>
+            </div>
+
+            <div class="community-dms__layout">
+              <!-- Thread list -->
+              <aside class="community-dms__threads" aria-label="Conversation list">
+                <div id="community-dm-thread-list">
+                  <div class="community-dms__empty">Loading conversations...</div>
+                </div>
+              </aside>
+
+              <!-- Active conversation -->
+              <section class="community-dms__messages" aria-label="Messages">
+                <div id="community-dm-empty-state" class="community-dms__empty">
+                  Pick a conversation on the left or start a new one.
+                </div>
+                <div id="community-dm-active" hidden>
+                  <header id="community-dm-active-header" class="community-dms__active-header"></header>
+                  <div id="community-dm-message-list" class="community-dms__message-list"></div>
+                  <form id="community-dm-compose" class="community-dms__compose"
+                    onsubmit="window.sendDmMessage(event)">
+                    <textarea id="community-dm-input" class="ds-input community-dms__input" rows="2"
+                      placeholder="Write a message... (1–4000 chars)" maxlength="4000" required></textarea>
+                    <button type="submit" class="ds-btn ds-btn--primary">Send</button>
+                  </form>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <!-- DM new-thread modal -->
+        <div id="community-dm-new-modal" class="ds-modal" role="dialog" aria-modal="true"
+          aria-labelledby="community-dm-new-title" style="display:none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('community-dm-new-modal')"></div>
+          <div class="ds-modal__content" style="max-width:480px;">
+            <div class="ds-modal__header">
+              <h3 id="community-dm-new-title" class="ds-modal__title">Start a conversation</h3>
+              <button type="button" class="ds-modal__close" aria-label="Close"
+                onclick="closeCommunityModal('community-dm-new-modal')">×</button>
+            </div>
+            <div class="ds-modal__body">
+              <div class="ds-form-group">
+                <label for="community-dm-search" class="ds-label">Search for a user</label>
+                <input id="community-dm-search" type="text" class="ds-input" placeholder="Type a name...">
+                <div id="community-dm-search-results" class="community-dms__search-results"></div>
+              </div>
+              <div id="community-dm-new-status" class="ds-helper-text"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
              MODALS for M2 (Community User Posts)
              ═══════════════════════════════════════════════════════════ -->
 
@@ -1122,6 +1190,10 @@ include
                   <button type="button" id="profile-modal-follow-btn" class="ds-btn ds-btn--primary ds-btn--full">
                     Follow User
                   </button>
+                </div>
+                <!-- WS3.6: link to the full profile page from the modal. -->
+                <div class="community-profile-modal__action">
+                  <a id="profile-modal-view-full" class="ds-btn ds-btn--ghost ds-btn--full" href="#">View full profile →</a>
                 </div>
                 <!-- Secondary actions: mute + block (14.8.2) -->
                 <div class="community-profile-modal__secondary-actions">

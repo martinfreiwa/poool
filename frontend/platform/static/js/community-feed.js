@@ -483,6 +483,9 @@ window.initCommunityFeed = function() {
             document.getElementById('profile-modal-followers').innerText = profile.follower_count;
             document.getElementById('profile-modal-following').innerText = profile.following_count;
             document.getElementById('profile-modal-posts').innerText = profile.post_count;
+            // WS3.6: link to the full profile page.
+            const viewFull = document.getElementById('profile-modal-view-full');
+            if (viewFull) viewFull.href = '/community/u/' + encodeURIComponent(userId);
 
             const badgesContainer = document.getElementById('profile-modal-badges');
             badgesContainer.replaceChildren();

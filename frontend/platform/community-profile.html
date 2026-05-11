@@ -1,0 +1,171 @@
+{% with title=display_name + " | Community", meta_description="Community profile",
+extra_css=['community', 'community-profile', 'leaderboard'],
+extra_js=['htmx-init', 'profile-dropdown', 'community-feed', 'community-autocomplete', 'community-profile'] %}{%
+include "components/head.html" %}{% endwith %}
+
+<body id="community-profile-body" class="fouc-guard">
+  <script>
+    window.PROFILE_USER_ID = '{{ target_user_id }}';
+    window.PROFILE_IS_OWN = {% if is_own %}true{% else %}false{% endif %};
+    window.PROFILE_DISPLAY_NAME = {{ display_name | tojson }};
+  </script>
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="lb-page">
+    <div class="lb-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main lb-main">
+      {% with investor_topbar_title=display_name, investor_topbar_variant="community" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
+      <div class="lb-container">
+
+        <!-- HERO HEADER ─────────────────────────────────────────── -->
+        <section class="community-profile-hero ds-card">
+          <div class="community-profile-hero__avatar">
+            {% if avatar_url %}
+              <img src="{{ avatar_url }}" alt="{{ display_name }} avatar">
+            {% else %}
+              <span class="community-profile-hero__avatar-initials" aria-hidden="true">{{ display_name[0] | upper }}</span>
+            {% endif %}
+          </div>
+          <div class="community-profile-hero__center">
+            <h1 class="community-profile-hero__name">
+              {{ display_name }}
+              {% if is_verified_owner %}
+              <span class="ds-badge ds-badge--info community-profile-hero__verified" title="Verified Owner">Verified</span>
+              {% endif %}
+              <span class="ds-badge community-profile-hero__level" title="Level">L{{ level }} · {{ level_name }}</span>
+            </h1>
+            {% if bio %}<p class="community-profile-hero__bio">{{ bio }}</p>{% endif %}
+          </div>
+          <div class="community-profile-hero__actions">
+            {% if is_own %}
+              <button type="button" class="ds-btn ds-btn--secondary" onclick="window.openProfileEditModal()">Edit profile</button>
+            {% else %}
+              <button type="button"
+                id="community-profile-follow-btn"
+                class="ds-btn {% if is_following %}ds-btn--secondary{% else %}ds-btn--primary{% endif %}"
+                onclick="window.communityProfile && window.communityProfile.toggleFollow()">
+                {% if is_following %}Unfollow{% else %}Follow{% endif %}
+              </button>
+            {% endif %}
+          </div>
+        </section>
+
+        {% if is_shadowbanned %}
+        <aside class="community-ban-banner community-ban-banner--soft" role="region" aria-label="Limited visibility">
+          <div class="community-ban-banner__body">
+            <div class="community-ban-banner__copy">
+              <strong class="community-ban-banner__title">Your posts have limited visibility.</strong>
+              <span class="community-ban-banner__reason">A moderator has restricted reach on your posts. New content still saves but won't surface in others' feeds.</span>
+            </div>
+          </div>
+        </aside>
+        {% endif %}
+
+        <!-- STAT STRIP ──────────────────────────────────────────── -->
+        <section class="community-profile-stats">
+          <div class="community-profile-stat">
+            <span class="community-profile-stat__value">{{ xp_total }}</span>
+            <span class="community-profile-stat__label">XP</span>
+          </div>
+          <div class="community-profile-stat">
+            <span class="community-profile-stat__value">{{ level }}</span>
+            <span class="community-profile-stat__label">Level</span>
+          </div>
+          <div class="community-profile-stat" data-relationship="followers">
+            <span class="community-profile-stat__value">{{ follower_count }}</span>
+            <span class="community-profile-stat__label">Followers</span>
+          </div>
+          <div class="community-profile-stat" data-relationship="following">
+            <span class="community-profile-stat__value">{{ following_count }}</span>
+            <span class="community-profile-stat__label">Following</span>
+          </div>
+          <div class="community-profile-stat">
+            <span class="community-profile-stat__value">{{ post_count }}</span>
+            <span class="community-profile-stat__label">Posts</span>
+          </div>
+          <div class="community-profile-stat">
+            <span class="community-profile-stat__value">{{ login_streak }}</span>
+            <span class="community-profile-stat__label">Streak</span>
+          </div>
+        </section>
+
+        <!-- TAB NAV ─────────────────────────────────────────────── -->
+        <nav class="community-profile-tabs" role="tablist" aria-label="Profile sections">
+          <button type="button" class="community-profile-tab active" data-tab="posts" role="tab" aria-selected="true">Posts</button>
+          <button type="button" class="community-profile-tab" data-tab="comments" role="tab" aria-selected="false">Comments</button>
+          <button type="button" class="community-profile-tab" data-tab="followers" role="tab" aria-selected="false">Followers</button>
+          <button type="button" class="community-profile-tab" data-tab="following" role="tab" aria-selected="false">Following</button>
+          <button type="button" class="community-profile-tab" data-tab="media" role="tab" aria-selected="false">Media</button>
+          <button type="button" class="community-profile-tab" data-tab="circle" role="tab" aria-selected="false">Circle</button>
+          <button type="button" class="community-profile-tab" data-tab="activity" role="tab" aria-selected="false">Activity</button>
+          {% if is_own %}
+          <button type="button" class="community-profile-tab" data-tab="analytics" role="tab" aria-selected="false">Analytics</button>
+          <button type="button" class="community-profile-tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+          {% endif %}
+        </nav>
+
+        <!-- TAB PANELS ──────────────────────────────────────────── -->
+        <section id="community-profile-panel-posts" class="community-profile-panel" data-panel="posts">
+          <div class="community-state community-state--loading">
+            <div class="community-state__icon" aria-hidden="true">…</div>
+            <p class="community-state__desc">Loading posts…</p>
+          </div>
+        </section>
+        <section id="community-profile-panel-comments" class="community-profile-panel hidden" data-panel="comments"></section>
+        <section id="community-profile-panel-followers" class="community-profile-panel hidden" data-panel="followers"></section>
+        <section id="community-profile-panel-following" class="community-profile-panel hidden" data-panel="following"></section>
+        <section id="community-profile-panel-media" class="community-profile-panel hidden" data-panel="media"></section>
+        <section id="community-profile-panel-circle" class="community-profile-panel hidden" data-panel="circle">
+          {% if circle %}
+          <div class="ds-card community-profile-circle-card">
+            <div class="community-profile-circle-card__emoji" aria-hidden="true">{{ circle.avatar_emoji or '🟢' }}</div>
+            <div class="community-profile-circle-card__body">
+              <h3 class="community-profile-circle-card__name">{{ circle.name }}</h3>
+              <p class="community-profile-circle-card__meta">{{ circle.member_count }} members · Level {{ circle.level }} ({{ circle.level_name }}) · {{ circle.total_xp }} XP</p>
+              {% if is_own %}
+              <a class="ds-btn ds-btn--secondary ds-btn--sm" href="/community?tab=circle">Manage circle →</a>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div class="community-state community-state--empty">
+            <div class="community-state__icon" aria-hidden="true">🟢</div>
+            <h3 class="community-state__title">Not in a circle</h3>
+            <p class="community-state__desc">{% if is_own %}Create or join a circle from the community page.{% else %}This user isn't a member of any circle yet.{% endif %}</p>
+            {% if is_own %}<a class="ds-btn ds-btn--primary" href="/community?tab=circle">Browse circles</a>{% endif %}
+          </div>
+          {% endif %}
+        </section>
+        <section id="community-profile-panel-activity" class="community-profile-panel hidden" data-panel="activity"></section>
+        {% if is_own %}
+        <section id="community-profile-panel-analytics" class="community-profile-panel hidden" data-panel="analytics"></section>
+        <section id="community-profile-panel-settings" class="community-profile-panel hidden" data-panel="settings">
+          <div class="ds-card community-profile-settings__card">
+            <h3 class="ds-text-md">Profile settings</h3>
+            <p class="ds-helper-text">Edit your bio, avatar, and request the Verified Owner badge from the edit-profile modal.</p>
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="window.openProfileEditModal()">Open edit profile</button>
+          </div>
+          <div class="ds-card community-profile-settings__card">
+            <h3 class="ds-text-md">Notifications</h3>
+            <p class="ds-helper-text">Manage which notifications you want to receive.</p>
+            <a class="ds-btn ds-btn--secondary" href="/community?tab=notifications">Open notification preferences →</a>
+          </div>
+          <div class="ds-card community-profile-settings__card">
+            <h3 class="ds-text-md">Moderation history</h3>
+            <p class="ds-helper-text">Review warnings, mutes, or bans on your account.</p>
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="window.openProfileEditModal()">Open moderation log</button>
+          </div>
+        </section>
+        {% endif %}
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+</html>
