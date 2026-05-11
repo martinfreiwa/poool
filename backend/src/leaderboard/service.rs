@@ -41,6 +41,20 @@ pub async fn refresh_all_scores(pool: &PgPool) -> Result<(), AppError> {
     .execute(pool)
     .await?;
 
+    // Step 0b: Remove rows for users whose account is no longer active
+    //          (suspended, deleted, frozen, etc.). They may still own active
+    //          investments, but they should not appear in public rankings.
+    sqlx::query(
+        r#"
+        DELETE FROM leaderboard_scores
+        WHERE user_id IN (
+            SELECT id FROM users WHERE status != 'active'
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
     // Step 1: Upsert fresh all-time metrics for every user with activity.
     sqlx::query(
         r#"
