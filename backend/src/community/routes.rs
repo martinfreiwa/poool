@@ -800,6 +800,51 @@ async fn update_own_comment(
     })))
 }
 
+/// DELETE /api/community/comments/:id — owner deletes their own comment
+/// (Phase 3 task 26). Refuses on locked threads and 404s if the row is gone.
+async fn delete_own_comment(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(comment_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    use sqlx::Row;
+    let row = sqlx::query("SELECT user_id, post_id FROM comments WHERE id = $1")
+        .bind(comment_id)
+        .fetch_optional(&c_pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Comment not found".into()))?;
+
+    let author_id: Uuid = row.try_get("user_id")?;
+    if author_id != user.id {
+        return Err(AppError::Forbidden(
+            "You can only delete your own comments.".into(),
+        ));
+    }
+    let post_id: Uuid = row.try_get("post_id")?;
+    let is_locked: Option<bool> = sqlx::query_scalar("SELECT is_locked FROM posts WHERE id = $1")
+        .bind(post_id)
+        .fetch_optional(&c_pool)
+        .await?;
+    if is_locked.unwrap_or(false) {
+        return Err(AppError::Forbidden(
+            "This thread has been locked by a moderator.".into(),
+        ));
+    }
+
+    sqlx::query("DELETE FROM comments WHERE id = $1")
+        .bind(comment_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
 #[derive(Deserialize)]
 struct ToggleCommentReactionReq {
     pub reaction_type: String,
@@ -2354,7 +2399,10 @@ pub fn router() -> Router<AppState> {
             get(get_comments).post(create_comment),
         )
         // 14.8.5: comment edit (own)
-        .route("/api/community/comments/:id", put(update_own_comment))
+        .route(
+            "/api/community/comments/:id",
+            put(update_own_comment).delete(delete_own_comment),
+        )
         // 14.8.6: comment reactions
         .route(
             "/api/community/comments/:id/reactions",

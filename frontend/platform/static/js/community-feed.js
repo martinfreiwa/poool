@@ -284,6 +284,9 @@ window.initCommunityFeed = function() {
 
                 // 14.8.5 — own-comment edit affordance.
                 if (currentUserId && c.author_id === currentUserId) {
+                    const ownActions = document.createElement('div');
+                    ownActions.className = 'community-comment-row__own-actions';
+
                     const editBtn = document.createElement('button');
                     editBtn.type = 'button';
                     editBtn.className = 'ds-btn ds-btn--ghost ds-btn--sm community-comment-row__edit-btn';
@@ -292,7 +295,36 @@ window.initCommunityFeed = function() {
                     editBtn.addEventListener('click', () =>
                         startCommentEdit(row, c.id, c.content, contentDiv, timeSpan, editBtn)
                     );
-                    body.appendChild(editBtn);
+                    ownActions.appendChild(editBtn);
+
+                    // Phase 3 task 26 — own-comment delete.
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.className = 'ds-btn ds-btn--ghost ds-btn--sm community-comment-row__delete-btn';
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.setAttribute('aria-label', 'Delete comment');
+                    deleteBtn.addEventListener('click', async () => {
+                        if (!confirm('Delete this comment? This cannot be undone.')) return;
+                        deleteBtn.disabled = true;
+                        try {
+                            const res = await fetch(`/api/community/comments/${encodeURIComponent(c.id)}`, {
+                                method: 'DELETE',
+                                credentials: 'same-origin',
+                                headers: csrfHeaders(),
+                            });
+                            if (!res.ok) throw new Error(await res.text());
+                            row.style.transition = 'opacity 0.2s ease';
+                            row.style.opacity = '0';
+                            setTimeout(() => row.remove(), 200);
+                            if (window.showToast) window.showToast('Comment deleted', 'success');
+                        } catch (err) {
+                            console.error('Delete comment failed', err);
+                            if (window.showToast) window.showToast('Failed to delete comment', 'error');
+                            deleteBtn.disabled = false;
+                        }
+                    });
+                    ownActions.appendChild(deleteBtn);
+                    body.appendChild(ownActions);
                 }
 
                 row.appendChild(body);
