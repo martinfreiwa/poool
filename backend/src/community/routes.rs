@@ -2109,6 +2109,10 @@ async fn admin_warn_user(
         return Err(AppError::NotFound("Community user not found.".to_string()));
     }
 
+    // WS1.6: admin warnings bypass notification_preferences on purpose —
+    // a user can't opt out of receiving a moderator warning about their
+    // own behaviour. Direct INSERT (inside the audit transaction) instead
+    // of notify_user() which would honour prefs.
     sqlx::query(
         r#"
         INSERT INTO notifications (user_id, actor_id, type, entity_id, content, link_url)
