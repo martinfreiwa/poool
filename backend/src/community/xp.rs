@@ -289,6 +289,100 @@ pub async fn get_user_leaderboard(
     Ok(entries)
 }
 
+/// Time window for the global XP leaderboard.
+///
+/// `Alltime` reads precomputed `community_profiles.xp_total` (fast).
+/// `Week`/`Month` aggregates the `xp_ledger` over the cutoff window — slower
+/// but always consistent with the ledger of record.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LeaderboardPeriod {
+    Week,
+    Month,
+    Alltime,
+}
+
+impl LeaderboardPeriod {
+    /// Parse from the query-string value. Unknown values fall back to `Alltime`.
+    pub fn parse(raw: Option<&str>) -> Self {
+        match raw.map(str::to_ascii_lowercase).as_deref() {
+            Some("week") | Some("weekly") | Some("7d") => Self::Week,
+            Some("month") | Some("monthly") | Some("30d") => Self::Month,
+            _ => Self::Alltime,
+        }
+    }
+
+    fn as_str(&self) -> &'static str {
+        match self {
+            Self::Week => "week",
+            Self::Month => "month",
+            Self::Alltime => "alltime",
+        }
+    }
+}
+
+impl std::fmt::Display for LeaderboardPeriod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// Windowed global XP leaderboard.
+///
+/// For `Alltime` this is the same precomputed read as `get_user_leaderboard`.
+/// For `Week`/`Month` it aggregates `xp_ledger.amount` over the cutoff window
+/// and then joins back to `community_profiles` for the user's current level
+/// and login streak (those fields are properties of "now", not the window).
+///
+/// The cutoff window is `NOW() - INTERVAL '7 days'` for `Week` and `NOW() -
+/// INTERVAL '30 days'` for `Month`, mirroring the investor leaderboard's
+/// timeframe semantics. Users with zero ledger entries in the window are
+/// excluded from windowed views (no point ranking idle users at 0 XP).
+pub async fn get_user_leaderboard_for_period(
+    pool: &PgPool,
+    period: LeaderboardPeriod,
+    limit: i64,
+) -> Result<Vec<UserLeaderboardEntry>, AppError> {
+    let limit = limit.clamp(1, 100);
+
+    match period {
+        LeaderboardPeriod::Alltime => get_user_leaderboard(pool, limit).await,
+        LeaderboardPeriod::Week | LeaderboardPeriod::Month => {
+            let cutoff = match period {
+                LeaderboardPeriod::Week => "NOW() - INTERVAL '7 days'",
+                LeaderboardPeriod::Month => "NOW() - INTERVAL '30 days'",
+                LeaderboardPeriod::Alltime => unreachable!(),
+            };
+            let query = format!(
+                r#"
+                SELECT
+                    agg.user_id                                       AS user_id,
+                    GREATEST(agg.xp_window, 0)::INTEGER               AS xp_total,
+                    COALESCE(cp.level, 1)                             AS level,
+                    COALESCE(cp.level_name, 'Seedling')               AS level_name,
+                    cp.circle_id                                      AS circle_id,
+                    COALESCE(cp.login_streak, 0)                      AS login_streak
+                FROM (
+                    SELECT user_id, SUM(amount)::BIGINT AS xp_window
+                    FROM xp_ledger
+                    WHERE created_at >= {cutoff}
+                    GROUP BY user_id
+                ) agg
+                LEFT JOIN community_profiles cp ON cp.user_id = agg.user_id
+                WHERE agg.xp_window > 0
+                ORDER BY xp_total DESC, agg.user_id ASC
+                LIMIT $1
+                "#,
+                cutoff = cutoff,
+            );
+            let entries = sqlx::query_as::<_, UserLeaderboardEntry>(&query)
+                .bind(limit)
+                .fetch_all(pool)
+                .await?;
+            Ok(entries)
+        }
+    }
+}
+
 // ─── XP Aggregation Worker ──────────────────────────────────────────
 
 /// Sync XP totals for all profiles and update circle XP.
