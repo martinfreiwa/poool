@@ -123,7 +123,7 @@
            hx-get="/community/partials/feed/list" 
            hx-include="#feed-filters"
            hx-trigger="load, reload-feed from:body">
-          <div style="padding: 40px; text-align: center; color: #98A2B3;">Loading feed...</div>
+          <div class="community-loading-state">Loading feed...</div>
       </div>
     </div> <!-- closing community-feed-container -->
 
@@ -148,9 +148,7 @@
         </div>
         <div class="profile-card-badges" id="my-profile-badges">
         </div>
-        <button type="button" onclick="window.location.href='/settings'" class="ds-btn ds-btn--ghost profile-edit-btn"
-          style="border:1px solid #EAECF0; background:#F9FAFB; color:#344054; cursor:pointer; width:100%; display: flex; justify-content: center; align-items: center; margin-top: 16px;">Edit
-          Profile</button>
+        <button type="button" onclick="window.location.href='/settings'" class="ds-btn ds-btn--secondary ds-btn--full community-profile-card__edit-btn">Edit Profile</button>
       </div>
 
       <!-- Trending Commodities -->
@@ -164,9 +162,7 @@
           Trending This Week
         </div>
         <div id="trending-assets-container">
-          <div style="padding: 16px; text-align: center; color: #98A2B3; font-size: 13px;">
-            Loading trending assets...
-          </div>
+          <div class="community-loading-state community-loading-state--inline">Loading trending assets...</div>
         </div>
       </div>
 
@@ -183,9 +179,7 @@
           Trending Tags
         </div>
         <div id="trending-hashtags-container">
-          <div style="padding: 12px; text-align: center; color: #98A2B3; font-size: 13px;">
-            Loading trending tags...
-          </div>
+          <div class="community-loading-state community-loading-state--inline">Loading trending tags...</div>
         </div>
       </div>
 

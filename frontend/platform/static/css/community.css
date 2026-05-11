@@ -2080,6 +2080,11 @@ button.community-tab-btn.active {
   font-size: 14px;
 }
 
+.community-loading-state--inline {
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
 .community-empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -2101,6 +2106,32 @@ button.community-tab-btn.active {
 .community-empty-state__desc {
   font-size: 14px;
   color: var(--body-color, #667085);
+}
+
+/* ── Following empty state (commit 17) ────────────────────────────── */
+.community-following-empty {
+  padding: 40px 24px;
+  color: var(--body-color, #667085);
+  text-align: center;
+}
+
+.community-following-empty__icon {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.community-following-empty__title {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--page-title-color, #101828);
+}
+
+.community-following-empty__desc {
+  font-size: 14px;
+}
+
+.community-following-empty__cta {
+  margin-top: 16px;
 }
 
 /* ── XP overview card (commit 5 — replaces dark gradient hero) ────── */
