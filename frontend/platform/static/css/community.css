@@ -2249,6 +2249,90 @@ button.community-tab-btn.active {
   color: var(--text-secondary, #667085);
 }
 
+/* WS2.2: unified empty / loading / error block. Replace ad-hoc renderers
+   with markup of the form:
+     <div class="community-state community-state--empty">
+       <div class="community-state__icon">…</div>
+       <h3 class="community-state__title">…</h3>
+       <p class="community-state__desc">…</p>
+     </div>
+   */
+.community-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-state__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ds-surface-hover, #F2F4F7);
+  color: var(--text-secondary, #667085);
+  font-size: 22px;
+}
+
+.community-state__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--page-title-color, #101828);
+  margin: 0;
+}
+
+.community-state__desc {
+  font-size: 14px;
+  color: var(--text-secondary, #667085);
+  margin: 0;
+  max-width: 360px;
+}
+
+.community-state--error .community-state__icon {
+  background: var(--danger-bg, #FEF3F2);
+  color: var(--danger-fg, #D92D20);
+}
+
+/* WS2.3 dark-mode parity hardening. Overrides hook into the
+   `[data-theme="dark"]` surface already defined in dashboard-tokens.css. */
+[data-theme="dark"] .community-hashtag-banner {
+  background: rgba(0, 0, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .community-lightbox {
+  background: rgba(0, 0, 0, 0.92);
+}
+
+[data-theme="dark"] .feed-post--client {
+  background: var(--card-bg);
+  border-color: var(--card-border-color);
+}
+
+/* WS2.5 post-card density tokens — single source for vertical rhythm. */
+.feed-post {
+  --feed-post-pad: 16px;
+  --feed-post-pad-x-mobile: 12px;
+  --feed-post-gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .feed-post,
+  .feed-post--client {
+    padding-left: var(--feed-post-pad-x-mobile);
+    padding-right: var(--feed-post-pad-x-mobile);
+  }
+  .feed-post-engagement {
+    flex-wrap: wrap;
+    gap: var(--feed-post-gap);
+  }
+}
+
 .community-leaderboard__rows {
   list-style: none;
   padding: 0;
