@@ -573,8 +573,6 @@ window.initCommunityFeed = function() {
                 throw new Error(err);
             }
             
-            const modal = document.getElementById('create-post-modal');
-            if (modal) modal.style.display = 'none';
             document.getElementById('post-content-input').value = '';
             document.getElementById('post-disclaimer-warning').style.display = 'none';
             window.postImageUrls = [];
