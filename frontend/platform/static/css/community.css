@@ -2027,3 +2027,205 @@ button.community-tab-btn.active {
   pointer-events: none;
   box-sizing: border-box;
 }
+
+/* ── Feed filter row (commit 2) ───────────────────────────────────── */
+.community-feed__filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.community-feed__filter-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Composer (commit 2 — replaces .community-create-post) ───────── */
+.community-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.community-composer__author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.community-composer__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E4E6EB;
+  color: var(--page-title-color, #181D27);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.community-composer__author-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.community-composer__author-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--page-title-color, #181D27);
+}
+
+.community-composer__type-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.community-composer__type-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #E4E6EB;
+  border: none;
+  padding: 4px 24px 4px 8px;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  cursor: pointer;
+}
+
+.community-composer__type-select:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
+.community-composer__type-caret {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  pointer-events: none;
+  color: var(--page-title-color, #181D27);
+}
+
+.community-composer__textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1.4;
+  resize: none;
+  padding: 0;
+  font-family: inherit;
+  color: var(--body-color, #344054);
+}
+
+.community-composer__textarea::placeholder {
+  color: var(--input-placeholder-color, #667085);
+}
+
+.community-composer__textarea:focus-visible {
+  outline: none;
+}
+
+.community-composer__disclaimer {
+  color: var(--btn-danger-bg, #D92D20);
+  margin-top: 0;
+}
+
+.community-composer__previews {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  min-height: 0;
+}
+
+.community-composer__previews:empty {
+  display: none;
+}
+
+.community-composer__poll {
+  padding: 16px;
+}
+
+.community-composer__poll[hidden],
+.community-composer__upload-status[hidden],
+.community-composer__disclaimer[hidden] {
+  display: none;
+}
+
+.community-composer__poll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.community-composer__poll-title {
+  margin: 0;
+  font-size: 15px;
+}
+
+.community-composer__poll-input {
+  margin-bottom: 12px;
+}
+
+.community-composer__poll-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.community-composer__poll-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.community-composer__poll-expiry {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.community-composer__toolbar {
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.community-composer__toolbar-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--page-title-color, #181D27);
+}
+
+.community-composer__toolbar-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Toolbar icon buttons inherit neutral color via currentColor (no rainbow). */
+.community-composer__toolbar-actions .ds-btn--icon {
+  color: var(--text-secondary, #475467);
+}
+
+.community-composer__upload-status {
+  color: var(--btn-primary-bg, #0000FF);
+}

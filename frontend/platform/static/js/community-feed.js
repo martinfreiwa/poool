@@ -114,21 +114,24 @@ window.initCommunityFeed = function() {
     let currentFeedMode = 'all';
     let currentSortMode = 'fresh';
 
+    function setToggleActive(activeBtn, inactiveBtn) {
+        if (!activeBtn || !inactiveBtn) return;
+        activeBtn.classList.add('active');
+        activeBtn.setAttribute('aria-pressed', 'true');
+        inactiveBtn.classList.remove('active');
+        inactiveBtn.setAttribute('aria-pressed', 'false');
+    }
+
     window.setFeedMode = function(mode) {
         currentFeedMode = mode;
         const btnAll = document.getElementById('feed-btn-all');
         const btnFollowing = document.getElementById('feed-btn-following');
-        
-        if (btnAll && btnFollowing) {
-            if (mode === 'all') {
-                btnAll.className = 'feed-toggle-btn active';
-                btnFollowing.className = 'feed-toggle-btn';
-            } else {
-                btnAll.className = 'feed-toggle-btn';
-                btnFollowing.className = 'feed-toggle-btn active';
-            }
+        if (mode === 'all') {
+            setToggleActive(btnAll, btnFollowing);
+        } else {
+            setToggleActive(btnFollowing, btnAll);
         }
-        
+
         const formInput = document.getElementById('form-feed-mode');
         if (formInput) formInput.value = mode;
         document.body.dispatchEvent(new Event('reload-feed'));
@@ -138,17 +141,12 @@ window.initCommunityFeed = function() {
         currentSortMode = mode;
         const btnFresh = document.getElementById('sort-btn-fresh');
         const btnHot = document.getElementById('sort-btn-hot');
-        
-        if (btnFresh && btnHot) {
-            if (mode === 'fresh') {
-                btnFresh.className = 'feed-toggle-btn active';
-                btnHot.className = 'feed-toggle-btn';
-            } else {
-                btnFresh.className = 'feed-toggle-btn';
-                btnHot.className = 'feed-toggle-btn active';
-            }
+        if (mode === 'fresh') {
+            setToggleActive(btnFresh, btnHot);
+        } else {
+            setToggleActive(btnHot, btnFresh);
         }
-        
+
         const formInput = document.getElementById('form-sort-by');
         if (formInput) formInput.value = mode;
         document.body.dispatchEvent(new Event('reload-feed'));
