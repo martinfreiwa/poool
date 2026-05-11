@@ -154,6 +154,19 @@ pub async fn refresh_all_scores(pool: &PgPool) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Run [`refresh_all_scores`] and, on success, stamp the in-process
+/// `last_updated` cache with the current UTC timestamp so subsequent
+/// `/api/leaderboard` reads skip the `SELECT MAX(computed_at)` query.
+/// Audit task C1.
+pub async fn refresh_all_scores_and_cache(
+    pool: &PgPool,
+    cache: &LastUpdatedCache,
+) -> Result<(), AppError> {
+    refresh_all_scores(pool).await?;
+    *cache.write().await = Some(chrono::Utc::now());
+    Ok(())
+}
+
 // ─── Read Path ─────────────────────────────────────────────────────
 
 // SAFETY / AUDIT NOTE (audit task A3):
@@ -201,6 +214,17 @@ fn metric_columns(metric_type: &str) -> (&'static str, &'static str) {
     pair
 }
 
+/// Cache handle used by [`get_rankings`] to skip the per-request
+/// `SELECT MAX(computed_at)` query (audit task C1).
+///
+/// Writers (the background refresh task and the admin POST refresh handler)
+/// stamp the inner `Option` with `Some(Utc::now())` after a successful
+/// `refresh_all_scores`. Readers see a hot cache and format it directly.
+/// On a cold cache (server just booted; nothing refreshed yet), the read
+/// path falls back to one `SELECT MAX(computed_at)` and warms the cache.
+pub type LastUpdatedCache =
+    std::sync::Arc<tokio::sync::RwLock<Option<chrono::DateTime<chrono::Utc>>>>;
+
 /// Fetch the leaderboard rankings.
 ///
 /// Supports two modes:
@@ -209,6 +233,10 @@ fn metric_columns(metric_type: &str) -> (&'static str, &'static str) {
 ///   - **Weekly/Monthly** (`timeframe == "weekly" | "monthly"`): computes
 ///     time-filtered metrics at query time by aggregating only investments
 ///     purchased within the timeframe window, then ranking inline with ROW_NUMBER.
+///
+/// `last_updated_cache` is an in-process cache of the most recent
+/// `leaderboard_scores.computed_at` (see [`LastUpdatedCache`]). When `Some`,
+/// the all-time read path skips the `SELECT MAX(computed_at)` SQL.
 #[allow(clippy::too_many_arguments)]
 pub async fn get_rankings(
     pool: &PgPool,
@@ -219,6 +247,7 @@ pub async fn get_rankings(
     per_page: i64,
     tier_id: Option<i32>,
     search: Option<String>,
+    last_updated_cache: Option<&LastUpdatedCache>,
 ) -> Result<LeaderboardResponse, AppError> {
     let offset = (page - 1) * per_page;
 
@@ -238,6 +267,8 @@ pub async fn get_rankings(
             .await?
         } else {
             // ── All-time: read from precomputed table ──
+            let resolved_last_updated =
+                resolve_last_updated(pool, last_updated_cache).await?;
             get_rankings_alltime(
                 pool,
                 current_user_id,
@@ -246,6 +277,7 @@ pub async fn get_rankings(
                 offset,
                 tier_id,
                 search.as_deref(),
+                resolved_last_updated,
             )
             .await?
         };
@@ -269,6 +301,10 @@ pub async fn get_rankings(
 }
 
 /// All-time rankings: read directly from precomputed `leaderboard_scores`.
+///
+/// `last_updated` is passed in by the caller (resolved via the in-process
+/// cache; see [`LastUpdatedCache`] and [`resolve_last_updated`]). This
+/// avoids running `SELECT MAX(computed_at)` per request (audit task C1).
 #[allow(clippy::too_many_arguments)]
 async fn get_rankings_alltime(
     pool: &PgPool,
@@ -278,6 +314,7 @@ async fn get_rankings_alltime(
     offset: i64,
     tier_id: Option<i32>,
     search: Option<&str>,
+    last_updated: Option<String>,
 ) -> Result<(Vec<LeaderboardEntry>, MyRank, i64, Option<String>), AppError> {
     let (rank_col, val_col) = metric_columns(metric_type);
 
@@ -377,14 +414,47 @@ async fn get_rankings_alltime(
     // My rank
     let my_rank = get_my_rank_alltime(pool, current_user_id, rank_col, val_col).await?;
 
-    // Last updated
-    let last_updated: Option<String> = sqlx::query_scalar(
-        r#"SELECT to_char(MAX(computed_at), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') FROM leaderboard_scores"#,
-    )
-    .fetch_one(pool)
-    .await?;
-
+    // `last_updated` is already resolved by the caller (via the in-process
+    // cache — see `resolve_last_updated`). No per-request MAX() query here.
     Ok((rankings, my_rank, total_participants, last_updated))
+}
+
+/// Resolve the most recent `leaderboard_scores.computed_at` formatted as an
+/// ISO-8601 string. Reads the in-process cache first; on a cold cache (or
+/// when no cache handle is provided, e.g. tests), runs a single
+/// `SELECT MAX(computed_at)` and writes the result back into the cache so
+/// subsequent requests are free.
+async fn resolve_last_updated(
+    pool: &PgPool,
+    cache: Option<&LastUpdatedCache>,
+) -> Result<Option<String>, AppError> {
+    // Fast path: hot cache.
+    if let Some(c) = cache {
+        if let Some(ts) = *c.read().await {
+            return Ok(Some(format_last_updated(ts)));
+        }
+    }
+
+    // Slow path: ask Postgres for the current MAX. If the table is empty
+    // this returns None and the cache stays cold (next refresh will warm it).
+    let ts: Option<chrono::DateTime<chrono::Utc>> =
+        sqlx::query_scalar(r#"SELECT MAX(computed_at) FROM leaderboard_scores"#)
+            .fetch_one(pool)
+            .await?;
+
+    if let (Some(ts), Some(c)) = (ts, cache) {
+        // Race-tolerant: writers stamp `Some(Utc::now())` after each
+        // successful refresh; readers either see Some and short-circuit or
+        // race on cold start and overwrite with the same value. Either way
+        // the cache settles on a monotonically non-decreasing timestamp.
+        *c.write().await = Some(ts);
+    }
+
+    Ok(ts.map(format_last_updated))
+}
+
+fn format_last_updated(ts: chrono::DateTime<chrono::Utc>) -> String {
+    ts.format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
 /// Timeframe-filtered rankings: compute metrics at query time.

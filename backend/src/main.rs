@@ -249,6 +249,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let auth_rate_limiter = auth::rate_limit::RateLimiter::disabled();
     tracing::info!("Rate limiter: disabled");
 
+    let leaderboard_last_refresh =
+        std::sync::Arc::new(tokio::sync::RwLock::new(None::<chrono::DateTime<chrono::Utc>>));
+
     let state = AppState {
         db: pool.clone(),
         db_replica: pools.replica,
@@ -257,6 +260,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config: config.clone(),
         redis: redis_pool,
         auth_rate_limiter: auth_rate_limiter.clone(),
+        leaderboard_last_refresh: leaderboard_last_refresh.clone(),
     };
 
     // Spawn background tasks
@@ -327,14 +331,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Leaderboard: Refresh metrics and rankings periodically
     let leaderboard_pool = pool.clone();
+    let leaderboard_cache = leaderboard_last_refresh.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(15 * 60)); // 15 mins
                                                                                            // Small initial delay to avoid slamming the DB on immediate startup
         tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         loop {
-            if let Err(e) = crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await
-            {
-                tracing::error!("Error refreshing leaderboard scores: {}", e);
+            match crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await {
+                Ok(()) => {
+                    // Audit task C1: refresh the in-process `last_updated`
+                    // cache so /api/leaderboard reads don't have to run
+                    // SELECT MAX(computed_at).
+                    *leaderboard_cache.write().await = Some(chrono::Utc::now());
+                }
+                Err(e) => {
+                    tracing::error!("Error refreshing leaderboard scores: {}", e);
+                }
             }
             interval.tick().await;
         }

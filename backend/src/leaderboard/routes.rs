@@ -77,6 +77,7 @@ pub async fn get_rankings(
         per_page,
         tier_id,
         search,
+        Some(&state.leaderboard_last_refresh),
     )
     .await
     {
@@ -187,7 +188,7 @@ pub async fn trigger_refresh(
             .into_response();
     }
 
-    match service::refresh_all_scores(&state.db).await {
+    match service::refresh_all_scores_and_cache(&state.db, &state.leaderboard_last_refresh).await {
         Ok(()) => Json(
             serde_json::json!({"status": "success", "message": "Leaderboard scores refreshed."}),
         )
