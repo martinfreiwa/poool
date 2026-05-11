@@ -129,4 +129,8 @@
             }, 200);
         });
     };
+
+    window.showToast = function(message, type) {
+        return window.showPooolToast(null, message, type || 'info');
+    };
 })();
