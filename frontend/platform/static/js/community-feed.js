@@ -757,12 +757,6 @@ window.initCommunityFeed = function() {
     // Expose for external usage
     window.loadHashtagFeed = loadHashtagFeed;
 
-    // Onboarding logic
-    window.closeOnboardingModal = function() {
-        document.getElementById('onboarding-modal').style.display = 'none';
-        localStorage.setItem('poool_community_onboarding_dismissed', 'true');
-    };
-
     async function updateMyProfileCard(profile, retryCount = 0) {
         // Elements from community.html
         const nameEl = document.getElementById('my-profile-name');
@@ -826,41 +820,18 @@ window.initCommunityFeed = function() {
         }
     }
 
-    async function checkOnboarding() {
+    async function loadMyProfile() {
         try {
             const res = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
             if (!res.ok) return;
-
             const profile = await res.json();
-
-            // Snyc the profile card on the right
             updateMyProfileCard(profile);
-            
-            if (localStorage.getItem('poool_community_onboarding_dismissed') === 'true') {
-                return;
-            }
-
-            // Checking if they need onboarding (XP concept)
-            const hasBio = !!profile.bio;
-            const hasPosts = profile.post_count > 0;
-
-            if (!hasBio || !hasPosts) {
-                const bioCB = document.getElementById('ob-bio');
-                const postCB = document.getElementById('ob-post');
-                if (bioCB) bioCB.checked = hasBio;
-                if (postCB) postCB.checked = hasPosts;
-                
-                const modal = document.getElementById('onboarding-modal');
-                if (modal) modal.style.display = 'flex';
-            } else {
-                localStorage.setItem('poool_community_onboarding_dismissed', 'true');
-            }
         } catch (e) {
-            console.error("Failed to check onboarding/profile status", e);
+            console.error("Failed to load community profile", e);
         }
     }
 
-    checkOnboarding();
+    loadMyProfile();
 
     // ═══════════════════════════════════════════════════════════════
     // UX.4: HASHTAG CONTENT RENDERING
