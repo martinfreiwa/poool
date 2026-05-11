@@ -185,11 +185,19 @@
     window.addEventListener("scroll", () => { if (!popover.hidden) close(); }, true);
   }
 
+  function bindHtmxRehook() {
+    if (document.body) {
+      document.body.addEventListener("htmx:afterSwap", setup);
+    }
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setup);
+    document.addEventListener("DOMContentLoaded", () => {
+      setup();
+      bindHtmxRehook();
+    });
   } else {
     setup();
+    bindHtmxRehook();
   }
-  // HTMX may re-render the composer when the Feed tab swaps in.
-  document.body.addEventListener("htmx:afterSwap", setup);
 })();
