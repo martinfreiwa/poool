@@ -791,14 +791,18 @@ pub async fn get_preferences(
 }
 
 /// Update leaderboard preferences for a user.
+///
+/// Partial-update semantics: fields omitted from the request (None) preserve
+/// the existing saved value rather than overwriting it with a default. This
+/// lets the UI toggle one field at a time (e.g. just `visible`) without
+/// silently resetting `show_avatar` or `display_name`.
 pub async fn update_preferences(
     pool: &PgPool,
     user_id: Uuid,
     req: &UpdatePreferencesRequest,
 ) -> Result<LeaderboardPreferences, AppError> {
-    let visible = req.visible.unwrap_or(false);
-    let show_avatar = req.show_avatar.unwrap_or(false);
-    let display_name = req.display_name.as_deref().and_then(|s| {
+    // Normalize incoming display_name: trim whitespace, treat empty as None.
+    let display_name = req.display_name.as_deref().map(|s| {
         let trimmed = s.trim();
         if trimmed.is_empty() {
             None
@@ -807,27 +811,37 @@ pub async fn update_preferences(
         }
     });
 
+    // For INSERT (new row) we need concrete defaults; for UPDATE we COALESCE
+    // against the existing column so omitted fields keep their saved value.
+    let visible_default = req.visible.unwrap_or(false);
+    let show_avatar_default = req.show_avatar.unwrap_or(false);
+    let display_name_default = display_name.clone().unwrap_or(None);
+
     sqlx::query!(
         r#"
         INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name, updated_at)
         VALUES ($1, $2, $3, $4, NOW())
         ON CONFLICT (user_id) DO UPDATE SET
-            visible = $2,
-            show_avatar = $3,
-            display_name = $4,
+            visible      = COALESCE($5, leaderboard_preferences.visible),
+            show_avatar  = COALESCE($6, leaderboard_preferences.show_avatar),
+            display_name = CASE
+                WHEN $7::bool THEN $8
+                ELSE leaderboard_preferences.display_name
+            END,
             updated_at = NOW()
         "#,
         user_id,
-        visible,
-        show_avatar,
-        display_name,
+        visible_default,
+        show_avatar_default,
+        display_name_default,
+        req.visible,
+        req.show_avatar,
+        req.display_name.is_some(),
+        display_name_default,
     )
     .execute(pool)
     .await?;
 
-    Ok(LeaderboardPreferences {
-        visible,
-        show_avatar,
-        display_name,
-    })
+    // Re-read the row so we return the actual merged state to the caller.
+    get_preferences(pool, user_id).await
 }
