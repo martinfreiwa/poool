@@ -306,8 +306,12 @@ pub fn map_to_post_display(
                 )
             } else {
                 let user = &matched[1..];
+                // Emit data-handle so the client can resolve the mention to a
+                // user_id and open the profile modal. Until the dedicated
+                // by-handle endpoint lands in Phase 2 the client falls back to
+                // /api/community/search to resolve the handle.
                 format!(
-                    "<span class='mention-tag' hx-get='/community/partials/feed/list?mention={}' hx-target='#community-feed-container'>{}</span>",
+                    "<span class='mention-tag' data-handle='{}'>{}</span>",
                     user, matched
                 )
             }

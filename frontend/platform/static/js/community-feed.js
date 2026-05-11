@@ -755,6 +755,47 @@ window.initCommunityFeed = function() {
     // Expose for external usage
     window.loadHashtagFeed = loadHashtagFeed;
 
+    // Resolve a @handle mention to a user_id and open the profile modal.
+    // Until the dedicated /api/community/users/by-handle/:handle endpoint
+    // ships (Phase 2), fall back to a community search for an exact handle
+    // match.
+    window.openProfileByHandle = async function (handle) {
+        if (!handle) return;
+        try {
+            const url = new URL('/api/community/search', window.location.origin);
+            url.searchParams.set('q', handle);
+            url.searchParams.set('type', 'users');
+            const res = await fetch(url.toString(), { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Search failed');
+            const data = await res.json();
+            const exact = (data.users || []).find(
+                (u) => (u.display_name || '').toLowerCase() === handle.toLowerCase()
+            );
+            const fallback = (data.users || [])[0];
+            const user = exact || fallback;
+            if (user && user.user_id) {
+                window.openUserProfile(user.user_id);
+            } else if (window.showToast) {
+                window.showToast(`User @${handle} not found`, 'warning');
+            }
+        } catch (err) {
+            console.error('openProfileByHandle failed', err);
+            if (window.showToast) {
+                window.showToast('Could not open profile', 'error');
+            }
+        }
+    };
+
+    // Delegate clicks on server-rendered .mention-tag spans (which carry a
+    // data-handle attribute) so they route through openProfileByHandle.
+    document.body.addEventListener('click', (event) => {
+        const tag = event.target.closest('.mention-tag[data-handle]');
+        if (!tag) return;
+        event.preventDefault();
+        event.stopPropagation();
+        window.openProfileByHandle(tag.dataset.handle);
+    });
+
     async function updateMyProfileCard(profile, retryCount = 0) {
         // Elements from community.html
         const nameEl = document.getElementById('my-profile-name');
@@ -857,11 +898,11 @@ window.initCommunityFeed = function() {
             } else if (part.match(/^@[\w\u00C0-\u024F_-]+$/)) {
                 const link = document.createElement('span');
                 link.className = 'mention-tag';
+                link.dataset.handle = part.substring(1);
                 link.textContent = part;
                 link.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const mention = part.substring(1);
-                    window.location.href = `/community?search=${encodeURIComponent(mention)}`;
+                    window.openProfileByHandle(link.dataset.handle);
                 });
                 container.appendChild(link);
             } else {
