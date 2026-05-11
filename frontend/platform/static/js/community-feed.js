@@ -1317,7 +1317,7 @@ window.initCommunityFeed = function() {
     // Until the dedicated /api/community/users/by-handle/:handle endpoint
     // ships (Phase 2), fall back to a community search for an exact handle
     // match.
-    // ─── Phase 3 task 20: followers / following list modal ──────
+    // ─── Phase 3 task 20 + WS1.2: paginated followers / following list ──
     window.openRelationshipList = async function (profileId, direction) {
         if (!profileId) return;
         const dir = direction === 'following' ? 'following' : 'followers';
@@ -1334,31 +1334,58 @@ window.initCommunityFeed = function() {
             document.getElementById('relationship-list-modal').style.display = 'block';
         }
 
-        try {
-            const res = await fetch(`/api/community/profile/${encodeURIComponent(profileId)}/${dir}`, {
-                credentials: 'same-origin',
-            });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const data = await res.json();
-            const users = Array.isArray(data.users) ? data.users : [];
-            if (statusEl) statusEl.hidden = true;
-            if (users.length === 0) {
-                if (rowsEl) {
+        // Track pagination state locally so the Load-more button can fetch
+        // the next page without reopening the modal.
+        let nextPage = 1;
+        let hasMore = false;
+
+        async function loadPage(page) {
+            try {
+                const res = await fetch(
+                    `/api/community/profile/${encodeURIComponent(profileId)}/${dir}?page=${page}`,
+                    { credentials: 'same-origin' }
+                );
+                if (!res.ok) throw new Error(`Request failed (${res.status})`);
+                const data = await res.json();
+                const users = Array.isArray(data.users) ? data.users : [];
+                hasMore = Boolean(data.has_more);
+                nextPage = (data.page || page) + 1;
+                if (page === 1 && statusEl) statusEl.hidden = true;
+                if (page === 1 && users.length === 0) {
                     const empty = document.createElement('div');
                     empty.className = 'community-relationship-list__empty';
                     empty.textContent = dir === 'following' ? 'No one followed yet.' : 'No followers yet.';
                     rowsEl.appendChild(empty);
+                    return;
                 }
-                return;
-            }
-            users.forEach((u) => rowsEl.appendChild(buildRelationshipRow(u)));
-        } catch (err) {
-            console.error('Failed to load relationship list', err);
-            if (statusEl) {
-                statusEl.textContent = 'Failed to load.';
-                statusEl.hidden = false;
+                users.forEach((u) => rowsEl.appendChild(buildRelationshipRow(u)));
+                renderLoadMore();
+            } catch (err) {
+                console.error('Failed to load relationship list', err);
+                if (statusEl) {
+                    statusEl.textContent = 'Failed to load.';
+                    statusEl.hidden = false;
+                }
             }
         }
+
+        function renderLoadMore() {
+            const existing = rowsEl.querySelector('.community-relationship-list__load-more');
+            if (existing) existing.remove();
+            if (!hasMore) return;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ds-btn ds-btn--secondary ds-btn--sm community-relationship-list__load-more';
+            btn.textContent = 'Load more';
+            btn.addEventListener('click', () => {
+                btn.disabled = true;
+                btn.textContent = 'Loading…';
+                loadPage(nextPage);
+            });
+            rowsEl.appendChild(btn);
+        }
+
+        await loadPage(1);
     };
 
     function buildRelationshipRow(u) {

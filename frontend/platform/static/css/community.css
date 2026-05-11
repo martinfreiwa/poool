@@ -2162,6 +2162,11 @@ button.community-tab-btn.active {
   color: var(--page-title-color, #101828);
 }
 
+.community-relationship-list__load-more {
+  align-self: center;
+  margin-top: 8px;
+}
+
 /* Phase 3 task 25: global leaderboard tab. */
 .community-leaderboard__header {
   margin-bottom: 16px;

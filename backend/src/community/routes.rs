@@ -3233,35 +3233,49 @@ async fn unfollow_user(
     Ok(Json(serde_json::json!({"success": true})))
 }
 
-// Phase 3 task 20: list followers / following for a given profile_id. Returns
-// up to 50 rows per request keyed off the follows table; each row carries
-// display_name, avatar_url, and is_following so the modal can show a Follow/
-// Unfollow button without an extra roundtrip.
+// Phase 3 task 20 + WS1.2: paginated list of followers / following.
+// Returns up to PAGE_SIZE rows per call plus a has_more flag so the modal
+// can render a "Load more" button. Each row carries display_name, avatar_url,
+// and is_following so the modal can show a Follow/Unfollow button without
+// a second roundtrip.
+const RELATIONSHIP_PAGE_SIZE: i64 = 30;
+
+#[derive(Deserialize)]
+struct RelationshipQuery {
+    page: Option<i64>,
+}
+
 async fn list_relationship(
     jar: CookieJar,
     state: &AppState,
     profile_id: Uuid,
     direction: &str,
+    page: i64,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let viewer = middleware::get_current_user(&jar, &state.db).await;
     let c_pool = get_community_pool(state)?;
+    let page = page.max(1);
+    let offset = (page - 1) * RELATIONSHIP_PAGE_SIZE;
+    // Fetch one extra to detect "has_more" cheaply.
+    let limit = RELATIONSHIP_PAGE_SIZE + 1;
 
-    let (sql, _bind) = match direction {
-        "followers" => (
-            "SELECT follower_id AS uid FROM follows WHERE following_id = $1 ORDER BY created_at DESC LIMIT 50",
-            profile_id,
-        ),
-        "following" => (
-            "SELECT following_id AS uid FROM follows WHERE follower_id = $1 ORDER BY created_at DESC LIMIT 50",
-            profile_id,
-        ),
+    let sql = match direction {
+        "followers" => "SELECT follower_id AS uid FROM follows WHERE following_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+        "following" => "SELECT following_id AS uid FROM follows WHERE follower_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
         _ => return Err(AppError::BadRequest("Invalid direction".into())),
     };
 
-    let user_ids: Vec<Uuid> = sqlx::query_scalar::<_, Uuid>(sql)
+    let mut user_ids: Vec<Uuid> = sqlx::query_scalar::<_, Uuid>(sql)
         .bind(profile_id)
+        .bind(limit)
+        .bind(offset)
         .fetch_all(&c_pool)
         .await?;
+
+    let has_more = user_ids.len() as i64 > RELATIONSHIP_PAGE_SIZE;
+    if has_more {
+        user_ids.truncate(RELATIONSHIP_PAGE_SIZE as usize);
+    }
 
     let authors = if user_ids.is_empty() {
         std::collections::HashMap::new()
@@ -3302,23 +3316,29 @@ async fn list_relationship(
         })
         .collect();
 
-    Ok(Json(serde_json::json!({ "users": users })))
+    Ok(Json(serde_json::json!({
+        "users": users,
+        "page": page,
+        "has_more": has_more,
+    })))
 }
 
 async fn list_followers(
     jar: CookieJar,
     State(state): State<AppState>,
     Path(profile_id): Path<Uuid>,
+    Query(q): Query<RelationshipQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    list_relationship(jar, &state, profile_id, "followers").await
+    list_relationship(jar, &state, profile_id, "followers", q.page.unwrap_or(1)).await
 }
 
 async fn list_following(
     jar: CookieJar,
     State(state): State<AppState>,
     Path(profile_id): Path<Uuid>,
+    Query(q): Query<RelationshipQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    list_relationship(jar, &state, profile_id, "following").await
+    list_relationship(jar, &state, profile_id, "following", q.page.unwrap_or(1)).await
 }
 
 // ─── Verified-owner request flow (14.8.16) ──────────────────────────────
