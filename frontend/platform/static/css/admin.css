@@ -1877,6 +1877,125 @@ body.admin-sidebar-collapsed .admin-main {
   overflow-y: auto;
 }
 
+/* WS2.1: native <dialog> styling used by community-user-ban-dialog. */
+.admin-dialog {
+  border: 0;
+  border-radius: 12px;
+  padding: 0;
+  width: min(520px, calc(100vw - 32px));
+  box-shadow: 0 20px 40px rgba(16, 24, 40, 0.18);
+}
+
+.admin-dialog__form { padding: 24px; }
+
+.admin-dialog__title {
+  margin: 0 0 8px;
+  color: var(--admin-text-primary, #101828);
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.admin-dialog__desc {
+  margin: 0 0 20px;
+  color: var(--admin-text-muted, #667085);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-dialog__field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.admin-dialog__label {
+  color: var(--admin-text-default, #344054);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-dialog__textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid var(--admin-border, #D0D5DD);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--admin-text-primary, #101828);
+  font: inherit;
+}
+
+.admin-dialog__status {
+  min-height: 20px;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.admin-dialog__status--error {
+  color: var(--admin-danger, #B42318);
+}
+
+.admin-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.admin-page-status {
+  min-height: 20px;
+  margin: 0 0 12px;
+  color: var(--admin-text-muted, #667085);
+  font-size: 14px;
+}
+
+/* WS2.1: admin-circles helpers. */
+.admin-alert--spaced { margin-bottom: 16px; }
+.admin-alert__retry { margin-left: 12px; }
+
+.admin-stats-grid--triple {
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .admin-stats-grid--triple { grid-template-columns: 1fr; }
+}
+
+.admin-card-header--filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.admin-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-form-group--inline { margin: 0; }
+
+.admin-pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-pagination__label {
+  font-size: 13px;
+  color: var(--admin-text-muted, #98A2B3);
+}
+
+.admin-table-empty__icon {
+  color: var(--admin-text-muted, #98A2B3);
+  margin-bottom: 16px;
+}
+
 .admin-table__cell-text {
   max-width: 480px;
   white-space: normal;

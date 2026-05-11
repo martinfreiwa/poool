@@ -35,15 +35,15 @@
       </header>
 
       <div class="admin-content">
-        <div class="admin-page-header" style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <div class="admin-page-header admin-page-header--split">
           <div>
             <h1 class="admin-page-title">Verified Owner Requests</h1>
             <p class="admin-page-subtitle">Approve or reject Verified Owner badge requests submitted from the
               community profile editor.</p>
           </div>
-          <div style="display:flex; gap:8px; align-items:center;">
+          <div class="admin-page-header__actions">
             <label for="vor-status-filter" class="ds-sr-only">Filter by status</label>
-            <select id="vor-status-filter" class="admin-input" style="padding:8px 12px;">
+            <select id="vor-status-filter" class="admin-input admin-input--compact">
               <option value="pending" selected>Pending</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
@@ -63,12 +63,12 @@
                   <th>Evidence</th>
                   <th>Status</th>
                   <th>Submitted</th>
-                  <th style="text-align:right;">Actions</th>
+                  <th class="admin-table__cell-actions">Actions</th>
                 </tr>
               </thead>
               <tbody id="vor-table">
                 <tr>
-                  <td colspan="7" style="text-align:center; padding:40px; color: var(--admin-text-muted);">
+                  <td colspan="7" class="admin-table__message">
                     Loading requests...
                   </td>
                 </tr>
@@ -80,11 +80,12 @@
     </main>
   </div>
 
-  <!-- Review modal -->
+  <!-- Review modal — display toggled by JS via style.display (functional
+       state, not a visual rule; per the WS2.1 convention). -->
   <div id="vor-review-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="vor-review-title"
     style="display:none;">
     <div class="ds-modal__backdrop" onclick="window.__vorCloseReview()"></div>
-    <div class="ds-modal__content" style="max-width:520px;">
+    <div class="ds-modal__content community-page-modal__content--md">
       <div class="ds-modal__header">
         <h3 id="vor-review-title" class="ds-modal__title">Review request</h3>
         <button type="button" class="ds-modal__close" aria-label="Close" onclick="window.__vorCloseReview()">×</button>
@@ -97,7 +98,7 @@
         </div>
         <div id="vor-review-status" class="ds-helper-text"></div>
       </div>
-      <div class="ds-modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+      <div class="ds-modal__footer">
         <button type="button" class="ds-btn ds-btn--secondary" onclick="window.__vorCloseReview()">Cancel</button>
         <button type="button" class="ds-btn ds-btn--danger" id="vor-review-reject-btn">Reject</button>
         <button type="button" class="ds-btn ds-btn--primary" id="vor-review-approve-btn">Approve</button>

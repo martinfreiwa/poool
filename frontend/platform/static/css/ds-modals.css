@@ -153,6 +153,13 @@
   justify-content: space-between;
 }
 
+.ds-modal__body-text {
+  margin: 0;
+  color: var(--text-tertiary, #475467);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 /* ── Error Alert inside Modal ───────────────────────────────────── */
 .ds-modal__error {
   color: #D92D20;

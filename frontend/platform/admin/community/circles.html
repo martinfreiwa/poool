@@ -56,14 +56,14 @@
       </header>
 
       <div class="admin-content">
-        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;">
+        <div class="admin-page-header admin-page-header--split">
           <div>
             <h1 class="admin-page-title">Circles</h1>
             <p class="admin-page-subtitle">Manage investor circles, review stats, and moderate.</p>
           </div>
           <button type="button" class="admin-btn admin-btn--secondary" id="circles-refresh-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;" aria-hidden="true">
+              stroke-linecap="round" stroke-linejoin="round" class="admin-btn__icon" aria-hidden="true">
               <polyline points="23 4 23 10 17 10"></polyline>
               <polyline points="1 20 1 14 7 14"></polyline>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
@@ -73,12 +73,12 @@
         </div>
 
         <div id="circles-status" class="sr-only" role="status" aria-live="polite"></div>
-        <div id="circles-error" class="admin-alert admin-alert--error" role="alert" hidden style="margin-bottom: 16px;">
+        <div id="circles-error" class="admin-alert admin-alert--error admin-alert--spaced" role="alert" hidden>
           <span id="circles-error-text"></span>
-          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="circles-error-retry" style="margin-left: 12px;">Retry</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm admin-alert__retry" id="circles-error-retry">Retry</button>
         </div>
 
-        <div class="admin-stats-grid" style="margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+        <div class="admin-stats-grid admin-stats-grid--triple">
           <div class="admin-stat-card">
             <h3 class="admin-stat-title">Total Circles</h3>
             <div class="admin-stat-value" id="circles-total-count">0</div>
@@ -94,13 +94,13 @@
         </div>
 
         <div class="admin-card">
-          <div class="admin-card-header" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between;">
-            <form id="circles-filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: end;">
-              <label class="admin-form-group" style="margin: 0;">
+          <div class="admin-card-header admin-card-header--filter">
+            <form id="circles-filter-form" class="admin-filter-form">
+              <label class="admin-form-group admin-form-group--inline">
                 <span class="admin-label">Search</span>
                 <input class="admin-input" id="circles-search" name="search" type="search" placeholder="Name or ID" autocomplete="off" />
               </label>
-              <label class="admin-form-group" style="margin: 0;">
+              <label class="admin-form-group admin-form-group--inline">
                 <span class="admin-label">Visibility</span>
                 <select class="admin-input" id="circles-visibility" name="visibility">
                   <option value="all">All</option>
@@ -110,9 +110,9 @@
               </label>
               <button type="submit" class="admin-btn admin-btn--secondary">Apply</button>
             </form>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="admin-pagination">
               <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="circles-prev-btn">Previous</button>
-              <span id="circles-page-label" style="font-size: 13px; color: var(--text-tertiary);">0-0 of 0</span>
+              <span id="circles-page-label" class="admin-pagination__label">0-0 of 0</span>
               <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="circles-next-btn">Next</button>
             </div>
           </div>
@@ -132,7 +132,7 @@
                     <th>Total XP</th>
                     <th>Created</th>
                     <th>Visibility</th>
-                    <th style="text-align: right;">Actions</th>
+                    <th class="admin-table__cell-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="circles-table-body"></tbody>
@@ -140,7 +140,7 @@
 
               <div id="circles-empty" class="admin-table-empty" hidden>
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
-                  stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); margin-bottom: 16px;" aria-hidden="true">
+                  stroke-linecap="round" stroke-linejoin="round" class="admin-table-empty__icon" aria-hidden="true">
                   <circle cx="12" cy="12" r="10"></circle>
                   <circle cx="12" cy="12" r="3"></circle>
                 </svg>
@@ -165,7 +165,7 @@
       </div>
       <div class="ds-modal__body">
         <div class="ds-modal__error" id="circle-delete-error" role="alert"></div>
-        <p id="circle-delete-message" style="margin:0;color:#475467;font-size:14px;line-height:1.6;"></p>
+        <p id="circle-delete-message" class="ds-modal__body-text"></p>
       </div>
       <div class="ds-modal__footer ds-modal__footer--bordered">
         <button type="button" class="ds-btn ds-btn--secondary" data-circle-delete-cancel>Cancel</button>
