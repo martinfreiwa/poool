@@ -638,6 +638,20 @@ include
               <h2 class="ds-text-xl community-leaderboard__title">Community Leaderboard</h2>
               <p class="ds-text-body community-leaderboard__desc">Top community members by total XP.</p>
             </div>
+            <div class="community-leaderboard__controls" style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;">
+              <label for="community-leaderboard-period" class="ds-text-body" style="margin:0;">Period:</label>
+              <select
+                id="community-leaderboard-period"
+                class="ds-input ds-input--sm"
+                x-model="period"
+                @change="reload()"
+                aria-label="Leaderboard period"
+                style="max-width:160px;">
+                <option value="alltime">All time</option>
+                <option value="month">This month</option>
+                <option value="week">This week</option>
+              </select>
+            </div>
             <div x-show="loading" class="community-loading-state">Loading leaderboard...</div>
             <div x-show="!loading && error" class="ds-card community-leaderboard__error">
               <p class="ds-text-subtitle" x-text="error"></p>
@@ -668,16 +682,26 @@ include
                 loading: false,
                 error: '',
                 rows: [],
+                period: 'alltime',
                 _loaded: false,
                 bind() {
                   window.addEventListener('load-global-leaderboard', () => this.load());
                 },
                 async load() {
                   if (this._loaded && !this.error) return;
+                  await this._fetch();
+                },
+                async reload() {
+                  // Forced refetch when the user changes the period filter.
+                  this._loaded = false;
+                  await this._fetch();
+                },
+                async _fetch() {
                   this.loading = true;
                   this.error = '';
                   try {
-                    const res = await fetch('/api/community/leaderboard?limit=50', { credentials: 'same-origin' });
+                    const p = encodeURIComponent(this.period || 'alltime');
+                    const res = await fetch(`/api/community/leaderboard?limit=50&period=${p}`, { credentials: 'same-origin' });
                     if (!res.ok) throw new Error('Failed to load leaderboard');
                     const data = await res.json();
                     this.rows = Array.isArray(data.leaderboard) ? data.leaderboard : [];
