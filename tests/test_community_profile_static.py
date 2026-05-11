@@ -75,12 +75,13 @@ def test_profile_css_has_required_classes():
 
 
 def test_backend_routes_registered():
-    main = read("backend/src/main.rs")
-    assert '"/community/me"' in main
-    assert '"/community/u/:user_id"' in main
-    assert "page_community_my_profile" in main
-    assert "page_community_user_profile" in main
-    assert "render_community_profile" in main
+    # main.rs is a thin shim; the router + page handlers live in lib.rs.
+    lib = read("backend/src/lib.rs")
+    assert '"/community/me"' in lib
+    assert '"/community/u/:user_id"' in lib
+    assert "page_community_my_profile" in lib
+    assert "page_community_user_profile" in lib
+    assert "render_community_profile" in lib
 
 
 def test_backend_profile_endpoints_registered():

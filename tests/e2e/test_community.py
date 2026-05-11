@@ -1,5 +1,7 @@
 import re
 import uuid
+import urllib.error
+import urllib.request
 from playwright.sync_api import expect
 import os
 import json
@@ -220,14 +222,34 @@ def test_community_invalid_partial_returns_404(authenticated_user_page):
     assert response.status == 404
 
 
-def test_community_partial_requires_auth(page):
-    response = page.request.get(
-        f"{BASE_URL}/community/partials/challenges",
-        max_redirects=0,
-    )
+def test_community_partial_requires_auth():
+    """Anonymous request to a community partial endpoint redirects to login.
 
-    assert response.status in (302, 303, 307, 308)
-    assert response.headers["location"].endswith("/auth/login")
+    Uses urllib rather than the Playwright `page` fixture: pytest-playwright's
+    `page` fixture spins up an event loop that clashes with the project-wide
+    asyncio config, throwing 'sync API inside asyncio loop' on collection.
+    This endpoint only needs an HTTP roundtrip, no browser context.
+    """
+    import urllib.request
+    req = urllib.request.Request(
+        f"{BASE_URL}/community/partials/challenges",
+        method="GET",
+    )
+    # Disable redirect following so we can inspect the 30x directly.
+    opener = urllib.request.build_opener(_NoRedirect())
+    try:
+        opener.open(req)
+        raise AssertionError("expected redirect, got 200")
+    except urllib.error.HTTPError as e:
+        assert e.code in (302, 303, 307, 308), f"unexpected status {e.code}"
+        location = e.headers.get("location", "")
+        assert location.endswith("/auth/login"), f"unexpected redirect target {location}"
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Treat 30x as a terminal response (raise HTTPError) instead of following."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):

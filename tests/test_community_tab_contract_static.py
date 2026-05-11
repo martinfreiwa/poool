@@ -129,7 +129,7 @@ def test_announcement_fragment_uses_server_rendered_contract():
     tab = read("frontend/platform/partials/community_announcements.html")
     list_template = read("frontend/platform/partials/community_announcements_list.html")
     js = read("frontend/platform/static/js/community-announcements.js")
-    main = read("backend/src/main.rs")
+    main = read("backend/src/lib.rs")
 
     for category in [
         "new_commodity",
