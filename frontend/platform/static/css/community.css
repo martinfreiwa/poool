@@ -3170,6 +3170,254 @@ button.community-tab-btn.active {
   color: var(--text-secondary, #98A2B3);
 }
 
+/* ── Circle modals (commit 15) ────────────────────────────────────── */
+/* Overlay; inline display:none is the initial state (JS toggles
+   display='flex' via openCommunityModal). */
+.community-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.community-modal__panel {
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+
+.community-modal__panel--flush {
+  padding: 0;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.community-modal__title {
+  margin: 0 0 16px;
+}
+
+.community-modal__title--inline {
+  margin: 0;
+}
+
+.community-modal__description {
+  margin: 0 0 16px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-modal__label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.community-modal__input,
+.community-modal__textarea {
+  width: 100%;
+}
+
+.community-modal__textarea {
+  resize: vertical;
+}
+
+.community-modal__emoji-input {
+  width: 80px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.community-modal__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.community-modal__copy-row {
+  background: var(--content-bg, #F9FAFB);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.community-modal__copy-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--page-title-color, #181D27);
+  outline: none;
+}
+
+/* Settings modal header / body / footer */
+.community-modal__header {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.community-modal__header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.community-modal__header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #EEF4FF;
+  color: var(--btn-primary-bg, #0000FF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.community-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-secondary, #667085);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.community-modal__close:hover {
+  color: var(--page-title-color, #181D27);
+}
+
+.community-modal__close:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.community-modal__body {
+  padding: 24px 28px;
+}
+
+.community-modal__footer {
+  padding: 16px 28px;
+  border-top: 1px solid var(--card-border-color, #E5E7EB);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--content-bg, #F9FAFB);
+  border-radius: 0 0 12px 12px;
+}
+
+.community-modal__footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.community-modal__danger-btn {
+  color: var(--btn-danger-bg, #F04438);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Switch (toggle) */
+.community-modal__toggle-row {
+  margin-bottom: 4px;
+  padding: 16px;
+  background: var(--content-bg, #F9FAFB);
+  border-radius: 10px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.community-modal__toggle-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.community-modal__toggle-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.community-modal__toggle-desc {
+  color: var(--text-secondary, #667085);
+}
+
+.community-modal__switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.community-modal__switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.community-modal__switch-track {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--card-border-color, #D0D5DD);
+  border-radius: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.community-modal__switch-knob {
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.community-modal__switch--on .community-modal__switch-track {
+  background: var(--btn-primary-bg, #0000FF);
+}
+
+.community-modal__switch--on .community-modal__switch-knob {
+  transform: translateX(20px);
+}
+
+.community-modal__switch input:focus-visible + .community-modal__switch-track {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-modal__switch-track,
+  .community-modal__switch-knob {
+    transition: none;
+  }
+}
+
 /* ── Community toast (commit 14 — JS-rendered) ────────────────────── */
 .community-toast {
   position: fixed;

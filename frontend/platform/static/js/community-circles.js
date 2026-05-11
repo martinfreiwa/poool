@@ -455,9 +455,9 @@ window.initCommunityCircles = function () {
             const checkbox = document.getElementById('settings-circle-public');
             checkbox.checked = isPublic;
             const track = document.getElementById('settings-toggle-track');
-            track.style.backgroundColor = isPublic ? '#0000FF' : '#D0D5DD';
-            const knob = track.querySelector('span');
-            if (knob) knob.style.transform = isPublic ? 'translateX(20px)' : 'translateX(0)';
+            if (track && track.parentElement) {
+                track.parentElement.classList.toggle('community-modal__switch--on', isPublic);
+            }
 
             // Show modal
             if (typeof window.openCommunityModal === 'function') {
