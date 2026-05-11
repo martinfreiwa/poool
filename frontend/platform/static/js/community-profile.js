@@ -82,6 +82,8 @@
       const active = b.dataset.tab === name;
       b.classList.toggle("active", active);
       b.setAttribute("aria-selected", active ? "true" : "false");
+      // WS2.7 a11y: roving tabindex so arrow-key navigation works.
+      b.setAttribute("tabindex", active ? "0" : "-1");
     });
     document.querySelectorAll(".community-profile-panel").forEach((p) => {
       p.classList.toggle("hidden", p.dataset.panel !== name);
@@ -428,6 +430,26 @@
     document.querySelectorAll(".community-profile-tab").forEach((tab) => {
       tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
     });
+
+    // WS2.7 a11y: arrow keys navigate the tablist (left/right wrap, home/end).
+    const tablist = document.querySelector(".community-profile-tabs");
+    if (tablist) {
+      tablist.addEventListener("keydown", (event) => {
+        const tabs = Array.from(tablist.querySelectorAll(".community-profile-tab"));
+        const idx = tabs.indexOf(document.activeElement);
+        if (idx < 0) return;
+        let next = idx;
+        if (event.key === "ArrowRight") next = (idx + 1) % tabs.length;
+        else if (event.key === "ArrowLeft") next = (idx - 1 + tabs.length) % tabs.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = tabs.length - 1;
+        else return;
+        event.preventDefault();
+        const targetTab = tabs[next];
+        targetTab.focus();
+        setActiveTab(targetTab.dataset.tab);
+      });
+    }
 
     // Follow button uses the helper from community-feed.js.
     window.communityProfile = {
