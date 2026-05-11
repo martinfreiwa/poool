@@ -1672,6 +1672,99 @@ body.admin-sidebar-collapsed .admin-main {
   color: #fff;
 }
 
+/* WS2.6: warning button + admin community helpers. */
+.admin-btn--warning {
+  background: var(--admin-warning-bg, #FFFAEB);
+  color: var(--admin-warning, #B54708);
+  border: 1px solid transparent;
+}
+
+.admin-btn--warning:hover {
+  background: var(--admin-warning, #B54708);
+  color: #fff;
+}
+
+/* WS2.6 admin-community shared cell formatting + status badges so the
+   admin tables stop hard-coding font-weight + colour at every row. */
+.admin-table__cell-primary {
+  font-weight: 500;
+  color: var(--admin-text-primary, #181D27);
+}
+
+.admin-table__cell-secondary {
+  font-size: 11px;
+  color: var(--admin-text-muted, #98A2B3);
+  font-family: monospace;
+}
+
+.admin-table__cell-muted {
+  font-size: 12px;
+  color: var(--admin-text-muted, #667085);
+}
+
+.admin-badge--status-pending  { background: #FFFAEB; color: #B54708; }
+.admin-badge--status-approved { background: #ECFDF3; color: #067647; }
+.admin-badge--status-rejected { background: #FEF3F2; color: #B42318; }
+.admin-badge--status-live     { background: #ECFDF3; color: #067647; }
+.admin-badge--status-draft    { background: #F2F4F7; color: #475467; }
+.admin-badge--status-archived { background: #F9FAFB; color: #98A2B3; }
+.admin-badge--status-closed   { background: #F2F4F7; color: #344054; }
+.admin-badge--status-accepting { background: #EEF4FF; color: #3538CD; }
+.admin-badge--status-scheduled { background: #EEF4FF; color: #3538CD; }
+
+/* WS2.6: shared modal overlay used by appeals/amas/reports admin pages. */
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.admin-modal-overlay[aria-hidden="true"] {
+  display: none;
+}
+
+.admin-modal {
+  background: var(--admin-card-bg, #FFFFFF);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.admin-modal--md { max-width: 540px; }
+.admin-modal--lg { max-width: 720px; }
+
+.admin-table__cell-text {
+  max-width: 480px;
+  white-space: normal;
+  font-size: 13px;
+  color: var(--admin-text-default, #344054);
+}
+
+.admin-table__cell-secondary--note {
+  margin-top: 4px;
+}
+
+.admin-table__cell-actions {
+  text-align: right;
+}
+
+.admin-table__message {
+  text-align: center;
+  padding: 40px;
+  color: var(--admin-text-muted, #98A2B3);
+}
+
+.admin-table__message--error {
+  color: var(--admin-danger, #B42318);
+}
+
 /* ===========================
    Focus Visible (keyboard nav)
    =========================== */

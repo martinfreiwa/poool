@@ -9,10 +9,11 @@
 (function () {
   'use strict';
 
+  // WS2.6: status badges use shared CSS classes from admin.css.
   const STATUS_BADGES = {
-    pending:  { text: 'Pending',  bg: '#FFFAEB', color: '#B54708' },
-    approved: { text: 'Approved', bg: '#ECFDF3', color: '#067647' },
-    rejected: { text: 'Rejected', bg: '#FEF3F2', color: '#B42318' },
+    pending:  { text: 'Pending',  cls: 'admin-badge--status-pending' },
+    approved: { text: 'Approved', cls: 'admin-badge--status-approved' },
+    rejected: { text: 'Rejected', cls: 'admin-badge--status-rejected' },
   };
 
   function getCsrfToken() {
@@ -70,21 +71,16 @@
 
     const userCell = document.createElement('td');
     const userName = document.createElement('div');
-    userName.style.fontWeight = '500';
+    userName.className = 'admin-table__cell-primary';
     userName.textContent = appeal.display_name || 'Unknown';
     const userIdLine = document.createElement('div');
-    userIdLine.style.fontSize = '11px';
-    userIdLine.style.color = '#98A2B3';
-    userIdLine.style.fontFamily = 'monospace';
+    userIdLine.className = 'admin-table__cell-secondary';
     userIdLine.textContent = appeal.user_id ? String(appeal.user_id).substring(0, 8) + '…' : '';
     userCell.append(userName, userIdLine);
     row.appendChild(userCell);
 
     const textCell = document.createElement('td');
-    textCell.style.maxWidth = '480px';
-    textCell.style.whiteSpace = 'normal';
-    textCell.style.fontSize = '13px';
-    textCell.style.color = '#344054';
+    textCell.className = 'admin-table__cell-text';
     const snippet = (appeal.appeal_text || '').slice(0, 240);
     textCell.textContent = snippet + ((appeal.appeal_text || '').length > 240 ? '…' : '');
     row.appendChild(textCell);
@@ -92,21 +88,18 @@
     const statusCell = document.createElement('td');
     const status = STATUS_BADGES[appeal.status] || STATUS_BADGES.pending;
     const badge = document.createElement('span');
-    badge.className = 'admin-badge';
-    badge.style.background = status.bg;
-    badge.style.color = status.color;
+    badge.className = 'admin-badge ' + status.cls;
     badge.textContent = status.text;
     statusCell.appendChild(badge);
     row.appendChild(statusCell);
 
     const dateCell = document.createElement('td');
-    dateCell.style.fontSize = '12px';
-    dateCell.style.color = '#667085';
+    dateCell.className = 'admin-table__cell-muted';
     dateCell.textContent = formatDate(appeal.created_at);
     row.appendChild(dateCell);
 
     const actionCell = document.createElement('td');
-    actionCell.style.textAlign = 'right';
+    actionCell.className = 'admin-table__cell-actions';
     if (appeal.status === 'pending') {
       const reviewBtn = document.createElement('button');
       reviewBtn.type = 'button';
@@ -116,15 +109,12 @@
       actionCell.appendChild(reviewBtn);
     } else {
       const resolvedLabel = document.createElement('div');
-      resolvedLabel.style.fontSize = '12px';
-      resolvedLabel.style.color = '#667085';
+      resolvedLabel.className = 'admin-table__cell-muted';
       resolvedLabel.textContent = appeal.resolved_at ? `Resolved ${formatDate(appeal.resolved_at)}` : '—';
       actionCell.appendChild(resolvedLabel);
       if (appeal.admin_notes) {
         const notes = document.createElement('div');
-        notes.style.fontSize = '11px';
-        notes.style.color = '#98A2B3';
-        notes.style.marginTop = '4px';
+        notes.className = 'admin-table__cell-secondary admin-table__cell-secondary--note';
         notes.textContent = appeal.admin_notes;
         actionCell.appendChild(notes);
       }
@@ -137,9 +127,7 @@
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.colSpan = 5;
-    cell.style.textAlign = 'center';
-    cell.style.padding = '40px';
-    cell.style.color = isError ? '#B42318' : 'var(--admin-text-muted)';
+    cell.className = isError ? 'admin-table__message admin-table__message--error' : 'admin-table__message';
     cell.textContent = text;
     row.appendChild(cell);
     return row;
