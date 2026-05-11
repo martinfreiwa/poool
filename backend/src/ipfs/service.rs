@@ -103,7 +103,12 @@ pub enum IpfsError {
     /// HTTP request to Pinata API failed
     RequestFailed(String),
     /// Pinata API returned an error response
-    ApiError { status: u16, message: String },
+    ApiError {
+        /// HTTP status code returned by the Pinata API.
+        status: u16,
+        /// Error message body returned by the Pinata API.
+        message: String,
+    },
     /// Failed to serialize metadata JSON
     SerializationError(String),
 }

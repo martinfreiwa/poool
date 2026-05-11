@@ -19,11 +19,11 @@
 #![allow(clippy::useless_conversion)]
 #![allow(clippy::useless_format)]
 #![allow(clippy::useless_vec)]
-// Documentation lint: warn rather than deny when exposing modules through the
-// library target. The original binary used `#![deny(missing_docs)]` but most
-// module fields are private domain types not part of the public API surface
-// for downstream tests. Internal docs should stay encouraged, not blocking.
-#![warn(missing_docs)]
+// Documentation lint: restored to `deny` after audit P3 follow-up. The newly
+// public items from the D1 router extraction have been documented. Modules
+// that are not part of the stable public API still carry
+// `#[allow(missing_docs)]` on their `pub mod` declaration.
+#![deny(missing_docs)]
 
 /*!
 POOOL Backend  Library entry point.
@@ -683,7 +683,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                         tracing::error!("{}", msg);
                         sentry::capture_message(&msg, sentry::Level::Fatal);
                     } else {
-                        tracing::info!("Reconciliation check 4/5 PASS: held_balance ≤ balance on all wallets.");
+                        tracing::info!(
+                            "Reconciliation check 4/5 PASS: held_balance ≤ balance on all wallets."
+                        );
                     }
                 }
                 Err(e) => tracing::error!("Reconciliation check 4 FAILED: {}", e),

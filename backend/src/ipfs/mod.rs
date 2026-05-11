@@ -10,4 +10,5 @@
 ///
 /// 🔴 SECURITY: Never include PII (names, emails, KYC docs) in on-chain metadata.
 pub mod metadata;
+/// Pinata-backed IPFS client used to upload and retrieve metadata pins.
 pub mod service;

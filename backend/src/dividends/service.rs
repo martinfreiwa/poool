@@ -40,33 +40,51 @@ struct HolderSnapshot {
 /// Result of a dividend calculation.
 #[derive(Debug, serde::Serialize)]
 pub struct CalculationResult {
+    /// Identifier of the dividend distribution being calculated.
     pub distribution_id: String,
+    /// Asset (property/token) the dividend belongs to.
     pub asset_id: String,
+    /// Total cash amount, in cents, available to distribute.
     pub total_amount_cents: i64,
+    /// Total token supply considered for proration.
     pub total_tokens: i64,
+    /// Number of holders eligible for a payout under anti-sniping rules.
     pub eligible_holders: i32,
+    /// Number of holders excluded from payout (e.g. anti-sniping).
     pub ineligible_holders: i32,
+    /// Per-holder payout previews (pre-approval).
     pub payouts: Vec<PayoutPreview>,
 }
 
 /// A single payout preview (before approval).
 #[derive(Debug, serde::Serialize)]
 pub struct PayoutPreview {
+    /// User receiving (or skipped for) the payout.
     pub user_id: String,
+    /// Email of the user (denormalized for admin UI).
     pub user_email: String,
+    /// Tokens held by the user at the snapshot moment.
     pub tokens_held: i64,
+    /// User's share of the distribution, expressed in basis points (1/100 of 1%).
     pub percentage_bps: i32,
+    /// Calculated payout amount in cents.
     pub payout_cents: i64,
+    /// How many days the user has held tokens (anti-sniping signal).
     pub holding_days: i32,
+    /// Whether the user qualifies for the payout under anti-sniping rules.
     pub eligible: bool,
 }
 
 /// Summary of a completed distribution.
 #[derive(Debug, serde::Serialize)]
 pub struct DistributionSummary {
+    /// Identifier of the executed distribution.
     pub distribution_id: String,
+    /// Total cents actually credited to wallets.
     pub total_credited_cents: i64,
+    /// Number of holders who received a credit.
     pub holders_credited: i32,
+    /// Number of holders skipped (ineligible / errored).
     pub holders_skipped: i32,
 }
 
