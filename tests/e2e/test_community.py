@@ -646,6 +646,77 @@ def test_community_own_comment_edit_updates_db_and_shows_edited(authenticated_us
             conn.close()
 
 
+def test_community_comment_reaction_toggle(authenticated_user_page):
+    """14.8.6 — reacting to a comment toggles a comment_reactions row and
+    bumps comments.reaction_count via trigger."""
+    page, tracker, current_user = authenticated_user_page
+    actor_id = current_user["user_id"]
+
+    page.goto(f"{BASE_URL}/community")
+    page.wait_for_load_state("networkidle")
+
+    post_id = _seed_community_post(actor_id, f"comment-reaction-fixture-{uuid.uuid4().hex}")
+    conn = get_community_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO comments (post_id, user_id, content)
+            VALUES (%s, %s, %s)
+            RETURNING id
+            """,
+            (post_id, str(actor_id), "Reactable comment."),
+        )
+        comment_id = cur.fetchone()[0]
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+
+    try:
+        # First POST adds the reaction.
+        first = page.request.post(
+            f"{BASE_URL}/api/community/comments/{comment_id}/reactions",
+            headers={**_csrf_headers(page), "Content-Type": "application/json"},
+            data='{"reaction_type": "fire"}',
+        )
+        assert first.status == 200, f"first reaction: {first.status}: {first.text()}"
+        body = first.json()
+        assert body["added"] is True
+        assert body["reaction_count"] == 1
+
+        # Same POST toggles it off.
+        second = page.request.post(
+            f"{BASE_URL}/api/community/comments/{comment_id}/reactions",
+            headers={**_csrf_headers(page), "Content-Type": "application/json"},
+            data='{"reaction_type": "fire"}',
+        )
+        assert second.status == 200
+        body2 = second.json()
+        assert body2["added"] is False
+        assert body2["reaction_count"] == 0
+
+        # Invalid reaction type is rejected.
+        bad = page.request.post(
+            f"{BASE_URL}/api/community/comments/{comment_id}/reactions",
+            headers={**_csrf_headers(page), "Content-Type": "application/json"},
+            data='{"reaction_type": "like"}',
+        )
+        assert bad.status == 400
+
+        tracker.assert_no_critical_errors()
+    finally:
+        conn = get_community_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM comments WHERE post_id = %s", (post_id,))
+            cur.execute("DELETE FROM posts WHERE id = %s", (post_id,))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+
 def test_community_mute_filters_feed(authenticated_user_page):
     """14.8.2 — muting a user removes their posts from the actor's feed
     (one-directional)."""

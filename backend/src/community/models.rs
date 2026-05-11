@@ -45,6 +45,9 @@ pub struct Comment {
     // never been edited; non-NULL drives the "Edited" indicator on the
     // comment row.
     pub edited_at: Option<DateTime<Utc>>,
+    // 14.8.6 — denormalized counter maintained by trigger on the new
+    // comment_reactions table (migration 029).
+    pub reaction_count: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

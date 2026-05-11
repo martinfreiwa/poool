@@ -2436,6 +2436,43 @@ button.community-tab-btn.active {
   word-break: break-word;
 }
 
+/* 14.8.6 — comment reaction button */
+.community-comment-row__reactions {
+  display: flex;
+  margin-top: 6px;
+}
+
+.community-comment-row__reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  background: var(--card-bg, #FFFFFF);
+  font-family: var(--font-family);
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.community-comment-row__reaction-btn:hover {
+  background: var(--content-bg, #F9FAFB);
+}
+
+.community-comment-row__reaction-btn[aria-pressed="true"],
+.community-comment-row__reaction-btn--active {
+  background: var(--danger-bg, #FEF3F2);
+  color: var(--btn-danger-bg, #B42318);
+  border-color: var(--danger-bg, #FECDCA);
+}
+
+.community-comment-row__reaction-btn:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
 /* 14.8.5 — own-comment edit affordance + inline editor */
 .community-comment-row__edit-btn {
   align-self: flex-start;

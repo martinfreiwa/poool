@@ -2448,6 +2448,8 @@ pub fn router() -> Router<AppState> {
             "/api/community/circles/leaderboard",
             get(get_circle_leaderboard),
         )
+        // Phase 3 task 25: global user XP leaderboard.
+        .route("/api/community/leaderboard", get(get_global_leaderboard))
         .route("/api/community/circles/:id", get(get_circle_detail))
         .route(
             "/api/community/circles/:id",
@@ -3955,6 +3957,59 @@ async fn decline_invite(
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::decline_invite(&c_pool, user.id, invite_id).await?;
     Ok(Json(serde_json::json!({"success": true})))
+}
+
+// Phase 3 task 25: global user XP leaderboard. Decorates each entry with
+// display_name + avatar_url + is_self for the viewer so the rendered table
+// can highlight the viewer's row without an extra fetch.
+#[derive(Deserialize)]
+struct LeaderboardQuery {
+    limit: Option<i64>,
+    // Reserved for week/month filters once we add a windowed view.
+    #[allow(dead_code)]
+    period: Option<String>,
+}
+
+async fn get_global_leaderboard(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(query): Query<LeaderboardQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let viewer = middleware::get_current_user(&jar, &state.db).await;
+    let c_pool = get_community_pool(&state)?;
+    let limit = query.limit.unwrap_or(50).clamp(1, 100);
+
+    let entries =
+        crate::community::xp::get_user_leaderboard(&c_pool, limit).await?;
+
+    let user_ids: Vec<Uuid> = entries.iter().map(|e| e.user_id).collect();
+    let authors = if user_ids.is_empty() {
+        std::collections::HashMap::new()
+    } else {
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?
+    };
+
+    let rows: Vec<serde_json::Value> = entries
+        .iter()
+        .enumerate()
+        .map(|(idx, e)| {
+            let info = authors.get(&e.user_id);
+            let is_self = viewer.as_ref().map(|v| v.id == e.user_id).unwrap_or(false);
+            serde_json::json!({
+                "rank": idx + 1,
+                "user_id": e.user_id,
+                "display_name": info.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
+                "avatar_url": info.and_then(|a| a.avatar_url.clone()),
+                "xp_total": e.xp_total,
+                "level": e.level,
+                "level_name": e.level_name,
+                "login_streak": e.login_streak,
+                "is_self": is_self,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "leaderboard": rows })))
 }
 
 async fn get_circle_leaderboard(

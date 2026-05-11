@@ -261,6 +261,27 @@ window.initCommunityFeed = function() {
                 body.appendChild(header);
                 body.appendChild(contentDiv);
 
+                // 14.8.6 — reaction button on every comment row.
+                const reactionRow = document.createElement('div');
+                reactionRow.className = 'community-comment-row__reactions';
+                const reactBtn = document.createElement('button');
+                reactBtn.type = 'button';
+                reactBtn.className = 'community-comment-row__reaction-btn';
+                const initialCount = Number.isInteger(c.reaction_count) ? c.reaction_count : 0;
+                reactBtn.setAttribute('aria-pressed', 'false');
+                reactBtn.setAttribute('aria-label', 'React to comment');
+                const fireIcon = document.createElement('span');
+                fireIcon.setAttribute('aria-hidden', 'true');
+                fireIcon.textContent = '🔥';
+                const countSpan = document.createElement('span');
+                countSpan.className = 'community-comment-row__reaction-count';
+                countSpan.textContent = String(initialCount);
+                reactBtn.appendChild(fireIcon);
+                reactBtn.appendChild(countSpan);
+                reactBtn.addEventListener('click', () => toggleCommentReaction(c.id, reactBtn));
+                reactionRow.appendChild(reactBtn);
+                body.appendChild(reactionRow);
+
                 // 14.8.5 — own-comment edit affordance.
                 if (currentUserId && c.author_id === currentUserId) {
                     const editBtn = document.createElement('button');
@@ -464,6 +485,34 @@ window.initCommunityFeed = function() {
             btnElement.disabled = false;
         }
     };
+
+    // ─── 14.8.6: comment reactions ─────────────────────────────────
+    async function toggleCommentReaction(commentId, btn) {
+        const countEl = btn.querySelector('.community-comment-row__reaction-count');
+        const wasPressed = btn.getAttribute('aria-pressed') === 'true';
+        btn.disabled = true;
+        try {
+            const res = await fetch(`/api/community/comments/${commentId}/reactions`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ reaction_type: 'fire' }),
+            });
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            btn.setAttribute('aria-pressed', data.added ? 'true' : 'false');
+            btn.classList.toggle('community-comment-row__reaction-btn--active', Boolean(data.added));
+            if (countEl && Number.isInteger(data.reaction_count)) {
+                countEl.textContent = String(data.reaction_count);
+            }
+        } catch (e) {
+            console.error('Failed to toggle comment reaction', e);
+            btn.setAttribute('aria-pressed', wasPressed ? 'true' : 'false');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+    window.toggleCommentReaction = toggleCommentReaction;
 
     // ─── 14.8.5: comment edit (own) ────────────────────────────────
     function startCommentEdit(row, commentId, currentText, contentDiv, timeSpan, editBtn) {
