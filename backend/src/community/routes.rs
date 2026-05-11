@@ -5084,6 +5084,11 @@ async fn admin_get_community_audit_log(
         .unwrap_or(0);
     let entity_type_filter = q.get("entity_type").cloned();
     let action_filter = q.get("action").cloned();
+    // Phase 2 task 17: filter by the user the audit entry was *about* so the
+    // admin user-detail page can pull just that user's history.
+    let target_user_filter = q
+        .get("target_user_id")
+        .and_then(|v| Uuid::parse_str(v).ok());
 
     // Build dynamic query
     let mut conditions = vec!["1=1".to_string()];
@@ -5092,6 +5097,9 @@ async fn admin_get_community_audit_log(
     }
     if let Some(ref act) = action_filter {
         conditions.push(format!("action = '{}'", act.replace('\'', "")));
+    }
+    if let Some(target) = target_user_filter {
+        conditions.push(format!("target_user_id = '{}'", target));
     }
     let where_clause = conditions.join(" AND ");
 
