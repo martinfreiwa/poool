@@ -1,6 +1,7 @@
 /// Wallet domain – handles user fiat balances and transactions (deposits/withdrawals)
 pub mod models;
 pub mod routes;
+pub mod safety;
 
 use crate::auth::routes::AppState;
 use axum::{

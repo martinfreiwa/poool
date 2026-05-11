@@ -58,9 +58,8 @@ pub struct AppState {
     /// the public list view does not have to run a `SELECT MAX(computed_at)`
     /// query on every request (audit task C1). `None` means the cache is
     /// cold and the read path should hydrate it from the DB on next miss.
-    pub leaderboard_last_refresh: std::sync::Arc<
-        tokio::sync::RwLock<Option<chrono::DateTime<chrono::Utc>>>,
-    >,
+    pub leaderboard_last_refresh:
+        std::sync::Arc<tokio::sync::RwLock<Option<chrono::DateTime<chrono::Utc>>>>,
 }
 
 // Implement FromRef so the auth middleware extractors can access PgPool

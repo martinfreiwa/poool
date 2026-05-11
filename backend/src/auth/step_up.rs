@@ -16,7 +16,8 @@ use crate::error::AppError;
 // ─── Threshold Constants (Phase 1.6) ───────────────────────────
 
 /// Withdrawals above this amount require step-up 2FA (in cents).
-pub const WITHDRAWAL_2FA_THRESHOLD_CENTS: i64 = 10_000; // $100
+/// Phase 18.9: raised from $100 to $500 to match `IMPLEMENTATION_ROADMAP.md`.
+pub const WITHDRAWAL_2FA_THRESHOLD_CENTS: i64 = 50_000; // $500
 
 /// Trades above this amount require step-up 2FA (in cents).
 pub const TRADE_2FA_THRESHOLD_CENTS: i64 = 50_000; // $500

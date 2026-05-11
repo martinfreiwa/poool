@@ -406,6 +406,22 @@ pub async fn handle_withdraw(
             return Redirect::to("/wallet?error=kyc_required").into_response();
         }
 
+        // ─── 18.6–18.9: Withdrawal safety controls ──────────────────
+        // Daily cap, velocity freeze, new-account cooldown, and step-up
+        // 2FA all run here BEFORE we touch the wallet so a blocked
+        // withdrawal never momentarily debits the balance.
+        if let Err(safety) = super::safety::check_withdrawal_safety(
+            &state.db,
+            state.redis.as_ref(),
+            user.id,
+            amount_cents,
+        )
+        .await
+        {
+            return Redirect::to(&format!("/wallet?error={}", safety.query_param()))
+                .into_response();
+        }
+
         // Use a transaction with FOR UPDATE lock to prevent TOCTOU double-spend race
         let mut tx = match state.db.begin().await {
             Ok(t) => t,

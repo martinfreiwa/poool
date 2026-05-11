@@ -2942,10 +2942,8 @@ async fn render_community_profile(
     is_own: bool,
 ) -> axum::response::Response {
     let Some(c_pool) = state.community_db.as_ref() else {
-        return crate::error::AppError::ServiceUnavailable(
-            "Community DB is offline".into(),
-        )
-        .into_response();
+        return crate::error::AppError::ServiceUnavailable("Community DB is offline".into())
+            .into_response();
     };
     let viewer = crate::auth::middleware::get_current_user(&jar, &state.db).await;
 
@@ -2990,18 +2988,7 @@ async fn render_community_profile(
         login_streak,
         is_verified_owner,
         is_shadowbanned,
-    ) = cp_row.unwrap_or((
-        None,
-        0,
-        0,
-        0,
-        0,
-        1,
-        "Seedling".into(),
-        0,
-        false,
-        false,
-    ));
+    ) = cp_row.unwrap_or((None, 0, 0, 0, 0, 1, "Seedling".into(), 0, false, false));
 
     let is_following = if let Some(ref v) = viewer {
         crate::community::service::is_following(c_pool, v.id, target_user_id)
@@ -3076,13 +3063,8 @@ async fn render_community_profile(
         base_url: state.config.base_url.clone(),
     };
 
-    common::routes_helper::serve_protected_with_context(
-        jar,
-        &state,
-        "community-profile.html",
-        ctx,
-    )
-    .await
+    common::routes_helper::serve_protected_with_context(jar, &state, "community-profile.html", ctx)
+        .await
 }
 
 /// GET /community/badge/:id — 14.8.13: user-facing badge detail page.
