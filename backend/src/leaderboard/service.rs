@@ -84,9 +84,16 @@ pub async fn refresh_all_scores(pool: &PgPool) -> Result<(), AppError> {
                 SUM(i.purchase_value_cents)              AS total_invested,
                 COUNT(DISTINCT i.asset_id)               AS unique_assets,
                 MAX(i.purchase_value_cents)               AS highest_inv,
+                -- Weighted basis-point ROI. Cast to NUMERIC before the multiply
+                -- so a 100k * 450 bps investment is not truncated by integer
+                -- division when the denominator (SUM purchase_value_cents) is
+                -- large. ROUND the final result to a whole bps integer for
+                -- storage; sub-bps precision is irrelevant for ranking.
                 COALESCE(
-                    SUM(i.purchase_value_cents * COALESCE(a.annual_yield_bps, 0))
-                    / NULLIF(SUM(i.purchase_value_cents), 0),
+                    ROUND(
+                        SUM(i.purchase_value_cents::NUMERIC * COALESCE(a.annual_yield_bps, 0)::NUMERIC)
+                        / NULLIF(SUM(i.purchase_value_cents::NUMERIC), 0)
+                    ),
                     0
                 )                                         AS weighted_roi_bps
             FROM investments i
@@ -379,9 +386,13 @@ async fn get_rankings_timeframed(
                 SUM(i.purchase_value_cents)::BIGINT              AS total_invested,
                 COUNT(DISTINCT i.asset_id)               AS unique_assets,
                 MAX(i.purchase_value_cents)               AS highest_inv,
+                -- Weighted bps ROI in NUMERIC space; see refresh_all_scores
+                -- for the precision rationale. Rounded to whole bps.
                 COALESCE(
-                    SUM(i.purchase_value_cents * COALESCE(a.annual_yield_bps, 0))
-                    / NULLIF(SUM(i.purchase_value_cents), 0),
+                    ROUND(
+                        SUM(i.purchase_value_cents::NUMERIC * COALESCE(a.annual_yield_bps, 0)::NUMERIC)
+                        / NULLIF(SUM(i.purchase_value_cents::NUMERIC), 0)
+                    ),
                     0
                 )                                         AS weighted_roi_bps
             FROM investments i
@@ -485,9 +496,12 @@ async fn get_rankings_timeframed(
                 SUM(i.purchase_value_cents)::BIGINT              AS total_invested,
                 COUNT(DISTINCT i.asset_id)               AS unique_assets,
                 MAX(i.purchase_value_cents)               AS highest_inv,
+                -- See refresh_all_scores for precision rationale.
                 COALESCE(
-                    SUM(i.purchase_value_cents * COALESCE(a.annual_yield_bps, 0))
-                    / NULLIF(SUM(i.purchase_value_cents), 0),
+                    ROUND(
+                        SUM(i.purchase_value_cents::NUMERIC * COALESCE(a.annual_yield_bps, 0)::NUMERIC)
+                        / NULLIF(SUM(i.purchase_value_cents::NUMERIC), 0)
+                    ),
                     0
                 )                                         AS weighted_roi_bps
             FROM investments i
@@ -682,9 +696,13 @@ async fn get_my_rank_timeframed(
                 SUM(i.purchase_value_cents)::BIGINT              AS total_invested,
                 COUNT(DISTINCT i.asset_id)               AS unique_assets,
                 MAX(i.purchase_value_cents)               AS highest_inv,
+                -- See refresh_all_scores for precision rationale.
                 COALESCE(
-                    SUM(i.purchase_value_cents * COALESCE(a.annual_yield_bps, 0))
-                    / NULLIF(SUM(i.purchase_value_cents), 0), 0
+                    ROUND(
+                        SUM(i.purchase_value_cents::NUMERIC * COALESCE(a.annual_yield_bps, 0)::NUMERIC)
+                        / NULLIF(SUM(i.purchase_value_cents::NUMERIC), 0)
+                    ),
+                    0
                 ) AS weighted_roi_bps
             FROM investments i
             JOIN assets a ON a.id = i.asset_id
