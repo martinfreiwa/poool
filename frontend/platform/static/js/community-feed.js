@@ -182,7 +182,10 @@ window.initCommunityFeed = function() {
     
     window.toggleComments = async function(postId, trigger) {
         const section = document.getElementById(`comments-section-${postId}`);
-        const isOpening = section.style.display === 'none';
+        const isOpening = section.hidden
+            || section.style.display === 'none'
+            || section.style.display === '';
+        section.hidden = false;
         section.style.display = isOpening ? 'block' : 'none';
         document
             .querySelectorAll(`[aria-controls="comments-section-${postId}"]`)

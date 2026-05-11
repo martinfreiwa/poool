@@ -1,15 +1,15 @@
 <div class="feed-post" id="post-{{ p.id }}">
     <!-- ─── Header ─── -->
     <div class="feed-post-header">
-        <div class="feed-post-author" style="cursor: pointer;" onclick="openUserProfile('{{ p.author_id }}')">
+        <div class="feed-post-author" onclick="openUserProfile('{{ p.author_id }}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openUserProfile('{{ p.author_id }}');}">
             {% if p.author_avatar %}
-                <img src="{{ p.author_avatar }}" class="feed-post-avatar-circle" style="border:none; object-fit:cover;">
+                <img src="{{ p.author_avatar }}" class="feed-post-avatar-circle feed-post-avatar-circle--photo" alt="">
             {% else %}
-                <div class="feed-post-avatar feed-post-avatar--announcement" style="font-size:12px; font-weight:bold;">
+                <div class="feed-post-avatar feed-post-avatar--announcement">
                     {{ p.author_initials }}
                 </div>
             {% endif %}
-            
+
             <div class="feed-post-meta">
                 <span class="feed-post-name">
                     {{ p.author_name }}
@@ -17,28 +17,28 @@
                         <span class="feed-post-verified-badge">Official</span>
                     {% endif %}
                     {% if p.verified_owner %}
-                        <span class="feed-post-badge" style="background:#F2F4F7;color:#475467;border:1px solid #EAECF0;margin-left:6px;font-size:11px;">Verified Owner</span>
+                        <span class="feed-post-badge feed-post-badge--neutral">Verified Owner</span>
                     {% endif %}
                     {% for badge in p.author_badges %}
                         {% if loop.index0 < 3 %}
-                            <span style="margin-left:4px; font-size:14px;">{{ badge }}</span>
+                            <span class="feed-post-author-emblem" aria-hidden="true">{{ badge }}</span>
                         {% endif %}
                     {% endfor %}
                 </span>
                 <span class="feed-post-time">{{ p.created_at_display }}</span>
             </div>
         </div>
-        
+
         {% if p.is_pinned %}
-            <span class="feed-post-badge" style="background:#F2F4F7;color:#475467;border:1px solid #EAECF0;">Pinned</span>
+            <span class="feed-post-badge feed-post-badge--neutral">Pinned</span>
         {% endif %}
-        
+
         {% if p.post_type == 'announcement' %}
-            <span class="feed-post-badge feed-post-badge--announcement" style="margin-left:8px;">Announcement</span>
+            <span class="feed-post-badge feed-post-badge--announcement">Announcement</span>
         {% elif p.post_type == 'market_insight' %}
-            <span class="feed-post-badge" style="background:#F2F4F7;color:#475467;margin-left:8px;border:1px solid #EAECF0;">Market Insight</span>
+            <span class="feed-post-badge feed-post-badge--neutral">Market Insight</span>
         {% elif p.post_type == 'review' %}
-            <span class="feed-post-badge" style="background:#F2F4F7;color:#475467;margin-left:8px;border:1px solid #EAECF0;">Review</span>
+            <span class="feed-post-badge feed-post-badge--neutral">Review</span>
         {% endif %}
     </div>
 
@@ -49,26 +49,26 @@
         </p>
 
         {% if p.image_urls and p.image_urls | length > 0 %}
-            <div style="margin-top: 16px;">
-                <img src="{{ p.image_urls[0] }}" style="max-width: 100%; border-radius: 12px; border: 1px solid #EAECF0;">
+            <div class="feed-post-image">
+                <img src="{{ p.image_urls[0] }}" alt="">
             </div>
         {% elif p.link_preview %}
-            <a href="{{ p.link_preview.url }}" target="_blank" rel="noopener noreferrer" class="feed-post-link-preview" style="display: flex; flex-direction: column; margin-top: 16px; border: 1px solid #EAECF0; border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; transition: border-color 0.2s;" onmouseover="this.style.borderColor='#D0D5DD'" onmouseout="this.style.borderColor='#EAECF0'">
+            <a href="{{ p.link_preview.url }}" target="_blank" rel="noopener noreferrer" class="feed-post-link-preview">
                 {% if p.link_preview.image %}
-                    <img src="{{ p.link_preview.image }}" style="width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #EAECF0;">
+                    <img class="feed-post-link-preview__image" src="{{ p.link_preview.image }}" alt="">
                 {% endif %}
-                <div style="padding: 12px 16px; background: #F9FAFB;">
-                    <div style="font-size: 11px; color: #667085; text-transform: uppercase; font-weight: 500; margin-bottom: 4px;">{{ p.link_preview_domain | default(p.link_preview.url, true) }}</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #101828; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ p.link_preview.title | default(p.link_preview.url, true) }}</div>
+                <div class="feed-post-link-preview__body">
+                    <div class="feed-post-link-preview__domain">{{ p.link_preview_domain | default(p.link_preview.url, true) }}</div>
+                    <div class="feed-post-link-preview__title">{{ p.link_preview.title | default(p.link_preview.url, true) }}</div>
                     {% if p.link_preview.description %}
-                        <div style="font-size: 13px; color: #475467; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ p.link_preview.description }}</div>
+                        <div class="feed-post-link-preview__desc">{{ p.link_preview.description }}</div>
                     {% endif %}
                 </div>
             </a>
         {% endif %}
 
         {% if p.disclaimer_shown %}
-            <div class="feed-post-disclaimer" style="font-size:12px; color:#667085; background:#F9FAFB; padding:8px 12px; border-radius:6px; margin-top:12px; border:1px solid #EAECF0;">
+            <div class="feed-post-disclaimer">
                 ⚠️ Disclaimer: This post contains community generated investment discussion. Do your own research, past performance does not guarantee future results.
             </div>
         {% endif %}
@@ -76,7 +76,6 @@
 
     <!-- UX.11: Poll Rendering Container -->
     <div id="poll-container-{{ p.id }}"></div>
-    <!-- Tell JS to load the poll for this post in the background! -->
     <script>
         if (typeof loadPollForPost === 'function') {
             loadPollForPost('{{ p.id }}', document.getElementById('poll-container-{{ p.id }}'));
@@ -84,29 +83,29 @@
     </script>
 
     <!-- ─── Engagement ─── -->
-    <div class="feed-post-engagement" style="margin-top: 20px; border-top: 1px solid #EAECF0; padding-top: 16px;">
+    <div class="feed-post-engagement">
         <div class="feed-post-reactions">
             <button class="feed-reaction-btn{% if p.current_user_reacted %} active{% endif %}" type="button" aria-label="React to post" aria-pressed="{% if p.current_user_reacted %}true{% else %}false{% endif %}" onclick="toggleReaction('{{ p.id }}', this, 'fire')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                <span style="margin-left:6px">{{ p.reaction_count }}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span class="feed-reaction-btn__count">{{ p.reaction_count }}</span>
             </button>
             <button class="feed-reaction-btn" type="button" aria-label="Show comments" aria-expanded="false" aria-controls="comments-section-{{ p.id }}" onclick="toggleComments('{{ p.id }}', this)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                <span style="margin-left:6px">{{ p.comment_count }}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span class="feed-reaction-btn__count">{{ p.comment_count }}</span>
             </button>
             <button class="feed-reaction-btn" type="button" aria-label="Copy link to post" onclick="const url = '{{ base_url }}/community/post/{{ p.id }}'; navigator.clipboard.writeText(url).then(() => { if (window.showToast) window.showToast('Link copied to clipboard'); else alert('Link copied to clipboard'); }).catch(err => console.error('Failed to copy: ', err));">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                <span style="margin-left:6px">Share</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span class="feed-reaction-btn__count">Share</span>
             </button>
         </div>
 
-        <div style="display: flex; gap: 16px; align-items: center;">
-            <div class="feed-post-stats" style="cursor: pointer;" role="button" tabindex="0" aria-label="Show comments" aria-controls="comments-section-{{ p.id }}" aria-expanded="false" onclick="toggleComments('{{ p.id }}', this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleComments('{{ p.id }}', this); }">
+        <div class="feed-post-engagement__right">
+            <button type="button" class="feed-post-stats-btn" aria-label="Show comments" aria-controls="comments-section-{{ p.id }}" aria-expanded="false" onclick="toggleComments('{{ p.id }}', this)">
                 {{ p.reaction_count }} reactions · {{ p.comment_count }} comments
-            </div>
-            
-            <button class="feed-bookmark-btn" id="bookmark-btn-{{ p.id }}" type="button" title="Save Post" aria-label="Save post" aria-pressed="false" onclick="toggleBookmark('{{ p.id }}', this)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            </button>
+
+            <button class="feed-bookmark-btn" id="bookmark-btn-{{ p.id }}" type="button" aria-label="Save post" aria-pressed="false" onclick="toggleBookmark('{{ p.id }}', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             </button>
             <script>
                 if (typeof checkBookmarkStatus === 'function') {
@@ -114,21 +113,21 @@
                 }
             </script>
 
-            <button class="ds-btn ds-btn--ghost ds-btn--sm" type="button" title="Report Post" aria-label="Report post" style="padding:4px; height:auto; border:none;" onclick="openReportModal('{{ p.id }}')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+            <button class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm feed-post-report-btn" type="button" aria-label="Report post" onclick="openReportModal('{{ p.id }}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
             </button>
         </div>
     </div>
 
     <!-- ─── Comments Section ─── -->
-    <div id="comments-section-{{ p.id }}" style="display: none; padding-top: 16px;">
-        <div id="comments-list-{{ p.id }}">
-            <div style="font-size: 13px; color: #667085; text-align: center;">Loading comments...</div>
+    <div id="comments-section-{{ p.id }}" class="feed-post-comments" hidden>
+        <div id="comments-list-{{ p.id }}" class="feed-post-comments__list">
+            <div class="feed-post-comments__loading">Loading comments...</div>
         </div>
-        <div style="display: flex; gap: 8px; margin-top: 12px; align-items: flex-start;">
-            <label for="comment-input-{{ p.id }}" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">Write a comment</label>
-            <textarea id="comment-input-{{ p.id }}" class="ds-input" placeholder="Write a comment..." rows="1" style="flex:1; resize:none; overflow-wrap:normal; min-height: 40px; padding: 10px;"></textarea>
-            <button class="ds-btn ds-btn--primary" type="button" style="height: 40px; padding: 0 16px;" onclick="submitComment('{{ p.id }}')">Post</button>
+        <div class="feed-post-comments__form">
+            <label for="comment-input-{{ p.id }}" class="ds-sr-only">Write a comment</label>
+            <textarea id="comment-input-{{ p.id }}" class="ds-input feed-post-comments__textarea" placeholder="Write a comment..." rows="1"></textarea>
+            <button class="ds-btn ds-btn--primary feed-post-comments__submit" type="button" onclick="submitComment('{{ p.id }}')">Post</button>
         </div>
     </div>
 </div>
