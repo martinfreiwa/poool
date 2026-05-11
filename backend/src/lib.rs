@@ -298,6 +298,31 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         leaderboard_last_refresh: leaderboard_last_refresh.clone(),
     };
 
+    // Audit task C1 follow-up: hydrate the `last_updated` cache once at
+    // startup so the very first /api/leaderboard request doesn't need to
+    // pay the `SELECT MAX(computed_at)` cost itself. Runs AFTER migrations
+    // (so the table exists) and BEFORE the HTTP server starts listening.
+    // An empty table leaves the cache at `None`, which is the same state
+    // the handler treats as "no rows yet".
+    match sqlx::query_scalar::<_, Option<chrono::DateTime<chrono::Utc>>>(
+        "SELECT MAX(computed_at) FROM leaderboard_scores",
+    )
+    .fetch_optional(&pool)
+    .await
+    {
+        Ok(row) => {
+            let ts = row.flatten();
+            *leaderboard_last_refresh.write().await = ts;
+            tracing::info!("leaderboard last_updated cache seeded: {:?}", ts);
+        }
+        Err(e) => {
+            tracing::warn!(
+                "leaderboard last_updated cache seed FAILED ({}); first read will fall back to MAX()",
+                e
+            );
+        }
+    }
+
     // Spawn background tasks
     tokio::spawn(email::run_email_scheduler(pool.clone()));
     tokio::spawn(email::run_transactional_email_outbox_worker(pool.clone()));
