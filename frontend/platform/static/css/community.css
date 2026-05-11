@@ -2162,6 +2162,89 @@ button.community-tab-btn.active {
   color: var(--page-title-color, #101828);
 }
 
+/* Phase 3 task 25: global leaderboard tab. */
+.community-leaderboard__header {
+  margin-bottom: 16px;
+}
+
+.community-leaderboard__rows {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.community-leaderboard-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #EAECF0);
+}
+
+.community-leaderboard-row--self {
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: color-mix(in srgb, var(--btn-primary-bg, #0000FF) 6%, var(--card-bg, #FFFFFF));
+}
+
+.community-leaderboard-row__rank {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-leaderboard-row__user {
+  background: none;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+
+.community-leaderboard-row__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ds-surface-hover, #F2F4F7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  overflow: hidden;
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+.community-leaderboard-row__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.community-leaderboard-row__name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.community-leaderboard-row__level {
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-leaderboard-row__xp {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--btn-primary-bg, #0000FF);
+}
+
 .feed-post-link-preview {
   display: flex;
   flex-direction: column;

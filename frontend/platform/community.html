@@ -82,6 +82,9 @@ include
               if (tab === 'saved' && typeof window.loadSavedPosts === 'function') {
                 window.loadSavedPosts();
               }
+              if (tab === 'leaderboard') {
+                window.dispatchEvent(new Event('load-global-leaderboard'));
+              }
               if (tab === 'search') {
                 const searchInput = document.querySelector('#community-search-tab input[type="text"]');
                 if (searchInput) searchInput.focus();
@@ -520,6 +523,74 @@ include
                   };
                   return icons[type] || icons['system'];
                 }
+              }));
+            });
+          </script>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB: GLOBAL LEADERBOARD (Phase 3 task 25)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="community-leaderboard-tab" class="community-tab-panel hidden" x-data="globalLeaderboard()" x-init="bind()">
+          <div class="community-leaderboard">
+            <div class="community-leaderboard__header">
+              <h2 class="ds-text-xl community-leaderboard__title">Community Leaderboard</h2>
+              <p class="ds-text-body community-leaderboard__desc">Top community members by total XP.</p>
+            </div>
+            <div x-show="loading" class="community-loading-state">Loading leaderboard...</div>
+            <div x-show="!loading && error" class="ds-card community-leaderboard__error">
+              <p class="ds-text-subtitle" x-text="error"></p>
+              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" @click="load()">Retry</button>
+            </div>
+            <ol x-show="!loading && !error" class="community-leaderboard__rows">
+              <template x-for="row in rows" :key="row.user_id">
+                <li class="community-leaderboard-row" :class="row.is_self ? 'community-leaderboard-row--self' : ''">
+                  <span class="community-leaderboard-row__rank" x-text="'#' + row.rank"></span>
+                  <button type="button" class="community-leaderboard-row__user" @click="openUserProfile(row.user_id)">
+                    <span class="community-leaderboard-row__avatar">
+                      <template x-if="row.avatar_url"><img :src="row.avatar_url" alt=""></template>
+                      <template x-if="!row.avatar_url"><span x-text="row.display_name.charAt(0).toUpperCase()"></span></template>
+                    </span>
+                    <span class="community-leaderboard-row__name" x-text="row.display_name"></span>
+                  </button>
+                  <span class="community-leaderboard-row__level" x-text="row.level_name + ' · L' + row.level"></span>
+                  <span class="community-leaderboard-row__xp" x-text="row.xp_total.toLocaleString() + ' XP'"></span>
+                </li>
+              </template>
+            </ol>
+          </div>
+          <script>
+            document.addEventListener('alpine:init', () => {
+              if (window.__leaderboardAlpineRegistered) return;
+              window.__leaderboardAlpineRegistered = true;
+              Alpine.data('globalLeaderboard', () => ({
+                loading: false,
+                error: '',
+                rows: [],
+                _loaded: false,
+                bind() {
+                  window.addEventListener('load-global-leaderboard', () => this.load());
+                },
+                async load() {
+                  if (this._loaded && !this.error) return;
+                  this.loading = true;
+                  this.error = '';
+                  try {
+                    const res = await fetch('/api/community/leaderboard?limit=50', { credentials: 'same-origin' });
+                    if (!res.ok) throw new Error('Failed to load leaderboard');
+                    const data = await res.json();
+                    this.rows = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+                    this._loaded = true;
+                  } catch (err) {
+                    console.error(err);
+                    this.error = err.message || 'Failed to load.';
+                  } finally {
+                    this.loading = false;
+                  }
+                },
+                openUserProfile(id) {
+                  if (typeof window.openUserProfile === 'function') window.openUserProfile(id);
+                },
               }));
             });
           </script>
