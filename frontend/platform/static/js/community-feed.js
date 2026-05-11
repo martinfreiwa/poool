@@ -2061,6 +2061,70 @@ window.initCommunityFeed = function() {
         }
     };
 
+    // ─── Phase 3 task 32: Verified Owner request flow ───────────
+    window.uploadVerifyProof = async function (event) {
+        const file = event && event.target && event.target.files && event.target.files[0];
+        if (!file) return;
+        const statusEl = document.getElementById('verify-request-status');
+        const nameEl = document.getElementById('verify-request-proof-name');
+        const proofInput = document.getElementById('verify-request-proof-url');
+        if (file.size > 5 * 1024 * 1024) {
+            statusEl.textContent = 'Image must be 5 MB or smaller.';
+            event.target.value = '';
+            return;
+        }
+        statusEl.textContent = 'Uploading proof...';
+        const form = new FormData();
+        form.append('file', file);
+        try {
+            const res = await fetch('/api/upload/post-image', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders(),
+                body: form,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+            proofInput.value = data.image_url;
+            nameEl.textContent = file.name;
+            statusEl.textContent = 'Proof attached.';
+        } catch (err) {
+            console.error('Verify proof upload failed', err);
+            statusEl.textContent = err.message || 'Upload failed.';
+        } finally {
+            event.target.value = '';
+        }
+    };
+
+    window.submitVerifyRequest = async function () {
+        const statement = (document.getElementById('verify-request-statement').value || '').trim();
+        const proof = document.getElementById('verify-request-proof-url').value || null;
+        const statusEl = document.getElementById('verify-request-status');
+        statusEl.textContent = '';
+        if (statement.length < 20) {
+            statusEl.textContent = 'Statement must be at least 20 characters.';
+            return;
+        }
+        try {
+            const res = await fetch('/api/community/profile/verify-request', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ statement, proof_url: proof }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+            statusEl.textContent = 'Request submitted. We will review and notify you.';
+            if (window.showToast) window.showToast('Verification request submitted', 'success');
+            document.getElementById('verify-request-statement').value = '';
+            document.getElementById('verify-request-proof-url').value = '';
+            document.getElementById('verify-request-proof-name').textContent = '';
+        } catch (err) {
+            console.error('Verify request failed', err);
+            statusEl.textContent = err.message || 'Failed to submit.';
+        }
+    };
+
     window.saveProfileDetails = async function() {
         const bio = document.getElementById('edit-profile-bio').value.trim();
         const btn = document.getElementById('save-profile-btn');

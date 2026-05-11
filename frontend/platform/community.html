@@ -945,6 +945,28 @@ include
                 <summary class="community-mod-log__summary">Moderation history</summary>
                 <div id="edit-profile-mod-log-body" class="community-mod-log__body">Loading...</div>
               </details>
+              <!-- Phase 3 task 32: verified-owner badge request. -->
+              <details class="community-verify-request">
+                <summary class="community-mod-log__summary">Request Verified Owner badge</summary>
+                <div class="community-verify-request__body">
+                  <p class="ds-helper-text">
+                    Tell us which asset you own and how we can verify it. We'll review and award the Verified Owner badge if approved.
+                  </p>
+                  <textarea id="verify-request-statement" class="ds-input" rows="3" maxlength="2000"
+                    placeholder="I own X shares of asset Y, purchased via transaction Z..."></textarea>
+                  <input type="hidden" id="verify-request-proof-url">
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="file" id="verify-request-file" class="ds-sr-only" accept="image/jpeg,image/png,image/webp"
+                      onchange="window.uploadVerifyProof(event)">
+                    <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
+                      onclick="document.getElementById('verify-request-file').click()">Attach proof image</button>
+                    <span id="verify-request-proof-name" class="ds-helper-text"></span>
+                  </div>
+                  <div id="verify-request-status" class="ds-helper-text"></div>
+                  <button type="button" class="ds-btn ds-btn--primary ds-btn--sm"
+                    onclick="window.submitVerifyRequest()">Submit request</button>
+                </div>
+              </details>
             </div>
             <div class="ds-modal__footer community-page-modal__footer">
               <button type="button" class="ds-btn ds-btn--secondary"

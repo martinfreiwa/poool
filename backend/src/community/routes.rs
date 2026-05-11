@@ -2472,6 +2472,19 @@ pub fn router() -> Router<AppState> {
             "/api/community/notifications/preferences",
             get(get_notification_preferences).put(update_notification_preferences),
         )
+        // Phase 3 task 32: verified-owner badge request flow.
+        .route(
+            "/api/community/profile/verify-request",
+            post(submit_verification_request),
+        )
+        .route(
+            "/api/admin/community/verification-requests",
+            get(admin_list_verification_requests),
+        )
+        .route(
+            "/api/admin/community/verification-requests/:id/review",
+            post(admin_review_verification_request),
+        )
         .route("/api/community/profile", put(update_profile))
         .route("/api/community/profile/:id", get(get_profile))
         // Phase 3 task 20: followers / following list views.
@@ -2858,6 +2871,171 @@ async fn update_notification_preferences(
     .execute(&c_pool)
     .await?;
     Ok(Json(serde_json::json!({"success": true, "prefs": payload.prefs})))
+}
+
+// Phase 3 task 32: verified-owner badge request flow.
+
+#[derive(Deserialize)]
+struct VerificationRequestReq {
+    pub statement: String,
+    pub proof_url: Option<String>,
+}
+
+async fn submit_verification_request(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+    Json(payload): Json<VerificationRequestReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_csrf_header(&headers, &jar)?;
+
+    let statement = payload.statement.trim();
+    if statement.len() < 20 || statement.len() > 2000 {
+        return Err(AppError::BadRequest(
+            "Statement must be between 20 and 2000 characters".into(),
+        ));
+    }
+    let c_pool = get_community_pool(&state)?;
+    check_user_not_banned(&c_pool, user.id).await?;
+
+    let existing: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM verification_requests WHERE user_id = $1 AND status = 'pending' LIMIT 1",
+    )
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await?;
+    if existing.is_some() {
+        return Err(AppError::BadRequest(
+            "You already have a pending verification request.".into(),
+        ));
+    }
+
+    let id: Uuid = sqlx::query_scalar(
+        "INSERT INTO verification_requests (user_id, statement, proof_url) VALUES ($1, $2, $3) RETURNING id",
+    )
+    .bind(user.id)
+    .bind(statement)
+    .bind(payload.proof_url.as_deref())
+    .fetch_one(&c_pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "id": id, "status": "pending" })))
+}
+
+async fn admin_list_verification_requests(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Query(q): Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let status = q.get("status").map(|s| s.as_str()).unwrap_or("pending");
+    let rows = sqlx::query_as::<
+        _,
+        (
+            Uuid,
+            Uuid,
+            String,
+            Option<String>,
+            String,
+            Option<String>,
+            chrono::DateTime<chrono::Utc>,
+            Option<chrono::DateTime<chrono::Utc>>,
+        ),
+    >(
+        "SELECT id, user_id, statement, proof_url, status, admin_notes, created_at, resolved_at \
+         FROM verification_requests \
+         WHERE ($1 = 'all' OR status = $1) \
+         ORDER BY created_at DESC",
+    )
+    .bind(status)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let entries: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|(id, user_id, statement, proof_url, status, notes, created_at, resolved_at)| {
+            serde_json::json!({
+                "id": id,
+                "user_id": user_id,
+                "statement": statement,
+                "proof_url": proof_url,
+                "status": status,
+                "admin_notes": notes,
+                "created_at": created_at,
+                "resolved_at": resolved_at,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "requests": entries })))
+}
+
+#[derive(Deserialize)]
+struct AdminReviewVerificationReq {
+    pub action: String,
+    pub admin_notes: Option<String>,
+}
+
+async fn admin_review_verification_request(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(req_id): Path<Uuid>,
+    Json(payload): Json<AdminReviewVerificationReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let status = match payload.action.as_str() {
+        "approve" => "approved",
+        "reject" => "rejected",
+        _ => {
+            return Err(AppError::BadRequest(
+                "Action must be 'approve' or 'reject'".into(),
+            ));
+        }
+    };
+
+    // Update + return the target user id so we can flip the verified_owner
+    // flag on every post they have authored.
+    let target_user_id: Option<Uuid> = sqlx::query_scalar(
+        "UPDATE verification_requests SET status = $1, admin_notes = $2, resolved_at = NOW() \
+         WHERE id = $3 AND status = 'pending' RETURNING user_id",
+    )
+    .bind(status)
+    .bind(payload.admin_notes.as_deref())
+    .bind(req_id)
+    .fetch_optional(&c_pool)
+    .await?;
+
+    let target_user_id = target_user_id.ok_or_else(|| {
+        AppError::BadRequest("Request not found or already resolved".into())
+    })?;
+
+    if status == "approved" {
+        sqlx::query("UPDATE posts SET verified_owner = true WHERE user_id = $1")
+            .bind(target_user_id)
+            .execute(&c_pool)
+            .await
+            .ok();
+    }
+
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        if status == "approved" {
+            "verification.approve"
+        } else {
+            "verification.reject"
+        },
+        "verification_request",
+        Some(req_id),
+        Some(target_user_id),
+        Some(serde_json::json!({"status": status})),
+    )
+    .await;
+
+    Ok(Json(serde_json::json!({"success": true, "status": status})))
 }
 
 // Phase 3 task 30: return moderation actions taken against the viewer so
@@ -4129,15 +4307,18 @@ async fn decline_invite(
     Ok(Json(serde_json::json!({"success": true})))
 }
 
-// Phase 3 task 25: global user XP leaderboard. Decorates each entry with
-// display_name + avatar_url + is_self for the viewer so the rendered table
-// can highlight the viewer's row without an extra fetch.
+// Phase 3 task 25 + roadmap 14.8.9: global user XP leaderboard. Decorates
+// each entry with display_name + avatar_url + is_self for the viewer so the
+// rendered table can highlight the viewer's row without an extra fetch.
+//
+// Accepts `period=week|month|alltime` to window XP aggregation and
+// `scope=global` for spec-compatibility (only `global` is supported today).
 #[derive(Deserialize)]
 struct LeaderboardQuery {
     limit: Option<i64>,
-    // Reserved for week/month filters once we add a windowed view.
-    #[allow(dead_code)]
     period: Option<String>,
+    #[allow(dead_code)] // currently only `global` is supported; reserved for future "circle"
+    scope: Option<String>,
 }
 
 async fn get_global_leaderboard(
@@ -4148,9 +4329,10 @@ async fn get_global_leaderboard(
     let viewer = middleware::get_current_user(&jar, &state.db).await;
     let c_pool = get_community_pool(&state)?;
     let limit = query.limit.unwrap_or(50).clamp(1, 100);
+    let period = crate::community::xp::LeaderboardPeriod::parse(query.period.as_deref());
 
     let entries =
-        crate::community::xp::get_user_leaderboard(&c_pool, limit).await?;
+        crate::community::xp::get_user_leaderboard_for_period(&c_pool, period, limit).await?;
 
     let user_ids: Vec<Uuid> = entries.iter().map(|e| e.user_id).collect();
     let authors = if user_ids.is_empty() {
@@ -4159,27 +4341,75 @@ async fn get_global_leaderboard(
         user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?
     };
 
+    // Respect leaderboard_preferences.visible=false from the investor
+    // leaderboard schema: users who opted out of public ranking get their
+    // display name and avatar suppressed (replaced with an anonymized
+    // "Investor #abcdef" placeholder). The viewer themselves is always
+    // shown un-anonymized so they can find their own row.
+    let hidden_user_ids = if user_ids.is_empty() {
+        std::collections::HashSet::new()
+    } else {
+        fetch_hidden_leaderboard_user_ids(&state.db, &user_ids).await?
+    };
+
+    let viewer_id = viewer.as_ref().map(|v| v.id);
     let rows: Vec<serde_json::Value> = entries
         .iter()
         .enumerate()
         .map(|(idx, e)| {
             let info = authors.get(&e.user_id);
-            let is_self = viewer.as_ref().map(|v| v.id == e.user_id).unwrap_or(false);
+            let is_self = viewer_id == Some(e.user_id);
+            let is_hidden = hidden_user_ids.contains(&e.user_id) && !is_self;
+            let (display_name, avatar_url) = if is_hidden {
+                (
+                    format!("Investor #{}", &e.user_id.to_string()[..6]),
+                    None,
+                )
+            } else {
+                (
+                    info.map(|a| a.display_name.clone())
+                        .unwrap_or_else(|| "Anonymous".into()),
+                    info.and_then(|a| a.avatar_url.clone()),
+                )
+            };
             serde_json::json!({
                 "rank": idx + 1,
                 "user_id": e.user_id,
-                "display_name": info.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
-                "avatar_url": info.and_then(|a| a.avatar_url.clone()),
+                "display_name": display_name,
+                "avatar_url": avatar_url,
                 "xp_total": e.xp_total,
                 "level": e.level,
                 "level_name": e.level_name,
                 "login_streak": e.login_streak,
                 "is_self": is_self,
+                "anonymized": is_hidden,
             })
         })
         .collect();
 
-    Ok(Json(serde_json::json!({ "leaderboard": rows })))
+    Ok(Json(serde_json::json!({
+        "leaderboard": rows,
+        "period": period.to_string(),
+        "scope": "global",
+    })))
+}
+
+/// Return the set of user IDs (from the input slice) whose
+/// `leaderboard_preferences.visible` is explicitly false. Users without a
+/// preferences row default to visible (no anonymization), matching the
+/// public-by-default semantics elsewhere in the community surface.
+async fn fetch_hidden_leaderboard_user_ids(
+    main_pool: &sqlx::PgPool,
+    user_ids: &[Uuid],
+) -> Result<std::collections::HashSet<Uuid>, AppError> {
+    let rows: Vec<(Uuid,)> = sqlx::query_as(
+        "SELECT user_id FROM leaderboard_preferences
+         WHERE user_id = ANY($1) AND visible = FALSE",
+    )
+    .bind(user_ids)
+    .fetch_all(main_pool)
+    .await?;
+    Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 
 async fn get_circle_leaderboard(
