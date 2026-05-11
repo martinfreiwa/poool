@@ -2515,6 +2515,21 @@ pub fn router() -> Router<AppState> {
             "/api/community/profile/:id/following",
             get(list_following),
         )
+        // WS3.1 — per-user community profile data.
+        .route("/api/community/profile/:id/posts", get(list_user_posts))
+        .route(
+            "/api/community/profile/:id/comments",
+            get(list_user_comments),
+        )
+        .route("/api/community/profile/:id/media", get(list_user_media))
+        .route(
+            "/api/community/profile/:id/activity",
+            get(list_user_activity),
+        )
+        .route(
+            "/api/community/profile/me/analytics",
+            get(get_my_analytics),
+        )
         .route("/api/community/follow/:id", post(follow_user))
         .route("/api/community/follow/:id", delete(unfollow_user))
         // Block / mute self-service (14.8.2)
@@ -3364,6 +3379,364 @@ async fn list_following(
     Query(q): Query<RelationshipQuery>,
 ) -> Result<impl IntoResponse, AppError> {
     list_relationship(jar, &state, profile_id, "following", q.page.unwrap_or(1)).await
+}
+
+// ─── WS3.1: per-user community profile data ─────────────────────────────
+
+const PROFILE_PAGE_SIZE: i64 = 20;
+
+#[derive(Deserialize)]
+struct ProfilePageQuery {
+    page: Option<i64>,
+}
+
+async fn list_user_posts(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+    Query(q): Query<ProfilePageQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let viewer = middleware::get_current_user(&jar, &state.db).await;
+    let c_pool = get_community_pool(&state)?;
+    let page = q.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * PROFILE_PAGE_SIZE;
+
+    let posts = sqlx::query_as::<_, models::Post>(
+        r#"
+        SELECT p.* FROM posts p
+        JOIN community_profiles cp ON p.user_id = cp.user_id
+        WHERE p.user_id = $1
+          AND p.is_hidden = false
+          AND (cp.is_shadowbanned = false OR $2 = p.user_id)
+        ORDER BY p.created_at DESC
+        LIMIT $3 OFFSET $4
+        "#,
+    )
+    .bind(profile_id)
+    .bind(viewer.as_ref().map(|v| v.id))
+    .bind(PROFILE_PAGE_SIZE + 1)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let mut posts = posts;
+    let has_more = posts.len() as i64 > PROFILE_PAGE_SIZE;
+    if has_more {
+        posts.truncate(PROFILE_PAGE_SIZE as usize);
+    }
+
+    let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
+    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
+
+    // Reactions the viewer has placed on these posts.
+    let reacted_set: std::collections::HashSet<Uuid> = if let Some(ref v) = viewer {
+        let post_ids: Vec<Uuid> = posts.iter().map(|p| p.id).collect();
+        if post_ids.is_empty() {
+            std::collections::HashSet::new()
+        } else {
+            sqlx::query_scalar::<_, Uuid>(
+                "SELECT post_id FROM reactions WHERE user_id = $1 AND post_id = ANY($2) AND reaction_type = 'fire'",
+            )
+            .bind(v.id)
+            .bind(&post_ids)
+            .fetch_all(&c_pool)
+            .await?
+            .into_iter()
+            .collect()
+        }
+    } else {
+        std::collections::HashSet::new()
+    };
+
+    let feed: Vec<models::PostDisplay> = posts
+        .iter()
+        .map(|p| {
+            let author = authors.get(&p.user_id);
+            let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
+            let author_name = author
+                .map(|a| a.display_name.clone())
+                .unwrap_or_else(|| "Anonymous".into());
+            map_to_post_display(
+                p,
+                author_name,
+                author.and_then(|a| a.avatar_url.clone()),
+                author_badges,
+                reacted_set.contains(&p.id),
+            )
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "posts": feed,
+        "page": page,
+        "has_more": has_more,
+    })))
+}
+
+async fn list_user_comments(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+    Query(q): Query<ProfilePageQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let _viewer = middleware::get_current_user(&jar, &state.db).await;
+    let c_pool = get_community_pool(&state)?;
+    let page = q.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * PROFILE_PAGE_SIZE;
+
+    let rows = sqlx::query_as::<
+        _,
+        (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>, String),
+    >(
+        r#"
+        SELECT c.id, c.post_id, c.content, c.created_at,
+               COALESCE(LEFT(p.content, 80), '')
+        FROM comments c
+        JOIN posts p ON p.id = c.post_id
+        WHERE c.user_id = $1
+          AND c.is_hidden = false
+          AND p.is_hidden = false
+        ORDER BY c.created_at DESC
+        LIMIT $2 OFFSET $3
+        "#,
+    )
+    .bind(profile_id)
+    .bind(PROFILE_PAGE_SIZE + 1)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let mut rows = rows;
+    let has_more = rows.len() as i64 > PROFILE_PAGE_SIZE;
+    if has_more {
+        rows.truncate(PROFILE_PAGE_SIZE as usize);
+    }
+
+    let entries: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|(id, post_id, content, created_at, post_snippet)| {
+            serde_json::json!({
+                "id": id,
+                "post_id": post_id,
+                "content": content,
+                "created_at": created_at,
+                "post_snippet": post_snippet,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "comments": entries,
+        "page": page,
+        "has_more": has_more,
+    })))
+}
+
+async fn list_user_media(
+    _jar: CookieJar,
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+    Query(q): Query<ProfilePageQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let page = q.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * PROFILE_PAGE_SIZE;
+
+    let rows = sqlx::query_as::<_, (Uuid, Option<Vec<String>>, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT id, image_urls, created_at FROM posts
+        WHERE user_id = $1
+          AND is_hidden = false
+          AND image_urls IS NOT NULL
+          AND array_length(image_urls, 1) > 0
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+        "#,
+    )
+    .bind(profile_id)
+    .bind(PROFILE_PAGE_SIZE + 1)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let mut rows = rows;
+    let has_more = rows.len() as i64 > PROFILE_PAGE_SIZE;
+    if has_more {
+        rows.truncate(PROFILE_PAGE_SIZE as usize);
+    }
+
+    let mut media: Vec<serde_json::Value> = Vec::new();
+    for (post_id, urls, created_at) in rows {
+        for url in urls.unwrap_or_default() {
+            media.push(serde_json::json!({
+                "post_id": post_id,
+                "url": crate::storage::service::rewrite_gcs_url(&url),
+                "created_at": created_at,
+            }));
+        }
+    }
+
+    Ok(Json(serde_json::json!({
+        "media": media,
+        "page": page,
+        "has_more": has_more,
+    })))
+}
+
+async fn list_user_activity(
+    _jar: CookieJar,
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+    Query(q): Query<ProfilePageQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let page = q.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * PROFILE_PAGE_SIZE;
+    let limit = PROFILE_PAGE_SIZE + 1;
+
+    // Merge posts, comments, and xp_ledger entries into one timeline.
+    let rows = sqlx::query_as::<
+        _,
+        (String, Uuid, Option<String>, chrono::DateTime<chrono::Utc>),
+    >(
+        r#"
+        SELECT 'post' AS kind, id AS entity_id, LEFT(content, 100) AS detail, created_at
+        FROM posts WHERE user_id = $1 AND is_hidden = false
+        UNION ALL
+        SELECT 'comment' AS kind, id AS entity_id, LEFT(content, 100) AS detail, created_at
+        FROM comments WHERE user_id = $1 AND is_hidden = false
+        UNION ALL
+        SELECT 'xp' AS kind, NULL::uuid AS entity_id,
+               (amount::text || ' XP — ' || COALESCE(reason, '')) AS detail,
+               created_at
+        FROM xp_ledger WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+        "#,
+    )
+    .bind(profile_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let mut rows = rows;
+    let has_more = rows.len() as i64 > PROFILE_PAGE_SIZE;
+    if has_more {
+        rows.truncate(PROFILE_PAGE_SIZE as usize);
+    }
+
+    let entries: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|(kind, entity_id, detail, created_at)| {
+            serde_json::json!({
+                "kind": kind,
+                "entity_id": entity_id,
+                "detail": detail,
+                "created_at": created_at,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "entries": entries,
+        "page": page,
+        "has_more": has_more,
+    })))
+}
+
+async fn get_my_analytics(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    let posts_30d: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM posts WHERE user_id = $1 AND created_at > NOW() - INTERVAL '30 days'",
+    )
+    .bind(user.id)
+    .fetch_one(&c_pool)
+    .await
+    .unwrap_or(0);
+
+    let reactions_30d: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM reactions r JOIN posts p ON r.post_id = p.id \
+         WHERE p.user_id = $1 AND r.created_at > NOW() - INTERVAL '30 days'",
+    )
+    .bind(user.id)
+    .fetch_one(&c_pool)
+    .await
+    .unwrap_or(0);
+
+    let comments_30d: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM comments c JOIN posts p ON c.post_id = p.id \
+         WHERE p.user_id = $1 AND c.created_at > NOW() - INTERVAL '30 days'",
+    )
+    .bind(user.id)
+    .fetch_one(&c_pool)
+    .await
+    .unwrap_or(0);
+
+    let xp_30d: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(amount), 0)::BIGINT FROM xp_ledger WHERE user_id = $1 AND created_at > NOW() - INTERVAL '30 days'",
+    )
+    .bind(user.id)
+    .fetch_one(&c_pool)
+    .await
+    .unwrap_or(0);
+
+    let profile_views_30d: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM profile_views WHERE profile_user_id = $1 AND created_at > NOW() - INTERVAL '30 days'",
+    )
+    .bind(user.id)
+    .fetch_one(&c_pool)
+    .await
+    .unwrap_or(0);
+
+    let top_post: Option<(Uuid, String, i32)> = sqlx::query_as(
+        "SELECT id, LEFT(content, 100), reaction_count FROM posts \
+         WHERE user_id = $1 AND created_at > NOW() - INTERVAL '30 days' AND is_hidden = false \
+         ORDER BY reaction_count DESC LIMIT 1",
+    )
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await
+    .unwrap_or(None);
+
+    Ok(Json(serde_json::json!({
+        "posts_30d": posts_30d,
+        "reactions_received_30d": reactions_30d,
+        "comments_received_30d": comments_30d,
+        "xp_earned_30d": xp_30d,
+        "profile_views_30d": profile_views_30d,
+        "top_post": top_post.map(|(id, snippet, rc)| serde_json::json!({
+            "post_id": id,
+            "content_snippet": snippet,
+            "reaction_count": rc,
+        })),
+    })))
+}
+
+/// Helper invoked by the profile page renderer to track views.
+pub async fn record_profile_view(
+    pool: &sqlx::PgPool,
+    profile_user_id: Uuid,
+    viewer_user_id: Option<Uuid>,
+) {
+    if Some(profile_user_id) == viewer_user_id {
+        return; // Don't count self-views.
+    }
+    let _ = sqlx::query(
+        "INSERT INTO profile_views (profile_user_id, viewer_user_id) VALUES ($1, $2)",
+    )
+    .bind(profile_user_id)
+    .bind(viewer_user_id)
+    .execute(pool)
+    .await;
 }
 
 // ─── Verified-owner request flow (14.8.16) ──────────────────────────────
