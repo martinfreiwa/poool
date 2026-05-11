@@ -168,11 +168,12 @@ window.initCommunityFeed = function() {
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function appendTextEmptyState(container, text, styles) {
+    function appendTextEmptyState(container, text, _legacyStyles) {
+        if (!container) return;
         container.replaceChildren();
         const empty = document.createElement('div');
+        empty.className = 'community-loading-state';
         empty.textContent = text;
-        empty.style.cssText = styles;
         container.appendChild(empty);
     }
 
@@ -207,45 +208,49 @@ window.initCommunityFeed = function() {
             const comments = await res.json();
             
             if (comments.length === 0) {
-                listContainer.innerHTML = '<div style="font-size: 13px; color: #667085; padding-bottom: 8px;">No comments yet. Be the first to start the discussion!</div>';
+                const emptyEl = document.createElement('div');
+                emptyEl.className = 'community-comments-empty';
+                emptyEl.textContent = 'No comments yet. Be the first to start the discussion!';
+                listContainer.replaceChildren(emptyEl);
                 return;
             }
 
-            listContainer.innerHTML = '';
+            listContainer.replaceChildren();
             comments.forEach(c => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;';
+                row.className = 'community-comment-row';
 
                 // Avatar
                 if (c.author_avatar) {
                     const img = document.createElement('img');
                     img.src = c.author_avatar;
-                    img.style.cssText = 'width: 28px; height: 28px; border-radius: 50%; object-fit:cover;';
+                    img.alt = '';
+                    img.className = 'community-comment-row__avatar';
                     row.appendChild(img);
                 } else {
                     const avatarDiv = document.createElement('div');
-                    avatarDiv.style.cssText = 'width: 28px; height: 28px; background: #eaecf0; border-radius: 50%; display: flex; align-items:center; justify-content:center; font-size: 10px; font-weight:600; color:#344054;';
+                    avatarDiv.className = 'community-comment-row__avatar community-comment-row__avatar--initials';
                     avatarDiv.textContent = getInitials(c.author_name);
                     row.appendChild(avatarDiv);
                 }
 
                 // Comment body
                 const body = document.createElement('div');
-                body.style.cssText = 'flex:1; background: #F9FAFB; padding: 10px 12px; border-radius: 8px; border: 1px solid #EAECF0;';
+                body.className = 'community-comment-row__body';
 
                 const header = document.createElement('div');
-                header.style.cssText = 'display:flex; justify-content: space-between; margin-bottom: 4px;';
+                header.className = 'community-comment-row__header';
                 const nameSpan = document.createElement('span');
-                nameSpan.style.cssText = 'font-weight: 600; font-size: 13px; color: #344054;';
+                nameSpan.className = 'community-comment-row__name';
                 nameSpan.textContent = c.author_name; // SAFE: textContent escapes HTML
                 const timeSpan = document.createElement('span');
-                timeSpan.style.cssText = 'font-size: 12px; color: #667085;';
+                timeSpan.className = 'community-comment-row__time';
                 timeSpan.textContent = timeAgo(c.created_at);
                 header.appendChild(nameSpan);
                 header.appendChild(timeSpan);
 
                 const contentDiv = document.createElement('div');
-                contentDiv.style.cssText = 'font-size: 14px; color: #475467; word-break: break-word;';
+                contentDiv.className = 'community-comment-row__content';
                 contentDiv.textContent = c.content; // SAFE: textContent escapes HTML
 
                 body.appendChild(header);
@@ -318,12 +323,12 @@ window.initCommunityFeed = function() {
                 profile.badges.forEach((badge) => {
                     const badgeEl = document.createElement('div');
                     badgeEl.title = badge.name || '';
-                    badgeEl.style.cssText = 'background:#F2F4F7; border: 1px solid #EAECF0; border-radius:16px; padding: 4px 8px; font-size:14px; cursor:help; display:flex; align-items:center;';
+                    badgeEl.className = 'community-profile-badge';
 
                     const icon = document.createElement('span');
                     icon.textContent = badge.icon || '';
                     const name = document.createElement('span');
-                    name.style.cssText = 'font-size:12px; font-weight:500; margin-left:6px; color:#344054;';
+                    name.className = 'community-profile-badge__name';
                     name.textContent = badge.name || 'Badge';
 
                     badgeEl.appendChild(icon);
@@ -337,14 +342,14 @@ window.initCommunityFeed = function() {
             const avatarContainer = document.getElementById('profile-modal-avatar');
             avatarContainer.replaceChildren();
             if (profile.avatar_url) {
-                avatarContainer.style.background = '#F2F4F7';
+                avatarContainer.classList.add('community-profile-modal__avatar--has-image');
                 const img = document.createElement('img');
                 img.src = profile.avatar_url;
                 img.alt = '';
-                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;';
+                img.className = 'community-profile-modal__avatar-img';
                 avatarContainer.appendChild(img);
             } else {
-                avatarContainer.style.background = '#F2F4F7';
+                avatarContainer.classList.add('community-profile-modal__avatar--has-image');
                 const parts = String(profile.display_name || 'User').split(' ');
                 const init = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2);
                 const initials = document.createElement('span');
@@ -488,17 +493,17 @@ window.initCommunityFeed = function() {
         container.replaceChildren();
         window.postImageUrls.forEach((url, index) => {
             const preview = document.createElement('div');
-            preview.style.cssText = 'position: relative; flex-shrink: 0;';
+            preview.className = 'community-composer__preview';
 
             const image = document.createElement('img');
             image.src = url;
             image.alt = 'Selected post image preview';
-            image.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #EAECF0;';
+            image.className = 'community-composer__preview-img';
 
             const remove = document.createElement('button');
             remove.type = 'button';
             remove.setAttribute('aria-label', 'Remove selected post image');
-            remove.style.cssText = 'position: absolute; top: -6px; right: -6px; background: white; border: 1px solid #EAECF0; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #D92D20; font-weight: bold; padding: 0;';
+            remove.className = 'community-composer__preview-remove';
             remove.textContent = '✕';
             remove.addEventListener('click', () => window.removePostImage(index));
 
@@ -697,26 +702,26 @@ window.initCommunityFeed = function() {
             if (!res.ok) throw new Error('Failed to load hashtag feed');
             const data = await res.json();
 
-            feedContainer.innerHTML = '';
+            feedContainer.replaceChildren();
 
             // Hashtag header banner
             const banner = document.createElement('div');
-            banner.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: #EEF4FF; border: 1px solid #D1E0FF; border-radius: 12px; margin-bottom: 20px;';
+            banner.className = 'community-hashtag-banner';
 
             const bannerLeft = document.createElement('div');
-            bannerLeft.style.cssText = 'display: flex; align-items: center; gap: 12px;';
+            bannerLeft.className = 'community-hashtag-banner__left';
             const hashIcon = document.createElement('div');
-            hashIcon.style.cssText = 'width: 40px; height: 40px; border-radius: 10px; background: #D1E0FF; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: var(--btn-primary-bg, #0000FF);';
+            hashIcon.className = 'community-hashtag-banner__icon';
             hashIcon.textContent = '#';
             bannerLeft.appendChild(hashIcon);
 
             const bannerText = document.createElement('div');
             const tagTitle = document.createElement('div');
-            tagTitle.style.cssText = 'font-size: 18px; font-weight: 700; color: #101828;';
+            tagTitle.className = 'community-hashtag-banner__title';
             tagTitle.textContent = '#' + tag;
             bannerText.appendChild(tagTitle);
             const tagCount = document.createElement('div');
-            tagCount.style.cssText = 'font-size: 13px; color: #667085;';
+            tagCount.className = 'community-hashtag-banner__count';
             tagCount.textContent = `${data.posts ? data.posts.length : 0} posts`;
             bannerText.appendChild(tagCount);
             bannerLeft.appendChild(bannerText);
@@ -734,7 +739,7 @@ window.initCommunityFeed = function() {
 
             if (!data.posts || data.posts.length === 0) {
                 const empty = document.createElement('div');
-                empty.style.cssText = 'text-align: center; padding: 40px; color: #667085;';
+                empty.className = 'community-loading-state';
                 empty.textContent = 'No posts found with this hashtag yet.';
                 feedContainer.appendChild(empty);
                 return;
@@ -874,9 +879,6 @@ window.initCommunityFeed = function() {
                 const link = document.createElement('span');
                 link.className = 'hashtag-tag';
                 link.textContent = part;
-                link.style.cssText = 'color: var(--btn-primary-bg, #0000FF); font-weight: 600; cursor: pointer; transition: opacity 0.2s;';
-                link.addEventListener('mouseover', () => link.style.opacity = '0.7');
-                link.addEventListener('mouseout', () => link.style.opacity = '1');
                 link.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const tag = part.substring(1).toLowerCase();
@@ -887,9 +889,6 @@ window.initCommunityFeed = function() {
                 const link = document.createElement('span');
                 link.className = 'mention-tag';
                 link.textContent = part;
-                link.style.cssText = 'color: #7F56D9; font-weight: 600; cursor: pointer; transition: opacity 0.2s;';
-                link.addEventListener('mouseover', () => link.style.opacity = '0.7');
-                link.addEventListener('mouseout', () => link.style.opacity = '1');
                 link.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const mention = part.substring(1);
