@@ -330,20 +330,56 @@ pub async fn toggle_reaction(
     })
 }
 
-/// Create a comment on a post
+/// Create a comment on a post (optionally as a reply to another comment).
+///
+/// 14.8.12 — when `parent_comment_id` is supplied, the parent must exist on
+/// the same post AND must itself be a top-level comment (depth cap of 2 —
+/// no reply to a reply). Replies still bump `posts.comment_count` so the
+/// flat total reflects total engagement.
 pub async fn create_comment(
     pool: &PgPool,
     post_id: Uuid,
     user_id: Uuid,
     content: String,
     content_sanitized: String,
+    parent_comment_id: Option<Uuid>,
 ) -> Result<Uuid, AppError> {
     let mut tx = pool.begin().await?;
 
+    if let Some(parent_id) = parent_comment_id {
+        // Parent must exist on this post AND be top-level (parent.parent_id IS NULL).
+        let parent: Option<(Uuid, Option<Uuid>)> = sqlx::query_as(
+            "SELECT post_id, parent_comment_id FROM comments WHERE id = $1",
+        )
+        .bind(parent_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        match parent {
+            None => {
+                return Err(AppError::NotFound(
+                    "Parent comment not found.".to_string(),
+                ));
+            }
+            Some((parent_post_id, parent_parent_id)) => {
+                if parent_post_id != post_id {
+                    return Err(AppError::BadRequest(
+                        "Parent comment is on a different post.".to_string(),
+                    ));
+                }
+                if parent_parent_id.is_some() {
+                    return Err(AppError::BadRequest(
+                        "Replies are limited to one level. Reply to the top-level comment instead."
+                            .to_string(),
+                    ));
+                }
+            }
+        }
+    }
+
     let comment_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO comments (post_id, user_id, content, content_sanitized)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO comments (post_id, user_id, content, content_sanitized, parent_comment_id)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id
         "#,
     )
@@ -351,6 +387,7 @@ pub async fn create_comment(
     .bind(user_id)
     .bind(&content)
     .bind(&content_sanitized)
+    .bind(parent_comment_id)
     .fetch_one(&mut *tx)
     .await?;
 

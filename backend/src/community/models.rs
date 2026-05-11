@@ -48,6 +48,8 @@ pub struct Comment {
     // 14.8.6 — denormalized counter maintained by trigger on the new
     // comment_reactions table (migration 029).
     pub reaction_count: i32,
+    // 14.8.12 — nullable self-FK; NULL for top-level comments.
+    pub parent_comment_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

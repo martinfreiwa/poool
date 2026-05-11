@@ -1,0 +1,72 @@
+{% with title=badge.name + " · Badge | Community", meta_description="Earn the " + badge.name + " badge in the POOOL community.",
+extra_css=['community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown'] %}{%
+include "components/head.html" %}{% endwith %}
+
+<body id="community-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="lb-page">
+    <div class="lb-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main lb-main">
+      {% with investor_topbar_title="Badge", investor_topbar_variant="empty-right" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
+      <div class="lb-container">
+        <a class="ds-btn ds-btn--ghost ds-btn--sm community-badge-detail__back" href="/community">← Back to community</a>
+
+        <section class="ds-card community-badge-detail">
+          <div class="community-badge-detail__hero">
+            <div class="community-badge-detail__icon" aria-hidden="true">{{ badge.icon }}</div>
+            <div class="community-badge-detail__heading">
+              <h1 class="community-badge-detail__name">{{ badge.name }}</h1>
+              <p class="community-badge-detail__code">{{ badge.code }}</p>
+            </div>
+            <div class="community-badge-detail__count">
+              <span class="community-badge-detail__count-value">{{ badge.holder_count }}</span>
+              <span class="community-badge-detail__count-label">{% if badge.holder_count == 1 %}holder{% else %}holders{% endif %}</span>
+            </div>
+          </div>
+          <p class="community-badge-detail__description">{{ badge.description }}</p>
+        </section>
+
+        <section class="community-panel community-badge-detail__holders">
+          <div class="community-panel__header">
+            <h2 class="community-panel__title">Recent holders</h2>
+          </div>
+          <div class="community-panel__body">
+            {% if recent_holders | length == 0 %}
+              <div class="community-empty-state">
+                <div class="community-empty-state__title">No holders yet</div>
+                <div class="community-empty-state__desc">Be the first to earn this badge.</div>
+              </div>
+            {% else %}
+              <ul class="community-badge-detail__holders-list">
+                {% for h in recent_holders %}
+                  <li class="community-badge-detail__holder">
+                    <button type="button" class="community-badge-detail__holder-btn" onclick="openUserProfile('{{ h.user_id }}')">
+                      <span class="community-badge-detail__holder-avatar">
+                        {% if h.avatar_url %}
+                          <img src="{{ h.avatar_url }}" alt="">
+                        {% else %}
+                          <span aria-hidden="true">{{ h.display_name | truncate(1, true, '') | upper }}</span>
+                        {% endif %}
+                      </span>
+                      <span class="community-badge-detail__holder-name">{{ h.display_name }}</span>
+                    </button>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>

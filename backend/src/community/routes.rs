@@ -113,6 +113,9 @@ pub struct ToggleReactionReq {
 #[derive(Deserialize)]
 pub struct CreateCommentReq {
     pub content: String,
+    // 14.8.12 — optional parent for nested replies (depth cap of 2 enforced
+    // in service layer).
+    pub parent_comment_id: Option<Uuid>,
 }
 
 /// Helper to assert the community database is available
@@ -680,6 +683,7 @@ async fn create_comment(
         user.id,
         payload.content.clone(),
         clean_html,
+        payload.parent_comment_id,
     )
     .await?;
 
@@ -977,6 +981,8 @@ async fn get_comments(
             "helpful_count": c.helpful_count,
             "created_at": c.created_at,
             "edited_at": c.edited_at,
+            "parent_comment_id": c.parent_comment_id,
+            "reaction_count": c.reaction_count,
         }));
     }
 
@@ -2611,6 +2617,24 @@ pub fn router() -> Router<AppState> {
             "/api/community/notifications/:id/read",
             post(mark_notification_read),
         )
+        // 14.8.15 — notification preferences
+        .route(
+            "/api/community/notification-prefs",
+            get(get_notification_prefs).put(update_notification_prefs),
+        )
+        // 14.8.16 — verified-owner request flow
+        .route(
+            "/api/community/verified-owner-requests",
+            get(list_my_verified_owner_requests).post(submit_verified_owner_request),
+        )
+        .route(
+            "/api/admin/community/verified-owner-requests",
+            get(admin_list_verified_owner_requests),
+        )
+        .route(
+            "/api/admin/community/verified-owner-requests/:id",
+            axum::routing::patch(admin_review_verified_owner_request),
+        )
         // Expert AMAs (M5)
         .route("/api/community/amas", get(list_amas))
         .route("/api/community/amas/:id", get(get_ama_detail))
@@ -3283,6 +3307,198 @@ async fn list_following(
     list_relationship(jar, &state, profile_id, "following").await
 }
 
+// ─── Verified-owner request flow (14.8.16) ──────────────────────────────
+
+#[derive(Deserialize)]
+struct SubmitVerifiedOwnerRequest {
+    pub asset_id: Uuid,
+    pub evidence_url: Option<String>,
+    pub note: Option<String>,
+}
+
+async fn submit_verified_owner_request(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<SubmitVerifiedOwnerRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    let existing: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM verified_owner_requests
+         WHERE user_id = $1 AND asset_id = $2 AND status = 'pending'",
+    )
+    .bind(user.id)
+    .bind(payload.asset_id)
+    .fetch_optional(&c_pool)
+    .await?;
+    if existing.is_some() {
+        return Err(AppError::Conflict(
+            "You already have a pending request for this asset.".into(),
+        ));
+    }
+
+    let id: Uuid = sqlx::query_scalar(
+        "INSERT INTO verified_owner_requests (user_id, asset_id, evidence_url, note)
+         VALUES ($1, $2, $3, $4) RETURNING id",
+    )
+    .bind(user.id)
+    .bind(payload.asset_id)
+    .bind(payload.evidence_url.as_deref())
+    .bind(payload.note.as_deref())
+    .fetch_one(&c_pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "id": id, "status": "pending" })))
+}
+
+async fn list_my_verified_owner_requests(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT id, asset_id, status, evidence_url, note, reviewed_at, created_at
+         FROM verified_owner_requests
+         WHERE user_id = $1 ORDER BY created_at DESC",
+    )
+    .bind(user.id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let items: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "asset_id": row.try_get::<Uuid, _>("asset_id").ok(),
+                "status": row.try_get::<String, _>("status").unwrap_or_default(),
+                "evidence_url": row.try_get::<Option<String>, _>("evidence_url").unwrap_or(None),
+                "note": row.try_get::<Option<String>, _>("note").unwrap_or(None),
+                "reviewed_at": row
+                    .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("reviewed_at")
+                    .unwrap_or(None),
+                "created_at": row
+                    .try_get::<chrono::DateTime<chrono::Utc>, _>("created_at")
+                    .ok(),
+            })
+        })
+        .collect();
+    Ok(Json(serde_json::json!({ "requests": items })))
+}
+
+#[derive(Deserialize)]
+struct AdminReviewQuery {
+    pub status: Option<String>,
+}
+
+async fn admin_list_verified_owner_requests(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Query(query): Query<AdminReviewQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let status_filter = query.status.unwrap_or_else(|| "pending".to_string());
+
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT id, user_id, asset_id, status, evidence_url, note,
+                reviewed_at, reviewer_id, admin_notes, created_at
+         FROM verified_owner_requests
+         WHERE status = $1 ORDER BY created_at DESC LIMIT 200",
+    )
+    .bind(&status_filter)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let items: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "user_id": row.try_get::<Uuid, _>("user_id").ok(),
+                "asset_id": row.try_get::<Uuid, _>("asset_id").ok(),
+                "status": row.try_get::<String, _>("status").unwrap_or_default(),
+                "evidence_url": row.try_get::<Option<String>, _>("evidence_url").unwrap_or(None),
+                "note": row.try_get::<Option<String>, _>("note").unwrap_or(None),
+                "reviewed_at": row
+                    .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("reviewed_at")
+                    .unwrap_or(None),
+                "reviewer_id": row.try_get::<Option<Uuid>, _>("reviewer_id").unwrap_or(None),
+                "admin_notes": row.try_get::<Option<String>, _>("admin_notes").unwrap_or(None),
+                "created_at": row
+                    .try_get::<chrono::DateTime<chrono::Utc>, _>("created_at")
+                    .ok(),
+            })
+        })
+        .collect();
+    Ok(Json(serde_json::json!({ "requests": items })))
+}
+
+#[derive(Deserialize)]
+struct AdminReviewVerifiedOwnerRequest {
+    pub status: String,
+    pub admin_notes: Option<String>,
+}
+
+async fn admin_review_verified_owner_request(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(request_id): Path<Uuid>,
+    Json(payload): Json<AdminReviewVerifiedOwnerRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
+    if !matches!(payload.status.as_str(), "approved" | "rejected") {
+        return Err(AppError::BadRequest(
+            "status must be 'approved' or 'rejected'.".into(),
+        ));
+    }
+
+    let c_pool = get_community_pool(&state)?;
+    let updated: Option<Uuid> = sqlx::query_scalar(
+        "UPDATE verified_owner_requests SET
+            status = $1,
+            admin_notes = $2,
+            reviewed_at = NOW(),
+            reviewer_id = $3
+         WHERE id = $4 AND status = 'pending'
+         RETURNING user_id",
+    )
+    .bind(&payload.status)
+    .bind(payload.admin_notes.as_deref())
+    .bind(admin.user.id)
+    .bind(request_id)
+    .fetch_optional(&c_pool)
+    .await?;
+
+    if updated.is_none() {
+        return Err(AppError::NotFound(
+            "Request not found or already reviewed.".into(),
+        ));
+    }
+
+    Ok(Json(serde_json::json!({
+        "id": request_id,
+        "status": payload.status,
+    })))
+}
+
 // ─── Block / mute self-service (14.8.2) ──────────────────────────────────
 // A block disables visibility in both directions (the target's posts vanish
 // from the actor's feed AND the actor's posts vanish from the target's feed);
@@ -3475,6 +3691,12 @@ struct SearchQuery {
     pub q: String,
     pub r#type: Option<String>, // "users", "posts", "all"
     pub page: Option<i64>,
+    // 14.8.19 — post filters (applied only when type=posts or type=all).
+    // Ignored for user search.
+    pub date_from: Option<String>, // ISO-8601 date or datetime, server-parsed
+    pub date_to: Option<String>,
+    pub author_id: Option<Uuid>,
+    pub min_engagement: Option<i64>, // reactions + comments >= N
 }
 
 async fn search_community(
@@ -3546,15 +3768,34 @@ async fn search_community(
     }
 
     if search_type == "all" || search_type == "posts" {
-        // Tag search vs content search
+        // 14.8.19 — apply optional date / author / engagement filters.
+        // Parse dates leniently: accept either YYYY-MM-DD or full RFC3339.
+        let parse_date = |s: &str| -> Option<chrono::DateTime<chrono::Utc>> {
+            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
+                return Some(dt.with_timezone(&chrono::Utc));
+            }
+            chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                .ok()
+                .and_then(|d| d.and_hms_opt(0, 0, 0))
+                .map(|ndt| ndt.and_utc())
+        };
+        let date_from = query.date_from.as_deref().and_then(parse_date);
+        let date_to = query.date_to.as_deref().and_then(parse_date);
+        let author_id = query.author_id;
+        let min_engagement = query.min_engagement.unwrap_or(0).max(0);
+
         posts_result = sqlx::query_as::<_, crate::community::models::Post>(
             r#"
             SELECT p.* FROM posts p
             JOIN community_profiles cp ON p.user_id = cp.user_id
-            WHERE p.is_hidden = false 
+            WHERE p.is_hidden = false
               AND cp.is_shadowbanned = false
               AND cp.is_community_banned = false
               AND (p.content ILIKE $1 OR p.content_tags::text ILIKE $1)
+              AND ($4::timestamptz IS NULL OR p.created_at >= $4)
+              AND ($5::timestamptz IS NULL OR p.created_at <= $5)
+              AND ($6::uuid IS NULL OR p.user_id = $6)
+              AND (p.reaction_count + p.comment_count) >= $7
             ORDER BY p.created_at DESC
             LIMIT $2 OFFSET $3
             "#,
@@ -3562,6 +3803,10 @@ async fn search_community(
         .bind(&search_term)
         .bind(limit)
         .bind(offset)
+        .bind(date_from)
+        .bind(date_to)
+        .bind(author_id)
+        .bind(min_engagement)
         .fetch_all(&c_pool)
         .await?;
     }
@@ -4617,6 +4862,91 @@ async fn mark_notification_read(
 
     let c_pool = get_community_pool(&state)?;
     crate::community::notifications::mark_as_read(&c_pool, user.id, notification_id).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+// ─── Notification preferences (14.8.15) ──────────────────────────────────
+
+#[derive(Deserialize)]
+struct NotificationPrefsPayload {
+    pub post_like: Option<bool>,
+    pub post_comment: Option<bool>,
+    pub mention: Option<bool>,
+    pub follow: Option<bool>,
+    pub announcement: Option<bool>,
+    pub ama: Option<bool>,
+    pub challenge: Option<bool>,
+    pub reward: Option<bool>,
+}
+
+async fn get_notification_prefs(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    crate::community::service::ensure_community_profile(&c_pool, user.id).await?;
+
+    use sqlx::Row;
+    let row = sqlx::query(
+        "SELECT notif_post_like, notif_post_comment, notif_mention, notif_follow,
+                notif_announcement, notif_ama, notif_challenge, notif_reward
+         FROM community_profiles WHERE user_id = $1",
+    )
+    .bind(user.id)
+    .fetch_one(&c_pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "post_like": row.try_get::<bool, _>("notif_post_like").unwrap_or(true),
+        "post_comment": row.try_get::<bool, _>("notif_post_comment").unwrap_or(true),
+        "mention": row.try_get::<bool, _>("notif_mention").unwrap_or(true),
+        "follow": row.try_get::<bool, _>("notif_follow").unwrap_or(true),
+        "announcement": row.try_get::<bool, _>("notif_announcement").unwrap_or(true),
+        "ama": row.try_get::<bool, _>("notif_ama").unwrap_or(true),
+        "challenge": row.try_get::<bool, _>("notif_challenge").unwrap_or(true),
+        "reward": row.try_get::<bool, _>("notif_reward").unwrap_or(true),
+    })))
+}
+
+async fn update_notification_prefs(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<NotificationPrefsPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    crate::community::service::ensure_community_profile(&c_pool, user.id).await?;
+
+    sqlx::query(
+        "UPDATE community_profiles SET
+            notif_post_like     = COALESCE($2, notif_post_like),
+            notif_post_comment  = COALESCE($3, notif_post_comment),
+            notif_mention       = COALESCE($4, notif_mention),
+            notif_follow        = COALESCE($5, notif_follow),
+            notif_announcement  = COALESCE($6, notif_announcement),
+            notif_ama           = COALESCE($7, notif_ama),
+            notif_challenge     = COALESCE($8, notif_challenge),
+            notif_reward        = COALESCE($9, notif_reward),
+            updated_at = NOW()
+         WHERE user_id = $1",
+    )
+    .bind(user.id)
+    .bind(payload.post_like)
+    .bind(payload.post_comment)
+    .bind(payload.mention)
+    .bind(payload.follow)
+    .bind(payload.announcement)
+    .bind(payload.ama)
+    .bind(payload.challenge)
+    .bind(payload.reward)
+    .execute(&c_pool)
+    .await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
