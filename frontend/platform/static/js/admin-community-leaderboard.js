@@ -21,6 +21,16 @@
     }
   }
 
+  function getCsrfToken() {
+    if (typeof window.getCsrfToken === "function") {
+      return window.getCsrfToken() || "";
+    }
+    const value = `; ${document.cookie}`;
+    const parts = value.split("; csrf_token=");
+    if (parts.length === 2) return parts.pop().split(";").shift() || "";
+    return "";
+  }
+
   function setLeaderboardState(mode, message) {
     $("leaderboard-loading").hidden = mode !== "loading";
     $("leaderboard-error").hidden = mode !== "error";
@@ -224,7 +234,10 @@
       const res = await fetch(`/api/admin/community/users/${request.userId}/xp`, {
         method: "POST",
         credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken(),
+        },
         body: JSON.stringify(request.payload),
       });
       const data = await parseJsonResponse(res);
