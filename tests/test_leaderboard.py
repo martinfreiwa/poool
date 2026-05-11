@@ -117,10 +117,25 @@ def run_tests():
     if r.status_code == 200:
         results.ok("GET /api/leaderboard/me returns 200")
         data = r.json()
-        if "rank" in data:
-            results.ok(f"User rank: {data['rank']}")
-        if "total_score" in data:
-            results.ok(f"User total score: {data['total_score']}")
+        # `rank` is Option<i32> server-side; the field is always present, may be null.
+        assert "rank" in data, "missing 'rank' field on /api/leaderboard/me"
+        results.ok(f"User rank: {data['rank']}")
+        # `total_score` was dropped in migration 046 — the rank response now
+        # exposes `metric_value` plus a `metrics` sub-object.
+        assert "metric_value" in data, "missing 'metric_value' field on /api/leaderboard/me"
+        results.ok(f"User metric_value: {data['metric_value']}")
+        assert "metrics" in data and isinstance(data["metrics"], dict), \
+            "missing 'metrics' object on /api/leaderboard/me"
+        for key in (
+            "total_invested_cents",
+            "asset_count",
+            "portfolio_roi_bps",
+            "affiliate_count",
+            "referral_revenue_cents",
+            "highest_investment_cents",
+        ):
+            assert key in data["metrics"], f"missing metrics.{key} on /api/leaderboard/me"
+        results.ok("metrics breakdown present (6 fields)")
     else:
         results.fail(f"GET /api/leaderboard/me returned {r.status_code}")
 
