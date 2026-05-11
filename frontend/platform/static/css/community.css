@@ -3070,6 +3070,122 @@ button.community-tab-btn.active {
   color: var(--btn-danger-bg, #F04438);
 }
 
+/* ── AMA question (commit 14 — JS-rendered) ───────────────────────── */
+.community-ama-question {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.community-ama-question__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.community-ama-question__text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--page-title-color, #181D27);
+  line-height: 1.5;
+  margin: 0;
+  word-break: break-word;
+}
+
+.community-ama-question__featured {
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  background: #FFF9C4;
+  color: #F57F17;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #FFF59D;
+}
+
+.community-ama-question__answer {
+  padding: 12px 16px;
+  background: #EEF4FF;
+  border-radius: 8px;
+  border-left: 3px solid var(--btn-primary-bg, #0000FF);
+}
+
+.community-ama-question__answer-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--success-fg, #027A48);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.community-ama-question__answer-text {
+  font-size: 14px;
+  color: var(--body-color, #344054);
+  line-height: 1.5;
+  margin: 0;
+  word-break: break-word;
+}
+
+.community-ama-question__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.community-ama-question__upvote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  background: var(--card-bg, #fff);
+  color: var(--text-secondary, #667085);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  font-family: var(--font-family);
+}
+
+.community-ama-question__upvote:hover {
+  background: var(--content-bg, #F9FAFB);
+}
+
+.community-ama-question__upvote--active,
+.community-ama-question__upvote[aria-pressed="true"] {
+  background: #EFF8FF;
+  color: #175CD3;
+  border-color: #B2DDFF;
+}
+
+.community-ama-question__upvote:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
+.community-ama-question__time {
+  font-size: 12px;
+  color: var(--text-secondary, #98A2B3);
+}
+
+/* ── Community toast (commit 14 — JS-rendered) ────────────────────── */
+.community-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--page-title-color, #181D27);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
 /* ── Community topbar tabs overflow (commit 11) ───────────────────── */
 /* The 6 visible community tabs may overflow the topbar between 768px
    (where lb-topbar-tabs unhides) and the desktop breakpoint where the

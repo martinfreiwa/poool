@@ -60,7 +60,8 @@
     }
 
     const toast = document.createElement("div");
-    toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181D27;color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:500;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,0.2);";
+    toast.className = "community-toast";
+    toast.setAttribute("role", "status");
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(function () { toast.remove(); }, 4000);
@@ -103,21 +104,20 @@
 
     function renderQuestion(q) {
       const card = document.createElement("div");
-      card.className = "ds-card";
-      card.style.cssText = "padding:16px 20px;display:flex;flex-direction:column;gap:12px;";
+      card.className = "ds-card community-ama-question";
 
       const topRow = document.createElement("div");
-      topRow.style.cssText = "display:flex;align-items:flex-start;gap:12px;";
+      topRow.className = "community-ama-question__top";
 
       const question = document.createElement("p");
-      question.style.cssText = "flex:1;font-size:14px;color:#181D27;line-height:1.5;margin:0;word-break:break-word;";
+      question.className = "community-ama-question__text";
       question.textContent = q.question || "";
       topRow.appendChild(question);
 
       if (q.is_featured) {
         const badge = document.createElement("span");
+        badge.className = "ds-badge community-ama-question__featured";
         badge.textContent = "Featured";
-        badge.style.cssText = "white-space:nowrap;font-size:11px;font-weight:600;background:#FFF9C4;color:#F57F17;padding:2px 8px;border-radius:6px;border:1px solid #FFF59D;";
         topRow.appendChild(badge);
       }
 
@@ -125,15 +125,15 @@
 
       if (q.answer) {
         const answer = document.createElement("div");
-        answer.style.cssText = "padding:12px 16px;background:#EEF4FF;border-radius:8px;border-left:3px solid var(--btn-primary-bg, #0000FF);";
+        answer.className = "community-ama-question__answer";
 
         const answerLabel = document.createElement("div");
-        answerLabel.style.cssText = "font-size:11px;font-weight:700;color:#027A48;margin-bottom:4px;text-transform:uppercase;";
+        answerLabel.className = "community-ama-question__answer-label";
         answerLabel.textContent = "Expert Answer";
         answer.appendChild(answerLabel);
 
         const answerText = document.createElement("p");
-        answerText.style.cssText = "font-size:14px;color:#344054;line-height:1.5;margin:0;word-break:break-word;";
+        answerText.className = "community-ama-question__answer-text";
         answerText.textContent = q.answer;
         answer.appendChild(answerText);
 
@@ -141,14 +141,12 @@
       }
 
       const bottom = document.createElement("div");
-      bottom.style.cssText = "display:flex;align-items:center;justify-content:space-between;";
+      bottom.className = "community-ama-question__bottom";
 
       const upvoteBtn = document.createElement("button");
       upvoteBtn.type = "button";
-      upvoteBtn.className = "feed-reaction-btn";
-      upvoteBtn.style.cssText = "display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid #EAECF0;background:" +
-        (q.user_has_upvoted ? "#EFF8FF" : "#fff") + ";color:" + (q.user_has_upvoted ? "#175CD3" : "#667085") +
-        ";font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;";
+      upvoteBtn.className = "community-ama-question__upvote" + (q.user_has_upvoted ? " community-ama-question__upvote--active" : "");
+      upvoteBtn.setAttribute("aria-pressed", q.user_has_upvoted ? "true" : "false");
       upvoteBtn.textContent = "Upvote " + Number(q.upvote_count || 0);
       upvoteBtn.addEventListener("click", function () {
         handleUpvote(q.id);
@@ -156,7 +154,7 @@
       bottom.appendChild(upvoteBtn);
 
       const time = document.createElement("span");
-      time.style.cssText = "font-size:12px;color:#98A2B3;";
+      time.className = "community-ama-question__time";
       time.textContent = timeAgo(q.created_at);
       bottom.appendChild(time);
 
@@ -168,7 +166,7 @@
       questionsList.replaceChildren();
       if (!questions.length) {
         const emptyQuestions = document.createElement("div");
-        emptyQuestions.style.cssText = "text-align:center;padding:32px;color:#667085;font-size:14px;";
+        emptyQuestions.className = "community-loading-state";
         emptyQuestions.textContent = "No questions submitted yet. Be the first to ask.";
         questionsList.appendChild(emptyQuestions);
         return;
