@@ -1,4 +1,4 @@
-<div class="feed-post" id="post-{{ p.id }}">
+<div class="feed-post" id="post-{{ p.id }}" data-post-id="{{ p.id }}" data-author-id="{{ p.author_id }}">
     <!-- ─── Header ─── -->
     <div class="feed-post-header">
         <div class="feed-post-author" onclick="openUserProfile('{{ p.author_id }}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openUserProfile('{{ p.author_id }}');}">
@@ -123,6 +123,26 @@
             <button class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm feed-post-report-btn" type="button" aria-label="Report post" onclick="openReportModal('{{ p.id }}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
             </button>
+
+            <!-- Owner-only actions: edit / delete. Hidden by default; community-feed.js
+                 sets data-is-own on the parent .feed-post when the viewer is the author. -->
+            <div class="feed-post-owner-menu">
+                <button type="button" class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm feed-post-owner-menu__toggle"
+                    aria-label="Post actions" aria-haspopup="true" aria-expanded="false"
+                    onclick="window.togglePostOwnerMenu('{{ p.id }}', this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1"></circle>
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="12" cy="19" r="1"></circle>
+                    </svg>
+                </button>
+                <div class="feed-post-owner-menu__dropdown" id="owner-menu-{{ p.id }}" role="menu" hidden>
+                    <button type="button" role="menuitem" class="feed-post-owner-menu__item"
+                        onclick="window.openEditPostModal('{{ p.id }}')">Edit</button>
+                    <button type="button" role="menuitem" class="feed-post-owner-menu__item feed-post-owner-menu__item--danger"
+                        onclick="window.deleteOwnPost('{{ p.id }}')">Delete</button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -381,6 +381,7 @@ pub async fn get_feed_data(
         query.sort_by.clone(),
         limit,
         offset,
+        user.map(|u| u.id),
     )
     .await?;
 
@@ -2233,6 +2234,17 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/profile/:id", get(get_profile))
         .route("/api/community/follow/:id", post(follow_user))
         .route("/api/community/follow/:id", delete(unfollow_user))
+        // Block / mute self-service (14.8.2)
+        .route(
+            "/api/community/users/:id/block",
+            post(block_user).delete(unblock_user),
+        )
+        .route(
+            "/api/community/users/:id/mute",
+            post(mute_user).delete(unmute_user),
+        )
+        .route("/api/community/blocks", get(list_blocks))
+        .route("/api/community/mutes", get(list_mutes))
         // XP System (M4)
         .route("/api/community/xp", get(get_xp_summary))
         .route("/api/community/xp/history", get(get_xp_history))
@@ -2539,10 +2551,34 @@ async fn get_profile(
                 avatar_url: None,
             });
 
-    let is_following = if let Some(u) = user {
+    let is_following = if let Some(ref u) = user {
         crate::community::service::is_following(&c_pool, u.id, profile_id).await?
     } else {
         false
+    };
+
+    // 14.8.2: surface block/mute state so the profile-modal action menu can
+    // show the correct toggle label without an extra roundtrip.
+    let (is_blocked, is_muted): (bool, bool) = if let Some(ref u) = user {
+        let blocked: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM block_relationships WHERE actor_user_id = $1 AND target_user_id = $2",
+        )
+        .bind(u.id)
+        .bind(profile_id)
+        .fetch_one(&c_pool)
+        .await
+        .unwrap_or(0);
+        let muted: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM mute_relationships WHERE actor_user_id = $1 AND target_user_id = $2",
+        )
+        .bind(u.id)
+        .bind(profile_id)
+        .fetch_one(&c_pool)
+        .await
+        .unwrap_or(0);
+        (blocked > 0, muted > 0)
+    } else {
+        (false, false)
     };
 
     Ok(Json(serde_json::json!({
@@ -2554,7 +2590,9 @@ async fn get_profile(
         "following_count": profile.following_count,
         "post_count": profile.post_count,
         "badges": profile.badges,
-        "is_following": is_following
+        "is_following": is_following,
+        "is_blocked": is_blocked,
+        "is_muted": is_muted
     })))
 }
 
@@ -2600,6 +2638,193 @@ async fn unfollow_user(
     crate::community::service::remove_follow(&c_pool, user.id, target_id).await?;
 
     Ok(Json(serde_json::json!({"success": true})))
+}
+
+// ─── Block / mute self-service (14.8.2) ──────────────────────────────────
+// A block disables visibility in both directions (the target's posts vanish
+// from the actor's feed AND the actor's posts vanish from the target's feed);
+// a mute is one-directional (only the actor stops seeing the target).
+
+async fn block_user(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(target_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    if user.id == target_id {
+        return Err(AppError::BadRequest("Cannot block yourself".into()));
+    }
+    let c_pool = get_community_pool(&state)?;
+    sqlx::query(
+        "INSERT INTO block_relationships (actor_user_id, target_user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (actor_user_id, target_user_id) DO NOTHING",
+    )
+    .bind(user.id)
+    .bind(target_id)
+    .execute(&c_pool)
+    .await?;
+    // Blocking implies unfollowing in both directions so dangling follow rows
+    // don't keep the target visible in the actor's "Following" feed.
+    let _ = sqlx::query(
+        "DELETE FROM follows WHERE (follower_id = $1 AND followee_id = $2)
+                              OR (follower_id = $2 AND followee_id = $1)",
+    )
+    .bind(user.id)
+    .bind(target_id)
+    .execute(&c_pool)
+    .await;
+    Ok(Json(serde_json::json!({"success": true, "blocked": true})))
+}
+
+async fn unblock_user(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(target_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    sqlx::query(
+        "DELETE FROM block_relationships WHERE actor_user_id = $1 AND target_user_id = $2",
+    )
+    .bind(user.id)
+    .bind(target_id)
+    .execute(&c_pool)
+    .await?;
+    Ok(Json(serde_json::json!({"success": true, "blocked": false})))
+}
+
+async fn mute_user(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(target_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    if user.id == target_id {
+        return Err(AppError::BadRequest("Cannot mute yourself".into()));
+    }
+    let c_pool = get_community_pool(&state)?;
+    sqlx::query(
+        "INSERT INTO mute_relationships (actor_user_id, target_user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (actor_user_id, target_user_id) DO NOTHING",
+    )
+    .bind(user.id)
+    .bind(target_id)
+    .execute(&c_pool)
+    .await?;
+    Ok(Json(serde_json::json!({"success": true, "muted": true})))
+}
+
+async fn unmute_user(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(target_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    sqlx::query(
+        "DELETE FROM mute_relationships WHERE actor_user_id = $1 AND target_user_id = $2",
+    )
+    .bind(user.id)
+    .bind(target_id)
+    .execute(&c_pool)
+    .await?;
+    Ok(Json(serde_json::json!({"success": true, "muted": false})))
+}
+
+async fn list_blocks(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT target_user_id, created_at FROM block_relationships
+         WHERE actor_user_id = $1 ORDER BY created_at DESC",
+    )
+    .bind(user.id)
+    .fetch_all(&c_pool)
+    .await?;
+    let mut ids = Vec::with_capacity(rows.len());
+    let mut payload = Vec::with_capacity(rows.len());
+    for row in rows {
+        let id: Uuid = row.try_get("target_user_id")?;
+        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at")?;
+        ids.push(id);
+        payload.push(serde_json::json!({
+            "target_user_id": id,
+            "created_at": created_at,
+        }));
+    }
+    let core_users =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &ids).await?;
+    let enriched: Vec<serde_json::Value> = payload
+        .into_iter()
+        .zip(ids.iter())
+        .map(|(mut row, id)| {
+            if let Some(info) = core_users.get(id) {
+                row["display_name"] = serde_json::json!(info.display_name);
+                row["avatar_url"] = serde_json::json!(info.avatar_url);
+            }
+            row
+        })
+        .collect();
+    Ok(Json(serde_json::json!({"blocks": enriched})))
+}
+
+async fn list_mutes(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT target_user_id, created_at FROM mute_relationships
+         WHERE actor_user_id = $1 ORDER BY created_at DESC",
+    )
+    .bind(user.id)
+    .fetch_all(&c_pool)
+    .await?;
+    let mut ids = Vec::with_capacity(rows.len());
+    let mut payload = Vec::with_capacity(rows.len());
+    for row in rows {
+        let id: Uuid = row.try_get("target_user_id")?;
+        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at")?;
+        ids.push(id);
+        payload.push(serde_json::json!({
+            "target_user_id": id,
+            "created_at": created_at,
+        }));
+    }
+    let core_users =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &ids).await?;
+    let enriched: Vec<serde_json::Value> = payload
+        .into_iter()
+        .zip(ids.iter())
+        .map(|(mut row, id)| {
+            if let Some(info) = core_users.get(id) {
+                row["display_name"] = serde_json::json!(info.display_name);
+                row["avatar_url"] = serde_json::json!(info.avatar_url);
+            }
+            row
+        })
+        .collect();
+    Ok(Json(serde_json::json!({"mutes": enriched})))
 }
 
 #[derive(Deserialize)]

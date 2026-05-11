@@ -1987,6 +1987,65 @@ button.community-tab-btn.active {
   outline-offset: -2px;
 }
 
+/* Owner-only kebab menu on post cards (Phase 2 tasks 12, 13). The menu sits
+   in the engagement bar and is hidden by default; community-feed.js sets
+   `data-is-own="true"` on .feed-post when window.__POOOL_USER matches the
+   data-author-id, which reveals the kebab. */
+.feed-post-owner-menu {
+  display: none;
+  position: relative;
+}
+
+.feed-post[data-is-own="true"] .feed-post-owner-menu {
+  display: inline-flex;
+}
+
+.feed-post-owner-menu__dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 140px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #EAECF0);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-post-owner-menu__dropdown[hidden] {
+  display: none;
+}
+
+.feed-post-owner-menu__item {
+  background: none;
+  border: 0;
+  text-align: left;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--page-title-color, #101828);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.feed-post-owner-menu__item:hover,
+.feed-post-owner-menu__item:focus-visible {
+  background: var(--ds-surface-hover, #F2F4F7);
+  outline: none;
+}
+
+.feed-post-owner-menu__item--danger {
+  color: #B42318;
+}
+
+.community-edit-post__textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
 .feed-post-link-preview {
   display: flex;
   flex-direction: column;
@@ -3881,6 +3940,22 @@ button.community-tab-btn.active {
 .community-profile-modal__action {
   display: flex;
   justify-content: center;
+}
+
+/* 14.8.2 — secondary actions row beneath Follow on the user-profile modal */
+.community-profile-modal__secondary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.community-profile-modal__danger {
+  color: var(--btn-danger-bg, #D92D20);
+}
+
+.community-profile-modal__danger:hover {
+  background: var(--danger-bg, #FEF3F2);
 }
 
 /* ── Community toast (commit 14 — JS-rendered) ────────────────────── */

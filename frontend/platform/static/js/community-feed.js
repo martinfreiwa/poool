@@ -374,6 +374,24 @@ window.initCommunityFeed = function() {
             
             newBtn.onclick = () => toggleFollow(userId, profile.is_following, newBtn);
 
+            // 14.8.2: wire mute + block secondary actions.
+            const muteBtn = document.getElementById('profile-modal-mute-btn');
+            const blockBtn = document.getElementById('profile-modal-block-btn');
+            if (muteBtn) {
+                const freshMute = muteBtn.cloneNode(false);
+                freshMute.textContent = profile.is_muted ? 'Unmute' : 'Mute';
+                muteBtn.parentNode.replaceChild(freshMute, muteBtn);
+                freshMute.onclick = () => window.toggleMute(userId, profile.is_muted === true, freshMute);
+            }
+            if (blockBtn) {
+                const freshBlock = blockBtn.cloneNode(false);
+                freshBlock.textContent = profile.is_blocked ? 'Unblock' : 'Block';
+                freshBlock.className =
+                    'ds-btn ds-btn--ghost ds-btn--sm community-profile-modal__danger';
+                blockBtn.parentNode.replaceChild(freshBlock, blockBtn);
+                freshBlock.onclick = () => window.toggleBlock(userId, profile.is_blocked === true, freshBlock);
+            }
+
             document.getElementById('profile-loading-state').style.display = 'none';
             document.getElementById('profile-content-state').style.display = 'block';
 
@@ -419,6 +437,65 @@ window.initCommunityFeed = function() {
         } finally {
             btnElement.disabled = false;
         }
+    };
+
+    // ─── 14.8.2: block / mute toggles ──────────────────────────────
+    async function toggleRelation({ kind, userId, currentlyOn, btnElement, onLabel, offLabel }) {
+        try {
+            btnElement.disabled = true;
+            const prevText = btnElement.textContent;
+            btnElement.textContent = currentlyOn ? `Un${kind}ing…` : `${kind.charAt(0).toUpperCase() + kind.slice(1)}ing…`;
+            const method = currentlyOn ? 'DELETE' : 'POST';
+            const res = await fetch(`/api/community/users/${userId}/${kind}`, {
+                method,
+                credentials: 'same-origin',
+                headers: csrfHeaders(),
+            });
+            if (!res.ok) throw new Error(prevText);
+            const newState = !currentlyOn;
+            btnElement.textContent = newState ? offLabel : onLabel;
+            btnElement.onclick = () => toggleRelation({ kind, userId, currentlyOn: newState, btnElement, onLabel, offLabel });
+            if (typeof window.showToast === 'function') {
+                window.showToast(
+                    newState
+                        ? `${kind.charAt(0).toUpperCase() + kind.slice(1)}ed.`
+                        : `Un${kind}d.`
+                );
+            }
+            if (kind === 'block') {
+                // Reciprocal block hides the target's posts; refresh feed if visible.
+                document.body.dispatchEvent(new Event('reload-feed'));
+            }
+        } catch (e) {
+            console.error(`Failed to toggle ${kind}`, e);
+            if (typeof window.showToast === 'function') {
+                window.showToast(`Could not update ${kind} state. Please try again.`);
+            }
+        } finally {
+            btnElement.disabled = false;
+        }
+    }
+
+    window.toggleMute = function(userId, currentlyMuted, btnElement) {
+        toggleRelation({
+            kind: 'mute',
+            userId,
+            currentlyOn: currentlyMuted,
+            btnElement,
+            onLabel: 'Mute',
+            offLabel: 'Unmute',
+        });
+    };
+
+    window.toggleBlock = function(userId, currentlyBlocked, btnElement) {
+        toggleRelation({
+            kind: 'block',
+            userId,
+            currentlyOn: currentlyBlocked,
+            btnElement,
+            onLabel: 'Block',
+            offLabel: 'Unblock',
+        });
     };
 
     // ─── M2 CREATE POST & REPORT LOGIC ─────────────────────────────
@@ -586,6 +663,153 @@ window.initCommunityFeed = function() {
         } finally {
             submitBtn.innerText = oldText;
             submitBtn.disabled = false;
+        }
+    };
+
+    // ─── OWNER POST ACTIONS (Phase 2 tasks 12, 13) ──────────────
+    //
+    // After every feed render we mark posts the viewer authored with
+    // data-is-own="true" so the CSS kebab menu becomes visible. We do this in
+    // a delegated way so it survives HTMX swaps + the saved/hashtag client
+    // builders.
+    function markOwnPosts() {
+        const me = window.__POOOL_USER && window.__POOOL_USER.id;
+        if (!me) return;
+        document.querySelectorAll('.feed-post[data-author-id]').forEach((card) => {
+            if (card.dataset.authorId === me) {
+                card.dataset.isOwn = 'true';
+            }
+        });
+    }
+
+    // Run after HTMX feed list swaps and after initial page paint.
+    document.body.addEventListener('htmx:afterSwap', markOwnPosts);
+    document.body.addEventListener('reload-feed', () => setTimeout(markOwnPosts, 0));
+    window.addEventListener('load', markOwnPosts);
+    // user-data.js publishes __POOOL_USER asynchronously; retry briefly so
+    // posts rendered before /api/me resolves still get the kebab on the next
+    // tick.
+    let ownPostsRetries = 0;
+    const ownPostsInterval = setInterval(() => {
+        if (window.__POOOL_USER || ownPostsRetries++ > 20) {
+            clearInterval(ownPostsInterval);
+            markOwnPosts();
+        }
+    }, 200);
+
+    window.togglePostOwnerMenu = function (postId, triggerBtn) {
+        const dropdown = document.getElementById(`owner-menu-${postId}`);
+        if (!dropdown) return;
+        const open = dropdown.hasAttribute('hidden');
+        // Close any other open menus first.
+        document.querySelectorAll('.feed-post-owner-menu__dropdown').forEach((d) => {
+            if (d !== dropdown) d.setAttribute('hidden', '');
+        });
+        if (open) {
+            dropdown.removeAttribute('hidden');
+            triggerBtn?.setAttribute('aria-expanded', 'true');
+        } else {
+            dropdown.setAttribute('hidden', '');
+            triggerBtn?.setAttribute('aria-expanded', 'false');
+        }
+    };
+
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('.feed-post-owner-menu')) return;
+        document.querySelectorAll('.feed-post-owner-menu__dropdown').forEach((d) => d.setAttribute('hidden', ''));
+        document.querySelectorAll('.feed-post-owner-menu__toggle[aria-expanded="true"]').forEach((t) => t.setAttribute('aria-expanded', 'false'));
+    });
+
+    window.openEditPostModal = function (postId) {
+        const card = document.getElementById(`post-${postId}`);
+        if (!card) return;
+        // Pull the current post body straight from the rendered DOM so we
+        // don't need an extra fetch round-trip. Reactions/comments aren't
+        // editable so we only need the textual content of feed-post-body > p.
+        const bodyEl = card.querySelector('.feed-post-body > p');
+        const currentContent = bodyEl ? bodyEl.textContent.trim() : '';
+        document.getElementById('edit-post-id').value = postId;
+        const ta = document.getElementById('edit-post-content');
+        ta.value = currentContent;
+        const counter = document.getElementById('edit-post-counter');
+        if (counter) counter.textContent = String(ta.value.length);
+        ta.oninput = () => { if (counter) counter.textContent = String(ta.value.length); };
+        const errEl = document.getElementById('edit-post-error');
+        if (errEl) errEl.hidden = true;
+        if (typeof window.openCommunityModal === 'function') {
+            window.openCommunityModal('edit-post-modal');
+        } else {
+            document.getElementById('edit-post-modal').style.display = 'block';
+        }
+        // Close the kebab menu now that the modal owns the focus.
+        document.getElementById(`owner-menu-${postId}`)?.setAttribute('hidden', '');
+    };
+
+    window.submitEditPost = async function () {
+        const postId = document.getElementById('edit-post-id').value;
+        const content = document.getElementById('edit-post-content').value.trim();
+        const errEl = document.getElementById('edit-post-error');
+        if (errEl) errEl.hidden = true;
+        if (!content) {
+            if (errEl) { errEl.textContent = 'Post content cannot be empty.'; errEl.hidden = false; }
+            return;
+        }
+        const btn = document.getElementById('submit-edit-post-btn');
+        const oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        try {
+            const res = await fetch(`/api/community/posts/${encodeURIComponent(postId)}`, {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ content })
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || `Request failed (${res.status})`);
+            }
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('edit-post-modal');
+            } else {
+                document.getElementById('edit-post-modal').style.display = 'none';
+            }
+            if (window.showToast) window.showToast('Post updated', 'success');
+            document.body.dispatchEvent(new Event('reload-feed'));
+        } catch (err) {
+            console.error('Edit post failed', err);
+            if (errEl) { errEl.textContent = err.message || 'Failed to save changes.'; errEl.hidden = false; }
+        } finally {
+            btn.disabled = false;
+            btn.textContent = oldText;
+        }
+    };
+
+    window.deleteOwnPost = async function (postId) {
+        if (!confirm('Delete this post? This cannot be undone.')) return;
+        try {
+            const res = await fetch(`/api/community/posts/${encodeURIComponent(postId)}`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: csrfHeaders(),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || `Request failed (${res.status})`);
+            }
+            // Optimistically remove the card; HTMX reload below will reconcile.
+            const card = document.getElementById(`post-${postId}`);
+            if (card) {
+                card.style.transition = 'opacity 0.2s ease';
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 200);
+            }
+            if (window.showToast) window.showToast('Post deleted', 'success');
+            document.body.dispatchEvent(new Event('reload-feed'));
+        } catch (err) {
+            console.error('Delete post failed', err);
+            if (window.showToast) window.showToast('Failed to delete post', 'error');
+            else alert(err.message);
         }
     };
 
