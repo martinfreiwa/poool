@@ -825,8 +825,7 @@ pub async fn handle_checkout(
     .await
     .unwrap_or(false);
 
-    let agreed_to_general =
-        disclosure_general_1 && disclosure_general_2 && disclosure_general_3;
+    let agreed_to_general = disclosure_general_1 && disclosure_general_2 && disclosure_general_3;
     let agreed_to_referral =
         disclosure_referral_1 && disclosure_referral_2 && disclosure_referral_3;
 
@@ -920,7 +919,11 @@ pub async fn handle_checkout(
                 result.order_id,
                 is_referral_user,
                 agreed_to_general,
-                if is_referral_user { Some(agreed_to_referral) } else { None },
+                if is_referral_user {
+                    Some(agreed_to_referral)
+                } else {
+                    None
+                },
                 client_ip,
                 policy_version
             )

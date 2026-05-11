@@ -10,10 +10,12 @@
 //! template can render a specific user-facing message.
 //!
 //! Defense-in-depth ordering:
-//!   1. 18.9 step-up 2FA (≥ $500)
-//!   2. 18.8 new-account cooldown (first 72h after KYC verified)
-//!   3. 18.6 daily volume cap ($10k/UTC-day)
-//!   4. 18.7 velocity (> N requests in 24h)
+//!
+//! 1. 18.9 step-up 2FA (≥ $500)
+//! 2. 18.8 new-account cooldown (first 72h after KYC verified)
+//! 3. 18.6 daily volume cap ($10k/UTC-day)
+//! 4. 18.7 velocity (> N requests in 24h)
+//!
 //! The velocity check is intentionally last because it auto-freezes the
 //! account; we don't want to freeze for a request that would have failed
 //! 2FA anyway.

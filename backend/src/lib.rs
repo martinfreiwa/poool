@@ -569,7 +569,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                         tracing::warn!("{}", msg);
                         sentry::capture_message(&msg, sentry::Level::Warning);
                     } else {
-                        tracing::info!("Reconciliation check 1/3 PASS: Cash wallets perfectly match deposits/withdrawals/purchases.");
+                        tracing::info!("Reconciliation check 1/5 PASS: Cash wallets perfectly match deposits/withdrawals/purchases.");
                     }
                 }
                 Err(e) => {
@@ -600,7 +600,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(rows) => {
                     recon_token_mismatches = rows.len() as i32;
                     if rows.is_empty() {
-                        tracing::info!("Reconciliation check 2/3 PASS: All token balances match.");
+                        tracing::info!("Reconciliation check 2/5 PASS: All token balances match.");
                     } else {
                         for row in &rows {
                             let expected_sold = row.tokens_total - row.tokens_available;
@@ -639,7 +639,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                     recon_negative_count = rows.len() as i32;
                     if rows.is_empty() {
                         tracing::info!(
-                            "Reconciliation check 3/3 PASS: No negative wallet balances."
+                            "Reconciliation check 3/5 PASS: No negative wallet balances."
                         );
                     } else {
                         for row in &rows {
