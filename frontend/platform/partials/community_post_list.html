@@ -30,7 +30,7 @@
              hx-get="/community/partials/feed/list?page={{ next_page }}{% if current_feed_mode %}&feed_mode={{ current_feed_mode }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}"
              hx-trigger="revealed"
              hx-swap="outerHTML">
-            <div class="ds-helper-text" style="text-align:center; padding:16px;">Loading more...</div>
+            <div class="community-feed-sentinel__hint ds-helper-text">Loading more...</div>
         </div>
     {% endif %}
 {% endif %}

@@ -488,7 +488,14 @@ window.initCommunityFeed = function() {
             badgesContainer.replaceChildren();
             if (profile.badges && profile.badges.length > 0) {
                 profile.badges.forEach((badge) => {
-                    const badgeEl = document.createElement('div');
+                    // 14.8.13 — clickable badge linking to /community/badge/:id SSR page.
+                    // Falls back to <div> if id missing (older payloads).
+                    const badgeEl = badge.id
+                        ? document.createElement('a')
+                        : document.createElement('div');
+                    if (badge.id) {
+                        badgeEl.href = `/community/badge/${badge.id}`;
+                    }
                     badgeEl.title = badge.name || '';
                     badgeEl.className = 'community-profile-badge';
 
@@ -564,7 +571,7 @@ window.initCommunityFeed = function() {
 
         } catch (e) {
             console.error(e);
-            document.getElementById('profile-loading-state').innerHTML = `<p style="color: #D92D20;">Failed to load profile.</p>`;
+            document.getElementById('profile-loading-state').innerHTML = `<p class="community-state-inline community-state-inline--error">Failed to load profile.</p>`;
         }
     };
 
@@ -1196,7 +1203,7 @@ window.initCommunityFeed = function() {
             const assets = await res.json();
             
             if (assets.length === 0) {
-                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #667085; font-size: 13px;">No trending assets yet</div>';
+                container.innerHTML = '<div class="community-state-inline">No trending assets yet</div>';
                 return;
             }
 
@@ -1306,7 +1313,7 @@ window.initCommunityFeed = function() {
             }
         } catch (e) {
             console.error(e);
-            feedContainer.innerHTML = '<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load posts for this hashtag.</div>';
+            feedContainer.innerHTML = '<div class="community-state-inline community-state-inline--error">Failed to load posts for this hashtag.</div>';
         }
     }
 
@@ -1697,55 +1704,53 @@ window.initCommunityFeed = function() {
      * Used only for hashtag filter and saved posts views that don't have HTMX partials.
      */
     function buildPostCard(p) {
+        // WS2.1: pure-class styling; visual rules live in community.css.
         const card = document.createElement('div');
-        card.className = 'feed-post';
-        card.style.cssText = 'background: var(--card-bg); border: 1px solid var(--card-border-color); border-radius: var(--card-border-radius); padding: 20px; margin-bottom: 16px;';
+        card.className = 'feed-post feed-post--client';
 
-        // Header
         const header = document.createElement('div');
         header.className = 'feed-post-header';
-        header.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:12px;';
 
         const avatar = document.createElement('div');
         avatar.className = 'feed-post-avatar-circle';
-        avatar.style.cssText = 'width:40px;height:40px;border-radius:50%;background:#EEF4FF;color:var(--btn-primary-bg);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;flex-shrink:0;';
         if (p.author_avatar) {
             const img = document.createElement('img');
             img.src = p.author_avatar;
-            img.style.cssText = 'width:40px;height:40px;border-radius:50%;object-fit:cover;';
-            avatar.innerHTML = '';
-            avatar.appendChild(img);
+            img.alt = '';
+            img.className = 'feed-post-avatar-circle__img';
+            avatar.replaceChildren(img);
+            avatar.classList.add('feed-post-avatar-circle--photo');
         } else {
             avatar.textContent = (p.author_name || 'U').charAt(0).toUpperCase();
         }
         header.appendChild(avatar);
 
         const meta = document.createElement('div');
+        meta.className = 'feed-post-meta';
         const nameEl = document.createElement('div');
-        nameEl.style.cssText = 'font-size:14px;font-weight:600;color:var(--page-title-color);';
+        nameEl.className = 'feed-post-name';
         nameEl.textContent = p.author_name || 'Community Member';
         meta.appendChild(nameEl);
         const timeEl = document.createElement('div');
-        timeEl.style.cssText = 'font-size:12px;color:#98A2B3;';
+        timeEl.className = 'feed-post-time';
         timeEl.textContent = p.created_at ? timeAgo(p.created_at) : '';
         meta.appendChild(timeEl);
         header.appendChild(meta);
         card.appendChild(header);
 
-        // Body
         const body = document.createElement('div');
         body.className = 'feed-post-body';
-        body.style.cssText = 'font-size:14px;color:var(--body-color);line-height:1.6;';
         renderContentWithHashtags(body, p.content || '');
         card.appendChild(body);
 
-        // Footer
         const footer = document.createElement('div');
-        footer.style.cssText = 'display:flex;align-items:center;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--card-border-color);font-size:13px;color:#667085;';
+        footer.className = 'feed-post-engagement feed-post-engagement--client';
         const likes = document.createElement('span');
+        likes.className = 'feed-post-engagement__stat';
         likes.textContent = `\u2764\uFE0F ${p.reaction_count || 0}`;
         footer.appendChild(likes);
         const comments = document.createElement('span');
+        comments.className = 'feed-post-engagement__stat';
         comments.textContent = `\uD83D\uDCAC ${p.comment_count || 0}`;
         footer.appendChild(comments);
         card.appendChild(footer);

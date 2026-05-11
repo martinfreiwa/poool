@@ -188,6 +188,49 @@ include
                 <button type="button" @click="setType('users')" :aria-pressed="type === 'users'"
                   :class="type === 'users' ? 'feed-toggle-btn active' : 'feed-toggle-btn'">Users</button>
               </div>
+
+              <!-- 14.8.19 — search filter chips for posts. Backend accepts date_from,
+                   date_to, author_id, min_engagement on /api/community/search. -->
+              <div class="community-search__filters" x-show="type !== 'users'" style="margin-top:12px;">
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ds-text-secondary, #475467);">
+                    From
+                    <input type="date" x-model="filterDateFrom" class="ds-input ds-input--sm"
+                      style="padding:4px 8px; font-size:13px;">
+                  </label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ds-text-secondary, #475467);">
+                    To
+                    <input type="date" x-model="filterDateTo" class="ds-input ds-input--sm"
+                      style="padding:4px 8px; font-size:13px;">
+                  </label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ds-text-secondary, #475467);">
+                    Min engagement
+                    <input type="number" min="0" x-model.number="filterMinEngagement" class="ds-input ds-input--sm"
+                      style="padding:4px 8px; font-size:13px; width:80px;" placeholder="0">
+                  </label>
+                  <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" @click="executeSearch()">Apply</button>
+                  <button type="button" class="ds-btn ds-btn--tertiary ds-btn--sm" @click="clearFilters()"
+                    x-show="filterDateFrom || filterDateTo || filterMinEngagement || filterAuthorId">Clear</button>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                  <template x-if="filterDateFrom">
+                    <span class="community-filter-chip">From: <span x-text="filterDateFrom"></span>
+                      <button @click="filterDateFrom=''; executeSearch()" aria-label="Remove from filter">×</button></span>
+                  </template>
+                  <template x-if="filterDateTo">
+                    <span class="community-filter-chip">To: <span x-text="filterDateTo"></span>
+                      <button @click="filterDateTo=''; executeSearch()" aria-label="Remove to filter">×</button></span>
+                  </template>
+                  <template x-if="filterMinEngagement">
+                    <span class="community-filter-chip">Min: <span x-text="filterMinEngagement"></span>
+                      <button @click="filterMinEngagement=null; executeSearch()" aria-label="Remove min filter">×</button></span>
+                  </template>
+                  <template x-if="filterAuthorId">
+                    <span class="community-filter-chip">Author: <span x-text="filterAuthorId.substring(0,8)"></span>
+                      <button @click="filterAuthorId=''; executeSearch()" aria-label="Remove author filter">×</button></span>
+                  </template>
+                </div>
+              </div>
             </div>
 
             <!-- Loading State -->
@@ -276,12 +319,25 @@ include
               hasSearched: false,
               users: [],
               posts: [],
+              // 14.8.19 filter state
+              filterDateFrom: '',
+              filterDateTo: '',
+              filterMinEngagement: null,
+              filterAuthorId: '',
 
               setType(newType) {
                 this.type = newType;
                 if (this.query.trim() !== '') {
                   this.executeSearch();
                 }
+              },
+
+              clearFilters() {
+                this.filterDateFrom = '';
+                this.filterDateTo = '';
+                this.filterMinEngagement = null;
+                this.filterAuthorId = '';
+                this.executeSearch();
               },
 
               async executeSearch() {
@@ -295,6 +351,13 @@ include
                   const url = new URL('/api/community/search', window.location.origin);
                   url.searchParams.set('q', q);
                   url.searchParams.set('type', this.type);
+                  // 14.8.19 — pass filter chips through to backend.
+                  if (this.filterDateFrom) url.searchParams.set('date_from', this.filterDateFrom);
+                  if (this.filterDateTo) url.searchParams.set('date_to', this.filterDateTo);
+                  if (this.filterAuthorId) url.searchParams.set('author_id', this.filterAuthorId);
+                  if (this.filterMinEngagement && this.filterMinEngagement > 0) {
+                    url.searchParams.set('min_engagement', String(this.filterMinEngagement));
+                  }
 
                   const res = await fetch(url.toString());
                   if (res.ok) {
@@ -638,15 +701,14 @@ include
               <h2 class="ds-text-xl community-leaderboard__title">Community Leaderboard</h2>
               <p class="ds-text-body community-leaderboard__desc">Top community members by total XP.</p>
             </div>
-            <div class="community-leaderboard__controls" style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;">
-              <label for="community-leaderboard-period" class="ds-text-body" style="margin:0;">Period:</label>
+            <div class="community-leaderboard__controls">
+              <label for="community-leaderboard-period" class="ds-text-body community-leaderboard__controls-label">Period:</label>
               <select
                 id="community-leaderboard-period"
-                class="ds-input ds-input--sm"
+                class="ds-input ds-input--sm community-leaderboard__period-select"
                 x-model="period"
                 @change="reload()"
-                aria-label="Leaderboard period"
-                style="max-width:160px;">
+                aria-label="Leaderboard period">
                 <option value="alltime">All time</option>
                 <option value="month">This month</option>
                 <option value="week">This week</option>
@@ -979,7 +1041,7 @@ include
                   <textarea id="verify-request-statement" class="ds-input" rows="3" maxlength="2000"
                     placeholder="I own X shares of asset Y, purchased via transaction Z..."></textarea>
                   <input type="hidden" id="verify-request-proof-url">
-                  <div style="display:flex; gap:8px; align-items:center;">
+                  <div class="community-verify-request__attach-row">
                     <input type="file" id="verify-request-file" class="ds-sr-only" accept="image/jpeg,image/png,image/webp"
                       onchange="window.uploadVerifyProof(event)">
                     <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"

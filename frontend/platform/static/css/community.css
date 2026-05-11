@@ -2172,6 +2172,83 @@ button.community-tab-btn.active {
   margin-bottom: 16px;
 }
 
+.community-leaderboard__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.community-leaderboard__controls-label {
+  margin: 0;
+}
+
+.community-leaderboard__period-select {
+  max-width: 160px;
+}
+
+.community-verify-request__attach-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.community-feed-sentinel__hint {
+  text-align: center;
+  padding: 16px;
+}
+
+/* WS2.1: client-built post card variants (saved/hashtag/SSR detail). The
+   feed-post primitive already covers most of these properties; the client
+   variant just provides the bits that the server-rendered partial would
+   otherwise interpolate. */
+.feed-post--client {
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #EAECF0);
+  border-radius: var(--card-border-radius, 14px);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.feed-post-avatar-circle__img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.feed-post-engagement--client {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border-color, #EAECF0);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-secondary, #667085);
+}
+
+.feed-post-engagement__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.community-state-inline {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary, #667085);
+  font-size: 13px;
+}
+
+.community-state-inline--error {
+  color: var(--danger-fg, #D92D20);
+}
+
+.community-state-inline--loading {
+  color: var(--text-secondary, #667085);
+}
+
 .community-leaderboard__rows {
   list-style: none;
   padding: 0;
@@ -4760,4 +4837,33 @@ button.community-tab-btn.active {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 14.8.19 — search filter chips. Shown when a filter is active so the user
+   can see at a glance what's narrowing their search. */
+.community-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #EEF4FF;
+  color: #1B4FFF;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.community-filter-chip button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.community-filter-chip button:hover {
+  opacity: 0.7;
 }
