@@ -2679,6 +2679,46 @@ button.community-tab-btn.active {
   margin-top: 6px;
 }
 
+/* WS1.1 — nested reply rows. */
+.community-comment-row--reply {
+  margin-left: 32px;
+  padding-left: 12px;
+  border-left: 2px solid var(--card-border-color, #EAECF0);
+}
+
+.community-comment-row--reply .community-comment-row__avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.community-comment-row__reply-btn {
+  margin-left: 6px;
+}
+
+.community-comment-row__reply-form {
+  margin: 4px 0 8px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.community-comment-row__reply-form textarea {
+  resize: vertical;
+  min-height: 40px;
+}
+
+.community-comment-row__reply-form-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.community-comments-error {
+  font-size: 13px;
+  color: var(--danger-fg, #D92D20);
+  padding: 8px 0;
+}
+
 .community-comment-row__reaction-btn {
   display: inline-flex;
   align-items: center;

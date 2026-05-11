@@ -218,9 +218,26 @@ window.initCommunityFeed = function() {
             listContainer.replaceChildren();
             const currentUserId =
                 (window.__POOOL_USER && (window.__POOOL_USER.id || window.__POOOL_USER.user_id)) || null;
-            comments.forEach(c => {
+
+            // WS1.1 — group comments into top-level + replies. Depth cap of 1
+            // is enforced server-side; client just renders top-level rows
+            // and nests reply children under each parent.
+            const repliesByParent = new Map();
+            const topLevel = [];
+            comments.forEach((c) => {
+                if (c.parent_comment_id) {
+                    if (!repliesByParent.has(c.parent_comment_id)) {
+                        repliesByParent.set(c.parent_comment_id, []);
+                    }
+                    repliesByParent.get(c.parent_comment_id).push(c);
+                } else {
+                    topLevel.push(c);
+                }
+            });
+
+            const buildCommentRow = (c, isReply) => {
                 const row = document.createElement('div');
-                row.className = 'community-comment-row';
+                row.className = 'community-comment-row' + (isReply ? ' community-comment-row--reply' : '');
                 row.dataset.commentId = c.id;
 
                 // Avatar
@@ -327,14 +344,85 @@ window.initCommunityFeed = function() {
                     body.appendChild(ownActions);
                 }
 
+                // WS1.1 — Reply button on top-level comments. Opens an inline
+                // textarea that submits with parent_comment_id set.
+                if (!isReply) {
+                    const replyBtn = document.createElement('button');
+                    replyBtn.type = 'button';
+                    replyBtn.className = 'ds-btn ds-btn--ghost ds-btn--sm community-comment-row__reply-btn';
+                    replyBtn.textContent = 'Reply';
+                    replyBtn.setAttribute('aria-label', 'Reply to comment');
+                    replyBtn.addEventListener('click', () => openInlineReply(row, c.id, postId));
+                    body.appendChild(replyBtn);
+                }
+
                 row.appendChild(body);
-                listContainer.appendChild(row);
+                return row;
+            };
+
+            topLevel.forEach((c) => {
+                const parentRow = buildCommentRow(c, false);
+                listContainer.appendChild(parentRow);
+                const replies = repliesByParent.get(c.id) || [];
+                replies.forEach((r) => listContainer.appendChild(buildCommentRow(r, true)));
             });
         } catch (e) {
             console.error(e);
-            listContainer.innerHTML = '<div style="font-size: 13px; color: #D92D20;">Failed to load comments.</div>';
+            listContainer.innerHTML = '<div class="community-comments-error">Failed to load comments.</div>';
         }
     };
+
+    // WS1.1 — inline reply composer rendered below a top-level comment.
+    function openInlineReply(parentRow, parentCommentId, postId) {
+        // Avoid duplicate inline composer on rapid clicks.
+        if (parentRow.nextElementSibling && parentRow.nextElementSibling.classList.contains('community-comment-row__reply-form')) {
+            parentRow.nextElementSibling.querySelector('textarea')?.focus();
+            return;
+        }
+        const wrap = document.createElement('div');
+        wrap.className = 'community-comment-row__reply-form';
+        const ta = document.createElement('textarea');
+        ta.className = 'ds-input';
+        ta.rows = 1;
+        ta.placeholder = 'Write a reply...';
+        const actions = document.createElement('div');
+        actions.className = 'community-comment-row__reply-form-actions';
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'ds-btn ds-btn--ghost ds-btn--sm';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', () => wrap.remove());
+        const send = document.createElement('button');
+        send.type = 'button';
+        send.className = 'ds-btn ds-btn--primary ds-btn--sm';
+        send.textContent = 'Reply';
+        send.addEventListener('click', async () => {
+            const content = ta.value.trim();
+            if (!content) return;
+            send.disabled = true;
+            send.textContent = 'Posting...';
+            try {
+                const res = await fetch(`/api/community/posts/${postId}/comments`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ content, parent_comment_id: parentCommentId }),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                wrap.remove();
+                await window.loadComments(postId);
+            } catch (err) {
+                console.error('Reply failed', err);
+                send.disabled = false;
+                send.textContent = 'Reply';
+                if (window.showToast) window.showToast('Failed to post reply', 'error');
+            }
+        });
+        actions.append(cancel, send);
+        wrap.append(ta, actions);
+        parentRow.after(wrap);
+        ta.focus();
+    }
 
     window.submitComment = async function(postId) {
         const input = document.getElementById(`comment-input-${postId}`);
