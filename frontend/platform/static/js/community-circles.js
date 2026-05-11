@@ -33,20 +33,20 @@ window.initCommunityCircles = function () {
         'admin_revoke': '⚠️ Admin Adjustment',
     };
 
-    function appendEmptyState(container, text, styles) {
+    function appendEmptyState(container, text, _legacyStyles) {
+        if (!container) return;
         container.replaceChildren();
         const empty = document.createElement('div');
+        empty.className = 'community-loading-state';
         empty.textContent = text;
-        empty.style.cssText = styles || 'text-align:center;padding:16px;color:#667085;';
         container.appendChild(empty);
     }
 
-    function createButton(label, className, onClick, extraStyles) {
+    function createButton(label, className, onClick) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = className;
         button.textContent = label;
-        if (extraStyles) button.style.cssText = extraStyles;
         button.addEventListener('click', onClick);
         return button;
     }
@@ -84,6 +84,7 @@ window.initCommunityCircles = function () {
 
     async function loadXpHistory() {
         const container = document.getElementById('xp-history-list');
+        if (!container) return;
         try {
             const res = await fetch('/api/community/xp/history?page=1');
             if (!res.ok) {
@@ -102,36 +103,36 @@ window.initCommunityCircles = function () {
             for (const e of entries) {
                 const label = XP_REASON_LABELS[e.reason] || e.reason;
                 const isPositive = e.amount > 0;
-                const color = isPositive ? '#027A48' : '#F04438';
-                const bg = isPositive ? '#ECFDF3' : '#FEF3F2';
                 const sign = isPositive ? '+' : '';
                 const date = new Date(e.created_at);
                 const timeStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--card-border-color);';
+                row.className = 'community-xp-row';
 
                 const meta = document.createElement('div');
                 const reason = document.createElement('div');
-                reason.style.cssText = 'font-size:14px;font-weight:500;color:#101828;';
+                reason.className = 'community-xp-row__reason';
                 reason.textContent = label;
                 meta.appendChild(reason);
 
                 const time = document.createElement('div');
-                time.style.cssText = 'font-size:12px;color:#667085;margin-top:2px;';
+                time.className = 'community-xp-row__time';
                 time.textContent = timeStr;
                 meta.appendChild(time);
                 row.appendChild(meta);
 
                 const amount = document.createElement('div');
-                amount.style.cssText = `font-size:14px;font-weight:700;color:${color};background:${bg};padding:4px 12px;border-radius:20px;`;
+                amount.className = 'community-xp-row__amount ' + (isPositive
+                    ? 'community-xp-row__amount--positive'
+                    : 'community-xp-row__amount--negative');
                 amount.textContent = `${sign}${e.amount} XP`;
                 row.appendChild(amount);
                 container.appendChild(row);
             }
         } catch (e) {
             console.error('Failed to load XP history', e);
-            appendEmptyState(container, 'Failed to load XP history.', 'text-align:center;color:#667085;padding:24px;');
+            appendEmptyState(container, 'Failed to load XP history.');
         }
     }
 
@@ -205,7 +206,7 @@ window.initCommunityCircles = function () {
 
             if (m.role === 'owner' || m.role === 'admin') {
                 const roleLabel = document.createElement('span');
-                roleLabel.style.cssText = `font-size:10px;background:${m.role === 'owner' ? '#0000FF' : '#7A5AF8'};color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px;`;
+                roleLabel.className = 'circle-member-role circle-member-role--' + m.role;
                 roleLabel.textContent = m.role === 'owner' ? 'Owner' : 'Admin';
                 name.appendChild(roleLabel);
             }
@@ -246,6 +247,7 @@ window.initCommunityCircles = function () {
 
     async function loadCircleLeaderboard() {
         const container = document.getElementById('circle-leaderboard-list');
+        if (!container) return;
         try {
             await loadMyJoinRequests();
 
@@ -255,7 +257,7 @@ window.initCommunityCircles = function () {
             const circles = data.circles || [];
 
             if (circles.length === 0) {
-                appendEmptyState(container, 'No circles yet. Be the first!', 'text-align:center;padding:16px;color:#667085;font-size:13px;');
+                appendEmptyState(container, 'No circles yet. Be the first!');
                 return;
             }
 
@@ -267,50 +269,49 @@ window.initCommunityCircles = function () {
 
                 const item = document.createElement('div');
                 item.className = 'circle-lb-item';
-                item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--card-border-color);';
 
                 const medalEl = document.createElement('span');
-                medalEl.style.cssText = 'font-size:18px;min-width:28px;text-align:center;';
+                medalEl.className = 'circle-lb-item__medal';
                 medalEl.textContent = medal;
 
                 const emoji = document.createElement('span');
-                emoji.style.fontSize = '18px';
+                emoji.className = 'circle-lb-item__emoji';
                 emoji.textContent = c.avatar_emoji || '🟢';
 
                 const info = document.createElement('div');
-                info.style.flex = '1';
+                info.className = 'circle-lb-item__info';
 
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-primary);';
+                title.className = 'circle-lb-item__title';
                 title.textContent = c.name || 'Circle';
 
                 const privacyBadge = document.createElement('span');
-                privacyBadge.style.cssText = isPrivate
-                    ? 'font-size:10px;background:#F2F4F7;color:#667085;padding:1px 6px;border-radius:4px;margin-left:4px;'
-                    : 'font-size:10px;background:#ECFDF3;color:#027A48;padding:1px 6px;border-radius:4px;margin-left:4px;';
+                privacyBadge.className = 'circle-lb-item__privacy ' + (isPrivate
+                    ? 'circle-lb-item__privacy--private'
+                    : 'circle-lb-item__privacy--public');
                 privacyBadge.textContent = isPrivate ? '🔒 Private' : '🌐 Public';
                 title.appendChild(privacyBadge);
 
                 const meta = document.createElement('div');
-                meta.style.cssText = 'font-size:11px;color:#667085;';
+                meta.className = 'circle-lb-item__meta';
                 meta.textContent = `${Number(c.member_count || 0).toLocaleString()} members · Lv.${c.level || 1}`;
 
                 const actions = document.createElement('div');
-                actions.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;';
+                actions.className = 'circle-lb-item__actions';
 
                 const xp = document.createElement('span');
-                xp.style.cssText = 'font-size:14px;font-weight:700;color:var(--primary-color);';
+                xp.className = 'circle-lb-item__xp';
                 xp.textContent = `${(c.total_xp || 0).toLocaleString()} XP`;
 
                 let actionEl;
                 if (isPrivate && myJoinRequestCircleIds.has(c.id)) {
                     actionEl = document.createElement('span');
-                    actionEl.style.cssText = 'font-size:12px;color:#667085;background:#F2F4F7;padding:4px 10px;border-radius:6px;';
+                    actionEl.className = 'circle-lb-item__pending';
                     actionEl.textContent = '⏳ Pending';
                 } else if (isPrivate) {
-                    actionEl = createButton('🔒 Request', 'ds-btn ds-btn--secondary ds-btn--sm', () => window.handleRequestJoinCircle(c.id), 'font-size:12px;');
+                    actionEl = createButton('🔒 Request', 'ds-btn ds-btn--secondary ds-btn--sm', () => window.handleRequestJoinCircle(c.id));
                 } else {
-                    actionEl = createButton('Join', 'ds-btn ds-btn--primary ds-btn--sm', () => window.handleJoinCircle(c.id), 'font-size:12px;');
+                    actionEl = createButton('Join', 'ds-btn ds-btn--primary ds-btn--sm', () => window.handleJoinCircle(c.id));
                 }
 
                 info.appendChild(title);
@@ -344,18 +345,18 @@ window.initCommunityCircles = function () {
             container.replaceChildren();
             for (const inv of invites) {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border-color);';
+                row.className = 'community-invite-row';
 
                 const info = document.createElement('div');
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:14px;font-weight:500;color:#101828;';
+                title.className = 'community-invite-row__title';
                 title.textContent = `Circle invite from #${(inv.inviter_id || '').substring(0, 6)}`;
                 const expires = document.createElement('div');
-                expires.style.cssText = 'font-size:12px;color:#667085;';
+                expires.className = 'community-invite-row__expires';
                 expires.textContent = `Expires ${new Date(inv.expires_at).toLocaleDateString()}`;
 
                 const actions = document.createElement('div');
-                actions.style.cssText = 'display:flex;gap:8px;';
+                actions.className = 'community-invite-row__actions';
                 actions.appendChild(createButton('Accept', 'ds-btn ds-btn--primary ds-btn--sm', () => window.handleAcceptInvite(inv.id)));
                 actions.appendChild(createButton('Decline', 'ds-btn ds-btn--secondary ds-btn--sm', () => window.handleDeclineInvite(inv.id)));
 
@@ -612,27 +613,27 @@ window.initCommunityCircles = function () {
             for (const req of requests) {
                 const date = new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border-color);';
+                row.className = 'community-request-row';
 
                 const requester = document.createElement('div');
-                requester.style.cssText = 'display:flex;align-items:center;gap:10px;';
+                requester.className = 'community-request-row__requester';
 
                 const avatar = document.createElement('div');
-                avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#EEF4FF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#2E90FA;';
+                avatar.className = 'community-request-row__avatar';
                 avatar.textContent = (req.user_name || 'U').charAt(0).toUpperCase();
 
                 const info = document.createElement('div');
                 const name = document.createElement('div');
-                name.style.cssText = 'font-size:14px;font-weight:500;color:#101828;';
+                name.className = 'community-request-row__name';
                 name.textContent = req.user_name || 'Unknown User';
                 const requested = document.createElement('div');
-                requested.style.cssText = 'font-size:12px;color:#667085;';
+                requested.className = 'community-request-row__date';
                 requested.textContent = `Requested ${date}`;
 
                 const actions = document.createElement('div');
-                actions.style.cssText = 'display:flex;gap:8px;';
+                actions.className = 'community-request-row__actions';
                 actions.appendChild(createButton('✓ Approve', 'ds-btn ds-btn--primary ds-btn--sm', () => window.handleApproveRequest(req.id)));
-                actions.appendChild(createButton('✗ Decline', 'ds-btn ds-btn--secondary ds-btn--sm', () => window.handleDeclineRequest(req.id), 'color:#F04438;'));
+                actions.appendChild(createButton('✗ Decline', 'ds-btn ds-btn--secondary ds-btn--sm community-request-row__decline', () => window.handleDeclineRequest(req.id)));
 
                 info.appendChild(name);
                 info.appendChild(requested);

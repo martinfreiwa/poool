@@ -2869,6 +2869,207 @@ button.community-tab-btn.active {
   line-height: 1.6;
 }
 
+/* ── XP history row (commit 13 — JS-rendered) ─────────────────────── */
+.community-xp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+}
+
+.community-xp-row:last-child {
+  border-bottom: none;
+}
+
+.community-xp-row__reason {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--page-title-color, #101828);
+}
+
+.community-xp-row__time {
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  margin-top: 2px;
+}
+
+.community-xp-row__amount {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.community-xp-row__amount--positive {
+  color: var(--success-fg, #027A48);
+  background: var(--success-bg, #ECFDF3);
+}
+
+.community-xp-row__amount--negative {
+  color: var(--btn-danger-bg, #F04438);
+  background: var(--danger-bg, #FEF3F2);
+}
+
+/* ── Circle member role badge (commit 13 — JS-rendered) ───────────── */
+.circle-member-role {
+  font-size: 10px;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.circle-member-role--owner {
+  background: var(--btn-primary-bg, #0000FF);
+}
+
+.circle-member-role--admin {
+  background: #7A5AF8;
+}
+
+/* ── Circle leaderboard rows (commit 13 — JS-rendered) ────────────── */
+.circle-lb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+}
+
+.circle-lb-item:last-child {
+  border-bottom: none;
+}
+
+.circle-lb-item__medal {
+  font-size: 18px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.circle-lb-item__emoji {
+  font-size: 18px;
+}
+
+.circle-lb-item__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.circle-lb-item__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+
+.circle-lb-item__privacy {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+.circle-lb-item__privacy--private {
+  background: var(--card-border-color, #F2F4F7);
+  color: var(--text-secondary, #667085);
+}
+
+.circle-lb-item__privacy--public {
+  background: var(--success-bg, #ECFDF3);
+  color: var(--success-fg, #027A48);
+}
+
+.circle-lb-item__meta {
+  font-size: 11px;
+  color: var(--text-secondary, #667085);
+}
+
+.circle-lb-item__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.circle-lb-item__xp {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--btn-primary-bg, #0000FF);
+  font-variant-numeric: tabular-nums;
+}
+
+.circle-lb-item__pending {
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  background: var(--card-border-color, #F2F4F7);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+/* ── Invite + request rows (commit 13 — JS-rendered) ──────────────── */
+.community-invite-row,
+.community-request-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+  gap: 12px;
+}
+
+.community-invite-row:last-child,
+.community-request-row:last-child {
+  border-bottom: none;
+}
+
+.community-invite-row__title,
+.community-request-row__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--page-title-color, #101828);
+}
+
+.community-invite-row__expires,
+.community-request-row__date {
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  margin-top: 2px;
+}
+
+.community-invite-row__actions,
+.community-request-row__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.community-request-row__requester {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.community-request-row__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #EEF4FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2E90FA;
+  flex-shrink: 0;
+}
+
+.community-request-row__decline {
+  color: var(--btn-danger-bg, #F04438);
+}
+
 /* ── Community topbar tabs overflow (commit 11) ───────────────────── */
 /* The 6 visible community tabs may overflow the topbar between 768px
    (where lb-topbar-tabs unhides) and the desktop breakpoint where the
