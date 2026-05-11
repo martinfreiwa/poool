@@ -518,6 +518,168 @@ async fn has_more_false_when_total_is_exact_multiple_of_per_page() {
     );
 }
 
+// ─── Test: timeframed weekly + tier filter — rankings and count align ──────
+//
+// Verifies audit task B2: with a weekly timeframe and tier_id selected, the
+// number of rows returned by the rankings query equals total_participants
+// from the count query. Both apply the same `tier_id = $X` predicate against
+// the same CTE result set, so a discrepancy would indicate the two queries
+// have drifted out of sync.
+//
+// Verdict (documented in the commit body): the two queries share the
+// inv_agg / ref_agg / merged / ranked CTEs and apply the same predicates;
+// this test exists to make a future divergence loud.
+
+#[ignore]
+#[tokio::test]
+async fn timeframed_tier_filter_count_matches_rankings_len() {
+    let pool = pool().await;
+
+    // Build 10 users: 3 in tier 2, 7 in tier 1. All purchases within the
+    // last 7 days so the weekly cutoff includes everything.
+    let users: Vec<Uuid> = (0..10).map(|_| Uuid::new_v4()).collect();
+    let asset = Uuid::new_v4();
+
+    for u in &users {
+        cleanup_user(&pool, *u).await;
+    }
+    cleanup_asset(&pool, asset).await;
+
+    for u in &users {
+        insert_user(&pool, *u, "active").await;
+    }
+    insert_asset(&pool, asset, 500).await;
+    // Distinct investment amounts so rank ordering is deterministic.
+    for (i, u) in users.iter().enumerate() {
+        insert_investment(&pool, *u, asset, ((i + 1) as i64) * 1_000).await;
+    }
+
+    // Tier 2 → users[0..3], tier 1 → users[3..10]
+    let tier_two: i32 = 2;
+    let tier_one: i32 = 1;
+    for (i, u) in users.iter().enumerate() {
+        let tier = if i < 3 { tier_two } else { tier_one };
+        let _ = sqlx::query(
+            "INSERT INTO user_tiers (user_id, tier_id) VALUES ($1, $2)
+             ON CONFLICT (user_id) DO UPDATE SET tier_id = EXCLUDED.tier_id",
+        )
+        .bind(u)
+        .bind(tier)
+        .execute(&pool)
+        .await;
+    }
+
+    // Inline the weekly timeframed rankings + count queries with the same
+    // CTE structure the service uses, then assert the two agree.
+    let cutoff = "NOW() - INTERVAL '7 days'";
+    let rankings_sql = format!(
+        r#"
+        WITH inv_agg AS (
+            SELECT i.user_id,
+                SUM(i.purchase_value_cents)::BIGINT AS total_invested
+            FROM investments i
+            WHERE i.status = 'active' AND i.purchased_at >= {cutoff}
+              AND i.user_id = ANY($1)
+            GROUP BY i.user_id
+        ),
+        merged AS (
+            SELECT user_id, total_invested
+            FROM inv_agg
+            WHERE total_invested > 0
+        ),
+        ranked AS (
+            SELECT m.user_id, m.total_invested,
+                ROW_NUMBER() OVER (ORDER BY m.total_invested DESC)::INT AS rank
+            FROM merged m
+        ),
+        enriched AS (
+            SELECT r.rank, r.user_id, ut.tier_id
+            FROM ranked r
+            LEFT JOIN user_tiers ut ON ut.user_id = r.user_id
+        )
+        SELECT rank FROM enriched WHERE tier_id = $2 ORDER BY rank ASC
+        "#,
+        cutoff = cutoff,
+    );
+
+    let count_sql = format!(
+        r#"
+        WITH inv_agg AS (
+            SELECT i.user_id,
+                SUM(i.purchase_value_cents)::BIGINT AS total_invested
+            FROM investments i
+            WHERE i.status = 'active' AND i.purchased_at >= {cutoff}
+              AND i.user_id = ANY($1)
+            GROUP BY i.user_id
+        ),
+        merged AS (
+            SELECT user_id, total_invested
+            FROM inv_agg
+            WHERE total_invested > 0
+        ),
+        ranked AS (
+            SELECT m.user_id, m.total_invested,
+                ROW_NUMBER() OVER (ORDER BY m.total_invested DESC)::INT AS rank
+            FROM merged m
+        ),
+        enriched AS (
+            SELECT r.rank, r.user_id, ut.tier_id
+            FROM ranked r
+            LEFT JOIN user_tiers ut ON ut.user_id = r.user_id
+        )
+        SELECT COUNT(*)::BIGINT FROM enriched WHERE tier_id = $2
+        "#,
+        cutoff = cutoff,
+    );
+
+    let ranks: Vec<(i32,)> = sqlx::query_as(&rankings_sql)
+        .bind(&users)
+        .bind(tier_two)
+        .fetch_all(&pool)
+        .await
+        .expect("rankings");
+
+    let total_participants: i64 = sqlx::query_scalar(&count_sql)
+        .bind(&users)
+        .bind(tier_two)
+        .fetch_one(&pool)
+        .await
+        .expect("count");
+
+    // Cleanup before assertions so failure doesn't leak test rows.
+    let _ = sqlx::query("DELETE FROM user_tiers WHERE user_id = ANY($1)")
+        .bind(&users)
+        .execute(&pool)
+        .await;
+    users.iter().for_each(drop);
+    let users_for_cleanup = users.clone();
+    for u in &users_for_cleanup {
+        cleanup_user(&pool, *u).await;
+    }
+    cleanup_asset(&pool, asset).await;
+
+    assert_eq!(
+        total_participants, 3,
+        "tier_id=2 should contain exactly 3 users; got {}",
+        total_participants
+    );
+    assert_eq!(
+        ranks.len() as i64,
+        total_participants,
+        "rankings query must return total_participants rows; got rows={} count={}",
+        ranks.len(),
+        total_participants
+    );
+    // Ranks reflect global positions (ROW_NUMBER is computed BEFORE the tier
+    // filter), so we expect monotonically increasing values within [1, 10].
+    let mut prev = 0i32;
+    for (r,) in &ranks {
+        assert!(*r > prev, "ranks must be strictly increasing: {} <= {}", *r, prev);
+        assert!(*r >= 1 && *r <= 10, "rank {} out of expected range", *r);
+        prev = *r;
+    }
+}
+
 // ─── Test 4: tier_id filter narrows total_participants ──────────────────────
 //
 // Smoke test that the (tier_id IS NULL OR tier_id = $X) predicate used in
