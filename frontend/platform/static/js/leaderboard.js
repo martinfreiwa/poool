@@ -704,6 +704,15 @@
     }, 300);
   };
 
+  window.switchTier = async function (tierId, btn) {
+    currentTier = tierId || '';
+    currentPage = 1;
+    var buttons = document.querySelectorAll('#lb-tier-filter [data-tier-id]');
+    buttons.forEach(function (b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    await refetchAndRender();
+  };
+
   async function refetchAndRender() {
     if (isFetching) return;
     isFetching = true;
