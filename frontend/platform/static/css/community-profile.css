@@ -327,3 +327,36 @@
   gap: 8px;
   align-items: flex-start;
 }
+
+/* WS2.4: dark-mode parity for the profile page. The base layout already
+   uses theme tokens (--card-bg, --card-border-color, --page-title-color,
+   --text-secondary), so these overrides only correct the hardcoded
+   colour-mix and any avatar/hero shadows. */
+[data-theme="dark"] .community-profile-hero {
+  background: var(--card-bg);
+  border-color: var(--card-border-color);
+}
+
+[data-theme="dark"] .community-profile-stat {
+  background: var(--card-bg);
+  border-color: var(--card-border-color);
+}
+
+[data-theme="dark"] .community-profile-stat[data-relationship]:hover {
+  background: var(--ds-surface-hover);
+}
+
+[data-theme="dark"] .community-profile-tabs {
+  border-bottom-color: var(--card-border-color);
+}
+
+[data-theme="dark"] .community-profile-activity-row,
+[data-theme="dark"] .community-profile-media-tile {
+  background: var(--card-bg);
+  border-color: var(--card-border-color);
+}
+
+[data-theme="dark"] .community-profile-hero__avatar {
+  background: var(--ds-surface-hover);
+  color: var(--btn-primary-bg);
+}
