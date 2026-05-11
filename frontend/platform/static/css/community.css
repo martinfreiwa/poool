@@ -2675,3 +2675,324 @@ button.community-tab-btn.active {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* ── Challenges (commit 6) ────────────────────────────────────────── */
+.community-challenges {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.community-challenges__section-title {
+  margin-bottom: 16px;
+}
+
+.community-challenges__loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.community-challenges__spinner {
+  margin: 0 auto 16px;
+}
+
+.community-challenges__loading-text {
+  color: var(--text-secondary, #667085);
+}
+
+.community-challenges__error {
+  text-align: center;
+  border: 1px solid var(--btn-danger-bg, #F04438);
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+.community-challenges__error-msg {
+  margin: 0 0 12px;
+  color: var(--btn-danger-bg, #F04438);
+}
+
+.community-challenges__list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.community-challenge-card {
+  padding: 24px;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  transition: box-shadow 0.2s ease;
+}
+
+.community-challenge-card:hover {
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(10, 13, 18, 0.05));
+}
+
+.community-challenge-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(3, 255, 136, 0.1);
+  color: var(--btn-primary-bg, #0000FF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.community-challenge-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.community-challenge-card__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.community-challenge-card__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.community-challenge-card__xp {
+  white-space: nowrap;
+}
+
+.community-challenge-card__desc {
+  color: var(--text-secondary, #667085);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.community-challenge-card__progress {
+  margin-bottom: 8px;
+  background: var(--progress-track-bg, #F2F4F7);
+}
+
+.community-challenge-card__meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary, #667085);
+}
+
+.community-challenges__empty {
+  text-align: center;
+  border: 1px dashed var(--card-border-color, #E5E7EB);
+  box-shadow: none;
+}
+
+.community-challenges__empty-msg {
+  margin: 0;
+}
+
+/* ── Expert AMAs (commit 6 — replaces dark-gradient hero) ─────────── */
+.community-ama {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.community-ama__loading {
+  text-align: center;
+  padding: 48px 0;
+}
+
+.community-ama__spinner {
+  margin: 0 auto 16px;
+}
+
+.community-ama__loading-text {
+  color: var(--text-secondary, #667085);
+}
+
+.community-ama__empty[hidden],
+.community-ama__content[hidden] {
+  display: none;
+}
+
+.community-ama__empty {
+  text-align: center;
+  padding: 64px 24px;
+}
+
+.community-ama__empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.community-ama__empty-title {
+  margin-bottom: 8px;
+}
+
+.community-ama__empty-desc {
+  color: var(--text-secondary, #667085);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.community-ama__content {
+  margin: 0 auto;
+}
+
+.community-ama-hero {
+  padding: 0;
+  margin-bottom: 24px;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0;
+  position: relative;
+}
+
+/* 3px brand accent strip on AMA hero per DESIGN §2 */
+.community-ama-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--btn-primary-bg, #0000FF), #03FF88);
+  border-top-left-radius: var(--card-border-radius, 12px);
+  border-top-right-radius: var(--card-border-radius, 12px);
+  z-index: 1;
+}
+
+.community-ama-hero__body {
+  flex: 1;
+  min-width: 300px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.community-ama-hero__status {
+  align-self: flex-start;
+}
+
+.community-ama-hero__title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  color: var(--page-title-color, #181D27);
+}
+
+.community-ama-hero__desc {
+  font-size: 16px;
+  color: var(--body-color, #344054);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+.community-ama-hero__meta {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  color: var(--body-color, #344054);
+}
+
+.community-ama-hero__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.community-ama-hero__expert {
+  text-align: center;
+  padding: 24px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--content-bg, #F9FAFB);
+  border-left: 1px solid var(--card-border-color, #E5E7EB);
+}
+
+.community-ama-hero__expert-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #EEF4FF;
+  color: var(--btn-primary-bg, #0000FF);
+  font-size: 32px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.community-ama-hero__expert-title {
+  font-size: 14px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-ama__grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+}
+
+.community-ama__section-title {
+  margin-bottom: 16px;
+}
+
+.community-ama__questions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.community-ama__sidebar {
+  /* sticky position handled at desktop breakpoint */
+}
+
+.community-ama-ask {
+  padding: 20px;
+}
+
+.community-ama-ask__title {
+  margin-bottom: 12px;
+}
+
+.community-ama-ask__hint {
+  color: var(--text-secondary, #667085);
+  margin-bottom: 16px;
+}
+
+.community-ama-ask__textarea {
+  width: 100%;
+  resize: vertical;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 1025px) {
+  .community-ama__sidebar .ds-card {
+    position: sticky;
+    top: 24px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .community-ama__grid {
+    grid-template-columns: 1fr;
+  }
+  .community-ama-hero {
+    flex-direction: column;
+  }
+  .community-ama-hero__expert {
+    border-left: none;
+    border-top: 1px solid var(--card-border-color, #E5E7EB);
+  }
+}

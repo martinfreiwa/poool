@@ -1,55 +1,43 @@
 <div id="community-challenges-tab" class="community-tab-panel" x-data="communityChallenges()">
-  <div class="community-content-layout" style="display: block; max-width: 800px; margin: 0 auto; ">
-
-    <!-- Page Header -->
-    <div style="margin-bottom: 32px; text-align: center;">
-      <h2 class="ds-text-xl" style="margin-bottom: 8px;">Gamified Challenges</h2>
-      <p class="ds-text-body" style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
-        Complete tasks to gain XP, unlock higher tiers, and earn exclusive platform rewards.
-      </p>
-    </div>
+  <div class="community-challenges">
 
     <!-- Active Challenges List -->
     <div>
-      <h3 class="ds-text-md" style="margin-bottom: 16px;">Active Challenges</h3>
-      
+      <h3 class="ds-text-md community-challenges__section-title">Active Challenges</h3>
+
       <!-- Loading State -->
-      <div x-show="loading" style="text-align: center; padding: 40px;">
-        <div class="ds-spinner" style="margin: 0 auto 16px;"></div>
-        <p class="ds-text-body" style="color: var(--text-secondary);">Loading challenges...</p>
+      <div x-show="loading" class="community-challenges__loading">
+        <div class="ds-spinner community-challenges__spinner"></div>
+        <p class="ds-text-body community-challenges__loading-text">Loading challenges...</p>
       </div>
 
-      <div x-show="!loading && error" class="ds-card"
-        style="text-align: center; border: 1px solid var(--btn-danger-bg, #F04438); box-shadow: none; margin-bottom: 16px;">
-        <p class="ds-text-subtitle" style="margin: 0 0 12px; color: var(--btn-danger-bg, #F04438);" x-text="error"></p>
+      <!-- Error State -->
+      <div x-show="!loading && error" class="ds-card community-challenges__error">
+        <p class="ds-text-subtitle community-challenges__error-msg" x-text="error"></p>
         <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" @click="loadChallenges()">Retry</button>
       </div>
 
-      <div x-show="!loading" style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Challenge list -->
+      <div x-show="!loading" class="community-challenges__list">
         <template x-for="ch in challenges" :key="ch.id">
-          <div class="ds-card" style="padding: 24px; display: flex; gap: 24px; align-items: flex-start; transition: all 0.2s; cursor: default;"
-            onmouseover="this.style.boxShadow='var(--card-shadow)';"
-            onmouseout="this.style.boxShadow='none';">
-            
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(3, 255, 136, 0.1); color: #0000FF; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+          <div class="ds-card community-challenge-card">
+            <div class="community-challenge-card__icon" aria-hidden="true">
               <span x-text="challengeIcon(ch)"></span>
             </div>
-            
-            <div style="flex: 1;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <h4 class="ds-text-md" style="margin: 0; font-weight: 600;" x-text="ch.title"></h4>
-                <div style="display: inline-flex; align-items: center; gap: 4px; background: #ECFDF3; color: #027A48; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 13px;">
-                  <span x-text="'+' + ch.xp_reward + ' XP'"></span>
-                </div>
+
+            <div class="community-challenge-card__body">
+              <div class="community-challenge-card__title-row">
+                <h4 class="ds-text-md community-challenge-card__title" x-text="ch.title"></h4>
+                <span class="ds-badge ds-badge--success community-challenge-card__xp" x-text="'+' + ch.xp_reward + ' XP'"></span>
               </div>
-              <p class="ds-text-body" style="color: var(--text-secondary); margin: 0 0 16px; line-height: 1.5;" x-text="ch.description"></p>
-              
-              <div class="ds-progress" style="margin-bottom: 8px; background: #F2F4F7;">
+              <p class="ds-text-body community-challenge-card__desc" x-text="ch.description"></p>
+
+              <div class="ds-progress community-challenge-card__progress">
                 <div class="ds-progress__fill" :style="challengeProgressStyle(ch)"></div>
               </div>
-              <div style="display: flex; justify-content: space-between;" class="ds-text-caption">
-                <span style="color: var(--text-secondary);" x-text="`${ch.user_progress} / ${ch.target_value} completed`"></span>
-                <span style="color: var(--text-secondary);" x-text="ch.end_time ? 'Ends ' + new Date(ch.end_time).toLocaleDateString() : 'Ongoing'"></span>
+              <div class="community-challenge-card__meta ds-text-caption">
+                <span x-text="`${ch.user_progress} / ${ch.target_value} completed`"></span>
+                <span x-text="ch.end_time ? 'Ends ' + new Date(ch.end_time).toLocaleDateString() : 'Ongoing'"></span>
               </div>
             </div>
           </div>
@@ -57,9 +45,8 @@
       </div>
 
       <!-- Empty State -->
-      <div x-show="!loading && !error && challenges.length === 0" class="ds-card"
-        style="text-align: center; border: 1px dashed var(--card-border-color); box-shadow: none;">
-        <p class="ds-text-subtitle" style="margin: 0;">No active challenges right now. Check back later!</p>
+      <div x-show="!loading && !error && challenges.length === 0" class="ds-card community-challenges__empty">
+        <p class="ds-text-subtitle community-challenges__empty-msg">No active challenges right now. Check back later!</p>
       </div>
     </div>
 
