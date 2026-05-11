@@ -24,7 +24,7 @@
         <button class="lb-topbar-tab rewards-tab-btn" data-tab="commissions-tab" onclick="switchRewardsTab(this)">Commissions</button>
       </div>
       {% elif investor_topbar_variant == 'community' %}
-      <div class="lb-topbar-tabs" role="tablist" aria-label="Community sections">
+      <div class="lb-topbar-tabs community-topbar-tabs" role="tablist" aria-label="Community sections">
         <button type="button" class="lb-topbar-tab active community-tab-btn" role="tab" aria-selected="true" aria-controls="community-content-area" data-tab="community-feed-tab" hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed" onclick="switchCommunityTab(this)">Feed</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-announcements-tab" hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements" onclick="switchCommunityTab(this)">Announcements</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="switchCommunityTab(this)">My Circle</button>

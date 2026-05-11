@@ -2868,3 +2868,62 @@ button.community-tab-btn.active {
   margin: 0;
   line-height: 1.6;
 }
+
+/* ── Community topbar tabs overflow (commit 11) ───────────────────── */
+/* The 6 visible community tabs may overflow the topbar between 768px
+   (where lb-topbar-tabs unhides) and the desktop breakpoint where the
+   sidebar narrows the topbar's usable width. Allow horizontal scroll
+   with scroll-snap so tabs stay reachable on tablets. */
+.community-topbar-tabs {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+  /* Reduce the shared 24px gap slightly on small viewports to fit
+     more labels before scroll kicks in. */
+  gap: 20px;
+}
+
+.community-topbar-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.community-topbar-tabs::-webkit-scrollbar-thumb {
+  background: var(--card-border-color, #E5E7EB);
+  border-radius: 2px;
+}
+
+.community-topbar-tabs .lb-topbar-tab {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Reduced-motion support (commit 11) ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .community-search-user-row,
+  .community-search-post-row,
+  .feed-post,
+  .ann-card,
+  .community-challenge-card,
+  .feed-post-link-preview {
+    transition: none !important;
+  }
+  .notif-loading-shimmer,
+  .notif-loading-shimmer--delay-1,
+  .notif-loading-shimmer--delay-2 {
+    animation: none !important;
+  }
+}
+
+/* ── Min 44px touch targets on engagement buttons (commit 11) ─────── */
+@media (max-width: 768px) {
+  .feed-reaction-btn,
+  .feed-bookmark-btn,
+  .feed-post-report-btn,
+  .community-composer__toolbar-actions .ds-btn--icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
