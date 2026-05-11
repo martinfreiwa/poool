@@ -7,7 +7,7 @@ include "components/head.html" %}{% endwith %}
   <script>
     window.PROFILE_USER_ID = '{{ target_user_id }}';
     window.PROFILE_IS_OWN = {% if is_own %}true{% else %}false{% endif %};
-    window.PROFILE_DISPLAY_NAME = {{ display_name | tojson }};
+    // display_name is read from the rendered hero header when needed.
   </script>
   {% include 'components/mobile-menu.html' %}
 

@@ -19,7 +19,6 @@ def test_profile_page_template_has_required_blocks():
     # Bootstrap globals consumed by community-profile.js
     assert "window.PROFILE_USER_ID" in html
     assert "window.PROFILE_IS_OWN" in html
-    assert "window.PROFILE_DISPLAY_NAME" in html
     # Hero header
     assert 'class="community-profile-hero ds-card"' in html
     assert "community-profile-hero__avatar" in html
