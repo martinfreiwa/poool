@@ -570,6 +570,7 @@ pub struct CircleLeaderboardEntry {
     pub total_xp: i64,
     pub level: i32,
     pub level_name: String,
+    pub is_public: bool,
 }
 
 pub async fn get_circle_leaderboard(
@@ -577,7 +578,7 @@ pub async fn get_circle_leaderboard(
     limit: i64,
 ) -> Result<Vec<CircleLeaderboardEntry>, AppError> {
     let entries = sqlx::query_as::<_, CircleLeaderboardEntry>(
-        r#"SELECT id, name, avatar_emoji, owner_id, member_count, total_xp, level, level_name
+        r#"SELECT id, name, avatar_emoji, owner_id, member_count, total_xp, level, level_name, is_public
            FROM circles
            ORDER BY total_xp DESC
            LIMIT $1"#,
