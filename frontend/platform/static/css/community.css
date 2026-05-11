@@ -2917,6 +2917,41 @@ button.community-tab-btn.active {
   }
 }
 
+/* ── Hashtag + mention inline chips (commit 12) ───────────────────── */
+/* Backend emits <span class='hashtag-tag'> / 'mention-tag' inside
+   rendered post content (community/routes.rs). Styling moved to CSS so
+   the spans no longer carry inline color/font-weight/cursor styles. */
+.hashtag-tag,
+.mention-tag {
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.hashtag-tag {
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+.mention-tag {
+  /* DESIGN.md does not define a brand-purple token; using the closest
+     existing legacy color until a token is added. Documented in
+     §17 Known Drift. */
+  color: #7F56D9;
+}
+
+.hashtag-tag:hover,
+.mention-tag:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+.hashtag-tag:focus-visible,
+.mention-tag:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* ── Min 44px touch targets on engagement buttons (commit 11) ─────── */
 @media (max-width: 768px) {
   .feed-reaction-btn,

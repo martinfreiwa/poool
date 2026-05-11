@@ -300,10 +300,16 @@ pub fn map_to_post_display(
             let matched = &caps[0];
             if matched.starts_with('#') {
                 let tag = matched[1..].to_lowercase();
-                format!("<span class='hashtag-tag' style='color: var(--btn-primary-bg, #0000FF); font-weight: 600; cursor: pointer; transition: opacity 0.2s;' hx-get='/community/partials/feed/list?hashtag={}' hx-target='#community-feed-container'>{}</span>", tag, matched)
+                format!(
+                    "<span class='hashtag-tag' hx-get='/community/partials/feed/list?hashtag={}' hx-target='#community-feed-container'>{}</span>",
+                    tag, matched
+                )
             } else {
                 let user = &matched[1..];
-                format!("<span class='mention-tag' style='color: #7F56D9; font-weight: 600; cursor: pointer; transition: opacity 0.2s;' hx-get='/community/partials/feed/list?mention={}' hx-target='#community-feed-container'>{}</span>", user, matched)
+                format!(
+                    "<span class='mention-tag' hx-get='/community/partials/feed/list?mention={}' hx-target='#community-feed-container'>{}</span>",
+                    user, matched
+                )
             }
         }).into_owned()
     };
