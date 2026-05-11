@@ -430,8 +430,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Initial delay to not slam the DB on startup
         tokio::time::sleep(std::time::Duration::from_secs(60)).await;
 
-        // Check once initially, then every 24h
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(24 * 60 * 60));
+        // 18.11 — Reconciliation runs every 6h (was 24h). All 5 invariants:
+        // cash, token, negative-balance, held-balance, and affiliate-treasury
+        // (18.15). Any violation emits a Fatal Sentry event for pager.
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(6 * 60 * 60));
         loop {
             interval.tick().await;
             tracing::info!("Starting daily financial reconciliation...");
@@ -589,21 +591,99 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
+            // ── Check 4 (18.11): held_balance ≤ balance ─────────────
+            // Per-wallet sanity: held_balance is funds reserved by open
+            // orders; can never exceed the wallet's actual balance.
+            let over_held = sqlx::query!(
+                r#"SELECT COUNT(*)::int as "n!"
+                   FROM wallets
+                   WHERE balance_cents < held_balance_cents"#,
+            )
+            .fetch_one(&recon_pool)
+            .await;
+            let mut recon_over_held: i32 = 0;
+            match over_held {
+                Ok(row) => {
+                    recon_over_held = row.n;
+                    if recon_over_held > 0 {
+                        let msg = format!(
+                            "RECONCILIATION FATAL: {} wallets have held_balance_cents > balance_cents",
+                            recon_over_held
+                        );
+                        tracing::error!("{}", msg);
+                        sentry::capture_message(&msg, sentry::Level::Fatal);
+                    } else {
+                        tracing::info!("Reconciliation check 4/5 PASS: held_balance ≤ balance on all wallets.");
+                    }
+                }
+                Err(e) => tracing::error!("Reconciliation check 4 FAILED: {}", e),
+            }
+
+            // ── Check 5 (18.15): Affiliate treasury invariant ──────────
+            // SUM(paid affiliate_commissions) ≤ debits to the
+            // affiliate_treasury wallet via wallet_transactions. A violation
+            // means commissions were marked paid without actually moving
+            // funds (or moved without the commission flip).
+            let aff_recon = sqlx::query!(
+                r#"
+                SELECT
+                    (SELECT COALESCE(SUM(provisional_amount_cents), 0)::bigint
+                     FROM affiliate_commissions
+                     WHERE status = 'paid') as "paid_commissions!",
+                    (SELECT COALESCE(SUM(-amount_cents), 0)::bigint
+                     FROM wallet_transactions wt
+                     JOIN wallets w ON w.id = wt.wallet_id
+                     WHERE w.wallet_type = 'affiliate_treasury'
+                       AND wt.status = 'completed'
+                       AND wt.amount_cents < 0) as "treasury_debits!"
+                "#,
+            )
+            .fetch_one(&recon_pool)
+            .await;
+            let mut recon_affiliate_drift: i64 = 0;
+            match aff_recon {
+                Ok(row) => {
+                    let paid = row.paid_commissions;
+                    let debits = row.treasury_debits;
+                    recon_affiliate_drift = paid - debits;
+                    if recon_affiliate_drift > 100 {
+                        let msg = format!(
+                            "RECONCILIATION FATAL: Affiliate treasury under-debited by {}c (paid={}, debits={})",
+                            recon_affiliate_drift, paid, debits
+                        );
+                        tracing::error!("{}", msg);
+                        sentry::capture_message(&msg, sentry::Level::Fatal);
+                    } else if recon_affiliate_drift.abs() > 100 {
+                        let msg = format!(
+                            "RECONCILIATION WARNING: Affiliate treasury drift {}c (paid={}, debits={})",
+                            recon_affiliate_drift, paid, debits
+                        );
+                        tracing::warn!("{}", msg);
+                        sentry::capture_message(&msg, sentry::Level::Warning);
+                    } else {
+                        tracing::info!("Reconciliation check 5/5 PASS: Affiliate treasury debits match paid commissions.");
+                    }
+                }
+                Err(e) => tracing::error!("Reconciliation check 5 FAILED: {}", e),
+            }
+
             // ── Task 10.8: Persist reconciliation results ──────────────
             let report_date = chrono::Utc::now().date_naive();
             let status = if recon_cash_delta.abs() > 100
                 || recon_token_mismatches > 0
                 || recon_negative_count > 0
+                || recon_over_held > 0
+                || recon_affiliate_drift > 100
             {
                 "fail"
-            } else if recon_cash_delta != 0 {
+            } else if recon_cash_delta != 0 || recon_affiliate_drift.abs() > 100 {
                 "warning"
             } else {
                 "pass"
             };
             let notes = format!(
-                "Cash delta: {} cents, Token mismatches: {}, Negative wallets: {}",
-                recon_cash_delta, recon_token_mismatches, recon_negative_count
+                "Cash delta: {} cents, Token mismatches: {}, Negative wallets: {}, Over-held wallets: {}, Affiliate drift: {} cents",
+                recon_cash_delta, recon_token_mismatches, recon_negative_count, recon_over_held, recon_affiliate_drift
             );
             if let Err(e) = sqlx::query(
                 r#"INSERT INTO reconciliation_reports (
