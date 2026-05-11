@@ -3107,6 +3107,7 @@ dependencies = [
  "google-cloud-storage",
  "hex",
  "hmac",
+ "http-body-util",
  "k256",
  "maplit",
  "mime_guess",

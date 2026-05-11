@@ -5,6 +5,17 @@ edition = "2021"
 publish = false
 default-run = "poool-backend"
 
+# Library target: lets external integration tests (tests/) and the binary
+# share the same code path. The library carries every module previously in
+# main.rs; main.rs is now a thin `tokio::main` shim that calls run().
+[lib]
+name = "poool_backend"
+path = "src/lib.rs"
+
+[[bin]]
+name = "poool-backend"
+path = "src/main.rs"
+
 [dependencies]
 # Web framework
 axum = { version = "0.7", features = ["multipart", "ws"] }
@@ -109,3 +120,11 @@ lto = "thin"
 codegen-units = 16
 incremental = false
 strip = "symbols"
+
+# Dev-only: `util` feature unlocks tower::ServiceExt::oneshot, used by the
+# HTTP integration tests in tests/leaderboard_http.rs to drive the router
+# in-process without binding a real TCP listener. `http-body-util` provides
+# `BodyExt::collect` for draining response bodies.
+[dev-dependencies]
+tower = { version = "0.5", features = ["limit", "util"] }
+http-body-util = "0.1"
