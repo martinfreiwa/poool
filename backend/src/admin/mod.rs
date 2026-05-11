@@ -208,6 +208,9 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/community/posts", get(page_admin_generic))
         .route("/admin/community/reports.html", get(page_admin_generic))
         .route("/admin/community/reports", get(page_admin_generic))
+        // Phase 2 task 18: ban appeals review queue.
+        .route("/admin/community/appeals.html", get(page_admin_generic))
+        .route("/admin/community/appeals", get(page_admin_generic))
         .route("/admin/community/user-detail.html", get(page_admin_generic))
         .route("/admin/community/user-detail", get(page_admin_generic))
         .route("/admin/community/users.html", get(page_admin_generic))
@@ -560,6 +563,11 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/rewards/affiliates/fraud-scan",
             get(crate::admin::rewards::api_admin_affiliate_fraud_scan),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/conduct-incidents",
+            get(crate::admin::rewards::api_admin_affiliate_conduct_incident_list)
+                .post(crate::admin::rewards::api_admin_affiliate_conduct_incident_create),
         )
         .route(
             "/api/admin/rewards/affiliates/:id/approve",

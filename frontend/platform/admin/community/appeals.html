@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ban Appeals | Community Admin | POOOL</title>
+
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-community-appeals.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Ban Appeals</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="display:flex; justify-content:space-between; align-items:flex-end;">
+          <div>
+            <h1 class="admin-page-title">Ban Appeals</h1>
+            <p class="admin-page-subtitle">Review appeals submitted by community-banned users.</p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label for="appeals-status-filter" class="ds-sr-only">Filter by status</label>
+            <select id="appeals-status-filter" class="admin-input" style="padding:8px 12px;">
+              <option value="pending" selected>Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="all">All</option>
+            </select>
+            <button class="admin-btn admin-btn--secondary" id="appeals-refresh-btn" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Appeal</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="appeals-table">
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:40px; color: var(--admin-text-muted);">
+                    Loading appeals...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Review modal -->
+  <div id="appeal-review-modal" class="ds-modal-overlay" style="z-index:1000;" role="dialog" aria-modal="true" aria-labelledby="appeal-modal-title" aria-hidden="true">
+    <div class="ds-modal__backdrop" data-appeals-close-modal></div>
+    <div class="ds-modal" style="max-width:540px; background:white; border-radius:12px; padding:24px; width:100%; box-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1);" tabindex="-1">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 id="appeal-modal-title" style="margin:0; font-size:18px; font-weight:600; color:#101828;">Review Appeal</h3>
+        <button type="button" data-appeals-close-modal aria-label="Close appeal review" style="background:none; border:none; cursor:pointer; color:#667085;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <input type="hidden" id="appeal-modal-id">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px; color:#667085; margin-bottom:4px;">Submitted by</div>
+        <div id="appeal-modal-user" style="font-weight:500;">—</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px; color:#667085; margin-bottom:4px;">Appeal text</div>
+        <div id="appeal-modal-text" style="background:#F9FAFB; padding:12px 16px; border-radius:8px; font-size:14px; white-space:pre-wrap; word-break:break-word; max-height:200px; overflow-y:auto;"></div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label for="appeal-modal-notes" style="display:block; font-size:14px; font-weight:500; margin-bottom:6px; color:#344054;">Admin Notes</label>
+        <textarea id="appeal-modal-notes" rows="3" maxlength="1000" style="width:100%; border:1px solid #D0D5DD; border-radius:8px; padding:10px; font-family:inherit;" placeholder="Optional notes shown to the user..."></textarea>
+        <p id="appeal-modal-error" role="alert" style="display:none; margin:8px 0 0; color:#B42318; font-size:13px;"></p>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px;">
+        <button type="button" data-appeals-close-modal style="padding:10px 16px; border-radius:8px; border:1px solid #D0D5DD; background:white; font-weight:500; cursor:pointer;">Cancel</button>
+        <button type="button" id="appeal-reject-btn" style="padding:10px 16px; border-radius:8px; border:1px solid #D0D5DD; background:white; color:#B42318; font-weight:500; cursor:pointer;">Reject</button>
+        <button type="button" id="appeal-approve-btn" style="padding:10px 16px; border-radius:8px; border:none; background:#039855; color:white; font-weight:500; cursor:pointer;">Approve</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
