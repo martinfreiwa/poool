@@ -2071,6 +2071,97 @@ button.community-tab-btn.active {
   gap: 4px;
 }
 
+/* Phase 3 task 20: followers/following list. */
+.community-profile-modal__stat {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+  color: inherit;
+  border-radius: 8px;
+}
+
+.community-profile-modal__stat:hover:not(.community-profile-modal__stat--static),
+.community-profile-modal__stat:focus-visible:not(.community-profile-modal__stat--static) {
+  background: var(--ds-surface-hover, #F2F4F7);
+  outline: none;
+}
+
+.community-profile-modal__stat--static {
+  cursor: default;
+}
+
+.community-relationship-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.community-relationship-list__empty {
+  text-align: center;
+  color: #667085;
+  padding: 24px 12px;
+}
+
+.community-relationship-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+}
+
+.community-relationship-row__user {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: 0;
+  padding: 4px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.community-relationship-row__user:hover,
+.community-relationship-row__user:focus-visible {
+  background: var(--ds-surface-hover, #F2F4F7);
+  outline: none;
+}
+
+.community-relationship-row__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--ds-surface-hover, #F2F4F7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--btn-primary-bg, #0000FF);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.community-relationship-row__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.community-relationship-row__name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--page-title-color, #101828);
+}
+
 .feed-post-link-preview {
   display: flex;
   flex-direction: column;

@@ -313,6 +313,13 @@ window.initCommunityFeed = function() {
     // ─── USER PROFILE LOGIC (M3) ─────────────────────────────
     
     let currentProfileId = null;
+    // Exposed so the followers/following stat buttons (rendered in
+    // community.html) can target the right user without an extra plumbing
+    // round-trip.
+    Object.defineProperty(window, 'currentProfileId', {
+        get() { return currentProfileId; },
+        configurable: true,
+    });
 
     window.openUserProfile = async function(userId) {
         currentProfileId = userId;
@@ -1077,6 +1084,100 @@ window.initCommunityFeed = function() {
     // Until the dedicated /api/community/users/by-handle/:handle endpoint
     // ships (Phase 2), fall back to a community search for an exact handle
     // match.
+    // ─── Phase 3 task 20: followers / following list modal ──────
+    window.openRelationshipList = async function (profileId, direction) {
+        if (!profileId) return;
+        const dir = direction === 'following' ? 'following' : 'followers';
+        const titleEl = document.getElementById('relationship-list-title');
+        const statusEl = document.getElementById('relationship-list-status');
+        const rowsEl = document.getElementById('relationship-list-rows');
+        if (titleEl) titleEl.textContent = dir === 'following' ? 'Following' : 'Followers';
+        if (rowsEl) rowsEl.replaceChildren();
+        if (statusEl) { statusEl.textContent = 'Loading…'; statusEl.hidden = false; }
+
+        if (typeof window.openCommunityModal === 'function') {
+            window.openCommunityModal('relationship-list-modal');
+        } else {
+            document.getElementById('relationship-list-modal').style.display = 'block';
+        }
+
+        try {
+            const res = await fetch(`/api/community/profile/${encodeURIComponent(profileId)}/${dir}`, {
+                credentials: 'same-origin',
+            });
+            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            const data = await res.json();
+            const users = Array.isArray(data.users) ? data.users : [];
+            if (statusEl) statusEl.hidden = true;
+            if (users.length === 0) {
+                if (rowsEl) {
+                    const empty = document.createElement('div');
+                    empty.className = 'community-relationship-list__empty';
+                    empty.textContent = dir === 'following' ? 'No one followed yet.' : 'No followers yet.';
+                    rowsEl.appendChild(empty);
+                }
+                return;
+            }
+            users.forEach((u) => rowsEl.appendChild(buildRelationshipRow(u)));
+        } catch (err) {
+            console.error('Failed to load relationship list', err);
+            if (statusEl) {
+                statusEl.textContent = 'Failed to load.';
+                statusEl.hidden = false;
+            }
+        }
+    };
+
+    function buildRelationshipRow(u) {
+        const row = document.createElement('div');
+        row.className = 'community-relationship-row';
+
+        const left = document.createElement('button');
+        left.type = 'button';
+        left.className = 'community-relationship-row__user';
+        left.addEventListener('click', () => {
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('relationship-list-modal');
+            }
+            window.openUserProfile(u.user_id);
+        });
+
+        const avatar = document.createElement('div');
+        avatar.className = 'community-relationship-row__avatar';
+        if (u.avatar_url) {
+            const img = document.createElement('img');
+            img.src = u.avatar_url;
+            img.alt = '';
+            avatar.appendChild(img);
+        } else {
+            avatar.textContent = getInitials(u.display_name);
+            avatar.classList.add('community-relationship-row__avatar--initials');
+        }
+        left.appendChild(avatar);
+
+        const name = document.createElement('div');
+        name.className = 'community-relationship-row__name';
+        name.textContent = u.display_name || 'Anonymous';
+        left.appendChild(name);
+        row.appendChild(left);
+
+        if (!u.is_self) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `ds-btn ds-btn--sm ${u.is_following ? 'ds-btn--secondary' : 'ds-btn--primary'}`;
+            btn.textContent = u.is_following ? 'Unfollow' : 'Follow';
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                window.toggleFollow(u.user_id, u.is_following, btn);
+                u.is_following = !u.is_following;
+                btn.textContent = u.is_following ? 'Unfollow' : 'Follow';
+                btn.className = `ds-btn ds-btn--sm ${u.is_following ? 'ds-btn--secondary' : 'ds-btn--primary'}`;
+            });
+            row.appendChild(btn);
+        }
+        return row;
+    }
+
     window.openProfileByHandle = async function (handle) {
         if (!handle) return;
         try {

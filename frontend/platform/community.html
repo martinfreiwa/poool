@@ -808,17 +808,20 @@ include
                 <h2 id="profile-modal-name" class="ds-heading community-profile-modal__name">User Name</h2>
                 <p id="profile-modal-bio" class="community-profile-modal__bio">This user hasn't written a bio yet.</p>
 
-                <!-- Stats row -->
+                <!-- Stats row — Phase 3 task 20: followers / following counts are buttons
+                     that open a list modal. -->
                 <div class="community-profile-modal__stats">
-                  <div class="community-profile-modal__stat">
+                  <button type="button" class="community-profile-modal__stat" data-relationship="followers"
+                    onclick="window.openRelationshipList(window.currentProfileId, 'followers')">
                     <div id="profile-modal-followers" class="community-profile-modal__stat-value">0</div>
                     <div class="community-profile-modal__stat-label">Followers</div>
-                  </div>
-                  <div class="community-profile-modal__stat">
+                  </button>
+                  <button type="button" class="community-profile-modal__stat" data-relationship="following"
+                    onclick="window.openRelationshipList(window.currentProfileId, 'following')">
                     <div id="profile-modal-following" class="community-profile-modal__stat-value">0</div>
                     <div class="community-profile-modal__stat-label">Following</div>
-                  </div>
-                  <div class="community-profile-modal__stat">
+                  </button>
+                  <div class="community-profile-modal__stat community-profile-modal__stat--static">
                     <div id="profile-modal-posts" class="community-profile-modal__stat-value">0</div>
                     <div class="community-profile-modal__stat-label">Posts</div>
                   </div>
@@ -841,6 +844,25 @@ include
                   <button type="button" id="profile-modal-block-btn" class="ds-btn ds-btn--ghost ds-btn--sm community-profile-modal__danger">Block</button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relationship list modal (Phase 3 task 20) -->
+        <div id="relationship-list-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="relationship-list-title" style="display:none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('relationship-list-modal')"></div>
+          <div class="ds-modal__content community-page-modal__content--md">
+            <div class="ds-modal__header">
+              <h3 id="relationship-list-title" class="ds-modal__title">Followers</h3>
+              <button type="button" class="ds-modal__close" aria-label="Close" onclick="closeCommunityModal('relationship-list-modal')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="ds-modal__body">
+              <div id="relationship-list-status" class="ds-helper-text" hidden></div>
+              <div id="relationship-list-rows" class="community-relationship-list"></div>
             </div>
           </div>
         </div>
