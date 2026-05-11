@@ -2680,6 +2680,9 @@ async fn page_fonts_template(jar: CookieJar, State(state): State<AppState>) -> i
 }
 
 /// GET /community/partials/:tab — Serves HTMX partial views for the community tabs.
+///
+/// When the community database pool is not configured, all five tabs render a
+/// graceful `community_disabled.html` card instead of a 500 or an empty feed.
 async fn community_htmx_partial(
     Path(tab): Path<String>,
     jar: CookieJar,
@@ -2699,6 +2702,15 @@ async fn community_htmx_partial(
                 .into_response()
         }
     };
+    if state.community_db.is_none() {
+        return common::routes_helper::serve_protected(
+            jar,
+            &state,
+            "partials/community_disabled.html",
+        )
+        .await
+        .into_response();
+    }
     common::routes_helper::serve_protected(jar, &state, template_name)
         .await
         .into_response()

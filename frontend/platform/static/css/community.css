@@ -2842,3 +2842,29 @@ button.community-tab-btn.active {
 .notif-loading-shimmer--delay-2 {
   animation-delay: 0.3s;
 }
+
+/* ── Disabled-feature state (commit 10) ───────────────────────────── */
+/* Rendered when state.community_db is None — gracefully informs the
+   user that community is being set up, instead of a 500 or fake-empty
+   feed. */
+.community-disabled {
+  text-align: center;
+  padding: 48px 32px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.community-disabled__icon {
+  margin: 0 auto 16px;
+  color: var(--text-secondary, #98A2B3);
+}
+
+.community-disabled__title {
+  margin: 0 0 8px;
+}
+
+.community-disabled__desc {
+  color: var(--text-secondary, #667085);
+  margin: 0;
+  line-height: 1.6;
+}
