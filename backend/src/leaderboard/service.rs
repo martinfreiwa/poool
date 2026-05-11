@@ -156,16 +156,49 @@ pub async fn refresh_all_scores(pool: &PgPool) -> Result<(), AppError> {
 
 // ─── Read Path ─────────────────────────────────────────────────────
 
+// SAFETY / AUDIT NOTE (audit task A3):
+// The values returned by this function are interpolated directly into SQL
+// via `format!()` in the read-path queries (alltime + timeframed). That is
+// safe ONLY because every arm of the `match` returns a hand-written
+// `&'static str` literal that is part of the schema — never user input.
+//
+// Contract for future contributors:
+//   1. Both fields of the returned tuple MUST remain `&'static str`. If you
+//      change the return type to allow non-literals you also have to switch
+//      the call sites to use a parameterized identifier strategy (e.g.
+//      `sqlx::QueryBuilder` with an allowlist), or you will introduce a SQL
+//      injection sink the moment someone passes a runtime string through.
+//   2. Every returned string MUST match `^[a-z_]+$`. The `debug_assert!`
+//      below is a tripwire for development/test builds; production builds
+//      rely on the match-arm literal guarantee, not the assert.
+//   3. The `_` (default) arm exists so that unknown / hostile `metric_type`
+//      strings collapse to a safe fallback rather than being interpolated.
 /// Resolve (rank_column, value_column) pair from metric key string.
-fn metric_columns(metric_type: &str) -> (&str, &str) {
-    match metric_type {
+///
+/// Returns identifiers from a closed allowlist of schema columns. The result
+/// is intended for direct interpolation into the `format!()`-built SELECT/
+/// ORDER BY clauses in `get_rankings_alltime` and `get_my_rank_alltime`.
+/// Callers MUST NOT pass these strings into a query alongside any other
+/// runtime-derived identifier — that would defeat the allowlist guarantee.
+fn metric_columns(metric_type: &str) -> (&'static str, &'static str) {
+    let pair: (&'static str, &'static str) = match metric_type {
         "assets" => ("rank_assets", "asset_count"),
         "roi" => ("rank_roi", "portfolio_roi_bps"),
         "affiliates" => ("rank_affiliates", "affiliate_count"),
         "revenue" => ("rank_ref_revenue", "referral_revenue_cents"),
         "highest_inv" => ("rank_highest_inv", "highest_investment_cents"),
         _ => ("rank_invested", "total_invested_cents"), // default: "invested"
-    }
+    };
+    // Tripwire: catch typos/regressions in the allowlist during dev/test.
+    // No-op in release builds.
+    debug_assert!(
+        pair.0.bytes().all(|b| b.is_ascii_lowercase() || b == b'_')
+            && pair.1.bytes().all(|b| b.is_ascii_lowercase() || b == b'_'),
+        "metric_columns must return allowlisted lowercase/underscore identifiers; got ({}, {})",
+        pair.0,
+        pair.1,
+    );
+    pair
 }
 
 /// Fetch the leaderboard rankings.
