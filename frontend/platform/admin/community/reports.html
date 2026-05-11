@@ -39,14 +39,14 @@
       <!-- Page Content -->
       <div class="admin-content">
         <!-- Page Header -->
-        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div class="admin-page-header admin-page-header--split">
           <div>
             <h1 class="admin-page-title">Moderation Queue</h1>
             <p class="admin-page-subtitle">Review and manage user-reported content.</p>
           </div>
           <div>
             <button class="admin-btn admin-btn--secondary" id="reports-refresh-btn" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <svg class="admin-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
               Refresh
             </button>
           </div>
@@ -62,12 +62,12 @@
                   <th>Reason</th>
                   <th>Post Content</th>
                   <th>Date</th>
-                  <th style="text-align: right;">Actions</th>
+                  <th class="admin-table__cell-actions">Actions</th>
                 </tr>
               </thead>
               <tbody id="reports-table">
                 <tr>
-                  <td colspan="5" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                  <td colspan="5" class="admin-table__message">
                     Loading reports...
                   </td>
                 </tr>
@@ -81,32 +81,32 @@
   </div>
 
   <!-- Action Modal -->
-  <div id="action-modal" class="ds-modal-overlay" style="z-index: 1000;" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc" aria-hidden="true">
+  <div id="action-modal" class="admin-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc" aria-hidden="true">
     <div class="ds-modal__backdrop" data-reports-close-modal></div>
-    <div class="ds-modal" style="max-width: 500px; background: white; border-radius: 12px; padding: 24px; width: 100%; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);" tabindex="-1">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #101828;" id="modal-title">Take Action</h3>
-        <button style="background: none; border: none; cursor: pointer; color: #667085;" type="button" data-reports-close-modal aria-label="Close action modal">
+    <div class="admin-modal" tabindex="-1">
+      <div class="admin-modal__header">
+        <h3 class="admin-modal__title" id="modal-title">Take Action</h3>
+        <button class="admin-modal__close" type="button" data-reports-close-modal aria-label="Close action modal">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <div>
+      <div class="admin-modal__body">
         <input type="hidden" id="modal-report-id">
         <input type="hidden" id="modal-action-type">
-        
-        <p style="margin-bottom: 16px; font-size: 14px; color: #475467;" id="modal-desc">
+
+        <p class="admin-modal__desc" id="modal-desc">
           Are you sure you want to proceed?
         </p>
-        
-        <div style="margin-bottom: 20px;">
-          <label for="modal-notes" style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #344054;">Admin Notes (Required)</label>
-          <textarea id="modal-notes" rows="3" maxlength="1000" required style="width: 100%; border: 1px solid #D0D5DD; border-radius: 8px; padding: 10px; font-family: inherit;" placeholder="Reason for this action..."></textarea>
-          <p id="modal-error" role="alert" style="display:none; margin:8px 0 0; color:#B42318; font-size:13px;"></p>
+
+        <div class="admin-modal__field">
+          <label class="admin-modal__label" for="modal-notes">Admin Notes (Required)</label>
+          <textarea id="modal-notes" class="admin-modal__textarea" rows="3" maxlength="1000" required placeholder="Reason for this action..."></textarea>
+          <p id="modal-error" class="admin-modal__error" role="alert" hidden></p>
         </div>
-        
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button style="padding: 10px 16px; border-radius: 8px; border: 1px solid #D0D5DD; background: white; font-weight: 500; cursor: pointer;" type="button" data-reports-close-modal>Cancel</button>
-          <button id="modal-confirm-btn" style="padding: 10px 16px; border-radius: 8px; border: none; background: #D92D20; color: white; font-weight: 500; cursor: pointer;" type="button">Confirm Action</button>
+
+        <div class="admin-modal__actions">
+          <button class="admin-btn admin-btn--secondary" type="button" data-reports-close-modal>Cancel</button>
+          <button id="modal-confirm-btn" class="admin-btn admin-btn--danger" type="button">Confirm Action</button>
         </div>
       </div>
     </div>

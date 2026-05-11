@@ -212,7 +212,7 @@
     const error = byId("modal-error");
     if (!error) return;
     error.textContent = message || "";
-    error.style.display = message ? "block" : "none";
+    error.hidden = !message;
   }
 
   function focusableElements() {

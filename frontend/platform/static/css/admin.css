@@ -1740,6 +1740,143 @@ body.admin-sidebar-collapsed .admin-main {
 .admin-modal--md { max-width: 540px; }
 .admin-modal--lg { max-width: 720px; }
 
+/* Modal subparts used by the admin-community moderation queue. */
+.admin-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-modal__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--admin-text-primary, #101828);
+}
+
+.admin-modal__close {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--admin-text-muted, #667085);
+}
+
+.admin-modal__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-modal__desc {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--admin-text-secondary, #475467);
+}
+
+.admin-modal__field {
+  margin-bottom: 20px;
+}
+
+.admin-modal__label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--admin-text-default, #344054);
+}
+
+.admin-modal__textarea {
+  width: 100%;
+  border: 1px solid var(--admin-border, #D0D5DD);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: inherit;
+}
+
+.admin-modal__error {
+  margin: 8px 0 0;
+  color: var(--admin-danger, #B42318);
+  font-size: 13px;
+}
+
+.admin-modal__error[hidden] { display: none; }
+
+.admin-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.admin-page-header--split {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.admin-btn__icon {
+  margin-right: 6px;
+}
+
+/* Admin community post-table helpers (WS2.1 polish). */
+.admin-table__tag-row {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.admin-badge--tag {
+  background: #FEF3C7;
+  color: #B45309;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.admin-table__action-row {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.admin-table__inline-status {
+  line-height: 30px;
+}
+
+.admin-page-header__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-input--compact {
+  padding: 8px 12px;
+}
+
+.admin-modal__row {
+  margin-bottom: 16px;
+}
+
+.admin-modal__row-label {
+  font-size: 13px;
+  color: var(--admin-text-muted, #667085);
+  margin-bottom: 4px;
+}
+
+.admin-modal__row-value {
+  font-weight: 500;
+}
+
+.admin-modal__pre {
+  background: var(--admin-surface-muted, #F9FAFB);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .admin-table__cell-text {
   max-width: 480px;
   white-space: normal;
