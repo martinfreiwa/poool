@@ -2996,3 +2996,186 @@ button.community-tab-btn.active {
     border-top: 1px solid var(--card-border-color, #E5E7EB);
   }
 }
+
+/* ── Search tab (commit 7) ────────────────────────────────────────── */
+.community-search {
+  display: block;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+.community-search__header {
+  margin-bottom: 24px;
+}
+
+.community-search__title {
+  margin-bottom: 16px;
+}
+
+.community-search__form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.community-search__input {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+}
+
+.community-search__type-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.community-search__group {
+  margin-bottom: 32px;
+}
+
+.community-search__group-title {
+  margin-bottom: 16px;
+}
+
+.community-search__user-list {
+  display: grid;
+  gap: 12px;
+}
+
+.community-search-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.community-search-user-row:hover,
+.community-search-post-row:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(10, 13, 18, 0.05));
+}
+
+.community-search-user-row:focus-visible,
+.community-search-post-row:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
+.community-search-user-row__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.community-search-user-row__avatar,
+.community-search-post-row__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.community-search-post-row__avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.community-search-user-row__avatar--initials,
+.community-search-post-row__avatar--initials {
+  background: #EEF4FF;
+  color: var(--btn-primary-bg, #0000FF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.community-search-post-row__avatar--initials {
+  font-size: 16px;
+}
+
+.community-search-user-row__name {
+  font-weight: 600;
+}
+
+.community-search-user-row__meta {
+  color: var(--text-secondary, #667085);
+}
+
+.community-search__post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.community-search-post-row {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.community-search-post-row__author {
+  font-weight: 600;
+}
+
+.community-search-post-row__date {
+  color: var(--text-secondary, #667085);
+}
+
+.community-search-post-row__content {
+  max-height: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.community-search__empty {
+  text-align: center;
+  border: 1px dashed var(--card-border-color, #E5E7EB);
+  box-shadow: none;
+}
+
+.community-search__empty-msg {
+  margin: 0;
+}
+
+/* ── Saved tab (commit 7) ─────────────────────────────────────────── */
+.community-saved {
+  display: block;
+  max-width: 800px;
+}
+
+.community-saved__header {
+  margin-bottom: 24px;
+}
+
+.community-saved__title {
+  margin-bottom: 8px;
+}
+
+.community-saved__desc {
+  color: var(--text-secondary, #667085);
+  margin: 0;
+}
+
+/* ── Notifications adjustments (commit 7) ─────────────────────────── */
+.community-notif-mark-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notif-loading-shimmer--delay-1 {
+  animation-delay: 0.15s;
+}
+
+.notif-loading-shimmer--delay-2 {
+  animation-delay: 0.3s;
+}

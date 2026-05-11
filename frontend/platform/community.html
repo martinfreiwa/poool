@@ -115,65 +115,55 @@ include
              TAB: SEARCH
              ═══════════════════════════════════════════════════════════ -->
         <div id="community-search-tab" class="community-tab-panel hidden" x-data="communitySearch()">
-          <div class="community-content-layout"
-            style="display: block; max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+          <div class="community-search">
 
-            <div style="margin-bottom: 24px;">
-              <h2 class="ds-text-xl" style="margin-bottom: 16px;">Search Community</h2>
-              <form @submit.prevent="executeSearch()" style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <input type="text" x-model="query" class="ds-input" placeholder="Search keywords, hashtags, users..."
-                  style="flex: 1; padding: 12px; font-size: 16px;">
-                <button type="submit" class="ds-btn ds-btn--primary" style="padding: 12px 24px; height: auto;">
+            <div class="community-search__header">
+              <h2 class="ds-text-xl community-search__title">Search Community</h2>
+              <form @submit.prevent="executeSearch()" class="community-search__form">
+                <label for="community-search-tab-input" class="ds-sr-only">Search query</label>
+                <input id="community-search-tab-input" type="text" x-model="query" class="ds-input community-search__input"
+                  placeholder="Search keywords, hashtags, users...">
+                <button type="submit" class="ds-btn ds-btn--primary ds-btn--icon" aria-label="Run search">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
                 </button>
               </form>
 
-              <div style="display: flex; gap: 8px;">
-                <button type="button" @click="setType('all')"
-                  :class="type === 'all' ? 'ds-btn--primary' : 'ds-btn--secondary'"
-                  class="ds-btn ds-btn--sm">All</button>
-                <button type="button" @click="setType('posts')"
-                  :class="type === 'posts' ? 'ds-btn--primary' : 'ds-btn--secondary'"
-                  class="ds-btn ds-btn--sm">Posts</button>
-                <button type="button" @click="setType('users')"
-                  :class="type === 'users' ? 'ds-btn--primary' : 'ds-btn--secondary'"
-                  class="ds-btn ds-btn--sm">Users</button>
+              <div class="community-search__type-filters" role="group" aria-label="Search type">
+                <button type="button" @click="setType('all')" :aria-pressed="type === 'all'"
+                  :class="type === 'all' ? 'feed-toggle-btn active' : 'feed-toggle-btn'">All</button>
+                <button type="button" @click="setType('posts')" :aria-pressed="type === 'posts'"
+                  :class="type === 'posts' ? 'feed-toggle-btn active' : 'feed-toggle-btn'">Posts</button>
+                <button type="button" @click="setType('users')" :aria-pressed="type === 'users'"
+                  :class="type === 'users' ? 'feed-toggle-btn active' : 'feed-toggle-btn'">Users</button>
               </div>
             </div>
 
             <!-- Loading State -->
-            <div x-show="loading" class="ds-text-subtitle" style="text-align: center; padding: 40px;">
-              Searching...
-            </div>
+            <div x-show="loading" class="community-loading-state">Searching...</div>
 
             <div x-show="!loading && hasSearched">
               <!-- Users Results -->
-              <div x-show="users.length > 0 && (type === 'all' || type === 'users')" style="margin-bottom: 32px;">
-                <h3 class="ds-text-md" style="margin-bottom: 16px;">Users</h3>
-                <div style="display: grid; gap: 12px;">
+              <div x-show="users.length > 0 && (type === 'all' || type === 'users')" class="community-search__group">
+                <h3 class="ds-text-md community-search__group-title">Users</h3>
+                <div class="community-search__user-list">
                   <template x-for="u in users" :key="u.user_id">
-                    <div class="ds-card"
-                      style="display: flex; align-items: center; justify-content: space-between; padding: 16px; cursor: pointer; transition: all 0.2s;"
-                      @click="openUserProfile(u.user_id)"
-                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';"
-                      onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
-                      <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="ds-card community-search-user-row" @click="openUserProfile(u.user_id)" role="button" tabindex="0"
+                      @keydown.enter="openUserProfile(u.user_id)" @keydown.space.prevent="openUserProfile(u.user_id)">
+                      <div class="community-search-user-row__main">
                         <template x-if="u.avatar_url">
-                          <img :src="u.avatar_url"
-                            style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                          <img class="community-search-user-row__avatar" :src="u.avatar_url" alt="">
                         </template>
                         <template x-if="!u.avatar_url">
-                          <div
-                            style="width: 48px; height: 48px; border-radius: 50%; background: #EEF4FF; color: var(--btn-primary-bg, #0000FF); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;"
+                          <div class="community-search-user-row__avatar community-search-user-row__avatar--initials"
                             x-text="u.display_name.charAt(0)"></div>
                         </template>
                         <div>
-                          <div class="ds-text-body-lg" style="font-weight: 600;" x-text="u.display_name"></div>
-                          <div class="ds-text-caption" style="color: var(--text-secondary);"
+                          <div class="ds-text-body-lg community-search-user-row__name" x-text="u.display_name"></div>
+                          <div class="ds-text-caption community-search-user-row__meta"
                             x-text="u.follower_count + ' Followers'"></div>
                         </div>
                       </div>
@@ -184,36 +174,31 @@ include
               </div>
 
               <!-- Posts Results -->
-              <div x-show="posts.length > 0 && (type === 'all' || type === 'posts')">
-                <h3 class="ds-text-md" style="margin-bottom: 16px;">Posts</h3>
-                <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div x-show="posts.length > 0 && (type === 'all' || type === 'posts')" class="community-search__group">
+                <h3 class="ds-text-md community-search__group-title">Posts</h3>
+                <div class="community-search__post-list">
                   <template x-for="p in posts" :key="p.id">
-                    <div class="ds-card feed-post-card" @click="window.location.href='/community/post/' + p.id"
-                      style="cursor: pointer; transition: all 0.2s;"
-                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';"
-                      onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                    <div class="ds-card community-search-post-row" @click="window.location.href='/community/post/' + p.id" role="button" tabindex="0"
+                      @keydown.enter="window.location.href='/community/post/' + p.id"
+                      @keydown.space.prevent="window.location.href='/community/post/' + p.id">
                       <div class="feed-post-header">
                         <div class="feed-post-avatar-wrapper">
                           <template x-if="p.author_avatar">
-                            <img :src="p.author_avatar"
-                              style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                            <img class="community-search-post-row__avatar" :src="p.author_avatar" alt="">
                           </template>
                           <template x-if="!p.author_avatar">
-                            <div
-                              style="width: 40px; height: 40px; border-radius: 50%; background: #EEF4FF; color: var(--btn-primary-bg, #0000FF); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px;"
+                            <div class="community-search-post-row__avatar community-search-post-row__avatar--initials"
                               x-text="p.author_name.charAt(0)"></div>
                           </template>
                         </div>
                         <div class="feed-post-author-info">
-                          <div class="ds-text-body" style="font-weight: 600;" x-text="p.author_name"></div>
-                          <div class="ds-text-caption" style="color: var(--text-secondary);"
+                          <div class="ds-text-body community-search-post-row__author" x-text="p.author_name"></div>
+                          <div class="ds-text-caption community-search-post-row__date"
                             x-text="new Date(p.created_at).toLocaleDateString()"></div>
                         </div>
                       </div>
                       <div class="feed-post-body">
-                        <div class="ds-text-body" x-text="p.content"
-                          style="max-height: 100px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical;">
-                        </div>
+                        <div class="ds-text-body community-search-post-row__content" x-text="p.content"></div>
                       </div>
                     </div>
                   </template>
@@ -221,9 +206,8 @@ include
               </div>
 
               <!-- Empty State -->
-              <div x-show="users.length === 0 && posts.length === 0" class="ds-card"
-                style="text-align: center; border: 1px dashed var(--card-border-color); box-shadow: none;">
-                <p class="ds-text-subtitle" style="margin: 0;">No results found for your search.</p>
+              <div x-show="users.length === 0 && posts.length === 0" class="ds-card community-search__empty">
+                <p class="ds-text-subtitle community-search__empty-msg">No results found for your search.</p>
               </div>
             </div>
 
@@ -311,10 +295,10 @@ include
                 </div>
               </div>
               <div class="notif-header__actions">
-                <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" @click="markAllAsRead()"
-                  x-show="notifications.some(n => !n.is_read)" style="display:flex; align-items:center; gap:6px;">
+                <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm community-notif-mark-all-btn" @click="markAllAsRead()"
+                  x-show="notifications.some(n => !n.is_read)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   Mark all as read
@@ -337,8 +321,8 @@ include
             <!-- Loading state -->
             <div x-show="loading && notifications.length === 0" class="notif-loading-state">
               <div class="notif-loading-shimmer"></div>
-              <div class="notif-loading-shimmer" style="animation-delay: 0.15s;"></div>
-              <div class="notif-loading-shimmer" style="animation-delay: 0.3s;"></div>
+              <div class="notif-loading-shimmer notif-loading-shimmer--delay-1"></div>
+              <div class="notif-loading-shimmer notif-loading-shimmer--delay-2"></div>
             </div>
 
             <!-- Empty state -->
@@ -518,12 +502,10 @@ include
              TAB 7: SAVED / BOOKMARKED POSTS (UX.6)
              ═══════════════════════════════════════════════════════════ -->
         <div id="community-saved-tab" class="community-tab-panel hidden">
-          <div class="community-content-layout" style="display: block; max-width: 800px;">
-            <div style="margin-bottom: 24px;">
-              <h2 class="ds-text-xl" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">Saved
-                Posts</h2>
-              <p class="ds-text-body" style="color:var(--text-secondary); margin: 0;">Posts you've bookmarked for later.
-              </p>
+          <div class="community-saved">
+            <div class="community-saved__header">
+              <h2 class="ds-text-xl community-saved__title">Saved Posts</h2>
+              <p class="ds-text-body community-saved__desc">Posts you've bookmarked for later.</p>
             </div>
             <div id="saved-posts-container" class="community-feed"></div>
           </div>
