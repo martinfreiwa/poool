@@ -24,6 +24,10 @@ pub async fn get_community_feed(
     sort_by: Option<String>,
     limit: i64,
     offset: i64,
+    // 14.8.2: when Some, the feed query also filters out posts authored by
+    // anyone the current user has blocked OR muted, AND anyone who has
+    // blocked the current user (reciprocal block).
+    current_user_id: Option<Uuid>,
 ) -> Result<Vec<Post>, AppError> {
     let limit = limit.clamp(1, 50);
 
@@ -38,6 +42,15 @@ pub async fn get_community_feed(
         "ORDER BY p.is_pinned DESC, p.created_at DESC"
     };
 
+    // Reused inside both branches. When current_user_id is None the predicate
+    // is vacuously true (NULL coalesced to '00000000…' avoids skipping rows).
+    let block_mute_predicate = "
+              AND ($CUR IS NULL OR p.user_id NOT IN (
+                  SELECT target_user_id FROM block_relationships WHERE actor_user_id = $CUR
+                  UNION SELECT actor_user_id FROM block_relationships WHERE target_user_id = $CUR
+                  UNION SELECT target_user_id FROM mute_relationships WHERE actor_user_id = $CUR
+              ))";
+
     let rows = if let Some(cat) = category {
         let query_str = format!(
             r#"
@@ -49,15 +62,17 @@ pub async fn get_community_feed(
               AND cp.is_shadowbanned = false
               AND (ac.category = $1 OR $1 = '')
               AND ($2 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $2))
-            {}
-            LIMIT $3 OFFSET $4
+              {block_mute}
+            {order_clause}
+            LIMIT $4 OFFSET $5
             "#,
-            order_clause
+            block_mute = block_mute_predicate.replace("$CUR", "$3"),
         );
 
         sqlx::query_as::<_, Post>(&query_str)
             .bind(cat)
             .bind(only_following_user_id)
+            .bind(current_user_id)
             .bind(limit)
             .bind(offset)
             .fetch_all(pool)
@@ -71,14 +86,16 @@ pub async fn get_community_feed(
             WHERE p.is_hidden = false
               AND cp.is_shadowbanned = false
               AND ($1 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
-            {}
-            LIMIT $2 OFFSET $3
+              {block_mute}
+            {order_clause}
+            LIMIT $3 OFFSET $4
             "#,
-            order_clause
+            block_mute = block_mute_predicate.replace("$CUR", "$2"),
         );
 
         sqlx::query_as::<_, Post>(&query_str)
             .bind(only_following_user_id)
+            .bind(current_user_id)
             .bind(limit)
             .bind(offset)
             .fetch_all(pool)

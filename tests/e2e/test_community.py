@@ -422,3 +422,184 @@ def test_community_ban_appeal_banner_hidden_for_unbanned_user(authenticated_user
     expect(banner).not_to_be_visible()
 
     tracker.assert_no_critical_errors()
+
+
+# ─── 14.8.2 — block / mute self-service ──────────────────────────────────
+
+
+def _seed_community_post(author_user_id, content):
+    """14.8.2 helper — inserts a post directly into the community DB so block
+    filtering can be asserted against a known author."""
+    conn = get_community_db_connection()
+    try:
+        cur = conn.cursor()
+        # Ensure a community_profiles row exists so the feed query JOIN doesn't
+        # drop the post.
+        cur.execute(
+            """
+            INSERT INTO community_profiles (user_id) VALUES (%s)
+            ON CONFLICT (user_id) DO NOTHING
+            """,
+            (str(author_user_id),),
+        )
+        cur.execute(
+            """
+            INSERT INTO posts (user_id, content, post_type)
+            VALUES (%s, %s, 'general')
+            RETURNING id
+            """,
+            (str(author_user_id), content),
+        )
+        post_id = cur.fetchone()[0]
+        conn.commit()
+        return post_id
+    finally:
+        cur.close()
+        conn.close()
+
+
+def _make_e2e_user_via_db():
+    """Reuse the e2e user creation helper from conftest without going through
+    a browser context — useful when we just need a second user id to seed."""
+    from tests.e2e.conftest import create_e2e_user
+
+    return create_e2e_user(email_prefix="e2e-target", display_name="Block Target")
+
+
+def _csrf_headers(page):
+    """Read csrf_token cookie from page context and return matching header dict."""
+    cookies = page.context.cookies(BASE_URL)
+    token = next((c["value"] for c in cookies if c["name"] == "csrf_token"), None)
+    return {"X-CSRF-Token": token} if token else {}
+
+
+def _block_via_api(page, target_user_id):
+    """Issues POST /api/community/users/:id/block from the page's auth context."""
+    return page.request.post(
+        f"{BASE_URL}/api/community/users/{target_user_id}/block",
+        headers={**_csrf_headers(page), "Content-Type": "application/json"},
+    )
+
+
+def test_community_block_unblock_and_feed_hides_blocked_author(authenticated_user_page):
+    """14.8.2 — actor blocks target, target's post vanishes from actor's
+    feed; unblock restores it."""
+    page, tracker, current_user = authenticated_user_page
+    actor_id = current_user["user_id"]
+    target = _make_e2e_user_via_db()
+    target_id = target["user_id"]
+
+    needle = f"block-fixture-{uuid.uuid4().hex}"
+    post_id = _seed_community_post(target_id, needle)
+
+    try:
+        # Confirm feed shows the target's post before any block.
+        page.goto(f"{BASE_URL}/community")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_selector("#community-feed-container .feed-post", timeout=10000)
+        feed_text_before = page.locator("#community-feed-container").inner_text()
+        assert needle in feed_text_before, "expected target's post in actor feed before block"
+
+        # Block via API call (uses page context so cookies + CSRF apply).
+        res = _block_via_api(page, target_id)
+        assert res.status == 200, f"block POST returned {res.status}: {res.text()}"
+        payload = res.json()
+        assert payload.get("blocked") is True
+
+        # List endpoint surfaces the target.
+        list_res = page.request.get(f"{BASE_URL}/api/community/blocks")
+        assert list_res.status == 200
+        blocks = list_res.json()["blocks"]
+        assert any(b["target_user_id"] == target_id for b in blocks)
+
+        # Reload feed; target's post should be filtered out.
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        feed_after = page.locator("#community-feed-container").inner_text()
+        assert needle not in feed_after, "blocked author's post still visible in feed"
+
+        # Self-block rejected with 400.
+        self_block = page.request.post(
+            f"{BASE_URL}/api/community/users/{actor_id}/block",
+            headers=_csrf_headers(page),
+        )
+        assert self_block.status == 400
+
+        # Unblock restores visibility.
+        unblock = page.request.delete(
+            f"{BASE_URL}/api/community/users/{target_id}/block",
+            headers=_csrf_headers(page),
+        )
+        assert unblock.status == 200
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        page.wait_for_selector("#community-feed-container .feed-post", timeout=10000)
+        feed_restored = page.locator("#community-feed-container").inner_text()
+        assert needle in feed_restored, "post did not reappear after unblock"
+
+        tracker.assert_no_critical_errors()
+    finally:
+        conn = get_community_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM posts WHERE id = %s", (post_id,))
+            cur.execute(
+                "DELETE FROM block_relationships WHERE actor_user_id = %s",
+                (str(actor_id),),
+            )
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+
+def test_community_mute_filters_feed(authenticated_user_page):
+    """14.8.2 — muting a user removes their posts from the actor's feed
+    (one-directional)."""
+    page, tracker, current_user = authenticated_user_page
+    target = _make_e2e_user_via_db()
+    target_id = target["user_id"]
+    needle = f"mute-fixture-{uuid.uuid4().hex}"
+    post_id = _seed_community_post(target_id, needle)
+
+    try:
+        # Visit /community first so the csrf_token cookie is set.
+        page.goto(f"{BASE_URL}/community")
+        page.wait_for_load_state("networkidle")
+        # Mute via API.
+        res = page.request.post(
+            f"{BASE_URL}/api/community/users/{target_id}/mute",
+            headers=_csrf_headers(page),
+        )
+        assert res.status == 200, f"mute POST returned {res.status}: {res.text()}"
+
+        page.goto(f"{BASE_URL}/community")
+        page.wait_for_load_state("networkidle")
+        feed_after = page.locator("#community-feed-container").inner_text()
+        assert needle not in feed_after, "muted author's post still visible"
+
+        # Unmute restores visibility.
+        page.request.delete(
+            f"{BASE_URL}/api/community/users/{target_id}/mute",
+            headers=_csrf_headers(page),
+        )
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        page.wait_for_selector("#community-feed-container .feed-post", timeout=10000)
+        feed_restored = page.locator("#community-feed-container").inner_text()
+        assert needle in feed_restored, "post did not reappear after unmute"
+
+        tracker.assert_no_critical_errors()
+    finally:
+        conn = get_community_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM posts WHERE id = %s", (post_id,))
+            cur.execute(
+                "DELETE FROM mute_relationships WHERE actor_user_id = %s",
+                (str(current_user["user_id"]),),
+            )
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
