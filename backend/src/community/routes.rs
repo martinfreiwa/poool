@@ -22,6 +22,10 @@ pub struct FeedQuery {
     pub page: Option<i64>,
     pub feed_mode: Option<String>,
     pub sort_by: Option<String>,
+    // Phase 2 task 15: when "bookmarks", the HTMX feed partial returns the
+    // viewer's bookmarked posts instead of the global feed. Any other value
+    // is treated as the default global feed.
+    pub source: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -5399,19 +5403,17 @@ pub struct BookmarkQuery {
     pub page: Option<i64>,
 }
 
-async fn list_bookmarks(
-    jar: CookieJar,
-    State(state): State<AppState>,
-    Query(query): Query<BookmarkQuery>,
-) -> Result<impl IntoResponse, AppError> {
-    let user = middleware::get_current_user(&jar, &state.db)
-        .await
-        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
-
-    let c_pool = get_community_pool(&state)?;
+// Phase 2 task 15: extracted so the HTMX feed-list partial can reuse the
+// same data shape as the JSON /api/community/bookmarks endpoint.
+pub async fn get_bookmark_feed_data(
+    state: &AppState,
+    user_id: Uuid,
+    page: Option<i64>,
+) -> Result<Vec<models::PostDisplay>, AppError> {
+    let c_pool = get_community_pool(state)?;
 
     let limit: i64 = 20;
-    let offset = (query.page.unwrap_or(1).max(1) - 1) * limit;
+    let offset = (page.unwrap_or(1).max(1) - 1) * limit;
 
     let posts = sqlx::query_as::<_, models::Post>(
         r#"
@@ -5423,13 +5425,12 @@ async fn list_bookmarks(
         LIMIT $2 OFFSET $3
         "#,
     )
-    .bind(user.id)
+    .bind(user_id)
     .bind(limit)
     .bind(offset)
     .fetch_all(&c_pool)
     .await?;
 
-    // Build user_ids list for batch fetching
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
     let authors =
         user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
@@ -5439,11 +5440,9 @@ async fn list_bookmarks(
     for p in posts {
         let author = authors.get(&p.user_id);
         let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
-
         let author_name = author
             .map(|a| a.display_name.clone())
             .unwrap_or_else(|| "Anonymous".into());
-
         feed.push(map_to_post_display(
             &p,
             author_name,
@@ -5452,7 +5451,18 @@ async fn list_bookmarks(
             false,
         ));
     }
+    Ok(feed)
+}
 
+async fn list_bookmarks(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(query): Query<BookmarkQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let feed = get_bookmark_feed_data(&state, user.id, query.page).await?;
     Ok(Json(feed))
 }
 

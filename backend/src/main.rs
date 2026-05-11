@@ -2723,7 +2723,21 @@ async fn community_feed_list_htmx(
     axum::extract::Query(query): axum::extract::Query<crate::community::routes::FeedQuery>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
     let user = crate::auth::middleware::get_current_user(&jar, &state.db).await;
-    let posts = crate::community::routes::get_feed_data(&state, &query, user.as_ref()).await?;
+
+    // Phase 2 task 15: when the Saved tab requests the partial, return only
+    // bookmarked posts. Anonymous viewers can't have bookmarks so fall back
+    // to the global feed instead of erroring.
+    let is_bookmarks = query.source.as_deref() == Some("bookmarks") && user.is_some();
+    let posts = if is_bookmarks {
+        crate::community::routes::get_bookmark_feed_data(
+            &state,
+            user.as_ref().expect("user checked above").id,
+            query.page,
+        )
+        .await?
+    } else {
+        crate::community::routes::get_feed_data(&state, &query, user.as_ref()).await?
+    };
 
     #[derive(serde::Serialize)]
     struct Context {
@@ -2732,7 +2746,11 @@ async fn community_feed_list_htmx(
         base_url: String,
     }
 
-    let current_feed_mode = query.feed_mode.clone().unwrap_or_else(|| "all".to_string());
+    let current_feed_mode = if is_bookmarks {
+        "bookmarks".to_string()
+    } else {
+        query.feed_mode.clone().unwrap_or_else(|| "all".to_string())
+    };
 
     Ok(common::routes_helper::serve_protected_with_context(
         jar,

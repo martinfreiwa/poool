@@ -1373,36 +1373,13 @@ window.initCommunityFeed = function() {
         }
     };
 
-    // Load Saved Posts (for Saved tab)
-    window.loadSavedPosts = async function() {
-        const container = document.getElementById('saved-posts-container');
-        if (!container) return;
-
-        container.innerHTML = '<div style="text-align: center; padding: 24px; color: #667085;">Loading saved posts...</div>';
-
-        try {
-            const res = await fetch('/api/community/bookmarks', { credentials: 'same-origin' });
-            if (!res.ok) throw new Error('Failed to load');
-            const posts = await res.json();
-
-            if (posts.length === 0) {
-                container.innerHTML = `<div style="text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 32px; margin-bottom: 12px;">🔖</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #101828; margin-bottom: 4px;">No saved posts yet</div>
-                    <div style="font-size: 14px; color: #667085;">Click the bookmark icon on any post to save it for later.</div>
-                </div>`;
-                return;
-            }
-
-            container.innerHTML = '';
-            for (const p of posts) {
-                const postEl = buildPostCard(p);
-                container.appendChild(postEl);
-            }
-        } catch (e) {
-            console.error(e);
-            container.innerHTML = '<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load saved posts.</div>';
-        }
+    // Phase 2 task 15: trigger the saved-posts HTMX swap. The container in
+    // community.html listens for the `load-saved-posts` body event and fetches
+    // /community/partials/feed/list?source=bookmarks, which returns the same
+    // server-rendered card as the main feed (reactions, comments, bookmark
+    // toggle, report, owner kebab — all wired).
+    window.loadSavedPosts = function () {
+        document.body.dispatchEvent(new Event('load-saved-posts'));
     };
 
     // ═══════════════════════════════════════════════════════════════

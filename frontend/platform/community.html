@@ -534,7 +534,13 @@ include
               <h2 class="ds-text-xl community-saved__title">Saved Posts</h2>
               <p class="ds-text-body community-saved__desc">Posts you've bookmarked for later.</p>
             </div>
-            <div id="saved-posts-container" class="community-feed"></div>
+            <!-- Phase 2 task 15: use the same HTMX partial endpoint as the main
+                 feed (with source=bookmarks) so saved posts get the full reaction
+                 / comment / bookmark / report card instead of the stripped-down
+                 client-rendered version. -->
+            <div id="saved-posts-container" class="community-feed"
+                 hx-get="/community/partials/feed/list?source=bookmarks"
+                 hx-trigger="load-saved-posts from:body"></div>
           </div>
         </div>
 
