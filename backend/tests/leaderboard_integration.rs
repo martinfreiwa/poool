@@ -216,19 +216,21 @@ async fn refresh_removes_non_active_user_rows() {
 
     refresh_all_scores_sql(&pool).await;
 
-    let active_score: Option<i64> =
-        sqlx::query_scalar("SELECT total_invested_cents FROM leaderboard_scores WHERE user_id = $1")
-            .bind(active)
-            .fetch_optional(&pool)
-            .await
-            .expect("query active");
+    let active_score: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores WHERE user_id = $1",
+    )
+    .bind(active)
+    .fetch_optional(&pool)
+    .await
+    .expect("query active");
 
-    let suspended_score: Option<i64> =
-        sqlx::query_scalar("SELECT total_invested_cents FROM leaderboard_scores WHERE user_id = $1")
-            .bind(suspended)
-            .fetch_optional(&pool)
-            .await
-            .expect("query suspended");
+    let suspended_score: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores WHERE user_id = $1",
+    )
+    .bind(suspended)
+    .fetch_optional(&pool)
+    .await
+    .expect("query suspended");
 
     cleanup_user(&pool, active).await;
     cleanup_user(&pool, suspended).await;
@@ -674,7 +676,12 @@ async fn timeframed_tier_filter_count_matches_rankings_len() {
     // filter), so we expect monotonically increasing values within [1, 10].
     let mut prev = 0i32;
     for (r,) in &ranks {
-        assert!(*r > prev, "ranks must be strictly increasing: {} <= {}", *r, prev);
+        assert!(
+            *r > prev,
+            "ranks must be strictly increasing: {} <= {}",
+            *r,
+            prev
+        );
         assert!(*r >= 1 && *r <= 10, "rank {} out of expected range", *r);
         prev = *r;
     }
@@ -750,4 +757,191 @@ async fn tier_filter_narrows_participant_pool() {
 
     assert_eq!(count_a, 1, "tier A should contain exactly 1 user");
     assert_eq!(count_all, 2, "no-filter count should contain both users");
+}
+
+// ─── Task 3: direct service-level has_more regression tests ────────────────
+//
+// The earlier `has_more_false_when_total_is_exact_multiple_of_per_page`
+// test (above) exercises the SQL pattern inline. These tests go further:
+// they call `poool_backend::leaderboard::service::get_rankings` directly
+// — same code path the HTTP handler invokes — so a regression in the
+// service-layer derivation is caught even if the inline SQL stays
+// correct. Each seeded user gets a unique `HMTEST_<id>` display_name +
+// `leaderboard_preferences.visible = true`, and the tests pass
+// `search = Some("HMTEST_")` so `total_participants` is scoped to the
+// test cohort regardless of other rows in `leaderboard_scores`.
+
+async fn seed_searchable_users(
+    pool: &PgPool,
+    n: usize,
+    test_id: &str,
+) -> (Vec<Uuid>, Uuid) {
+    let asset = Uuid::new_v4();
+    cleanup_asset(pool, asset).await;
+    insert_asset(pool, asset, 500).await;
+
+    let users: Vec<Uuid> = (0..n).map(|_| Uuid::new_v4()).collect();
+    for u in &users {
+        cleanup_user(pool, *u).await;
+        insert_user(pool, *u, "active").await;
+        // Distinct, very large investment ensures the test cohort sorts
+        // strictly above any organic real-user data in the test DB.
+        let amount: i64 = (n as i64 - users.iter().position(|x| x == u).unwrap() as i64)
+            * 1_000_000_000_i64
+            + 100_000_000_i64;
+        insert_investment(pool, *u, asset, amount).await;
+        // Display name must match the unique HMTEST_<id> prefix so the
+        // service's full_name predicate scopes the count to this cohort.
+        sqlx::query(
+            r#"INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name)
+               VALUES ($1, TRUE, TRUE, $2)
+               ON CONFLICT (user_id) DO UPDATE SET
+                   visible = TRUE,
+                   display_name = EXCLUDED.display_name"#,
+        )
+        .bind(u)
+        .bind(format!("HMTEST_{}_{}", test_id, u.simple()))
+        .execute(pool)
+        .await
+        .expect("insert pref");
+    }
+
+    refresh_all_scores_sql(pool).await;
+    // Mirror the rank-update step the production refresh performs.
+    sqlx::query(
+        r#"UPDATE leaderboard_scores ls SET rank_invested = sub.r_inv
+           FROM (
+               SELECT user_id, ROW_NUMBER() OVER (ORDER BY total_invested_cents DESC, computed_at ASC) AS r_inv
+               FROM leaderboard_scores
+           ) sub WHERE ls.user_id = sub.user_id"#,
+    )
+    .execute(pool)
+    .await
+    .expect("rank refresh");
+
+    (users, asset)
+}
+
+async fn cleanup_searchable_users(pool: &PgPool, users: &[Uuid], asset: Uuid) {
+    for u in users {
+        cleanup_user(pool, *u).await;
+    }
+    cleanup_asset(pool, asset).await;
+}
+
+#[ignore]
+#[tokio::test]
+async fn has_more_false_on_exact_multiple_page() {
+    // Seed exactly 20 ranked users, request page=2 with per_page=10.
+    // Page 2 is the LAST page; has_more must be false. Pre-fix this
+    // returned true (because rankings.len() == per_page heuristic).
+    let pool = pool().await;
+    let test_id = "exact20";
+    let (users, asset) = seed_searchable_users(&pool, 20, test_id).await;
+    let viewer = users[0];
+
+    let resp = poool_backend::leaderboard::service::get_rankings(
+        &pool,
+        viewer,
+        "invested",
+        "alltime",
+        2,                                // page
+        10,                               // per_page
+        None,                             // tier_id
+        Some(format!("HMTEST_{}", test_id)),
+        None,                             // last_updated_cache
+    )
+    .await
+    .expect("get_rankings");
+
+    cleanup_searchable_users(&pool, &users, asset).await;
+
+    assert_eq!(
+        resp.total_participants, 20,
+        "search-scoped total_participants should be exactly 20; got {}",
+        resp.total_participants
+    );
+    assert_eq!(
+        resp.rankings.len(),
+        10,
+        "page 2 must return 10 rows; got {}",
+        resp.rankings.len()
+    );
+    assert!(
+        !resp.has_more,
+        "has_more must be FALSE on the last full page (regression for audit fix B1)"
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn has_more_true_with_overflow() {
+    // Seed 25 ranked users. With page=2 per_page=10, page 2 holds ranks
+    // 11..20 (10 rows). 5 more rows remain, so has_more must be true.
+    let pool = pool().await;
+    let test_id = "over25";
+    let (users, asset) = seed_searchable_users(&pool, 25, test_id).await;
+    let viewer = users[0];
+
+    let resp = poool_backend::leaderboard::service::get_rankings(
+        &pool,
+        viewer,
+        "invested",
+        "alltime",
+        2,
+        10,
+        None,
+        Some(format!("HMTEST_{}", test_id)),
+        None,
+    )
+    .await
+    .expect("get_rankings");
+
+    cleanup_searchable_users(&pool, &users, asset).await;
+
+    assert_eq!(resp.total_participants, 25);
+    assert_eq!(resp.rankings.len(), 10, "page 2 must return 10 rows");
+    assert!(
+        resp.has_more,
+        "has_more must be TRUE when 5 more rows remain after page 2"
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn has_more_false_partial_last_page() {
+    // Seed 15 users. With page=2 per_page=10, page 2 holds only 5 rows
+    // (ranks 11..15). has_more must be false — the page isn't even full.
+    let pool = pool().await;
+    let test_id = "part15";
+    let (users, asset) = seed_searchable_users(&pool, 15, test_id).await;
+    let viewer = users[0];
+
+    let resp = poool_backend::leaderboard::service::get_rankings(
+        &pool,
+        viewer,
+        "invested",
+        "alltime",
+        2,
+        10,
+        None,
+        Some(format!("HMTEST_{}", test_id)),
+        None,
+    )
+    .await
+    .expect("get_rankings");
+
+    cleanup_searchable_users(&pool, &users, asset).await;
+
+    assert_eq!(resp.total_participants, 15);
+    assert_eq!(
+        resp.rankings.len(),
+        5,
+        "page 2 of a 15-user set must return 5 rows; got {}",
+        resp.rankings.len()
+    );
+    assert!(
+        !resp.has_more,
+        "has_more must be FALSE on a partial last page"
+    );
 }
