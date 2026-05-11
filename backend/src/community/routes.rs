@@ -3704,6 +3704,10 @@ async fn get_my_analytics(
 }
 
 /// Helper invoked by the profile page renderer to track views.
+///
+/// WS3.2: telemetry is fire-and-forget so a DB blip never breaks the page
+/// render, but failures still surface via `tracing::warn!` (and forward to
+/// Sentry via the tracing-sentry bridge) instead of being silently swallowed.
 pub async fn record_profile_view(
     pool: &sqlx::PgPool,
     profile_user_id: Uuid,
@@ -3712,12 +3716,20 @@ pub async fn record_profile_view(
     if Some(profile_user_id) == viewer_user_id {
         return; // Don't count self-views.
     }
-    let _ =
+    if let Err(e) =
         sqlx::query("INSERT INTO profile_views (profile_user_id, viewer_user_id) VALUES ($1, $2)")
             .bind(profile_user_id)
             .bind(viewer_user_id)
             .execute(pool)
-            .await;
+            .await
+    {
+        tracing::warn!(
+            profile_user_id = %profile_user_id,
+            viewer_user_id = ?viewer_user_id,
+            error = %e,
+            "record_profile_view: insert failed"
+        );
+    }
 }
 
 // ─── Verified-owner request flow (14.8.16) ──────────────────────────────
