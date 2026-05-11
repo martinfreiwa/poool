@@ -739,8 +739,8 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 
 | ID | Task | Description | Status | Assignee | Tested? | Notes |
 |:---|:---|:---|:---|:---|:---|:---|
-| **19.8** | Dynamic Checkout Disclosures | API returns `is_referral_user` flag. Direct users: 3 checkboxes. Referral users: 6 checkboxes (hardcoded). Backend rejects if mismatch. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.4 |
-| **19.9** | Disclosure Logging | All acceptance events stored in `investment_disclosures_log` (timestamp, IP, policy version). Immutable. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.6 (DDL provided) |
+| **19.8** | Dynamic Checkout Disclosures | API returns `is_referral_user` flag. Direct users: 3 checkboxes. Referral users: 6 checkboxes (hardcoded). Backend rejects if mismatch. | `✅ DONE` | `Claude Opus 4.7` | `✅` | Commit `744c834`. Backend validates `disclosure_general_{1,2,3}` always required + `disclosure_referral_{1,2,3}` required when `is_referral_user`. Returns 400 with specific message on miss. Frontend renders 3 stacked general checkboxes (always) and 3 stacked referral checkboxes (conditional). Smoke-tested with both user types. |
+| **19.9** | Disclosure Logging | All acceptance events stored in `investment_disclosures_log` (timestamp, IP, policy version). Immutable. | `✅ DONE` | `Claude Opus 4.7` | `✅` | Commit `744c834`. Migration `129_disclosure_policy_version.sql` adds NOT NULL `policy_version` column (default '1.0'). INSERT now writes the full triplet (timestamp + IP + policy_version) plus per-checkbox aggregate state. Version read from `platform_settings.legal_disclosure_version` so bumps need no code change. |
 
 ### 19C: Frontend Ecosystem (Affiliate Portal & Admin)
 
