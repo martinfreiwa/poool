@@ -98,10 +98,12 @@
     }
   }
 
+  // Inputs are integer cents. Convert to euros before applying the compact
+  // M/K suffix so the threshold for "€1M" is 100_000_000 cents, not 1_000_000.
   function formatCompact(val) {
-    if (val >= 1000000) return '€' + (val / 100000000).toFixed(2) + 'M';
-    if (val >= 100000) return '€' + (val / 100000).toFixed(0) + 'K';
-    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(val / 100);
+    if (val >= 100000000) return '€' + (val / 1e8).toFixed(2) + 'M';
+    if (val >= 100000)    return '€' + (val / 1e5).toFixed(1) + 'K';
+    return '€' + (val / 100).toFixed(0);
   }
 
   function getMetricName(type) {
