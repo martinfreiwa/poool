@@ -2688,6 +2688,15 @@ pub fn router() -> Router<AppState> {
             get(get_trending_hashtags),
         )
         .route("/api/community/hashtags/:tag", get(get_posts_by_hashtag))
+        // Phase 3 task 28: autocomplete suggestions for the post composer.
+        .route(
+            "/api/community/mentions/suggest",
+            get(suggest_mentions),
+        )
+        .route(
+            "/api/community/hashtags/suggest",
+            get(suggest_hashtags),
+        )
 }
 
 // ─── Social Handlers ─────────────────────────────────────────────────────────
@@ -6092,6 +6101,70 @@ async fn get_trending_hashtags(
         .collect();
 
     Ok(Json(hashtags))
+}
+
+// Phase 3 task 28: autocomplete suggestions for the post composer.
+
+#[derive(Deserialize)]
+struct SuggestQuery {
+    pub q: String,
+}
+
+async fn suggest_hashtags(
+    State(state): State<AppState>,
+    Query(q): Query<SuggestQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let prefix = q.q.trim().trim_start_matches('#').to_lowercase();
+    if prefix.is_empty() {
+        return Ok(Json(serde_json::json!({ "hashtags": [] })));
+    }
+    let pattern = format!("{}%", prefix);
+    let rows = sqlx::query_as::<_, (String, i32)>(
+        "SELECT tag, post_count FROM hashtags WHERE tag ILIKE $1 ORDER BY post_count DESC, tag ASC LIMIT 10",
+    )
+    .bind(&pattern)
+    .fetch_all(&c_pool)
+    .await?;
+    let hashtags: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|(tag, count)| serde_json::json!({ "tag": tag, "post_count": count }))
+        .collect();
+    Ok(Json(serde_json::json!({ "hashtags": hashtags })))
+}
+
+async fn suggest_mentions(
+    State(state): State<AppState>,
+    Query(q): Query<SuggestQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let prefix = q.q.trim().trim_start_matches('@');
+    if prefix.is_empty() {
+        return Ok(Json(serde_json::json!({ "users": [] })));
+    }
+    let pattern = format!("{}%", prefix);
+    let rows = sqlx::query_as::<_, (Uuid, Option<String>, Option<String>)>(
+        r#"
+        SELECT u.id, up.display_name, u.avatar_url
+        FROM users u
+        JOIN user_profiles up ON up.user_id = u.id
+        WHERE up.display_name ILIKE $1
+          AND u.status <> 'deleted'
+        ORDER BY up.display_name ASC
+        LIMIT 10
+        "#,
+    )
+    .bind(&pattern)
+    .fetch_all(&state.db)
+    .await?;
+    let users: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|(id, name, avatar)| serde_json::json!({
+            "user_id": id,
+            "display_name": name.clone().unwrap_or_default(),
+            "avatar_url": avatar,
+        }))
+        .collect();
+    Ok(Json(serde_json::json!({ "users": users })))
 }
 
 /// Get posts by a specific hashtag

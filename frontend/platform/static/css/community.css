@@ -2245,6 +2245,57 @@ button.community-tab-btn.active {
   color: var(--btn-primary-bg, #0000FF);
 }
 
+/* Phase 3 task 28: composer autocomplete popover. */
+.community-autocomplete {
+  position: absolute;
+  z-index: 200;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #EAECF0);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.12);
+  padding: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.community-autocomplete[hidden] {
+  display: none;
+}
+
+.community-autocomplete__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--page-title-color, #101828);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.community-autocomplete__item--active,
+.community-autocomplete__item:hover {
+  background: var(--ds-surface-hover, #F2F4F7);
+}
+
+.community-autocomplete__subtitle {
+  font-size: 11px;
+  color: var(--text-secondary, #98A2B3);
+}
+
+.community-autocomplete__empty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-secondary, #667085);
+}
+
 .feed-post-link-preview {
   display: flex;
   flex-direction: column;
