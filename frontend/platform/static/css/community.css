@@ -2921,6 +2921,29 @@ button.community-tab-btn.active {
   color: var(--text-secondary, #667085);
 }
 
+.community-challenge-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.community-challenge-card--completed {
+  opacity: 0.85;
+}
+
+.community-challenge-card--completed .community-challenge-card__cta {
+  display: none;
+}
+
+.community-challenge-card__done,
+.community-challenge-card__reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .community-challenges__empty {
   text-align: center;
   border: 1px dashed var(--card-border-color, #E5E7EB);

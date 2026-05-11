@@ -20,7 +20,7 @@
       <!-- Challenge list -->
       <div x-show="!loading" class="community-challenges__list">
         <template x-for="ch in challenges" :key="ch.id">
-          <div class="ds-card community-challenge-card">
+          <div class="ds-card community-challenge-card" :class="ch.completed ? 'community-challenge-card--completed' : ''">
             <div class="community-challenge-card__icon" aria-hidden="true">
               <span x-text="challengeIcon(ch)"></span>
             </div>
@@ -36,8 +36,27 @@
                 <div class="ds-progress__fill" :style="challengeProgressStyle(ch)"></div>
               </div>
               <div class="community-challenge-card__meta ds-text-caption">
-                <span x-text="`${ch.user_progress} / ${ch.target_value} completed`"></span>
-                <span x-text="ch.end_time ? 'Ends ' + new Date(ch.end_time).toLocaleDateString() : 'Ongoing'"></span>
+                <span x-text="`${ch.current} / ${ch.target} · ` + challengeStateLabel(ch)"></span>
+                <span x-text="challengeFrequencyLabel(ch)"></span>
+              </div>
+
+              <div class="community-challenge-card__actions">
+                <template x-if="ch.completed">
+                  <span class="ds-badge ds-badge--success community-challenge-card__done">
+                    Completed
+                    <template x-if="ch.completed_at">
+                      <span x-text="' · ' + new Date(ch.completed_at).toLocaleDateString()"></span>
+                    </template>
+                  </span>
+                </template>
+                <template x-if="!ch.completed">
+                  <a class="ds-btn ds-btn--primary ds-btn--sm community-challenge-card__cta"
+                     :href="challengeAction(ch).href"
+                     x-text="challengeAction(ch).label"></a>
+                </template>
+                <template x-if="ch.badge_reward">
+                  <span class="ds-badge ds-badge--info community-challenge-card__reward" x-text="'Badge: ' + ch.badge_reward"></span>
+                </template>
               </div>
             </div>
           </div>
