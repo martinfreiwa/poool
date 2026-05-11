@@ -1,7 +1,7 @@
 {% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones,
 and grow together.",
 extra_css=['community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed',
-'community-circles', 'community-challenges'] %}{%
+'community-circles', 'community-challenges', 'community-ban-appeal'] %}{%
 include
 "components/head.html" %}{% endwith %}
 
@@ -27,6 +27,28 @@ include
       {% with investor_topbar_title="Community", investor_topbar_variant="community" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="lb-container">
+
+        <!-- Ban appeal banner (14.8.1) — hidden by default; community-ban-appeal.js
+             reveals it after fetching /api/community/profile/me when the current
+             user is community-banned. -->
+        <aside id="community-ban-banner" class="community-ban-banner" role="region" aria-label="Account banned" hidden>
+          <div class="community-ban-banner__body">
+            <div class="community-ban-banner__icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+              </svg>
+            </div>
+            <div class="community-ban-banner__copy">
+              <strong class="community-ban-banner__title">Your community access is restricted.</strong>
+              <span id="community-ban-banner-reason" class="community-ban-banner__reason"></span>
+            </div>
+          </div>
+          <div class="community-ban-banner__actions">
+            <button type="button" id="community-ban-appeal-btn" class="ds-btn ds-btn--secondary ds-btn--sm" onclick="openCommunityModal('ban-appeal-modal', this)">Submit an appeal</button>
+            <span id="community-ban-pending-state" class="community-ban-banner__pending" hidden>Appeal under review</span>
+          </div>
+        </aside>
 
         <!-- Tab Navigation — HTMX-driven via topbar buttons -->
         <script>
@@ -167,7 +189,12 @@ include
                             x-text="u.follower_count + ' Followers'"></div>
                         </div>
                       </div>
-                      <button class="ds-btn ds-btn--secondary ds-btn--sm" @click.stop="">Follow</button>
+                      <button
+                        x-show="!u.is_self"
+                        class="ds-btn ds-btn--sm"
+                        :class="u.is_following ? 'ds-btn--secondary' : 'ds-btn--primary'"
+                        x-text="u.is_following ? 'Unfollow' : 'Follow'"
+                        @click.stop="window.toggleFollow(u.user_id, u.is_following, $event.target); u.is_following = !u.is_following"></button>
                     </div>
                   </template>
                 </div>
@@ -584,6 +611,42 @@ include
             textarea.setSelectionRange(len, len);
           }
         </script>
+
+        <!-- Ban Appeal Modal (14.8.1) -->
+        <div id="ban-appeal-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="ban-appeal-title" aria-describedby="ban-appeal-desc" style="display: none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('ban-appeal-modal')"></div>
+          <div class="ds-modal__content community-page-modal__content--md">
+            <div class="ds-modal__header">
+              <h3 id="ban-appeal-title" class="ds-modal__title">Submit a Ban Appeal</h3>
+              <button type="button" class="ds-modal__close"
+                aria-label="Close ban appeal dialog" onclick="closeCommunityModal('ban-appeal-modal')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="ds-modal__body">
+              <p id="ban-appeal-desc" class="ds-text-body community-ban-appeal__desc">Tell us why your account should be reinstated. Your appeal will be reviewed by the moderation team.</p>
+              <div class="ds-form-group">
+                <label for="ban-appeal-text" class="ds-label">Your appeal</label>
+                <textarea id="ban-appeal-text" class="ds-input community-ban-appeal__textarea" rows="6"
+                  placeholder="Explain the context and why this ban should be reconsidered (10–2000 characters)"
+                  minlength="10" maxlength="2000" required></textarea>
+                <div class="ds-helper-text">
+                  <span id="ban-appeal-counter">0</span> / 2000 characters · 10 character minimum.
+                </div>
+                <div id="ban-appeal-error" class="ds-form-error" role="alert" hidden></div>
+              </div>
+            </div>
+            <div class="ds-modal__footer community-page-modal__footer">
+              <button type="button" class="ds-btn ds-btn--secondary"
+                onclick="closeCommunityModal('ban-appeal-modal')">Cancel</button>
+              <button type="button" class="ds-btn ds-btn--primary" id="ban-appeal-submit-btn">Submit Appeal</button>
+            </div>
+          </div>
+        </div>
 
         <!-- Report Post Modal -->
         <div id="report-post-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="report-post-title" style="display: none;">

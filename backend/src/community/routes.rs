@@ -2567,7 +2567,7 @@ async fn search_community(
     State(state): State<AppState>,
     Query(query): Query<SearchQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = middleware::get_current_user(&jar, &state.db).await;
+    let viewer = middleware::get_current_user(&jar, &state.db).await;
     let c_pool = get_community_pool(&state)?;
 
     let limit = 20;
@@ -2669,10 +2669,31 @@ async fn search_community(
     .await?;
     let badges = crate::community::service::get_badges_batch(&c_pool, &uids_vec).await?;
 
+    // Batch lookup of which result users the viewer already follows.
+    let following_set: std::collections::HashSet<Uuid> = if let Some(v) = &viewer {
+        let user_ids: Vec<Uuid> = users_result.iter().map(|u| u.user_id).collect();
+        if user_ids.is_empty() {
+            std::collections::HashSet::new()
+        } else {
+            sqlx::query_scalar::<_, Uuid>(
+                "SELECT following_id FROM follows WHERE follower_id = $1 AND following_id = ANY($2)",
+            )
+            .bind(v.id)
+            .bind(&user_ids)
+            .fetch_all(&c_pool)
+            .await?
+            .into_iter()
+            .collect()
+        }
+    } else {
+        std::collections::HashSet::new()
+    };
+
     // Format response
     let mut users_formatted = Vec::new();
     for u in users_result {
         let auth = authors.get(&u.user_id);
+        let is_self = viewer.as_ref().map(|v| v.id == u.user_id).unwrap_or(false);
         users_formatted.push(serde_json::json!({
             "user_id": u.user_id,
             "display_name": auth.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
@@ -2680,6 +2701,8 @@ async fn search_community(
             "bio": u.bio,
             "follower_count": u.follower_count,
             "badges": badges.get(&u.user_id).cloned().unwrap_or_default(),
+            "is_following": following_set.contains(&u.user_id),
+            "is_self": is_self,
         }));
     }
 
