@@ -27,7 +27,11 @@
       </div>
 
       <!-- Create Post composer -->
-      <div class="ds-card community-composer">
+      <div class="ds-card community-composer" id="community-composer"
+           data-drop-target="true"
+           ondragover="event.preventDefault(); this.classList.add('community-composer--dragover');"
+           ondragleave="this.classList.remove('community-composer--dragover');"
+           ondrop="window.handleComposerDrop(event)">
         <!-- Author + post-type row -->
         <div class="community-composer__author">
           <div id="fb-compose-avatar" class="ds-avatar ds-avatar--md community-composer__avatar" aria-hidden="true">U</div>

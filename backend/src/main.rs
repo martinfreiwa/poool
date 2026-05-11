@@ -991,6 +991,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/community", get(page_community))
         .route("/community/post/:id", get(page_community_post))
         .route("/community/hashtag/:tag", get(page_community_hashtag))
+        .route("/community/badge/:id", get(page_community_badge))
         .route(
             "/community/partials/feed/list",
             get(community_feed_list_htmx),
@@ -2745,6 +2746,14 @@ async fn community_feed_list_htmx(
         posts: Vec<crate::community::models::PostDisplay>,
         current_feed_mode: String,
         base_url: String,
+        // Phase 4 task 34: data the infinite-scroll sentinel needs to compute
+        // the next-page URL.
+        current_page: i64,
+        next_page: i64,
+        page_size: i64,
+        current_source: String,
+        current_category: String,
+        current_sort_by: String,
     }
 
     let current_feed_mode = if is_bookmarks {
@@ -2752,6 +2761,8 @@ async fn community_feed_list_htmx(
     } else {
         query.feed_mode.clone().unwrap_or_else(|| "all".to_string())
     };
+    let current_page = query.page.unwrap_or(1).max(1);
+    let page_size: i64 = 20;
 
     Ok(common::routes_helper::serve_protected_with_context(
         jar,
@@ -2761,6 +2772,12 @@ async fn community_feed_list_htmx(
             posts,
             current_feed_mode,
             base_url: state.config.base_url.clone(),
+            current_page,
+            next_page: current_page + 1,
+            page_size,
+            current_source: if is_bookmarks { "bookmarks".into() } else { String::new() },
+            current_category: query.category.clone().unwrap_or_default(),
+            current_sort_by: query.sort_by.clone().unwrap_or_default(),
         },
     )
     .await)
@@ -2848,6 +2865,42 @@ async fn page_community_hashtag(
             tag: clean_tag,
             post_count,
             posts,
+            base_url: state.config.base_url.clone(),
+        },
+    )
+    .await
+}
+
+/// GET /community/badge/:id — 14.8.13: user-facing badge detail page.
+/// Renders badge metadata + holder count via the shared community-badge.html
+/// template.
+async fn page_community_badge(
+    Path(id): Path<uuid::Uuid>,
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let result =
+        crate::community::routes::get_badge_detail_data(&state, id).await;
+
+    #[derive(serde::Serialize)]
+    struct Context {
+        badge: serde_json::Value,
+        recent_holders: Vec<serde_json::Value>,
+        base_url: String,
+    }
+
+    let (badge, recent_holders) = match result {
+        Ok(v) => v,
+        Err(e) => return e.into_response(),
+    };
+
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "community-badge.html",
+        Context {
+            badge,
+            recent_holders,
             base_url: state.config.base_url.clone(),
         },
     )

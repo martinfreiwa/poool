@@ -701,6 +701,70 @@ window.initCommunityFeed = function() {
 
     window.postImageUrls = [];
     
+    // ─── Phase 4 task 33: post image lightbox ─────────────────
+    function ensureLightbox() {
+        let lb = document.getElementById('community-lightbox');
+        if (lb) return lb;
+        lb = document.createElement('div');
+        lb.id = 'community-lightbox';
+        lb.className = 'community-lightbox';
+        lb.hidden = true;
+        lb.setAttribute('role', 'dialog');
+        lb.setAttribute('aria-modal', 'true');
+        lb.innerHTML = '<button type="button" class="community-lightbox__close" aria-label="Close">✕</button><img alt="">';
+        document.body.appendChild(lb);
+        lb.addEventListener('click', (event) => {
+            if (event.target === lb || event.target.classList.contains('community-lightbox__close')) {
+                lb.hidden = true;
+            }
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !lb.hidden) lb.hidden = true;
+        });
+        return lb;
+    }
+    document.addEventListener('click', (event) => {
+        const img = event.target.closest('.feed-post-image-grid__item img');
+        if (!img) return;
+        event.preventDefault();
+        const lb = ensureLightbox();
+        const target = lb.querySelector('img');
+        target.src = img.src;
+        target.alt = img.alt || '';
+        lb.hidden = false;
+    });
+
+    // ─── Phase 4 task 35: Ctrl+Enter on composer submits ──────
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (target.id === 'post-content-input') {
+            event.preventDefault();
+            if (typeof window.submitUserPost === 'function') window.submitUserPost();
+        } else if (target.matches('textarea[id^="comment-input-"]')) {
+            event.preventDefault();
+            const postId = target.id.replace('comment-input-', '');
+            if (typeof window.submitComment === 'function') window.submitComment(postId);
+        }
+    });
+
+    // ─── Phase 4 task 36: drag-drop image upload onto composer ──
+    window.handleComposerDrop = function (event) {
+        event.preventDefault();
+        const composer = event.currentTarget;
+        if (composer && composer.classList) composer.classList.remove('community-composer--dragover');
+        const files = event.dataTransfer && event.dataTransfer.files;
+        if (!files || files.length === 0) return;
+        // Reuse the existing single-file upload path for each dropped image.
+        for (const f of files) {
+            const pseudo = { target: { files: [f], value: '' } };
+            if (typeof window.uploadPostImage === 'function') {
+                window.uploadPostImage(pseudo);
+            }
+        }
+    };
+
     window.uploadPostImage = async function(e) {
         if (!e.target.files || e.target.files.length === 0) return;
         

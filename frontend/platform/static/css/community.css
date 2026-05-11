@@ -2344,6 +2344,61 @@ button.community-tab-btn.active {
   transform: scale(1.2);
 }
 
+/* Phase 4 task 33: post image lightbox. */
+.community-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 24px;
+}
+
+.community-lightbox[hidden] {
+  display: none;
+}
+
+.community-lightbox img {
+  max-width: 95vw;
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  object-fit: contain;
+}
+
+.community-lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 0;
+  color: #FFF;
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.community-lightbox__close:hover,
+.community-lightbox__close:focus-visible {
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+}
+
+/* Phase 4 task 36: drag-drop visual feedback on the composer. */
+.community-composer--dragover {
+  outline: 2px dashed var(--btn-primary-bg, #0000FF);
+  outline-offset: -6px;
+}
+
+/* Phase 4 task 34: infinite-scroll sentinel. */
+.community-feed-sentinel {
+  min-height: 40px;
+}
+
 .feed-post-link-preview {
   display: flex;
   flex-direction: column;
@@ -4493,4 +4548,139 @@ button.community-tab-btn.active {
     min-width: 44px;
     min-height: 44px;
   }
+}
+
+/* ── Badge detail page (14.8.13) ──────────────────────────────────── */
+.community-badge-detail__back {
+  margin-bottom: 16px;
+  display: inline-flex;
+}
+
+.community-badge-detail {
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.community-badge-detail__hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.community-badge-detail__icon {
+  font-size: 48px;
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: var(--content-bg, #F9FAFB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.community-badge-detail__heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.community-badge-detail__name {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  margin: 0 0 4px;
+}
+
+.community-badge-detail__code {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #667085);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.community-badge-detail__count {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.community-badge-detail__count-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--btn-primary-bg, #0000FF);
+  font-variant-numeric: tabular-nums;
+}
+
+.community-badge-detail__count-label {
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  text-transform: uppercase;
+}
+
+.community-badge-detail__description {
+  margin: 0;
+  color: var(--body-color, #344054);
+  line-height: 1.6;
+}
+
+.community-badge-detail__holders-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.community-badge-detail__holder-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  transition: background-color 0.15s ease;
+}
+
+.community-badge-detail__holder-btn:hover {
+  background: var(--content-bg, #F9FAFB);
+}
+
+.community-badge-detail__holder-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #EEF4FF;
+  color: var(--btn-primary-bg, #0000FF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.community-badge-detail__holder-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.community-badge-detail__holder-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--page-title-color, #101828);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
