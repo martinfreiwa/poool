@@ -49,10 +49,17 @@
         </p>
 
         {% if p.image_urls and p.image_urls | length > 0 %}
-            <div class="feed-post-image">
-                <img src="{{ p.image_urls[0] }}" alt="">
+            <div class="feed-post-image-grid feed-post-image-grid--{{ p.image_urls | length }}">
+                {% for url in p.image_urls %}
+                    <button type="button" class="feed-post-image-grid__item"
+                        onclick="window.open(this.querySelector('img').src, '_blank', 'noopener,noreferrer')"
+                        aria-label="Open image in new tab">
+                        <img src="{{ url }}" alt="">
+                    </button>
+                {% endfor %}
             </div>
-        {% elif p.link_preview %}
+        {% endif %}
+        {% if p.link_preview %}
             <a href="{{ p.link_preview.url }}" target="_blank" rel="noopener noreferrer" class="feed-post-link-preview">
                 {% if p.link_preview.image %}
                     <img class="feed-post-link-preview__image" src="{{ p.link_preview.image }}" alt="">
