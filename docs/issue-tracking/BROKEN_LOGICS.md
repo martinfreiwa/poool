@@ -232,7 +232,7 @@
 - **Reproduction steps:** Use a database with fewer than 20 leaderboard participants and open `/leaderboard` without `?live`.
 - **Evidence:** Static review: `leaderboard.js` uses `getDemoData(data)` when `!forceLive && data.total_participants < 20`.
 - **Recommended task:** Remove automatic demo substitution; render real small datasets with richer empty/low-participation states.
-- **Status:** ✅ Fixed in local working tree — demo rendering now requires explicit `?demo`.
+- **Status:** ✅ Resolved in commit `11f37e6` (audit closeout 2026-05-11) — demo rendering now requires explicit `?demo` and is loaded via dynamic import.
 - **Page Tracker:** PAGE-ISSUE-0005
 - **Date:** 2026-04-24
 

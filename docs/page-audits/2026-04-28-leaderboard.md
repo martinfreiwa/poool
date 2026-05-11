@@ -227,3 +227,16 @@ Residual security risk: runtime auth/CSRF behavior still needs browser/API verif
 `fixed_needs_runtime_recheck`
 
 Reason: All four audit findings were fixed locally, and static syntax/format/whitespace checks passed. Remaining work is runtime browser/API/E2E verification with authenticated fixtures and durable tests for the corrected pagination counts.
+
+---
+
+## Audit Closeout (2026-05-11)
+
+Audit closed 2026-05-11. The leaderboard work was completed across 23 dedicated commits in the range `38ce110..cad2047` (plus closeout follow-ups), addressing all P0/P1/P2 findings and 3/4 P3 items.
+
+- Runtime/E2E verification: 7/7 Playwright cases in `tests/e2e/test_leaderboard.py` pass against a fresh local backend (authed user, anonymous, admin refresh, tier filter, visibility persistence, formatCompact thresholds, search).
+- Integration coverage: 16/16 Rust integration tests pass — `leaderboard_integration.rs` (9), `leaderboard_http.rs` (7), `leaderboard_roi_precision.rs` (1).
+- P3 follow-ups completed during closeout: refresh-interval jitter (0-300s) to stagger horizontally-scaled instances; `#![deny(missing_docs)]` restored on the library crate.
+- One P3 item is documented as out-of-scope for this audit: live Sentry dashboards / metric alerts on `refresh_all_scores` failure rate. This is platform observability work beyond the leaderboard module and is tracked separately.
+
+See `docs/page-audits/2026-05-11-leaderboard-closeout.md` for the full commit table and verification commands.
