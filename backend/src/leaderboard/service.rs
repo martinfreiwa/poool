@@ -250,7 +250,12 @@ pub async fn get_rankings(
             .await?
         };
 
-    let has_more = rankings.len() as i64 == per_page;
+    // Audit task B1: derive `has_more` from the count query, not from
+    // `rankings.len() == per_page`. With the old heuristic, a page that
+    // happened to fill exactly to `per_page` and was also the last page
+    // (i.e. total is an exact multiple of per_page) would report
+    // `has_more: true`, suggesting an empty next page to API consumers.
+    let has_more = (offset + rankings.len() as i64) < total_participants;
 
     Ok(LeaderboardResponse {
         rankings,

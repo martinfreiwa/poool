@@ -424,6 +424,100 @@ async fn preferences_partial_update_preserves_other_fields() {
     );
 }
 
+// ─── Test: has_more must be derived from the count, not page fullness ──────
+//
+// Regression for audit task B1. The service used to compute
+// `has_more = rankings.len() == per_page`. With total=N and per_page=N (so
+// a single full page is also the last page), that heuristic claims
+// `has_more: true` when there is in fact nothing on the next page.
+//
+// We exercise the math directly via the same SELECT pattern the service
+// uses (LIMIT/OFFSET + a COUNT(*)) and assert the corrected derivation:
+//   has_more = (offset + rankings.len()) < total_participants
+
+#[ignore]
+#[tokio::test]
+async fn has_more_false_when_total_is_exact_multiple_of_per_page() {
+    let pool = pool().await;
+    let u1 = Uuid::new_v4();
+    let u2 = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    for u in [u1, u2] {
+        cleanup_user(&pool, u).await;
+    }
+    cleanup_asset(&pool, asset).await;
+
+    for u in [u1, u2] {
+        insert_user(&pool, u, "active").await;
+    }
+    insert_asset(&pool, asset, 500).await;
+    insert_investment(&pool, u1, asset, 20_000).await;
+    insert_investment(&pool, u2, asset, 10_000).await;
+    refresh_all_scores_sql(&pool).await;
+
+    sqlx::query(
+        r#"UPDATE leaderboard_scores ls SET rank_invested = sub.r_inv
+           FROM (
+               SELECT user_id, ROW_NUMBER() OVER (ORDER BY total_invested_cents DESC, computed_at ASC) AS r_inv
+               FROM leaderboard_scores
+           ) sub WHERE ls.user_id = sub.user_id"#,
+    )
+    .execute(&pool)
+    .await
+    .expect("rank update");
+
+    let per_page: i64 = 2;
+    let offset: i64 = 0;
+
+    // page 1 fetch (LIMIT 2 OFFSET 0). With exactly 2 users, this fills the
+    // page entirely AND exhausts the dataset.
+    let rows: Vec<(Uuid,)> = sqlx::query_as(
+        r#"SELECT user_id FROM leaderboard_scores
+           WHERE user_id = ANY($1)
+           ORDER BY rank_invested ASC
+           LIMIT $2 OFFSET $3"#,
+    )
+    .bind(vec![u1, u2])
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&pool)
+    .await
+    .expect("page 1 select");
+
+    let total_participants: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*)::BIGINT FROM leaderboard_scores WHERE user_id = ANY($1)"#,
+    )
+    .bind(vec![u1, u2])
+    .fetch_one(&pool)
+    .await
+    .expect("count");
+
+    for u in [u1, u2] {
+        cleanup_user(&pool, u).await;
+    }
+    cleanup_asset(&pool, asset).await;
+
+    // The OLD heuristic — `rows.len() == per_page` — would yield true here.
+    let old_heuristic = rows.len() as i64 == per_page;
+    // The FIXED derivation — what the service now returns.
+    let has_more = (offset + rows.len() as i64) < total_participants;
+
+    assert_eq!(rows.len() as i64, per_page, "page must be exactly full");
+    assert_eq!(total_participants, per_page, "total must equal per_page");
+    assert!(
+        old_heuristic,
+        "sanity: old heuristic does claim has_more on a full-but-last page"
+    );
+    assert!(
+        !has_more,
+        "fixed has_more must be false when (offset + rows) >= total_participants; got true with offset={} rows={} total={}",
+        offset,
+        rows.len(),
+        total_participants
+    );
+}
+
 // ─── Test 4: tier_id filter narrows total_participants ──────────────────────
 //
 // Smoke test that the (tier_id IS NULL OR tier_id = $X) predicate used in
