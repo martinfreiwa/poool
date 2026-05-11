@@ -1061,8 +1061,17 @@ async fn create_user_post(
     // We can assume high_level = false for now until M4 XP system is in place
     let is_high_level_user = false;
 
-    // M3-BE.7 Dynamic Asset-Owner Tags Check — boolean flag, NOT HTML injection (FIX-F4)
-    let mut verified_owner = false;
+    // M3-BE.7 Dynamic Asset-Owner Tags Check — boolean flag, NOT HTML injection (FIX-F4).
+    // WS1.3: if the profile has been granted the verified-owner badge via
+    // the manual request flow, every new post inherits the flag.
+    let mut verified_owner: bool = sqlx::query_scalar(
+        "SELECT COALESCE(is_verified_owner, false) FROM community_profiles WHERE user_id = $1",
+    )
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await
+    .unwrap_or(None)
+    .unwrap_or(false);
 
     if let Some(aid) = payload.asset_id {
         let is_owner = sqlx::query_scalar::<_, bool>(
@@ -3051,11 +3060,23 @@ async fn admin_review_verification_request(
     })?;
 
     if status == "approved" {
+        // WS1.3: backfill existing posts, then flip the profile flag so any
+        // future posts inherit verified_owner automatically.
         sqlx::query("UPDATE posts SET verified_owner = true WHERE user_id = $1")
             .bind(target_user_id)
             .execute(&c_pool)
             .await
             .ok();
+        sqlx::query(
+            "UPDATE community_profiles SET is_verified_owner = true WHERE user_id = $1",
+        )
+        .bind(target_user_id)
+        .execute(&c_pool)
+        .await
+        .ok();
+    } else if status == "rejected" {
+        // Don't touch existing badges on reject — only block future
+        // auto-inheritance if they were never granted.
     }
 
     crate::community::audit::log(
