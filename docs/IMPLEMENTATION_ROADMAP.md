@@ -711,11 +711,11 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 | ID | Task | Description | Status | Assignee | Tested? | Notes |
 |:---|:---|:---|:---|:---|:---|:---|
 | **18.10** | 🔴 Platform Fee Float→Decimal Fix | **P1-FINANCIAL**: checkout platform fee calculation must use `rust_decimal::Decimal`, not floats | `✅ DONE` | Codex | `✅` | Ref: MP §19.3. Extracted `calculate_platform_fee_cents()`, uses checked Decimal arithmetic, rounds fractional cents up, rejects negative inputs, handles overflow, and has 7 focused regression tests. |
-| **18.11** | Reconciliation Background Worker | `tokio::spawn` worker (6h interval) checking 5 invariants. Store results in `reconciliation_reports`. Send Sentry P0 on violation. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4.1, §4.7 |
+| **18.11** | Reconciliation Background Worker | `tokio::spawn` worker (6h interval) checking 5 invariants. Store results in `reconciliation_reports`. Send Sentry P0 on violation. | `✅ DONE` | `Claude Opus 4.7` | `❌` | Commit `a1e9c9c`. Extends existing daily worker in main.rs:429 — cadence 24h → 6h, adds invariants 4 (held_balance ≤ balance) and 5 (affiliate treasury debit conservation). Each violation fires `sentry::Level::Fatal`. `reconciliation_reports.notes` now logs all 5 metrics. |
 | **18.12** | Dispute Resolution Engine | Wire `payment_disputes` (migration 012) status flow: opened→under_review→resolved/escalated. GCS evidence upload. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4.2 |
 | **18.13** | Treasury Admin UI Expansion | Add Dispute tab to `treasury.html`. Reconciliation report history. Alert banner for invariant violations. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4, `ADMIN_FEATURES.md` |
 | **18.14** | Deposit Admin UI: Webhook Status | Show auto-matched vs manual deposits in `deposits.html`. Webhook event log viewer. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.2 |
-| **18.15** | Affiliate Treasury Invariant | Extend reconciliation worker: `SUM(affiliate_commissions WHERE paid) ≤ treasury_wallet.debits` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4.1 #5 |
+| **18.15** | Affiliate Treasury Invariant | Extend reconciliation worker: `SUM(affiliate_commissions WHERE paid) ≤ treasury_wallet.debits` | `✅ DONE` | `Claude Opus 4.7` | `❌` | Commit `a1e9c9c`. Shipped together with 18.11 as the 5th invariant. Drift > $1 → Fatal Sentry (commissions marked paid but funds never moved). |
 
 ---
 
