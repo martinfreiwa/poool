@@ -1107,6 +1107,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .layer(tower::limit::concurrency::ConcurrencyLimitLayer::new(100))
         .layer(axum::middleware::from_fn(auth::csrf::csrf_middleware))
+        // 19.2 — Affiliate attribution: capture ?ref=<code> and write 30-day
+        // first-touch cookie. Layer order: runs BEFORE csrf check since GET
+        // requests with the ref param are not state-changing.
+        .layer(axum::middleware::from_fn(
+            rewards::attribution::capture_referral,
+        ))
         .layer(axum::middleware::from_fn(apply_security_headers))
         // Sentry user context: attach user.id + email to every Sentry event
         .layer(axum::middleware::from_fn_with_state(
