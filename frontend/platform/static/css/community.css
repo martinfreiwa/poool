@@ -2881,6 +2881,26 @@ button.community-tab-btn.active {
   margin: 16px 0;
 }
 
+/* WS1.5: mobile-friendly horizontally-scrolling topbar tabs. */
+@media (max-width: 640px) {
+  .community-topbar-tabs {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    gap: 4px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .community-topbar-tabs::-webkit-scrollbar { display: none; }
+  .community-tab-btn {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
 .community-hashtag-banner__left {
   display: flex;
   align-items: center;
