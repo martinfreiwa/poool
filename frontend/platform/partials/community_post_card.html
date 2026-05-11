@@ -92,10 +92,20 @@
     <!-- ─── Engagement ─── -->
     <div class="feed-post-engagement">
         <div class="feed-post-reactions">
-            <button class="feed-reaction-btn{% if p.current_user_reacted %} active{% endif %}" type="button" aria-label="React to post" aria-pressed="{% if p.current_user_reacted %}true{% else %}false{% endif %}" onclick="toggleReaction('{{ p.id }}', this, 'fire')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                <span class="feed-reaction-btn__count">{{ p.reaction_count }}</span>
-            </button>
+            <!-- Phase 3 task 29: hover/focus reveals multi-type reaction picker.
+                 Default click still fires 'fire' so the one-click flow is preserved. -->
+            <div class="feed-reaction-group">
+                <button class="feed-reaction-btn{% if p.current_user_reacted %} active{% endif %}" type="button" aria-label="React to post" aria-pressed="{% if p.current_user_reacted %}true{% else %}false{% endif %}" onclick="toggleReaction('{{ p.id }}', this, 'fire')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span class="feed-reaction-btn__count">{{ p.reaction_count }}</span>
+                </button>
+                <div class="feed-reaction-picker" role="group" aria-label="Pick a reaction type">
+                    <button type="button" class="feed-reaction-picker__btn" aria-label="React: fire" onclick="toggleReaction('{{ p.id }}', this.closest('.feed-reaction-group').querySelector('.feed-reaction-btn'), 'fire')">🔥</button>
+                    <button type="button" class="feed-reaction-picker__btn" aria-label="React: insightful" onclick="toggleReaction('{{ p.id }}', this.closest('.feed-reaction-group').querySelector('.feed-reaction-btn'), 'insightful')">💡</button>
+                    <button type="button" class="feed-reaction-picker__btn" aria-label="React: clap" onclick="toggleReaction('{{ p.id }}', this.closest('.feed-reaction-group').querySelector('.feed-reaction-btn'), 'clap')">👏</button>
+                    <button type="button" class="feed-reaction-picker__btn" aria-label="React: green" onclick="toggleReaction('{{ p.id }}', this.closest('.feed-reaction-group').querySelector('.feed-reaction-btn'), 'green')">🌱</button>
+                </div>
+            </div>
             <button class="feed-reaction-btn" type="button" aria-label="Show comments" aria-expanded="false" aria-controls="comments-section-{{ p.id }}" onclick="toggleComments('{{ p.id }}', this)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                 <span class="feed-reaction-btn__count">{{ p.comment_count }}</span>
