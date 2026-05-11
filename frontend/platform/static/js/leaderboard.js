@@ -154,6 +154,25 @@
       console.error('Leaderboard init failed:', err);
       showLayer('error');
     }
+
+    // Audit task A2 — unhide the admin-only "Refresh now" control if the
+    // viewer holds an admin role. Failures are silent (button stays hidden).
+    revealAdminControls();
+  }
+
+  async function revealAdminControls() {
+    try {
+      var res = await fetch('/api/me', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      var me = await res.json();
+      var roles = Array.isArray(me && me.roles) ? me.roles : [];
+      if (roles.indexOf('admin') !== -1 || roles.indexOf('super_admin') !== -1) {
+        var btn = document.getElementById('lb-refresh-btn');
+        if (btn) btn.hidden = false;
+      }
+    } catch (_) {
+      // Network or auth error — leave button hidden.
+    }
   }
 
   function renderLeaderboardData(data) {
@@ -745,6 +764,52 @@
       });
     }
   }
+
+  // Audit task A2 — admin-only manual refresh. POST /api/leaderboard/refresh
+  // with a CSRF token, then refetch the rankings on success so the table
+  // updates without a full page reload. Failures surface inline.
+  function getCsrfToken() {
+    var match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function setRefreshStatus(message, isError) {
+    var status = document.getElementById('lb-refresh-status');
+    if (!status) return;
+    status.textContent = message;
+    status.style.color = isError ? '#B42318' : 'var(--btn-primary-bg, #0000FF)';
+  }
+
+  window.adminRefreshLeaderboard = async function (btn) {
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    var originalLabel = btn.textContent;
+    btn.textContent = 'Refreshing...';
+    setRefreshStatus('Recomputing scores...', false);
+    try {
+      var res = await fetch('/api/leaderboard/refresh', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken(),
+        },
+      });
+      if (!res.ok) {
+        var detail = '';
+        try { detail = (await res.json()).error || ''; } catch (_) {}
+        throw new Error(detail || ('HTTP ' + res.status));
+      }
+      setRefreshStatus('Leaderboard refreshed.', false);
+      await refetchAndRender();
+    } catch (err) {
+      console.error('Admin refresh failed:', err);
+      setRefreshStatus('Refresh failed: ' + (err.message || 'unknown error'), true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
+  };
 
   window.toggleVisibility = function (checkbox) {
     var previousPrefs = cachedPrefs ? Object.assign({}, cachedPrefs) : { visible: !checkbox.checked, show_avatar: false, display_name: null };

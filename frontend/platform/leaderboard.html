@@ -117,8 +117,25 @@ include
           <div class="lb-ledger-card">
             <div class="lb-ledger-header">
               <h2 class="lb-ledger-title">Global Tier Listings</h2>
-              <div class="lb-ledger-actions">
+              <div class="lb-ledger-actions" style="display:flex;align-items:center;gap:12px;">
                 <span id="lb-total-participants" class="lb-ledger-title" style="opacity: 0.6;"></span>
+                <!--
+                  Admin-only "Refresh now" button. Hidden by default; the
+                  client toggles `hidden` off once /api/me confirms the
+                  viewer holds an admin role. POSTs to /api/leaderboard/refresh
+                  with a CSRF token; status is rendered in #lb-refresh-status.
+                  Audit task A2.
+                -->
+                <button
+                  id="lb-refresh-btn"
+                  type="button"
+                  class="ds-btn ds-btn--secondary ds-btn--sm"
+                  hidden
+                  onclick="adminRefreshLeaderboard(this)"
+                  aria-label="Refresh leaderboard scores (admin only)">
+                  Refresh now
+                </button>
+                <span id="lb-refresh-status" class="lb-last-updated" role="status" aria-live="polite"></span>
               </div>
             </div>
             <div style="overflow-x: auto;">
@@ -159,7 +176,7 @@ include
     </main>
   </div>
 
-  <script src="/static/js/leaderboard.js?v=6"></script>
+  <script src="/static/js/leaderboard.js?v=7"></script>
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
 </body>
