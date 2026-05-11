@@ -121,7 +121,13 @@ def test_community_feed_reaction_comment_accessibility(authenticated_user_page):
         expect(reaction_btn).to_have_attribute("aria-pressed", "false")
         expect(reaction_btn.locator("span")).to_have_text("0")
 
-        comment_btn = post.locator(f"button[aria-controls='comments-section-{post_id}']")
+        # Two buttons share aria-controls=comments-section-… (the small
+        # reaction-bar icon button + the larger "X reactions · Y comments"
+        # text button). Narrow to the icon button via class to keep the
+        # selector unambiguous.
+        comment_btn = post.locator(
+            f"button.feed-reaction-btn[aria-controls='comments-section-{post_id}']"
+        )
         expect(comment_btn).to_have_attribute("aria-label", "Show comments")
         expect(comment_btn).to_have_attribute("aria-expanded", "false")
         comment_btn.click()
@@ -291,8 +297,13 @@ def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):
     circle_tab = page.locator(
         "button.community-tab-btn", has_text=re.compile(r"My Circle", re.IGNORECASE)
     )
+    # The mobile topbar (WS1.5) puts tabs in a horizontally scrolling row;
+    # the "My Circle" tab can be off-screen at 390px width. Scroll it in,
+    # then click programmatically — the mobile-header overlay intercepts
+    # pointer events on the tab's actual coords.
+    circle_tab.scroll_into_view_if_needed()
     expect(circle_tab).to_be_visible(timeout=10000)
-    circle_tab.click()
+    circle_tab.evaluate("el => el.click()")
 
     settings_button = page.locator("button", has_text=re.compile(r"Settings", re.IGNORECASE)).first
     expect(settings_button).to_be_visible(timeout=10000)

@@ -3042,9 +3042,13 @@ button.community-tab-btn.active {
   margin: 16px 0;
 }
 
-/* WS1.5: mobile-friendly horizontally-scrolling topbar tabs. */
-@media (max-width: 640px) {
-  .community-topbar-tabs {
+/* WS1.5: mobile-friendly horizontally-scrolling topbar tabs.
+   leaderboard.css hides .lb-topbar-tabs entirely at <=768px and is loaded
+   AFTER community.css, so we need a more-specific selector (both classes)
+   to win the cascade and re-show the community variant. */
+@media (max-width: 768px) {
+  .lb-topbar-tabs.community-topbar-tabs {
+    display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -3052,6 +3056,7 @@ button.community-tab-btn.active {
     gap: 4px;
     padding-bottom: 4px;
     scrollbar-width: none;
+    width: 100%;
   }
   .community-topbar-tabs::-webkit-scrollbar { display: none; }
   .community-tab-btn {

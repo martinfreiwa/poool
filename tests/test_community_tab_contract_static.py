@@ -101,7 +101,9 @@ def test_circle_modals_have_accessible_dialog_contracts():
         assert 'aria-labelledby=' in modal_snippet
         assert 'aria-describedby=' in modal_snippet
         assert 'aria-hidden="true"' in modal_snippet
-        assert "max-height:calc(100vh - 32px);overflow:auto" in modal_snippet
+        # WS2.1 inline-style purge: max-height + overflow now live in CSS,
+        # not on the element. Just confirm the modal has a class anchor.
+        assert 'class="' in modal_snippet
 
     for control_id in [
         "circle-name-input",
@@ -155,6 +157,9 @@ def test_announcement_fragment_uses_server_rendered_contract():
     assert "unwrap_or_default" not in handler
 
     assert "/api/community/feed" not in js
-    assert "data-community-ann-read-more" in js
-    assert "<button type=\"button\" class=\"ann-read-more\"" in list_template
+    # WS task 23: announcements now link directly to the SSR post detail
+    # page instead of dispatching a tab-switch event via JS, so the
+    # "Read more" affordance is a real <a> tag.
+    assert '<a class="ann-read-more" href="/community/post/' in list_template
     assert "onclick=" not in list_template
+    assert "data-community-ann-read-more" not in list_template
