@@ -63,8 +63,10 @@ pub struct CommunityProfile {
     pub post_count: i32,
     pub follower_count: i32,
     pub following_count: i32,
-    pub total_xp: i32,
-    pub tier: i32,
+    // Column on `community_profiles` is `xp_total` (added in 008_circles_xp.sql),
+    // not `total_xp`; the previous mismatch crashed every `SELECT *` decode.
+    #[sqlx(rename = "xp_total")]
+    pub xp_total: i32,
     pub muted_until: Option<DateTime<Utc>>,
     pub mod_notes: Option<String>,
     pub created_at: DateTime<Utc>,
