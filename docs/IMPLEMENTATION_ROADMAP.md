@@ -691,20 +691,20 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 
 | ID | Task | Description | Status | Assignee | Tested? | Notes |
 |:---|:---|:---|:---|:---|:---|:---|
-| **18.1** | Deposit State Machine Expansion | Add `requested` state to `deposit_requests`. Current flow skips directly to `pending`. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.1.1 |
+| **18.1** | Deposit State Machine Expansion | Add `requested` state to `deposit_requests`. Current flow skips directly to `pending`. | `✅ DONE (schema)` | `Claude Opus 4.7` | `❌` | Commit `53c2453`. Migration `126_deposit_state_requested.sql` extends status CHECK with `requested` and adds partial index on (provider, status) for webhook reconciliation lookups. Service-layer adoption (insert `requested`, transition to `pending` on first ack) follows when 18.2/18.3 webhook handlers land. |
 | **18.2** | Stripe Webhook Handler | `POST /webhooks/stripe` — Signature verification (HMAC SHA256), auto-match `provider_reference`, call `confirm_deposit()` atomically | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.1.2, `FINANCIAL_FLOW.md` |
 | **18.3** | OCBC Webhook Handler | `POST /webhooks/ocbc` — mTLS cert validation, ref-code matching, queue for 4-Eyes approval | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.1, `SMART_CONTRACT_IMPLEMENTATION.md` §3 |
 | **18.4** | Deposit Fraud Detection | Velocity checks (5/day, $50k/week), duplicate detection (same amount+currency in 60s), AML threshold alerts | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.1.3 |
-| **18.5** | Webhook Event Logging Table | `webhook_events` table: provider, event_type, payload (JSONB), status, processed_at, error | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.2 |
+| **18.5** | Webhook Event Logging Table | `webhook_events` table: provider, event_type, payload (JSONB), status, processed_at, error | `✅ DONE (schema)` | `Claude Opus 4.7` | `❌` | Commit `53c2453`. Migration `127_webhook_events.sql`. Includes signature_valid bool, status state machine (received/processed/error/ignored), related_entity_type+id for cross-references, and partial unique on (provider, provider_event_id) for idempotency. Wires from webhook handlers in 18.2/18.3. |
 
 ### 18B: Withdrawal Safety & Limits
 
 | ID | Task | Description | Status | Assignee | Tested? | Notes |
 |:---|:---|:---|:---|:---|:---|:---|
-| **18.6** | Withdrawal Daily Cap | $10,000/user/day limit, configurable via `platform_settings` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.2.1 |
-| **18.7** | Withdrawal Velocity Check | >3 withdrawals in 24h → auto-freeze, require admin review | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.2.1 |
-| **18.8** | New Account Cooldown | First 72h after KYC: max $1,000 withdrawal | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.2.1 |
-| **18.9** | 2FA Step-Up for Withdrawals | Withdrawal >$500 requires TOTP confirmation | `⚪ NOT STARTED` | - | `❌` | Ref: MP §1.11, §19.2.1 |
+| **18.6** | Withdrawal Daily Cap | $10,000/user/day limit, configurable via `platform_settings` | `✅ DONE` | `Claude Opus 4.7` | `❌` | Commit `53c2453`. `wallet/safety.rs::check_withdrawal_safety` enforces cumulative UTC-day cap via `withdrawal_daily_cap_cents` (default 1_000_000c). Runs BEFORE wallet FOR UPDATE lock so blocked withdrawals never momentarily debit. |
+| **18.7** | Withdrawal Velocity Check | >3 withdrawals in 24h → auto-freeze, require admin review | `✅ DONE` | `Claude Opus 4.7` | `❌` | Commit `53c2453`. Threshold + window read from `withdrawal_velocity_threshold` (default 3) + `withdrawal_velocity_window_hours` (default 24). Auto-flips `users.status` to `frozen`. |
+| **18.8** | New Account Cooldown | First 72h after KYC: max $1,000 withdrawal | `✅ DONE` | `Claude Opus 4.7` | `❌` | Commit `53c2453`. Reads `kyc_records.verified_at` (latest approved row); during the cooldown window, blocks any withdrawal > `new_account_max_withdraw_cents` (default 100_000c). |
+| **18.9** | 2FA Step-Up for Withdrawals | Withdrawal >$500 requires TOTP confirmation | `✅ DONE` | `Claude Opus 4.7` | `❌` | Commit `53c2453`. `WITHDRAWAL_2FA_THRESHOLD_CENTS` raised from 10_000c ($100) to 50_000c ($500). `require_step_up_2fa` is now actually called from `handle_withdraw` (was unused). Returns `?error=withdraw_2fa_required` redirect on miss. |
 
 ### 18C: Treasury & Reconciliation
 
