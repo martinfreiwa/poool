@@ -3074,6 +3074,109 @@ button.community-tab-btn.active {
   line-height: 1.6;
 }
 
+/* ── Ban-appeal banner + modal (14.8.1) ───────────────────────────── */
+.community-ban-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  background: var(--danger-bg, #FEF3F2);
+  border: 1px solid var(--danger-fg, #FECDCA);
+  border-left: 4px solid var(--btn-danger-bg, #D92D20);
+  border-radius: 12px;
+  color: var(--page-title-color, #181D27);
+}
+
+.community-ban-banner[hidden] {
+  display: none;
+}
+
+.community-ban-banner__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.community-ban-banner__icon {
+  flex-shrink: 0;
+  color: var(--btn-danger-bg, #D92D20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.community-ban-banner__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.community-ban-banner__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+
+.community-ban-banner__reason {
+  font-size: 13px;
+  color: var(--body-color, #475467);
+  word-break: break-word;
+}
+
+.community-ban-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.community-ban-banner__pending {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #667085);
+  padding: 6px 12px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 999px;
+}
+
+.community-ban-banner__pending[hidden] {
+  display: none;
+}
+
+/* The .ds-btn appeal trigger uses display:flex, which would override the
+   [hidden] UA default — restore it scoped to the banner. */
+.community-ban-banner #community-ban-appeal-btn[hidden] {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .community-ban-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .community-ban-banner__actions {
+    justify-content: flex-end;
+  }
+}
+
+.community-ban-appeal__desc {
+  margin: 0 0 16px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-ban-appeal__textarea {
+  resize: vertical;
+  min-height: 140px;
+  width: 100%;
+}
+
 /* ── XP history row (commit 13 — JS-rendered) ─────────────────────── */
 .community-xp-row {
   display: flex;

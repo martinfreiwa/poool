@@ -320,3 +320,105 @@ def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):
     expect(settings_button).to_be_focused()
 
     tracker.assert_no_critical_errors()
+
+
+def _mark_user_community_banned(user_id, reason="Repeat policy violations."):
+    """14.8.1 helper — upserts a community_profiles row with the user marked banned."""
+    conn = get_community_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO community_profiles (user_id, is_community_banned, ban_reason)
+            VALUES (%s, TRUE, %s)
+            ON CONFLICT (user_id) DO UPDATE SET
+                is_community_banned = TRUE,
+                ban_reason = EXCLUDED.ban_reason
+            """,
+            (str(user_id), reason),
+        )
+        # Wipe any prior appeals for a clean slate.
+        cur.execute("DELETE FROM ban_appeals WHERE user_id = %s", (str(user_id),))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+
+
+def _fetch_ban_appeals(user_id):
+    conn = get_community_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT status, appeal_text FROM ban_appeals WHERE user_id = %s",
+            (str(user_id),),
+        )
+        rows = cur.fetchall()
+        return rows
+    finally:
+        cur.close()
+        conn.close()
+
+
+def test_community_ban_appeal_banner_and_submission(authenticated_user_page):
+    """14.8.1 — banned user sees banner, can submit appeal, state flips to pending.
+
+    Covers: backend ban-state exposure on /api/community/profile/me, banner
+    render branch, submit POST /api/community/appeals, post-submit UI swap.
+    """
+    page, tracker, current_user = authenticated_user_page
+    user_id = current_user["user_id"]
+
+    _mark_user_community_banned(user_id)
+
+    page.goto(f"{BASE_URL}/community")
+    page.wait_for_load_state("networkidle")
+
+    banner = page.locator("#community-ban-banner")
+    expect(banner).to_be_visible(timeout=5000)
+    expect(banner.locator("#community-ban-banner-reason")).to_contain_text(
+        "Repeat policy violations."
+    )
+
+    submit_btn = page.locator("#community-ban-appeal-btn")
+    pending_pill = page.locator("#community-ban-pending-state")
+    expect(submit_btn).to_be_visible()
+    expect(pending_pill).not_to_be_visible()
+
+    submit_btn.click()
+    modal = page.locator("#ban-appeal-modal")
+    expect(modal).to_be_visible(timeout=3000)
+    expect(modal).to_have_attribute("role", "dialog")
+
+    textarea = page.locator("#ban-appeal-text")
+    textarea.fill(
+        "I understand the policy violation and am requesting a careful review. "
+        "I will not repeat the behaviour."
+    )
+
+    page.locator("#ban-appeal-submit-btn").click()
+    expect(modal).not_to_be_visible(timeout=5000)
+    expect(pending_pill).to_be_visible(timeout=5000)
+    expect(submit_btn).not_to_be_visible()
+
+    appeals = _fetch_ban_appeals(user_id)
+    assert len(appeals) == 1, f"expected exactly one appeal row, got {appeals!r}"
+    assert appeals[0][0] == "pending"
+    assert "policy violation" in appeals[0][1].lower()
+
+    tracker.assert_no_critical_errors()
+
+
+def test_community_ban_appeal_banner_hidden_for_unbanned_user(authenticated_user_page):
+    """14.8.1 — banner stays hidden for the happy path so non-banned users
+    never see the warning."""
+    page, tracker, current_user = authenticated_user_page
+
+    page.goto(f"{BASE_URL}/community")
+    page.wait_for_load_state("networkidle")
+
+    banner = page.locator("#community-ban-banner")
+    expect(banner).to_have_count(1)
+    expect(banner).not_to_be_visible()
+
+    tracker.assert_no_critical_errors()

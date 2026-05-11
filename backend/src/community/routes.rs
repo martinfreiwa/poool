@@ -2449,6 +2449,46 @@ async fn get_profile_me(
     let c_pool = get_community_pool(&state)?;
     let profile = crate::community::service::get_user_profile(&c_pool, user.id).await?;
 
+    // 14.8.1: surface ban state + pending-appeal flag so the frontend can render
+    // the ban-appeal banner without a second roundtrip. We propagate SQL errors
+    // (rather than swallow them) so any binding/decoding issue surfaces in logs.
+    use sqlx::Row;
+    let ban_state_row = sqlx::query(
+        "SELECT is_community_banned, ban_reason FROM community_profiles WHERE user_id = $1",
+    )
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await?;
+    let (is_banned, ban_reason): (bool, Option<String>) = match ban_state_row {
+        Some(row) => {
+            tracing::debug!(
+                user_id = %user.id,
+                "ban_state row found, decoding columns"
+            );
+            (
+                row.try_get::<bool, _>("is_community_banned")?,
+                row.try_get::<Option<String>, _>("ban_reason")?,
+            )
+        }
+        None => {
+            tracing::debug!(user_id = %user.id, "ban_state row missing");
+            (false, None)
+        }
+    };
+
+    let has_pending_appeal: bool = if is_banned {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM ban_appeals WHERE user_id = $1 AND status = 'pending'",
+        )
+        .bind(user.id)
+        .fetch_one(&c_pool)
+        .await
+        .map(|n| n > 0)
+        .unwrap_or(false)
+    } else {
+        false
+    };
+
     Ok(Json(serde_json::json!({
         "user_id": profile.user_id,
         "bio": profile.bio,
@@ -2456,6 +2496,9 @@ async fn get_profile_me(
         "follower_count": profile.follower_count,
         "following_count": profile.following_count,
         "badges": profile.badges,
+        "is_community_banned": is_banned,
+        "ban_reason": ban_reason,
+        "has_pending_appeal": has_pending_appeal,
     })))
 }
 
