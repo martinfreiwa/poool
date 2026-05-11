@@ -654,7 +654,14 @@ pub async fn handle_checkout(
     let mut payment_method_opt: Option<String> = None;
     let mut proof_url: Option<String> = None;
     let mut proof_upload_failed = false;
-    let mut disclosure_accepted = false;
+    // 19.8: 3 required general disclosures + 3 referral-only disclosures.
+    // Backend rejects checkout if any required box is missing.
+    let mut disclosure_general_1 = false;
+    let mut disclosure_general_2 = false;
+    let mut disclosure_general_3 = false;
+    let mut disclosure_referral_1 = false;
+    let mut disclosure_referral_2 = false;
+    let mut disclosure_referral_3 = false;
 
     if content_type.contains("multipart/form-data") {
         // Rebuild the request to extract multipart
@@ -728,9 +735,34 @@ pub async fn handle_checkout(
                             }
                         }
                     }
-                    "affiliate_disclosure_accepted" => {
+                    "disclosure_general_1" => {
                         if let Ok(text) = field.text().await {
-                            disclosure_accepted = text == "on" || text == "true";
+                            disclosure_general_1 = text == "on" || text == "true";
+                        }
+                    }
+                    "disclosure_general_2" => {
+                        if let Ok(text) = field.text().await {
+                            disclosure_general_2 = text == "on" || text == "true";
+                        }
+                    }
+                    "disclosure_general_3" => {
+                        if let Ok(text) = field.text().await {
+                            disclosure_general_3 = text == "on" || text == "true";
+                        }
+                    }
+                    "disclosure_referral_1" => {
+                        if let Ok(text) = field.text().await {
+                            disclosure_referral_1 = text == "on" || text == "true";
+                        }
+                    }
+                    "disclosure_referral_2" => {
+                        if let Ok(text) = field.text().await {
+                            disclosure_referral_2 = text == "on" || text == "true";
+                        }
+                    }
+                    "disclosure_referral_3" => {
+                        if let Ok(text) = field.text().await {
+                            disclosure_referral_3 = text == "on" || text == "true";
                         }
                     }
                     _ => {}
@@ -748,10 +780,18 @@ pub async fn handle_checkout(
         if let Ok(axum::extract::Form(map)) = form {
             payment_currency_opt = map.get("payment_currency").cloned();
             payment_method_opt = map.get("payment_method").cloned();
-            disclosure_accepted = map
-                .get("affiliate_disclosure_accepted")
-                .map(|s| s == "on" || s == "true")
-                .unwrap_or(false);
+            // 19.8 — parse new disclosure checkboxes from URL-encoded form.
+            let check = |k: &str| {
+                map.get(k)
+                    .map(|s| s == "on" || s == "true")
+                    .unwrap_or(false)
+            };
+            disclosure_general_1 = check("disclosure_general_1");
+            disclosure_general_2 = check("disclosure_general_2");
+            disclosure_general_3 = check("disclosure_general_3");
+            disclosure_referral_1 = check("disclosure_referral_1");
+            disclosure_referral_2 = check("disclosure_referral_2");
+            disclosure_referral_3 = check("disclosure_referral_3");
         }
     }
 
@@ -769,6 +809,37 @@ pub async fn handle_checkout(
         return (
             axum::http::StatusCode::BAD_REQUEST,
             Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">Invalid payment currency.</div>"#.to_string()),
+        ).into_response();
+    }
+
+    // ── 19.8: Validate disclosure checkboxes against user type ──────
+    // Direct users must accept the 3 general disclosures. Referral users
+    // must additionally accept the 3 referral-specific disclosures. The
+    // backend is the authority — frontend hiding/showing checkboxes
+    // does not relax this.
+    let is_referral_user: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM affiliate_referrals WHERE referred_user_id = $1 LIMIT 1)",
+    )
+    .bind(user.id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(false);
+
+    let agreed_to_general =
+        disclosure_general_1 && disclosure_general_2 && disclosure_general_3;
+    let agreed_to_referral =
+        disclosure_referral_1 && disclosure_referral_2 && disclosure_referral_3;
+
+    if !agreed_to_general {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">You must accept all three general investment disclosures to continue.</div>"#.to_string()),
+        ).into_response();
+    }
+    if is_referral_user && !agreed_to_referral {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">You must accept all three referral disclosures to continue.</div>"#.to_string()),
         ).into_response();
     }
 
@@ -826,19 +897,35 @@ pub async fn handle_checkout(
                 }
             }
 
-            // Masterplan Priority 4: Log Investment Disclosures for tracking
-            if disclosure_accepted {
-                let _ = sqlx::query!(
-                    r#"INSERT INTO investment_disclosures_log
-                       (user_id, order_id, is_referral_user, agreed_to_general, agreed_to_referral, ip_address)
-                       VALUES ($1, $2, true, true, true, $3)"#,
-                    user.id,
-                    result.order_id,
-                    client_ip
-                )
-                .execute(&state.db)
-                .await;
-            }
+            // 19.9: Log Investment Disclosures for tracking. Per-row state
+            // captures whether the user actually ticked all general boxes
+            // and (for referral users) all referral boxes. Policy version
+            // is read from platform_settings.legal_disclosure_version so
+            // a policy bump is reflected on the next checkout without code.
+            let policy_version: String = sqlx::query_scalar(
+                "SELECT value FROM platform_settings WHERE key = 'legal_disclosure_version'",
+            )
+            .fetch_optional(&state.db)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| "1.0".to_string());
+
+            let _ = sqlx::query!(
+                r#"INSERT INTO investment_disclosures_log
+                   (user_id, order_id, is_referral_user, agreed_to_general,
+                    agreed_to_referral, ip_address, policy_version)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
+                user.id,
+                result.order_id,
+                is_referral_user,
+                agreed_to_general,
+                if is_referral_user { Some(agreed_to_referral) } else { None },
+                client_ip,
+                policy_version
+            )
+            .execute(&state.db)
+            .await;
 
             // Return JSON with redirect URL so the frontend fetch() can reliably read it.
             // Also include HX-Redirect for any HTMX-based callers.
