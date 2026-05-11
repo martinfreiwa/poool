@@ -3418,6 +3418,99 @@ button.community-tab-btn.active {
   }
 }
 
+/* ── Community page-level ds-modal overrides (commit 16) ──────────── */
+.community-page-modal__content--sm {
+  max-width: 400px;
+}
+
+.community-page-modal__content--md {
+  max-width: 480px;
+}
+
+.community-page-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--card-border-color, #EAECF0);
+}
+
+/* ── User profile modal (commit 16) ───────────────────────────────── */
+.community-profile-modal__loading {
+  padding: 40px;
+  text-align: center;
+}
+
+.community-profile-modal__spinner {
+  margin: 0 auto;
+}
+
+.community-profile-modal__loading-text {
+  margin-top: 16px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-profile-modal__header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.community-profile-modal__body {
+  text-align: center;
+  padding-top: 0;
+}
+
+.community-profile-modal__avatar {
+  margin: 0 auto 16px;
+}
+
+.community-profile-modal__name {
+  margin-bottom: 4px;
+}
+
+.community-profile-modal__bio {
+  color: var(--text-secondary, #667085);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.community-profile-modal__stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.community-profile-modal__stat {
+  text-align: center;
+}
+
+.community-profile-modal__stat-value {
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--page-title-color, #101828);
+  font-variant-numeric: tabular-nums;
+}
+
+.community-profile-modal__stat-label {
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  text-transform: uppercase;
+}
+
+.community-profile-modal__badges {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.community-profile-modal__action {
+  display: flex;
+  justify-content: center;
+}
+
 /* ── Community toast (commit 14 — JS-rendered) ────────────────────── */
 .community-toast {
   position: fixed;

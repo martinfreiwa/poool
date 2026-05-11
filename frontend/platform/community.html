@@ -589,13 +589,13 @@ include
         <div id="report-post-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="report-post-title" style="display: none;">
           <div class="ds-modal__backdrop" onclick="closeCommunityModal('report-post-modal')">
           </div>
-          <div class="ds-modal__content" style="max-width: 400px;">
+          <div class="ds-modal__content community-page-modal__content--sm">
             <div class="ds-modal__header">
               <h3 id="report-post-title" class="ds-modal__title">Report Post</h3>
               <button type="button" class="ds-modal__close"
                 aria-label="Close report dialog" onclick="closeCommunityModal('report-post-modal')">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -613,12 +613,10 @@ include
                 </select>
               </div>
             </div>
-            <div class="ds-modal__footer"
-              style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
+            <div class="ds-modal__footer community-page-modal__footer">
               <button type="button" class="ds-btn ds-btn--secondary"
                 onclick="closeCommunityModal('report-post-modal')">Cancel</button>
-              <button type="button" class="ds-btn ds-btn--primary" id="submit-report-btn" onclick="submitReport()"
-                style="background: #D92D20; color: white; border: none;">Submit Report</button>
+              <button type="button" class="ds-btn ds-btn--danger" id="submit-report-btn" onclick="submitReport()">Submit Report</button>
             </div>
           </div>
         </div>
@@ -627,13 +625,13 @@ include
         <div id="edit-profile-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" style="display: none;">
           <div class="ds-modal__backdrop" onclick="closeCommunityModal('edit-profile-modal')">
           </div>
-          <div class="ds-modal__content" style="max-width: 480px;">
+          <div class="ds-modal__content community-page-modal__content--md">
             <div class="ds-modal__header">
               <h3 id="edit-profile-title" class="ds-modal__title">Edit Profile</h3>
               <button type="button" class="ds-modal__close"
                 aria-label="Close profile editor" onclick="closeCommunityModal('edit-profile-modal')">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -641,14 +639,13 @@ include
             </div>
             <div class="ds-modal__body">
               <div class="ds-form-group">
-                <label class="ds-label">Bio</label>
+                <label for="edit-profile-bio" class="ds-label">Bio</label>
                 <textarea id="edit-profile-bio" class="ds-input" rows="3"
                   placeholder="Tell the community about your investment style..." maxlength="160"></textarea>
                 <div class="ds-helper-text">Maximum 160 characters.</div>
               </div>
             </div>
-            <div class="ds-modal__footer"
-              style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
+            <div class="ds-modal__footer community-page-modal__footer">
               <button type="button" class="ds-btn ds-btn--secondary"
                 onclick="closeCommunityModal('edit-profile-modal')">Cancel</button>
               <button type="button" class="ds-btn ds-btn--primary" id="save-profile-btn"
@@ -661,59 +658,56 @@ include
         <div id="user-profile-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-name" style="display: none;">
           <div class="ds-modal__backdrop" onclick="closeCommunityModal('user-profile-modal')">
           </div>
-          <div class="ds-modal__content" style="max-width: 480px;">
+          <div class="ds-modal__content community-page-modal__content--md">
             <!-- Loading State -->
-            <div id="profile-loading-state" style="padding: 40px; text-align: center;">
-              <div class="ds-spinner" style="margin: 0 auto;"></div>
-              <p style="margin-top: 16px; color: #667085;">Loading profile...</p>
+            <div id="profile-loading-state" class="community-profile-modal__loading">
+              <div class="ds-spinner community-profile-modal__spinner"></div>
+              <p class="community-profile-modal__loading-text">Loading profile...</p>
             </div>
 
             <!-- Content State -->
-            <div id="profile-content-state" style="display: none;">
-              <div class="ds-modal__header" style="border-bottom: none; padding-bottom: 0;">
+            <div id="profile-content-state" hidden>
+              <div class="ds-modal__header community-profile-modal__header">
                 <button type="button" class="ds-modal__close"
                   aria-label="Close user profile" onclick="closeCommunityModal('user-profile-modal')">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
                 </button>
               </div>
-              <div class="ds-modal__body" style="text-align: center; padding-top: 0;">
-                <div id="profile-modal-avatar" class="ds-avatar ds-avatar--xl" style="margin: 0 auto 16px auto;">
+              <div class="ds-modal__body community-profile-modal__body">
+                <div id="profile-modal-avatar" class="ds-avatar ds-avatar--xl community-profile-modal__avatar">
                   <span id="profile-modal-initials">U</span>
                 </div>
-                <h2 id="profile-modal-name" class="ds-heading" style="margin-bottom: 4px;">User Name</h2>
-                <p id="profile-modal-bio" style="color: #667085; font-size: 14px; margin-bottom: 16px;">This user hasn't
-                  written a bio yet.</p>
+                <h2 id="profile-modal-name" class="ds-heading community-profile-modal__name">User Name</h2>
+                <p id="profile-modal-bio" class="community-profile-modal__bio">This user hasn't written a bio yet.</p>
 
                 <!-- Stats row -->
-                <div style="display: flex; justify-content: center; gap: 24px; margin-bottom: 24px;">
-                  <div style="text-align: center;">
-                    <div id="profile-modal-followers" style="font-weight: 600; font-size: 18px; color: #101828;">0</div>
-                    <div style="font-size: 12px; color: #667085; text-transform: uppercase;">Followers</div>
+                <div class="community-profile-modal__stats">
+                  <div class="community-profile-modal__stat">
+                    <div id="profile-modal-followers" class="community-profile-modal__stat-value">0</div>
+                    <div class="community-profile-modal__stat-label">Followers</div>
                   </div>
-                  <div style="text-align: center;">
-                    <div id="profile-modal-following" style="font-weight: 600; font-size: 18px; color: #101828;">0</div>
-                    <div style="font-size: 12px; color: #667085; text-transform: uppercase;">Following</div>
+                  <div class="community-profile-modal__stat">
+                    <div id="profile-modal-following" class="community-profile-modal__stat-value">0</div>
+                    <div class="community-profile-modal__stat-label">Following</div>
                   </div>
-                  <div style="text-align: center;">
-                    <div id="profile-modal-posts" style="font-weight: 600; font-size: 18px; color: #101828;">0</div>
-                    <div style="font-size: 12px; color: #667085; text-transform: uppercase;">Posts</div>
+                  <div class="community-profile-modal__stat">
+                    <div id="profile-modal-posts" class="community-profile-modal__stat-value">0</div>
+                    <div class="community-profile-modal__stat-label">Posts</div>
                   </div>
                 </div>
 
                 <!-- Badges / Labels -->
-                <div id="profile-modal-badges"
-                  style="display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap;">
+                <div id="profile-modal-badges" class="community-profile-modal__badges">
                   <!-- Badges will go here later -->
                 </div>
 
                 <!-- Action Button -->
-                <div style="display:flex; justify-content: center;">
-                  <button type="button" id="profile-modal-follow-btn" class="ds-btn ds-btn--primary"
-                    style="width: 100%;">
+                <div class="community-profile-modal__action">
+                  <button type="button" id="profile-modal-follow-btn" class="ds-btn ds-btn--primary ds-btn--full">
                     Follow User
                   </button>
                 </div>
