@@ -2462,6 +2462,11 @@ pub fn router() -> Router<AppState> {
         )
         // Social Layer
         .route("/api/community/profile/me", get(get_profile_me))
+        // Phase 3 task 30: viewer's own moderation history.
+        .route(
+            "/api/community/profile/me/moderation-log",
+            get(get_my_moderation_log),
+        )
         .route("/api/community/profile", put(update_profile))
         .route("/api/community/profile/:id", get(get_profile))
         // Phase 3 task 20: followers / following list views.
@@ -2768,6 +2773,16 @@ async fn get_profile_me(
             .flatten()
             .flatten();
 
+    // Phase 3 task 30: surface is_shadowbanned + warning_count so the feed
+    // can render a moderation banner without an extra fetch.
+    let (is_shadowbanned, warning_count): (bool, i32) = sqlx::query_as::<_, (bool, i32)>(
+        "SELECT COALESCE(is_shadowbanned, false), COALESCE(warning_count, 0) FROM community_profiles WHERE user_id = $1",
+    )
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await?
+    .unwrap_or((false, 0));
+
     Ok(Json(serde_json::json!({
         "user_id": profile.user_id,
         "bio": profile.bio,
@@ -2779,7 +2794,44 @@ async fn get_profile_me(
         "is_community_banned": is_banned,
         "ban_reason": ban_reason,
         "has_pending_appeal": has_pending_appeal,
+        "is_shadowbanned": is_shadowbanned,
+        "warning_count": warning_count,
     })))
+}
+
+// Phase 3 task 30: return moderation actions taken against the viewer so
+// they can see their own moderation history.
+async fn get_my_moderation_log(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let rows = sqlx::query_as::<_, (String, Option<serde_json::Value>, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT action, details, created_at
+        FROM community_audit_logs
+        WHERE target_user_id = $1
+          AND action IN ('user.warn', 'user.mute', 'user.unmute', 'user.ban', 'user.unban', 'user.shadowban', 'user.unshadowban')
+        ORDER BY created_at DESC
+        LIMIT 50
+        "#,
+    )
+    .bind(user.id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let entries: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|(action, details, created_at)| serde_json::json!({
+            "action": action,
+            "details": details,
+            "created_at": created_at,
+        }))
+        .collect();
+    Ok(Json(serde_json::json!({ "entries": entries })))
 }
 
 async fn update_profile(

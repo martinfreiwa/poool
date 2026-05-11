@@ -3607,6 +3607,42 @@ button.community-tab-btn.active {
   display: none;
 }
 
+/* Phase 3 task 30: softer warning variant for shadowban. */
+.community-ban-banner--soft {
+  background: var(--warning-bg, #FFFAEB);
+  border-color: var(--warning-fg, #FEDF89);
+  border-left-color: #F79009;
+}
+
+.community-mod-log-details[hidden] {
+  display: none;
+}
+
+.community-mod-log__summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-secondary, #667085);
+}
+
+.community-mod-log__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-secondary, #475467);
+}
+
+.community-mod-log__row {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+
+.community-mod-log__row:last-child {
+  border-bottom: 0;
+}
+
 .community-ban-banner__body {
   display: flex;
   align-items: flex-start;

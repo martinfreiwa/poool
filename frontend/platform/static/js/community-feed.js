@@ -1365,10 +1365,51 @@ window.initCommunityFeed = function() {
             if (!res.ok) return;
             const profile = await res.json();
             updateMyProfileCard(profile);
+            // Phase 3 task 30: surface the shadowban banner + warning_count hint.
+            const sbBanner = document.getElementById('community-shadowban-banner');
+            if (sbBanner) {
+                sbBanner.hidden = !profile.is_shadowbanned;
+            }
+            const modSummary = document.getElementById('edit-profile-mod-log');
+            if (modSummary && (profile.is_shadowbanned || (profile.warning_count || 0) > 0)) {
+                modSummary.hidden = false;
+            }
         } catch (e) {
             console.error("Failed to load community profile", e);
         }
     }
+
+    // Lazy-fetch the moderation log entries when the summary opens.
+    document.addEventListener('toggle', async (event) => {
+        const summary = event.target;
+        if (!(summary instanceof HTMLDetailsElement)) return;
+        if (summary.id !== 'edit-profile-mod-log') return;
+        if (!summary.open) return;
+        if (summary.dataset.loaded === '1') return;
+        const body = document.getElementById('edit-profile-mod-log-body');
+        try {
+            const res = await fetch('/api/community/profile/me/moderation-log', { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Failed to load history');
+            const data = await res.json();
+            const entries = Array.isArray(data.entries) ? data.entries : [];
+            if (entries.length === 0) {
+                body.textContent = 'No moderation actions on record.';
+            } else {
+                body.replaceChildren();
+                entries.forEach((entry) => {
+                    const row = document.createElement('div');
+                    row.className = 'community-mod-log__row';
+                    const label = entry.action.replace('user.', '').replace(/_/g, ' ');
+                    row.textContent = `${label} · ${new Date(entry.created_at).toLocaleString()}`;
+                    body.appendChild(row);
+                });
+            }
+            summary.dataset.loaded = '1';
+        } catch (err) {
+            console.error('Failed to load moderation log', err);
+            body.textContent = 'Failed to load moderation history.';
+        }
+    }, true);
 
     loadMyProfile();
 

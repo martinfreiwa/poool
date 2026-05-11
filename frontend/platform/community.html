@@ -50,6 +50,29 @@ include
           </div>
         </aside>
 
+        <!-- Shadowban banner (Phase 3 task 30) — hidden by default, revealed by
+             community-feed.js when /api/community/profile/me returns
+             is_shadowbanned=true. -->
+        <aside id="community-shadowban-banner" class="community-ban-banner community-ban-banner--soft" role="region" aria-label="Limited visibility" hidden>
+          <div class="community-ban-banner__body">
+            <div class="community-ban-banner__icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </div>
+            <div class="community-ban-banner__copy">
+              <strong class="community-ban-banner__title">Your posts have limited visibility.</strong>
+              <span class="community-ban-banner__reason">A moderator has restricted how widely your content is shown. New posts and comments are still saved but won't appear in others' feeds.</span>
+            </div>
+          </div>
+          <div class="community-ban-banner__actions">
+            <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm"
+              onclick="window.openProfileEditModal()">View moderation history</button>
+          </div>
+        </aside>
+
         <!-- Tab Navigation — HTMX-driven via topbar buttons -->
         <script>
           /**
@@ -839,6 +862,11 @@ include
                   placeholder="Tell the community about your investment style..." maxlength="160"></textarea>
                 <div class="ds-helper-text">Maximum 160 characters.</div>
               </div>
+              <!-- Phase 3 task 30: collapsed moderation history (warnings, mutes, etc). -->
+              <details id="edit-profile-mod-log" class="community-mod-log-details" hidden>
+                <summary class="community-mod-log__summary">Moderation history</summary>
+                <div id="edit-profile-mod-log-body" class="community-mod-log__body">Loading...</div>
+              </details>
             </div>
             <div class="ds-modal__footer community-page-modal__footer">
               <button type="button" class="ds-btn ds-btn--secondary"
