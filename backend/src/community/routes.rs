@@ -2622,6 +2622,20 @@ pub fn router() -> Router<AppState> {
             "/api/community/notification-prefs",
             get(get_notification_prefs).put(update_notification_prefs),
         )
+        // 14.8.24 — admin community settings
+        .route(
+            "/api/admin/community/settings",
+            get(admin_get_community_settings).put(admin_update_community_settings),
+        )
+        // 14.8.20 — direct messages
+        .route(
+            "/api/community/dms/threads",
+            get(list_dm_threads).post(create_dm_thread),
+        )
+        .route(
+            "/api/community/dms/threads/:id/messages",
+            get(list_dm_messages).post(post_dm_message),
+        )
         // 14.8.16 — verified-owner request flow
         .route(
             "/api/community/verified-owner-requests",
@@ -3497,6 +3511,380 @@ async fn admin_review_verified_owner_request(
         "id": request_id,
         "status": payload.status,
     })))
+}
+
+// ─── Admin community settings (14.8.24) ─────────────────────────────────
+
+async fn admin_get_community_settings(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    admin
+        .require_permission(&state.db, "community.view")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT key, value, description, updated_at FROM community_settings ORDER BY key",
+    )
+    .fetch_all(&c_pool)
+    .await?;
+
+    let settings: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "key": row.try_get::<String, _>("key").unwrap_or_default(),
+                "value": row.try_get::<String, _>("value").unwrap_or_default(),
+                "description": row.try_get::<Option<String>, _>("description").unwrap_or(None),
+                "updated_at": row
+                    .try_get::<chrono::DateTime<chrono::Utc>, _>("updated_at")
+                    .ok(),
+            })
+        })
+        .collect();
+    Ok(Json(serde_json::json!({ "settings": settings })))
+}
+
+#[derive(Deserialize)]
+struct UpdateCommunitySettingsPayload {
+    pub updates: Vec<CommunitySettingUpdate>,
+}
+
+#[derive(Deserialize)]
+struct CommunitySettingUpdate {
+    pub key: String,
+    pub value: String,
+}
+
+async fn admin_update_community_settings(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateCommunitySettingsPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
+    if payload.updates.is_empty() {
+        return Ok(Json(serde_json::json!({ "updated": 0 })));
+    }
+
+    let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
+    let mut updated_count: usize = 0;
+    for update in &payload.updates {
+        // Only existing keys are accepted (no schemaless write).
+        let res = sqlx::query(
+            "UPDATE community_settings SET value = $1, updated_by = $2, updated_at = NOW()
+             WHERE key = $3",
+        )
+        .bind(&update.value)
+        .bind(admin.user.id)
+        .bind(&update.key)
+        .execute(&mut *tx)
+        .await?;
+        if res.rows_affected() > 0 {
+            updated_count += 1;
+        }
+    }
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({ "updated": updated_count })))
+}
+
+// ─── Direct messages (14.8.20) ──────────────────────────────────────────
+
+/// Helper — returns (a, b) with a < b so callers can address the unique row.
+fn dm_pair(viewer: Uuid, other: Uuid) -> (Uuid, Uuid) {
+    if viewer < other {
+        (viewer, other)
+    } else {
+        (other, viewer)
+    }
+}
+
+/// Helper — returns true when either user has blocked the other.
+async fn dm_block_exists(c_pool: &sqlx::PgPool, a: Uuid, b: Uuid) -> Result<bool, AppError> {
+    let count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM block_relationships
+         WHERE (actor_user_id = $1 AND target_user_id = $2)
+            OR (actor_user_id = $2 AND target_user_id = $1)",
+    )
+    .bind(a)
+    .bind(b)
+    .fetch_one(c_pool)
+    .await?;
+    Ok(count > 0)
+}
+
+async fn list_dm_threads(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT t.id, t.participant_a_id, t.participant_b_id, t.last_message_at,
+                (
+                    SELECT COUNT(*) FROM dm_messages m
+                    WHERE m.thread_id = t.id
+                      AND m.sender_id <> $1
+                      AND m.read_at_recipient IS NULL
+                ) AS unread_count,
+                (
+                    SELECT m.content FROM dm_messages m
+                    WHERE m.thread_id = t.id
+                    ORDER BY m.created_at DESC LIMIT 1
+                ) AS last_message_preview
+         FROM dm_threads t
+         WHERE (t.participant_a_id = $1 AND t.deleted_at_a IS NULL)
+            OR (t.participant_b_id = $1 AND t.deleted_at_b IS NULL)
+         ORDER BY COALESCE(t.last_message_at, t.created_at) DESC
+         LIMIT 100",
+    )
+    .bind(user.id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let mut other_ids: Vec<Uuid> = Vec::with_capacity(rows.len());
+    let mut pending: Vec<(Uuid, Uuid, Option<chrono::DateTime<chrono::Utc>>, i64, Option<String>)> =
+        Vec::with_capacity(rows.len());
+    for row in rows {
+        let id: Uuid = row.try_get("id")?;
+        let a: Uuid = row.try_get("participant_a_id")?;
+        let b: Uuid = row.try_get("participant_b_id")?;
+        let last: Option<chrono::DateTime<chrono::Utc>> = row.try_get("last_message_at")?;
+        let unread: i64 = row.try_get("unread_count")?;
+        let preview: Option<String> = row.try_get("last_message_preview")?;
+        let other = if a == user.id { b } else { a };
+        other_ids.push(other);
+        pending.push((id, other, last, unread, preview));
+    }
+    let authors = if other_ids.is_empty() {
+        std::collections::HashMap::new()
+    } else {
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &other_ids)
+            .await
+            .unwrap_or_default()
+    };
+
+    let threads: Vec<serde_json::Value> = pending
+        .into_iter()
+        .map(|(id, other, last, unread, preview)| {
+            let info = authors.get(&other);
+            serde_json::json!({
+                "thread_id": id,
+                "other_user_id": other,
+                "other_display_name": info
+                    .map(|i| i.display_name.clone())
+                    .unwrap_or_else(|| "Anonymous".into()),
+                "other_avatar_url": info.and_then(|i| i.avatar_url.clone()),
+                "last_message_at": last,
+                "last_message_preview": preview,
+                "unread_count": unread,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "threads": threads })))
+}
+
+#[derive(Deserialize)]
+struct CreateDmThreadPayload {
+    pub recipient_user_id: Uuid,
+    pub content: String,
+}
+
+async fn create_dm_thread(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateDmThreadPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    if user.id == payload.recipient_user_id {
+        return Err(AppError::BadRequest("Cannot DM yourself.".into()));
+    }
+    let trimmed = payload.content.trim();
+    if trimmed.is_empty() || trimmed.len() > 4000 {
+        return Err(AppError::BadRequest(
+            "Message must be 1–4000 characters.".into(),
+        ));
+    }
+
+    let c_pool = get_community_pool(&state)?;
+    check_user_not_banned(&c_pool, user.id).await?;
+    if dm_block_exists(&c_pool, user.id, payload.recipient_user_id).await? {
+        return Err(AppError::Forbidden(
+            "Direct messages are unavailable between you and this user.".into(),
+        ));
+    }
+
+    let (a, b) = dm_pair(user.id, payload.recipient_user_id);
+    let mut tx = c_pool.begin().await?;
+    let thread_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO dm_threads (participant_a_id, participant_b_id, last_message_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (participant_a_id, participant_b_id)
+         DO UPDATE SET last_message_at = NOW(),
+                       deleted_at_a = NULL,
+                       deleted_at_b = NULL
+         RETURNING id",
+    )
+    .bind(a)
+    .bind(b)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let message_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO dm_messages (thread_id, sender_id, content)
+         VALUES ($1, $2, $3) RETURNING id",
+    )
+    .bind(thread_id)
+    .bind(user.id)
+    .bind(trimmed)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "thread_id": thread_id,
+        "message_id": message_id,
+    })))
+}
+
+async fn list_dm_messages(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(thread_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    use sqlx::Row;
+    let thread = sqlx::query(
+        "SELECT participant_a_id, participant_b_id FROM dm_threads WHERE id = $1",
+    )
+    .bind(thread_id)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Thread not found.".into()))?;
+    let a: Uuid = thread.try_get("participant_a_id")?;
+    let b: Uuid = thread.try_get("participant_b_id")?;
+    if user.id != a && user.id != b {
+        return Err(AppError::Forbidden("Not a participant.".into()));
+    }
+
+    // Mark messages from the other side as read.
+    let _ = sqlx::query(
+        "UPDATE dm_messages SET read_at_recipient = NOW()
+         WHERE thread_id = $1 AND sender_id <> $2 AND read_at_recipient IS NULL",
+    )
+    .bind(thread_id)
+    .bind(user.id)
+    .execute(&c_pool)
+    .await;
+
+    let rows = sqlx::query(
+        "SELECT id, sender_id, content, created_at, read_at_recipient
+         FROM dm_messages WHERE thread_id = $1
+         ORDER BY created_at ASC LIMIT 500",
+    )
+    .bind(thread_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let messages: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "sender_id": row.try_get::<Uuid, _>("sender_id").ok(),
+                "content": row.try_get::<String, _>("content").unwrap_or_default(),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+                "read_at_recipient": row
+                    .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("read_at_recipient")
+                    .unwrap_or(None),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "messages": messages })))
+}
+
+#[derive(Deserialize)]
+struct PostDmMessagePayload {
+    pub content: String,
+}
+
+async fn post_dm_message(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(thread_id): Path<Uuid>,
+    Json(payload): Json<PostDmMessagePayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let trimmed = payload.content.trim();
+    if trimmed.is_empty() || trimmed.len() > 4000 {
+        return Err(AppError::BadRequest(
+            "Message must be 1–4000 characters.".into(),
+        ));
+    }
+
+    let c_pool = get_community_pool(&state)?;
+    check_user_not_banned(&c_pool, user.id).await?;
+
+    use sqlx::Row;
+    let thread = sqlx::query(
+        "SELECT participant_a_id, participant_b_id FROM dm_threads WHERE id = $1",
+    )
+    .bind(thread_id)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Thread not found.".into()))?;
+    let a: Uuid = thread.try_get("participant_a_id")?;
+    let b: Uuid = thread.try_get("participant_b_id")?;
+    if user.id != a && user.id != b {
+        return Err(AppError::Forbidden("Not a participant.".into()));
+    }
+    let other = if user.id == a { b } else { a };
+    if dm_block_exists(&c_pool, user.id, other).await? {
+        return Err(AppError::Forbidden(
+            "Direct messages are unavailable between you and this user.".into(),
+        ));
+    }
+
+    let mut tx = c_pool.begin().await?;
+    let id: Uuid = sqlx::query_scalar(
+        "INSERT INTO dm_messages (thread_id, sender_id, content)
+         VALUES ($1, $2, $3) RETURNING id",
+    )
+    .bind(thread_id)
+    .bind(user.id)
+    .bind(trimmed)
+    .fetch_one(&mut *tx)
+    .await?;
+    sqlx::query("UPDATE dm_threads SET last_message_at = NOW() WHERE id = $1")
+        .bind(thread_id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({ "id": id })))
 }
 
 // ─── Block / mute self-service (14.8.2) ──────────────────────────────────

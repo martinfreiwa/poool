@@ -211,6 +211,9 @@ pub fn router() -> axum::Router<AppState> {
         // Phase 2 task 18: ban appeals review queue.
         .route("/admin/community/appeals.html", get(page_admin_generic))
         .route("/admin/community/appeals", get(page_admin_generic))
+        // 14.8.24: admin community settings.
+        .route("/admin/community/settings.html", get(page_admin_generic))
+        .route("/admin/community/settings", get(page_admin_generic))
         .route("/admin/community/user-detail.html", get(page_admin_generic))
         .route("/admin/community/user-detail", get(page_admin_generic))
         .route("/admin/community/users.html", get(page_admin_generic))

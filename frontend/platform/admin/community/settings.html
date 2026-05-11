@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Settings | Admin | POOOL</title>
+
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-community-settings.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Settings</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Community Settings</h1>
+          <p class="admin-page-subtitle">Platform-wide community feature flags + content thresholds.</p>
+        </div>
+
+        <section class="ds-card admin-settings-section">
+          <div id="admin-settings-status" class="ds-helper-text" role="status" aria-live="polite"></div>
+          <form id="admin-settings-form" class="admin-settings-form">
+            <div id="admin-settings-rows" class="admin-settings-rows">
+              <div class="ds-helper-text">Loading settings…</div>
+            </div>
+            <div class="admin-settings-actions">
+              <button type="submit" class="ds-btn ds-btn--primary">Save changes</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>
