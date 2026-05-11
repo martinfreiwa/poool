@@ -2836,12 +2836,19 @@ async fn page_community(jar: CookieJar, State(state): State<AppState>) -> impl I
 /// GET /community/hashtag/:tag — Phase 3 task 24: dedicated hashtag landing
 /// page rendered server-side using the same community_post_list partial as
 /// the feed.
+#[derive(serde::Deserialize)]
+struct PageQuery {
+    page: Option<i64>,
+}
+
 async fn page_community_hashtag(
     Path(tag): Path<String>,
+    axum::extract::Query(q): axum::extract::Query<PageQuery>,
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> axum::response::Response {
-    let result = crate::community::routes::get_hashtag_feed_data(&state, &tag, None).await;
+    let page = q.page.unwrap_or(1).max(1);
+    let result = crate::community::routes::get_hashtag_feed_data(&state, &tag, Some(page)).await;
 
     #[derive(serde::Serialize)]
     struct Context {
@@ -2849,6 +2856,9 @@ async fn page_community_hashtag(
         post_count: usize,
         posts: Vec<crate::community::models::PostDisplay>,
         base_url: String,
+        current_page: i64,
+        next_page: i64,
+        has_more: bool,
     }
 
     let (clean_tag, posts) = match result {
@@ -2856,6 +2866,9 @@ async fn page_community_hashtag(
         Err(e) => return e.into_response(),
     };
     let post_count = posts.len();
+    // 20 is the page size in get_hashtag_feed_data. "has_more" is best-effort:
+    // if we filled the page there *might* be more.
+    let has_more = post_count >= 20;
 
     common::routes_helper::serve_protected_with_context(
         jar,
@@ -2866,6 +2879,9 @@ async fn page_community_hashtag(
             post_count,
             posts,
             base_url: state.config.base_url.clone(),
+            current_page: page,
+            next_page: page + 1,
+            has_more,
         },
     )
     .await

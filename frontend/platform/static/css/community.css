@@ -2867,6 +2867,18 @@ button.community-tab-btn.active {
   border: 1px solid #D1E0FF;
   border-radius: 12px;
   margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.community-hashtag-banner__back {
+  margin-left: auto;
+}
+
+.community-hashtag-pagination {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
 }
 
 .community-hashtag-banner__left {

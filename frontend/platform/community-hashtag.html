@@ -14,20 +14,35 @@ include "components/head.html" %}{% endwith %}
       {% with investor_topbar_title="#" + tag, investor_topbar_variant="community" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="lb-container">
-        <div class="community-hashtag-banner" style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
+        <div class="community-hashtag-banner">
           <div class="community-hashtag-banner__left">
             <div class="community-hashtag-banner__icon">#</div>
             <div>
               <div class="community-hashtag-banner__title">#{{ tag }}</div>
-              <div class="community-hashtag-banner__count">{{ post_count }} post{% if post_count != 1 %}s{% endif %}</div>
+              <div class="community-hashtag-banner__count">
+                {% if current_page and current_page > 1 %}Page {{ current_page }} · {% endif %}
+                {{ post_count }} post{% if post_count != 1 %}s{% endif %}
+              </div>
             </div>
           </div>
-          <a class="ds-btn ds-btn--secondary ds-btn--sm" href="/community" style="margin-left:auto;">← Back to feed</a>
+          <a class="ds-btn ds-btn--secondary ds-btn--sm community-hashtag-banner__back" href="/community">← Back to feed</a>
         </div>
 
         <div id="community-feed-container" class="community-feed">
           {% include 'partials/community_post_list.html' %}
         </div>
+
+        {# WS1.4: paginate via plain links so the URL is shareable. #}
+        {% if has_more %}
+        <div class="community-hashtag-pagination">
+          <a class="ds-btn ds-btn--secondary" href="/community/hashtag/{{ tag }}?page={{ next_page }}">Load older posts →</a>
+        </div>
+        {% endif %}
+        {% if current_page and current_page > 1 %}
+        <div class="community-hashtag-pagination">
+          <a class="ds-btn ds-btn--ghost ds-btn--sm" href="/community/hashtag/{{ tag }}{% if current_page > 2 %}?page={{ current_page - 1 }}{% endif %}">← Newer posts</a>
+        </div>
+        {% endif %}
       </div>
     </main>
   </div>
