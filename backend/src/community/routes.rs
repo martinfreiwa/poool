@@ -715,6 +715,89 @@ async fn create_comment(
     Ok(Json(serde_json::json!({ "id": comment_id })))
 }
 
+#[derive(Deserialize)]
+struct UpdateCommentReq {
+    pub content: String,
+}
+
+/// PUT /api/community/comments/:id — owner edits their own comment (14.8.5).
+///
+/// Reuses the same guards as `create_comment`: ban check, length validation,
+/// automod, locked-thread, and HTML sanitisation. The first edit also
+/// captures `original_content` for moderation review; subsequent edits
+/// preserve it.
+async fn update_own_comment(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(comment_id): Path<Uuid>,
+    Json(payload): Json<UpdateCommentReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    validation::validate_comment_length(&payload.content)?;
+    if let Some(reason) = validation::check_automod(&payload.content) {
+        return Err(AppError::Forbidden(format!(
+            "Content violation: {}",
+            reason
+        )));
+    }
+    let clean_html = validation::sanitize_html_basic(&payload.content);
+    let c_pool = get_community_pool(&state)?;
+    check_user_not_banned(&c_pool, user.id).await?;
+
+    use sqlx::Row;
+    let row = sqlx::query(
+        "SELECT user_id, post_id, content FROM comments WHERE id = $1",
+    )
+    .bind(comment_id)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Comment not found".into()))?;
+
+    let author_id: Uuid = row.try_get("user_id")?;
+    if author_id != user.id {
+        return Err(AppError::Forbidden(
+            "You can only edit your own comments.".into(),
+        ));
+    }
+    let post_id: Uuid = row.try_get("post_id")?;
+    let original_content: String = row.try_get("content")?;
+
+    // Refuse edits on locked threads (same rule as create_comment).
+    let is_locked: Option<bool> = sqlx::query_scalar("SELECT is_locked FROM posts WHERE id = $1")
+        .bind(post_id)
+        .fetch_optional(&c_pool)
+        .await?;
+    if is_locked.unwrap_or(false) {
+        return Err(AppError::Forbidden(
+            "This thread has been locked by a moderator.".into(),
+        ));
+    }
+
+    // First edit captures original_content; subsequent edits leave it alone.
+    sqlx::query(
+        "UPDATE comments SET
+            content = $1,
+            content_sanitized = $2,
+            edited_at = NOW(),
+            original_content = COALESCE(original_content, $3)
+         WHERE id = $4",
+    )
+    .bind(&payload.content)
+    .bind(&clean_html)
+    .bind(&original_content)
+    .bind(comment_id)
+    .execute(&c_pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "id": comment_id,
+        "edited": true,
+    })))
+}
+
 async fn get_comments(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -754,11 +837,13 @@ async fn get_comments(
         result.push(serde_json::json!({
             "id": c.id,
             "post_id": c.post_id,
+            "author_id": c.user_id,
             "author_name": author.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
             "author_avatar": author.and_then(|a| a.avatar_url.clone()),
             "content": c.content,
             "helpful_count": c.helpful_count,
             "created_at": c.created_at,
+            "edited_at": c.edited_at,
         }));
     }
 
@@ -2180,6 +2265,8 @@ pub fn router() -> Router<AppState> {
             "/api/community/posts/:id/comments",
             get(get_comments).post(create_comment),
         )
+        // 14.8.5: comment edit (own)
+        .route("/api/community/comments/:id", put(update_own_comment))
         // Admin Stats & Moderation
         .route("/api/admin/community/stats", get(get_admin_stats))
         .route("/api/admin/community/reports", get(get_reports))
@@ -2509,9 +2596,21 @@ async fn get_profile_me(
         false
     };
 
+    // Phase 3 task 19: include avatar_url so the edit-profile modal can paint
+    // the current photo without an extra /api/me roundtrip.
+    let avatar_url: Option<String> =
+        sqlx::query_scalar("SELECT avatar_url FROM users WHERE id = $1")
+            .bind(user.id)
+            .fetch_optional(&state.db)
+            .await
+            .ok()
+            .flatten()
+            .flatten();
+
     Ok(Json(serde_json::json!({
         "user_id": profile.user_id,
         "bio": profile.bio,
+        "avatar_url": avatar_url,
         "post_count": profile.post_count,
         "follower_count": profile.follower_count,
         "following_count": profile.following_count,

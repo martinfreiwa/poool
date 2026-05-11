@@ -216,9 +216,12 @@ window.initCommunityFeed = function() {
             }
 
             listContainer.replaceChildren();
+            const currentUserId =
+                (window.__POOOL_USER && (window.__POOOL_USER.id || window.__POOOL_USER.user_id)) || null;
             comments.forEach(c => {
                 const row = document.createElement('div');
                 row.className = 'community-comment-row';
+                row.dataset.commentId = c.id;
 
                 // Avatar
                 if (c.author_avatar) {
@@ -245,7 +248,9 @@ window.initCommunityFeed = function() {
                 nameSpan.textContent = c.author_name; // SAFE: textContent escapes HTML
                 const timeSpan = document.createElement('span');
                 timeSpan.className = 'community-comment-row__time';
-                timeSpan.textContent = timeAgo(c.created_at);
+                let timeText = timeAgo(c.created_at);
+                if (c.edited_at) timeText += ' · Edited';
+                timeSpan.textContent = timeText;
                 header.appendChild(nameSpan);
                 header.appendChild(timeSpan);
 
@@ -255,6 +260,20 @@ window.initCommunityFeed = function() {
 
                 body.appendChild(header);
                 body.appendChild(contentDiv);
+
+                // 14.8.5 — own-comment edit affordance.
+                if (currentUserId && c.author_id === currentUserId) {
+                    const editBtn = document.createElement('button');
+                    editBtn.type = 'button';
+                    editBtn.className = 'ds-btn ds-btn--ghost ds-btn--sm community-comment-row__edit-btn';
+                    editBtn.textContent = 'Edit';
+                    editBtn.setAttribute('aria-label', 'Edit comment');
+                    editBtn.addEventListener('click', () =>
+                        startCommentEdit(row, c.id, c.content, contentDiv, timeSpan, editBtn)
+                    );
+                    body.appendChild(editBtn);
+                }
+
                 row.appendChild(body);
                 listContainer.appendChild(row);
             });
@@ -438,6 +457,81 @@ window.initCommunityFeed = function() {
             btnElement.disabled = false;
         }
     };
+
+    // ─── 14.8.5: comment edit (own) ────────────────────────────────
+    function startCommentEdit(row, commentId, currentText, contentDiv, timeSpan, editBtn) {
+        // Build inline editor.
+        const editor = document.createElement('div');
+        editor.className = 'community-comment-row__editor';
+        const textarea = document.createElement('textarea');
+        textarea.className = 'ds-input community-comment-row__editor-textarea';
+        textarea.rows = 3;
+        textarea.value = currentText;
+        editor.appendChild(textarea);
+        const actions = document.createElement('div');
+        actions.className = 'community-comment-row__editor-actions';
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'ds-btn ds-btn--secondary ds-btn--sm';
+        cancel.textContent = 'Cancel';
+        const save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'ds-btn ds-btn--primary ds-btn--sm';
+        save.textContent = 'Save';
+        actions.appendChild(cancel);
+        actions.appendChild(save);
+        editor.appendChild(actions);
+
+        contentDiv.replaceWith(editor);
+        editBtn.hidden = true;
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+        cancel.addEventListener('click', () => {
+            editor.replaceWith(contentDiv);
+            editBtn.hidden = false;
+        });
+
+        save.addEventListener('click', async () => {
+            const next = textarea.value.trim();
+            if (next.length < 1) return;
+            if (next === currentText) {
+                editor.replaceWith(contentDiv);
+                editBtn.hidden = false;
+                return;
+            }
+            save.disabled = true;
+            save.textContent = 'Saving…';
+            try {
+                const res = await fetch(`/api/community/comments/${commentId}`, {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ content: next }),
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err || `HTTP ${res.status}`);
+                }
+                contentDiv.textContent = next;
+                if (timeSpan && !timeSpan.textContent.includes('Edited')) {
+                    timeSpan.textContent = `${timeSpan.textContent} · Edited`;
+                }
+                editor.replaceWith(contentDiv);
+                editBtn.hidden = false;
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Comment updated.');
+                }
+            } catch (e) {
+                console.error('Failed to update comment', e);
+                save.disabled = false;
+                save.textContent = 'Save';
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Could not update comment. Please try again.');
+                }
+            }
+        });
+    }
 
     // ─── 14.8.2: block / mute toggles ──────────────────────────────
     async function toggleRelation({ kind, userId, currentlyOn, btnElement, onLabel, offLabel }) {
@@ -1660,24 +1754,87 @@ window.initCommunityFeed = function() {
     // UX.15: EDIT COMMUNITY PROFILE
     // ═══════════════════════════════════════════════════════════════
 
+    function paintAvatarPreview(url) {
+        const preview = document.getElementById('edit-profile-avatar-preview');
+        if (!preview) return;
+        if (url) {
+            preview.style.backgroundImage = `url("${url}")`;
+            preview.dataset.avatarUrl = url;
+        } else {
+            preview.style.backgroundImage = '';
+            delete preview.dataset.avatarUrl;
+        }
+    }
+
     window.openProfileEditModal = async function() {
         const modal = document.getElementById('edit-profile-modal');
         if (!modal) return;
-        
+
         try {
             const res = await fetch('/api/community/profile/me');
             if (res.ok) {
                 const profile = await res.json();
                 document.getElementById('edit-profile-bio').value = profile.bio || '';
+                paintAvatarPreview(profile.avatar_url || (window.__POOOL_USER && window.__POOOL_USER.avatar_url) || null);
             }
         } catch (e) {
             console.error('Failed to load profile for editing', e);
         }
-        
+
         if (typeof window.openCommunityModal === 'function') {
             window.openCommunityModal('edit-profile-modal');
         } else {
             modal.style.display = 'block';
+        }
+    };
+
+    // Phase 3 task 19: client side of the avatar upload. Reuses the existing
+    // POST /api/upload/avatar endpoint (writes to users.avatar_url) and paints
+    // the new image into the preview immediately so the save button just needs
+    // to flush the bio change.
+    window.uploadProfileAvatar = async function (event) {
+        const file = event && event.target && event.target.files && event.target.files[0];
+        if (!file) return;
+        const statusEl = document.getElementById('edit-profile-avatar-status');
+        const showStatus = (text, error) => {
+            if (!statusEl) return;
+            statusEl.textContent = text;
+            statusEl.hidden = false;
+            statusEl.style.color = error ? '#B42318' : '#475467';
+        };
+        if (file.size > 5 * 1024 * 1024) {
+            showStatus('Image must be 5 MB or smaller.', true);
+            event.target.value = '';
+            return;
+        }
+        showStatus('Uploading...');
+        const form = new FormData();
+        form.append('file', file);
+        try {
+            const res = await fetch('/api/upload/avatar', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders(),
+                body: form,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+            paintAvatarPreview(data.avatar_url);
+            showStatus('Photo updated. Save changes to keep the new picture.');
+            // Reflect immediately in sidebar avatar.
+            const sidebarAvatar = document.getElementById('my-profile-avatar-circle');
+            if (sidebarAvatar) {
+                sidebarAvatar.style.backgroundImage = `url("${data.avatar_url}")`;
+                sidebarAvatar.style.backgroundSize = 'cover';
+                sidebarAvatar.style.backgroundPosition = 'center';
+                sidebarAvatar.textContent = '';
+            }
+            if (window.__POOOL_USER) window.__POOOL_USER.avatar_url = data.avatar_url;
+        } catch (err) {
+            console.error('Avatar upload failed', err);
+            showStatus(err.message || 'Upload failed.', true);
+        } finally {
+            event.target.value = '';
         }
     };
 

@@ -742,6 +742,26 @@ include
               </button>
             </div>
             <div class="ds-modal__body">
+              <!-- Phase 3 task 19: profile picture upload. Reuses POST /api/upload/avatar
+                   which writes to users.avatar_url; we surface the resulting URL in the
+                   preview and let the user save it together with the bio. -->
+              <div class="ds-form-group community-edit-profile__avatar-group">
+                <label class="ds-label">Profile picture</label>
+                <div class="community-edit-profile__avatar-row">
+                  <div id="edit-profile-avatar-preview" class="community-edit-profile__avatar-preview" aria-hidden="true"></div>
+                  <div class="community-edit-profile__avatar-actions">
+                    <input type="file" id="edit-profile-avatar-input" class="ds-sr-only"
+                      accept="image/jpeg,image/png,image/webp"
+                      onchange="window.uploadProfileAvatar(event)">
+                    <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
+                      onclick="document.getElementById('edit-profile-avatar-input').click()">
+                      Change photo
+                    </button>
+                    <div class="ds-helper-text">JPEG, PNG or WebP. Max 5 MB.</div>
+                    <div id="edit-profile-avatar-status" class="ds-helper-text" hidden></div>
+                  </div>
+                </div>
+              </div>
               <div class="ds-form-group">
                 <label for="edit-profile-bio" class="ds-label">Bio</label>
                 <textarea id="edit-profile-bio" class="ds-input" rows="3"
