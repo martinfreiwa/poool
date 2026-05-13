@@ -1,6 +1,9 @@
 pub mod models;
 pub mod public_assets;
 pub mod routes;
+/// Villa-Returns P3 — public investor performance KPIs.
+#[allow(missing_docs)]
+pub mod villa_performance;
 
 use crate::auth::routes::AppState;
 use axum::{routing::get, Router};
@@ -26,4 +29,13 @@ pub fn router() -> Router<AppState> {
         .route("/commodity", get(page_commodity))
         .route("/commodity/:slug", get(page_commodity))
         .route("/api/assets/search", get(api_asset_search))
+        // Villa-Returns P3 — public investor KPIs.
+        .route(
+            "/api/villas/:asset_id/performance",
+            get(villa_performance::api_villa_performance),
+        )
+        .route(
+            "/api/villas/:asset_id/history",
+            get(villa_performance::api_villa_history),
+        )
 }
