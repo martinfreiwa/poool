@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect(&database_url)
         .await?;
 
-    let candidates: Vec<(
+    type CandidateRow = (
         uuid::Uuid,
         i32,
         i32,
@@ -58,7 +58,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         i64,
         Option<i32>,
         chrono::DateTime<chrono::Utc>,
-    )> = sqlx::query_as(
+    );
+    let candidates: Vec<CandidateRow> = sqlx::query_as(
         r#"
         SELECT af.asset_id, af.period_year, af.period_month,
                COALESCE(af.rental_income_cents, 0)::BIGINT AS gross,
