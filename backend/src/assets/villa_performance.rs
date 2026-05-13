@@ -479,13 +479,12 @@ pub async fn api_villa_history(
     //    For Market: no fallback — empty list means no observed trades.
     let mut points: Vec<HistoryPoint> = snapshots
         .into_iter()
-        .filter_map(|(d, i, u)| match i {
-            Some(idr) => Some(HistoryPoint {
+        .filter_map(|(d, i, u)| {
+            i.map(|idr| HistoryPoint {
                 date: d,
                 value_idr_cents: idr,
                 value_usd_cents: u.unwrap_or(0),
-            }),
-            None => None,
+            })
         })
         .collect();
 

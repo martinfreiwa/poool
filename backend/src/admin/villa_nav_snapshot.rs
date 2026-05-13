@@ -82,8 +82,8 @@ pub async fn run_snapshot_for_all_assets(pool: &PgPool) -> Result<SnapshotResult
     let mut with_market: i64 = 0;
 
     for a in &assets {
-        let tokens_in_pool: i64 = a.tokens_total.unwrap_or(0)
-            - i64::from(a.tokens_owner_retained.unwrap_or(0));
+        let tokens_in_pool: i64 =
+            a.tokens_total.unwrap_or(0) - i64::from(a.tokens_owner_retained.unwrap_or(0));
         if tokens_in_pool <= 0 {
             continue;
         }
@@ -164,7 +164,8 @@ pub async fn run_snapshot_for_all_assets(pool: &PgPool) -> Result<SnapshotResult
         .unwrap_or((None, Some(0), Some(0)));
 
         let market_idr = market.0;
-        let market_usd: Option<i64> = market_idr.map(|v| (v as i128 * fx_bps as i128 / 10_000) as i64);
+        let market_usd: Option<i64> =
+            market_idr.map(|v| (v as i128 * fx_bps as i128 / 10_000) as i64);
         let trade_count = market.1.unwrap_or(0) as i32;
         let volume = market.2.unwrap_or(0);
         if market_idr.is_some() {

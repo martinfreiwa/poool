@@ -71,8 +71,8 @@ pub async fn api_admin_villa_capex_approve(
     .await
     .map_err(ApiError::Database)?;
 
-    let (existing_asset, existing_status, submitted_by) = existing
-        .ok_or_else(|| ApiError::NotFound("CapEx not found".to_string()))?;
+    let (existing_asset, existing_status, submitted_by) =
+        existing.ok_or_else(|| ApiError::NotFound("CapEx not found".to_string()))?;
     if existing_asset != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
     }
@@ -148,7 +148,9 @@ pub async fn api_admin_villa_capex_reject(
     Json(input): Json<RejectInput>,
 ) -> Result<Json<CapexRow>, ApiError> {
     if input.reason.trim().is_empty() {
-        return Err(ApiError::BadRequest("Rejection reason required".to_string()));
+        return Err(ApiError::BadRequest(
+            "Rejection reason required".to_string(),
+        ));
     }
 
     let row: CapexRow = sqlx::query_as(
@@ -167,9 +169,7 @@ pub async fn api_admin_villa_capex_reject(
     .fetch_optional(&state.db)
     .await
     .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::Conflict(
-        "CapEx not found or not in 'submitted' state".to_string(),
-    ))?;
+    .ok_or_else(|| ApiError::Conflict("CapEx not found or not in 'submitted' state".to_string()))?;
 
     let _ = sqlx::query(
         r#"
@@ -193,8 +193,7 @@ pub async fn api_admin_villa_capex_reject(
         .bind("CapEx event rejected")
         .bind(format!(
             "Admin rejected your CapEx event ({}). Reason: {}",
-            row.description,
-            input.reason
+            row.description, input.reason
         ))
         .bind(format!(
             "/developer/villas/{}/annual/{}",

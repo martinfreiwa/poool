@@ -102,9 +102,8 @@ pub fn compute_nav_preview(valuation_idr_cents: i64, cfg: &TokenConfig) -> NavPr
         .tokens_total
         .saturating_sub(cfg.tokens_owner_retained.unwrap_or(0) as i64);
     let nav: i64 = if tokens_in_pool > 0 && cfg.tokenized_pct_bps > 0 {
-        let pool_value: i128 = (valuation_idr_cents as i128)
-            * cfg.tokenized_pct_bps as i128
-            / 10_000;
+        let pool_value: i128 =
+            (valuation_idr_cents as i128) * cfg.tokenized_pct_bps as i128 / 10_000;
         (pool_value / tokens_in_pool as i128) as i64
     } else {
         0
@@ -384,7 +383,9 @@ pub async fn api_admin_villa_valuations_reject(
     Json(input): Json<RejectInput>,
 ) -> Result<Json<ValuationRow>, ApiError> {
     if input.reason.trim().is_empty() {
-        return Err(ApiError::BadRequest("Rejection reason required".to_string()));
+        return Err(ApiError::BadRequest(
+            "Rejection reason required".to_string(),
+        ));
     }
     let existing = load_row(&state.db, val_id).await?;
     if existing.asset_id != asset_id {

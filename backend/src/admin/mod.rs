@@ -60,27 +60,27 @@ pub mod system;
 pub mod treasury;
 /// Module
 pub mod users;
+/// Villa-Returns C3-admin — approve/reject developer CapEx events.
+#[allow(missing_docs)]
+pub mod villa_capex;
+/// Villa-Returns B3 — per-asset deduction policy management.
+#[allow(missing_docs)]
+pub mod villa_deduction_policy;
+/// Villa-Returns P2 — developer-villa access management.
+#[allow(missing_docs)]
+pub mod villa_developer_access;
+/// Villa-Returns C3-admin — accept/discard developer forecast suggestions.
+#[allow(missing_docs)]
+pub mod villa_forecast;
+/// Villa-Returns P4 — daily NAV + market-price snapshot job.
+#[allow(missing_docs)]
+pub mod villa_nav_snapshot;
 /// Villa-Returns P2 — monthly operations entry + workflow.
 #[allow(missing_docs)]
 pub mod villa_operations;
 /// Villa-Returns P2.5 — annual valuations entry + workflow.
 #[allow(missing_docs)]
 pub mod villa_valuations;
-/// Villa-Returns C3-admin — approve/reject developer CapEx events.
-#[allow(missing_docs)]
-pub mod villa_capex;
-/// Villa-Returns C3-admin — accept/discard developer forecast suggestions.
-#[allow(missing_docs)]
-pub mod villa_forecast;
-/// Villa-Returns B3 — per-asset deduction policy management.
-#[allow(missing_docs)]
-pub mod villa_deduction_policy;
-/// Villa-Returns P4 — daily NAV + market-price snapshot job.
-#[allow(missing_docs)]
-pub mod villa_nav_snapshot;
-/// Villa-Returns P2 — developer-villa access management.
-#[allow(missing_docs)]
-pub mod villa_developer_access;
 /// Module
 pub mod withdrawals;
 

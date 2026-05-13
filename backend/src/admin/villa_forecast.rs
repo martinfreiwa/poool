@@ -85,9 +85,9 @@ pub async fn api_admin_forecast_suggestion_accept(
     .fetch_optional(&mut *tx)
     .await
     .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::Conflict(
-        "Suggestion not found or not in 'submitted' state".to_string(),
-    ))?;
+    .ok_or_else(|| {
+        ApiError::Conflict("Suggestion not found or not in 'submitted' state".to_string())
+    })?;
 
     // UPSERT into villa_forecast_assumptions, picking only fields that the
     // suggestion provided (preserve any prior non-null values otherwise).
@@ -183,9 +183,9 @@ pub async fn api_admin_forecast_suggestion_discard(
     .fetch_optional(&state.db)
     .await
     .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::Conflict(
-        "Suggestion not found or not in 'submitted' state".to_string(),
-    ))?;
+    .ok_or_else(|| {
+        ApiError::Conflict("Suggestion not found or not in 'submitted' state".to_string())
+    })?;
 
     let _ = sqlx::query(
         r#"
@@ -206,9 +206,17 @@ pub async fn api_admin_forecast_suggestion_discard(
             "#,
         )
         .bind(submitter_id)
-        .bind(format!("Forecast suggestion discarded — {}", row.forecast_year))
-        .bind(input.outcome_notes.clone().unwrap_or_else(|| "Admin discarded the suggestion. See dashboard for details.".to_string()))
-        .bind(format!("/developer/villas/{}/annual/{}", row.asset_id, row.forecast_year))
+        .bind(format!(
+            "Forecast suggestion discarded — {}",
+            row.forecast_year
+        ))
+        .bind(input.outcome_notes.clone().unwrap_or_else(|| {
+            "Admin discarded the suggestion. See dashboard for details.".to_string()
+        }))
+        .bind(format!(
+            "/developer/villas/{}/annual/{}",
+            row.asset_id, row.forecast_year
+        ))
         .execute(&state.db)
         .await;
     }

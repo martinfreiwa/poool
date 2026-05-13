@@ -349,7 +349,15 @@ pub async fn api_admin_villa_operations_update(
     .await
     .map_err(ApiError::Database)?;
 
-    write_audit(&state.db, admin.user.id, "update", row.id, &row, Some(&existing)).await;
+    write_audit(
+        &state.db,
+        admin.user.id,
+        "update",
+        row.id,
+        &row,
+        Some(&existing),
+    )
+    .await;
     Ok(Json(row))
 }
 
@@ -420,8 +428,8 @@ pub async fn api_admin_villa_operations_publish(
     .unwrap_or(1);
 
     let gross_rental_usd = idr_to_usd_cents(existing.gross_rental_idr_cents, fx_bps);
-    let total_opex_usd   = idr_to_usd_cents(existing.total_opex_idr_cents, fx_bps);
-    let net_rental_usd   = idr_to_usd_cents(existing.net_rental_income_idr_cents, fx_bps);
+    let total_opex_usd = idr_to_usd_cents(existing.total_opex_idr_cents, fx_bps);
+    let net_rental_usd = idr_to_usd_cents(existing.net_rental_income_idr_cents, fx_bps);
     let distributable_usd = idr_to_usd_cents(existing.distributable_idr_cents, fx_bps);
 
     // Villa-Returns C1 shadow-write — gated on feature flag.
@@ -490,7 +498,9 @@ pub async fn api_admin_villa_operations_publish(
         .map_err(ApiError::Database)?;
         tracing::info!(
             "C1 shadow-write: legacy asset_financials upserted for asset={} period={}-{:02}",
-            row.asset_id, row.period_year, row.period_month
+            row.asset_id,
+            row.period_year,
+            row.period_month
         );
     }
 
@@ -521,7 +531,15 @@ pub async fn api_admin_villa_operations_publish(
         .await;
     }
 
-    write_audit(&state.db, admin.user.id, "publish", row.id, &row, Some(&existing)).await;
+    write_audit(
+        &state.db,
+        admin.user.id,
+        "publish",
+        row.id,
+        &row,
+        Some(&existing),
+    )
+    .await;
     Ok(Json(row))
 }
 
@@ -558,7 +576,8 @@ pub async fn api_admin_villa_operations_top_up(
     }
     if row.supersedes_id.is_none() {
         return Err(ApiError::Conflict(
-            "Top-up only meaningful on a corrected (supersedes_id != NULL) published row".to_string(),
+            "Top-up only meaningful on a corrected (supersedes_id != NULL) published row"
+                .to_string(),
         ));
     }
 
@@ -638,8 +657,8 @@ pub async fn api_admin_villa_operations_top_up(
     let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
 
     for inv in &investors {
-        let new_share: i64 = ((new_distributable as i128) * inv.tokens_owned as i128
-            / denominator as i128) as i64;
+        let new_share: i64 =
+            ((new_distributable as i128) * inv.tokens_owned as i128 / denominator as i128) as i64;
         let delta = new_share - inv.already_paid;
         if delta <= 0 {
             skipped += 1;
@@ -779,7 +798,9 @@ pub async fn api_admin_villa_operations_reject(
     Json(input): Json<RejectInput>,
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
     if input.reason.trim().is_empty() {
-        return Err(ApiError::BadRequest("Rejection reason required".to_string()));
+        return Err(ApiError::BadRequest(
+            "Rejection reason required".to_string(),
+        ));
     }
     let existing = load_row(&state.db, log_id).await?;
     if existing.asset_id != asset_id {
@@ -825,12 +846,23 @@ pub async fn api_admin_villa_operations_reject(
             "Admin rejected your submission. Reason: {}",
             input.reason
         ))
-        .bind(format!("/developer/villas/{}/operations/new?year={}&month={}", asset_id, row.period_year, row.period_month))
+        .bind(format!(
+            "/developer/villas/{}/operations/new?year={}&month={}",
+            asset_id, row.period_year, row.period_month
+        ))
         .execute(&state.db)
         .await;
     }
 
-    write_audit(&state.db, admin.user.id, "reject", row.id, &row, Some(&existing)).await;
+    write_audit(
+        &state.db,
+        admin.user.id,
+        "reject",
+        row.id,
+        &row,
+        Some(&existing),
+    )
+    .await;
     Ok(Json(row))
 }
 
@@ -899,13 +931,12 @@ pub async fn api_admin_villa_operations_process_payouts(
     // wallet credit and the wallet_transactions row through it. USD/IDR are
     // fully supported; other currencies require an fx_rates_daily entry from
     // IDR to that currency (deferred — no EUR/USDT asset in dev to test against).
-    let payout_currency: String = sqlx::query_scalar(
-        "SELECT COALESCE(payout_currency, 'USD') FROM assets WHERE id = $1",
-    )
-    .bind(asset_id)
-    .fetch_one(&state.db)
-    .await
-    .map_err(ApiError::Database)?;
+    let payout_currency: String =
+        sqlx::query_scalar("SELECT COALESCE(payout_currency, 'USD') FROM assets WHERE id = $1")
+            .bind(asset_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(ApiError::Database)?;
 
     let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
     for p in &pending {
@@ -1222,7 +1253,13 @@ pub async fn api_admin_villa_operations_distribute(
     }
 
     // Asset-level config: distribution_record_day + payout_currency + token denominators.
-    let cfg: (Option<i32>, Option<String>, Option<i64>, Option<i32>, Option<i32>) = sqlx::query_as(
+    let cfg: (
+        Option<i32>,
+        Option<String>,
+        Option<i64>,
+        Option<i32>,
+        Option<i32>,
+    ) = sqlx::query_as(
         r#"
         SELECT
             distribution_record_day,
@@ -1313,8 +1350,8 @@ pub async fn api_admin_villa_operations_distribute(
     let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
     for inv in &eligible {
         // Pro-rata payout, integer arithmetic. `i128` intermediate.
-        let amount: i64 = ((total_distributable as i128) * inv.tokens_owned as i128
-            / denominator as i128) as i64;
+        let amount: i64 =
+            ((total_distributable as i128) * inv.tokens_owned as i128 / denominator as i128) as i64;
         if amount <= 0 {
             skipped += 1;
             continue;
@@ -1461,37 +1498,51 @@ pub async fn api_admin_villa_config_update(
     // Range validation up-front so partial inputs fail with clear messages.
     if let Some(v) = input.tokenized_pct_bps {
         if !(0..=10_000).contains(&v) {
-            return Err(ApiError::BadRequest("tokenized_pct_bps must be 0–10000".to_string()));
+            return Err(ApiError::BadRequest(
+                "tokenized_pct_bps must be 0–10000".to_string(),
+            ));
         }
     }
     if let Some(v) = input.reserve_pct_bps {
         if !(0..=10_000).contains(&v) {
-            return Err(ApiError::BadRequest("reserve_pct_bps must be 0–10000".to_string()));
+            return Err(ApiError::BadRequest(
+                "reserve_pct_bps must be 0–10000".to_string(),
+            ));
         }
     }
     if let Some(v) = input.withholding_tax_bps {
         if !(0..=10_000).contains(&v) {
-            return Err(ApiError::BadRequest("withholding_tax_bps must be 0–10000".to_string()));
+            return Err(ApiError::BadRequest(
+                "withholding_tax_bps must be 0–10000".to_string(),
+            ));
         }
     }
     if let Some(v) = input.mgmt_fee_bps {
         if !(0..=10_000).contains(&v) {
-            return Err(ApiError::BadRequest("mgmt_fee_bps must be 0–10000".to_string()));
+            return Err(ApiError::BadRequest(
+                "mgmt_fee_bps must be 0–10000".to_string(),
+            ));
         }
     }
     if let Some(v) = input.distribution_record_day {
         if !(1..=28).contains(&v) {
-            return Err(ApiError::BadRequest("distribution_record_day must be 1–28".to_string()));
+            return Err(ApiError::BadRequest(
+                "distribution_record_day must be 1–28".to_string(),
+            ));
         }
     }
     if let Some(ref f) = input.payout_frequency {
         if !matches!(f.as_str(), "monthly" | "quarterly" | "annual") {
-            return Err(ApiError::BadRequest("payout_frequency must be monthly|quarterly|annual".to_string()));
+            return Err(ApiError::BadRequest(
+                "payout_frequency must be monthly|quarterly|annual".to_string(),
+            ));
         }
     }
     if let Some(ref c) = input.payout_currency {
         if c.len() != 3 {
-            return Err(ApiError::BadRequest("payout_currency must be 3-char ISO code".to_string()));
+            return Err(ApiError::BadRequest(
+                "payout_currency must be 3-char ISO code".to_string(),
+            ));
         }
     }
 
@@ -1579,14 +1630,12 @@ pub async fn api_admin_villa_operations_list(
 // ─── Internal helpers ─────────────────────────────────────────
 
 async fn load_row(pool: &PgPool, log_id: i64) -> Result<VillaOperationsRow, ApiError> {
-    sqlx::query_as::<_, VillaOperationsRow>(
-        "SELECT * FROM villa_operations_log WHERE id = $1",
-    )
-    .bind(log_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))
+    sqlx::query_as::<_, VillaOperationsRow>("SELECT * FROM villa_operations_log WHERE id = $1")
+        .bind(log_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(ApiError::Database)?
+        .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))
 }
 
 async fn transition(
