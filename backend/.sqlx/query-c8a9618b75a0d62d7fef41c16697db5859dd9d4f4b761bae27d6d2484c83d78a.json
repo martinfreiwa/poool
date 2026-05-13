@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*)::int as \"n!\"\n                   FROM wallets\n                   WHERE balance_cents < held_balance_cents",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c8a9618b75a0d62d7fef41c16697db5859dd9d4f4b761bae27d6d2484c83d78a"
+}

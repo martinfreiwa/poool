@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT a.id, a.title as \"title!\", a.tokens_total as \"tokens_total!\", a.tokens_available as \"tokens_available!\",\n                       (\n                           COALESCE(inv.total_owned, 0)\n                           + COALESCE(pending.pending_reserved, 0)\n                       )::int as \"total_accounted!\"\n                FROM assets a\n                LEFT JOIN (\n                    SELECT asset_id, SUM(tokens_owned)::int as total_owned\n                    FROM investments\n                    WHERE status != 'exited'\n                    GROUP BY asset_id\n                ) inv ON inv.asset_id = a.id\n                LEFT JOIN (\n                    SELECT oi.asset_id, SUM(oi.tokens_quantity)::int as pending_reserved\n                    FROM order_items oi\n                    JOIN orders o ON o.id = oi.order_id\n                    WHERE o.status = 'pending'\n                      AND o.payment_method IN ('bank', 'bank_transfer')\n                    GROUP BY oi.asset_id\n                ) pending ON pending.asset_id = a.id\n                WHERE a.funding_status IN ('funding_open', 'funding_in_progress', 'funded')\n                  AND (a.tokens_total - a.tokens_available) != (\n                      COALESCE(inv.total_owned, 0) + COALESCE(pending.pending_reserved, 0)\n                  )\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "tokens_total!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "tokens_available!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "total_accounted!",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "fb9c81638adc0483d0abbab120e87af661fa13a89da4d7d9611c531b86e5e39f"
+}

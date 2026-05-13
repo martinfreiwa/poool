@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name, updated_at)\n        VALUES ($1, $2, $3, $4, NOW())\n        ON CONFLICT (user_id) DO UPDATE SET\n            visible      = COALESCE($5, leaderboard_preferences.visible),\n            show_avatar  = COALESCE($6, leaderboard_preferences.show_avatar),\n            display_name = CASE\n                WHEN $7::bool THEN $8\n                ELSE leaderboard_preferences.display_name\n            END,\n            updated_at = NOW()\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Varchar",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6ea1198f6edcd6310ecaaa38b468d9d92bd41299ee8fc844d959f11bb12e1c8f"
+}

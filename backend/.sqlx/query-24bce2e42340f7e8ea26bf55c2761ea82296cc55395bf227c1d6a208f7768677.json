@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO investment_disclosures_log\n                   (user_id, order_id, is_referral_user, agreed_to_general,\n                    agreed_to_referral, ip_address, policy_version)\n                   VALUES ($1, $2, $3, $4, $5, $6, $7)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "24bce2e42340f7e8ea26bf55c2761ea82296cc55395bf227c1d6a208f7768677"
+}

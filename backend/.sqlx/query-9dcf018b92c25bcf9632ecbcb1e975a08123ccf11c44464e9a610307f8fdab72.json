@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT\n                    (SELECT COALESCE(SUM(provisional_amount_cents), 0)::bigint\n                     FROM affiliate_commissions\n                     WHERE status = 'paid') as \"paid_commissions!\",\n                    (SELECT COALESCE(SUM(-amount_cents), 0)::bigint\n                     FROM wallet_transactions wt\n                     JOIN wallets w ON w.id = wt.wallet_id\n                     WHERE w.wallet_type = 'affiliate_treasury'\n                       AND wt.status = 'completed'\n                       AND wt.amount_cents < 0) as \"treasury_debits!\"\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "paid_commissions!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "treasury_debits!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "9dcf018b92c25bcf9632ecbcb1e975a08123ccf11c44464e9a610307f8fdab72"
+}
