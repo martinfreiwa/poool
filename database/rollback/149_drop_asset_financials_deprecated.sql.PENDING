@@ -1,0 +1,10 @@
+-- C5 P8 — drop the deprecated `asset_financials__deprecated_*` table.
+--
+-- DO NOT APPLY without:
+--   1. Migration 148 (rename) executed at least 30 days ago.
+--   2. Verified backup of the deprecated table to GCS (cold storage).
+--   3. No app code or migration references the table name.
+--
+-- File saved with `.PENDING` suffix.
+
+-- DROP TABLE IF EXISTS asset_financials__deprecated_YYYYMMDD;

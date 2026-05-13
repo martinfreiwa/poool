@@ -1,0 +1,23 @@
+-- C5 P8 — rename legacy `asset_financials` to deprecated namespace.
+--
+-- DO NOT APPLY without:
+--   1. 90 consecutive days of zero reads on `asset_financials`
+--      (verify via `pg_stat_user_tables.seq_scan + idx_scan` delta).
+--   2. C2 pilot cut-over signed off and stable for the same window.
+--   3. Operations runbook reviewed by the user.
+--
+-- File saved with `.PENDING` suffix so the migration runner does NOT pick it
+-- up automatically. Rename to `148_rename_asset_financials_deprecated.sql`
+-- when ready, drop into `database/`, then commit.
+--
+-- After this rename, no app code may reference `asset_financials` directly.
+-- Shadow-write in `villa_operations.rs::api_admin_villa_operations_publish`
+-- must be removed or pointed at the renamed table before this runs.
+
+-- Example with placeholder date — replace YYYYMMDD before applying:
+-- ALTER TABLE asset_financials RENAME TO asset_financials__deprecated_YYYYMMDD;
+-- COMMENT ON TABLE asset_financials__deprecated_YYYYMMDD IS
+--   'Deprecated YYYY-MM-DD. Source of truth migrated to villa_operations_log + villa_operations_current. Retained for 30 days then dropped.';
+
+-- Rollback (if needed within 30 days, before P8 drop):
+-- ALTER TABLE asset_financials__deprecated_YYYYMMDD RENAME TO asset_financials;
