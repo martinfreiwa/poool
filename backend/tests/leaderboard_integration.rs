@@ -771,11 +771,7 @@ async fn tier_filter_narrows_participant_pool() {
 // `search = Some("HMTEST_")` so `total_participants` is scoped to the
 // test cohort regardless of other rows in `leaderboard_scores`.
 
-async fn seed_searchable_users(
-    pool: &PgPool,
-    n: usize,
-    test_id: &str,
-) -> (Vec<Uuid>, Uuid) {
+async fn seed_searchable_users(pool: &PgPool, n: usize, test_id: &str) -> (Vec<Uuid>, Uuid) {
     let asset = Uuid::new_v4();
     cleanup_asset(pool, asset).await;
     insert_asset(pool, asset, 500).await;
@@ -845,11 +841,11 @@ async fn has_more_false_on_exact_multiple_page() {
         viewer,
         "invested",
         "alltime",
-        2,                                // page
-        10,                               // per_page
-        None,                             // tier_id
+        2,    // page
+        10,   // per_page
+        None, // tier_id
         Some(format!("HMTEST_{}", test_id)),
-        None,                             // last_updated_cache
+        None, // last_updated_cache
     )
     .await
     .expect("get_rankings");

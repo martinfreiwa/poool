@@ -435,10 +435,7 @@ async fn community_leaderboard_anonymizes_hidden_users() {
     // leaderboard (which reads `community_profiles.xp_total` directly,
     // see `community::xp::get_user_leaderboard`). XP must beat any
     // pre-existing seed users so our two rows land in the top-N.
-    for (uid, xp) in [
-        (visible_user, 10_000_000i32),
-        (hidden_user, 9_000_000i32),
-    ] {
+    for (uid, xp) in [(visible_user, 10_000_000i32), (hidden_user, 9_000_000i32)] {
         sqlx::query(
             r#"INSERT INTO community_profiles (user_id, xp_total, level, level_name, login_streak)
                VALUES ($1, $2, 1, 'Seedling', 0)

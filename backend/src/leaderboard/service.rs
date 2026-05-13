@@ -267,8 +267,7 @@ pub async fn get_rankings(
             .await?
         } else {
             // ── All-time: read from precomputed table ──
-            let resolved_last_updated =
-                resolve_last_updated(pool, last_updated_cache).await?;
+            let resolved_last_updated = resolve_last_updated(pool, last_updated_cache).await?;
             get_rankings_alltime(
                 pool,
                 current_user_id,

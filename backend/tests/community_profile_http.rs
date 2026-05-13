@@ -73,7 +73,9 @@ async fn profile_posts_returns_401_unauthenticated() {
     assert!(
         matches!(
             res.status(),
-            StatusCode::UNAUTHORIZED | StatusCode::SERVICE_UNAVAILABLE | StatusCode::INTERNAL_SERVER_ERROR
+            StatusCode::UNAUTHORIZED
+                | StatusCode::SERVICE_UNAVAILABLE
+                | StatusCode::INTERNAL_SERVER_ERROR
         ),
         "unexpected status {}",
         res.status()

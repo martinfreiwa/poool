@@ -231,6 +231,104 @@ pub async fn page_affiliate_settings(
     crate::common::routes_helper::serve_protected(jar, &state, "affiliate-settings.html").await
 }
 
+/// GET /affiliate/terms — Affiliate Terms & Conditions (public legal page).
+pub async fn page_affiliate_terms(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-terms.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /affiliate/code-of-conduct — Affiliate Code of Conduct (public legal page).
+pub async fn page_affiliate_code_of_conduct(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-code-of-conduct.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /affiliate/marketing-materials — Approved Marketing Materials Policy (public legal page).
+pub async fn page_affiliate_marketing_materials(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-marketing-materials.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /affiliate/qualified-referral-payout — Qualified Referral & Payout Policy (public legal page).
+pub async fn page_affiliate_qualified_referral_payout(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-qualified-referral-payout.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /affiliate/tax — Affiliate Tax SOP (public legal page).
+pub async fn page_affiliate_tax(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-tax.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /affiliate/privacy-notice — Affiliate Privacy Notice (public legal page).
+pub async fn page_affiliate_privacy_notice(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-privacy-notice.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /affiliate/complaints — Complaint & Investigation procedures (public legal page).
+pub async fn page_affiliate_complaints(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-complaints.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
 async fn require_active_affiliate_user_id(
     jar: &CookieJar,
     state: &AppState,

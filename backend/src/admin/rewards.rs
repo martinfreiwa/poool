@@ -1612,6 +1612,176 @@ pub async fn api_admin_affiliate_fraud_scan(
     .into_response())
 }
 
+// ─── Affiliate Conduct Incidents (Phase 1 monitoring — blueprint Point 2 §F) ───
+// Records persuasion / advisory-selling / cold-outreach / side-deal indicators.
+// Distinct from referral-ring fraud detection (which is automated).
+
+#[allow(missing_docs)]
+#[derive(serde::Deserialize)]
+pub struct ConductIncidentCreatePayload {
+    pub affiliate_id: String,
+    pub incident_type: String,
+    pub severity: Option<String>,
+    pub source: Option<String>,
+    pub description: String,
+    pub evidence_url: Option<String>,
+    pub content_snippet: Option<String>,
+    pub action_taken: Option<String>,
+}
+
+#[allow(missing_docs)]
+#[derive(serde::Deserialize)]
+pub struct ConductIncidentListQuery {
+    pub status: Option<String>,
+    pub severity: Option<String>,
+    pub affiliate_id: Option<String>,
+    pub limit: Option<i64>,
+}
+
+/// POST /api/admin/rewards/affiliates/conduct-incidents
+/// Record a conduct incident (advisory selling, cold outreach, side deals, etc.).
+pub async fn api_admin_affiliate_conduct_incident_create(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<ConductIncidentCreatePayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
+    let affiliate_id = ApiError::parse_uuid(&payload.affiliate_id)?;
+    let severity = payload.severity.as_deref().unwrap_or("minor");
+    if !matches!(severity, "minor" | "serious" | "critical") {
+        return Err(ApiError::BadRequest("Invalid severity".into()));
+    }
+    let source = payload.source.as_deref().unwrap_or("manual");
+    if !matches!(
+        source,
+        "user_complaint" | "support_escalation" | "admin_review" | "automated" | "manual"
+    ) {
+        return Err(ApiError::BadRequest("Invalid source".into()));
+    }
+
+    let row = sqlx::query!(
+        r#"
+        INSERT INTO affiliate_conduct_incidents
+            (affiliate_id, incident_type, severity, source, description,
+             evidence_url, content_snippet, action_taken, reported_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, created_at
+        "#,
+        affiliate_id,
+        payload.incident_type,
+        severity,
+        source,
+        payload.description,
+        payload.evidence_url,
+        payload.content_snippet,
+        payload.action_taken,
+        admin.user.id,
+    )
+    .fetch_one(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+        VALUES ($1, 'affiliate_conduct.incident_created', 'affiliate_conduct_incident', $2, $3)
+        "#,
+    )
+    .bind(admin.user.id)
+    .bind(row.id)
+    .bind(serde_json::json!({
+        "affiliate_id": affiliate_id,
+        "incident_type": payload.incident_type,
+        "severity": severity,
+    }))
+    .execute(&state.db)
+    .await
+    .ok();
+
+    Ok(axum::response::Json(serde_json::json!({
+        "success": true,
+        "incident_id": row.id,
+        "created_at": row.created_at,
+    }))
+    .into_response())
+}
+
+/// GET /api/admin/rewards/affiliates/conduct-incidents
+/// List conduct incidents (filterable by status / severity / affiliate).
+pub async fn api_admin_affiliate_conduct_incident_list(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Query(query): Query<ConductIncidentListQuery>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
+    let status = query.status.as_deref();
+    let severity = query.severity.as_deref();
+    let affiliate_id = query
+        .affiliate_id
+        .as_deref()
+        .map(ApiError::parse_uuid)
+        .transpose()?;
+    let limit = query.limit.unwrap_or(100).clamp(1, 500);
+
+    let rows = sqlx::query!(
+        r#"
+        SELECT i.id, i.affiliate_id, i.incident_type, i.severity, i.status,
+               i.source, i.description, i.evidence_url, i.content_snippet,
+               i.action_taken, i.reported_by, i.reviewed_by, i.reviewed_at,
+               i.review_notes, i.created_at, i.updated_at,
+               u.email AS affiliate_email
+          FROM affiliate_conduct_incidents i
+          LEFT JOIN users u ON u.id = i.affiliate_id
+         WHERE ($1::text IS NULL OR i.status = $1)
+           AND ($2::text IS NULL OR i.severity = $2)
+           AND ($3::uuid IS NULL OR i.affiliate_id = $3)
+         ORDER BY i.created_at DESC
+         LIMIT $4
+        "#,
+        status,
+        severity,
+        affiliate_id,
+        limit,
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    let items: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.id,
+                "affiliate_id": r.affiliate_id,
+                "affiliate_email": r.affiliate_email,
+                "incident_type": r.incident_type,
+                "severity": r.severity,
+                "status": r.status,
+                "source": r.source,
+                "description": r.description,
+                "evidence_url": r.evidence_url,
+                "content_snippet": r.content_snippet,
+                "action_taken": r.action_taken,
+                "created_at": r.created_at,
+                "updated_at": r.updated_at,
+            })
+        })
+        .collect();
+
+    Ok(axum::response::Json(serde_json::json!({
+        "success": true,
+        "count": items.len(),
+        "incidents": items,
+    }))
+    .into_response())
+}
+
 /// POST /api/admin/rewards/affiliates/:id/clawback
 /// Reverses paid commissions if fraud is detected post-payout.
 pub async fn api_admin_affiliate_clawback(
