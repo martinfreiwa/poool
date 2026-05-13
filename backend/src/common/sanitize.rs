@@ -10,6 +10,7 @@
 ///
 /// # Examples
 /// ```
+/// use poool_backend::common::sanitize::strip_tags;
 /// assert_eq!(strip_tags("<script>alert('xss')</script>Hello"), "alert('xss')Hello");
 /// assert_eq!(strip_tags("Normal text"), "Normal text");
 /// assert_eq!(strip_tags("<b>Bold</b> and <i>italic</i>"), "Bold and italic");

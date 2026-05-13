@@ -6,7 +6,7 @@ pub mod routes;
 /// Locally: via `gcloud auth application-default login` or `GOOGLE_APPLICATION_CREDENTIALS`.
 ///
 /// # Bucket layout
-/// ```
+/// ```text
 /// gs://{bucket}/
 ///   avatars/{user_id}/{filename}          ← profile photos (public-readable)
 ///   kyc/{user_id}/{filename}              ← KYC identity docs (private, signed URLs only)
