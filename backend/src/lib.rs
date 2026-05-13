@@ -328,6 +328,47 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(email::run_transactional_email_outbox_worker(pool.clone()));
     tokio::spawn(support::sla::monitor_sla_breaches(pool.clone()));
 
+    // Villa-Returns B1 — daily NAV snapshot job. Gated by VILLA_NAV_SNAPSHOT_ENABLED
+    // (default off in prod; explicit opt-in needed). Interval overridable via
+    // VILLA_NAV_SNAPSHOT_INTERVAL_SECS for dev smoke tests; defaults to 24h.
+    if std::env::var("VILLA_NAV_SNAPSHOT_ENABLED")
+        .ok()
+        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+        .unwrap_or(false)
+    {
+        let secs: u64 = std::env::var("VILLA_NAV_SNAPSHOT_INTERVAL_SECS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(86_400);
+        let nav_pool = pool.clone();
+        tokio::spawn(async move {
+            let mut interval =
+                tokio::time::interval(tokio::time::Duration::from_secs(secs));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            // Skip the initial immediate tick so the job aligns with the cycle
+            // rather than firing on startup.
+            interval.tick().await;
+            tracing::info!(
+                "Villa NAV snapshot job armed; interval = {}s",
+                secs
+            );
+            loop {
+                interval.tick().await;
+                match admin::villa_nav_snapshot::run_snapshot_for_all_assets(&nav_pool).await {
+                    Ok(r) => tracing::info!(
+                        "Villa NAV snapshot job completed: {} assets processed, {} with NAV, {} with market",
+                        r.assets_processed, r.assets_with_nav, r.assets_with_market_price
+                    ),
+                    Err(e) => tracing::error!("Villa NAV snapshot job failed: {}", e),
+                }
+            }
+        });
+    } else {
+        tracing::info!(
+            "Villa NAV snapshot job disabled (set VILLA_NAV_SNAPSHOT_ENABLED=true to enable)"
+        );
+    }
+
     if let Some(c_pool) = &state.community_db {
         tokio::spawn(community::background::monitor_asset_velocity(
             c_pool.clone(),
@@ -581,7 +622,10 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             let token_mismatches = sqlx::query!(
                 r#"
                 SELECT a.id, a.title as "title!", a.tokens_total as "tokens_total!", a.tokens_available as "tokens_available!",
-                       COALESCE(inv.total_owned, 0)::int as "total_owned!"
+                       (
+                           COALESCE(inv.total_owned, 0)
+                           + COALESCE(pending.pending_reserved, 0)
+                       )::int as "total_accounted!"
                 FROM assets a
                 LEFT JOIN (
                     SELECT asset_id, SUM(tokens_owned)::int as total_owned
@@ -589,8 +633,18 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                     WHERE status != 'exited'
                     GROUP BY asset_id
                 ) inv ON inv.asset_id = a.id
+                LEFT JOIN (
+                    SELECT oi.asset_id, SUM(oi.tokens_quantity)::int as pending_reserved
+                    FROM order_items oi
+                    JOIN orders o ON o.id = oi.order_id
+                    WHERE o.status = 'pending'
+                      AND o.payment_method IN ('bank', 'bank_transfer')
+                    GROUP BY oi.asset_id
+                ) pending ON pending.asset_id = a.id
                 WHERE a.funding_status IN ('funding_open', 'funding_in_progress', 'funded')
-                  AND (a.tokens_total - a.tokens_available) != COALESCE(inv.total_owned, 0)
+                  AND (a.tokens_total - a.tokens_available) != (
+                      COALESCE(inv.total_owned, 0) + COALESCE(pending.pending_reserved, 0)
+                  )
                 "#
             )
             .fetch_all(&recon_pool)
@@ -605,11 +659,11 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                         for row in &rows {
                             let expected_sold = row.tokens_total - row.tokens_available;
                             let msg = format!(
-                                "TOKEN MISMATCH: Asset '{}' ({:?}): sold={} but investments show {} tokens",
+                                "TOKEN MISMATCH: Asset '{}' ({:?}): reserved/sold={} but investments plus pending bank orders show {} tokens",
                                 row.title,
                                 row.id,
                                 expected_sold,
-                                row.total_owned
+                                row.total_accounted
                             );
                             tracing::error!("{}", msg);
                             sentry::capture_message(&msg, sentry::Level::Error);
