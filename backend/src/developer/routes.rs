@@ -433,6 +433,54 @@ pub async fn page_developer_submissions(
     crate::common::routes_helper::serve_protected(jar, &state, "developer/submissions.html").await
 }
 
+/// GET /developer/operations — Villa-Returns P2 monthly operations dashboard.
+pub async fn page_developer_operations_dashboard(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/operations-dashboard.html",
+    )
+    .await
+}
+
+/// GET /developer/villas/:asset_id/operations/new — Villa-Returns P2 monthly submission form.
+pub async fn page_developer_operations_submit(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/operations-submit.html",
+    )
+    .await
+}
+
+/// GET /developer/villas/:asset_id/annual/:year — Villa-Returns C3 annual data page.
+pub async fn page_developer_annual_data(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/annual-data.html",
+    )
+    .await
+}
+
 // ─── API Endpoints ──────────────────────────────────────────
 
 /// GET /api/developer/dashboard/stats — JSON endpoint for dashboard stats.

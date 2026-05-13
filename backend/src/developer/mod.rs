@@ -1,12 +1,24 @@
 pub mod change_requests;
+/// Villa-Returns P2 — DeveloperUser extractor + asset-link enforcement.
+#[allow(missing_docs)]
+pub mod extractors;
 pub mod fragments;
 pub mod models;
 pub mod routes;
 pub mod service;
+/// Villa-Returns P2 — developer endpoints for monthly operations submission.
+#[allow(missing_docs)]
+pub mod villa_operations;
+/// Villa-Returns C3 — developer CapEx submission.
+#[allow(missing_docs)]
+pub mod villa_capex;
+/// Villa-Returns C3 — developer forecast suggestions + annual summary.
+#[allow(missing_docs)]
+pub mod forecast_suggestions;
 
 use crate::auth::routes::AppState;
 use axum::{
-    routing::{get, post},
+    routing::{get, post, put},
     Router,
 };
 
@@ -76,5 +88,57 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/developer/assets/:id/pending-changes",
             get(change_requests::get_pending),
+        )
+        // ── Villa-Returns P2 — developer operations workflow ─────────
+        .route(
+            "/developer/operations",
+            get(routes::page_developer_operations_dashboard),
+        )
+        .route(
+            "/developer/villas/:asset_id/operations/new",
+            get(routes::page_developer_operations_submit),
+        )
+        .route(
+            "/api/developer/operations/dashboard",
+            get(villa_operations::api_developer_operations_dashboard),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/operations",
+            post(villa_operations::api_developer_villa_operations_create)
+                .get(villa_operations::api_developer_villa_operations_list),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/operations/:log_id",
+            put(villa_operations::api_developer_villa_operations_update),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/operations/:log_id/submit",
+            put(villa_operations::api_developer_villa_operations_submit),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/asset-config",
+            get(villa_operations::api_developer_asset_config),
+        )
+        // ── Villa-Returns C3 — developer annual data ─────────────────
+        .route(
+            "/developer/villas/:asset_id/annual/:year",
+            get(routes::page_developer_annual_data),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/capex",
+            post(villa_capex::api_developer_villa_capex_create)
+                .get(villa_capex::api_developer_villa_capex_list),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/forecast/:year/suggest",
+            post(forecast_suggestions::api_developer_forecast_suggest),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/forecast/:year/suggestions",
+            get(forecast_suggestions::api_developer_forecast_suggestions_list),
+        )
+        .route(
+            "/api/developer/villas/:asset_id/annual/:year/summary",
+            get(forecast_suggestions::api_developer_annual_summary),
         )
 }
