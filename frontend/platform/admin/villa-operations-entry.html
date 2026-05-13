@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Villa Operations Entry | Admin | POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .vop-shell { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .vop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .vop-header h1 { font-size: 22px; margin: 0; }
+    .vop-mode-badge { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: var(--accent, #2563eb); color: white; }
+    .vop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .vop-section { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 8px; padding: 20px; }
+    .vop-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #6b7280); }
+    .vop-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    .vop-field label { font-size: 13px; color: var(--text, #111); }
+    .vop-field input { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; }
+    .vop-field input[readonly] { background: var(--readonly-bg, #f3f4f6); color: var(--text-muted, #6b7280); }
+    .vop-preview { background: var(--accent-bg, #eff6ff); border-color: var(--accent, #2563eb); }
+    .vop-preview .vop-field input { background: transparent; border: none; font-weight: 600; }
+    .vop-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+    .vop-btn { padding: 10px 18px; border-radius: 6px; border: 1px solid var(--border, #d1d5db); background: var(--btn-bg, #fff); cursor: pointer; font: inherit; }
+    .vop-btn.primary { background: var(--accent, #2563eb); color: white; border-color: var(--accent, #2563eb); }
+    .vop-btn.danger { background: var(--danger, #dc2626); color: white; border-color: var(--danger, #dc2626); }
+    .vop-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .vop-status-line { padding: 12px 16px; background: var(--info-bg, #eff6ff); border-left: 4px solid var(--accent, #2563eb); margin-bottom: 24px; border-radius: 4px; }
+    .vop-error { color: var(--danger, #dc2626); margin-top: 8px; font-size: 13px; }
+    .vop-rejected { background: var(--danger-bg, #fef2f2); border-left-color: var(--danger, #dc2626); }
+    textarea.vop-textarea { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; min-height: 70px; resize: vertical; }
+  </style>
+</head>
+<body>
+  <main class="vop-shell">
+    <div class="vop-header">
+      <div>
+        <h1 id="vop-title">Villa Operations Entry</h1>
+        <div id="vop-breadcrumb" style="font-size: 13px; color: var(--text-muted, #6b7280); margin-top: 4px;"></div>
+      </div>
+      <span class="vop-mode-badge" id="vop-mode-badge">entry</span>
+    </div>
+
+    <div class="vop-status-line" id="vop-status-line" style="display: none;"></div>
+
+    <form id="vop-form" novalidate>
+      <div class="vop-grid">
+        <section class="vop-section">
+          <h2>Rental & occupancy</h2>
+          <div class="vop-field"><label>Gross rental (IDR cents)</label><input type="number" name="gross_rental_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Nights available</label><input type="number" name="nights_available" min="0" max="31" step="1" /></div>
+          <div class="vop-field"><label>Nights booked</label><input type="number" name="nights_booked" min="0" max="31" step="1" /></div>
+        </section>
+
+        <section class="vop-section">
+          <h2>Operating expenses (IDR cents)</h2>
+          <div class="vop-field"><label>Cleaning</label><input type="number" name="expense_cleaning_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Maintenance</label><input type="number" name="expense_maintenance_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Utilities</label><input type="number" name="expense_utilities_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Staff & security</label><input type="number" name="expense_staff_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Pool & garden</label><input type="number" name="expense_pool_garden_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Pest control</label><input type="number" name="expense_pest_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Other</label><input type="number" name="expense_other_idr_cents" min="0" step="1" /></div>
+        </section>
+
+        <section class="vop-section">
+          <h2>Adjustments & fees (IDR cents)</h2>
+          <div class="vop-field"><label>OTA fees</label><input type="number" name="ota_fees_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Payment fees</label><input type="number" name="payment_fees_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Refunds</label><input type="number" name="refunds_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Management fee paid</label><input type="number" name="mgmt_fee_idr_cents" min="0" step="1" /></div>
+          <div class="vop-field"><label>Reserve override (admin-only, optional)</label><input type="number" name="reserve_override_idr_cents" min="0" step="1" /></div>
+        </section>
+
+        <section class="vop-section vop-preview">
+          <h2>Computed preview (read-only)</h2>
+          <div class="vop-field"><label>Occupancy</label><input readonly id="vop-pv-occupancy" /></div>
+          <div class="vop-field"><label>ADR (IDR cents)</label><input readonly id="vop-pv-adr" /></div>
+          <div class="vop-field"><label>Total OpEx</label><input readonly id="vop-pv-opex" /></div>
+          <div class="vop-field"><label>Net rental income</label><input readonly id="vop-pv-net" /></div>
+          <div class="vop-field"><label>Reserve applied</label><input readonly id="vop-pv-reserve" /></div>
+          <div class="vop-field"><label>Platform fee</label><input readonly id="vop-pv-platform" /></div>
+          <div class="vop-field"><label>Withholding</label><input readonly id="vop-pv-withholding" /></div>
+          <div class="vop-field"><label><strong>Distributable</strong></label><input readonly id="vop-pv-distributable" /></div>
+        </section>
+      </div>
+
+      <section class="vop-section" id="vop-correction-section" style="display: none;">
+        <h2>Correction reason (required)</h2>
+        <textarea class="vop-textarea" name="correction_reason"></textarea>
+      </section>
+
+      <section class="vop-section" id="vop-reject-section" style="display: none;">
+        <h2>Reject reason</h2>
+        <textarea class="vop-textarea" id="vop-reject-reason"></textarea>
+      </section>
+
+      <div class="vop-actions">
+        <button type="button" class="vop-btn" id="btn-save-draft">Save draft</button>
+        <button type="button" class="vop-btn primary" id="btn-submit">Submit for approval</button>
+        <button type="button" class="vop-btn primary" id="btn-approve" disabled>Approve</button>
+        <button type="button" class="vop-btn primary" id="btn-publish" disabled>Publish</button>
+        <button type="button" class="vop-btn danger" id="btn-reject" disabled>Reject</button>
+      </div>
+      <div class="vop-error" id="vop-error"></div>
+    </form>
+  </main>
+  <script src="/static/js/admin-villa-operations-entry.js" defer></script>
+</body>
+</html>

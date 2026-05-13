@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Villa Valuation | Admin | POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .vv-shell { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .vv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .vv-header h1 { font-size: 22px; margin: 0; }
+    .vv-mode-badge { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: var(--admin-accent, #2563eb); color: white; }
+    .vv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .vv-section { background: var(--admin-card-bg, #fff); border: 1px solid var(--admin-border, #e5e7eb); border-radius: 8px; padding: 20px; }
+    .vv-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280); }
+    .vv-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    .vv-field label { font-size: 13px; color: var(--admin-text, #111); }
+    .vv-field input, .vv-field select, .vv-field textarea { padding: 8px 10px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit; }
+    .vv-field input[readonly] { background: var(--admin-readonly-bg, #f3f4f6); color: var(--admin-text-muted, #6b7280); }
+    .vv-nav-preview { background: var(--admin-accent-bg, #eff6ff); border-color: var(--admin-accent, #2563eb); }
+    .vv-nav-preview input { background: transparent; border: none; font-weight: 600; }
+    .vv-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+    .vv-btn { padding: 10px 18px; border-radius: 6px; border: 1px solid var(--admin-border, #d1d5db); background: var(--admin-card-bg, #fff); cursor: pointer; font: inherit; }
+    .vv-btn.primary { background: var(--admin-accent, #2563eb); color: white; border-color: var(--admin-accent, #2563eb); }
+    .vv-btn.danger { background: var(--admin-danger, #dc2626); color: white; border-color: var(--admin-danger, #dc2626); }
+    .vv-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .vv-status { padding: 12px 16px; background: var(--admin-info-bg, #eff6ff); border-left: 4px solid var(--admin-accent, #2563eb); margin-bottom: 24px; border-radius: 4px; }
+    .vv-status.rejected { background: var(--admin-danger-bg, #fef2f2); border-left-color: var(--admin-danger, #dc2626); }
+    .vv-error { color: var(--admin-danger, #dc2626); margin-top: 8px; font-size: 13px; min-height: 18px; }
+    .vv-comparable-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; margin-bottom: 6px; }
+    .vv-comparable-row input { padding: 6px 8px; }
+    .vv-comparable-row button { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--admin-border, #d1d5db); background: var(--admin-card-bg, #fff); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main class="vv-shell">
+    <div class="vv-header">
+      <div>
+        <h1 id="vv-title">Villa Valuation</h1>
+        <div id="vv-breadcrumb" style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin-top: 4px;"></div>
+      </div>
+      <span class="vv-mode-badge" id="vv-mode-badge">new</span>
+    </div>
+
+    <div class="vv-status" id="vv-status" style="display: none;"></div>
+
+    <form id="vv-form" novalidate>
+      <div class="vv-grid">
+        <section class="vv-section">
+          <h2>Valuation</h2>
+          <div class="vv-field">
+            <label>Valuation date</label>
+            <input type="date" name="valuation_date" required />
+          </div>
+          <div class="vv-field">
+            <label>Valuation (IDR cents)</label>
+            <input type="number" name="valuation_idr_cents" min="1" step="1" required />
+          </div>
+          <div class="vv-field">
+            <label>Method</label>
+            <select name="valuation_method" required>
+              <option value="external_appraisal">External appraisal</option>
+              <option value="sales_comparison">Sales comparison</option>
+              <option value="income">Income</option>
+              <option value="cost">Cost</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="vv-section">
+          <h2>Appraiser & evidence</h2>
+          <div class="vv-field">
+            <label>Appraiser name</label>
+            <input type="text" name="appraiser_name" />
+          </div>
+          <div class="vv-field">
+            <label>Appraiser user UUID (optional)</label>
+            <input type="text" name="appraiser_user_id" placeholder="00000000-0000-0000-0000-000000000000" />
+          </div>
+          <div class="vv-field">
+            <label>Evidence document UUID (from asset_documents)</label>
+            <input type="text" name="evidence_doc_id" placeholder="optional" />
+          </div>
+        </section>
+
+        <section class="vv-section">
+          <h2>Comparables</h2>
+          <p style="font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 0 0 8px;">Recent comparable sales used to justify this valuation.</p>
+          <div id="vv-comparables-list"></div>
+          <button type="button" class="vv-btn" id="vv-comp-add" style="margin-top: 8px;">+ Add comparable</button>
+        </section>
+
+        <section class="vv-section vv-nav-preview">
+          <h2>NAV preview (PDF §7)</h2>
+          <p style="font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 0 0 8px;">
+            Computed server-side from <code>(valuation × tokenized %) / tokens-in-pool</code>.
+            Updates 250 ms after you stop typing the valuation.
+          </p>
+          <div class="vv-field"><label>Tokenized %</label><input readonly id="vv-pv-tokpct" /></div>
+          <div class="vv-field"><label>Tokens in pool</label><input readonly id="vv-pv-tokpool" /></div>
+          <div class="vv-field"><label><strong>NAV per token (IDR cents)</strong></label><input readonly id="vv-pv-nav" /></div>
+        </section>
+      </div>
+
+      <section class="vv-section">
+        <h2>Notes</h2>
+        <textarea name="notes" rows="3" style="width: 100%;"></textarea>
+      </section>
+
+      <section class="vv-section" id="vv-correction-section" style="display: none;">
+        <h2>Correction reason (required)</h2>
+        <textarea name="correction_reason" rows="2" style="width: 100%;"></textarea>
+      </section>
+
+      <section class="vv-section" id="vv-reject-section" style="display: none;">
+        <h2>Reject reason</h2>
+        <textarea id="vv-reject-reason" rows="2" style="width: 100%;"></textarea>
+      </section>
+
+      <div class="vv-actions">
+        <button type="button" class="vv-btn" id="btn-save-draft">Save draft</button>
+        <button type="button" class="vv-btn primary" id="btn-submit">Submit for approval</button>
+        <button type="button" class="vv-btn primary" id="btn-approve" disabled>Approve</button>
+        <button type="button" class="vv-btn primary" id="btn-publish" disabled>Publish</button>
+        <button type="button" class="vv-btn danger" id="btn-reject" disabled>Reject</button>
+      </div>
+      <div class="vv-error" id="vv-error"></div>
+    </form>
+  </main>
+  <script src="/static/js/admin-villa-valuation.js" defer></script>
+</body>
+</html>

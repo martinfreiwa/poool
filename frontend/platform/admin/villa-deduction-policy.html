@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deduction Policy | Admin | POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .vdp-shell { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .vdp-header h1 { font-size: 22px; margin: 0; }
+    .vdp-info { font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 4px 0 24px; }
+    .vdp-section { background: var(--admin-card-bg, #fff); border: 1px solid var(--admin-border, #e5e7eb); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+    .vdp-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280); }
+    .vdp-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .vdp-cat-cell { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--admin-border, #e5e7eb); border-radius: 6px; font-size: 13px; }
+    .vdp-cat-cell input[type=checkbox] { width: 16px; height: 16px; }
+    .vdp-cat-cell input[type=number] { width: 64px; padding: 4px 6px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 4px; font: inherit; font-size: 12px; }
+    .vdp-cat-cell label { display: flex; flex-direction: column; }
+    .vdp-cat-code { font-family: monospace; color: var(--admin-text-muted, #6b7280); font-size: 11px; }
+    .vdp-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-width: 320px; }
+    .vdp-field label { font-size: 13px; }
+    .vdp-field input, .vdp-field textarea { padding: 8px 10px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit; font-size: 13px; }
+    .vdp-btn { padding: 10px 18px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; background: var(--admin-card-bg, #fff); cursor: pointer; font: inherit; }
+    .vdp-btn.primary { background: var(--admin-accent, #2563eb); color: white; border-color: var(--admin-accent, #2563eb); }
+    .vdp-error { color: var(--admin-danger, #dc2626); font-size: 13px; min-height: 18px; margin-top: 8px; }
+    .vdp-history-row { padding: 12px 0; border-top: 1px solid var(--admin-border, #e5e7eb); font-size: 13px; }
+    .vdp-history-row:first-child { border-top: 0; }
+    .vdp-history-date { font-weight: 600; }
+    .vdp-history-codes { font-family: monospace; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin-top: 4px; }
+    .vdp-history-notes { font-size: 12px; color: var(--admin-text-muted, #6b7280); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <main class="vdp-shell">
+    <div class="vdp-header">
+      <h1>Deduction policy</h1>
+      <p class="vdp-info" id="vdp-breadcrumb">Loading…</p>
+    </div>
+
+    <div class="vdp-section">
+      <h2>Set new policy</h2>
+      <p class="vdp-info" style="margin: 0 0 12px;">
+        Append-only. Existing published rows are unaffected — the new policy applies to submissions for periods on/after the chosen effective date.
+        Optional caps are bps of <em>gross rental</em> (e.g. 500 = 5 %).
+      </p>
+
+      <div class="vdp-field">
+        <label>Effective from</label>
+        <input id="vdp-effective-from" type="date" required />
+      </div>
+
+      <h3 style="font-size: 13px; margin: 16px 0 8px; font-weight: 600;">Allowed categories</h3>
+      <div class="vdp-cat-grid" id="vdp-cat-grid">
+        <div style="grid-column: 1 / -1; padding: 12px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading categories…</div>
+      </div>
+
+      <div class="vdp-field" style="margin-top: 16px;">
+        <label>Notes (optional)</label>
+        <textarea id="vdp-notes" rows="2"></textarea>
+      </div>
+
+      <button type="button" class="vdp-btn primary" id="vdp-save">Append new policy</button>
+      <div class="vdp-error" id="vdp-error"></div>
+    </div>
+
+    <div class="vdp-section">
+      <h2>Policy history</h2>
+      <p class="vdp-info" style="margin: 0 0 12px;">Newest first. Append-only by design — past policies are never edited or deleted.</p>
+      <div id="vdp-history">
+        <div style="padding: 12px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</div>
+      </div>
+    </div>
+  </main>
+  <script src="/static/js/admin-villa-deduction-policy.js" defer></script>
+</body>
+</html>

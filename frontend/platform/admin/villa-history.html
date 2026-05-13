@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Villa History | Admin | POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .vh-shell { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+    .vh-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .vh-header h1 { font-size: 22px; margin: 0; }
+    .vh-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .vh-controls label { font-size: 12px; color: var(--admin-text-muted, #6b7280); display: inline-flex; align-items: center; gap: 6px; }
+    .vh-controls input[type=date] { padding: 6px 8px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 4px; font: inherit; font-size: 12px; }
+    .vh-jump-btn { padding: 6px 12px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 4px; background: var(--admin-card-bg, #fff); cursor: pointer; font: inherit; font-size: 12px; }
+    .vh-jump-btn.active { background: var(--admin-accent, #2563eb); color: white; border-color: var(--admin-accent, #2563eb); }
+    .vh-asof-banner { background: var(--admin-info-bg, #eff6ff); border-left: 4px solid var(--admin-accent, #2563eb); padding: 10px 14px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; }
+    .vh-section { background: var(--admin-card-bg, #fff); border: 1px solid var(--admin-border, #e5e7eb); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+    .vh-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280); }
+    .vh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+    .vh-cell { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--admin-border, #e5e7eb); background: var(--admin-card-bg, #fff); cursor: pointer; font-size: 12px; transition: border-color 0.15s; }
+    .vh-cell:hover { border-color: var(--admin-accent, #2563eb); }
+    .vh-cell.active { border-color: var(--admin-accent, #2563eb); background: var(--admin-accent-bg, #eff6ff); }
+    .vh-cell-period { font-weight: 600; }
+    .vh-cell-meta { font-size: 11px; color: var(--admin-text-muted, #6b7280); margin-top: 2px; }
+    .vh-badge { padding: 2px 6px; border-radius: 8px; font-size: 10px; display: inline-block; margin-top: 4px; }
+    .vh-badge.published { background: var(--admin-success-bg, #ecfdf5); color: var(--admin-success, #059669); }
+    .vh-badge.superseded { background: var(--admin-warn-bg, #fffbeb); color: var(--admin-warn, #d97706); }
+    .vh-badge.draft, .vh-badge.submitted, .vh-badge.approved { background: var(--admin-neutral-bg, #f3f4f6); color: var(--admin-text-muted, #6b7280); }
+    .vh-chain-row { display: grid; grid-template-columns: 90px 100px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--admin-border, #e5e7eb); align-items: start; }
+    .vh-chain-row:first-child { border-top: 0; }
+    .vh-chain-when { font-size: 12px; color: var(--admin-text-muted, #6b7280); font-variant-numeric: tabular-nums; }
+    .vh-chain-status { font-size: 11px; }
+    .vh-chain-diff { font-size: 12px; }
+    .vh-diff-row { display: flex; gap: 8px; align-items: baseline; margin: 1px 0; }
+    .vh-diff-key { color: var(--admin-text-muted, #6b7280); min-width: 200px; font-family: monospace; font-size: 11px; }
+    .vh-diff-old { color: var(--admin-danger, #dc2626); text-decoration: line-through; font-variant-numeric: tabular-nums; }
+    .vh-diff-new { color: var(--admin-success, #059669); font-variant-numeric: tabular-nums; }
+    .vh-diff-arrow { color: var(--admin-text-muted, #6b7280); }
+    .vh-empty { text-align: center; padding: 32px 24px; color: var(--admin-text-muted, #6b7280); }
+  </style>
+</head>
+<body>
+  <main class="vh-shell">
+    <div class="vh-header">
+      <div>
+        <h1>Villa Operations History</h1>
+        <div id="vh-breadcrumb" style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin-top: 4px;">Loading…</div>
+      </div>
+      <div class="vh-controls">
+        <button class="vh-jump-btn active" data-jump="now">Now</button>
+        <button class="vh-jump-btn" data-jump="3">−3 months</button>
+        <button class="vh-jump-btn" data-jump="6">−6 months</button>
+        <button class="vh-jump-btn" data-jump="12">−12 months</button>
+        <button class="vh-jump-btn" data-jump="24">−24 months</button>
+        <label>As of <input id="vh-asof" type="date" /></label>
+      </div>
+    </div>
+
+    <div class="vh-asof-banner" id="vh-asof-banner" style="display: none;">
+      Viewing data as published at <strong id="vh-asof-display">—</strong>. Values may have been corrected since.
+    </div>
+
+    <div class="vh-section">
+      <h2>Monthly grid — latest non-superseded row per period</h2>
+      <p style="font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 0 0 12px;">Click a period to expand its full supersession chain. Colour coding: green = published, amber = was superseded since, grey = pre-publish.</p>
+      <div class="vh-grid" id="vh-grid">
+        <div class="vh-empty">Loading…</div>
+      </div>
+    </div>
+
+    <div class="vh-section" id="vh-chain-section" style="display: none;">
+      <h2>Supersession chain — <span id="vh-chain-title">—</span></h2>
+      <p style="font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 0 0 12px;">Field-level diff of every row written for this period, oldest first. Strikethrough red = prior value, green = new value. Only rows recorded ≤ current as-of are shown.</p>
+      <div id="vh-chain"></div>
+    </div>
+  </main>
+  <script src="/static/js/admin-villa-history.js" defer></script>
+</body>
+</html>

@@ -421,6 +421,9 @@
               Orders<span class="tab-badge" id="badge-orders">0</span>
             </button>
             <button class="asset-tab" data-tab="settings">Settings</button>
+            <button class="asset-tab" data-tab="operations">
+              Operations<span class="tab-badge" id="badge-operations">0</span>
+            </button>
           </div>
 
           <!-- ─── TAB: OVERVIEW ─── -->
@@ -795,14 +798,156 @@
             </div>
           </div>
 
+          <!-- ─── TAB: OPERATIONS (Villa-Returns P2.4) ─── -->
+          <div class="tab-panel" id="panel-operations">
+            <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Developer access</h3>
+                <button class="admin-btn admin-btn--primary" id="btn-grant-dev-access" type="button">
+                  + Add developer
+                </button>
+              </div>
+              <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 16px;">
+                Developers (management company users) authorised to submit monthly operations data for this villa.
+                Append-only: revocations set <code>effective_until</code>; never deleted.
+              </p>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                  <tr style="background: var(--admin-card-header-bg, #f9fafb);">
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Developer</th>
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Active from</th>
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Status</th>
+                    <th style="padding: 10px 12px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="dev-access-tbody">
+                  <tr><td colspan="4" style="padding: 24px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-card" style="padding: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Monthly operations — trailing 12 months</h3>
+                <button class="admin-btn admin-btn--secondary" id="btn-enter-month" type="button">
+                  Enter month manually
+                </button>
+              </div>
+              <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 16px;">
+                Latest non-superseded row per month. Click a published row to correct it.
+              </p>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                  <tr style="background: var(--admin-card-header-bg, #f9fafb);">
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Period</th>
+                    <th style="text-align: right; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Distributable (IDR)</th>
+                    <th style="text-align: right; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Occupancy</th>
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Status</th>
+                    <th style="padding: 10px 12px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="ops-strip-tbody">
+                  <tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Villa-Returns C3-admin: Pending developer submissions -->
+            <div class="admin-card" style="padding: 24px; margin-top: 24px;">
+              <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 4px;">Pending developer submissions</h3>
+              <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 16px;">
+                CapEx events + forecast suggestions awaiting admin action. 4-eyes enforced on CapEx — you cannot approve rows you submitted.
+              </p>
+
+              <h4 style="font-size: 13px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280);">CapEx events</h4>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px;">
+                <thead>
+                  <tr style="background: var(--admin-card-header-bg, #f9fafb);">
+                    <th style="text-align: left; padding: 8px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Date</th>
+                    <th style="text-align: left; padding: 8px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Description</th>
+                    <th style="text-align: right; padding: 8px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Amount (IDR)</th>
+                    <th style="text-align: left; padding: 8px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Status</th>
+                    <th style="padding: 8px 12px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="capex-pending-tbody">
+                  <tr><td colspan="5" style="padding: 16px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</td></tr>
+                </tbody>
+              </table>
+
+              <h4 style="font-size: 13px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280);">Forecast suggestions</h4>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                  <tr style="background: var(--admin-card-header-bg, #f9fafb);">
+                    <th style="text-align: left; padding: 8px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Year</th>
+                    <th style="text-align: left; padding: 8px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Notes / inputs</th>
+                    <th style="text-align: left; padding: 8px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Status</th>
+                    <th style="padding: 8px 12px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="forecast-pending-tbody">
+                  <tr><td colspan="4" style="padding: 16px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Villa-Returns P2.4b: Valuations panel -->
+            <div class="admin-card" style="padding: 24px; margin-top: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Valuations</h3>
+                <button class="admin-btn admin-btn--primary" id="btn-new-valuation" type="button">
+                  + New valuation
+                </button>
+              </div>
+              <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 16px;">
+                Annual valuations (PDF §3). Append-only — corrections create a new row with <code>supersedes_id</code> set;
+                the prior row is auto-flipped to <code>superseded</code>.
+              </p>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                  <tr style="background: var(--admin-card-header-bg, #f9fafb);">
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Date</th>
+                    <th style="text-align: right; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Value (IDR)</th>
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Method</th>
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Appraiser</th>
+                    <th style="text-align: left; padding: 10px 12px; font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px;">Status</th>
+                    <th style="padding: 10px 12px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="valuations-tbody">
+                  <tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
         <!-- /asset-content -->
       </div>
     </main>
   </div>
 
+  <!-- ─── Grant-developer modal (Villa-Returns P2.4) ─── -->
+  <div id="grant-dev-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--admin-card-bg, #fff); padding: 24px; border-radius: 8px; max-width: 420px; width: 100%;">
+      <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">Add developer access</h3>
+      <label style="display: block; font-size: 13px; margin-bottom: 4px;">Developer user UUID</label>
+      <input id="grant-dev-uuid" type="text" placeholder="00000000-0000-0000-0000-000000000000"
+        style="width: 100%; padding: 8px 10px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit; margin-bottom: 12px;" />
+      <label style="display: block; font-size: 13px; margin-bottom: 4px;">Notes (optional)</label>
+      <textarea id="grant-dev-notes" rows="2"
+        style="width: 100%; padding: 8px 10px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit; margin-bottom: 16px;"></textarea>
+      <div id="grant-dev-error" style="color: var(--admin-danger, #dc2626); font-size: 13px; margin-bottom: 12px; min-height: 18px;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="admin-btn admin-btn--secondary" id="grant-dev-cancel" type="button">Cancel</button>
+        <button class="admin-btn admin-btn--primary"   id="grant-dev-confirm" type="button">Grant</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/admin-property-page-editor.js"></script>
   <script src="/static/js/admin-asset-details.js"></script>
+  <script src="/static/js/admin-asset-operations.js"></script>
 </body>
 
 </html>

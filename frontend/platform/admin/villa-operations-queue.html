@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Villa Operations Queue | Admin | POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .voq-shell { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+    .voq-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .voq-header h1 { font-size: 22px; margin: 0; }
+    .voq-empty { text-align: center; padding: 48px 24px; color: var(--admin-text-muted, #6b7280); background: var(--admin-card-bg, #fff); border-radius: 8px; }
+    .voq-table { width: 100%; border-collapse: collapse; background: var(--admin-card-bg, #fff); border-radius: 8px; overflow: hidden; font-size: 13px; }
+    .voq-table th, .voq-table td { padding: 10px 12px; text-align: left; }
+    .voq-table th { background: var(--admin-card-header-bg, #f9fafb); font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+    .voq-table tbody tr { border-top: 1px solid var(--admin-border, #e5e7eb); }
+    .voq-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .voq-badge { padding: 3px 10px; border-radius: 10px; font-size: 11px; }
+    .voq-badge.correction { background: var(--admin-warn-bg, #fffbeb); color: var(--admin-warn, #d97706); }
+    .voq-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .voq-btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--admin-border, #d1d5db); background: var(--admin-card-bg, #fff); cursor: pointer; font: inherit; font-size: 12px; text-decoration: none; color: inherit; }
+    .voq-btn.primary { background: var(--admin-accent, #2563eb); color: white; border-color: var(--admin-accent, #2563eb); }
+    .voq-btn.danger { color: var(--admin-danger, #dc2626); border-color: var(--admin-danger, #dc2626); }
+    .voq-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .voq-self-note { font-size: 11px; color: var(--admin-text-muted, #6b7280); font-style: italic; margin-top: 4px; }
+    .voq-correction-note { font-size: 11px; color: var(--admin-warn, #d97706); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <main class="voq-shell">
+    <div class="voq-header">
+      <div>
+        <h1>Villa Operations — Approval Queue</h1>
+        <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 4px 0 0;">
+          Submitted monthly operations rows awaiting approval. 4-eyes enforced — you cannot approve rows you submitted.
+        </p>
+      </div>
+      <button class="voq-btn" id="btn-refresh" type="button">Refresh</button>
+    </div>
+
+    <div id="voq-empty" class="voq-empty" style="display: none;">No rows awaiting approval.</div>
+
+    <table class="voq-table" id="voq-table">
+      <thead>
+        <tr>
+          <th>Villa</th>
+          <th>Period</th>
+          <th class="voq-num">Distributable (IDR)</th>
+          <th>Submitter</th>
+          <th>Submitted</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="voq-tbody">
+        <tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <!-- Reject modal -->
+  <div id="voq-reject-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--admin-card-bg, #fff); padding: 24px; border-radius: 8px; max-width: 420px; width: 100%;">
+      <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 700;">Reject submission</h3>
+      <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 12px;">
+        Row will return to <code>draft</code> with this reason. Developer will see it on their dashboard.
+      </p>
+      <label style="display: block; font-size: 13px; margin-bottom: 4px;">Reason (required)</label>
+      <textarea id="voq-reject-reason" rows="3"
+        style="width: 100%; padding: 8px 10px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit; margin-bottom: 12px;"></textarea>
+      <div id="voq-reject-error" style="color: var(--admin-danger, #dc2626); font-size: 13px; min-height: 18px; margin-bottom: 12px;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="voq-btn" id="voq-reject-cancel" type="button">Cancel</button>
+        <button class="voq-btn danger" id="voq-reject-confirm" type="button">Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/admin-villa-operations-queue.js" defer></script>
+</body>
+</html>
