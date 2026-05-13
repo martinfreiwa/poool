@@ -55,9 +55,7 @@ where
         .unwrap_or(false);
 
         if !is_developer {
-            return Err(ApiError::Forbidden(
-                "Developer access required".to_string(),
-            ));
+            return Err(ApiError::Forbidden("Developer access required".to_string()));
         }
 
         Ok(DeveloperUser { user })
@@ -67,11 +65,7 @@ where
 impl DeveloperUser {
     /// Enforce that this developer is currently authorised to submit data for `asset_id`.
     /// Returns 403 if no active link exists. Active = `effective_until IS NULL`.
-    pub async fn require_asset_link(
-        &self,
-        pool: &PgPool,
-        asset_id: Uuid,
-    ) -> Result<(), ApiError> {
+    pub async fn require_asset_link(&self, pool: &PgPool, asset_id: Uuid) -> Result<(), ApiError> {
         let linked: bool = sqlx::query_scalar(
             r#"
             SELECT EXISTS(

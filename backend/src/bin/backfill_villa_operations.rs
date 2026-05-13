@@ -34,8 +34,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .or_else(|_| env::var("POOOL_DATABASE_URL"))
         .unwrap_or_else(|_| "postgres://localhost/poool".to_string());
 
-    println!("Villa-Returns B3 backfill — mode = {}",
-        if execute { "EXECUTE (writes durable rows)" } else { "DRY-RUN (no writes)" });
+    println!(
+        "Villa-Returns B3 backfill — mode = {}",
+        if execute {
+            "EXECUTE (writes durable rows)"
+        } else {
+            "DRY-RUN (no writes)"
+        }
+    );
     println!("Connecting to: {}", redact_url(&database_url));
 
     let pool = PgPoolOptions::new()
@@ -43,7 +49,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect(&database_url)
         .await?;
 
-    let candidates: Vec<(uuid::Uuid, i32, i32, i64, i64, i64, Option<i32>, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
+    let candidates: Vec<(
+        uuid::Uuid,
+        i32,
+        i32,
+        i64,
+        i64,
+        i64,
+        Option<i32>,
+        chrono::DateTime<chrono::Utc>,
+    )> = sqlx::query_as(
         r#"
         SELECT af.asset_id, af.period_year, af.period_month,
                COALESCE(af.rental_income_cents, 0)::BIGINT AS gross,

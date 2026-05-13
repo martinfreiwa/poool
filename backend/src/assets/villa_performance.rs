@@ -90,14 +90,13 @@ pub async fn api_villa_performance(
 
     // C2 per-asset pilot gate. When platform flag is 'on', an asset must also
     // be flagged `villa_returns_pilot=TRUE` to be served from the new layer.
-    let asset_pilot: bool = sqlx::query_scalar(
-        "SELECT COALESCE(villa_returns_pilot, FALSE) FROM assets WHERE id = $1",
-    )
-    .bind(asset_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(ApiError::Database)?
-    .unwrap_or(false);
+    let asset_pilot: bool =
+        sqlx::query_scalar("SELECT COALESCE(villa_returns_pilot, FALSE) FROM assets WHERE id = $1")
+            .bind(asset_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::Database)?
+            .unwrap_or(false);
 
     let effective_off = flag == "off" || (flag == "on" && !asset_pilot);
 
@@ -198,8 +197,15 @@ pub async fn api_villa_performance(
     // query villa_operations_log (with status IN published/superseded) using
     // DISTINCT ON to pick the latest recorded row per (year, month) that was
     // visible at as_of. For NOW reads we use villa_operations_current (fast path).
-    let (latest_year, latest_month, latest_idr, latest_usd, last_12m_idr, last_12m_usd, months_with_data) =
-    if let Some(as_of) = q.as_of {
+    let (
+        latest_year,
+        latest_month,
+        latest_idr,
+        latest_usd,
+        last_12m_idr,
+        last_12m_usd,
+        months_with_data,
+    ) = if let Some(as_of) = q.as_of {
         let rows: Vec<(i32, i32, i64, i64)> = sqlx::query_as(
             r#"
             SELECT DISTINCT ON (period_year, period_month)
@@ -266,7 +272,15 @@ pub async fn api_villa_performance(
         .fetch_one(&state.db)
         .await
         .map_err(ApiError::Database)?;
-        (ly, lm, li, lu, totals.0.unwrap_or(0), totals.1.unwrap_or(0), totals.2.unwrap_or(0))
+        (
+            ly,
+            lm,
+            li,
+            lu,
+            totals.0.unwrap_or(0),
+            totals.1.unwrap_or(0),
+            totals.2.unwrap_or(0),
+        )
     };
 
     let annual_yield_bps: i32 = if pool_value_idr > 0 && last_12m_idr > 0 {
@@ -452,13 +466,14 @@ pub async fn api_villa_history(
         idr_col = column.0,
         usd_col = column.1,
     );
-    let snapshots: Vec<(chrono::NaiveDate, Option<i64>, Option<i64>)> = sqlx::query_as(&snapshot_query)
-        .bind(asset_id)
-        .bind(q.from)
-        .bind(q.to)
-        .fetch_all(&state.db)
-        .await
-        .map_err(ApiError::Database)?;
+    let snapshots: Vec<(chrono::NaiveDate, Option<i64>, Option<i64>)> =
+        sqlx::query_as(&snapshot_query)
+            .bind(asset_id)
+            .bind(q.from)
+            .bind(q.to)
+            .fetch_all(&state.db)
+            .await
+            .map_err(ApiError::Database)?;
 
     // 2. NAV fallback: if no snapshots for NAV, derive from valuations history.
     //    For Market: no fallback — empty list means no observed trades.

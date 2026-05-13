@@ -2,19 +2,19 @@ pub mod change_requests;
 /// Villa-Returns P2 — DeveloperUser extractor + asset-link enforcement.
 #[allow(missing_docs)]
 pub mod extractors;
+/// Villa-Returns C3 — developer forecast suggestions + annual summary.
+#[allow(missing_docs)]
+pub mod forecast_suggestions;
 pub mod fragments;
 pub mod models;
 pub mod routes;
 pub mod service;
-/// Villa-Returns P2 — developer endpoints for monthly operations submission.
-#[allow(missing_docs)]
-pub mod villa_operations;
 /// Villa-Returns C3 — developer CapEx submission.
 #[allow(missing_docs)]
 pub mod villa_capex;
-/// Villa-Returns C3 — developer forecast suggestions + annual summary.
+/// Villa-Returns P2 — developer endpoints for monthly operations submission.
 #[allow(missing_docs)]
-pub mod forecast_suggestions;
+pub mod villa_operations;
 
 use crate::auth::routes::AppState;
 use axum::{

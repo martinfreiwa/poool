@@ -342,16 +342,12 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or(86_400);
         let nav_pool = pool.clone();
         tokio::spawn(async move {
-            let mut interval =
-                tokio::time::interval(tokio::time::Duration::from_secs(secs));
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(secs));
             interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             // Skip the initial immediate tick so the job aligns with the cycle
             // rather than firing on startup.
             interval.tick().await;
-            tracing::info!(
-                "Villa NAV snapshot job armed; interval = {}s",
-                secs
-            );
+            tracing::info!("Villa NAV snapshot job armed; interval = {}s", secs);
             loop {
                 interval.tick().await;
                 match admin::villa_nav_snapshot::run_snapshot_for_all_assets(&nav_pool).await {

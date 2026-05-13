@@ -157,15 +157,14 @@ pub async fn api_developer_villa_operations_update(
     dev.require_asset_link(&state.db, asset_id).await?;
     input.reserve_override_idr_cents = None;
 
-    let existing: VillaOperationsRow = sqlx::query_as(
-        "SELECT * FROM villa_operations_log WHERE id = $1 AND asset_id = $2",
-    )
-    .bind(log_id)
-    .bind(asset_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))?;
+    let existing: VillaOperationsRow =
+        sqlx::query_as("SELECT * FROM villa_operations_log WHERE id = $1 AND asset_id = $2")
+            .bind(log_id)
+            .bind(asset_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::Database)?
+            .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))?;
 
     if existing.submitted_by != Some(dev.user.id) {
         return Err(ApiError::Forbidden(
@@ -246,15 +245,14 @@ pub async fn api_developer_villa_operations_submit(
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
     dev.require_asset_link(&state.db, asset_id).await?;
 
-    let existing: VillaOperationsRow = sqlx::query_as(
-        "SELECT * FROM villa_operations_log WHERE id = $1 AND asset_id = $2",
-    )
-    .bind(log_id)
-    .bind(asset_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(ApiError::Database)?
-    .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))?;
+    let existing: VillaOperationsRow =
+        sqlx::query_as("SELECT * FROM villa_operations_log WHERE id = $1 AND asset_id = $2")
+            .bind(log_id)
+            .bind(asset_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::Database)?
+            .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))?;
 
     if existing.submitted_by != Some(dev.user.id) {
         return Err(ApiError::Forbidden(
@@ -302,9 +300,7 @@ pub async fn api_developer_villa_operations_submit(
     ))
     .bind(format!(
         "Developer {} submitted monthly operations for villa {} (distributable {:.2} IDR cents).",
-        dev.user.email,
-        asset_id,
-        row.distributable_idr_cents as f64
+        dev.user.email, asset_id, row.distributable_idr_cents as f64
     ))
     .bind(format!(
         "/admin/villas/{}/operations/{}/{}?log_id={}&mode=review",

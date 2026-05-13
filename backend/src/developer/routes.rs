@@ -457,12 +457,8 @@ pub async fn page_developer_operations_submit(
     if let Err(response) = require_developer_page(&jar, &state).await {
         return response;
     }
-    crate::common::routes_helper::serve_protected(
-        jar,
-        &state,
-        "developer/operations-submit.html",
-    )
-    .await
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/operations-submit.html")
+        .await
 }
 
 /// GET /developer/villas/:asset_id/annual/:year — Villa-Returns C3 annual data page.
@@ -473,12 +469,7 @@ pub async fn page_developer_annual_data(
     if let Err(response) = require_developer_page(&jar, &state).await {
         return response;
     }
-    crate::common::routes_helper::serve_protected(
-        jar,
-        &state,
-        "developer/annual-data.html",
-    )
-    .await
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/annual-data.html").await
 }
 
 // ─── API Endpoints ──────────────────────────────────────────
