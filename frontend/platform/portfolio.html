@@ -550,6 +550,34 @@ extra_js=['htmx-init',
           </div>
         </div>
 
+        <!-- Villa-Returns P3: lifetime KPIs across all positions -->
+        <div id="villa-summary-section" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 16px 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280;">Villa-Returns lifetime</h3>
+            <span style="font-size: 11px; color: #6b7280;" id="vs-meta">Across active positions</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+            <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Active positions</div>
+              <div style="font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums;" id="vs-positions">—</div>
+            </div>
+            <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Total invested</div>
+              <div style="font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums;" id="vs-invested">—</div>
+            </div>
+            <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Current value</div>
+              <div style="font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums;" id="vs-current">—</div>
+              <div style="font-size: 11px; margin-top: 2px;" id="vs-pnl"></div>
+            </div>
+            <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f0fdf4;">
+              <div style="font-size: 11px; color: #059669; text-transform: uppercase; letter-spacing: 0.5px;">Lifetime dividends</div>
+              <div style="font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; color: #059669;" id="vs-dividends">—</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 2px;" id="vs-dividend-count"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Assets Table -->
         <div id="assets-section" class="assets-section hidden">
           <div id="portfolio-assets-table" class="portfolio-assets-table ds-table-container">
@@ -1164,6 +1192,7 @@ extra_js=['htmx-init',
   <script src="/static/js/portfolio-service.js"></script>
   <script src="/static/js/currency-service.js"></script>
   <script src="/static/js/portfolio-data.js"></script>
+  <script src="/static/js/portfolio-villa-summary.js" defer></script>
 
   <script>
     // PORTFOLIO-BUG-001: Vanilla JS replacements for Alpine x-show/x-data toggles

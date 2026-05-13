@@ -15,7 +15,7 @@
           </nav>
           <div class="header-actions">
             <a href="https://platform.poool.app/auth/login" class="header-action-link">Log in</a>
-            <a href="https://platform.poool.app/auth/signup" class="btn-primary btn-sm btn-nav">Sign up</a>
+            <a href="https://platform.poool.app/auth/signup" class="ds-btn ds-btn--primary public-header-signup">Sign up</a>
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@
                 <!-- Categories -->
                 <div id="property-categories" class="categories-section">
                   <div class="category-badge">
-                    <svg class="badge-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v5"/><path d="M2 9h20v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9Z"/><path d="M2 14h20"/><path d="M7 9V3"/></svg>
+                    <img src="/static/images/icons/Bed.svg" alt="Beds" class="badge-icon" width="16" height="16" />
                     <span class="badge-text">{{ asset.bedrooms | default(4) }}</span>
                   </div>
                   <div class="category-separator"></div>
@@ -288,7 +288,7 @@
                 </div>
 
                 <!-- Financials -->
-                <div class="financial-section">
+                <div class="financial-section" data-asset-id="{{ asset.id }}">
                   <div class="financial-header">
                     <svg class="financial-icon" width="24" height="24" viewBox="0 0 20 20" fill="none" stroke="#414651" stroke-width="1.67" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><ellipse cx="10" cy="6" rx="7" ry="2.5"/><path d="M3 10C3 11.38 6.13 12.5 10 12.5C13.87 12.5 17 11.38 17 10"/><path d="M3 14C3 15.38 6.13 16.5 10 16.5C13.87 16.5 17 15.38 17 14"/><path d="M3 6V14M17 6V14"/></svg>
                     <h2 class="financial-title">Financials</h2>
@@ -297,6 +297,7 @@
                     <div class="financial-tabs">
                       <button class="financial-tab active" data-tab="property-cost"><span class="tab-text">Property cost</span></button>
                       <button class="financial-tab" data-tab="rental-income"><span class="tab-text">Rental income (Year 1)</span></button>
+                      <button class="financial-tab" data-tab="live-performance"><span class="tab-text">Live performance</span></button>
                     </div>
                     <div class="financial-info" id="property-cost-content">
                       <div class="financial-row">
@@ -332,6 +333,24 @@
                       </div>
                       <div class="financial-info-bar">
                         <span class="info-bar-text">Based on {{ asset.annual_yield_percent }}% annual rental yield</span>
+                      </div>
+                    </div>
+                    <!-- Villa-Returns P3 public — minimal live cards (PDF §A5: no time-travel, no chart) -->
+                    <div class="financial-info" id="live-performance-content" style="display: none">
+                      <div class="financial-row">
+                        <span class="financial-label">Annual yield (actual)</span>
+                        <div class="financial-value-group"><span class="financial-value total" id="lp-pub-yield">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Projected annualised return</span>
+                        <div class="financial-value-group"><span class="financial-value" id="lp-pub-proj">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">5-year total return <span style="font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #eff6ff; color: #2563eb; margin-left: 4px;">Projected</span></span>
+                        <div class="financial-value-group"><span class="financial-value total" id="lp-pub-five">—</span></div>
+                      </div>
+                      <div class="financial-info-bar">
+                        <span class="info-bar-text" id="lp-pub-meta">Loading live data…</span>
                       </div>
                     </div>
                   </div>
@@ -477,7 +496,7 @@
                   </div>
                   {% if asset.funded_percentage >= 100 %}
                   <div class="price-card-investment" style="flex-direction:column;">
-                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="add-to-cart-btn" style="text-decoration:none;display:flex;align-items:center;justify-content:center;width:100%;opacity:0.6;pointer-events:none;">
+                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn" aria-disabled="true" tabindex="-1">
                       <span class="btn-text">Sold out</span>
                     </a>
                   </div>
@@ -492,7 +511,7 @@
                         <input type="text" id="investment-amount-input" value="2,000" class="amount-input" />
                       </div>
                     </div>
-                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="add-to-cart-btn" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">
+                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn">
                       <span class="btn-text">Sign up to invest</span>
                     </a>
                   </div>
@@ -621,7 +640,7 @@
               <div class="input-dropdown"><span class="currency-label">USD</span></div>
               <div class="input-field"><input type="text" id="mobile-investment-amount" value="2,000" class="amount-input" disabled /></div>
             </div>
-            <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="add-to-cart-btn" style="text-decoration:none;display:flex;align-items:center;justify-content:center;opacity:0.6;pointer-events:none;">
+            <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn" aria-disabled="true" tabindex="-1">
               <span class="btn-text">Sold out</span>
             </a>
           </div>
@@ -639,7 +658,7 @@
               <div class="input-dropdown"><span class="currency-label">USD</span></div>
               <div class="input-field"><input type="text" id="mobile-investment-amount" value="2,000" class="amount-input" /></div>
             </div>
-            <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="add-to-cart-btn" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">
+            <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn">
               <span class="btn-text">Sign up to invest</span>
             </a>
           </div>
@@ -755,7 +774,26 @@
       body.property-public-body .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; flex: 1; }
       body.property-public-body .header-action-link { font-size: 14px; font-weight: 600; color: #101828; text-decoration: none; padding: 12px 0; transition: color 0.2s ease; }
       body.property-public-body .header-action-link:hover { color: #0000ff; }
-      body.property-public-body .btn-nav { padding: 10px 20px; font-size: 14px; }
+      body.property-public-body .public-header-signup {
+        min-height: 40px;
+        height: 40px;
+        padding: 10px 18px;
+        border-radius: var(--btn-border-radius, 8px);
+        background: #0000FF;
+        color: #98FB96;
+        border: 1px solid #0000FF;
+        font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 20px;
+        text-decoration: none;
+      }
+      body.property-public-body .public-header-signup:hover {
+        background: #0000CC;
+        color: #98FB96;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(0, 0, 255, 0.14);
+      }
       @media (max-width: 767px) {
         body.property-public-body .header-nav { display: none; }
       }
@@ -781,9 +819,37 @@
       body.property-public-body .price-card-investment .investment-input {
         width: 100% !important;
       }
-      body.property-public-body .price-card-investment .add-to-cart-btn {
+      body.property-public-body .price-card-investment .add-to-cart-btn,
+      body.property-public-body .mobile-investment .add-to-cart-btn {
         width: 100% !important;
         min-width: unset !important;
+        min-height: 44px;
+        height: 44px;
+        padding: 10px 20px;
+        border-radius: var(--btn-border-radius, 8px);
+        font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 20px;
+        text-decoration: none;
+      }
+      body.property-public-body .price-card-investment .add-to-cart-btn.ds-btn--primary,
+      body.property-public-body .mobile-investment .add-to-cart-btn.ds-btn--primary {
+        background: #0000FF;
+        color: #98FB96;
+        border: 1px solid #0000FF;
+      }
+      body.property-public-body .price-card-investment .add-to-cart-btn.ds-btn--primary:hover,
+      body.property-public-body .mobile-investment .add-to-cart-btn.ds-btn--primary:hover {
+        background: #0000E6;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(0, 0, 255, 0.16);
+      }
+      body.property-public-body .price-card-investment .add-to-cart-btn[aria-disabled="true"],
+      body.property-public-body .mobile-investment .add-to-cart-btn[aria-disabled="true"] {
+        opacity: 0.6;
+        pointer-events: none;
+        cursor: not-allowed;
       }
 
       /* Main region: no sidebar → full-width wrapper, no left offset */
@@ -920,5 +986,6 @@
       wireSignupCTA('#property-price-card', 'investment-amount-input');
       wireSignupCTA('#mobile-property-price-card', 'mobile-investment-amount');
     </script>
+    <script src="/static/js/property-public-performance.js" defer></script>
   </body>
 </html>

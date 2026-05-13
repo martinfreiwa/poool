@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Annual data | Developer | POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <style>
+    .dad-shell { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .dad-header h1 { font-size: 22px; margin: 0; }
+    .dad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+    .dad-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 8px; padding: 20px; }
+    .dad-card h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #6b7280); }
+    .dad-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .dad-field label { font-size: 13px; }
+    .dad-field input, .dad-field select, .dad-field textarea { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; font-size: 13px; }
+    .dad-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border, #e5e7eb); font-size: 13px; }
+    .dad-row:last-child { border-bottom: 0; }
+    .dad-row-key { color: var(--text-muted, #6b7280); }
+    .dad-row-val { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .dad-btn { padding: 8px 14px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; background: var(--card-bg, #fff); cursor: pointer; font: inherit; font-size: 13px; }
+    .dad-btn.primary { background: var(--accent, #2563eb); color: white; border-color: var(--accent, #2563eb); }
+    .dad-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .dad-list { font-size: 12px; max-height: 220px; overflow-y: auto; border-top: 1px solid var(--border, #e5e7eb); margin-top: 12px; }
+    .dad-list-item { padding: 8px 0; border-bottom: 1px solid var(--border, #e5e7eb); display: grid; grid-template-columns: 90px 1fr 100px 90px; gap: 8px; align-items: baseline; }
+    .dad-list-item:last-child { border-bottom: 0; }
+    .dad-status { padding: 2px 8px; border-radius: 10px; font-size: 10px; }
+    .dad-status.submitted, .dad-status.draft { background: #f3f4f6; color: #6b7280; }
+    .dad-status.approved { background: #ecfdf5; color: #059669; }
+    .dad-status.rejected { background: #fef2f2; color: #dc2626; }
+    .dad-status.accepted { background: #ecfdf5; color: #059669; }
+    .dad-status.discarded { background: #f3f4f6; color: #6b7280; }
+    .dad-error { color: var(--danger, #dc2626); font-size: 12px; margin-top: 6px; min-height: 14px; }
+    .dad-info { color: var(--text-muted, #6b7280); font-size: 12px; margin: 0 0 8px; }
+  </style>
+</head>
+<body>
+  <main class="dad-shell">
+    <div class="dad-header">
+      <h1>Annual data</h1>
+      <div id="dad-breadcrumb" style="font-size: 13px; color: var(--text-muted, #6b7280); margin-top: 4px;">Loading…</div>
+    </div>
+
+    <div class="dad-grid">
+      <section class="dad-card">
+        <h2>Annual rollup</h2>
+        <p class="dad-info">System-computed from your villa's published monthly operations + approved CapEx for the year.</p>
+        <div id="dad-summary"><div class="dad-info">Loading…</div></div>
+      </section>
+
+      <section class="dad-card">
+        <h2>Submit CapEx event</h2>
+        <p class="dad-info">Capital expenditure for the asset (major repair / renovation / equipment). Admin approves; the next valuation references approved totals.</p>
+        <form id="dad-capex-form">
+          <div class="dad-field">
+            <label>Event date</label>
+            <input type="date" name="event_date" required />
+          </div>
+          <div class="dad-field">
+            <label>Amount (IDR cents)</label>
+            <input type="number" name="amount_idr_cents" min="1" step="1" required />
+          </div>
+          <div class="dad-field">
+            <label>Category</label>
+            <select name="category">
+              <option value="renovation">Renovation</option>
+              <option value="major_repair">Major repair</option>
+              <option value="equipment">Equipment</option>
+              <option value="landscaping">Landscaping</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="dad-field">
+            <label>Description</label>
+            <textarea name="description" rows="2" required></textarea>
+          </div>
+          <div class="dad-field">
+            <label>Evidence document UUID (optional)</label>
+            <input type="text" name="evidence_doc_id" placeholder="00000000-0000-0000-0000-000000000000" />
+          </div>
+          <button type="button" class="dad-btn primary" id="btn-capex-submit">Submit for admin approval</button>
+          <div class="dad-error" id="capex-error"></div>
+        </form>
+        <div class="dad-list" id="dad-capex-list"></div>
+      </section>
+
+      <section class="dad-card">
+        <h2>Forecast suggestion</h2>
+        <p class="dad-info">Suggest forecast inputs for the year. Admin reviews and merges accepted values into <code>villa_forecast_assumptions</code>.</p>
+        <form id="dad-forecast-form">
+          <div class="dad-field">
+            <label>Projected occupancy (bps; 10000 = 100%)</label>
+            <input type="number" name="projected_occupancy_bps" min="0" max="10000" step="1" />
+          </div>
+          <div class="dad-field">
+            <label>Projected ADR (IDR cents)</label>
+            <input type="number" name="projected_adr_idr_cents" min="0" step="1" />
+          </div>
+          <div class="dad-field">
+            <label>Projected rent growth (bps)</label>
+            <input type="number" name="projected_rent_growth_bps" step="1" />
+          </div>
+          <div class="dad-field">
+            <label>Projected expense inflation (bps)</label>
+            <input type="number" name="projected_expense_inflation_bps" step="1" />
+          </div>
+          <div class="dad-field">
+            <label>Projected appreciation (bps)</label>
+            <input type="number" name="projected_appreciation_bps" step="1" />
+          </div>
+          <div class="dad-field">
+            <label>Projected exit yield (bps)</label>
+            <input type="number" name="projected_exit_yield_bps" min="0" step="1" />
+          </div>
+          <div class="dad-field">
+            <label>Notes</label>
+            <textarea name="notes" rows="2"></textarea>
+          </div>
+          <button type="button" class="dad-btn primary" id="btn-forecast-submit">Submit suggestion</button>
+          <div class="dad-error" id="forecast-error"></div>
+        </form>
+        <div class="dad-list" id="dad-forecast-list"></div>
+      </section>
+
+      <section class="dad-card">
+        <h2>Annual tax statement</h2>
+        <p class="dad-info">Upload the year's tax statement via the documents flow on this villa's detail page. The link is required for admin year-end review (PDF §3 line "Annual tax statement").</p>
+        <p class="dad-info"><em>Document upload UI integration deferred — for this slice, upload via the existing asset_documents flow and reference the document UUID in CapEx evidence above.</em></p>
+      </section>
+    </div>
+  </main>
+  <script src="/static/js/developer-annual-data.js" defer></script>
+</body>
+</html>

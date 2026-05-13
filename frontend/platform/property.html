@@ -278,7 +278,7 @@
                 </div>
 
                 <!-- 10. Financials Section -->
-                <div class="financial-section">
+                <div class="financial-section" data-asset-id="{{ asset.id }}">
                   <div class="financial-header">
                     <svg class="financial-icon" width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="10" cy="6" rx="7" ry="2.5" stroke="#181D27" stroke-width="1.67"/><path d="M3 10C3 11.38 6.13 12.5 10 12.5C13.87 12.5 17 11.38 17 10" stroke="#181D27" stroke-width="1.67" stroke-linecap="round"/><path d="M3 14C3 15.38 6.13 16.5 10 16.5C13.87 16.5 17 15.38 17 14" stroke="#181D27" stroke-width="1.67" stroke-linecap="round"/><path d="M3 6V14M17 6V14" stroke="#181D27" stroke-width="1.67" stroke-linecap="round"/></svg>
                     <h2 class="financial-title">Financials</h2>
@@ -287,6 +287,7 @@
                     <div class="financial-tabs">
                       <button class="financial-tab active" data-tab="property-cost"><span class="tab-text">Property cost</span></button>
                       <button class="financial-tab" data-tab="rental-income"><span class="tab-text">Rental income (Year 1)</span></button>
+                      <button class="financial-tab" data-tab="live-performance"><span class="tab-text">Live performance</span></button>
                     </div>
                     <div class="financial-info" id="property-cost-content">
                       <div class="financial-row">
@@ -322,6 +323,91 @@
                       </div>
                       <div class="financial-info-bar">
                         <span class="info-bar-text">Based on {{ asset.annual_yield_percent }}% annual rental yield</span>
+                      </div>
+                    </div>
+                    <!-- Villa-Returns P3: live performance from villa_operations_current + villa_valuations -->
+                    <div class="financial-info" id="live-performance-content" style="display: none">
+                      <div class="financial-row" style="border-bottom: 1px solid var(--admin-border, #e5e7eb); margin-bottom: 8px; padding-bottom: 8px;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                          <div role="group" aria-label="Currency" style="display: inline-flex; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; overflow: hidden;">
+                            <button type="button" id="lp-cur-usd" class="lp-cur-btn lp-cur-active" data-cur="USD" style="border: none; padding: 6px 12px; background: var(--admin-accent, #2563eb); color: white; cursor: pointer; font: inherit; font-size: 12px;">USD</button>
+                            <button type="button" id="lp-cur-idr" class="lp-cur-btn" data-cur="IDR" style="border: none; padding: 6px 12px; background: transparent; color: inherit; cursor: pointer; font: inherit; font-size: 12px;">IDR</button>
+                          </div>
+                          <label style="font-size: 12px; color: var(--admin-text-muted, #6b7280); display: inline-flex; align-items: center; gap: 6px;">
+                            As of
+                            <input id="lp-asof" type="date" style="padding: 4px 6px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 4px; font: inherit; font-size: 12px;" />
+                          </label>
+                          <button type="button" id="lp-asof-reset" style="border: 1px solid var(--admin-border, #d1d5db); padding: 4px 10px; border-radius: 4px; background: transparent; cursor: pointer; font: inherit; font-size: 12px;">Latest</button>
+                        </div>
+                      </div>
+                      <div class="financial-row" id="lp-asof-banner" style="display: none; background: var(--admin-info-bg, #eff6ff); padding: 8px 12px; border-radius: 4px; margin-bottom: 8px;">
+                        <span style="font-size: 12px;" id="lp-asof-banner-text">Viewing as published at —. Values may have been corrected since.</span>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">NAV per token (PDF §7)</span>
+                        <div class="financial-value-group"><span class="financial-value" id="lp-nav">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Latest period</span>
+                        <div class="financial-value-group"><span class="financial-value" id="lp-period">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Latest distributable</span>
+                        <div class="financial-value-group"><span class="financial-value" id="lp-latest-dist">—</span></div>
+                      </div>
+                      <div class="financial-divider"></div>
+                      <div class="financial-row">
+                        <span class="financial-label">Trailing 12-month distributable</span>
+                        <div class="financial-value-group"><span class="financial-value" id="lp-12m-dist">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Annual yield (actual)</span>
+                        <div class="financial-value-group"><span class="financial-value total" id="lp-yield">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Monthly yield (annual ÷ 12)</span>
+                        <div class="financial-value-group"><span class="financial-value" id="lp-monthly-yield">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Projected annualised return <span style="font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #eff6ff; color: #2563eb; margin-left: 4px;">Projected</span></span>
+                        <div class="financial-value-group"><span class="financial-value" id="lp-proj-annual">—</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">5-year total return <span style="font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #eff6ff; color: #2563eb; margin-left: 4px;">Projected</span></span>
+                        <div class="financial-value-group"><span class="financial-value total" id="lp-five-year">—</span></div>
+                      </div>
+                      <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                        <h4 style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin: 0 0 8px;">Share price performance (NAV)</h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                          <div style="padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; text-align: center;">
+                            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">+3 months</div>
+                            <div style="font-size: 16px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums;" id="lp-sp-3m">—</div>
+                          </div>
+                          <div style="padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; text-align: center;">
+                            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">+6 months</div>
+                            <div style="font-size: 16px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums;" id="lp-sp-6m">—</div>
+                          </div>
+                          <div style="padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; text-align: center;">
+                            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">+12 months</div>
+                            <div style="font-size: 16px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums;" id="lp-sp-12m">—</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="financial-info-bar">
+                        <span class="info-bar-text" id="lp-meta">Loading live data…</span>
+                      </div>
+                      <!-- Villa-Returns P3 NAV history chart (PDF §8: NAV is its own series) -->
+                      <div style="margin-top: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                          <h4 style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin: 0;">NAV per token — valuation history</h4>
+                          <span style="font-size: 11px; color: #6b7280;" id="lp-chart-meta"></span>
+                        </div>
+                        <svg id="lp-nav-chart" viewBox="0 0 600 180" preserveAspectRatio="none"
+                          style="width: 100%; height: 180px; margin-top: 8px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 4px;"
+                          role="img" aria-label="NAV per token over valuation history">
+                          <text x="300" y="90" text-anchor="middle" font-size="12" fill="#6b7280">Loading…</text>
+                        </svg>
+                        <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0;">Step function — NAV is constant between valuations. Per PDF §8, NAV is shown as its own series; Market price (when available) is rendered as a separate line.</p>
                       </div>
                     </div>
                   </div>
@@ -694,5 +780,6 @@
       window.addEventListener('load', positionSimilarProperties);
     })();
   </script>
+  <script src="/static/js/property-performance.js" defer></script>
   </body>
 </html>

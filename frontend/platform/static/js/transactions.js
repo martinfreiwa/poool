@@ -79,16 +79,46 @@ function getStatusBadge(status) {
         </div>`;
 }
 
+// Cache of unfiltered transactions so client-side filters can re-render without refetching.
+let _allTransactions = [];
+
 function processTransactions(transactionsData) {
+    _allTransactions = (transactionsData && transactionsData.transactions) || [];
+    renderFiltered();
+}
+
+function getActiveFilters() {
+    return {
+        type: (document.getElementById('transactions-type-filter')?.value || '').trim().toLowerCase(),
+        from: document.getElementById('transactions-date-from')?.value || '',
+        to: document.getElementById('transactions-date-to')?.value || '',
+    };
+}
+
+function txTypeMatches(tx, filter) {
+    if (!filter) return true;
+    const t = (tx.type || '').toLowerCase();
+    if (filter === 'dividend') return t === 'dividend' || t === 'rent_paid' || t === 'rent paid';
+    return t === filter;
+}
+
+function renderFiltered() {
     const listBody = document.getElementById('wallet-transactions-list-body');
     const listContainer = document.getElementById('wallet-transactions-list-container');
     const emptyState = document.getElementById('wallet-transactions-empty');
     if (!listBody) return;
 
-    // Clear list
+    const f = getActiveFilters();
+    const filtered = _allTransactions.filter((tx) => {
+        if (!txTypeMatches(tx, f.type)) return false;
+        if (f.from && tx.created_at && tx.created_at.slice(0, 10) < f.from) return false;
+        if (f.to && tx.created_at && tx.created_at.slice(0, 10) > f.to) return false;
+        return true;
+    });
+
     listBody.innerHTML = '';
 
-    if (!transactionsData || !transactionsData.transactions || transactionsData.transactions.length === 0) {
+    if (filtered.length === 0) {
         if (listContainer) listContainer.classList.add('hidden');
         if (emptyState) emptyState.classList.remove('hidden');
         return;
@@ -96,6 +126,8 @@ function processTransactions(transactionsData) {
 
     if (listContainer) listContainer.classList.remove('hidden');
     if (emptyState) emptyState.classList.add('hidden');
+
+    const transactionsData = { transactions: filtered };
 
     // Remove any previous delegation listener before re-rendering
     if (listBody._txDetailHandler) {
@@ -188,6 +220,20 @@ async function loadTransactions() {
 // Initialise when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     loadTransactions();
+    // Villa-Returns P3: wire client-side filters that were UI-only before.
+    const typeFilter = document.getElementById('transactions-type-filter');
+    const dateFrom = document.getElementById('transactions-date-from');
+    const dateTo = document.getElementById('transactions-date-to');
+    const clearBtn = document.getElementById('transactions-clear-filters');
+    typeFilter?.addEventListener('change', renderFiltered);
+    dateFrom?.addEventListener('change', renderFiltered);
+    dateTo?.addEventListener('change', renderFiltered);
+    clearBtn?.addEventListener('click', () => {
+        if (typeFilter) typeFilter.value = '';
+        if (dateFrom) dateFrom.value = '';
+        if (dateTo) dateTo.value = '';
+        renderFiltered();
+    });
 });
 
 // Expose reload function for "Retry" buttons

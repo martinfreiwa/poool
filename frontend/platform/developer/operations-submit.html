@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Submit Monthly Operations | Developer | POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <style>
+    .dop-shell { max-width: 1000px; margin: 32px auto; padding: 0 24px; }
+    .dop-header { margin-bottom: 24px; }
+    .dop-header h1 { font-size: 22px; margin: 0; }
+    .dop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .dop-section { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 8px; padding: 20px; }
+    .dop-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #6b7280); }
+    .dop-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    .dop-field label { font-size: 13px; color: var(--text, #111); }
+    .dop-field input { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; }
+    .dop-field input[readonly] { background: var(--readonly-bg, #f3f4f6); color: var(--text-muted, #6b7280); }
+    .dop-preview { background: var(--accent-bg, #eff6ff); border-color: var(--accent, #2563eb); }
+    .dop-preview .dop-field input { background: transparent; border: none; font-weight: 600; }
+    .dop-actions { display: flex; gap: 12px; }
+    .dop-btn { padding: 10px 18px; border-radius: 6px; border: 1px solid var(--border, #d1d5db); background: var(--btn-bg, #fff); cursor: pointer; font: inherit; }
+    .dop-btn.primary { background: var(--accent, #2563eb); color: white; border-color: var(--accent, #2563eb); }
+    .dop-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .dop-status { padding: 12px 16px; background: var(--info-bg, #eff6ff); border-left: 4px solid var(--accent, #2563eb); margin-bottom: 24px; border-radius: 4px; }
+    .dop-rejected { background: var(--danger-bg, #fef2f2); border-left-color: var(--danger, #dc2626); }
+    .dop-error { color: var(--danger, #dc2626); margin-top: 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="dop-shell">
+    <div class="dop-header">
+      <h1>Submit Monthly Operations</h1>
+      <div id="dop-breadcrumb" style="font-size: 13px; color: var(--text-muted, #6b7280); margin-top: 4px;"></div>
+    </div>
+
+    <div class="dop-status" id="dop-status" style="display: none;"></div>
+
+    <form id="dop-form" novalidate>
+      <div class="dop-grid">
+        <section class="dop-section">
+          <h2>Rental & occupancy</h2>
+          <div class="dop-field"><label>Gross rental (IDR cents)</label><input type="number" name="gross_rental_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Nights available</label><input type="number" name="nights_available" min="0" max="31" step="1" /></div>
+          <div class="dop-field"><label>Nights booked</label><input type="number" name="nights_booked" min="0" max="31" step="1" /></div>
+        </section>
+
+        <section class="dop-section">
+          <h2>Operating expenses (IDR cents)</h2>
+          <div class="dop-field"><label>Cleaning</label><input type="number" name="expense_cleaning_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Maintenance</label><input type="number" name="expense_maintenance_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Utilities</label><input type="number" name="expense_utilities_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Staff & security</label><input type="number" name="expense_staff_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Pool & garden</label><input type="number" name="expense_pool_garden_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Pest control</label><input type="number" name="expense_pest_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Other</label><input type="number" name="expense_other_idr_cents" min="0" step="1" /></div>
+        </section>
+
+        <section class="dop-section">
+          <h2>Adjustments & fees (IDR cents)</h2>
+          <div class="dop-field"><label>OTA fees</label><input type="number" name="ota_fees_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Payment fees</label><input type="number" name="payment_fees_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Refunds</label><input type="number" name="refunds_idr_cents" min="0" step="1" /></div>
+          <div class="dop-field"><label>Management fee paid</label><input type="number" name="mgmt_fee_idr_cents" min="0" step="1" /></div>
+        </section>
+
+        <section class="dop-section dop-preview">
+          <h2>Computed preview (read-only — server is authority on publish)</h2>
+          <div class="dop-field"><label>Occupancy</label><input readonly id="dop-pv-occupancy" /></div>
+          <div class="dop-field"><label>ADR (IDR cents)</label><input readonly id="dop-pv-adr" /></div>
+          <div class="dop-field"><label>Total OpEx</label><input readonly id="dop-pv-opex" /></div>
+          <div class="dop-field"><label>Net rental income</label><input readonly id="dop-pv-net" /></div>
+          <div class="dop-field"><label>Reserve applied (admin config)</label><input readonly id="dop-pv-reserve" /></div>
+          <div class="dop-field"><label>Platform fee (admin config)</label><input readonly id="dop-pv-platform" /></div>
+          <div class="dop-field"><label>Withholding (admin config)</label><input readonly id="dop-pv-withholding" /></div>
+          <div class="dop-field"><label><strong>Distributable (estimate)</strong></label><input readonly id="dop-pv-distributable" /></div>
+        </section>
+      </div>
+
+      <div class="dop-actions">
+        <button type="button" class="dop-btn" id="btn-save-draft">Save draft</button>
+        <button type="button" class="dop-btn primary" id="btn-submit">Submit for approval</button>
+      </div>
+      <div class="dop-error" id="dop-error"></div>
+    </form>
+  </main>
+  <script src="/static/js/developer-operations-submit.js" defer></script>
+</body>
+</html>

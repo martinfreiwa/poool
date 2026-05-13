@@ -489,6 +489,8 @@
                 <td class="myt__cell--num">${escapeHtml(a.tokens_owned || 0)}</td>
                 <td class="myt__cell--num">${formatUSD(a.purchase_value_cents)}</td>
                 <td class="myt__cell--num">${formatUSD(a.current_value_cents)}</td>
+                <td class="myt__cell--num">${a.nav_token_usd_cents != null ? formatUSD(a.nav_token_usd_cents) : '<span style="color:var(--myt-text-tertiary,#999);">—</span>'}</td>
+                <td class="myt__cell--num">${a.market_token_usd_cents != null ? formatUSD(a.market_token_usd_cents) : '<span style="color:var(--myt-text-tertiary,#999);">—</span>'}</td>
                 <td class="myt__cell--num">${formatPL(a.pl)}</td>
                 <td class="myt__cell--num"><span class="${a.yield >= 0 ? 'myt__pnl--positive' : 'myt__pnl--negative'}">${escapeHtml(formatPctBps(a.yield))}</span></td>
                 <td><span class="myt__status myt__status--${escapeHtml((a.status || '').toLowerCase())}">${escapeHtml(a.status || '—')}</span></td>
@@ -1273,11 +1275,27 @@
         state.errors.assets = null;
         state.errors.summary = null;
         try {
-            const r = await authedFetch('/api/portfolio');
+            const [r, navResp] = await Promise.all([
+                authedFetch('/api/portfolio'),
+                authedFetch('/api/investors/me/positions-nav').catch(() => null),
+            ]);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const data = await r.json();
             state.portfolio = data;
-            state.assets = data.investments || [];
+            // Villa-Returns A5: merge NAV/Market snapshot into each investment row.
+            let navByAsset = new Map();
+            if (navResp && navResp.ok) {
+                const navList = await navResp.json();
+                for (const n of navList) navByAsset.set(n.asset_id, n);
+            }
+            state.assets = (data.investments || []).map((inv) => {
+                const nav = navByAsset.get(inv.asset_id);
+                return {
+                    ...inv,
+                    nav_token_usd_cents: nav ? nav.nav_token_usd_cents : null,
+                    market_token_usd_cents: nav ? nav.market_token_usd_cents : null,
+                };
+            });
             state.loaded.assets = true;
             state.loaded.summary = true;
         } catch (err) {

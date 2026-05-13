@@ -522,12 +522,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
           // Show/hide content based on clicked tab
           const tabType = this.getAttribute("data-tab");
+          const livePerfContent = document.getElementById(
+            "live-performance-content",
+          );
           if (tabType === "property-cost") {
             if (propertyCostContent) propertyCostContent.style.display = "flex";
             if (rentalIncomeContent) rentalIncomeContent.style.display = "none";
+            if (livePerfContent) livePerfContent.style.display = "none";
           } else if (tabType === "rental-income") {
             if (propertyCostContent) propertyCostContent.style.display = "none";
             if (rentalIncomeContent) rentalIncomeContent.style.display = "flex";
+            if (livePerfContent) livePerfContent.style.display = "none";
+          } else if (tabType === "live-performance") {
+            if (propertyCostContent) propertyCostContent.style.display = "none";
+            if (rentalIncomeContent) rentalIncomeContent.style.display = "none";
+            if (livePerfContent) livePerfContent.style.display = "flex";
           }
         });
       });
