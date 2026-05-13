@@ -60,6 +60,27 @@ pub mod system;
 pub mod treasury;
 /// Module
 pub mod users;
+/// Villa-Returns P2 — monthly operations entry + workflow.
+#[allow(missing_docs)]
+pub mod villa_operations;
+/// Villa-Returns P2.5 — annual valuations entry + workflow.
+#[allow(missing_docs)]
+pub mod villa_valuations;
+/// Villa-Returns C3-admin — approve/reject developer CapEx events.
+#[allow(missing_docs)]
+pub mod villa_capex;
+/// Villa-Returns C3-admin — accept/discard developer forecast suggestions.
+#[allow(missing_docs)]
+pub mod villa_forecast;
+/// Villa-Returns B3 — per-asset deduction policy management.
+#[allow(missing_docs)]
+pub mod villa_deduction_policy;
+/// Villa-Returns P4 — daily NAV + market-price snapshot job.
+#[allow(missing_docs)]
+pub mod villa_nav_snapshot;
+/// Villa-Returns P2 — developer-villa access management.
+#[allow(missing_docs)]
+pub mod villa_developer_access;
 /// Module
 pub mod withdrawals;
 
@@ -1177,6 +1198,170 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/blockchain/primary-settle/queue",
             get(blockchain::api_admin_blockchain_primary_settle_queue),
+        )
+        // ── Villa-Returns P2 — admin operations workflow ─────────────
+        .route(
+            "/api/admin/villas/:asset_id/operations",
+            post(villa_operations::api_admin_villa_operations_create)
+                .get(villa_operations::api_admin_villa_operations_list),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id",
+            put(villa_operations::api_admin_villa_operations_update),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/submit",
+            put(villa_operations::api_admin_villa_operations_submit),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/approve",
+            put(villa_operations::api_admin_villa_operations_approve),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/publish",
+            put(villa_operations::api_admin_villa_operations_publish),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/reject",
+            put(villa_operations::api_admin_villa_operations_reject),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/distribute",
+            post(villa_operations::api_admin_villa_operations_distribute),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/process-payouts",
+            post(villa_operations::api_admin_villa_operations_process_payouts),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/top-up",
+            post(villa_operations::api_admin_villa_operations_top_up),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/operations/:log_id/documents",
+            post(villa_operations::api_admin_villa_operations_link_document)
+                .get(villa_operations::api_admin_villa_operations_documents_list),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/config",
+            put(villa_operations::api_admin_villa_config_update),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/config-summary",
+            get(villa_operations::api_admin_villa_config_summary),
+        )
+        // ── Villa-Returns P2 — developer access ───────────────────────
+        .route(
+            "/api/admin/villas/:asset_id/developer-access",
+            get(villa_developer_access::api_admin_developer_access_list)
+                .post(villa_developer_access::api_admin_developer_access_grant),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/developer-access/:link_id",
+            delete(villa_developer_access::api_admin_developer_access_revoke),
+        )
+        // ── Villa-Returns P2 — admin entry page ─────────────────────
+        .route(
+            "/admin/villas/:asset_id/operations/:year/:month",
+            get(pages::page_admin_villa_operations_entry),
+        )
+        // ── Villa-Returns B4 — forensic history viewer ──────────────
+        .route(
+            "/admin/villas/:asset_id/history",
+            get(pages::page_admin_villa_history),
+        )
+        // ── Villa-Returns C3-admin — CapEx approval + forecast accept/discard ──
+        .route(
+            "/api/admin/villas/:asset_id/capex",
+            get(villa_capex::api_admin_villa_capex_list),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/capex/:capex_id/approve",
+            put(villa_capex::api_admin_villa_capex_approve),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/capex/:capex_id/reject",
+            put(villa_capex::api_admin_villa_capex_reject),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/forecast-suggestions",
+            get(villa_forecast::api_admin_forecast_suggestions_list),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/forecast-suggestions/:id/accept",
+            put(villa_forecast::api_admin_forecast_suggestion_accept),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/forecast-suggestions/:id/discard",
+            put(villa_forecast::api_admin_forecast_suggestion_discard),
+        )
+        // ── Villa-Returns B3 — deduction policy ──────────────────────
+        .route(
+            "/api/villa-expense-categories",
+            get(villa_deduction_policy::api_villa_expense_categories),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/deduction-policies",
+            get(villa_deduction_policy::api_admin_deduction_policies_list)
+                .post(villa_deduction_policy::api_admin_deduction_policy_create),
+        )
+        .route(
+            "/admin/villas/:asset_id/deduction-policy",
+            get(pages::page_admin_villa_deduction_policy),
+        )
+        // ── Villa-Returns P4 — daily NAV snapshot trigger ───────────
+        .route(
+            "/api/admin/villa-nav-snapshot/run",
+            post(villa_nav_snapshot::api_admin_villa_nav_snapshot_run),
+        )
+        // ── Villa-Returns P2.5 — valuations ─────────────────────────
+        .route(
+            "/api/admin/villas/:asset_id/valuations",
+            post(villa_valuations::api_admin_villa_valuations_create)
+                .get(villa_valuations::api_admin_villa_valuations_list),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/valuations/nav-preview",
+            get(villa_valuations::api_admin_villa_nav_preview),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/valuations/:val_id",
+            put(villa_valuations::api_admin_villa_valuations_update),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/valuations/:val_id/submit",
+            put(villa_valuations::api_admin_villa_valuations_submit),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/valuations/:val_id/approve",
+            put(villa_valuations::api_admin_villa_valuations_approve),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/valuations/:val_id/publish",
+            put(villa_valuations::api_admin_villa_valuations_publish),
+        )
+        .route(
+            "/api/admin/villas/:asset_id/valuations/:val_id/reject",
+            put(villa_valuations::api_admin_villa_valuations_reject),
+        )
+        .route(
+            "/admin/villas/:asset_id/valuations/new",
+            get(pages::page_admin_villa_valuation_entry),
+        )
+        .route(
+            "/admin/villas/:asset_id/valuations/:val_id/edit",
+            get(pages::page_admin_villa_valuation_entry),
+        )
+        // ── Villa-Returns P2.3 — approvals queue ────────────────────
+        // Path avoids /api/admin/approvals/* which is already segmented by
+        // generic approval routes (`:id/approve`, `:id/reject`).
+        .route(
+            "/api/admin/villa-operations-queue",
+            get(villa_operations::api_admin_villa_operations_queue),
+        )
+        .route(
+            "/admin/villa-operations-queue",
+            get(pages::page_admin_villa_operations_queue),
         );
 
     // Debug-only endpoints: DB seeder is gated so it cannot ship to prod.

@@ -16,6 +16,47 @@ pub async fn page_admin_dashboard(
     render_admin_template(&state, "admin/index.html")
 }
 
+/// GET /admin/villas/:asset_id/operations/:year/:month — Villa-Returns P2 entry page.
+/// URL params are read client-side via `window.location.pathname`.
+pub async fn page_admin_villa_operations_entry(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    render_admin_template(&state, "admin/villa-operations-entry.html")
+}
+
+/// GET /admin/villa-operations-queue — Villa-Returns P2.3 cross-asset approval queue.
+pub async fn page_admin_villa_operations_queue(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    render_admin_template(&state, "admin/villa-operations-queue.html")
+}
+
+/// GET /admin/villas/:asset_id/valuations/{new,:val_id/edit} — Villa-Returns P2.5 valuation entry page.
+pub async fn page_admin_villa_valuation_entry(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    render_admin_template(&state, "admin/villa-valuation.html")
+}
+
+/// GET /admin/villas/:asset_id/history — Villa-Returns B4 forensic time-travel viewer.
+pub async fn page_admin_villa_history(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    render_admin_template(&state, "admin/villa-history.html")
+}
+
+/// GET /admin/villas/:asset_id/deduction-policy — Villa-Returns B3 deduction policy admin.
+pub async fn page_admin_villa_deduction_policy(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    render_admin_template(&state, "admin/villa-deduction-policy.html")
+}
+
 /// GET /admin/blog  Blog dashboard (protected, requires blog.manage).
 pub async fn page_admin_blog(admin: AdminUser, State(state): State<AppState>) -> impl IntoResponse {
     if crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.view").await
