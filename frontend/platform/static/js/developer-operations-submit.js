@@ -8,6 +8,8 @@
  *   POST  /api/developer/villas/:asset_id/operations
  *   PUT   /api/developer/villas/:asset_id/operations/:log_id
  *   PUT   /api/developer/villas/:asset_id/operations/:log_id/submit
+ *   POST  /api/developer/villas/:asset_id/operations/:log_id/documents  (upload + link)
+ *   GET   /api/developer/villas/:asset_id/operations/:log_id/documents  (list linked)
  */
 
 let assetId = null;
@@ -39,6 +41,7 @@ function setupHandlers() {
   document.getElementById("dop-form").addEventListener("input", recompute);
   document.getElementById("btn-save-draft").addEventListener("click", saveDraft);
   document.getElementById("btn-submit").addEventListener("click", submitForApproval);
+  document.getElementById("btn-upload-doc").addEventListener("click", uploadDocument);
 }
 
 async function hydrate() {
@@ -56,6 +59,7 @@ async function hydrate() {
       reflectStatus(currentRow.status);
     }
     recompute();
+    reflectDocsSection();
   } catch (err) {
     showError(`Failed to load: ${err.message}`);
   }
@@ -169,6 +173,7 @@ async function saveDraft() {
     currentRow = await resp.json();
     logId = currentRow.id;
     reflectStatus(currentRow.status);
+    reflectDocsSection();
   } catch (err) {
     showError(`Save failed: ${err.message}`);
   }
@@ -189,6 +194,93 @@ async function submitForApproval() {
 }
 
 function showError(msg) { document.getElementById("dop-error").textContent = msg; }
+
+/* ── Period documents (receipts / invoices / statements) ─────────────── */
+
+// The panel needs a log_id to attach against, so it stays hidden until the
+// period has been saved as a draft at least once.
+function reflectDocsSection() {
+  const section = document.getElementById("dop-docs-section");
+  if (logId) {
+    section.style.display = "block";
+    loadDocuments();
+  } else {
+    section.style.display = "none";
+  }
+}
+
+async function loadDocuments() {
+  const errEl = document.getElementById("dop-docs-error");
+  try {
+    const resp = await fetch(
+      `/api/developer/villas/${encodeURIComponent(assetId)}/operations/${logId}/documents`
+    );
+    if (!resp.ok) throw new Error(await responseError(resp));
+    renderDocuments(await resp.json());
+    errEl.textContent = "";
+  } catch (err) {
+    errEl.textContent = `Failed to load documents: ${err.message}`;
+  }
+}
+
+function renderDocuments(docs) {
+  const list = document.getElementById("dop-docs-list");
+  if (!Array.isArray(docs) || docs.length === 0) {
+    list.innerHTML =
+      '<p style="font-size: 13px; color: var(--text-muted, #6b7280); margin: 0;">No documents linked to this period yet.</p>';
+    return;
+  }
+  list.innerHTML = docs
+    .map((d) => {
+      const when = new Date(d.created_at).toLocaleDateString();
+      const label = String(d.doc_type || "other").replace(/_/g, " ");
+      const href = `/api/documents/${encodeURIComponent(d.document_id)}/download`;
+      return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border, #e5e7eb);">
+        <span style="font-size: 13px;"><strong style="text-transform: capitalize;">${label}</strong> &middot; linked ${when}</span>
+        <a href="${href}" target="_blank" rel="noopener" class="dop-btn" style="padding: 4px 12px; font-size: 12px; text-decoration: none;">Download</a>
+      </div>`;
+    })
+    .join("");
+}
+
+// Single combined upload-and-link call — the developer endpoint takes the
+// file + doc_type as multipart and does the asset_documents insert plus the
+// villa_period_documents link server-side.
+async function uploadDocument() {
+  const errEl = document.getElementById("dop-docs-error");
+  errEl.textContent = "";
+  if (!logId) {
+    errEl.textContent = "Save the period as a draft first.";
+    return;
+  }
+  const fileInput = document.getElementById("dop-doc-file");
+  const file = fileInput.files[0];
+  if (!file) {
+    errEl.textContent = "Choose a file to upload.";
+    return;
+  }
+  const docType = document.getElementById("dop-doc-type").value;
+  const btn = document.getElementById("btn-upload-doc");
+  btn.disabled = true;
+  btn.textContent = "Uploading…";
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("doc_type", docType);
+    const resp = await fetch(
+      `/api/developer/villas/${encodeURIComponent(assetId)}/operations/${logId}/documents`,
+      { method: "POST", headers: csrfHeaders(), body: fd }
+    );
+    if (!resp.ok) throw new Error(await responseError(resp));
+    fileInput.value = "";
+    await loadDocuments();
+  } catch (err) {
+    errEl.textContent = `Upload failed: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Upload & link";
+  }
+}
 
 function csrfHeaders(headers = {}) {
   const value = `; ${document.cookie}`;

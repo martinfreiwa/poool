@@ -16,7 +16,7 @@
     .dop-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #6b7280); }
     .dop-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
     .dop-field label { font-size: 13px; color: var(--text, #111); }
-    .dop-field input { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; }
+    .dop-field input, .dop-field select { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; }
     .dop-field input[readonly] { background: var(--readonly-bg, #f3f4f6); color: var(--text-muted, #6b7280); }
     .dop-preview { background: var(--accent-bg, #eff6ff); border-color: var(--accent, #2563eb); }
     .dop-preview .dop-field input { background: transparent; border: none; font-weight: 600; }
@@ -85,6 +85,31 @@
       </div>
       <div class="dop-error" id="dop-error"></div>
     </form>
+
+    <section class="dop-section" id="dop-docs-section" style="display: none; margin-top: 24px;">
+      <h2>Period documents — receipts, invoices, statements</h2>
+      <div id="dop-docs-list" style="margin-bottom: 16px;"></div>
+      <div class="dop-grid" style="margin-bottom: 0;">
+        <div class="dop-field">
+          <label for="dop-doc-type">Document type</label>
+          <select id="dop-doc-type">
+            <option value="receipt">Receipt</option>
+            <option value="invoice">Invoice</option>
+            <option value="bank_statement">Bank statement</option>
+            <option value="payout_statement">Payout statement</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="dop-field">
+          <label for="dop-doc-file">File (PDF or image, max 20 MB)</label>
+          <input type="file" id="dop-doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+        </div>
+      </div>
+      <div class="dop-actions">
+        <button type="button" class="dop-btn primary" id="btn-upload-doc">Upload &amp; link</button>
+      </div>
+      <div class="dop-error" id="dop-docs-error"></div>
+    </section>
   </main>
   <script src="/static/js/developer-operations-submit.js" defer></script>
 </body>
