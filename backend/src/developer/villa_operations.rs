@@ -14,10 +14,14 @@ use crate::admin::extractors::ApiError;
 use crate::admin::villa_operations::{compute_totals, VillaOperationsInput, VillaOperationsRow};
 use crate::auth::routes::AppState;
 use crate::developer::extractors::DeveloperUser;
-use axum::extract::{Path, Query, State};
+use axum::extract::{Multipart, Path, Query, State};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Period documents (receipts / invoices / statements) cap at 20 MB,
+/// matching the admin asset-document limit.
+const MAX_PERIOD_DOC_BYTES: usize = 20 * 1024 * 1024;
 
 #[derive(Debug, Deserialize)]
 pub struct OperationsQuery {
@@ -392,4 +396,214 @@ async fn load_asset_config(
     .map_err(ApiError::Database)?
     .ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
     Ok((row.0.unwrap_or(500), row.1.unwrap_or(0), row.2.unwrap_or(0)))
+}
+
+// ─── Period documents (PDF §2 items 16-17 — developer submission path) ───
+//
+// The admin path is 2-step: upload to a generic asset_documents endpoint,
+// then link. There is no developer-accessible generic upload (the existing
+// `/api/developer/draft/:id/documents` authorises via `assets.developer_user_id`,
+// not the Villa-Returns `developer_asset_links` model), so the developer path
+// is a single combined upload-and-link endpoint guarded by `require_asset_link`.
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct PeriodDocumentRow {
+    pub id: i64,
+    pub asset_id: Uuid,
+    pub period_year: i32,
+    pub period_month: i32,
+    pub log_id: Option<i64>,
+    pub document_id: Uuid,
+    pub doc_type: String,
+    pub uploaded_by: Option<Uuid>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// POST /api/developer/villas/:asset_id/operations/:log_id/documents
+/// Upload a receipt / invoice / statement and link it to the period in one step.
+/// multipart/form-data: `file` + `doc_type`.
+pub async fn api_developer_villa_operations_upload_document(
+    dev: DeveloperUser,
+    State(state): State<AppState>,
+    Path((asset_id, log_id)): Path<(Uuid, i64)>,
+    mut multipart: Multipart,
+) -> Result<Json<PeriodDocumentRow>, ApiError> {
+    dev.require_asset_link(&state.db, asset_id).await?;
+
+    // Confirm the log row belongs to this asset and grab its period.
+    let row: (Uuid, i32, i32) = sqlx::query_as(
+        "SELECT asset_id, period_year, period_month FROM villa_operations_log WHERE id = $1",
+    )
+    .bind(log_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))?;
+    if row.0 != asset_id {
+        return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
+    }
+    let (period_year, period_month) = (row.1, row.2);
+
+    // Read multipart fields: `file` + `doc_type`.
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut mime_type = String::from("application/octet-stream");
+    let mut doc_type = String::new();
+    let mut file_name = String::from("document");
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| ApiError::BadRequest("Failed to read multipart data".to_string()))?
+    {
+        match field.name().unwrap_or("") {
+            "doc_type" => {
+                doc_type = field
+                    .text()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid doc_type".to_string()))?;
+            }
+            "file" => {
+                if let Some(ct) = field.content_type() {
+                    mime_type = ct.to_string();
+                }
+                file_name = field.file_name().unwrap_or("document").to_string();
+                let bytes = field
+                    .bytes()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Failed to read uploaded file".to_string()))?
+                    .to_vec();
+                if bytes.len() > MAX_PERIOD_DOC_BYTES {
+                    return Err(ApiError::BadRequest("File must be <= 20 MB".to_string()));
+                }
+                file_bytes = Some(bytes);
+            }
+            _ => {}
+        }
+    }
+
+    let doc_type = doc_type.trim().to_string();
+    if doc_type.is_empty() {
+        return Err(ApiError::BadRequest("doc_type required".to_string()));
+    }
+    let file_bytes =
+        file_bytes.ok_or_else(|| ApiError::BadRequest("file field required".to_string()))?;
+    crate::storage::service::validate_asset_doc_mime(&mime_type)
+        .map_err(|_| ApiError::BadRequest("Unsupported file type".to_string()))?;
+
+    // Upload to GCS (private bucket); fall back to local storage on failure.
+    let file_id = Uuid::new_v4();
+    let object_path = format!(
+        "properties/{}/documents/{}.{}",
+        asset_id,
+        file_id,
+        crate::storage::service::extension_for_doc_mime(&mime_type)
+    );
+    let file_url = upload_period_document(&state, &object_path, &file_bytes, &mime_type).await?;
+
+    // asset_documents row + villa_period_documents link, in one transaction.
+    // document_type is the generic 'financial' — the only operational type the
+    // asset_documents CHECK constraint permits; the real subtype lives in
+    // villa_period_documents.doc_type.
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    let title = format!("{doc_type} {period_year}-{period_month:02} — {file_name}");
+    let document_id: Uuid = sqlx::query_scalar(
+        r#"INSERT INTO asset_documents
+               (asset_id, document_type, title, file_url, file_size_bytes, is_investor_visible)
+           VALUES ($1, 'financial', $2, $3, $4, FALSE)
+           RETURNING id"#,
+    )
+    .bind(asset_id)
+    .bind(&title)
+    .bind(&file_url)
+    .bind(file_bytes.len() as i64)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    let linked: PeriodDocumentRow = sqlx::query_as(
+        r#"INSERT INTO villa_period_documents
+               (asset_id, period_year, period_month, log_id, document_id, doc_type, uploaded_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING id, asset_id, period_year, period_month, log_id, document_id, doc_type, uploaded_by, created_at"#,
+    )
+    .bind(asset_id)
+    .bind(period_year)
+    .bind(period_month)
+    .bind(log_id)
+    .bind(document_id)
+    .bind(&doc_type)
+    .bind(dev.user.id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db)
+            if db.constraint()
+                == Some("villa_period_documents_period_year_period_month_document_id_key") =>
+        {
+            ApiError::Conflict("This document is already linked to this period".to_string())
+        }
+        _ => ApiError::Database(e),
+    })?;
+
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'villa_ops.link_document', 'villa_period_documents', NULL, $2)"#,
+    )
+    .bind(dev.user.id)
+    .bind(serde_json::to_value(&linked).unwrap_or(serde_json::Value::Null))
+    .execute(&mut *tx)
+    .await;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+    Ok(Json(linked))
+}
+
+async fn upload_period_document(
+    state: &AppState,
+    object_path: &str,
+    file_bytes: &[u8],
+    mime_type: &str,
+) -> Result<String, ApiError> {
+    if let Some(bucket) = &state.config.gcs_bucket {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            crate::storage::service::upload_private(
+                bucket,
+                object_path,
+                file_bytes.to_vec(),
+                mime_type,
+            ),
+        )
+        .await
+        {
+            Ok(Ok(url)) => return Ok(url),
+            Ok(Err(e)) => {
+                tracing::warn!("Period doc GCS upload failed: {e}; falling back to local")
+            }
+            Err(_) => tracing::warn!("Period doc GCS upload timed out; falling back to local"),
+        }
+    }
+    crate::storage::service::upload_local(object_path, file_bytes.to_vec())
+        .await
+        .map_err(|e| ApiError::Internal(format!("Document upload failed: {e}")))
+}
+
+/// GET /api/developer/villas/:asset_id/operations/:log_id/documents — list linked docs.
+pub async fn api_developer_villa_operations_documents_list(
+    dev: DeveloperUser,
+    State(state): State<AppState>,
+    Path((asset_id, log_id)): Path<(Uuid, i64)>,
+) -> Result<Json<Vec<PeriodDocumentRow>>, ApiError> {
+    dev.require_asset_link(&state.db, asset_id).await?;
+    let rows: Vec<PeriodDocumentRow> = sqlx::query_as(
+        r#"SELECT id, asset_id, period_year, period_month, log_id, document_id, doc_type, uploaded_by, created_at
+           FROM villa_period_documents
+           WHERE asset_id = $1 AND log_id = $2
+           ORDER BY created_at DESC, id DESC"#,
+    )
+    .bind(asset_id)
+    .bind(log_id)
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+    Ok(Json(rows))
 }

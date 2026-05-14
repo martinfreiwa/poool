@@ -116,6 +116,11 @@ pub fn router() -> Router<AppState> {
             put(villa_operations::api_developer_villa_operations_submit),
         )
         .route(
+            "/api/developer/villas/:asset_id/operations/:log_id/documents",
+            post(villa_operations::api_developer_villa_operations_upload_document)
+                .get(villa_operations::api_developer_villa_operations_documents_list),
+        )
+        .route(
             "/api/developer/villas/:asset_id/asset-config",
             get(villa_operations::api_developer_asset_config),
         )
