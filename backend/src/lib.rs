@@ -365,6 +365,39 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    // Villa-Returns B2 — nightly IDR→USD FX rate populator. Gated by
+    // VILLA_FX_POPULATOR_ENABLED (default off in prod). Interval overridable
+    // via VILLA_FX_POPULATOR_INTERVAL_SECS for dev smoke tests; defaults to 24h.
+    if std::env::var("VILLA_FX_POPULATOR_ENABLED")
+        .ok()
+        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+        .unwrap_or(false)
+    {
+        let secs: u64 = std::env::var("VILLA_FX_POPULATOR_INTERVAL_SECS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(86_400);
+        let fx_pool = pool.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(secs));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            // Skip the initial immediate tick so the job aligns with the cycle.
+            interval.tick().await;
+            tracing::info!("Villa FX populator armed; interval = {}s", secs);
+            loop {
+                interval.tick().await;
+                match admin::villa_fx_populator::run_fx_populator(&fx_pool).await {
+                    Ok(()) => {}
+                    Err(e) => tracing::warn!("Villa FX populator run failed: {}", e),
+                }
+            }
+        });
+    } else {
+        tracing::info!(
+            "Villa FX populator disabled (set VILLA_FX_POPULATOR_ENABLED=true to enable)"
+        );
+    }
+
     if let Some(c_pool) = &state.community_db {
         tokio::spawn(community::background::monitor_asset_velocity(
             c_pool.clone(),

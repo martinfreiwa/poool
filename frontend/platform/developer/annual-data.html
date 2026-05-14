@@ -39,6 +39,7 @@
 <body>
   <main class="dad-shell">
     <div class="dad-header">
+      <a id="dad-back" href="/developer/operations" style="display:inline-block;margin-bottom:12px;font-size:13px;color:var(--text-muted, #6b7280);text-decoration:none;">&larr; Asset detail</a>
       <h1>Annual data</h1>
       <div id="dad-breadcrumb" style="font-size: 13px; color: var(--text-muted, #6b7280); margin-top: 4px;">Loading…</div>
     </div>
@@ -126,8 +127,25 @@
 
       <section class="dad-card">
         <h2>Annual tax statement</h2>
-        <p class="dad-info">Upload the year's tax statement via the documents flow on this villa's detail page. The link is required for admin year-end review (PDF §3 line "Annual tax statement").</p>
-        <p class="dad-info"><em>Document upload UI integration deferred — for this slice, upload via the existing asset_documents flow and reference the document UUID in CapEx evidence above.</em></p>
+        <p class="dad-info">Upload the year's tax statement or annual report. Required for admin year-end review (PDF §3 line "Annual tax statement").</p>
+        <form id="dad-doc-form">
+          <div class="dad-field">
+            <label>Document type</label>
+            <select name="doc_type">
+              <option value="tax_statement">Tax statement</option>
+              <option value="annual_report">Annual report</option>
+              <option value="audit">Audit</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="dad-field">
+            <label>File (PDF or image, max 20 MB)</label>
+            <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+          </div>
+          <button type="button" class="dad-btn primary" id="btn-doc-upload">Upload &amp; link</button>
+          <div class="dad-error" id="doc-error"></div>
+        </form>
+        <div class="dad-list" id="dad-doc-list"></div>
       </section>
     </div>
   </main>

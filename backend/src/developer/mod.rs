@@ -121,6 +121,11 @@ pub fn router() -> Router<AppState> {
                 .get(villa_operations::api_developer_villa_operations_documents_list),
         )
         .route(
+            "/api/developer/villas/:asset_id/annual/:year/documents",
+            post(villa_operations::api_developer_villa_annual_documents_upload)
+                .get(villa_operations::api_developer_villa_annual_documents_list),
+        )
+        .route(
             "/api/developer/villas/:asset_id/asset-config",
             get(villa_operations::api_developer_asset_config),
         )

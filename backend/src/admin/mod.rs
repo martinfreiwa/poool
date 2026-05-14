@@ -72,6 +72,9 @@ pub mod villa_developer_access;
 /// Villa-Returns C3-admin — accept/discard developer forecast suggestions.
 #[allow(missing_docs)]
 pub mod villa_forecast;
+/// Villa-Returns B2 — nightly IDR→USD FX rate populator.
+#[allow(missing_docs)]
+pub mod villa_fx_populator;
 /// Villa-Returns P4 — daily NAV + market-price snapshot job.
 #[allow(missing_docs)]
 pub mod villa_nav_snapshot;

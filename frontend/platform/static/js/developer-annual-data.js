@@ -2,12 +2,15 @@
  * Developer Annual Data — Villa-Returns C3.
  * URL: /developer/villas/:asset_id/annual/:year
  *
- * Three sections:
+ * Four sections:
  *   1. Annual rollup (read-only) — GET /api/developer/villas/:id/annual/:year/summary
  *   2. CapEx submit + list — POST/GET /api/developer/villas/:id/capex
  *   3. Forecast suggestion submit + list —
  *      POST /api/developer/villas/:id/forecast/:year/suggest
  *      GET  /api/developer/villas/:id/forecast/:year/suggestions
+ *   4. Annual documents (tax statement / report) upload + list —
+ *      POST /api/developer/villas/:id/annual/:year/documents  (multipart file + doc_type)
+ *      GET  /api/developer/villas/:id/annual/:year/documents
  */
 
 (function () {
@@ -27,15 +30,18 @@
     year = parseInt(parts[4], 10);
     document.getElementById("dad-breadcrumb").textContent =
       `Asset ${assetId.slice(0, 8)}… · Year ${year}`;
+    const back = document.getElementById("dad-back");
+    if (back) back.href = `/developer/asset-detail?id=${encodeURIComponent(assetId)}`;
   }
 
   function wireHandlers() {
     document.getElementById("btn-capex-submit").addEventListener("click", submitCapex);
     document.getElementById("btn-forecast-submit").addEventListener("click", submitForecast);
+    document.getElementById("btn-doc-upload").addEventListener("click", uploadDoc);
   }
 
   async function hydrate() {
-    await Promise.all([loadSummary(), loadCapex(), loadForecasts()]);
+    await Promise.all([loadSummary(), loadCapex(), loadForecasts(), loadDocs()]);
   }
 
   // ─── Annual rollup ───────────────────────────────────────────
@@ -176,6 +182,73 @@
       await loadForecasts();
     } catch (e) {
       err.textContent = e.message;
+    }
+  }
+
+  // ─── Annual documents (tax statement / report) ───────────────
+
+  async function loadDocs() {
+    const list = document.getElementById("dad-doc-list");
+    try {
+      const r = await fetch(
+        `/api/developer/villas/${encodeURIComponent(assetId)}/annual/${year}/documents`
+      );
+      if (!r.ok) throw new Error(await responseError(r));
+      const rows = await r.json();
+      if (!rows.length) {
+        list.innerHTML = `<div class="dad-info" style="padding: 12px 0;">No documents uploaded for ${year} yet.</div>`;
+        return;
+      }
+      list.innerHTML = "";
+      for (const d of rows) {
+        const el = document.createElement("div");
+        el.className = "dad-list-item";
+        const label = String(d.doc_type || "other").replace(/_/g, " ");
+        const href = `/api/documents/${encodeURIComponent(d.document_id)}/download`;
+        el.innerHTML = `
+          <div>${escapeHtml(formatDate(d.created_at))}</div>
+          <div style="text-transform: capitalize;">${escapeHtml(label)}</div>
+          <div><a href="${escapeAttr(href)}" target="_blank" rel="noopener">Download</a></div>
+          <div></div>
+        `;
+        list.appendChild(el);
+      }
+    } catch (err) {
+      list.innerHTML = `<div class="dad-error">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // Single combined upload-and-link call — the server uploads to GCS,
+  // inserts asset_documents under the generic 'financial' type, and links
+  // into villa_annual_documents with the chosen subtype.
+  async function uploadDoc() {
+    const f = document.getElementById("dad-doc-form").elements;
+    const err = document.getElementById("doc-error");
+    err.textContent = "";
+    const file = f["file"].files[0];
+    if (!file) {
+      err.textContent = "Choose a file to upload.";
+      return;
+    }
+    const btn = document.getElementById("btn-doc-upload");
+    btn.disabled = true;
+    btn.textContent = "Uploading…";
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("doc_type", f["doc_type"].value);
+      const r = await fetch(
+        `/api/developer/villas/${encodeURIComponent(assetId)}/annual/${year}/documents`,
+        { method: "POST", headers: csrfHeaders(), body: fd }
+      );
+      if (!r.ok) throw new Error(await responseError(r));
+      f["file"].value = "";
+      await loadDocs();
+    } catch (e) {
+      err.textContent = `Upload failed: ${e.message}`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Upload & link";
     }
   }
 
