@@ -37,6 +37,7 @@
     document.getElementById("grant-dev-confirm")?.addEventListener("click", confirmGrant);
     document.getElementById("btn-enter-month")?.addEventListener("click", openLatestMonthEntry);
     document.getElementById("btn-new-valuation")?.addEventListener("click", openNewValuation);
+    document.getElementById("btn-save-villa-config")?.addEventListener("click", saveVillaConfig);
   });
 
   async function hydrate() {
@@ -46,6 +47,7 @@
       loadValuations(),
       loadPendingCapex(),
       loadPendingForecasts(),
+      loadVillaConfig(),
     ]);
   }
 
@@ -550,6 +552,98 @@
     const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
     const m = now.getMonth() === 0 ? 12 : now.getMonth();
     window.location.href = `/admin/villas/${encodeURIComponent(assetId)}/operations/${y}/${m}`;
+  }
+
+  // ─── Villa-Returns configuration (PDF §4 master data) ───────
+
+  async function loadVillaConfig() {
+    const errEl = document.getElementById("villa-config-error");
+    if (!errEl) return; // card not on page
+    try {
+      const resp = await fetch(`/api/admin/villas/${encodeURIComponent(assetId)}/config-summary`);
+      if (!resp.ok) throw new Error(await responseError(resp));
+      fillVillaConfig(await resp.json());
+      errEl.textContent = "";
+    } catch (err) {
+      errEl.textContent = `Failed to load configuration: ${err.message}`;
+    }
+  }
+
+  function fillVillaConfig(cfg) {
+    const setVal = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.value = v == null ? "" : v;
+    };
+    const setText = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v == null ? "—" : v;
+    };
+    const setChecked = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.checked = !!v;
+    };
+    setVal("vcfg-tokenized_pct_bps", cfg.tokenized_pct_bps);
+    setVal("vcfg-tokens_owner_retained", cfg.tokens_owner_retained);
+    setVal("vcfg-tokens_payout_eligible", cfg.tokens_payout_eligible);
+    setVal("vcfg-payout_frequency", cfg.payout_frequency);
+    setVal("vcfg-payout_currency", cfg.payout_currency);
+    setVal("vcfg-distribution_record_day", cfg.distribution_record_day);
+    setVal("vcfg-mgmt_fee_bps", cfg.mgmt_fee_bps);
+    setVal("vcfg-reserve_pct_bps", cfg.reserve_pct_bps);
+    setVal("vcfg-withholding_tax_bps", cfg.withholding_tax_bps);
+    setChecked("vcfg-allow_developer_submission", cfg.allow_developer_submission);
+    setChecked("vcfg-villa_returns_pilot", cfg.villa_returns_pilot);
+    setText("vcfg-tokens_total", cfg.tokens_total);
+    setText("vcfg-native_currency_code", cfg.native_currency_code);
+    setText("vcfg-poool_split_pct", cfg.poool_split_pct);
+  }
+
+  // PUT /config COALESCEs every column, so sending the full current
+  // snapshot is a safe partial update — unchanged fields write their
+  // own value back. Empty numeric inputs send null (keep existing).
+  async function saveVillaConfig() {
+    const errEl = document.getElementById("villa-config-error");
+    const okEl = document.getElementById("villa-config-status");
+    errEl.textContent = "";
+    okEl.textContent = "";
+    const numOrNull = (id) => {
+      const raw = (document.getElementById(id).value || "").trim();
+      return raw === "" ? null : parseInt(raw, 10);
+    };
+    const payload = {
+      tokenized_pct_bps: numOrNull("vcfg-tokenized_pct_bps"),
+      tokens_owner_retained: numOrNull("vcfg-tokens_owner_retained"),
+      tokens_payout_eligible: numOrNull("vcfg-tokens_payout_eligible"),
+      reserve_pct_bps: numOrNull("vcfg-reserve_pct_bps"),
+      mgmt_fee_bps: numOrNull("vcfg-mgmt_fee_bps"),
+      withholding_tax_bps: numOrNull("vcfg-withholding_tax_bps"),
+      payout_frequency: document.getElementById("vcfg-payout_frequency").value || null,
+      payout_currency:
+        document.getElementById("vcfg-payout_currency").value.trim().toUpperCase() || null,
+      distribution_record_day: numOrNull("vcfg-distribution_record_day"),
+      allow_developer_submission: document.getElementById("vcfg-allow_developer_submission")
+        .checked,
+      villa_returns_pilot: document.getElementById("vcfg-villa_returns_pilot").checked,
+    };
+    const btn = document.getElementById("btn-save-villa-config");
+    btn.disabled = true;
+    try {
+      const resp = await fetch(`/api/admin/villas/${encodeURIComponent(assetId)}/config`, {
+        method: "PUT",
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) throw new Error(await responseError(resp));
+      fillVillaConfig(await resp.json());
+      okEl.textContent = "Configuration saved.";
+      setTimeout(() => {
+        okEl.textContent = "";
+      }, 4000);
+    } catch (err) {
+      errEl.textContent = `Save failed: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   // ─── Helpers (inlined to match codebase convention) ──────────

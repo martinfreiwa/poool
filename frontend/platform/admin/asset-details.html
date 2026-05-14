@@ -919,6 +919,66 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Villa-Returns P2.4c: Configuration (PDF §4 master data) -->
+            <div class="admin-card" style="padding: 24px; margin-top: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Villa-Returns configuration</h3>
+                <button class="admin-btn admin-btn--primary" id="btn-save-villa-config" type="button">Save configuration</button>
+              </div>
+              <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 20px;">
+                PDF §4 master data — tokenization, payout rules, fees &amp; reserve. Ranges enforced server-side
+                (bps fields 0–10000, record day 1–28).
+              </p>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;">
+                <div>
+                  <h4 style="font-size: 12px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280);">Tokenization</h4>
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Tokenized share (bps)</label>
+                  <input id="vcfg-tokenized_pct_bps" type="number" min="0" max="10000" step="1" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;" />
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Owner-retained tokens</label>
+                  <input id="vcfg-tokens_owner_retained" type="number" min="0" step="1" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;" />
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Payout-eligible tokens</label>
+                  <input id="vcfg-tokens_payout_eligible" type="number" min="0" step="1" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;" />
+                  <div style="font-size: 12px; color: var(--admin-text-muted, #6b7280); margin-top: 10px;">Total tokens (read-only): <strong id="vcfg-tokens_total" style="color: var(--admin-text-primary);">—</strong></div>
+                </div>
+                <div>
+                  <h4 style="font-size: 12px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280);">Payout</h4>
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Frequency</label>
+                  <select id="vcfg-payout_frequency" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;">
+                    <option value="monthly">monthly</option>
+                    <option value="quarterly">quarterly</option>
+                    <option value="annual">annual</option>
+                  </select>
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Payout currency (3-char ISO)</label>
+                  <input id="vcfg-payout_currency" type="text" maxlength="3" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit; text-transform: uppercase;" />
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Distribution record day (1–28)</label>
+                  <input id="vcfg-distribution_record_day" type="number" min="1" max="28" step="1" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;" />
+                  <div style="font-size: 12px; color: var(--admin-text-muted, #6b7280); margin-top: 10px;">Native currency (read-only): <strong id="vcfg-native_currency_code" style="color: var(--admin-text-primary);">—</strong></div>
+                </div>
+                <div>
+                  <h4 style="font-size: 12px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--admin-text-muted, #6b7280);">Fees &amp; reserves</h4>
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Management fee (bps)</label>
+                  <input id="vcfg-mgmt_fee_bps" type="number" min="0" max="10000" step="1" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;" />
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Reserve share (bps)</label>
+                  <input id="vcfg-reserve_pct_bps" type="number" min="0" max="10000" step="1" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;" />
+                  <label style="display: block; font-size: 12px; color: var(--admin-text-muted, #6b7280); margin: 10px 0 4px;">Withholding tax (bps)</label>
+                  <input id="vcfg-withholding_tax_bps" type="number" min="0" max="10000" step="1" style="width: 100%; padding: 7px 9px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit;" />
+                  <div style="font-size: 12px; color: var(--admin-text-muted, #6b7280); margin-top: 10px;">POOOL split % (read-only): <strong id="vcfg-poool_split_pct" style="color: var(--admin-text-primary);">—</strong></div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 28px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--admin-border, #e5e7eb);">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                  <input type="checkbox" id="vcfg-allow_developer_submission" />
+                  Allow developer submission
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                  <input type="checkbox" id="vcfg-villa_returns_pilot" />
+                  Villa-Returns pilot — exposes the new investor read path for this asset
+                </label>
+              </div>
+              <div id="villa-config-error" style="color: var(--admin-danger, #dc2626); font-size: 13px; margin-top: 12px;"></div>
+              <div id="villa-config-status" style="color: var(--admin-success, #059669); font-size: 13px; margin-top: 12px;"></div>
+            </div>
           </div>
 
         </div>
