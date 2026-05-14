@@ -8,6 +8,9 @@
  *   PUT    /api/admin/villas/:asset_id/operations/:log_id
  *   PUT    /api/admin/villas/:asset_id/operations/:log_id/{submit,approve,publish,reject}
  *   GET    /api/admin/villas/:asset_id/operations?year=&month=
+ *   POST   /api/admin/assets/:asset_id/documents              (upload file)
+ *   POST   /api/admin/villas/:asset_id/operations/:log_id/documents  (link to period)
+ *   GET    /api/admin/villas/:asset_id/operations/:log_id/documents  (list linked)
  */
 
 let assetId = null;
@@ -52,6 +55,7 @@ function setupHandlers() {
   document.getElementById("btn-approve").addEventListener("click", approve);
   document.getElementById("btn-publish").addEventListener("click", publish);
   document.getElementById("btn-reject").addEventListener("click", reject);
+  document.getElementById("btn-upload-doc").addEventListener("click", uploadDocument);
 }
 
 async function hydrate() {
@@ -72,6 +76,7 @@ async function hydrate() {
       reflectStatus(currentRow.status);
     }
     recompute();
+    reflectDocsSection();
   } catch (err) {
     showError(`Failed to load: ${err.message}`);
   }
@@ -195,6 +200,7 @@ async function saveDraft() {
     currentRow = await resp.json();
     logId = currentRow.id;
     reflectStatus(currentRow.status);
+    reflectDocsSection();
   } catch (err) {
     showError(`Save failed: ${err.message}`);
   }
@@ -244,6 +250,112 @@ async function reject() {
 
 function showError(msg) {
   document.getElementById("vop-error").textContent = msg;
+}
+
+/* ── Period documents (receipts / invoices / statements) ─────────────── */
+
+// Show the documents panel only once a log row exists (it needs a log_id
+// to link against). Reloads the linked-docs list each time it becomes
+// visible.
+function reflectDocsSection() {
+  const section = document.getElementById("vop-docs-section");
+  if (logId) {
+    section.style.display = "block";
+    loadDocuments();
+  } else {
+    section.style.display = "none";
+  }
+}
+
+async function loadDocuments() {
+  const errEl = document.getElementById("vop-docs-error");
+  try {
+    const resp = await fetch(
+      `/api/admin/villas/${encodeURIComponent(assetId)}/operations/${logId}/documents`
+    );
+    if (!resp.ok) throw new Error(await responseError(resp));
+    renderDocuments(await resp.json());
+    errEl.textContent = "";
+  } catch (err) {
+    errEl.textContent = `Failed to load documents: ${err.message}`;
+  }
+}
+
+function renderDocuments(docs) {
+  const list = document.getElementById("vop-docs-list");
+  if (!Array.isArray(docs) || docs.length === 0) {
+    list.innerHTML =
+      '<p style="font-size: 13px; color: var(--text-muted, #6b7280); margin: 0;">No documents linked to this period yet.</p>';
+    return;
+  }
+  list.innerHTML = docs
+    .map((d) => {
+      const when = new Date(d.created_at).toLocaleDateString();
+      const label = String(d.doc_type || "other").replace(/_/g, " ");
+      const href = `/api/documents/${encodeURIComponent(d.document_id)}/download`;
+      return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border, #e5e7eb);">
+        <span style="font-size: 13px;"><strong style="text-transform: capitalize;">${label}</strong> &middot; linked ${when}</span>
+        <a href="${href}" target="_blank" rel="noopener" class="vop-btn" style="padding: 4px 12px; font-size: 12px; text-decoration: none;">Download</a>
+      </div>`;
+    })
+    .join("");
+}
+
+// Two-step: upload the file into asset_documents under the generic
+// 'financial' type (the only operational type the CHECK constraint
+// allows), then link the returned document_id to this monthly period
+// with the real operational subtype in villa_period_documents.doc_type.
+async function uploadDocument() {
+  const errEl = document.getElementById("vop-docs-error");
+  errEl.textContent = "";
+  if (!logId) {
+    errEl.textContent = "Save the period as a draft first.";
+    return;
+  }
+  const fileInput = document.getElementById("vop-doc-file");
+  const file = fileInput.files[0];
+  if (!file) {
+    errEl.textContent = "Choose a file to upload.";
+    return;
+  }
+  const docType = document.getElementById("vop-doc-type").value;
+  const btn = document.getElementById("btn-upload-doc");
+  btn.disabled = true;
+  btn.textContent = "Uploading…";
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("document_type", "financial");
+    fd.append(
+      "title",
+      `${docType} ${year}-${String(month).padStart(2, "0")} — ${file.name}`
+    );
+    const upResp = await fetch(
+      `/api/admin/assets/${encodeURIComponent(assetId)}/documents`,
+      { method: "POST", headers: csrfHeaders(), body: fd }
+    );
+    if (!upResp.ok) throw new Error(await responseError(upResp));
+    const uploaded = await upResp.json();
+    const documentId = uploaded.document_id || uploaded.id;
+    if (!documentId) throw new Error("upload did not return a document id");
+
+    const linkResp = await fetch(
+      `/api/admin/villas/${encodeURIComponent(assetId)}/operations/${logId}/documents`,
+      {
+        method: "POST",
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ document_id: documentId, doc_type: docType }),
+      }
+    );
+    if (!linkResp.ok) throw new Error(await responseError(linkResp));
+    fileInput.value = "";
+    await loadDocuments();
+  } catch (err) {
+    errEl.textContent = `Upload failed: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Upload & link";
+  }
 }
 
 function csrfHeaders(headers = {}) {

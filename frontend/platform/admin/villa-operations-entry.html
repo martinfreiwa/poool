@@ -21,7 +21,7 @@
     .vop-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #6b7280); }
     .vop-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
     .vop-field label { font-size: 13px; color: var(--text, #111); }
-    .vop-field input { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; }
+    .vop-field input, .vop-field select { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; }
     .vop-field input[readonly] { background: var(--readonly-bg, #f3f4f6); color: var(--text-muted, #6b7280); }
     .vop-preview { background: var(--accent-bg, #eff6ff); border-color: var(--accent, #2563eb); }
     .vop-preview .vop-field input { background: transparent; border: none; font-weight: 600; }
@@ -109,6 +109,31 @@
       </div>
       <div class="vop-error" id="vop-error"></div>
     </form>
+
+    <section class="vop-section" id="vop-docs-section" style="display: none; margin-top: 24px;">
+      <h2>Period documents — receipts, invoices, statements</h2>
+      <div id="vop-docs-list" style="margin-bottom: 16px;"></div>
+      <div class="vop-grid" style="margin-bottom: 0;">
+        <div class="vop-field">
+          <label for="vop-doc-type">Document type</label>
+          <select id="vop-doc-type">
+            <option value="receipt">Receipt</option>
+            <option value="invoice">Invoice</option>
+            <option value="bank_statement">Bank statement</option>
+            <option value="payout_statement">Payout statement</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="vop-field">
+          <label for="vop-doc-file">File (PDF or image, max 20 MB)</label>
+          <input type="file" id="vop-doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+        </div>
+      </div>
+      <div class="vop-actions" style="margin-top: 4px;">
+        <button type="button" class="vop-btn primary" id="btn-upload-doc">Upload &amp; link</button>
+      </div>
+      <div class="vop-error" id="vop-docs-error"></div>
+    </section>
   </main>
   <script src="/static/js/admin-villa-operations-entry.js" defer></script>
 </body>
