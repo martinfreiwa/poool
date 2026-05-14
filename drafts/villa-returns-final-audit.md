@@ -9,6 +9,15 @@
 
 **Legend:** ✅ shipped + verified · ⚠️ partial / placeholder · ❌ not shipped
 
+> **Revision 2 (2026-05-13)** — refreshed after Tracks A/B/C + production deploy
+> `1dbbae5`. The first revision predated those tracks and understated shipped
+> state (tokio NAV cron, FX seed, shadow-write, backfill binary, feature-flag
+> seed, my-trading NAV columns, share-price delta cards were all marked ❌/⚠️
+> but are in fact ✅). Sections 5, 6, 12, 14, the scorecard, and the open-items
+> list below are corrected. **All Villa-Returns code is now live in production**
+> behind `platform_settings.villa_returns.enabled='off'` (migration 148 safe
+> default) — nothing is investor-visible until the operator runs Phase 3 C2.
+
 ---
 
 ## 1. PDF §2 — Monthly inputs from management company
@@ -96,12 +105,12 @@ Every monetary value lands in `villa_operations_log` (IDR-native per Q1, USD fro
 | 4 | Reserve amount | `reserve_applied_idr_cents` with optional `reserve_override_idr_cents` | ✅ |
 | 5 | Payout per token | Computed in distribute endpoint: `distributable × tokens_owned / denominator` | ✅ |
 | 6 | Net return per investor | Per-investor payout in `dividend_payouts` + portfolio aggregate API | ✅ |
-| 7 | Monthly yield | Performance API (`annual_yield_bps` / 12 derived) | ⚠️ ad-hoc (no dedicated monthly-yield KPI exposed) |
+| 7 | Monthly yield | Performance API + dedicated monthly-yield card on property.html Performance tab (Track A) | ✅ |
 | 8 | Annualised yield | `annual_yield_bps` in performance API | ✅ |
 | 9 | Investor dashboard return | Performance API + portfolio summary endpoint | ✅ |
 | 10 | Investor-specific deductions | Per-asset `withholding_tax_bps` applied; per-investor jurisdiction layer deferred | ⚠️ (Q10 lock-in: jurisdiction layer flagged as future) |
 
-**Score: 8 / 10 fully wired. 2 partial.**
+**Score: 9 / 10 fully wired. 1 partial.**
 
 ---
 
@@ -113,10 +122,10 @@ Every monetary value lands in `villa_operations_log` (IDR-native per Q1, USD fro
 | 2 | Projected Annualised Net Return (%) | Same (PDF doesn't distinguish) | Same | ✅ |
 | 3 | 5-Year Total Return (%) | `five_year_total_return_bps` (compound formula) | property.html + property-public.html | ✅ |
 | 4 | Annual Yield (%) | `annual_yield_bps` | property.html + property-public.html + portfolio | ✅ |
-| 5 | Share Price Performance +3M / +6M / +12M | History endpoint serves the data | **Not rendered as a dedicated KPI** (chart shows raw NAV) | ⚠️ |
+| 5 | Share Price Performance +3M / +6M / +12M | History endpoint + 3 delta cards (Track A) | property.html Performance tab — 3 share-price-performance cards computing deltas from snapshots | ✅ |
 | 6 | Net Return per Investor | `portfolio-villa-summary` endpoint | portfolio.html lifetime card | ✅ |
 
-**Score: 5 / 6 fully wired. 1 partial (chart shows the data; explicit +3M/+6M/+12M delta KPIs not surfaced as cards).**
+**Score: 6 / 6 fully wired.**
 
 ---
 
@@ -239,7 +248,7 @@ Market price source: VWAP from `trade_history` last 24h. Currently empty for tes
 | A4 | `property.html` Performance tab | ✅ |
 | A5 | `property-public.html` minimal cards | ✅ |
 | A6 | `poool_app_home.html` dashboard cards | ⚠️ **Substituted by `portfolio.html` Villa-Returns lifetime card**. `poool_app_home.html` is the public landing page — wrong target identified in the plan. Functionally equivalent surface delivered. |
-| A7 | `my-trading.html` per-position columns | ❌ **Not extended.** Multi-asset summary delivered via `portfolio.html` instead. Per-position NAV+Market drilldown remains a separate slice. |
+| A7 | `my-trading.html` per-position columns | ✅ Extended (Track A) — positions table has NAV/token + Market/token columns wired to `/api/investors/me/positions-nav`. |
 | A8 | `transactions.html` distribution filter | ✅ |
 
 ### Group B — NEW admin pages
@@ -259,7 +268,7 @@ Market price source: VWAP from `trade_history` last 24h. Currently empty for tes
 | C2 | `developer/operations-submit.html` | ✅ |
 | C3 | `developer/annual-data.html` | ✅ |
 
-**Pages score: 12 / 15 fully wired. 2 substituted differently than plan said. 1 not extended (my-trading.html).**
+**Pages score: 13 / 15 fully wired. 2 substituted differently than plan said (A2 tokenize tabs, A6 host page).**
 
 ---
 
@@ -291,19 +300,22 @@ Market price source: VWAP from `trade_history` last 24h. Currently empty for tes
 
 | Phase / item | Status |
 |---|---|
-| P1 schema (13 migrations + 4 hot-fixes) | ✅ applied dev |
+| P1 schema (18 migrations + rollback siblings) | ✅ applied dev + **production** (130–148) |
 | Append-only trigger guards | ✅ verified via 9 psql tests |
 | `clock_timestamp()` default | ✅ (migration 144) |
-| Feature flag (`settings.villa_returns.enabled`) | ⚠️ row not seeded but framework available |
+| Feature flag (`platform_settings.villa_returns.enabled`) | ✅ seeded (migration 146) + forced safe `'off'` in prod (migration 148) |
+| Per-asset pilot gate (`assets.villa_returns_pilot`) | ✅ column + read-gate wired (Track C) |
 | P4 daily NAV snapshot job (admin trigger) | ✅ |
-| P4 daily NAV snapshot — automated cron / tokio interval | ❌ |
-| FX rate populator (real source) | ❌ schema only |
-| Shadow-write to legacy `asset_financials` | ❌ |
-| Backfill script | ❌ |
-| P5 investor-pilot cut-over | ❌ |
-| P6 read-path cut-over + deprecate legacy | ❌ |
-| P7 multi-currency expansion beyond USD/IDR | ❌ |
-| P8 `DROP TABLE asset_financials` | ❌ |
+| P4 daily NAV snapshot — automated tokio interval cron | ✅ `VILLA_NAV_SNAPSHOT_ENABLED` env gate, spawned in `lib.rs` (Track B) |
+| FX rate seed | ✅ placeholder IDR→USD seed (migration 147) |
+| FX rate populator (real nightly source) | ⚠️ still schema + seed only — no external API populator |
+| Shadow-write to legacy `asset_financials` | ✅ publish handler shadow-writes when flag ≠ `'on'` (Track C / C1) |
+| Backfill binary | ✅ `backfill-villa-operations` bin — dry-run default, `--execute` flag (Track B / B3) |
+| P5 investor-pilot cut-over — **gate** | ✅ flag + pilot bool wired |
+| P5 investor-pilot cut-over — **execution** | ⏳ operator step — see `villa-returns-cutover-step-c2.sql` |
+| C4 multi-currency wallet routing | ✅ wallet + wallet_transactions route through `assets.payout_currency` |
+| P6/P7 multi-currency FX conversion in distribute | ⚠️ hard-fails for non-USD/IDR until those `fx_rates_daily` rows populate |
+| P8 `DROP TABLE asset_financials` | ⏳ `.PENDING` migrations staged (rollback/148-149) — gated on 90-day no-read window |
 
 ---
 
@@ -314,54 +326,47 @@ Market price source: VWAP from `trade_history` last 24h. Currently empty for tes
 | PDF §2 monthly inputs | 18 | 16 | 2 | 0 | 89% |
 | PDF §3 annual inputs | 10 | 9 | 1 | 0 | 90% |
 | PDF §4 master data | 18 | 18 | 0 | 0 | 100% |
-| PDF §5 calculations | 10 | 8 | 2 | 0 | 80% |
-| PDF §6 UI KPIs | 6 | 5 | 1 | 0 | 83% |
+| PDF §5 calculations | 10 | 9 | 1 | 0 | 90% |
+| PDF §6 UI KPIs | 6 | 6 | 0 | 0 | 100% |
 | PDF §7 NAV formula | 1 | 1 | 0 | 0 | 100% |
 | PDF §8 separation | 1 | 1 | 0 | 0 | 100% |
 | PDF §9 missing items | 15 | 13 | 2 | 0 | 87% |
 | PDF §10 data blocks | 4 | 4 | 0 | 0 | 100% |
 | PDF §11 responsibility split | 14 | 13 | 1 | 0 | 93% |
 | Prompt Q1–Q11 | 11 | 10 | 1 | 0 | 91% |
-| Plan pages (A+B+C) | 15 | 12 | 2 | 1 | 80% |
+| Plan pages (A+B+C) | 15 | 13 | 2 | 0 | 87% |
 | Plan workflows W1–W15 | 15 | 14 | 1 | 0 | 93% |
-| Plan infrastructure | 13 | 6 | 1 | 6 | 46% |
-| **TOTAL** | **151** | **130** | **14** | **7** | **86%** |
+| Plan infrastructure | 16 | 12 | 2 | 2 | 75% |
+| **TOTAL** | **154** | **139** | **13** | **2** | **90%** |
 
 ---
 
 ## What is genuinely open
 
-### Active gaps to investor-facing experience (~2 items)
-1. **`my-trading.html` per-position NAV + Market columns** — multi-asset already covered by portfolio.html, but per-position drilldown not extended. Effort: M.
-2. **Share Price Performance +3M / +6M / +12M as explicit KPI cards** — data is in the history endpoint; the cards would compute deltas from snapshots. Effort: S.
+> Revised after Tracks A/B/C + deploy `1dbbae5`. The original list had 13 items;
+> 6 are now shipped (my-trading NAV columns, share-price delta cards, tokio cron,
+> backfill binary, shadow-write, monthly-yield card). 7 remain, grouped by what
+> unblocks them.
 
-### Document upload workflows (2 items)
-3. **Receipts/invoices/bank-statement upload UI for monthly periods** — `villa_period_documents` link table exists; the upload form / drag-drop UX is not yet wired on B1 or C2. Effort: M.
-4. **Annual tax statement upload** — placeholder text on C3 referring to existing asset_documents flow; no inline upload UI on C3. Effort: S.
+### Codeable now — no operator or prod dependency (3 items)
+1. **Receipts/invoices/bank-statement upload UI for monthly periods** — `villa_period_documents` link table + `link-document` endpoint exist; the upload form / drag-drop UX is not wired on B1 or C2. Effort: M.
+2. **Annual tax statement upload UI** — placeholder text on C3 refers to the existing `asset_documents` flow; no inline upload UI on C3. Effort: S.
+3. **`admin/asset-tokenize.html` villa config tabs** — plan called for tabs (Tokenization, Payout config, Fees & Reserves, Forecast). All config endpoints are live (PUT routes) but no UI on the tokenize page — admin currently configures via A1 + B2 + B3. Effort: M.
 
-### Admin tab missed (1 item)
-5. **`admin/asset-tokenize.html` 4-tab extension** — the plan called for tabs (Tokenization, Payout config, Fees & Reserves, Forecast). All config endpoints are live (admin can call them) but no UI exists on tokenize page — admin currently configures via A1 + B2 + B3 instead. Effort: M.
+### Needs a decision or a running session (2 items)
+4. **FX rate populator (real nightly source)** — `fx_rates_daily` table + placeholder seed exist; no external-API populator. Needs a provider choice (e.g. exchangerate API, OXR) before coding. Effort: S once chosen.
+5. **W5 admin override — live browser verification** — endpoint is live and exercised during P2 design; not yet smoke-tested through the admin UI. Needs a running app + admin session. Effort: S.
 
-### Operational automation (3 items)
-6. **Tokio background interval task** for daily NAV snapshot (admin trigger works) — needs a `tokio::spawn` interval scheduler in lib.rs startup. Effort: S.
-7. **FX rate populator** — `fx_rates_daily` table exists but no nightly source populator (defaults to 1 bps in dev). Needs external API choice. Effort: S.
-8. **Q7 backfill script** — never written / never run. Needed only if legacy `asset_financials` data is to be imported. Effort: S.
-
-### Long-term infra cut-over (4 items, plan phases P5–P8)
-9. **Shadow-write to legacy `asset_financials`** during transition. Effort: M.
-10. **P5 read-path cut-over for investor pilot** behind `settings.villa_returns.enabled`. Effort: M.
-11. **P6/P7 multi-currency expansion** beyond USD + IDR (USDT, EUR, etc.). Effort: L.
-12. **P8 `DROP TABLE asset_financials`** after 90-day no-read window. Effort: S (gated by P5-P6).
-
-### Polish (1 item)
-13. **W5 admin override** — endpoint live, not browser-tested live. Pure verification task. Effort: S.
+### Operator / time-gated — Phase 3 cut-over (2 items)
+6. **P5 C2 pilot execution** — gate code (flag + pilot bool) is shipped and live in prod at the safe `'off'` default. Execution = operator runs `drafts/villa-returns-cutover-step-c2.sql`, then a 14-day monitor window before ramp. Then `'on'`.
+7. **P6/P7 multi-currency FX conversion in distribute + P8 `DROP TABLE asset_financials`** — distribute hard-fails for non-USD/IDR until those `fx_rates_daily` rows populate; P8 drop migrations are staged `.PENDING` and gated on a 90-day no-read window. Effort: L (P6/P7), S (P8, gated).
 
 ---
 
 ## What is fully wired up (the "done" list)
 
-### Schema (16 migrations applied)
-130–142 (base 13), 143 (trigger hole hot-fix), 144 (clock_timestamp hot-fix), 145 (dividend_payouts villa-period link).
+### Schema (18 migrations applied — dev + production)
+130–142 (base 13), 143 (trigger hole hot-fix), 144 (clock_timestamp hot-fix), 145 (dividend_payouts villa-period link), 146 (feature-flag seed + per-asset pilot bool), 147 (FX rate placeholder seed), 148 (force safe prod defaults). Rollback siblings for all 18 in `database/rollback/`; `.PENDING` rename/drop migrations staged for the eventual C5 `asset_financials` retirement.
 
 ### Backend modules (18)
 | Module | Role |
@@ -455,11 +460,20 @@ Market price source: VWAP from `trade_history` last 24h. Currently empty for tes
 - 14 of 15 workflows verified live ✅
 - 4 production bugs caught + fixed during smoke testing ✅
 
-**Production-readiness gaps:**
+**Production-readiness gaps (post Tracks A/B/C + deploy):**
 - Document upload UIs (receipts / tax statement) — placeholder only
-- Per-position investor drilldown (`my-trading.html`) — not extended
 - A2 tokenize tabs — not extended (config endpoints live, UI gap)
-- Operational automation: cron + FX populator + backfill
-- Phase-5 onward cut-over from `asset_financials`
+- FX populator — schema + seed only, no real nightly source
+- Phase-3 C2 cut-over — gate shipped + live; execution is an operator step
+- P6/P7 multi-currency FX conversion + P8 legacy-table drop — time-gated
 
-**86% spec coverage with full backend support behind every gap.** The 14% not fully wired breaks down as 9% partial (placeholder/substituted) and 5% future infra. Nothing in the "Not shipped" column is a blocker to running a complete villa-returns monthly cycle in dev — the system has been demonstrated end-to-end from dev submit through investor wallet credit.
+**90% spec coverage, all code live in production.** Operational automation that
+the first revision marked missing — tokio NAV cron, shadow-write, backfill
+binary, feature-flag + pilot gate — all shipped in Tracks A/B/C and deployed in
+`1dbbae5`. The remaining 10% is 8% partial (document-upload UI, tokenize tabs,
+FX populator, multi-currency) and 2% operator/time-gated (C2 execution, P8 drop).
+Nothing in the "Not shipped" column is a code blocker — both remaining items are
+operator decisions, not unwritten features. The system runs a complete
+villa-returns monthly cycle end-to-end from dev submit through investor wallet
+credit, and is deployed behind a safe `'off'` feature flag awaiting the
+operator's Phase 3 go.
