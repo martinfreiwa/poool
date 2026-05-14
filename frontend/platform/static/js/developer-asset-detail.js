@@ -646,6 +646,19 @@ function renderFinancials(a) {
   document.getElementById("financials-count").textContent =
     `${financials.length} record${financials.length !== 1 ? "s" : ""}`;
 
+  // assetId is only known client-side, so the entry links are wired here.
+  const now = new Date();
+  const opsYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const opsMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+  const opsBtn = document.getElementById("btn-submit-operations");
+  if (opsBtn) {
+    opsBtn.href = `/developer/villas/${encodeURIComponent(assetId)}/operations/new?year=${opsYear}&month=${opsMonth}`;
+  }
+  const annualBtn = document.getElementById("btn-annual-data");
+  if (annualBtn) {
+    annualBtn.href = `/developer/villas/${encodeURIComponent(assetId)}/annual/${now.getFullYear()}`;
+  }
+
   if (financials.length === 0) return;
 
   const months = [

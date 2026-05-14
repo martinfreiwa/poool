@@ -292,7 +292,11 @@ extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'mobile-navigation', '
             <div class="ad-card ad-card--flush">
               <div class="ad-card__header">
                 <h3 class="ad-card__title">Monthly Performance</h3>
-                <span class="ad-card__meta" id="financials-count">0 records</span>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                  <span class="ad-card__meta" id="financials-count">0 records</span>
+                  <a id="btn-submit-operations" class="ad-btn ad-btn--outline" href="/developer/operations">Submit monthly operations</a>
+                  <a id="btn-annual-data" class="ad-btn ad-btn--outline" href="/developer/operations">Annual data</a>
+                </div>
               </div>
               <div class="ad-card__body" style="padding:0;">
                 <table class="ad-table">

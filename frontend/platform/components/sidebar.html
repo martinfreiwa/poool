@@ -52,6 +52,11 @@
         path.includes("/developer/asset-detail")
       ) {
         activePage = "assets";
+      } else if (
+        path.includes("/developer/operations") ||
+        path.includes("/developer/villas/")
+      ) {
+        activePage = "operations";
       } else if (path.includes("/settings")) {
         activePage = "settings";
       } else if (path.includes("/support")) {
@@ -177,6 +182,22 @@
                   </svg>
                 </div>
                 <span id="nav-text-submissions" class="sidebar__nav-text">My Submissions</span>
+              </div>
+            </a>
+          </div>
+
+          <!-- Operations -->
+          <div id="nav-item-operations" class="sidebar__nav-item">
+            <a id="nav-item-operations-content" href="/developer/operations" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-operations" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-operations" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/>
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                    <path d="M9 12h6M9 16h6"/>
+                  </svg>
+                </div>
+                <span id="nav-text-operations" class="sidebar__nav-text">Operations</span>
               </div>
             </a>
           </div>

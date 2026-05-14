@@ -82,19 +82,36 @@ function fillFormFromRow(row) {
 
 function reflectStatus(status) {
   const line = document.getElementById("dop-status");
-  line.style.display = "block";
-  let txt = `Status: ${status}`;
-  if (currentRow?.rejected_reason && status === "draft") {
-    txt += ` — Rejected: ${currentRow.rejected_reason}`;
-    line.classList.add("dop-rejected");
+  line.style.display = "flex";
+
+  const rejected = currentRow?.rejected_reason && status === "draft";
+  let variant = "neutral";
+  let detail = "";
+  if (rejected) {
+    variant = "danger";
+    detail = `Rejected: ${currentRow.rejected_reason}`;
   } else if (status === "submitted") {
-    txt += " — awaiting admin approval";
+    variant = "info";
+    detail = "awaiting admin approval";
   } else if (status === "approved") {
-    txt += " — awaiting publish by admin";
+    variant = "info";
+    detail = "awaiting publish by admin";
   } else if (status === "published") {
-    txt += " — to edit, request correction with admin";
+    variant = "success";
+    detail = "to edit, request correction with admin";
   }
-  line.textContent = txt;
+
+  line.textContent = "";
+  const badge = document.createElement("span");
+  badge.className = `ds-badge ds-badge--${variant}`;
+  badge.textContent = status || "draft";
+  line.appendChild(badge);
+  if (detail) {
+    const note = document.createElement("span");
+    note.className = "ds-text-caption ds-text--muted";
+    note.textContent = detail;
+    line.appendChild(note);
+  }
 
   const btnDraft = document.getElementById("btn-save-draft");
   const btnSubmit = document.getElementById("btn-submit");
@@ -227,17 +244,18 @@ function renderDocuments(docs) {
   const list = document.getElementById("dop-docs-list");
   if (!Array.isArray(docs) || docs.length === 0) {
     list.innerHTML =
-      '<p style="font-size: 13px; color: var(--text-muted, #6b7280); margin: 0;">No documents linked to this period yet.</p>';
+      '<p class="ds-text-caption ds-text--muted">No documents linked to this period yet.</p>';
     return;
   }
   list.innerHTML = docs
     .map((d) => {
       const when = new Date(d.created_at).toLocaleDateString();
-      const label = String(d.doc_type || "other").replace(/_/g, " ");
+      const raw = String(d.doc_type || "other").replace(/_/g, " ");
+      const label = raw.charAt(0).toUpperCase() + raw.slice(1);
       const href = `/api/documents/${encodeURIComponent(d.document_id)}/download`;
-      return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border, #e5e7eb);">
-        <span style="font-size: 13px;"><strong style="text-transform: capitalize;">${label}</strong> &middot; linked ${when}</span>
-        <a href="${href}" target="_blank" rel="noopener" class="dop-btn" style="padding: 4px 12px; font-size: 12px; text-decoration: none;">Download</a>
+      return `<div class="ds-flex ds-justify-between ds-items-center ds-gap-12 ds-mb-8">
+        <span class="ds-text-body"><strong>${label}</strong> &middot; linked ${when}</span>
+        <a href="${href}" target="_blank" rel="noopener" class="ds-btn ds-btn--secondary ds-btn--sm">Download</a>
       </div>`;
     })
     .join("");

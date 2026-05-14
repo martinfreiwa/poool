@@ -17,6 +17,17 @@
   let assetId = null;
   let year = null;
 
+  // capex / forecast-suggestion / annual-document status → ds-badge variant.
+  const STATUS_VARIANT = {
+    submitted: "info",
+    draft: "neutral",
+    pending: "warning",
+    approved: "success",
+    accepted: "success",
+    rejected: "danger",
+    discarded: "neutral",
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
     parseUrl();
     wireHandlers();
@@ -52,16 +63,17 @@
       const r = await fetch(`/api/developer/villas/${encodeURIComponent(assetId)}/annual/${year}/summary`);
       if (!r.ok) throw new Error(await responseError(r));
       const s = await r.json();
-      out.innerHTML = `
-        <div class="dad-row"><span class="dad-row-key">Year</span><span class="dad-row-val">${s.forecast_year}</span></div>
-        <div class="dad-row"><span class="dad-row-key">Months with published data</span><span class="dad-row-val">${s.months_published}</span></div>
-        <div class="dad-row"><span class="dad-row-key">Total distributable (IDR)</span><span class="dad-row-val">${Number(s.total_distributable_idr_cents).toLocaleString()}</span></div>
-        <div class="dad-row"><span class="dad-row-key">Total distributable (USD)</span><span class="dad-row-val">${formatUsd(s.total_distributable_usd_cents)}</span></div>
-        <div class="dad-row"><span class="dad-row-key">Total net rental (IDR)</span><span class="dad-row-val">${Number(s.total_net_rental_idr_cents).toLocaleString()}</span></div>
-        <div class="dad-row"><span class="dad-row-key">Approved CapEx events</span><span class="dad-row-val">${s.approved_capex_count} · ${Number(s.approved_capex_idr_cents).toLocaleString()} IDR</span></div>
-      `;
+      const kv = (k, v) =>
+        `<div class="ds-flex ds-justify-between ds-gap-12 ds-mb-8"><span class="ds-text-body ds-text--muted">${k}</span><span class="ds-text-body--semibold">${v}</span></div>`;
+      out.innerHTML =
+        kv("Year", s.forecast_year) +
+        kv("Months with published data", s.months_published) +
+        kv("Total distributable (IDR)", Number(s.total_distributable_idr_cents).toLocaleString()) +
+        kv("Total distributable (USD)", formatUsd(s.total_distributable_usd_cents)) +
+        kv("Total net rental (IDR)", Number(s.total_net_rental_idr_cents).toLocaleString()) +
+        kv("Approved CapEx events", `${s.approved_capex_count} · ${Number(s.approved_capex_idr_cents).toLocaleString()} IDR`);
     } catch (err) {
-      out.innerHTML = `<div class="dad-error">${escapeHtml(err.message)}</div>`;
+      out.innerHTML = `<p class="ds-form-error">${escapeHtml(err.message)}</p>`;
     }
   }
 
@@ -74,23 +86,27 @@
       if (!r.ok) throw new Error(await responseError(r));
       const rows = await r.json();
       if (!rows.length) {
-        list.innerHTML = `<div class="dad-info" style="padding: 12px 0;">No CapEx submitted for ${year} yet.</div>`;
+        list.innerHTML = `<p class="ds-text-caption ds-text--muted">No CapEx submitted for ${year} yet.</p>`;
         return;
       }
       list.innerHTML = "";
       for (const r of rows) {
         const el = document.createElement("div");
-        el.className = "dad-list-item";
+        el.className = "ds-flex ds-justify-between ds-items-center ds-gap-12 ds-mb-8";
         el.innerHTML = `
-          <div>${escapeHtml(r.event_date)}</div>
-          <div>${escapeHtml(r.description)}<div style="color: var(--text-muted, #6b7280);">${escapeHtml((r.category || '').replace(/_/g, ' '))}</div></div>
-          <div style="text-align: right; font-variant-numeric: tabular-nums;">${Number(r.amount_idr_cents).toLocaleString()}</div>
-          <div><span class="dad-status ${escapeAttr(r.status)}">${escapeHtml(r.status)}</span></div>
+          <div>
+            <div class="ds-text-body">${escapeHtml(r.description)}</div>
+            <div class="ds-text-caption ds-text--muted">${escapeHtml(r.event_date)} · ${escapeHtml((r.category || '').replace(/_/g, ' '))}</div>
+          </div>
+          <div class="ds-flex ds-items-center ds-gap-8">
+            <span class="ds-text-body--semibold">${Number(r.amount_idr_cents).toLocaleString()}</span>
+            <span class="ds-badge ds-badge--${STATUS_VARIANT[r.status] || 'neutral'}">${escapeHtml(r.status)}</span>
+          </div>
         `;
         list.appendChild(el);
       }
     } catch (err) {
-      list.innerHTML = `<div class="dad-error">${escapeHtml(err.message)}</div>`;
+      list.innerHTML = `<p class="ds-form-error">${escapeHtml(err.message)}</p>`;
     }
   }
 
@@ -136,24 +152,26 @@
       if (!r.ok) throw new Error(await responseError(r));
       const rows = await r.json();
       if (!rows.length) {
-        list.innerHTML = `<div class="dad-info" style="padding: 12px 0;">No suggestions submitted for ${year} yet.</div>`;
+        list.innerHTML = `<p class="ds-text-caption ds-text--muted">No suggestions submitted for ${year} yet.</p>`;
         return;
       }
       list.innerHTML = "";
       for (const r of rows) {
         const el = document.createElement("div");
-        el.className = "dad-list-item";
+        el.className = "ds-flex ds-justify-between ds-items-center ds-gap-12 ds-mb-8";
         const occ = r.projected_occupancy_bps != null ? `${(r.projected_occupancy_bps / 100).toFixed(2)}%` : "—";
+        const adr = r.projected_adr_idr_cents ? Number(r.projected_adr_idr_cents).toLocaleString() + ' IDR' : '—';
         el.innerHTML = `
-          <div>${escapeHtml(formatDate(r.submitted_at))}</div>
-          <div>${escapeHtml(r.notes || "(no notes)")}<div style="color: var(--text-muted, #6b7280);">Occupancy ${occ}, ADR ${r.projected_adr_idr_cents ? Number(r.projected_adr_idr_cents).toLocaleString() + ' IDR' : '—'}</div></div>
-          <div></div>
-          <div><span class="dad-status ${escapeAttr(r.status)}">${escapeHtml(r.status)}</span></div>
+          <div>
+            <div class="ds-text-body">${escapeHtml(r.notes || "(no notes)")}</div>
+            <div class="ds-text-caption ds-text--muted">${escapeHtml(formatDate(r.submitted_at))} · Occupancy ${occ}, ADR ${adr}</div>
+          </div>
+          <span class="ds-badge ds-badge--${STATUS_VARIANT[r.status] || 'neutral'}">${escapeHtml(r.status)}</span>
         `;
         list.appendChild(el);
       }
     } catch (err) {
-      list.innerHTML = `<div class="dad-error">${escapeHtml(err.message)}</div>`;
+      list.innerHTML = `<p class="ds-form-error">${escapeHtml(err.message)}</p>`;
     }
   }
 
@@ -196,25 +214,27 @@
       if (!r.ok) throw new Error(await responseError(r));
       const rows = await r.json();
       if (!rows.length) {
-        list.innerHTML = `<div class="dad-info" style="padding: 12px 0;">No documents uploaded for ${year} yet.</div>`;
+        list.innerHTML = `<p class="ds-text-caption ds-text--muted">No documents uploaded for ${year} yet.</p>`;
         return;
       }
       list.innerHTML = "";
       for (const d of rows) {
         const el = document.createElement("div");
-        el.className = "dad-list-item";
-        const label = String(d.doc_type || "other").replace(/_/g, " ");
+        el.className = "ds-flex ds-justify-between ds-items-center ds-gap-12 ds-mb-8";
+        const raw = String(d.doc_type || "other").replace(/_/g, " ");
+        const label = raw.charAt(0).toUpperCase() + raw.slice(1);
         const href = `/api/documents/${encodeURIComponent(d.document_id)}/download`;
         el.innerHTML = `
-          <div>${escapeHtml(formatDate(d.created_at))}</div>
-          <div style="text-transform: capitalize;">${escapeHtml(label)}</div>
-          <div><a href="${escapeAttr(href)}" target="_blank" rel="noopener">Download</a></div>
-          <div></div>
+          <div>
+            <div class="ds-text-body">${escapeHtml(label)}</div>
+            <div class="ds-text-caption ds-text--muted">${escapeHtml(formatDate(d.created_at))}</div>
+          </div>
+          <a href="${escapeAttr(href)}" target="_blank" rel="noopener" class="ds-btn ds-btn--secondary ds-btn--sm">Download</a>
         `;
         list.appendChild(el);
       }
     } catch (err) {
-      list.innerHTML = `<div class="dad-error">${escapeHtml(err.message)}</div>`;
+      list.innerHTML = `<p class="ds-form-error">${escapeHtml(err.message)}</p>`;
     }
   }
 

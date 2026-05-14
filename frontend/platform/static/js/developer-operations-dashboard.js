@@ -15,16 +15,26 @@ async function load() {
     render(entries);
   } catch (err) {
     document.getElementById("dev-empty").textContent = `Failed to load: ${err.message}`;
-    document.getElementById("dev-empty").style.display = "block";
+    document.getElementById("dev-empty").style.display = "flex";
   }
 }
+
+// villa_operations_log.status → ds-badge variant.
+const STATUS_VARIANT = {
+  published: "success",
+  approved: "success",
+  submitted: "info",
+  draft: "neutral",
+  rejected: "danger",
+  none: "warning",
+};
 
 function render(entries) {
   const tbody = document.getElementById("dev-tbody");
   const empty = document.getElementById("dev-empty");
   tbody.innerHTML = "";
   if (!entries.length) {
-    empty.style.display = "block";
+    empty.style.display = "flex";
     return;
   }
   empty.style.display = "none";
@@ -37,10 +47,12 @@ function render(entries) {
     const tr = document.createElement("tr");
 
     const tdName = document.createElement("td");
+    tdName.className = "ds-table-td--bold";
     tdName.textContent = e.asset_title || "(untitled)";
     tr.appendChild(tdName);
 
     const tdPeriod = document.createElement("td");
+    tdPeriod.className = "ds-table-td--mono";
     tdPeriod.textContent =
       e.latest_period_year && e.latest_period_month
         ? `${e.latest_period_year}-${String(e.latest_period_month).padStart(2, "0")}`
@@ -50,23 +62,34 @@ function render(entries) {
     const tdStatus = document.createElement("td");
     const status = e.latest_status || "none";
     const badge = document.createElement("span");
-    badge.className = `dev-status ${status}`;
+    badge.className = `ds-badge ds-badge--${STATUS_VARIANT[status] || "neutral"}`;
     badge.textContent = status === "none" ? "Not started" : status;
     tdStatus.appendChild(badge);
     if (status === "rejected" || (status === "draft" && e.latest_rejected_reason)) {
-      const note = document.createElement("span");
-      note.className = "dev-rejected-note";
+      const note = document.createElement("div");
+      note.className = "ds-text-caption ds-text--danger";
       note.textContent = `Reason: ${e.latest_rejected_reason || ""}`;
       tdStatus.appendChild(note);
     }
     tr.appendChild(tdStatus);
 
     const tdAction = document.createElement("td");
+    const actions = document.createElement("div");
+    actions.className = "ds-flex ds-gap-8";
+
     const a = document.createElement("a");
-    a.className = "dev-btn primary";
+    a.className = "ds-btn ds-btn--primary ds-btn--sm";
     a.href = `/developer/villas/${encodeURIComponent(e.asset_id)}/operations/new?year=${targetYear}&month=${targetMonth}`;
     a.textContent = `Submit ${targetYear}-${String(targetMonth).padStart(2, "0")}`;
-    tdAction.appendChild(a);
+    actions.appendChild(a);
+
+    const annual = document.createElement("a");
+    annual.className = "ds-btn ds-btn--secondary ds-btn--sm";
+    annual.href = `/developer/villas/${encodeURIComponent(e.asset_id)}/annual/${targetYear}`;
+    annual.textContent = `Annual ${targetYear}`;
+    actions.appendChild(annual);
+
+    tdAction.appendChild(actions);
     tr.appendChild(tdAction);
 
     tbody.appendChild(tr);

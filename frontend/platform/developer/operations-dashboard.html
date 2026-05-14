@@ -1,50 +1,50 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Operations Dashboard | Developer | POOOL</title>
-  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="/static/css/bundle.css" />
-  <link rel="stylesheet" href="/static/css/fonts.css" />
-  <style>
-    .dev-shell { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
-    .dev-shell h1 { font-size: 22px; margin: 0 0 24px 0; }
-    .dev-table { width: 100%; border-collapse: collapse; background: var(--card-bg, #fff); border-radius: 8px; overflow: hidden; }
-    .dev-table th, .dev-table td { padding: 12px 16px; border-bottom: 1px solid var(--border, #e5e7eb); text-align: left; font-size: 14px; }
-    .dev-table th { background: var(--header-bg, #f9fafb); font-weight: 600; color: var(--text-muted, #6b7280); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-    .dev-status { padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; display: inline-block; }
-    .dev-status.draft { background: var(--neutral-bg, #f3f4f6); color: var(--text-muted, #6b7280); }
-    .dev-status.submitted { background: var(--info-bg, #eff6ff); color: var(--info, #2563eb); }
-    .dev-status.approved { background: var(--success-bg, #ecfdf5); color: var(--success, #059669); }
-    .dev-status.published { background: var(--success-bg, #ecfdf5); color: var(--success, #059669); font-weight: 600; }
-    .dev-status.rejected { background: var(--danger-bg, #fef2f2); color: var(--danger, #dc2626); }
-    .dev-status.none { background: var(--warn-bg, #fffbeb); color: var(--warn, #d97706); }
-    .dev-btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border, #d1d5db); background: var(--btn-bg, #fff); cursor: pointer; font: inherit; font-size: 13px; text-decoration: none; color: inherit; }
-    .dev-btn.primary { background: var(--accent, #2563eb); color: white; border-color: var(--accent, #2563eb); }
-    .dev-rejected-note { font-size: 12px; color: var(--danger, #dc2626); display: block; margin-top: 4px; }
-    .dev-empty { text-align: center; padding: 48px 24px; color: var(--text-muted, #6b7280); }
-  </style>
-</head>
-<body>
-  <main class="dev-shell">
-    <h1>Operations Dashboard</h1>
-    <p style="color: var(--text-muted, #6b7280); margin-bottom: 24px;">
-      Villas assigned to you. Submit monthly operations data; admin reviews and publishes.
-    </p>
-    <table class="dev-table" id="dev-table">
-      <thead>
-        <tr>
-          <th>Villa</th>
-          <th>Latest period</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="dev-tbody"></tbody>
-    </table>
-    <div class="dev-empty" id="dev-empty" style="display: none;">No villas assigned yet.</div>
-  </main>
-  <script src="/static/js/developer-operations-dashboard.js" defer></script>
+{% with title="Operations | Developer", no_index=True, extra_css=['leaderboard', 'marketplace', 'developer-assets', 'developer-leaderboard-navbar', 'developer-ui', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-operations-dashboard'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="developer-operations-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div id="developer-operations-page" class="marketplace-page">
+    <div id="developer-operations-sidebar" class="marketplace-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main marketplace-main developer-lb-shell-main">
+      {% with dev_nav_title="Operations", dev_nav_active="operations" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
+      <div class="admin-content">
+        <div class="ds-table-container">
+          <div class="ds-table-container__header">
+            <div>
+              <h2 class="ds-table-container__title">Monthly Operations</h2>
+              <p class="ds-text-caption ds-text--muted">Villas assigned to you. Submit monthly operations data; admin reviews and publishes.</p>
+            </div>
+          </div>
+
+          <div class="ds-table-scroll">
+            <table class="ds-table" id="dev-table">
+              <thead>
+                <tr>
+                  <th class="ds-table-th">Villa</th>
+                  <th class="ds-table-th">Latest period</th>
+                  <th class="ds-table-th">Status</th>
+                  <th class="ds-table-th">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dev-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="ds-table-empty" id="dev-empty" style="display: none;">
+            <div class="ds-table-empty__icon">🏠</div>
+            <div class="ds-table-empty__title">No villas assigned yet</div>
+            <p class="ds-table-empty__description">Villas assigned to you for monthly operations reporting will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
 </body>
+
 </html>
