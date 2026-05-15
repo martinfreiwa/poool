@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM affiliate_live_counters WHERE payout_user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "78a53856167b868a4e45e12cdc1acdf10bdaad5d3e628cac24d4171a4c71dd5f"
+}

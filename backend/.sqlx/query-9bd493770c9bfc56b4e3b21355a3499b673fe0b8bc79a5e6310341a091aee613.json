@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO affiliate_links\n              (code, link_type, attribution_user_id, payout_user_id, team_id, status)\n           VALUES ($1, 'personal', $2, $2, gen_random_uuid(), 'active')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9bd493770c9bfc56b4e3b21355a3499b673fe0b8bc79a5e6310341a091aee613"
+}

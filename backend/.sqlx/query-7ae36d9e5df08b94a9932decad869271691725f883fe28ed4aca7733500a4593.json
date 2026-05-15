@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM referral_clicks WHERE link_id IN (SELECT id FROM affiliate_links WHERE attribution_user_id = $1 OR payout_user_id = $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7ae36d9e5df08b94a9932decad869271691725f883fe28ed4aca7733500a4593"
+}
