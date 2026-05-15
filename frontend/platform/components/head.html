@@ -3,11 +3,32 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Enable cross-document View Transitions (SPA-like navigation) -->
     <meta name="view-transition" content="same-origin" />
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+
+    <!-- PWA: manifest + theme. Manifest link is global so every page on
+         platform.poool.app is installable, not just /community. -->
+    <link rel="manifest" href="/static/manifest.webmanifest" />
+    <meta name="theme-color" content="#001DCA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0b2e" media="(prefers-color-scheme: dark)" />
+    <meta name="application-name" content="POOOL" />
+
+    <!-- iOS home-screen install support. iOS ignores manifest icons; uses
+         these tags. apple-mobile-web-app-capable enables standalone mode
+         when launched from home screen. -->
+    <link rel="apple-touch-icon" href="/static/images/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/images/icons/apple-touch-icon-152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/images/icons/apple-touch-icon-167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="POOOL" />
+    <meta name="format-detection" content="telephone=no" />
+
     <title>{{ title | default('POOOL') }} - POOOL</title>
     {% if meta_description %}
     <meta name="description" content="{{ meta_description }}" />{% endif %}
@@ -32,7 +53,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     {% else %}
     <!-- Default fallback image -->
-    <meta property="og:image" content="{{ request_url }}/static/images/poool-og-default.png" />
+    <meta property="og:image" content="{{ request_url }}/static/images/poool-og-default.webp" />
     <meta name="twitter:card" content="summary" />
     {% endif %}
     
@@ -203,6 +224,10 @@
     <link rel="stylesheet" href="/static/css/poool-dropdown.css?v={{ asset_version }}" />
     <script src="/static/js/toast.js?v={{ asset_version }}"></script>
     <script src="/static/js/user-data.js?v={{ asset_version }}"></script>
+    <!-- PWA: install button, SW registration, iOS instructions modal. Loaded
+         globally so every platform page is installable (was previously
+         community-only). -->
+    <script defer src="/static/js/pwa-install.js?v={{ asset_version }}"></script>
     <script src="/static/js/poool-dropdown.js?v={{ asset_version }}"></script>
     <script src="/static/js/poool-dropdown-init.js?v={{ asset_version }}"></script>
     <script src="/static/js/sidebar-community.js?v={{ asset_version }}"></script>

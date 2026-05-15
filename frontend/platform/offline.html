@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Offline — POOOL</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="theme-color" content="#001DCA" />
+  <style>
+    :root {
+      --bg: #0a0b2e;
+      --fg: #ffffff;
+      --muted: rgba(255, 255, 255, 0.7);
+      --accent: #03ff88;
+      --accent-ink: #001428;
+      --border: rgba(255, 255, 255, 0.16);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .card {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      padding: 32px 24px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(8px);
+    }
+    .logo {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 16px;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 12px 36px rgba(0, 29, 202, 0.45);
+    }
+    .logo img { width: 100%; height: 100%; display: block; }
+    h1 {
+      font-size: 22px;
+      line-height: 1.25;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+    p { color: var(--muted); margin: 0 0 24px; line-height: 1.5; }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      padding: 12px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .btn--primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+    .btn--ghost {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+    .status {
+      margin-top: 18px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .status .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f6ff;
+        --fg: #0a0b2e;
+        --muted: rgba(10, 11, 46, 0.7);
+        --border: rgba(10, 11, 46, 0.12);
+        --accent-ink: #001428;
+      }
+      .card { background: #ffffff; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <div class="logo" aria-hidden="true">
+      <img src="/static/images/icons/pwa-192.png" alt="" />
+    </div>
+    <h1>You're offline</h1>
+    <p>POOOL can't reach the network right now. Check your connection and try again. Already-installed pages will still open from your home screen.</p>
+    <div class="actions">
+      <button class="btn btn--primary" type="button" onclick="location.reload()">Try again</button>
+      <a class="btn btn--ghost" href="/community">Open community</a>
+    </div>
+    <p class="status"><span class="dot" aria-hidden="true"></span><span id="status-text">No internet connection</span></p>
+  </main>
+  <script>
+    (function () {
+      var statusText = document.getElementById('status-text');
+      function update() {
+        if (navigator.onLine) {
+          statusText.textContent = 'Back online — reloading…';
+          setTimeout(function () { location.reload(); }, 600);
+        } else {
+          statusText.textContent = 'No internet connection';
+        }
+      }
+      window.addEventListener('online', update);
+      window.addEventListener('offline', update);
+      update();
+    })();
+  </script>
+</body>
+</html>

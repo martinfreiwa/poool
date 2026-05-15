@@ -1,0 +1,89 @@
+{
+  "name": "POOOL — Fractional Ownership Community",
+  "short_name": "POOOL",
+  "description": "Fractional ownership investment community. Pool with friends to buy real estate, businesses, and assets together.",
+  "id": "/",
+  "start_url": "/community?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#0a0b2e",
+  "theme_color": "#001DCA",
+  "orientation": "any",
+  "categories": ["finance", "social", "business"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/static/images/icons/logo-pool.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/images/icons/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/images/icons/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/images/icons/pwa-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/images/screenshots/wide-community.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Sign up for POOOL on desktop"
+    },
+    {
+      "src": "/static/images/screenshots/narrow-community.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Sign up for POOOL on mobile"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Community",
+      "short_name": "Community",
+      "description": "Open the community feed",
+      "url": "/community?source=pwa-shortcut",
+      "icons": [{ "src": "/static/images/icons/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Portfolio",
+      "short_name": "Portfolio",
+      "description": "Your investments",
+      "url": "/portfolio?source=pwa-shortcut",
+      "icons": [{ "src": "/static/images/icons/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Marketplace",
+      "short_name": "Market",
+      "description": "Browse opportunities",
+      "url": "/marketplace?source=pwa-shortcut",
+      "icons": [{ "src": "/static/images/icons/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Wallet",
+      "short_name": "Wallet",
+      "description": "Manage your wallet",
+      "url": "/wallet?source=pwa-shortcut",
+      "icons": [{ "src": "/static/images/icons/pwa-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}

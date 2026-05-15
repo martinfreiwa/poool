@@ -3,9 +3,25 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+
+    <!-- PWA manifest + theme. Mirrors components/head.html so auth flows
+         remain installable; install button itself is hidden on /auth/*. -->
+    <link rel="manifest" href="/static/manifest.webmanifest" />
+    <meta name="theme-color" content="#001DCA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0b2e" media="(prefers-color-scheme: dark)" />
+    <meta name="application-name" content="POOOL" />
+    <link rel="apple-touch-icon" href="/static/images/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/images/icons/apple-touch-icon-152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/images/icons/apple-touch-icon-167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="POOOL" />
+
     <title>{{ title | default('POOOL') }}</title>
     {% if meta_description %}
     <meta name="description" content="{{ meta_description }}" />{% endif %}
@@ -51,6 +67,7 @@
     </script>
     <script src="/static/js/vendor/htmx.min.js?v={{ asset_version }}"></script>
     <script src="/static/js/toast.js?v={{ asset_version }}"></script>
+    <script defer src="/static/js/pwa-install.js?v={{ asset_version }}"></script>
 
     <!-- Design tokens only (no dashboard CSS) -->
     <link rel="stylesheet" href="/static/css/dashboard-tokens.css?v={{ asset_version }}" />
