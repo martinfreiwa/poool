@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*)::BIGINT\n           FROM referral_clicks rc\n           LEFT JOIN affiliate_links al ON al.id = rc.link_id\n           WHERE\n             CASE\n               WHEN $2::text = 'personal' THEN al.link_type = 'personal'    AND al.attribution_user_id = $1\n               WHEN $2::text = 'business' THEN al.link_type = 'team_business' AND al.attribution_user_id = $1\n               ELSE (al.attribution_user_id = $1 OR al.payout_user_id = $1)\n             END",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b2d98d012c3094b620adc3003a7bcedbe919f3988583b9858e80e8ba2102b0a2"
+}

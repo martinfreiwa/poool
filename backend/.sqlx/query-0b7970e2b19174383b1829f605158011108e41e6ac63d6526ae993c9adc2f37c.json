@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_referrals\n                   SET status = $1::text,\n                       qualified_at = CASE\n                           WHEN $1::text = 'qualified' AND qualified_at IS NULL THEN NOW()\n                           ELSE qualified_at\n                       END,\n                       updated_at = NOW()\n                   WHERE id = $2 AND status = 'under_holdback'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0b7970e2b19174383b1829f605158011108e41e6ac63d6526ae993c9adc2f37c"
+}

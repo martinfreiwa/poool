@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n               COALESCE(SUM(provisional_amount_cents) FILTER (WHERE status = 'provisionally_tracked'), 0)::BIGINT as \"provisional!\",\n               COALESCE(SUM(provisional_amount_cents) FILTER (WHERE status = 'on_hold'), 0)::BIGINT as \"on_hold!\",\n               COALESCE(SUM(provisional_amount_cents) FILTER (WHERE status = 'payable'), 0)::BIGINT as \"payable!\",\n               COALESCE(SUM(provisional_amount_cents) FILTER (WHERE status = 'paid'), 0)::BIGINT as \"paid!\",\n               COALESCE(SUM(provisional_amount_cents), 0)::BIGINT as \"total!\"\n           FROM affiliate_commissions\n           WHERE attribution_user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "provisional!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "on_hold!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "payable!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "paid!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "dadc93d1e5eec5fc2fb25727ff97cdef2582a53b625c2518a83cdb747c3cc840"
+}

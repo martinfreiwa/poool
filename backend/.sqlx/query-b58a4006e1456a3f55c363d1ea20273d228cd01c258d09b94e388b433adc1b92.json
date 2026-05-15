@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.user_id,\n                      a.current_tier,\n                      a.commission_rate_bps,\n                      COALESCE(SUM(i.purchase_value_cents) FILTER (\n                          WHERE ar.status IN ('qualified', 'paid')\n                            AND COALESCE(ar.qualified_at, ar.updated_at) >= NOW() - INTERVAL '12 months'\n                      ), 0)::bigint AS \"volume_12m_cents!\"\n               FROM affiliates a\n               LEFT JOIN affiliate_referrals ar ON ar.affiliate_id = a.user_id\n               LEFT JOIN investments i           ON i.id = ar.qualifying_investment_id\n               WHERE a.status = 'active'\n               GROUP BY a.user_id, a.current_tier, a.commission_rate_bps",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "current_tier",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "commission_rate_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "volume_12m_cents!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "b58a4006e1456a3f55c363d1ea20273d228cd01c258d09b94e388b433adc1b92"
+}

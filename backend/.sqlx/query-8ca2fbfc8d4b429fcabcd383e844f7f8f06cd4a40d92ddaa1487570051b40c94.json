@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT name, commission_rate_bps, min_volume_cents, sort_order\n           FROM affiliate_tiers\n           ORDER BY sort_order ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "commission_rate_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "min_volume_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "sort_order",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8ca2fbfc8d4b429fcabcd383e844f7f8f06cd4a40d92ddaa1487570051b40c94"
+}

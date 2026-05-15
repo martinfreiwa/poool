@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE developer_team_memberships\n           SET status = 'active',\n               joined_at = NOW(),\n               invitation_token_hash = NULL,\n               updated_at = NOW()\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5d0147a5e3cd67cf413ddbbc192eba3985ff44d838e64b80991bbf541027706c"
+}

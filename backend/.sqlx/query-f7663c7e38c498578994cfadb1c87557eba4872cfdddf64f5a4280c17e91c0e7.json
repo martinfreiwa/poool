@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.id, m.team_id, m.status, m.role, m.joined_at,\n                  t.display_name AS team_name, t.developer_user_id,\n                  al.code        AS business_link_code\n           FROM developer_team_memberships m\n           JOIN developer_teams t ON t.id = m.team_id\n           LEFT JOIN affiliate_links al ON al.team_id = m.team_id\n                                       AND al.attribution_user_id = m.user_id\n                                       AND al.link_type = 'team_business'\n                                       AND al.status = 'active'\n           WHERE m.user_id = $1\n             AND m.status IN ('invited', 'pending_developer_approval', 'active')\n           LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "team_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "role",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "joined_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "team_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "developer_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "business_link_code",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f7663c7e38c498578994cfadb1c87557eba4872cfdddf64f5a4280c17e91c0e7"
+}

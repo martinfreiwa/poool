@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ac.provisional_amount_cents, ac.status, ac.tier_at_execution,\n                  ac.created_at::text as \"created_at\",\n                  al.link_type\n           FROM affiliate_commissions ac\n           JOIN affiliate_links al ON al.id = ac.link_id\n           WHERE\n             CASE\n               WHEN $2::text = 'personal' THEN al.link_type = 'personal'    AND ac.attribution_user_id = $1\n               WHEN $2::text = 'business' THEN al.link_type = 'team_business' AND ac.attribution_user_id = $1\n               ELSE ac.payout_user_id = $1\n             END\n           ORDER BY ac.created_at DESC\n           LIMIT 10",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "provisional_amount_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "tier_at_execution",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "link_type",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      null,
+      false
+    ]
+  },
+  "hash": "d3f091b087f3af8fe3ff07a40f8aa4e56772165f41cc37e29d82c96cdf17ef77"
+}

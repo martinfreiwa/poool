@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.display_name AS team_name, u.email::text AS requester_email\n         FROM developer_teams t\n         LEFT JOIN users u ON u.id = $2\n         WHERE t.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "team_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "requester_email",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "7dc9fd1ddf92232046f648cc54d38a498f725c479d49643e6b40fd64184e5cd3"
+}

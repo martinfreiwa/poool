@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO developer_team_memberships\n              (team_id, user_id, status, invited_at)\n           VALUES ($1, $2, 'pending_developer_approval', NOW())\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "708db98e813b81c2809f196c61b0b50fd399d6acfd8a6afc544e9c0bdfdcce1d"
+}

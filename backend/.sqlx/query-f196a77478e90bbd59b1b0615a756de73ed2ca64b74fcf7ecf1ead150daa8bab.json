@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE developer_teams\n           SET status = $2::varchar,\n               terminated_at = CASE WHEN $2::varchar = 'terminated' THEN NOW() ELSE NULL END::timestamptz,\n               terminated_reason = CASE WHEN $2::varchar = 'terminated' THEN $3::text ELSE NULL END,\n               updated_at = NOW()\n           WHERE id = $1\n           RETURNING id, status, developer_user_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "developer_user_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f196a77478e90bbd59b1b0615a756de73ed2ca64b74fcf7ecf1ead150daa8bab"
+}

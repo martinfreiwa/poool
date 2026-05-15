@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT code FROM affiliate_links\n           WHERE attribution_user_id = $1\n             AND link_type = 'team_business'\n             AND status = 'active'\n           LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "code",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "98a718657521f2c17bad2b720dabdb2c4060f7cc2c3227e6fd31f228fb317a42"
+}

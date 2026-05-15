@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n               COUNT(*) FILTER (WHERE ar.status = 'attributed') as \"attributed!\",\n               COUNT(*) FILTER (WHERE ar.status = 'registered') as \"registered!\",\n               COUNT(*) FILTER (WHERE ar.status = 'under_holdback') as \"under_holdback!\",\n               COUNT(*) FILTER (WHERE ar.status = 'qualified') as \"qualified!\",\n               COUNT(*) as \"total!\"\n           FROM affiliate_referrals ar\n           JOIN affiliate_links al ON al.id = ar.link_id\n           WHERE\n             CASE\n               WHEN $2::text = 'personal' THEN al.link_type = 'personal'    AND ar.attribution_user_id = $1\n               WHEN $2::text = 'business' THEN al.link_type = 'team_business' AND ar.attribution_user_id = $1\n               ELSE ar.payout_user_id = $1\n             END",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "attributed!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "registered!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "under_holdback!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "qualified!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "6d512bdf5c9a07f415707991853a61b95b78f22481ded46b1c736271e93829bd"
+}

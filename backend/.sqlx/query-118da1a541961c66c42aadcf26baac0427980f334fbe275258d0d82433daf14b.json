@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO developer_team_memberships\n              (team_id, user_id, status, invitation_token_hash, invitation_expires_at,\n               invited_by_user_id, invited_at)\n           VALUES ($1, $2, 'invited', $3, $4, $5, NOW())\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "118da1a541961c66c42aadcf26baac0427980f334fbe275258d0d82433daf14b"
+}

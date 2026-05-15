@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_links\n           SET status = 'inactive',\n               deactivated_at = NOW(),\n               deactivated_reason = $3,\n               updated_at = NOW()\n           WHERE team_id = $1\n             AND attribution_user_id = $2\n             AND link_type = 'team_business'\n             AND status = 'active'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fbddd83c3b1dc8d6f61cf3b00dad4549f88ed0dea2ea3e7d9cf4b4777d122f1d"
+}

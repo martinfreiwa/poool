@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE developer_team_memberships\n           SET status = 'removed',\n               removed_at = NOW(),\n               removed_reason = $2,\n               removed_by_user_id = $3,\n               invitation_token_hash = NULL,\n               updated_at = NOW()\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3051e7a6b99d36ef216fa1dc082d34f25e994c637061d5fce43c4de8aaaa1c04"
+}

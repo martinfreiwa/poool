@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO developer_team_memberships\n              (team_id, user_id, status, role, joined_at, invited_by_user_id, invited_at)\n           VALUES ($1, $2, 'active', $3, NOW(), $4, NOW())\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6a6afc1d92d5d7361dd3e76067c4e61def6b4eab59807bff94446a00296a4750"
+}

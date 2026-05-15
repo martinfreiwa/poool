@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT lifetime_revenue_cents, lifetime_commission_cents,\n                  pending_commission_cents, payable_commission_cents,\n                  paid_commission_cents, clawed_back_cents\n           FROM affiliate_live_counters WHERE payout_user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "lifetime_revenue_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "lifetime_commission_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "pending_commission_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "payable_commission_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "paid_commission_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "clawed_back_cents",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "46b89246fd7e1b48796157cce4971889af1b4493c131d524039d7682a48f5c17"
+}

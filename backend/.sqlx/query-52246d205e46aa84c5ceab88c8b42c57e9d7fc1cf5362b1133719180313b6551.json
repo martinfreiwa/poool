@@ -1,0 +1,86 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.id, t.developer_user_id, t.display_name, t.public_slug, t.status,\n                  t.created_at, t.terminated_at,\n                  u.email::text AS developer_email,\n                  COALESCE((SELECT COUNT(*) FROM developer_team_memberships m\n                            WHERE m.team_id = t.id AND m.status = 'active'), 0) AS \"active_members!\",\n                  COALESCE((SELECT COUNT(*) FROM developer_team_memberships m\n                            WHERE m.team_id = t.id\n                              AND m.status IN ('invited', 'pending_developer_approval')), 0) AS \"pending_members!\",\n                  COALESCE((SELECT lifetime_commission_cents FROM affiliate_live_counters\n                            WHERE payout_user_id = t.developer_user_id), 0) AS \"lifetime_commission_cents!\",\n                  COALESCE((SELECT payable_commission_cents FROM affiliate_live_counters\n                            WHERE payout_user_id = t.developer_user_id), 0) AS \"payable_commission_cents!\"\n           FROM developer_teams t\n           LEFT JOIN users u ON u.id = t.developer_user_id\n           ORDER BY t.created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "developer_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "public_slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "terminated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "developer_email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "active_members!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "pending_members!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "lifetime_commission_cents!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "payable_commission_cents!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "52246d205e46aa84c5ceab88c8b42c57e9d7fc1cf5362b1133719180313b6551"
+}
