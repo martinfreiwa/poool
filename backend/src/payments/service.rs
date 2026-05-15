@@ -1190,8 +1190,7 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
             .await
             .map_err(|e| e.to_string())?;
 
-            revert_pending_order_item_investment(&mut tx, user_id, asset_id, qty, subtotal)
-                .await?;
+            revert_pending_order_item_investment(&mut tx, user_id, asset_id, qty, subtotal).await?;
         }
 
         // 3. Mark order as failed (expired)
@@ -1294,8 +1293,7 @@ pub async fn approve_order(
 
     // 2. Allocate investments only after manual payment verification.
     for (asset_id, tokens_qty, subtotal) in &order_items {
-        allocate_order_item_investment(&mut tx, user_id, *asset_id, *tokens_qty, *subtotal)
-            .await?;
+        allocate_order_item_investment(&mut tx, user_id, *asset_id, *tokens_qty, *subtotal).await?;
     }
 
     // 3. Update order status to completed
