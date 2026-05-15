@@ -88,9 +88,7 @@ pub async fn api_developer_operations_dashboard(
     State(state): State<AppState>,
     Query(q): Query<OperationsQuery>,
 ) -> Result<Json<MatrixDashboardResponse>, ApiError> {
-    let year = q
-        .year
-        .unwrap_or_else(|| chrono::Utc::now().year());
+    let year = q.year.unwrap_or_else(|| chrono::Utc::now().year());
 
     let rows: Vec<MatrixFlatRow> = sqlx::query_as(
         r#"
@@ -262,39 +260,39 @@ pub async fn api_developer_villa_operations_create(
         RETURNING *
         "#,
     )
-    .bind(asset_id)                                         // $1
-    .bind(input.period_year)                                // $2
-    .bind(input.period_month)                               // $3
-    .bind(input.gross_rental_idr_cents)                     // $4
+    .bind(asset_id) // $1
+    .bind(input.period_year) // $2
+    .bind(input.period_month) // $3
+    .bind(input.gross_rental_idr_cents) // $4
     .bind(input.currency_code.unwrap_or_else(|| "IDR".to_string())) // $5
-    .bind(input.nights_available)                           // $6
-    .bind(input.nights_booked)                              // $7
-    .bind(input.expense_cleaning_idr_cents)                 // $8
-    .bind(input.expense_maintenance_idr_cents)              // $9
-    .bind(input.expense_utilities_idr_cents)                // $10
-    .bind(input.expense_staff_idr_cents)                    // $11
-    .bind(input.expense_pool_garden_idr_cents)              // $12
-    .bind(input.expense_pest_idr_cents)                     // $13
-    .bind(input.expense_other_idr_cents)                    // $14
-    .bind(input.expense_property_tax_idr_cents)             // $15
-    .bind(input.expense_insurance_idr_cents)                // $16
-    .bind(input.expense_accounting_idr_cents)               // $17
-    .bind(input.expense_internet_idr_cents)                 // $18
-    .bind(input.expense_capex_idr_cents)                    // $19
-    .bind(input.ota_fees_idr_cents)                         // $20
-    .bind(input.payment_fees_idr_cents)                     // $21
-    .bind(input.refunds_idr_cents)                          // $22
-    .bind(input.mgmt_fee_idr_cents)                         // $23
-    .bind(totals.total_opex_idr_cents)                      // $24
-    .bind(totals.net_rental_income_idr_cents)               // $25
-    .bind(totals.reserve_applied_idr_cents)                 // $26
-    .bind(totals.platform_fee_idr_cents)                    // $27
-    .bind(totals.withholding_idr_cents)                     // $28
-    .bind(totals.distributable_idr_cents)                   // $29
-    .bind(input.mgmt_reported_distributable_idr_cents)      // $30
-    .bind(input.supersedes_id)                              // $31
-    .bind(input.correction_reason)                          // $32
-    .bind(dev.user.id)                                      // $33
+    .bind(input.nights_available) // $6
+    .bind(input.nights_booked) // $7
+    .bind(input.expense_cleaning_idr_cents) // $8
+    .bind(input.expense_maintenance_idr_cents) // $9
+    .bind(input.expense_utilities_idr_cents) // $10
+    .bind(input.expense_staff_idr_cents) // $11
+    .bind(input.expense_pool_garden_idr_cents) // $12
+    .bind(input.expense_pest_idr_cents) // $13
+    .bind(input.expense_other_idr_cents) // $14
+    .bind(input.expense_property_tax_idr_cents) // $15
+    .bind(input.expense_insurance_idr_cents) // $16
+    .bind(input.expense_accounting_idr_cents) // $17
+    .bind(input.expense_internet_idr_cents) // $18
+    .bind(input.expense_capex_idr_cents) // $19
+    .bind(input.ota_fees_idr_cents) // $20
+    .bind(input.payment_fees_idr_cents) // $21
+    .bind(input.refunds_idr_cents) // $22
+    .bind(input.mgmt_fee_idr_cents) // $23
+    .bind(totals.total_opex_idr_cents) // $24
+    .bind(totals.net_rental_income_idr_cents) // $25
+    .bind(totals.reserve_applied_idr_cents) // $26
+    .bind(totals.platform_fee_idr_cents) // $27
+    .bind(totals.withholding_idr_cents) // $28
+    .bind(totals.distributable_idr_cents) // $29
+    .bind(input.mgmt_reported_distributable_idr_cents) // $30
+    .bind(input.supersedes_id) // $31
+    .bind(input.correction_reason) // $32
+    .bind(dev.user.id) // $33
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
@@ -370,33 +368,33 @@ pub async fn api_developer_villa_operations_update(
         RETURNING *
         "#,
     )
-    .bind(log_id)                                           // $1
-    .bind(input.gross_rental_idr_cents)                     // $2
-    .bind(input.nights_available)                           // $3
-    .bind(input.nights_booked)                              // $4
-    .bind(input.expense_cleaning_idr_cents)                 // $5
-    .bind(input.expense_maintenance_idr_cents)              // $6
-    .bind(input.expense_utilities_idr_cents)                // $7
-    .bind(input.expense_staff_idr_cents)                    // $8
-    .bind(input.expense_pool_garden_idr_cents)              // $9
-    .bind(input.expense_pest_idr_cents)                     // $10
-    .bind(input.expense_other_idr_cents)                    // $11
-    .bind(input.expense_property_tax_idr_cents)             // $12
-    .bind(input.expense_insurance_idr_cents)                // $13
-    .bind(input.expense_accounting_idr_cents)               // $14
-    .bind(input.expense_internet_idr_cents)                 // $15
-    .bind(input.expense_capex_idr_cents)                    // $16
-    .bind(input.ota_fees_idr_cents)                         // $17
-    .bind(input.payment_fees_idr_cents)                     // $18
-    .bind(input.refunds_idr_cents)                          // $19
-    .bind(input.mgmt_fee_idr_cents)                         // $20
-    .bind(totals.total_opex_idr_cents)                      // $21
-    .bind(totals.net_rental_income_idr_cents)               // $22
-    .bind(totals.reserve_applied_idr_cents)                 // $23
-    .bind(totals.platform_fee_idr_cents)                    // $24
-    .bind(totals.withholding_idr_cents)                     // $25
-    .bind(totals.distributable_idr_cents)                   // $26
-    .bind(input.mgmt_reported_distributable_idr_cents)      // $27
+    .bind(log_id) // $1
+    .bind(input.gross_rental_idr_cents) // $2
+    .bind(input.nights_available) // $3
+    .bind(input.nights_booked) // $4
+    .bind(input.expense_cleaning_idr_cents) // $5
+    .bind(input.expense_maintenance_idr_cents) // $6
+    .bind(input.expense_utilities_idr_cents) // $7
+    .bind(input.expense_staff_idr_cents) // $8
+    .bind(input.expense_pool_garden_idr_cents) // $9
+    .bind(input.expense_pest_idr_cents) // $10
+    .bind(input.expense_other_idr_cents) // $11
+    .bind(input.expense_property_tax_idr_cents) // $12
+    .bind(input.expense_insurance_idr_cents) // $13
+    .bind(input.expense_accounting_idr_cents) // $14
+    .bind(input.expense_internet_idr_cents) // $15
+    .bind(input.expense_capex_idr_cents) // $16
+    .bind(input.ota_fees_idr_cents) // $17
+    .bind(input.payment_fees_idr_cents) // $18
+    .bind(input.refunds_idr_cents) // $19
+    .bind(input.mgmt_fee_idr_cents) // $20
+    .bind(totals.total_opex_idr_cents) // $21
+    .bind(totals.net_rental_income_idr_cents) // $22
+    .bind(totals.reserve_applied_idr_cents) // $23
+    .bind(totals.platform_fee_idr_cents) // $24
+    .bind(totals.withholding_idr_cents) // $25
+    .bind(totals.distributable_idr_cents) // $26
+    .bind(input.mgmt_reported_distributable_idr_cents) // $27
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;

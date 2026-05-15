@@ -37,11 +37,23 @@ fn build_display_name(
 /// function so we can compute it from any cents value (per-user batch sum
 /// or a single-user sidebar lookup).
 pub fn portfolio_tier_for_cents(cents: i64) -> Option<&'static str> {
-    if cents >= 10_000_000 { Some("Platinum") }       // ≥ $100k
-    else if cents >= 1_000_000 { Some("Gold") }       // ≥ $10k
-    else if cents >= 100_000 { Some("Silver") }       // ≥ $1k
-    else if cents > 0 { Some("Bronze") }
-    else { None }
+    if cents >= 10_000_000 {
+        Some("Platinum")
+    }
+    // ≥ $100k
+    else if cents >= 1_000_000 {
+        Some("Gold")
+    }
+    // ≥ $10k
+    else if cents >= 100_000 {
+        Some("Silver")
+    }
+    // ≥ $1k
+    else if cents > 0 {
+        Some("Bronze")
+    } else {
+        None
+    }
 }
 
 /// W3.4: batch-resolve user_id → portfolio tier label. Single core-DB

@@ -373,9 +373,7 @@ pub async fn api_admin_affiliate_team_member_move(
     .ok_or_else(|| ApiError::NotFound("Target team not found".into()))?;
 
     if target.status != "active" {
-        return Err(ApiError::BadRequest(
-            "Target team must be active".into(),
-        ));
+        return Err(ApiError::BadRequest("Target team must be active".into()));
     }
 
     // 1) Remove from source — same path as developer remove, but actor=admin.

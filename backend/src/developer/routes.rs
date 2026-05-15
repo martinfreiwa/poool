@@ -423,8 +423,12 @@ pub async fn page_developer_onboarding(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    crate::common::routes_helper::serve_protected(jar, &state, "developer/developer-onboarding.html")
-        .await
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/developer-onboarding.html",
+    )
+    .await
 }
 
 /// POST /api/developer/apply — Save developer application + auto-grant developer role.
@@ -437,7 +441,13 @@ pub async fn api_developer_apply(
 
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
-        None => return (StatusCode::UNAUTHORIZED, axum::Json(serde_json::json!({"ok": false, "error": "Please log in"}))).into_response(),
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                axum::Json(serde_json::json!({"ok": false, "error": "Please log in"})),
+            )
+                .into_response()
+        }
     };
 
     // Auto-grant developer role if not already a developer
@@ -451,13 +461,14 @@ pub async fn api_developer_apply(
     .unwrap_or(false);
 
     if !is_developer {
-        let role_id: Option<uuid::Uuid> = sqlx::query_scalar("SELECT id FROM roles WHERE name = 'developer'")
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+        let role_id: Option<uuid::Uuid> =
+            sqlx::query_scalar("SELECT id FROM roles WHERE name = 'developer'")
+                .fetch_optional(&state.db)
+                .await
+                .unwrap_or(None);
         if let Some(rid) = role_id {
             let _ = sqlx::query(
-                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             )
             .bind(user.id)
             .bind(rid)
@@ -474,7 +485,11 @@ pub async fn api_developer_apply(
         "Developer application submitted"
     );
 
-    (StatusCode::OK, axum::Json(serde_json::json!({"ok": true, "redirect": "/developer/dashboard"}))).into_response()
+    (
+        StatusCode::OK,
+        axum::Json(serde_json::json!({"ok": true, "redirect": "/developer/dashboard"})),
+    )
+        .into_response()
 }
 
 /// GET /developer/application-form — Render the developer application form.

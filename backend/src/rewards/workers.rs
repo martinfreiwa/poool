@@ -184,8 +184,7 @@ pub async fn run_referral_clicks_partition_maint_worker(pool: PgPool) {
         tracing::info!("📦 referral_clicks: startup partition-heal complete");
     }
 
-    let mut interval =
-        tokio::time::interval(Duration::from_secs(PARTITION_MAINT_INTERVAL_SECS));
+    let mut interval = tokio::time::interval(Duration::from_secs(PARTITION_MAINT_INTERVAL_SECS));
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
     interval.tick().await; // consume immediate-first-tick after startup heal
 
@@ -229,7 +228,8 @@ pub async fn run_referral_clicks_partition_retention_worker(pool: PgPool) {
     }
 
     tokio::time::sleep(Duration::from_secs(120)).await; // boot offset
-    let mut interval = tokio::time::interval(Duration::from_secs(PARTITION_RETENTION_INTERVAL_SECS));
+    let mut interval =
+        tokio::time::interval(Duration::from_secs(PARTITION_RETENTION_INTERVAL_SECS));
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
     tracing::info!(

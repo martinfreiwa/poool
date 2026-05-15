@@ -92,14 +92,43 @@ async fn make_team(pool: &PgPool, developer_user_id: Uuid) -> Uuid {
 async fn cleanup_user(pool: &PgPool, user_id: Uuid) {
     // Order matters: drop child rows before parents.
     let _ = sqlx::query!("DELETE FROM referral_clicks WHERE link_id IN (SELECT id FROM affiliate_links WHERE attribution_user_id = $1 OR payout_user_id = $1)", user_id).execute(pool).await;
-    let _ = sqlx::query!("DELETE FROM affiliate_commissions WHERE attribution_user_id = $1 OR payout_user_id = $1", user_id).execute(pool).await;
+    let _ = sqlx::query!(
+        "DELETE FROM affiliate_commissions WHERE attribution_user_id = $1 OR payout_user_id = $1",
+        user_id
+    )
+    .execute(pool)
+    .await;
     let _ = sqlx::query!("DELETE FROM affiliate_referrals WHERE attribution_user_id = $1 OR payout_user_id = $1 OR referred_user_id = $1", user_id).execute(pool).await;
-    let _ = sqlx::query!("DELETE FROM affiliate_links WHERE attribution_user_id = $1 OR payout_user_id = $1", user_id).execute(pool).await;
-    let _ = sqlx::query!("DELETE FROM developer_team_memberships WHERE user_id = $1", user_id).execute(pool).await;
-    let _ = sqlx::query!("DELETE FROM developer_teams WHERE developer_user_id = $1", user_id).execute(pool).await;
-    let _ = sqlx::query!("DELETE FROM affiliates WHERE user_id = $1", user_id).execute(pool).await;
-    let _ = sqlx::query!("DELETE FROM affiliate_live_counters WHERE payout_user_id = $1", user_id).execute(pool).await;
-    let _ = sqlx::query!("DELETE FROM users WHERE id = $1", user_id).execute(pool).await;
+    let _ = sqlx::query!(
+        "DELETE FROM affiliate_links WHERE attribution_user_id = $1 OR payout_user_id = $1",
+        user_id
+    )
+    .execute(pool)
+    .await;
+    let _ = sqlx::query!(
+        "DELETE FROM developer_team_memberships WHERE user_id = $1",
+        user_id
+    )
+    .execute(pool)
+    .await;
+    let _ = sqlx::query!(
+        "DELETE FROM developer_teams WHERE developer_user_id = $1",
+        user_id
+    )
+    .execute(pool)
+    .await;
+    let _ = sqlx::query!("DELETE FROM affiliates WHERE user_id = $1", user_id)
+        .execute(pool)
+        .await;
+    let _ = sqlx::query!(
+        "DELETE FROM affiliate_live_counters WHERE payout_user_id = $1",
+        user_id
+    )
+    .execute(pool)
+    .await;
+    let _ = sqlx::query!("DELETE FROM users WHERE id = $1", user_id)
+        .execute(pool)
+        .await;
 }
 
 // ─── DB constraint tests ────────────────────────────────────────────────────
@@ -121,7 +150,10 @@ async fn affiliate_links_shape_constraint_rejects_personal_with_team() {
     .execute(&p)
     .await;
 
-    assert!(err.is_err(), "personal link with team_id should violate CHECK");
+    assert!(
+        err.is_err(),
+        "personal link with team_id should violate CHECK"
+    );
     cleanup_user(&p, u).await;
 }
 
@@ -144,7 +176,10 @@ async fn affiliate_links_shape_constraint_rejects_team_business_same_user() {
     .execute(&p)
     .await;
 
-    assert!(err.is_err(), "team_business with attribution=payout should violate CHECK");
+    assert!(
+        err.is_err(),
+        "team_business with attribution=payout should violate CHECK"
+    );
     cleanup_user(&p, dev).await;
 }
 
@@ -181,7 +216,10 @@ async fn one_active_membership_per_user_enforces_partial_unique() {
     .execute(&p)
     .await;
 
-    assert!(err.is_err(), "second active membership should violate partial-unique");
+    assert!(
+        err.is_err(),
+        "second active membership should violate partial-unique"
+    );
 
     cleanup_user(&p, dev_a).await;
     cleanup_user(&p, dev_b).await;
@@ -241,7 +279,10 @@ async fn create_team_business_link_is_idempotent_and_enforces_active_membership(
         .expect("second create");
 
     assert_eq!(first.id, second.id);
-    assert_eq!(first.link_type, team_models::LinkType::TeamBusiness.as_str());
+    assert_eq!(
+        first.link_type,
+        team_models::LinkType::TeamBusiness.as_str()
+    );
     assert_eq!(first.attribution_user_id, member);
     assert_eq!(first.payout_user_id, dev);
     assert_eq!(first.team_id, Some(team_id));
@@ -259,7 +300,9 @@ async fn personal_attribution_writes_self_payout() {
     let owner = make_user(&p, "att-owner").await;
     let visitor = make_user(&p, "att-vis").await;
     make_active_affiliate(&p, owner).await;
-    let link = team_links::create_personal_link(&p, owner).await.expect("link");
+    let link = team_links::create_personal_link(&p, owner)
+        .await
+        .expect("link");
 
     let ok = service::attribute_affiliate_referral(&p, &link.code, visitor, None, None, None)
         .await
@@ -295,8 +338,12 @@ async fn team_business_attribution_splits_attribution_from_payout() {
     sqlx::query!(
         "INSERT INTO developer_team_memberships (team_id, user_id, status, joined_at)
          VALUES ($1, $2, 'active', NOW())",
-        team_id, mem
-    ).execute(&p).await.unwrap();
+        team_id,
+        mem
+    )
+    .execute(&p)
+    .await
+    .unwrap();
 
     let link = team_links::create_team_business_link(&p, team_id, mem, dev)
         .await
@@ -330,7 +377,9 @@ async fn self_referral_blocked_at_attribution() {
     let p = pool().await;
     let owner = make_user(&p, "self-ref").await;
     make_active_affiliate(&p, owner).await;
-    let link = team_links::create_personal_link(&p, owner).await.expect("link");
+    let link = team_links::create_personal_link(&p, owner)
+        .await
+        .expect("link");
 
     let ok = service::attribute_affiliate_referral(&p, &link.code, owner, None, None, None)
         .await
@@ -363,8 +412,13 @@ async fn team_member_cannot_refer_into_own_team() {
         "INSERT INTO developer_team_memberships (team_id, user_id, status, joined_at)
          VALUES ($1, $2, 'active', NOW()),
                 ($1, $3, 'active', NOW())",
-        team_id, mem_a, mem_b
-    ).execute(&p).await.unwrap_or_else(|_| {
+        team_id,
+        mem_a,
+        mem_b
+    )
+    .execute(&p)
+    .await
+    .unwrap_or_else(|_| {
         // partial-unique would block both — split insert
         Default::default()
     });
@@ -377,14 +431,22 @@ async fn team_member_cannot_refer_into_own_team() {
         "INSERT INTO developer_team_memberships (team_id, user_id, status, joined_at)
          VALUES ($1, $2, 'active', NOW())
          ON CONFLICT DO NOTHING",
-        team_id, mem_a
-    ).execute(&p).await.ok();
+        team_id,
+        mem_a
+    )
+    .execute(&p)
+    .await
+    .ok();
     sqlx::query!(
         "INSERT INTO developer_team_memberships (team_id, user_id, status, joined_at)
          VALUES ($1, $2, 'active', NOW())
          ON CONFLICT DO NOTHING",
-        team_id, mem_b
-    ).execute(&p).await.ok();
+        team_id,
+        mem_b
+    )
+    .execute(&p)
+    .await
+    .ok();
 
     let link = team_links::create_team_business_link(&p, team_id, mem_a, dev)
         .await
@@ -414,8 +476,12 @@ async fn remove_member_deactivates_team_business_links() {
     let membership_id = sqlx::query_scalar!(
         "INSERT INTO developer_team_memberships (team_id, user_id, status, joined_at)
          VALUES ($1, $2, 'active', NOW()) RETURNING id",
-        team_id, mem
-    ).fetch_one(&p).await.unwrap();
+        team_id,
+        mem
+    )
+    .fetch_one(&p)
+    .await
+    .unwrap();
 
     let link = team_links::create_team_business_link(&p, team_id, mem, dev)
         .await
@@ -426,13 +492,10 @@ async fn remove_member_deactivates_team_business_links() {
         .await
         .expect("remove");
 
-    let row = sqlx::query!(
-        "SELECT status FROM affiliate_links WHERE id = $1",
-        link.id
-    )
-    .fetch_one(&p)
-    .await
-    .unwrap();
+    let row = sqlx::query!("SELECT status FROM affiliate_links WHERE id = $1", link.id)
+        .fetch_one(&p)
+        .await
+        .unwrap();
     assert_eq!(row.status, "inactive");
 
     let mem_row = sqlx::query!(
@@ -460,33 +523,43 @@ async fn dashboard_context_filter_separates_personal_and_business() {
     sqlx::query!(
         "INSERT INTO developer_team_memberships (team_id, user_id, status, joined_at)
          VALUES ($1, $2, 'active', NOW())",
-        team_id, mem
-    ).execute(&p).await.unwrap();
+        team_id,
+        mem
+    )
+    .execute(&p)
+    .await
+    .unwrap();
 
     make_active_affiliate(&p, mem).await;
 
-    let _personal = team_links::create_personal_link(&p, mem).await.expect("personal");
+    let _personal = team_links::create_personal_link(&p, mem)
+        .await
+        .expect("personal");
     let _biz = team_links::create_team_business_link(&p, team_id, mem, dev)
         .await
         .expect("business");
 
     // Personal context — affiliate dashboard should resolve without errors.
-    let personal = service::get_affiliate_dashboard_with_context(
-        &p, mem, service::DashboardContext::Personal,
-    )
-    .await
-    .expect("personal dashboard");
-    assert_eq!(personal.get("context").and_then(|v| v.as_str()), Some("personal"));
+    let personal =
+        service::get_affiliate_dashboard_with_context(&p, mem, service::DashboardContext::Personal)
+            .await
+            .expect("personal dashboard");
+    assert_eq!(
+        personal.get("context").and_then(|v| v.as_str()),
+        Some("personal")
+    );
 
     // Business context — Member sieht reporting-only data (informational_only
     // flag erscheint nur wenn affiliate-profile fehlt; member hat eins, also
     // expect normal dashboard response).
-    let business = service::get_affiliate_dashboard_with_context(
-        &p, mem, service::DashboardContext::Business,
-    )
-    .await
-    .expect("business dashboard");
-    assert_eq!(business.get("context").and_then(|v| v.as_str()), Some("business"));
+    let business =
+        service::get_affiliate_dashboard_with_context(&p, mem, service::DashboardContext::Business)
+            .await
+            .expect("business dashboard");
+    assert_eq!(
+        business.get("context").and_then(|v| v.as_str()),
+        Some("business")
+    );
 
     cleanup_user(&p, dev).await;
     cleanup_user(&p, mem).await;

@@ -258,40 +258,40 @@ pub async fn api_admin_villa_operations_create(
         RETURNING *
         "#,
     )
-    .bind(asset_id)                                         // $1
-    .bind(input.period_year)                                // $2
-    .bind(input.period_month)                               // $3
-    .bind(input.gross_rental_idr_cents)                     // $4
+    .bind(asset_id) // $1
+    .bind(input.period_year) // $2
+    .bind(input.period_month) // $3
+    .bind(input.gross_rental_idr_cents) // $4
     .bind(input.currency_code.unwrap_or_else(|| "IDR".to_string())) // $5
-    .bind(input.nights_available)                           // $6
-    .bind(input.nights_booked)                              // $7
-    .bind(input.expense_cleaning_idr_cents)                 // $8
-    .bind(input.expense_maintenance_idr_cents)              // $9
-    .bind(input.expense_utilities_idr_cents)                // $10
-    .bind(input.expense_staff_idr_cents)                    // $11
-    .bind(input.expense_pool_garden_idr_cents)              // $12
-    .bind(input.expense_pest_idr_cents)                     // $13
-    .bind(input.expense_other_idr_cents)                    // $14
-    .bind(input.expense_property_tax_idr_cents)             // $15
-    .bind(input.expense_insurance_idr_cents)                // $16
-    .bind(input.expense_accounting_idr_cents)               // $17
-    .bind(input.expense_internet_idr_cents)                 // $18
-    .bind(input.expense_capex_idr_cents)                    // $19
-    .bind(input.ota_fees_idr_cents)                         // $20
-    .bind(input.payment_fees_idr_cents)                     // $21
-    .bind(input.refunds_idr_cents)                          // $22
-    .bind(input.mgmt_fee_idr_cents)                         // $23
-    .bind(totals.total_opex_idr_cents)                      // $24
-    .bind(totals.net_rental_income_idr_cents)               // $25
-    .bind(input.reserve_override_idr_cents)                 // $26
-    .bind(totals.reserve_applied_idr_cents)                 // $27
-    .bind(totals.platform_fee_idr_cents)                    // $28
-    .bind(totals.withholding_idr_cents)                     // $29
-    .bind(totals.distributable_idr_cents)                   // $30
-    .bind(input.mgmt_reported_distributable_idr_cents)      // $31
-    .bind(input.supersedes_id)                              // $32
-    .bind(input.correction_reason.clone())                  // $33
-    .bind(admin.user.id)                                    // $34
+    .bind(input.nights_available) // $6
+    .bind(input.nights_booked) // $7
+    .bind(input.expense_cleaning_idr_cents) // $8
+    .bind(input.expense_maintenance_idr_cents) // $9
+    .bind(input.expense_utilities_idr_cents) // $10
+    .bind(input.expense_staff_idr_cents) // $11
+    .bind(input.expense_pool_garden_idr_cents) // $12
+    .bind(input.expense_pest_idr_cents) // $13
+    .bind(input.expense_other_idr_cents) // $14
+    .bind(input.expense_property_tax_idr_cents) // $15
+    .bind(input.expense_insurance_idr_cents) // $16
+    .bind(input.expense_accounting_idr_cents) // $17
+    .bind(input.expense_internet_idr_cents) // $18
+    .bind(input.expense_capex_idr_cents) // $19
+    .bind(input.ota_fees_idr_cents) // $20
+    .bind(input.payment_fees_idr_cents) // $21
+    .bind(input.refunds_idr_cents) // $22
+    .bind(input.mgmt_fee_idr_cents) // $23
+    .bind(totals.total_opex_idr_cents) // $24
+    .bind(totals.net_rental_income_idr_cents) // $25
+    .bind(input.reserve_override_idr_cents) // $26
+    .bind(totals.reserve_applied_idr_cents) // $27
+    .bind(totals.platform_fee_idr_cents) // $28
+    .bind(totals.withholding_idr_cents) // $29
+    .bind(totals.distributable_idr_cents) // $30
+    .bind(input.mgmt_reported_distributable_idr_cents) // $31
+    .bind(input.supersedes_id) // $32
+    .bind(input.correction_reason.clone()) // $33
+    .bind(admin.user.id) // $34
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
@@ -362,34 +362,34 @@ pub async fn api_admin_villa_operations_update(
         RETURNING *
         "#,
     )
-    .bind(log_id)                                           // $1
-    .bind(input.gross_rental_idr_cents)                     // $2
-    .bind(input.nights_available)                           // $3
-    .bind(input.nights_booked)                              // $4
-    .bind(input.expense_cleaning_idr_cents)                 // $5
-    .bind(input.expense_maintenance_idr_cents)              // $6
-    .bind(input.expense_utilities_idr_cents)                // $7
-    .bind(input.expense_staff_idr_cents)                    // $8
-    .bind(input.expense_pool_garden_idr_cents)              // $9
-    .bind(input.expense_pest_idr_cents)                     // $10
-    .bind(input.expense_other_idr_cents)                    // $11
-    .bind(input.expense_property_tax_idr_cents)             // $12
-    .bind(input.expense_insurance_idr_cents)                // $13
-    .bind(input.expense_accounting_idr_cents)               // $14
-    .bind(input.expense_internet_idr_cents)                 // $15
-    .bind(input.expense_capex_idr_cents)                    // $16
-    .bind(input.ota_fees_idr_cents)                         // $17
-    .bind(input.payment_fees_idr_cents)                     // $18
-    .bind(input.refunds_idr_cents)                          // $19
-    .bind(input.mgmt_fee_idr_cents)                         // $20
-    .bind(totals.total_opex_idr_cents)                      // $21
-    .bind(totals.net_rental_income_idr_cents)               // $22
-    .bind(input.reserve_override_idr_cents)                 // $23
-    .bind(totals.reserve_applied_idr_cents)                 // $24
-    .bind(totals.platform_fee_idr_cents)                    // $25
-    .bind(totals.withholding_idr_cents)                     // $26
-    .bind(totals.distributable_idr_cents)                   // $27
-    .bind(input.mgmt_reported_distributable_idr_cents)      // $28
+    .bind(log_id) // $1
+    .bind(input.gross_rental_idr_cents) // $2
+    .bind(input.nights_available) // $3
+    .bind(input.nights_booked) // $4
+    .bind(input.expense_cleaning_idr_cents) // $5
+    .bind(input.expense_maintenance_idr_cents) // $6
+    .bind(input.expense_utilities_idr_cents) // $7
+    .bind(input.expense_staff_idr_cents) // $8
+    .bind(input.expense_pool_garden_idr_cents) // $9
+    .bind(input.expense_pest_idr_cents) // $10
+    .bind(input.expense_other_idr_cents) // $11
+    .bind(input.expense_property_tax_idr_cents) // $12
+    .bind(input.expense_insurance_idr_cents) // $13
+    .bind(input.expense_accounting_idr_cents) // $14
+    .bind(input.expense_internet_idr_cents) // $15
+    .bind(input.expense_capex_idr_cents) // $16
+    .bind(input.ota_fees_idr_cents) // $17
+    .bind(input.payment_fees_idr_cents) // $18
+    .bind(input.refunds_idr_cents) // $19
+    .bind(input.mgmt_fee_idr_cents) // $20
+    .bind(totals.total_opex_idr_cents) // $21
+    .bind(totals.net_rental_income_idr_cents) // $22
+    .bind(input.reserve_override_idr_cents) // $23
+    .bind(totals.reserve_applied_idr_cents) // $24
+    .bind(totals.platform_fee_idr_cents) // $25
+    .bind(totals.withholding_idr_cents) // $26
+    .bind(totals.distributable_idr_cents) // $27
+    .bind(input.mgmt_reported_distributable_idr_cents) // $28
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
@@ -566,10 +566,10 @@ pub async fn api_admin_villa_operations_publish(
     // credit investor wallets in one background task. Both steps are idempotent so
     // the manual "Distribute" button on the UI remains a safe no-op retry.
     {
-        let pool      = state.db.clone();
-        let actor_id  = admin.user.id;
+        let pool = state.db.clone();
+        let actor_id = admin.user.id;
         let asset_id_ = row.asset_id;
-        let log_id_   = row.id;
+        let log_id_ = row.id;
         tokio::spawn(async move {
             match distribute_core(&pool, asset_id_, log_id_, actor_id).await {
                 Err(e) => {
@@ -578,13 +578,16 @@ pub async fn api_admin_villa_operations_publish(
                 Ok(dist) => {
                     tracing::info!(
                         "post-publish auto-distribute: created={} skipped={} total={}",
-                        dist.created, dist.skipped, dist.total_paid_cents
+                        dist.created,
+                        dist.skipped,
+                        dist.total_paid_cents
                     );
                     match process_payouts_core(&pool, asset_id_, log_id_, actor_id).await {
                         Err(e) => tracing::warn!("post-publish auto-process-payouts failed: {e:?}"),
                         Ok(pp) => tracing::info!(
                             "post-publish auto-process-payouts: paid={} total={}",
-                            pp.paid_count, pp.paid_total_cents
+                            pp.paid_count,
+                            pp.paid_total_cents
                         ),
                     }
                 }
@@ -1173,8 +1176,12 @@ pub(crate) async fn process_payouts_core(
         });
         tokio::spawn(async move {
             let _ = crate::email::trigger_transactional_email(
-                &email_pool, &email_user, "dividend_payout", email_meta,
-            ).await;
+                &email_pool,
+                &email_user,
+                "dividend_payout",
+                email_meta,
+            )
+            .await;
         });
 
         paid_count += 1;

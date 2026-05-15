@@ -111,7 +111,9 @@ async fn require_team_owner(
 fn parse_date_query(q: Option<String>, default_offset_days: i64) -> NaiveDate {
     q.as_deref()
         .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
-        .unwrap_or_else(|| chrono::Utc::now().date_naive() - chrono::Duration::days(default_offset_days))
+        .unwrap_or_else(|| {
+            chrono::Utc::now().date_naive() - chrono::Duration::days(default_offset_days)
+        })
 }
 
 #[derive(Deserialize)]
@@ -162,11 +164,37 @@ pub struct UpdateTeamPayload {
 /// Reserved slugs that would collide with platform routes or admin paths.
 /// Sorted alphabetical for binary_search.
 const RESERVED_SLUGS: &[&str] = &[
-    "admin", "affiliate", "api", "app", "assets", "auth", "billing",
-    "blog", "checkout", "community", "dashboard", "developer", "docs",
-    "help", "kyc", "login", "logout", "marketplace", "marketing",
-    "portfolio", "profile", "register", "rewards", "settings", "signup",
-    "static", "support", "terms", "user", "wallet", "www",
+    "admin",
+    "affiliate",
+    "api",
+    "app",
+    "assets",
+    "auth",
+    "billing",
+    "blog",
+    "checkout",
+    "community",
+    "dashboard",
+    "developer",
+    "docs",
+    "help",
+    "kyc",
+    "login",
+    "logout",
+    "marketplace",
+    "marketing",
+    "portfolio",
+    "profile",
+    "register",
+    "rewards",
+    "settings",
+    "signup",
+    "static",
+    "support",
+    "terms",
+    "user",
+    "wallet",
+    "www",
 ];
 
 /// Slug-Whitelist: lowercase letters, digits, hyphen. 3–40 chars,
@@ -177,9 +205,7 @@ fn validate_slug(s: &str) -> Result<String, ApiError> {
         return Ok(String::new()); // allow clear
     }
     if trimmed.len() < 3 || trimmed.len() > 40 {
-        return Err(ApiError::BadRequest(
-            "Slug must be 3–40 characters".into(),
-        ));
+        return Err(ApiError::BadRequest("Slug must be 3–40 characters".into()));
     }
     if !trimmed
         .chars()
@@ -214,10 +240,14 @@ fn validate_email(raw: &str) -> Result<String, ApiError> {
     }
     let parts: Vec<&str> = trimmed.split('@').collect();
     if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
-        return Err(ApiError::BadRequest("Email must contain a single '@'".into()));
+        return Err(ApiError::BadRequest(
+            "Email must contain a single '@'".into(),
+        ));
     }
     if !parts[1].contains('.') {
-        return Err(ApiError::BadRequest("Email domain must contain a dot".into()));
+        return Err(ApiError::BadRequest(
+            "Email domain must contain a dot".into(),
+        ));
     }
     if trimmed.chars().any(|c| c.is_control() || c.is_whitespace()) {
         return Err(ApiError::BadRequest(
@@ -435,7 +465,7 @@ pub async fn invite_member(
             .await
             .map_err(|e| match e {
                 crate::error::AppError::BadRequest(m) => ApiError::BadRequest(m),
-                crate::error::AppError::Conflict(m)   => ApiError::Conflict(m),
+                crate::error::AppError::Conflict(m) => ApiError::Conflict(m),
                 _ => ApiError::Internal("invite failed".into()),
             })?;
 
@@ -482,13 +512,12 @@ pub async fn remove_member(
     Json(payload): Json<RemoveMemberPayload>,
 ) -> Result<axum::response::Response, ApiError> {
     // Ownership-Check inline
-    let team_id: Option<Uuid> = sqlx::query_scalar(
-        "SELECT team_id FROM developer_team_memberships WHERE id = $1",
-    )
-    .bind(membership_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(ApiError::Database)?;
+    let team_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT team_id FROM developer_team_memberships WHERE id = $1")
+            .bind(membership_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::Database)?;
     let team_id = team_id.ok_or_else(|| ApiError::NotFound("Membership not found".into()))?;
     require_team_owner(&state.db, team_id, dev.user.id).await?;
 
@@ -588,7 +617,11 @@ pub async fn accept_invitation(
             crate::error::AppError::BadRequest(m) => ApiError::BadRequest(m),
             _ => ApiError::Internal("accept failed".into()),
         })?;
-    Ok((StatusCode::OK, Json(serde_json::json!({"status": "active"}))).into_response())
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({"status": "active"})),
+    )
+        .into_response())
 }
 
 pub async fn self_request_join(
@@ -611,8 +644,10 @@ pub async fn self_request_join(
         crate::error::AppError::Conflict(m) => ApiError::Conflict(m),
         _ => ApiError::Internal("self-request failed".into()),
     })?;
-    Ok(Json(serde_json::json!({"membership_id": id, "status": "pending_developer_approval"}))
-        .into_response())
+    Ok(
+        Json(serde_json::json!({"membership_id": id, "status": "pending_developer_approval"}))
+            .into_response(),
+    )
 }
 
 pub async fn my_membership(
@@ -671,10 +706,7 @@ pub fn router() -> Router<AppState> {
             "/api/developer/affiliate/team/members",
             get(list_team_members),
         )
-        .route(
-            "/api/developer/affiliate/team/invite",
-            post(invite_member),
-        )
+        .route("/api/developer/affiliate/team/invite", post(invite_member))
         .route(
             "/api/developer/affiliate/team/members/:id/approve",
             post(approve_member),
@@ -694,7 +726,10 @@ pub fn router() -> Router<AppState> {
         )
         .route("/api/developer/affiliate/team/products", get(team_products))
         // Member self-service endpoints
-        .route("/api/affiliate/team/accept-invitation", post(accept_invitation))
+        .route(
+            "/api/affiliate/team/accept-invitation",
+            post(accept_invitation),
+        )
         .route("/api/affiliate/team/self-request", post(self_request_join))
         .route("/api/affiliate/team/my-membership", get(my_membership))
 }

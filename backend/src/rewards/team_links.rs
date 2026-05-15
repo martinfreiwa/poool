@@ -31,13 +31,12 @@ pub fn generate_unique_code() -> String {
 async fn generate_available_code(pool: &PgPool) -> Result<String, AppError> {
     for _ in 0..5 {
         let code = generate_unique_code();
-        let exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM affiliate_links WHERE code = $1)",
-        )
-        .bind(&code)
-        .fetch_one(pool)
-        .await
-        .unwrap_or(false);
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM affiliate_links WHERE code = $1)")
+                .bind(&code)
+                .fetch_one(pool)
+                .await
+                .unwrap_or(false);
         if !exists {
             return Ok(code);
         }
@@ -86,10 +85,7 @@ pub async fn list_active_for_team(
 
 /// Liefert alle Links eines Users (sowohl als attribution_user_id als auch
 /// als payout_user_id — also "alles was ich verdienen oder ausführen kann").
-pub async fn list_for_user(
-    pool: &PgPool,
-    user_id: Uuid,
-) -> Result<Vec<AffiliateLink>, AppError> {
+pub async fn list_for_user(pool: &PgPool, user_id: Uuid) -> Result<Vec<AffiliateLink>, AppError> {
     let rows = sqlx::query_as::<_, AffiliateLink>(
         r#"SELECT id, code, link_type, attribution_user_id, payout_user_id, team_id,
                   status, created_at, updated_at, deactivated_at, deactivated_reason
@@ -111,10 +107,7 @@ pub async fn list_for_user(
 ///
 /// Idempotent — wenn der User schon einen aktiven Personal-Link hat, gibt
 /// die existierende Row zurück.
-pub async fn create_personal_link(
-    pool: &PgPool,
-    user_id: Uuid,
-) -> Result<AffiliateLink, AppError> {
+pub async fn create_personal_link(pool: &PgPool, user_id: Uuid) -> Result<AffiliateLink, AppError> {
     // Idempotenz: bereits aktiver Personal-Link?
     let existing = sqlx::query_as::<_, AffiliateLink>(
         r#"SELECT id, code, link_type, attribution_user_id, payout_user_id, team_id,

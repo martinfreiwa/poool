@@ -62,10 +62,7 @@ pub fn router() -> Router<AppState> {
             "/developer/onboarding",
             get(routes::page_developer_onboarding),
         )
-        .route(
-            "/api/developer/apply",
-            post(routes::api_developer_apply),
-        )
+        .route("/api/developer/apply", post(routes::api_developer_apply))
         .route(
             "/developer/application-form",
             get(page_developer_application_form),
@@ -113,10 +110,7 @@ pub fn router() -> Router<AppState> {
             "/api/developer/assets/:id/pending-changes",
             get(change_requests::get_pending),
         )
-        .route(
-            "/developer/ranking",
-            get(routes::page_developer_ranking),
-        )
+        .route("/developer/ranking", get(routes::page_developer_ranking))
         // ── Villa-Returns P2 — developer operations workflow ─────────
         .route(
             "/developer/operations",

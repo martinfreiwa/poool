@@ -345,10 +345,8 @@ pub fn map_to_post_display(
         .unwrap_or_else(|| p.content.clone());
     // W3.5: also capture `$slug` so we can render asset tickers as links
     // straight to the marketplace card. Slug accepts a-z, 0-9, hyphen.
-    let re = regex::Regex::new(
-        r"(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+|\$[a-zA-Z0-9_-]+)",
-    )
-    .unwrap();
+    let re =
+        regex::Regex::new(r"(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+|\$[a-zA-Z0-9_-]+)").unwrap();
     let rendered_content = if p.post_type == "announcement" {
         raw_content.clone()
     } else {
@@ -3094,15 +3092,14 @@ async fn get_profile_me(
     // Cross-DB read: leaderboard visibility lives on
     // `leaderboard_preferences.visible` in the core DB. Default TRUE when
     // the row hasn't been created yet (matches the FE optimistic default).
-    let leaderboard_visible: bool = sqlx::query_scalar(
-        "SELECT visible FROM leaderboard_preferences WHERE user_id = $1",
-    )
-    .bind(user.id)
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten()
-    .unwrap_or(true);
+    let leaderboard_visible: bool =
+        sqlx::query_scalar("SELECT visible FROM leaderboard_preferences WHERE user_id = $1")
+            .bind(user.id)
+            .fetch_optional(&state.db)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or(true);
 
     Ok(Json(serde_json::json!({
         "user_id": profile.user_id,
@@ -5800,12 +5797,11 @@ async fn submit_challenge_entry(
     }
 
     // Confirm challenge exists and is a submission-type, active.
-    let kind: Option<(String, bool)> = sqlx::query_as(
-        "SELECT requirement_type, is_active FROM challenges WHERE id = $1",
-    )
-    .bind(challenge_id)
-    .fetch_optional(&c_pool)
-    .await?;
+    let kind: Option<(String, bool)> =
+        sqlx::query_as("SELECT requirement_type, is_active FROM challenges WHERE id = $1")
+            .bind(challenge_id)
+            .fetch_optional(&c_pool)
+            .await?;
     let (req_type, is_active) =
         kind.ok_or_else(|| AppError::NotFound("Challenge not found.".into()))?;
     if !is_active {
@@ -5900,9 +5896,7 @@ async fn list_challenge_submissions(
             })
         })
         .collect();
-    Ok(Json(
-        serde_json::json!({ "submissions": submissions }),
-    ))
+    Ok(Json(serde_json::json!({ "submissions": submissions })))
 }
 
 /// POST /api/community/challenges/submissions/:sid/vote — toggle vote.
@@ -5917,12 +5911,11 @@ async fn toggle_submission_vote(
     let c_pool = get_community_pool(&state)?;
 
     // Don't allow self-voting (cheap sybil).
-    let owner: Option<(Uuid, Uuid)> = sqlx::query_as(
-        "SELECT user_id, challenge_id FROM challenge_submissions WHERE id = $1",
-    )
-    .bind(submission_id)
-    .fetch_optional(&c_pool)
-    .await?;
+    let owner: Option<(Uuid, Uuid)> =
+        sqlx::query_as("SELECT user_id, challenge_id FROM challenge_submissions WHERE id = $1")
+            .bind(submission_id)
+            .fetch_optional(&c_pool)
+            .await?;
     let (owner_id, challenge_id) =
         owner.ok_or_else(|| AppError::NotFound("Submission not found.".into()))?;
     if owner_id == user.id {
@@ -5945,20 +5938,21 @@ async fn toggle_submission_vote(
     let has_voted = if existed.is_some() {
         false
     } else {
-        sqlx::query("INSERT INTO challenge_submission_votes (submission_id, voter_id) VALUES ($1, $2)")
-            .bind(submission_id)
-            .bind(user.id)
-            .execute(&c_pool)
-            .await?;
+        sqlx::query(
+            "INSERT INTO challenge_submission_votes (submission_id, voter_id) VALUES ($1, $2)",
+        )
+        .bind(submission_id)
+        .bind(user.id)
+        .execute(&c_pool)
+        .await?;
         true
     };
 
-    let vote_count: i32 = sqlx::query_scalar(
-        "SELECT vote_count FROM challenge_submissions WHERE id = $1",
-    )
-    .bind(submission_id)
-    .fetch_one(&c_pool)
-    .await?;
+    let vote_count: i32 =
+        sqlx::query_scalar("SELECT vote_count FROM challenge_submissions WHERE id = $1")
+            .bind(submission_id)
+            .fetch_one(&c_pool)
+            .await?;
 
     // Mirror vote count into challenge_progress so the existing list endpoint
     // and completion sweep treat votes as progress for submission challenges.
@@ -7393,7 +7387,9 @@ async fn admin_export_community_audit_log_csv(
     }
 
     let mut body = String::with_capacity(rows.len() * 200);
-    body.push_str("id,actor_user_id,action,entity_type,entity_id,target_user_id,details,created_at\n");
+    body.push_str(
+        "id,actor_user_id,action,entity_type,entity_id,target_user_id,details,created_at\n",
+    );
     for r in rows {
         body.push_str(&format!(
             "{},{},{},{},{},{},{},{}\n",
@@ -7415,7 +7411,10 @@ async fn admin_export_community_audit_log_csv(
     Ok((
         axum::http::StatusCode::OK,
         [
-            (axum::http::header::CONTENT_TYPE, "text/csv; charset=utf-8".to_string()),
+            (
+                axum::http::header::CONTENT_TYPE,
+                "text/csv; charset=utf-8".to_string(),
+            ),
             (
                 axum::http::header::CONTENT_DISPOSITION,
                 format!("attachment; filename=\"{}\"", filename),

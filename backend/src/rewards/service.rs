@@ -1194,7 +1194,9 @@ pub async fn check_and_track_affiliate_commission(
         referral.payout_user_id,
         order_id,
         commission_cents,
-        referral.current_tier.unwrap_or_else(|| "Access".to_string())
+        referral
+            .current_tier
+            .unwrap_or_else(|| "Access".to_string())
     )
     .execute(&mut **tx)
     .await?;

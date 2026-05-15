@@ -73,7 +73,9 @@ pub async fn api_admin_forecast_assumption_upsert(
     Json(input): Json<ForecastAssumptionInput>,
 ) -> Result<Json<ForecastAssumptionRow>, ApiError> {
     if !(2000..=2100).contains(&input.forecast_year) {
-        return Err(ApiError::BadRequest("forecast_year must be 2000–2100".into()));
+        return Err(ApiError::BadRequest(
+            "forecast_year must be 2000–2100".into(),
+        ));
     }
 
     let row: ForecastAssumptionRow = sqlx::query_as(

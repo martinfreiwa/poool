@@ -475,12 +475,11 @@ pub async fn create_user_post(
     // hidden. We don't enforce author block/mute here — the feed query
     // already hides those, so the quote card simply renders nothing.
     if let Some(quoted_id) = req.quoted_post_id {
-        let quoted_meta: Option<(Uuid, bool, Option<Uuid>)> = sqlx::query_as(
-            "SELECT user_id, is_hidden, quoted_post_id FROM posts WHERE id = $1",
-        )
-        .bind(quoted_id)
-        .fetch_optional(&mut *tx)
-        .await?;
+        let quoted_meta: Option<(Uuid, bool, Option<Uuid>)> =
+            sqlx::query_as("SELECT user_id, is_hidden, quoted_post_id FROM posts WHERE id = $1")
+                .bind(quoted_id)
+                .fetch_optional(&mut *tx)
+                .await?;
         match quoted_meta {
             None => {
                 return Err(AppError::BadRequest(

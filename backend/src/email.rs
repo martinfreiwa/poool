@@ -206,18 +206,18 @@ pub async fn trigger_transactional_email(
         "affiliate_commission_earned" => "New Commission Tracked - POOOL Partner Syndicate",
 
         // Developer-Team-Affiliate (Phase 2+)
-        "team_invitation_received"     => "You've been invited to a POOOL Affiliate Team",
-        "team_member_approved"         => "You're now an active POOOL Affiliate Team member",
-        "team_member_removed"          => "You were removed from a POOOL Affiliate Team",
-        "team_self_request_received"   => "New team join request — POOOL Affiliate",
+        "team_invitation_received" => "You've been invited to a POOOL Affiliate Team",
+        "team_member_approved" => "You're now an active POOOL Affiliate Team member",
+        "team_member_removed" => "You were removed from a POOOL Affiliate Team",
+        "team_self_request_received" => "New team join request — POOOL Affiliate",
 
         "support_ticket_reply" => "New reply on your support ticket",
         "support_ticket_new" => "New support ticket submitted",
         "support_ticket_resolved" => "Your support ticket has been resolved",
 
         // Villa-Returns operations lifecycle
-        "operations_rejected"  => "Action Required: Operations Submission Rejected",
-        "operations_approved"  => "Operations Approved — Pending Publish",
+        "operations_rejected" => "Action Required: Operations Submission Rejected",
+        "operations_approved" => "Operations Approved — Pending Publish",
         "operations_published" => "Operations Published — Now Live",
 
         _ => "You Have a New Notification",

@@ -148,7 +148,8 @@ pub async fn update_circle(
 
     // Convert "" → SQL NULL so owners can clear the banner; treat anything
     // else as a literal value to set. None leaves the column alone.
-    let banner_arg: Option<Option<&str>> = banner_url.map(|s| if s.is_empty() { None } else { Some(s) });
+    let banner_arg: Option<Option<&str>> =
+        banner_url.map(|s| if s.is_empty() { None } else { Some(s) });
 
     let circle = sqlx::query_as::<_, Circle>(
         r#"UPDATE circles SET
@@ -427,10 +428,11 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
     // first interaction with the circle is something concrete (not a
     // "you joined" silence). Fire-and-forget — failure here must NOT
     // unwind the join itself.
-    if let Ok(Some(name)) = sqlx::query_scalar::<_, String>("SELECT name FROM circles WHERE id = $1")
-        .bind(circle_id)
-        .fetch_optional(pool)
-        .await
+    if let Ok(Some(name)) =
+        sqlx::query_scalar::<_, String>("SELECT name FROM circles WHERE id = $1")
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await
     {
         let welcome = format!("Welcome to {}! Say hello in the circle feed.", name);
         let _ = crate::community::notifications::notify_user(

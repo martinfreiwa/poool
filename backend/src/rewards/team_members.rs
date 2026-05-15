@@ -59,9 +59,7 @@ pub async fn invite_by_email(
             .await?;
 
     let target_user_id = target_user_id.ok_or_else(|| {
-        AppError::BadRequest(
-            "Cannot invite — user with this email is not registered yet.".into(),
-        )
+        AppError::BadRequest("Cannot invite — user with this email is not registered yet.".into())
     })?;
 
     if target_user_id == inviter_user_id {
@@ -156,9 +154,13 @@ pub async fn invite_by_email(
         "inviter_name": inviter_email,
         "token": token,
     });
-    let _ =
-        crate::email::trigger_transactional_email(pool, &target_user_id, "team_invitation_received", metadata)
-            .await;
+    let _ = crate::email::trigger_transactional_email(
+        pool,
+        &target_user_id,
+        "team_invitation_received",
+        metadata,
+    )
+    .await;
 
     Ok((row.id, token))
 }
@@ -414,13 +416,14 @@ pub async fn approve_pending(
     .await;
 
     // Confirmation email to the member.
-    let team_name: String = sqlx::query_scalar("SELECT display_name FROM developer_teams WHERE id = $1")
-        .bind(row.team_id)
-        .fetch_optional(pool)
-        .await
-        .ok()
-        .flatten()
-        .unwrap_or_else(|| "POOOL Affiliate Team".to_string());
+    let team_name: String =
+        sqlx::query_scalar("SELECT display_name FROM developer_teams WHERE id = $1")
+            .bind(row.team_id)
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| "POOOL Affiliate Team".to_string());
     let _ = crate::email::trigger_transactional_email(
         pool,
         &row.user_id,
