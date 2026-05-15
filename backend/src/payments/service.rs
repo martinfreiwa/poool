@@ -885,7 +885,7 @@ pub async fn execute_checkout(
         .map_err(|e| format!("Funding status update failed: {}", e))?;
 
         if payment_method == "wallet" {
-            upsert_active_investment(&mut *tx, user_id, *asset_id, *tokens_qty, subtotal).await?;
+            upsert_active_investment(&mut tx, user_id, *asset_id, *tokens_qty, subtotal).await?;
         }
     }
 
@@ -1190,7 +1190,7 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
             .await
             .map_err(|e| e.to_string())?;
 
-            revert_pending_order_item_investment(&mut *tx, user_id, asset_id, qty, subtotal)
+            revert_pending_order_item_investment(&mut tx, user_id, asset_id, qty, subtotal)
                 .await?;
         }
 
@@ -1294,7 +1294,7 @@ pub async fn approve_order(
 
     // 2. Allocate investments only after manual payment verification.
     for (asset_id, tokens_qty, subtotal) in &order_items {
-        allocate_order_item_investment(&mut *tx, user_id, *asset_id, *tokens_qty, *subtotal)
+        allocate_order_item_investment(&mut tx, user_id, *asset_id, *tokens_qty, *subtotal)
             .await?;
     }
 
@@ -1470,7 +1470,7 @@ pub async fn reject_order(
         .await
         .map_err(|e| format!("Failed to fetch subtotal details: {}", e))?;
 
-        revert_pending_order_item_investment(&mut *tx, user_id, *asset_id, *qty, subtotal).await?;
+        revert_pending_order_item_investment(&mut tx, user_id, *asset_id, *qty, subtotal).await?;
 
         // 4. Restore tokens to the asset
         sqlx::query("UPDATE assets SET tokens_available = tokens_available + $1 WHERE id = $2")

@@ -527,7 +527,7 @@ pub async fn get_feed_data(
 
     // UX.16 — batch-fetch quoted post briefs so each card can render the
     // shared post without an extra request per row.
-    let quoted_brief_map = fetch_quoted_briefs(&state, &c_pool, &posts).await;
+    let quoted_brief_map = fetch_quoted_briefs(state, &c_pool, &posts).await;
     // UX.14 — batch-fetch user flairs.
     let flair_map = service::get_flairs_batch(&c_pool, &user_ids)
         .await
@@ -622,7 +622,7 @@ async fn fetch_quoted_briefs(
         let info = info_map.get(&uid);
         let truncated = if content.chars().count() > 280 {
             let mut s: String = content.chars().take(277).collect();
-            s.push_str("…");
+            s.push('…');
             s
         } else {
             content
@@ -8103,7 +8103,7 @@ async fn list_trending_posts(
             let content: String = r.try_get("content").unwrap_or_default();
             let snippet = if content.chars().count() > 140 {
                 let mut s: String = content.chars().take(137).collect();
-                s.push_str("…");
+                s.push('…');
                 s
             } else {
                 content

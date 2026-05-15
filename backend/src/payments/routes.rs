@@ -78,65 +78,6 @@ fn local_test_proof_url(user_id: uuid::Uuid, file_name: &str) -> String {
     format!("local-test-proof://{user_id}/{proof_name}")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_bank_details_email_matching_is_case_insensitive_and_trimmed() {
-        assert!(email_matches_csv(
-            "support@traffic-creator.com",
-            "qa@example.com, SUPPORT@TRAFFIC-CREATOR.COM "
-        ));
-        assert!(!email_matches_csv(
-            "investor@example.com",
-            "qa@example.com, support@traffic-creator.com"
-        ));
-    }
-
-    #[test]
-    fn test_bank_details_default_e2e_account_uses_sandbox_details() {
-        assert!(should_use_test_bank_details_with_config(
-            "support@traffic-creator.com",
-            None
-        ));
-        assert!(!should_use_test_bank_details_with_config(
-            "investor@example.com",
-            None
-        ));
-    }
-
-    #[test]
-    fn test_bank_details_env_allowlist_overrides_default_fixture() {
-        assert!(should_use_test_bank_details_with_config(
-            "qa@example.com",
-            Some("qa@example.com")
-        ));
-        assert!(!should_use_test_bank_details_with_config(
-            "support@traffic-creator.com",
-            Some("qa@example.com")
-        ));
-    }
-
-    #[test]
-    fn test_local_upload_placeholder_is_restricted_to_local_envs() {
-        assert!(app_env_allows_local_upload_placeholder("development"));
-        assert!(app_env_allows_local_upload_placeholder("test"));
-        assert!(app_env_allows_local_upload_placeholder(" LOCAL "));
-        assert!(!app_env_allows_local_upload_placeholder("production"));
-        assert!(!app_env_allows_local_upload_placeholder("staging"));
-    }
-
-    #[test]
-    fn test_local_test_proof_url_sanitizes_file_names() {
-        let user_id = uuid::Uuid::nil();
-        assert_eq!(
-            local_test_proof_url(user_id, "../fake proof.pdf"),
-            "local-test-proof://00000000-0000-0000-0000-000000000000/..fakeproof.pdf"
-        );
-    }
-}
-
 // ─── Deposit Handlers ───────────────────────────────────────────
 
 /// POST /api/payments/deposit – Initiate a bank deposit (USD or IDR).
@@ -1717,5 +1658,64 @@ pub async fn api_admin_reject_order(
             Json(serde_json::json!({"error": e})),
         )
             .into_response(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bank_details_email_matching_is_case_insensitive_and_trimmed() {
+        assert!(email_matches_csv(
+            "support@traffic-creator.com",
+            "qa@example.com, SUPPORT@TRAFFIC-CREATOR.COM "
+        ));
+        assert!(!email_matches_csv(
+            "investor@example.com",
+            "qa@example.com, support@traffic-creator.com"
+        ));
+    }
+
+    #[test]
+    fn test_bank_details_default_e2e_account_uses_sandbox_details() {
+        assert!(should_use_test_bank_details_with_config(
+            "support@traffic-creator.com",
+            None
+        ));
+        assert!(!should_use_test_bank_details_with_config(
+            "investor@example.com",
+            None
+        ));
+    }
+
+    #[test]
+    fn test_bank_details_env_allowlist_overrides_default_fixture() {
+        assert!(should_use_test_bank_details_with_config(
+            "qa@example.com",
+            Some("qa@example.com")
+        ));
+        assert!(!should_use_test_bank_details_with_config(
+            "support@traffic-creator.com",
+            Some("qa@example.com")
+        ));
+    }
+
+    #[test]
+    fn test_local_upload_placeholder_is_restricted_to_local_envs() {
+        assert!(app_env_allows_local_upload_placeholder("development"));
+        assert!(app_env_allows_local_upload_placeholder("test"));
+        assert!(app_env_allows_local_upload_placeholder(" LOCAL "));
+        assert!(!app_env_allows_local_upload_placeholder("production"));
+        assert!(!app_env_allows_local_upload_placeholder("staging"));
+    }
+
+    #[test]
+    fn test_local_test_proof_url_sanitizes_file_names() {
+        let user_id = uuid::Uuid::nil();
+        assert_eq!(
+            local_test_proof_url(user_id, "../fake proof.pdf"),
+            "local-test-proof://00000000-0000-0000-0000-000000000000/..fakeproof.pdf"
+        );
     }
 }
