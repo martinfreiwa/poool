@@ -1088,6 +1088,77 @@
 }
 
 /* ============================================================
+   Nav Group — collapsible dropdown parent (e.g. Community)
+   ============================================================ */
+.admin-nav-group-trigger {
+  background: none;
+  border: none;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.admin-nav-group-trigger:focus-visible {
+  outline: 2px solid var(--admin-accent, #4f46e5);
+  outline-offset: -2px;
+  border-radius: var(--admin-radius-sm, 6px);
+}
+.admin-nav-group-caret {
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: transform 0.18s ease, opacity 0.15s ease;
+}
+.admin-nav-group-trigger:hover .admin-nav-group-caret,
+.admin-nav-group-trigger.active .admin-nav-group-caret {
+  opacity: 0.85;
+}
+.admin-nav-group--collapsed .admin-nav-group-caret {
+  transform: rotate(-90deg);
+}
+.admin-nav-group--collapsed .admin-nav-group-items {
+  display: none;
+}
+/* Sub-items: extra left indent, slightly smaller text */
+.admin-nav-sub-item {
+  padding-left: 40px !important;
+  font-size: 13px !important;
+}
+.admin-nav-sub-item .admin-nav-icon {
+  width: 15px !important;
+  height: 15px !important;
+  opacity: 0.55;
+}
+.admin-nav-sub-item.active .admin-nav-icon,
+.admin-nav-sub-item:hover .admin-nav-icon {
+  opacity: 0.9;
+}
+/* Left accent bar on sub-item: appears at the indent level */
+.admin-nav-sub-item.active::before {
+  left: 22px;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+}
+/* Group items container — no margin shift; decorative rail via pseudo */
+.admin-nav-group-items {
+  position: relative;
+  margin-bottom: 4px;
+}
+.admin-nav-group-items::before {
+  content: "";
+  position: absolute;
+  left: 27px; /* aligns with icon column of trigger */
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--admin-border, rgba(0,0,0,0.08));
+  pointer-events: none;
+}
+
+/* ============================================================
    Sidebar Avatar Status Dot
    ============================================================ */
 .admin-sidebar-avatar-wrap {

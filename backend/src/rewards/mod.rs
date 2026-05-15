@@ -2,6 +2,11 @@ pub mod attribution;
 pub mod models;
 pub mod routes;
 pub mod service;
+pub mod team_links;
+pub mod team_members;
+pub mod team_models;
+pub mod team_reports;
+pub mod team_routes;
 pub mod workers;
 
 use crate::auth::routes::AppState;
@@ -104,4 +109,6 @@ pub fn router() -> Router<AppState> {
             get(get_payout_settings_handler).post(save_payout_settings_handler),
         )
         .route("/api/rewards/commissions", get(list_commissions_handler))
+        // Phase 2 — Developer-Team-Affiliate
+        .merge(team_routes::router())
 }

@@ -114,6 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('cb-materials')?.checked) acceptedPolicies.push('Approved Marketing Materials Policy');
             if (document.getElementById('cb-payout')?.checked) acceptedPolicies.push('Qualified Referral & Payout Policy');
             if (document.getElementById('cb-privacy')?.checked) acceptedPolicies.push('Affiliate Privacy Notice');
+            if (document.getElementById('cb-no-sales-role')?.checked) acceptedPolicies.push('No Sales-Team Role Acknowledgement');
+            if (document.getElementById('cb-permitted-scope')?.checked) acceptedPolicies.push('Permitted Scope Acknowledgement');
 
             const btn = document.getElementById('submit-exam-btn');
             if (btn) {

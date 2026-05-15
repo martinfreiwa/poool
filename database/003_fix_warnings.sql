@@ -73,42 +73,42 @@ END $$;
 
 -- Sunset Heights Villa (a1111111-…)
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
-SELECT id, '/images/villa1.jpg', 'Sunset Heights Villa exterior', 0, TRUE
+SELECT id, '/images/villa1.webp', 'Sunset Heights Villa exterior', 0, TRUE
 FROM assets WHERE title = 'Sunset Heights Villa'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
-SELECT id, '/images/villa1_2.jpg', 'Sunset Heights Villa pool', 1, FALSE
+SELECT id, '/images/villa1_2.webp', 'Sunset Heights Villa pool', 1, FALSE
 FROM assets WHERE title = 'Sunset Heights Villa'
 ON CONFLICT DO NOTHING;
 
 -- Central Plaza Commerce (a2222222-…)
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
-SELECT id, '/images/villa3_1.jpg', 'Central Plaza Commerce exterior', 0, TRUE
+SELECT id, '/images/villa3_1.webp', 'Central Plaza Commerce exterior', 0, TRUE
 FROM assets WHERE title = 'Central Plaza Commerce'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
-SELECT id, '/images/villa3_2.jpg', 'Central Plaza Commerce interior', 1, FALSE
+SELECT id, '/images/villa3_2.webp', 'Central Plaza Commerce interior', 1, FALSE
 FROM assets WHERE title = 'Central Plaza Commerce'
 ON CONFLICT DO NOTHING;
 
 -- Green Field Agriculture (a3333333-…) – commodity, use commodity images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
 SELECT id,
-    '/static/images/commodities/rice/eduardo-prim-3u51-uLQICc-unsplash.jpg',
+    '/static/images/commodities/rice/eduardo-prim-3u51-uLQICc-unsplash.webp',
     'Green Field Agriculture – lush farmland', 0, TRUE
 FROM assets WHERE title = 'Green Field Agriculture'
 ON CONFLICT DO NOTHING;
 
 -- Uluwatu Luxury Retreat (a4444444-…)
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
-SELECT id, '/images/villa4_1.jpg', 'Uluwatu Luxury Retreat exterior', 0, TRUE
+SELECT id, '/images/villa4_1.webp', 'Uluwatu Luxury Retreat exterior', 0, TRUE
 FROM assets WHERE title = 'Uluwatu Luxury Retreat'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover)
-SELECT id, '/images/villa1_2.jpg', 'Uluwatu Luxury Retreat pool', 1, FALSE
+SELECT id, '/images/villa1_2.webp', 'Uluwatu Luxury Retreat pool', 1, FALSE
 FROM assets WHERE title = 'Uluwatu Luxury Retreat'
 ON CONFLICT DO NOTHING;
 

@@ -23,35 +23,35 @@ BEGIN
     VALUES
         (
             v_asset_id,
-            '/static/images/properties/demo_apartment_01/apartment-exterior.png',
+            '/static/images/properties/demo_apartment_01/apartment-exterior.webp',
             'Modern apartment building exterior with balconies and shared entrance',
             0,
             TRUE
         ),
         (
             v_asset_id,
-            '/static/images/properties/demo_apartment_01/apartment-living-room.png',
+            '/static/images/properties/demo_apartment_01/apartment-living-room.webp',
             'Bright apartment living room with balcony and city view',
             1,
             FALSE
         ),
         (
             v_asset_id,
-            '/static/images/properties/demo_apartment_01/apartment-kitchen-dining.png',
+            '/static/images/properties/demo_apartment_01/apartment-kitchen-dining.webp',
             'Compact modern apartment kitchen and dining area',
             2,
             FALSE
         ),
         (
             v_asset_id,
-            '/static/images/properties/demo_apartment_01/apartment-bedroom.png',
+            '/static/images/properties/demo_apartment_01/apartment-bedroom.webp',
             'Apartment bedroom with built-in wardrobe and neighboring building view',
             3,
             FALSE
         ),
         (
             v_asset_id,
-            '/static/images/properties/demo_apartment_01/apartment-balcony-view.png',
+            '/static/images/properties/demo_apartment_01/apartment-balcony-view.webp',
             'Upper-floor apartment balcony with chairs and city view',
             4,
             FALSE

@@ -16,6 +16,127 @@ use crate::auth::routes::AppState;
 use super::models::*;
 use super::service;
 
+const DEFAULT_TEST_BANK_DETAILS_EMAILS: &str = "support@traffic-creator.com";
+const TEST_BANK_DETAILS_EMAILS_ENV: &str = "POOOL_TEST_BANK_DETAILS_EMAILS";
+
+fn app_env_allows_local_upload_placeholder(app_env: &str) -> bool {
+    matches!(
+        app_env.trim().to_ascii_lowercase().as_str(),
+        "development" | "dev" | "local" | "test"
+    )
+}
+
+fn email_matches_csv(email: &str, configured_emails: &str) -> bool {
+    configured_emails
+        .split(',')
+        .map(str::trim)
+        .filter(|candidate| !candidate.is_empty())
+        .any(|candidate| candidate.eq_ignore_ascii_case(email))
+}
+
+fn should_use_test_bank_details_with_config(email: &str, configured_emails: Option<&str>) -> bool {
+    let configured_emails = configured_emails
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or(DEFAULT_TEST_BANK_DETAILS_EMAILS);
+
+    email_matches_csv(email, configured_emails)
+}
+
+fn should_use_test_bank_details(email: &str) -> bool {
+    should_use_test_bank_details_with_config(
+        email,
+        std::env::var(TEST_BANK_DETAILS_EMAILS_ENV).ok().as_deref(),
+    )
+}
+
+fn bank_details_for_user(email: &str) -> (serde_json::Value, serde_json::Value) {
+    let (usd_raw, idr_raw) = if should_use_test_bank_details(email) {
+        (
+            service::TEST_BANK_DETAILS_USD,
+            service::TEST_BANK_DETAILS_IDR,
+        )
+    } else {
+        (service::BANK_DETAILS_USD, service::BANK_DETAILS_IDR)
+    };
+
+    let usd = serde_json::from_str(usd_raw).unwrap_or_default();
+    let idr = serde_json::from_str(idr_raw).unwrap_or_default();
+    (usd, idr)
+}
+
+fn local_test_proof_url(user_id: uuid::Uuid, file_name: &str) -> String {
+    let sanitized_name: String = file_name
+        .chars()
+        .filter(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_'))
+        .collect();
+    let proof_name = if sanitized_name.is_empty() {
+        "proof.bin"
+    } else {
+        sanitized_name.as_str()
+    };
+
+    format!("local-test-proof://{user_id}/{proof_name}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bank_details_email_matching_is_case_insensitive_and_trimmed() {
+        assert!(email_matches_csv(
+            "support@traffic-creator.com",
+            "qa@example.com, SUPPORT@TRAFFIC-CREATOR.COM "
+        ));
+        assert!(!email_matches_csv(
+            "investor@example.com",
+            "qa@example.com, support@traffic-creator.com"
+        ));
+    }
+
+    #[test]
+    fn test_bank_details_default_e2e_account_uses_sandbox_details() {
+        assert!(should_use_test_bank_details_with_config(
+            "support@traffic-creator.com",
+            None
+        ));
+        assert!(!should_use_test_bank_details_with_config(
+            "investor@example.com",
+            None
+        ));
+    }
+
+    #[test]
+    fn test_bank_details_env_allowlist_overrides_default_fixture() {
+        assert!(should_use_test_bank_details_with_config(
+            "qa@example.com",
+            Some("qa@example.com")
+        ));
+        assert!(!should_use_test_bank_details_with_config(
+            "support@traffic-creator.com",
+            Some("qa@example.com")
+        ));
+    }
+
+    #[test]
+    fn test_local_upload_placeholder_is_restricted_to_local_envs() {
+        assert!(app_env_allows_local_upload_placeholder("development"));
+        assert!(app_env_allows_local_upload_placeholder("test"));
+        assert!(app_env_allows_local_upload_placeholder(" LOCAL "));
+        assert!(!app_env_allows_local_upload_placeholder("production"));
+        assert!(!app_env_allows_local_upload_placeholder("staging"));
+    }
+
+    #[test]
+    fn test_local_test_proof_url_sanitizes_file_names() {
+        let user_id = uuid::Uuid::nil();
+        assert_eq!(
+            local_test_proof_url(user_id, "../fake proof.pdf"),
+            "local-test-proof://00000000-0000-0000-0000-000000000000/..fakeproof.pdf"
+        );
+    }
+}
+
 // ─── Deposit Handlers ───────────────────────────────────────────
 
 /// POST /api/payments/deposit – Initiate a bank deposit (USD or IDR).
@@ -311,15 +432,21 @@ pub async fn payment_webhook(
 
 /// GET /api/payments/bank-details – Return bank transfer details for instructions.
 pub async fn get_bank_details(
-    _jar: CookieJar,
-    State(_state): State<AppState>,
+    jar: CookieJar,
+    State(state): State<AppState>,
 ) -> axum::response::Response {
-    // In a real staging environment, this would come from a secure config or DB.
-    // For this MVP, we use the constants from service.rs.
-    let usd: serde_json::Value =
-        serde_json::from_str(service::BANK_DETAILS_USD).unwrap_or_default();
-    let idr: serde_json::Value =
-        serde_json::from_str(service::BANK_DETAILS_IDR).unwrap_or_default();
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Not authenticated"})),
+            )
+                .into_response();
+        }
+    };
+
+    let (usd, idr) = bank_details_for_user(&user.email);
 
     Json(serde_json::json!({
         "USD": usd,
@@ -431,26 +558,29 @@ pub async fn checkout_page(
         })
         .collect();
 
-    let platform_fee_pct: f64 = sqlx::query_scalar(
+    let platform_fee_pct: rust_decimal::Decimal = sqlx::query_scalar(
         "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
     )
     .fetch_optional(&state.db)
     .await
     .ok()
     .flatten()
-    .and_then(|v: String| v.parse::<f64>().ok())
-    .unwrap_or(0.0);
+    .and_then(|v: String| v.parse().ok())
+    .unwrap_or(rust_decimal::Decimal::ZERO);
 
-    let fee_cents = (cart_total_cents as f64 * platform_fee_pct / 100.0).ceil() as i64;
+    let fee_cents =
+        service::calculate_platform_fee_cents(cart_total_cents, platform_fee_pct).unwrap_or(0);
     let grand_total_cents = cart_total_cents + fee_cents;
+    let fee_pct_display = platform_fee_pct.normalize().to_string();
 
     let cart_json = serde_json::json!({
         "items": cart_items,
         "count": cart_items.len(),
         "total_cents": cart_total_cents,
         "fee_cents": fee_cents,
-        "fee_pct": platform_fee_pct,
-        "grand_total_cents": grand_total_cents
+        "fee_pct": fee_pct_display,
+        "grand_total_cents": grand_total_cents,
+        "usd_to_idr_rate": crate::config::DEFAULT_USD_TO_IDR_RATE_I64
     })
     .to_string();
 
@@ -485,10 +615,7 @@ pub async fn checkout_page(
     let wallet_json = serde_json::json!({ "wallets": wallets }).to_string();
 
     // Fetch Bank Details
-    let usd: serde_json::Value =
-        serde_json::from_str(service::BANK_DETAILS_USD).unwrap_or_default();
-    let idr: serde_json::Value =
-        serde_json::from_str(service::BANK_DETAILS_IDR).unwrap_or_default();
+    let (usd, idr) = bank_details_for_user(&user.email);
     let bank_json = serde_json::json!({ "USD": usd, "IDR": idr }).to_string();
 
     // Check if user is a referred investor for affiliate disclosure display
@@ -654,6 +781,7 @@ pub async fn handle_checkout(
     let mut payment_method_opt: Option<String> = None;
     let mut proof_url: Option<String> = None;
     let mut proof_upload_failed = false;
+    let mut bank_transfer_ack = false;
     // 19.8: 3 required general disclosures + 3 referral-only disclosures.
     // Backend rejects checkout if any required box is missing.
     let mut disclosure_general_1 = false;
@@ -705,8 +833,19 @@ pub async fn handle_checkout(
                         if let Ok(data) = field.bytes().await {
                             if !data.is_empty() {
                                 let Some(bucket) = state.config.gcs_bucket.clone() else {
-                                    tracing::error!("GCS_BUCKET_NAME not configured — cannot upload proof of transfer");
-                                    proof_upload_failed = true;
+                                    if app_env_allows_local_upload_placeholder(
+                                        &state.config.app_env,
+                                    ) {
+                                        tracing::warn!(
+                                            user_id = %user.id,
+                                            app_env = %state.config.app_env,
+                                            "GCS_BUCKET_NAME not configured; using local-only proof placeholder"
+                                        );
+                                        proof_url = Some(local_test_proof_url(user.id, &name));
+                                    } else {
+                                        tracing::error!("GCS_BUCKET_NAME not configured — cannot upload proof of transfer");
+                                        proof_upload_failed = true;
+                                    }
                                     continue;
                                 };
                                 let object_path = format!("proofs/{}/{}", user.id, name);
@@ -733,6 +872,11 @@ pub async fn handle_checkout(
                                     }
                                 }
                             }
+                        }
+                    }
+                    "bank_transfer_ack" => {
+                        if let Ok(text) = field.text().await {
+                            bank_transfer_ack = text == "on" || text == "true";
                         }
                     }
                     "disclosure_general_1" => {
@@ -789,6 +933,7 @@ pub async fn handle_checkout(
             disclosure_general_1 = check("disclosure_general_1");
             disclosure_general_2 = check("disclosure_general_2");
             disclosure_general_3 = check("disclosure_general_3");
+            bank_transfer_ack = check("bank_transfer_ack");
             disclosure_referral_1 = check("disclosure_referral_1");
             disclosure_referral_2 = check("disclosure_referral_2");
             disclosure_referral_3 = check("disclosure_referral_3");
@@ -844,6 +989,12 @@ pub async fn handle_checkout(
 
     // Bank transfer orders require proof of transfer to prevent bypassing the UI requirement.
     if payment_method == "bank_transfer" || payment_method == "bank" {
+        if !bank_transfer_ack {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">You must confirm that the bank transfer reference and fee instructions will be followed.</div>"#.to_string()),
+            ).into_response();
+        }
         if proof_upload_failed {
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,

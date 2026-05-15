@@ -5,6 +5,12 @@
 (function () {
   "use strict";
 
+  // Lightweight toast helper — falls back to window.alert only if toast.js
+  // failed to load. Default kind is 'error'.
+  const toast = (msg, kind) => (typeof window.showToast === 'function')
+    ? window.showToast(msg, kind || 'error')
+    : window.alert(msg);
+
   const STATUS_LABELS = {
     live: "LIVE NOW",
     accepting_questions: "QUESTIONS OPEN",
@@ -263,7 +269,7 @@
         await loadAmaDetail(activeAmaId);
       } catch (err) {
         console.error("AMA upvote failed", err);
-        alert("Failed to upvote question: " + (err && err.message ? err.message : "Unknown error"));
+        toast("Failed to upvote question: " + (err && err.message ? err.message : "Unknown error"));
       }
     }
 
@@ -271,15 +277,15 @@
       const question = questionInput.value.trim();
 
       if (question.length < 10) {
-        alert("Your question must be at least 10 characters.");
+        toast("Your question must be at least 10 characters.");
         return;
       }
       if (question.length > 500) {
-        alert("Question is too long. Max 500 characters.");
+        toast("Question is too long. Max 500 characters.");
         return;
       }
       if (!activeAmaId) {
-        alert("No active AMA to submit to.");
+        toast("No active AMA to submit to.");
         return;
       }
 
@@ -301,7 +307,7 @@
         await loadAmaDetail(activeAmaId);
         showToast("Question submitted. The community can upvote it now.");
       } catch (err) {
-        alert("Failed to submit question: " + (err && err.message ? err.message : "Unknown error"));
+        toast("Failed to submit question: " + (err && err.message ? err.message : "Unknown error"));
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText === "Submitting..." ? "Submit" : originalText;

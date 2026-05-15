@@ -2,139 +2,453 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Villa Operations Entry | Admin | POOOL</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operations Review | Admin | POOOL</title>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/developer-operations-submit.css" />
   <script src="/static/js/user-data.js"></script>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
   <style>
-    .vop-shell { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
-    .vop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .vop-header h1 { font-size: 22px; margin: 0; }
-    .vop-mode-badge { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: var(--accent, #2563eb); color: white; }
-    .vop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-    .vop-section { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 8px; padding: 20px; }
-    .vop-section h2 { font-size: 14px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #6b7280); }
-    .vop-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-    .vop-field label { font-size: 13px; color: var(--text, #111); }
-    .vop-field input, .vop-field select { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; }
-    .vop-field input[readonly] { background: var(--readonly-bg, #f3f4f6); color: var(--text-muted, #6b7280); }
-    .vop-preview { background: var(--accent-bg, #eff6ff); border-color: var(--accent, #2563eb); }
-    .vop-preview .vop-field input { background: transparent; border: none; font-weight: 600; }
-    .vop-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
-    .vop-btn { padding: 10px 18px; border-radius: 6px; border: 1px solid var(--border, #d1d5db); background: var(--btn-bg, #fff); cursor: pointer; font: inherit; }
-    .vop-btn.primary { background: var(--accent, #2563eb); color: white; border-color: var(--accent, #2563eb); }
-    .vop-btn.danger { background: var(--danger, #dc2626); color: white; border-color: var(--danger, #dc2626); }
-    .vop-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .vop-status-line { padding: 12px 16px; background: var(--info-bg, #eff6ff); border-left: 4px solid var(--accent, #2563eb); margin-bottom: 24px; border-radius: 4px; }
-    .vop-error { color: var(--danger, #dc2626); margin-top: 8px; font-size: 13px; }
-    .vop-rejected { background: var(--danger-bg, #fef2f2); border-left-color: var(--danger, #dc2626); }
-    textarea.vop-textarea { padding: 8px 10px; border: 1px solid var(--border, #d1d5db); border-radius: 6px; font: inherit; min-height: 70px; resize: vertical; }
+    /* Make admin-main behave as a flex column so the split shell fills remaining height */
+    .vop-wrapper { height: 100vh; overflow: hidden; }
+    .vop-main {
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      padding: 0 !important;
+    }
+    .vop-main .admin-topbar { flex-shrink: 0; }
+    .vop-shell { flex: 1; overflow: hidden; }
+
+    /* Admin-only section tint */
+    .dops-section--admin { border-color: #C7D7FF; }
+    .dops-section--admin .dops-section-head {
+      background: #FAFBFF;
+      border-bottom-color: #D4E0FF;
+    }
+
+    /* Config grid: 3-col on wide, stacks on narrow */
+    .vop-cfg-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 900px) { .vop-cfg-grid { grid-template-columns: 1fr 1fr; } }
+
+    /* Percentage input wrapper */
+    .vop-pct-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .vop-pct-input { padding-right: 28px !important; }
+    .vop-pct-unit {
+      position: absolute;
+      right: 10px;
+      font-size: 13px;
+      color: var(--admin-text-muted);
+      pointer-events: none;
+    }
+
+    /* Doc rename inline */
+    .vop-doc-rename-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Admin badge chip inside section head */
+    .vop-admin-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      background: #EEF4FF;
+      color: #1849A9;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-left: 6px;
+    }
   </style>
 </head>
-<body>
-  <main class="vop-shell">
-    <div class="vop-header">
-      <div>
-        <h1 id="vop-title">Villa Operations Entry</h1>
-        <div id="vop-breadcrumb" style="font-size: 13px; color: var(--text-muted, #6b7280); margin-top: 4px;"></div>
-      </div>
-      <span class="vop-mode-badge" id="vop-mode-badge">entry</span>
-    </div>
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper vop-wrapper">
+    {% include 'admin/components/sidebar.html' %}
 
-    <div class="vop-status-line" id="vop-status-line" style="display: none;"></div>
+    <main class="admin-main vop-main">
 
-    <form id="vop-form" novalidate>
-      <div class="vop-grid">
-        <section class="vop-section">
-          <h2>Rental & occupancy</h2>
-          <div class="vop-field"><label>Gross rental (IDR cents)</label><input type="number" name="gross_rental_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Nights available</label><input type="number" name="nights_available" min="0" max="31" step="1" /></div>
-          <div class="vop-field"><label>Nights booked</label><input type="number" name="nights_booked" min="0" max="31" step="1" /></div>
-        </section>
-
-        <section class="vop-section">
-          <h2>Operating expenses (IDR cents)</h2>
-          <div class="vop-field"><label>Cleaning</label><input type="number" name="expense_cleaning_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Maintenance</label><input type="number" name="expense_maintenance_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Utilities</label><input type="number" name="expense_utilities_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Staff & security</label><input type="number" name="expense_staff_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Pool & garden</label><input type="number" name="expense_pool_garden_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Pest control</label><input type="number" name="expense_pest_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Other</label><input type="number" name="expense_other_idr_cents" min="0" step="1" /></div>
-        </section>
-
-        <section class="vop-section">
-          <h2>Adjustments & fees (IDR cents)</h2>
-          <div class="vop-field"><label>OTA fees</label><input type="number" name="ota_fees_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Payment fees</label><input type="number" name="payment_fees_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Refunds</label><input type="number" name="refunds_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Management fee paid</label><input type="number" name="mgmt_fee_idr_cents" min="0" step="1" /></div>
-          <div class="vop-field"><label>Reserve override (admin-only, optional)</label><input type="number" name="reserve_override_idr_cents" min="0" step="1" /></div>
-        </section>
-
-        <section class="vop-section vop-preview">
-          <h2>Computed preview (read-only)</h2>
-          <div class="vop-field"><label>Occupancy</label><input readonly id="vop-pv-occupancy" /></div>
-          <div class="vop-field"><label>ADR (IDR cents)</label><input readonly id="vop-pv-adr" /></div>
-          <div class="vop-field"><label>Total OpEx</label><input readonly id="vop-pv-opex" /></div>
-          <div class="vop-field"><label>Net rental income</label><input readonly id="vop-pv-net" /></div>
-          <div class="vop-field"><label>Reserve applied</label><input readonly id="vop-pv-reserve" /></div>
-          <div class="vop-field"><label>Platform fee</label><input readonly id="vop-pv-platform" /></div>
-          <div class="vop-field"><label>Withholding</label><input readonly id="vop-pv-withholding" /></div>
-          <div class="vop-field"><label><strong>Distributable</strong></label><input readonly id="vop-pv-distributable" /></div>
-        </section>
-      </div>
-
-      <section class="vop-section" id="vop-correction-section" style="display: none;">
-        <h2>Correction reason (required)</h2>
-        <textarea class="vop-textarea" name="correction_reason"></textarea>
-      </section>
-
-      <section class="vop-section" id="vop-reject-section" style="display: none;">
-        <h2>Reject reason</h2>
-        <textarea class="vop-textarea" id="vop-reject-reason"></textarea>
-      </section>
-
-      <div class="vop-actions">
-        <button type="button" class="vop-btn" id="btn-save-draft">Save draft</button>
-        <button type="button" class="vop-btn primary" id="btn-submit">Submit for approval</button>
-        <button type="button" class="vop-btn primary" id="btn-approve" disabled>Approve</button>
-        <button type="button" class="vop-btn primary" id="btn-publish" disabled>Publish</button>
-        <button type="button" class="vop-btn danger" id="btn-reject" disabled>Reject</button>
-      </div>
-      <div class="vop-error" id="vop-error"></div>
-    </form>
-
-    <section class="vop-section" id="vop-docs-section" style="display: none; margin-top: 24px;">
-      <h2>Period documents — receipts, invoices, statements</h2>
-      <div id="vop-docs-list" style="margin-bottom: 16px;"></div>
-      <div class="vop-grid" style="margin-bottom: 0;">
-        <div class="vop-field">
-          <label for="vop-doc-type">Document type</label>
-          <select id="vop-doc-type">
-            <option value="receipt">Receipt</option>
-            <option value="invoice">Invoice</option>
-            <option value="bank_statement">Bank statement</option>
-            <option value="payout_statement">Payout statement</option>
-            <option value="other">Other</option>
-          </select>
+      <!-- ── Topbar ── -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/villa-operations-queue">Operations Queue</a>
+            <span class="separator">›</span>
+            <span class="current" id="vop-asset-name">Loading…</span>
+          </nav>
         </div>
-        <div class="vop-field">
-          <label for="vop-doc-file">File (PDF or image, max 20 MB)</label>
-          <input type="file" id="vop-doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+        <div class="admin-topbar-right" style="gap: 8px; flex-wrap: nowrap;">
+          <span class="dops-period-badge">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span id="vop-period-text">— / —</span>
+          </span>
+          <span id="vop-status-chip"></span>
+          <span id="vop-error-bar" style="color:#D92D20;font-size:12px;font-weight:500;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-save-draft">Save</button>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-submit" style="display:none;">Submit for approval</button>
+          <button class="admin-btn admin-btn--danger admin-btn--sm" id="btn-reject" disabled>Reject</button>
+          <button class="admin-btn admin-btn--primary admin-btn--sm" id="btn-approve" disabled>Approve</button>
+          <button class="admin-btn admin-btn--primary admin-btn--sm" id="btn-publish" style="display:none;" disabled>Publish</button>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-distribute" style="display:none;" title="Auto-distribute runs on publish. Use this to retry or force-reprocess.">Re-distribute</button>
         </div>
-      </div>
-      <div class="vop-actions" style="margin-top: 4px;">
-        <button type="button" class="vop-btn primary" id="btn-upload-doc">Upload &amp; link</button>
-      </div>
-      <div class="vop-error" id="vop-docs-error"></div>
-    </section>
-  </main>
+      </header>
+
+      <!-- ── Split shell ── -->
+      <div class="dops-shell vop-shell">
+
+        <!-- Left: scrollable form -->
+        <div class="dops-form-col">
+          <form id="vop-form" novalidate>
+
+            <!-- § 1  Rental & Occupancy -->
+            <div class="dops-section">
+              <div class="dops-section-head">
+                <div class="dops-section-num">1</div>
+                <div class="dops-section-head__text">
+                  <div class="dops-section-title">Rental &amp; occupancy</div>
+                  <div class="dops-section-sub">All amounts in IDR cents</div>
+                </div>
+              </div>
+              <div class="dops-section-body">
+                <div class="ds-form-group">
+                  <label class="ds-form-label" for="vop-gross-rental">Gross rental (IDR cents)</label>
+                  <input class="ds-input" id="vop-gross-rental" type="text" inputmode="numeric" name="gross_rental_idr_cents" placeholder="Rp 0" />
+                </div>
+                <div class="dops-grid-2">
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-nights-available">Nights available</label>
+                    <input class="ds-input" id="vop-nights-available" type="text" inputmode="numeric" name="nights_available" placeholder="0" data-nocurrency />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-nights-booked">Nights booked</label>
+                    <input class="ds-input" id="vop-nights-booked" type="text" inputmode="numeric" name="nights_booked" placeholder="0" data-nocurrency />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- § 2  Operating Expenses -->
+            <div class="dops-section">
+              <div class="dops-section-head">
+                <div class="dops-section-num">2</div>
+                <div class="dops-section-head__text">
+                  <div class="dops-section-title">Operating expenses</div>
+                  <div class="dops-section-sub">All amounts in IDR cents</div>
+                </div>
+              </div>
+              <div class="dops-section-body">
+                <div class="dops-grid-2">
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-cleaning">Cleaning</label>
+                    <input class="ds-input" id="vop-cleaning" type="text" inputmode="numeric" name="expense_cleaning_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-maintenance">Maintenance</label>
+                    <input class="ds-input" id="vop-maintenance" type="text" inputmode="numeric" name="expense_maintenance_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-utilities">Utilities</label>
+                    <input class="ds-input" id="vop-utilities" type="text" inputmode="numeric" name="expense_utilities_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-staff">Staff &amp; security</label>
+                    <input class="ds-input" id="vop-staff" type="text" inputmode="numeric" name="expense_staff_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-pool-garden">Pool &amp; garden</label>
+                    <input class="ds-input" id="vop-pool-garden" type="text" inputmode="numeric" name="expense_pool_garden_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-pest">Pest control</label>
+                    <input class="ds-input" id="vop-pest" type="text" inputmode="numeric" name="expense_pest_idr_cents" placeholder="Rp 0" />
+                  </div>
+                </div>
+                <div class="ds-form-group">
+                  <label class="ds-form-label" for="vop-other">Other (miscellaneous)</label>
+                  <input class="ds-input" id="vop-other" type="text" inputmode="numeric" name="expense_other_idr_cents" placeholder="Rp 0" />
+                </div>
+                <div class="dops-grid-2">
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-property-tax">Property tax / PBB</label>
+                    <input class="ds-input" id="vop-property-tax" type="text" inputmode="numeric" name="expense_property_tax_idr_cents" placeholder="Rp 0" />
+                    <p class="ds-form-hint">Pajak Bumi dan Bangunan — amortize annual bill monthly</p>
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-insurance">Insurance</label>
+                    <input class="ds-input" id="vop-insurance" type="text" inputmode="numeric" name="expense_insurance_idr_cents" placeholder="Rp 0" />
+                    <p class="ds-form-hint">Fire, liability &amp; contents — monthly portion</p>
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-accounting">Accounting &amp; legal</label>
+                    <input class="ds-input" id="vop-accounting" type="text" inputmode="numeric" name="expense_accounting_idr_cents" placeholder="Rp 0" />
+                    <p class="ds-form-hint">Notary, audit, accountant — amortized monthly</p>
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-internet">Internet &amp; streaming</label>
+                    <input class="ds-input" id="vop-internet" type="text" inputmode="numeric" name="expense_internet_idr_cents" placeholder="Rp 0" />
+                    <p class="ds-form-hint">WiFi, Netflix, TV subscriptions for guests</p>
+                  </div>
+                </div>
+                <div class="ds-form-group" style="background:var(--admin-bg-hover,#F9FAFB);border:1px solid var(--admin-border);border-radius:8px;padding:14px 16px;">
+                  <div class="dops-label-row">
+                    <label class="ds-form-label" style="margin:0;" for="vop-capex">Renovation / refurbishment</label>
+                    <span class="dops-label-opt" style="background:#FEF3C7;color:#92400E;font-weight:600;">CapEx · excluded from yield</span>
+                  </div>
+                  <input class="ds-input" id="vop-capex" type="text" inputmode="numeric" name="expense_capex_idr_cents" placeholder="Rp 0" style="margin-top:8px;" />
+                  <p class="ds-form-hint">One-time capital spend — tracked separately, does not reduce distributable.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- § 3  Adjustments & Fees -->
+            <div class="dops-section">
+              <div class="dops-section-head">
+                <div class="dops-section-num">3</div>
+                <div class="dops-section-head__text">
+                  <div class="dops-section-title">Adjustments &amp; fees</div>
+                  <div class="dops-section-sub">All amounts in IDR cents</div>
+                </div>
+              </div>
+              <div class="dops-section-body">
+                <div class="dops-grid-2">
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-ota-fees">OTA fees</label>
+                    <input class="ds-input" id="vop-ota-fees" type="text" inputmode="numeric" name="ota_fees_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-payment-fees">Payment fees</label>
+                    <input class="ds-input" id="vop-payment-fees" type="text" inputmode="numeric" name="payment_fees_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-refunds">Refunds</label>
+                    <input class="ds-input" id="vop-refunds" type="text" inputmode="numeric" name="refunds_idr_cents" placeholder="Rp 0" />
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-mgmt-fee">Management fee paid</label>
+                    <input class="ds-input" id="vop-mgmt-fee" type="text" inputmode="numeric" name="mgmt_fee_idr_cents" placeholder="Rp 0" />
+                  </div>
+                </div>
+                <div class="ds-form-group">
+                  <div class="dops-label-row">
+                    <label class="ds-form-label" for="vop-mgmt-reported">Actual amount transferred to SPV (IDR cents)</label>
+                    <span class="dops-label-opt">optional</span>
+                  </div>
+                  <input class="ds-input" id="vop-mgmt-reported" type="text" inputmode="numeric" name="mgmt_reported_distributable_idr_cents" placeholder="Management company's reported transfer" />
+                  <p class="ds-form-hint">PDF §2: "Distributable property amount". Used to reconcile against POOOL's calculated distributable.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- § 4  Supporting Documents -->
+            <div class="dops-section" id="vop-docs-section" style="display:none;">
+              <div class="dops-section-head">
+                <div class="dops-section-num">4</div>
+                <div class="dops-section-head__text">
+                  <div class="dops-section-title">Supporting documents</div>
+                  <div class="dops-section-sub">Receipts, invoices, bank statements, payout statements</div>
+                </div>
+              </div>
+              <div class="dops-section-body">
+                <div id="vop-docs-list" class="dops-docs-list"></div>
+
+                <div style="display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap;">
+                  <select id="vop-doc-type" class="ds-input" style="max-width: 170px; flex-shrink: 0;">
+                    <option value="receipt">Receipt</option>
+                    <option value="invoice">Invoice</option>
+                    <option value="bank_statement">Bank statement</option>
+                    <option value="payout_statement">Payout statement</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <label class="dops-dropzone" id="vop-dropzone" style="flex: 1; min-width: 0;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242"/>
+                      <path d="M12 12v9"/><path d="M16 16l-4-4-4 4"/>
+                    </svg>
+                    <span>Drop file &nbsp;·&nbsp; <strong>click to browse</strong></span>
+                    <span class="dops-dropzone__hint">PDF · PNG · JPG · max 20 MB</span>
+                    <input type="file" id="vop-doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                  </label>
+                  <button type="button" class="ds-btn ds-btn--primary ds-btn--sm" id="btn-upload-doc" style="flex-shrink: 0;">Upload</button>
+                </div>
+
+                <div class="ds-form-error" id="vop-docs-error"></div>
+              </div>
+            </div>
+
+            <!-- § 5  Admin controls -->
+            <div class="dops-section dops-section--admin">
+              <div class="dops-section-head">
+                <div class="dops-section-num">5</div>
+                <div class="dops-section-head__text">
+                  <div class="dops-section-title">
+                    Admin controls
+                    <span class="vop-admin-badge">Admin only</span>
+                  </div>
+                  <div class="dops-section-sub">Reserve override · rejection reason · correction note</div>
+                </div>
+              </div>
+              <div class="dops-section-body">
+
+                <!-- ── Asset-level villa config ── -->
+                <div class="vop-cfg-grid">
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-cfg-reserve">Reserve %</label>
+                    <div class="vop-pct-wrap">
+                      <input class="ds-input vop-pct-input" id="vop-cfg-reserve" type="number" min="0" max="100" step="0.01" placeholder="0.00" />
+                      <span class="vop-pct-unit">%</span>
+                    </div>
+                    <p class="ds-form-hint">Held back from distributable. Stored as basis points (×100).</p>
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-cfg-platform">Platform fee %</label>
+                    <div class="vop-pct-wrap">
+                      <input class="ds-input vop-pct-input" id="vop-cfg-platform" type="number" readonly style="opacity:.6;cursor:default;" placeholder="0.00" />
+                      <span class="vop-pct-unit">%</span>
+                    </div>
+                    <p class="ds-form-hint">POOOL platform split — read-only.</p>
+                  </div>
+                  <div class="ds-form-group">
+                    <label class="ds-form-label" for="vop-cfg-withholding">Withholding tax %</label>
+                    <div class="vop-pct-wrap">
+                      <input class="ds-input vop-pct-input" id="vop-cfg-withholding" type="number" min="0" max="100" step="0.01" placeholder="0.00" />
+                      <span class="vop-pct-unit">%</span>
+                    </div>
+                    <p class="ds-form-hint">Applied post-reserve &amp; platform fee.</p>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                  <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-save-config">Save config</button>
+                  <span id="vop-cfg-status" style="font-size:12px; color:var(--admin-text-muted);"></span>
+                </div>
+
+                <hr style="border:none; border-top:1px solid var(--admin-border); margin:0 0 20px;" />
+
+                <div class="ds-form-group">
+                  <div class="dops-label-row">
+                    <label class="ds-form-label" for="vop-reserve-override">Reserve override (IDR cents)</label>
+                    <span class="dops-label-opt">optional · this period only</span>
+                  </div>
+                  <input class="ds-input" id="vop-reserve-override" type="text" inputmode="numeric" name="reserve_override_idr_cents" placeholder="Rp 0 — leave blank to use asset policy" />
+                  <p class="ds-form-hint">Overrides the asset's reserve policy rate for this period only.</p>
+                </div>
+
+                <div class="ds-form-group" id="vop-correction-group" style="display:none;">
+                  <label class="ds-form-label" for="vop-correction-reason">Correction reason</label>
+                  <textarea class="ds-input" id="vop-correction-reason" name="correction_reason" rows="2" placeholder="Why is this a correction to a previously submitted period?" style="resize: vertical;"></textarea>
+                </div>
+
+                <div class="ds-form-group">
+                  <label class="ds-form-label" for="vop-reject-reason">Rejection reason</label>
+                  <textarea class="ds-input" id="vop-reject-reason" rows="2" placeholder="Required when clicking Reject — the developer will see this." style="resize: vertical;"></textarea>
+                </div>
+
+              </div>
+            </div>
+
+          </form>
+        </div><!-- /.dops-form-col -->
+
+        <!-- Right: live summary panel -->
+        <aside class="dops-summary-col">
+
+          <div class="dops-sum-hero">
+            <div class="dops-sum-hero__eyebrow">
+              <span class="dops-sum-hero__label">Live estimate</span>
+              <span class="dops-sum-hero__sub">Updates as you type · IDR</span>
+            </div>
+            <div class="dops-sum-hero__amount" id="dops-distrib-amount">0</div>
+            <div class="dops-sum-hero__hint">Net rental income · before reserve &amp; fees</div>
+
+            <div class="dops-occ">
+              <svg class="dops-occ__ring" viewBox="0 0 44 44" fill="none">
+                <circle cx="22" cy="22" r="18" stroke="var(--card-border-color,#E5E7EB)" stroke-width="4"/>
+                <circle cx="22" cy="22" r="18" stroke="var(--btn-primary-bg,#0000FF)" stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-dasharray="113.1" stroke-dashoffset="113.1"
+                  transform="rotate(-90 22 22)"
+                  id="dops-occ-ring-circle"
+                  style="transition:stroke-dashoffset 0.3s ease"/>
+              </svg>
+              <div>
+                <div class="dops-occ__pct" id="dops-occ-pct">0.0%</div>
+                <div class="dops-occ__label">Occupancy rate</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dops-sum-metrics">
+            <div class="dops-metric-section">Revenue</div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Gross rental</span>
+              <span class="dops-metric__val" id="dops-mv-gross">0</span>
+            </div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">ADR (per booked night)</span>
+              <span class="dops-metric__val" id="dops-mv-adr">0</span>
+            </div>
+
+            <div class="dops-metric-section">Deductions</div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Total OpEx</span>
+              <span class="dops-metric__val dops-metric__val--neg" id="dops-mv-opex">0</span>
+            </div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Net rental income</span>
+              <span class="dops-metric__val" id="dops-mv-net">0</span>
+            </div>
+
+            <div class="dops-metric-section">Fees &amp; reserves</div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Reserve</span>
+              <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-reserve">— (server)</span>
+            </div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Platform fee</span>
+              <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-platform">— (server)</span>
+            </div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Withholding tax</span>
+              <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-withholding">— (server)</span>
+            </div>
+
+            <div class="dops-metric-section">Admin</div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Reserve override</span>
+              <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-reserve-override">— (policy)</span>
+            </div>
+            <div class="dops-metric">
+              <span class="dops-metric__key">Mgmt reported transfer</span>
+              <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-mgmt-reported">—</span>
+            </div>
+          </div>
+
+        </aside><!-- /.dops-summary-col -->
+
+      </div><!-- /.dops-shell -->
+    </main>
+  </div><!-- /.admin-wrapper -->
+
   <script src="/static/js/admin-villa-operations-entry.js" defer></script>
 </body>
 </html>

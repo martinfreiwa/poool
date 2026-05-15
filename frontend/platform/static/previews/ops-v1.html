@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Operations Submit · V1 — Step Wizard</title>
+<link rel="stylesheet" href="/static/css/bundle.css">
+<link rel="stylesheet" href="/static/css/dashboard-tokens.css">
+<link rel="stylesheet" href="/static/css/ds-forms.css">
+<link rel="stylesheet" href="/static/css/ds-buttons.css">
+<link rel="stylesheet" href="/static/css/ds-cards.css">
+<link rel="stylesheet" href="/static/css/ds-badges.css">
+<link rel="stylesheet" href="/static/css/ds-typography.css">
+<link rel="stylesheet" href="/static/css/ds-utilities.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-family, 'TT Norms Pro', sans-serif); background: var(--page-bg, #F5F6FA); color: var(--body-color, #344054); min-height: 100vh; }
+
+  /* ── Topbar ── */
+  .v1-topbar {
+    background: var(--card-bg, #fff);
+    border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .v1-topbar__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--body-color, #344054);
+    text-decoration: none;
+  }
+  .v1-topbar__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--page-title-color, #101828);
+  }
+  .v1-topbar__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    background: #EEF4FF;
+    color: #1849A9;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+  }
+
+  /* ── Step progress bar ── */
+  .v1-progress {
+    background: var(--card-bg, #fff);
+    border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+    padding: 0 32px;
+  }
+  .v1-steps {
+    display: flex;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .v1-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 8px;
+    gap: 6px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .v1-step--active { border-bottom-color: var(--btn-primary-bg, #0000FF); }
+  .v1-step__circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--input-border-color, #D0D5DD);
+    background: var(--card-bg, #fff);
+    color: var(--muted-text, #98A2B3);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .v1-step--active .v1-step__circle { border-color: var(--btn-primary-bg, #0000FF); background: var(--btn-primary-bg, #0000FF); color: #fff; }
+  .v1-step--done .v1-step__circle { border-color: var(--btn-primary-bg, #0000FF); background: #EBF0FF; color: var(--btn-primary-bg, #0000FF); }
+  .v1-step__label { font-size: 11px; font-weight: 600; color: var(--muted-text, #98A2B3); }
+  .v1-step--active .v1-step__label { color: var(--btn-primary-bg, #0000FF); }
+  .v1-step--done .v1-step__label { color: var(--body-color, #344054); }
+
+  /* ── Content ── */
+  .v1-content {
+    max-width: 640px;
+    margin: 40px auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── Step panel ── */
+  .v1-panel { display: none; }
+  .v1-panel--active { display: block; }
+
+  .v1-panel__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--btn-primary-bg, #0000FF);
+    margin-bottom: 8px;
+  }
+  .v1-panel__title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--page-title-color, #101828);
+    margin: 0 0 6px;
+  }
+  .v1-panel__sub {
+    font-size: 14px;
+    color: var(--muted-text, #667085);
+    line-height: 1.6;
+    margin: 0 0 32px;
+  }
+
+  /* ── Field group ── */
+  .v1-field {
+    margin-bottom: 20px;
+  }
+  .v1-field label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--body-color, #344054);
+    margin-bottom: 6px;
+  }
+  .v1-field input {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--input-border-color, #D0D5DD);
+    border-radius: 8px;
+    padding: 0 14px;
+    font-size: 15px;
+    font-family: var(--font-family);
+    background: var(--card-bg, #fff);
+    color: var(--page-title-color, #101828);
+    transition: border-color 0.12s, box-shadow 0.12s;
+    outline: none;
+  }
+  .v1-field input:focus { border-color: var(--btn-primary-bg, #0000FF); box-shadow: 0 0 0 3px rgba(0,0,255,0.08); }
+  .v1-field input[readonly] { background: var(--page-bg, #F9FAFB); color: var(--muted-text, #667085); }
+  .v1-hint { font-size: 12px; color: var(--muted-text, #667085); margin-top: 5px; }
+
+  /* ── Divider ── */
+  .v1-divider { border: none; border-top: 1px solid var(--card-border-color, #E5E7EB); margin: 28px 0; }
+
+  /* ── Summary rows ── */
+  .v1-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+    font-size: 14px;
+  }
+  .v1-summary-row:last-child { border-bottom: none; }
+  .v1-summary-row__key { color: var(--muted-text, #667085); }
+  .v1-summary-row__val { font-weight: 700; color: var(--page-title-color, #101828); }
+  .v1-summary-row--highlight .v1-summary-row__val {
+    font-size: 20px;
+    color: var(--btn-primary-bg, #0000FF);
+  }
+
+  /* ── Nav buttons ── */
+  .v1-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--card-border-color, #E5E7EB);
+  }
+  .v1-btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: 10px;
+    background: var(--card-bg, #fff);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--body-color, #344054);
+    cursor: pointer;
+    font-family: var(--font-family);
+    transition: border-color 0.12s;
+  }
+  .v1-btn-back:hover { border-color: #aaa; }
+  .v1-btn-next {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 10px;
+    background: var(--btn-primary-bg, #0000FF);
+    color: var(--btn-primary-color, #fff);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font-family);
+    transition: opacity 0.12s;
+  }
+  .v1-btn-next:hover { opacity: 0.9; }
+  .v1-btn-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: 1px solid var(--input-border-color, #D0D5DD);
+    border-radius: 10px;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--body-color, #344054);
+    cursor: pointer;
+    font-family: var(--font-family);
+  }
+
+  /* ── Preview label tag ── */
+  .preview-tag {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #101828;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    z-index: 100;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="v1-topbar">
+  <a href="/developer/operations" class="v1-topbar__back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    Operations
+  </a>
+  <span class="v1-topbar__title">Best villa — May 2026</span>
+  <span class="v1-topbar__badge">Draft</span>
+</header>
+
+<!-- Step progress -->
+<div class="v1-progress">
+  <div class="v1-steps">
+    <div class="v1-step v1-step--done" onclick="goto(0)">
+      <div class="v1-step__circle">✓</div>
+      <span class="v1-step__label">Revenue</span>
+    </div>
+    <div class="v1-step v1-step--active" onclick="goto(1)">
+      <div class="v1-step__circle">2</div>
+      <span class="v1-step__label">Expenses</span>
+    </div>
+    <div class="v1-step" onclick="goto(2)">
+      <div class="v1-step__circle">3</div>
+      <span class="v1-step__label">Fees</span>
+    </div>
+    <div class="v1-step" onclick="goto(3)">
+      <div class="v1-step__circle">4</div>
+      <span class="v1-step__label">Review</span>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="v1-content">
+
+  <!-- Step 1: Revenue -->
+  <div class="v1-panel" id="step-0">
+    <p class="v1-panel__eyebrow">Step 1 of 4</p>
+    <h1 class="v1-panel__title">Rental &amp; occupancy</h1>
+    <p class="v1-panel__sub">Report the gross rental income and occupancy figures for May 2026.</p>
+
+    <div class="v1-field">
+      <label for="s1-gross">Gross rental income <span style="color:#98A2B3;font-weight:400">(IDR)</span></label>
+      <input id="s1-gross" type="number" placeholder="e.g. 85,000,000" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="v1-field">
+        <label for="s1-avail">Nights available</label>
+        <input id="s1-avail" type="number" placeholder="31" />
+      </div>
+      <div class="v1-field">
+        <label for="s1-booked">Nights booked</label>
+        <input id="s1-booked" type="number" placeholder="0" />
+      </div>
+    </div>
+
+    <div class="v1-nav">
+      <a href="/developer/operations" class="v1-btn-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M19 12H5"/></svg>
+        Cancel
+      </a>
+      <div style="display:flex;gap:12px">
+        <button class="v1-btn-save">Save draft</button>
+        <button class="v1-btn-next" onclick="goto(1)">Expenses <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Expenses -->
+  <div class="v1-panel v1-panel--active" id="step-1">
+    <p class="v1-panel__eyebrow">Step 2 of 4</p>
+    <h1 class="v1-panel__title">Operating expenses</h1>
+    <p class="v1-panel__sub">All amounts in Indonesian Rupiah (IDR). Enter 0 if not applicable this period.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="v1-field">
+        <label>Cleaning</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Maintenance</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Utilities</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Staff &amp; security</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Pool &amp; garden</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Pest control</label>
+        <input type="number" placeholder="0" />
+      </div>
+    </div>
+    <div class="v1-field">
+      <label>Other expenses</label>
+      <input type="number" placeholder="0" />
+    </div>
+
+    <div class="v1-nav">
+      <button class="v1-btn-back" onclick="goto(0)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Revenue
+      </button>
+      <div style="display:flex;gap:12px">
+        <button class="v1-btn-save">Save draft</button>
+        <button class="v1-btn-next" onclick="goto(2)">Fees &amp; adjustments <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Fees -->
+  <div class="v1-panel" id="step-2">
+    <p class="v1-panel__eyebrow">Step 3 of 4</p>
+    <h1 class="v1-panel__title">Fees &amp; adjustments</h1>
+    <p class="v1-panel__sub">OTA commissions, refunds, and management fees paid this period.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="v1-field">
+        <label>OTA fees</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Payment fees</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Refunds</label>
+        <input type="number" placeholder="0" />
+      </div>
+      <div class="v1-field">
+        <label>Management fee paid</label>
+        <input type="number" placeholder="0" />
+      </div>
+    </div>
+    <div class="v1-field">
+      <label>Actual SPV transfer <span style="color:#98A2B3;font-weight:400">— optional</span></label>
+      <input type="number" placeholder="Management company's reported transfer" />
+      <p class="v1-hint">PDF §2 "Distributable property amount". Used by admin to reconcile.</p>
+    </div>
+
+    <div class="v1-nav">
+      <button class="v1-btn-back" onclick="goto(1)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Expenses
+      </button>
+      <div style="display:flex;gap:12px">
+        <button class="v1-btn-save">Save draft</button>
+        <button class="v1-btn-next" onclick="goto(3)">Review &amp; submit <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Review -->
+  <div class="v1-panel" id="step-3">
+    <p class="v1-panel__eyebrow">Step 4 of 4</p>
+    <h1 class="v1-panel__title">Review &amp; submit</h1>
+    <p class="v1-panel__sub">Check everything looks right before sending to POOOL for approval.</p>
+
+    <div style="margin-bottom:28px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#98A2B3;margin-bottom:8px">Revenue</div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Gross rental</span><span class="v1-summary-row__val">Rp 85,000,000</span></div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Nights available</span><span class="v1-summary-row__val">31</span></div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Nights booked</span><span class="v1-summary-row__val">18</span></div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Occupancy</span><span class="v1-summary-row__val">58.1%</span></div>
+    </div>
+    <div style="margin-bottom:28px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#98A2B3;margin-bottom:8px">Expenses</div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Total OpEx</span><span class="v1-summary-row__val">Rp 12,400,000</span></div>
+    </div>
+    <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#98A2B3;margin-bottom:12px">Computed by POOOL</div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Net rental income</span><span class="v1-summary-row__val">Rp 72,600,000</span></div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Reserve (5%)</span><span class="v1-summary-row__val">− Rp 3,630,000</span></div>
+      <div class="v1-summary-row"><span class="v1-summary-row__key">Platform fee</span><span class="v1-summary-row__val">− Rp 0</span></div>
+      <div class="v1-summary-row v1-summary-row--highlight"><span class="v1-summary-row__key" style="font-weight:700;color:#101828">Distributable estimate</span><span class="v1-summary-row__val">Rp 68,970,000</span></div>
+    </div>
+
+    <div class="v1-nav">
+      <button class="v1-btn-back" onclick="goto(2)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Fees
+      </button>
+      <div style="display:flex;gap:12px">
+        <button class="v1-btn-save">Save draft</button>
+        <button class="v1-btn-next" style="background:#027A48">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          Submit for approval
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="preview-tag">V1 · Step Wizard</div>
+
+<script>
+let current = 1;
+const steps = document.querySelectorAll('.v1-step');
+const panels = document.querySelectorAll('.v1-panel');
+
+function goto(n) {
+  current = n;
+  steps.forEach((s, i) => {
+    s.classList.remove('v1-step--active', 'v1-step--done');
+    if (i < n) s.classList.add('v1-step--done');
+    else if (i === n) s.classList.add('v1-step--active');
+  });
+  panels.forEach((p, i) => p.classList.toggle('v1-panel--active', i === n));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

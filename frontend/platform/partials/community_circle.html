@@ -61,6 +61,10 @@
 
     <!-- Circle Content -->
     <div id="circle-content" hidden>
+      <!-- CO.2 — custom banner. Hidden until banner_url is set. -->
+      <div id="circle-banner" hidden
+           style="height:120px; border-radius:12px; background-size:cover; background-position:center; margin-bottom:12px;"
+           aria-hidden="true"></div>
       <div class="circle-content-grid">
         <div class="circle-members-card">
           <div class="circle-members-header">
@@ -152,12 +156,28 @@
     style="display:none;">
     <div class="ds-card community-modal__panel">
       <h3 id="invite-circle-title" class="ds-text-md community-modal__title">Invite to Circle</h3>
-      <p id="invite-circle-description" class="ds-text-body community-modal__description">Share your referral link to invite friends. When they sign up, they'll automatically join your circle!</p>
-      <div class="community-modal__copy-row">
-        <label for="circle-invite-link" class="ds-sr-only">Invite link</label>
-        <input id="circle-invite-link" type="text" readonly class="community-modal__copy-input" value="">
-        <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="copyInviteLink()">Copy</button>
+      <p id="invite-circle-description" class="ds-text-body community-modal__description">Search an existing investor to send a circle invite, or share your referral link to bring someone new in.</p>
+
+      <!-- Search & invite existing investors -->
+      <div class="community-modal__section" style="margin-bottom:16px;">
+        <label for="circle-invite-search" class="ds-label">Find an investor</label>
+        <input id="circle-invite-search" type="text" class="ds-input"
+          placeholder="Type a display name…" autocomplete="off"
+          oninput="window.searchUsersToInvite && window.searchUsersToInvite(this.value)">
+        <div id="circle-invite-results" class="community-invite-results" role="listbox"
+          style="margin-top:8px; display:none;"></div>
+        <div id="circle-invite-status" class="ds-helper-text" role="status"></div>
       </div>
+
+      <!-- Referral link (auto-joins on signup) -->
+      <div class="community-modal__section">
+        <label for="circle-invite-link" class="ds-label">Referral link (auto-joins on signup)</label>
+        <div class="community-modal__copy-row">
+          <input id="circle-invite-link" type="text" readonly class="community-modal__copy-input" value="">
+          <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="copyInviteLink()">Copy</button>
+        </div>
+      </div>
+
       <div class="community-modal__actions">
         <button class="ds-btn ds-btn--secondary" onclick="closeCommunityModal('invite-modal')">Close</button>
       </div>
@@ -220,6 +240,44 @@
               <span class="community-modal__switch-knob"></span>
             </span>
           </label>
+        </div>
+
+        <!-- Custom Banner (CO.2) -->
+        <div class="ds-form-group" style="margin-top:24px;">
+          <label class="ds-text-body community-modal__label" style="font-weight:600;">Circle banner</label>
+          <div class="ds-text-caption community-modal__toggle-desc" style="margin-bottom:8px;">A wide image shown at the top of your circle. JPEG, PNG, or WebP. Max 5 MB.</div>
+
+          <div id="settings-circle-banner-preview"
+               style="height:80px; border-radius:8px; border:1px dashed var(--ds-border, #E5E7EB); background-size:cover; background-position:center; background-color:var(--ds-bg-secondary, #F9FAFB); display:flex; align-items:center; justify-content:center; color:var(--ds-text-secondary, #475467); font-size:13px;">
+            No banner yet
+          </div>
+          <input type="file" id="settings-circle-banner-input" accept="image/jpeg,image/png,image/webp"
+                 capture="environment" class="ds-sr-only"
+                 onchange="window.uploadCircleBanner && window.uploadCircleBanner(event)">
+          <input type="hidden" id="settings-circle-banner-url">
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
+                    onclick="document.getElementById('settings-circle-banner-input').click()">Upload banner</button>
+            <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" id="settings-circle-banner-clear-btn"
+                    onclick="window.clearCircleBanner && window.clearCircleBanner()" hidden>Remove banner</button>
+          </div>
+          <div id="settings-circle-banner-status" class="ds-helper-text"></div>
+        </div>
+
+        <!-- Token-Gated Access (W3.1) -->
+        <div class="ds-form-group" style="margin-top:24px;">
+          <label class="ds-text-body community-modal__label" style="font-weight:600;">Token-gated access</label>
+          <div class="ds-text-caption community-modal__toggle-desc" style="margin-bottom:8px;">Restrict joining to investors who hold a minimum value of a specific asset. Leave the asset blank to disable.</div>
+
+          <label for="settings-circle-gate-asset" class="ds-text-body" style="font-size:13px;">Required asset</label>
+          <select id="settings-circle-gate-asset" class="ds-input community-modal__input">
+            <option value="">No token gate</option>
+          </select>
+
+          <label for="settings-circle-gate-min" class="ds-text-body" style="font-size:13px; margin-top:8px;">Minimum holding value (USD)</label>
+          <input id="settings-circle-gate-min" type="number" min="0" step="1" class="ds-input community-modal__input"
+            placeholder="0 = any holding" />
+          <div class="ds-text-caption community-modal__toggle-desc" style="margin-top:4px;">e.g. 1000 = members must hold at least $1,000 of the chosen asset.</div>
         </div>
       </div>
 

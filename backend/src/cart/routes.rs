@@ -255,13 +255,16 @@ pub async fn add_to_cart(
         return Redirect::to("/cart?error=sold_out").into_response();
     }
 
-    // 5. Upsert into cart_items (UNIQUE on user_id + asset_id)
+    // 5. Upsert into cart_items (UNIQUE on user_id + asset_id).
+    // The property page amount input represents the intended investment for
+    // that asset, so a repeat add replaces the quantity instead of silently
+    // accumulating an existing cart row.
     let result = sqlx::query(
         r#"
         INSERT INTO cart_items (user_id, asset_id, tokens_quantity, token_price_cents)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT (user_id, asset_id) DO UPDATE
-        SET tokens_quantity = LEAST(cart_items.tokens_quantity + $3, $5),
+        SET tokens_quantity = LEAST($3, $5),
             token_price_cents = $4
         "#,
     )
@@ -506,7 +509,8 @@ pub async fn api_cart(jar: CookieJar, State(state): State<AppState>) -> axum::re
             Json(serde_json::json!({
                 "items": views,
                 "count": views.len(),
-                "total_cents": views.iter().map(|i| i.total_cents).sum::<i64>()
+                "total_cents": views.iter().map(|i| i.total_cents).sum::<i64>(),
+                "usd_to_idr_rate": crate::config::DEFAULT_USD_TO_IDR_RATE_I64
             }))
             .into_response()
         }
@@ -777,11 +781,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let available_tokens_f64 = tokens_available as f64;
 
         let funded_pct = if total_tokens_f64 > 0.0 {
-            // Include tokens in cart to show the user's contribution to funding
-            let sold_tokens = total_tokens_f64 - available_tokens_f64 + tokens_qty as f64;
+            let sold_tokens = total_tokens_f64 - available_tokens_f64;
             let raw_pct = ((sold_tokens / total_tokens_f64) * 100.0).min(100.0);
-            // Show at least 1% if user has shares in cart (avoid misleading 0%)
-            if raw_pct > 0.0 && (raw_pct as i32) == 0 {
+            if raw_pct > 0.0 && raw_pct < 1.0 {
                 1
             } else {
                 raw_pct as i32
@@ -1217,6 +1219,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     </label>
                 </div>
                 {kfs_checkbox}
+                <div id="cart-validation-error" class="cart-page-alert cart-inline-error" role="alert" style="display:none; margin-top:12px;"></div>
 
                 <!-- CTA Button -->
 
@@ -1239,10 +1242,15 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     var kfsEl = document.getElementById('cart-kfs-checkbox');
                     var kfsChecked = kfsEl ? kfsEl.checked : true;
                     var btn = document.getElementById('cart-proceed-btn');
+                    var error = document.getElementById('cart-validation-error');
 
                     if (checked && kfsChecked) {{
                       btn.classList.remove('proceed-payment-btn--disabled');
                       sessionStorage.setItem('terms_accepted', '1');
+                      if (error) {{
+                        error.style.display = 'none';
+                        error.textContent = '';
+                      }}
                     }} else {{
                       btn.classList.add('proceed-payment-btn--disabled');
                       sessionStorage.removeItem('terms_accepted');
@@ -1255,6 +1263,13 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
 
                     if (!checked || !kfsChecked) {{
                       e.preventDefault();
+                      var error = document.getElementById('cart-validation-error');
+                      if (error) {{
+                        error.textContent = !checked
+                          ? 'Please accept the Terms and Conditions and Privacy Policy before checkout.'
+                          : 'Please read and acknowledge the Key Facts Statement before checkout.';
+                        error.style.display = 'block';
+                      }}
                       var termsRow = document.getElementById('cart-terms-row');
                       var kfsRow = document.getElementById('cart-kfs-row');
                       var rowToShake = (!kfsChecked && checked && kfsRow) ? kfsRow : termsRow;

@@ -13,6 +13,22 @@
             <div class="feed-post-meta">
                 <span class="feed-post-name">
                     {{ p.author_name }}
+                    {% if p.author_flair %}
+                        <span class="feed-post-flair"
+                              style="margin-left:6px; font-size:12px; padding:2px 8px; border-radius:999px; background:var(--ds-bg-secondary,#F2F4F7); color:var(--ds-text-secondary,#475467);"
+                              title="User flair">{{ p.author_flair }}</span>
+                    {% endif %}
+                    {% if p.author_top_contributor %}
+                        <span class="feed-post-top-contributor"
+                              style="margin-left:6px; font-size:11px; padding:2px 8px; border-radius:999px; background:linear-gradient(135deg, #FFD700, #FF9500); color:#0a0b2e; font-weight:600;"
+                              title="Top 50 by XP this period">⭐ Top</span>
+                    {% endif %}
+                    {% if p.author_tier %}
+                        {% set tier_color = '#CD7F32' %}{% if p.author_tier == 'Silver' %}{% set tier_color = '#C0C0C0' %}{% elif p.author_tier == 'Gold' %}{% set tier_color = '#FFD700' %}{% elif p.author_tier == 'Platinum' %}{% set tier_color = '#E5E4E2' %}{% endif %}
+                        <span class="feed-post-tier"
+                              style="margin-left:6px; font-size:11px; padding:2px 8px; border-radius:999px; background:{{ tier_color }}; color:#0a0b2e; font-weight:600;"
+                              title="Portfolio tier — derived from total invested capital">💎 {{ p.author_tier }}</span>
+                    {% endif %}
                     {% if 'POOOL' in p.author_name %}
                         <span class="feed-post-verified-badge">Official</span>
                     {% endif %}
@@ -26,6 +42,9 @@
                     {% endfor %}
                 </span>
                 <span class="feed-post-time">{{ p.created_at_display }}</span>
+                {% if p.read_time_minutes %}
+                    <span class="feed-post-readtime ds-text-caption" aria-label="Estimated reading time">· {{ p.read_time_minutes }} min read</span>
+                {% endif %}
             </div>
         </div>
 
@@ -59,7 +78,32 @@
                 {% endfor %}
             </div>
         {% endif %}
-        {% if p.link_preview %}
+        {% if p.embed_kind == 'youtube' %}
+            <a href="{{ p.link_preview.url }}" target="_blank" rel="noopener noreferrer"
+               class="feed-post-video-embed feed-post-video-embed--youtube"
+               style="position:relative; display:block; border-radius:12px; overflow:hidden; margin-top:8px;">
+                <img src="https://img.youtube.com/vi/{{ p.embed_id }}/hqdefault.jpg"
+                     alt="{{ p.link_preview.title | default('YouTube video', true) }}"
+                     style="display:block; width:100%; height:auto;">
+                <span aria-hidden="true"
+                      style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+                    <span style="background:rgba(0,0,0,0.7); color:#fff; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">▶</span>
+                </span>
+                {% if p.link_preview.title %}
+                    <div style="padding:8px 12px; background:var(--ds-bg-secondary,#F9FAFB); font-size:13px; font-weight:600;">{{ p.link_preview.title }}</div>
+                {% endif %}
+            </a>
+        {% elif p.embed_kind == 'loom' %}
+            <a href="{{ p.link_preview.url }}" target="_blank" rel="noopener noreferrer"
+               class="feed-post-video-embed feed-post-video-embed--loom"
+               style="display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--ds-border,#E5E7EB); border-radius:12px; margin-top:8px; text-decoration:none; color:inherit;">
+                <span aria-hidden="true" style="flex-shrink:0; background:#625df5; color:#fff; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">▶</span>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:600; font-size:14px;">{{ p.link_preview.title | default('Loom video', true) }}</div>
+                    <div class="ds-text-caption">loom.com · click to watch</div>
+                </div>
+            </a>
+        {% elif p.link_preview %}
             <a href="{{ p.link_preview.url }}" target="_blank" rel="noopener noreferrer" class="feed-post-link-preview">
                 {% if p.link_preview.image %}
                     <img class="feed-post-link-preview__image" src="{{ p.link_preview.image }}" alt="">
@@ -71,6 +115,20 @@
                         <div class="feed-post-link-preview__desc">{{ p.link_preview.description }}</div>
                     {% endif %}
                 </div>
+            </a>
+        {% endif %}
+
+        {% if p.quoted %}
+            <a href="/community/post/{{ p.quoted.id }}" class="feed-post-quoted"
+               style="display:block; margin-top:10px; padding:12px; border:1px solid var(--ds-border, #E5E7EB); border-left:3px solid var(--ds-color-primary, #03FF88); border-radius:8px; text-decoration:none; color:inherit; background:var(--ds-bg-secondary, #F9FAFB);">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                    {% if p.quoted.author_avatar %}
+                        <img src="{{ p.quoted.author_avatar }}" alt="" style="width:20px; height:20px; border-radius:50%; object-fit:cover;">
+                    {% endif %}
+                    <span style="font-weight:600; font-size:13px;">{{ p.quoted.author_name }}</span>
+                    <span class="ds-text-caption">· {{ p.quoted.created_at_display }}</span>
+                </div>
+                <div style="font-size:13px; white-space:pre-wrap;">{{ p.quoted.content }}</div>
             </a>
         {% endif %}
 
@@ -110,10 +168,26 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                 <span class="feed-reaction-btn__count">{{ p.comment_count }}</span>
             </button>
-            <button class="feed-reaction-btn" type="button" aria-label="Copy link to post" onclick="const url = '{{ base_url }}/community/post/{{ p.id }}'; navigator.clipboard.writeText(url).then(() => { if (window.showToast) window.showToast('Link copied to clipboard'); else alert('Link copied to clipboard'); }).catch(err => console.error('Failed to copy: ', err));">
+            <button class="feed-reaction-btn" type="button" aria-label="Share post"
+                    onclick="window.sharePostLink && window.sharePostLink('{{ base_url }}/community/post/{{ p.id }}', {{ p.author_name | tojson }})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 <span class="feed-reaction-btn__count">Share</span>
             </button>
+            {# W3.3 lite — direct share intents. Web Share API covers mobile;
+               these dedicated icons handle the desktop "I want to post this on X" case. #}
+            <a class="feed-reaction-btn" target="_blank" rel="noopener noreferrer"
+               aria-label="Share on X / Twitter"
+               href="https://twitter.com/intent/tweet?text={{ ('Worth a read on POOOL — ' ~ p.author_name) | urlencode }}&url={{ (base_url ~ '/community/post/' ~ p.id) | urlencode }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                <span class="feed-reaction-btn__count">X</span>
+            </a>
+            {# UX.16: Quote button — only shown on posts that are themselves not already a quote, to keep chains flat. #}
+            {% if not p.quoted %}
+            <button class="feed-reaction-btn" type="button" aria-label="Quote this post" onclick="window.openQuoteComposer && window.openQuoteComposer('{{ p.id }}', {{ p.author_name | tojson }}, {{ p.content | tojson }})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l3-3h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v15z"/><path d="M8 9h2m-2 4h6"/></svg>
+                <span class="feed-reaction-btn__count">Quote</span>
+            </button>
+            {% endif %}
         </div>
 
         <div class="feed-post-engagement__right">
@@ -121,14 +195,14 @@
                 {{ p.reaction_count }} reactions · {{ p.comment_count }} comments
             </button>
 
-            <button class="feed-bookmark-btn" id="bookmark-btn-{{ p.id }}" type="button" aria-label="Save post" aria-pressed="false" onclick="toggleBookmark('{{ p.id }}', this)">
+            <button class="feed-bookmark-btn{% if p.is_bookmarked %} bookmarked{% endif %}"
+                    id="bookmark-btn-{{ p.id }}" type="button"
+                    aria-label="{% if p.is_bookmarked %}Remove saved post{% else %}Save post{% endif %}"
+                    aria-pressed="{% if p.is_bookmarked %}true{% else %}false{% endif %}"
+                    title="{% if p.is_bookmarked %}Remove Bookmark{% else %}Save Post{% endif %}"
+                    onclick="toggleBookmark('{{ p.id }}', this)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             </button>
-            <script>
-                if (typeof checkBookmarkStatus === 'function') {
-                    checkBookmarkStatus('{{ p.id }}', document.getElementById('bookmark-btn-{{ p.id }}'));
-                }
-            </script>
 
             <button class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm feed-post-report-btn" type="button" aria-label="Report post" onclick="openReportModal('{{ p.id }}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>

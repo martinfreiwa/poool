@@ -6,6 +6,35 @@ use crate::storage::service::rewrite_gcs_url;
 
 const DEFAULT_PROPERTY_IMAGE_URL: &str = "/static/images/seed/villa1.webp";
 
+fn clean_display_text(value: &Option<String>) -> Option<String> {
+    value
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .filter(|s| !s.eq_ignore_ascii_case("none") && !s.eq_ignore_ascii_case("null"))
+        .map(ToOwned::to_owned)
+}
+
+fn clean_country_display(value: &Option<String>) -> Option<String> {
+    clean_display_text(value).map(|country| match country.as_str() {
+        "ID" | "id" => "Indonesia".to_string(),
+        _ => country,
+    })
+}
+
+fn effective_tokens_sold(
+    tokens_total: i32,
+    tokens_available: i32,
+    tokens_sold_actual: Option<i64>,
+) -> i32 {
+    let stored_sold = tokens_total.saturating_sub(tokens_available).max(0);
+    let actual_sold = tokens_sold_actual
+        .map(|n| n.clamp(0, tokens_total as i64) as i32)
+        .unwrap_or(stored_sold);
+
+    stored_sold.max(actual_sold).min(tokens_total.max(0))
+}
+
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct MarketplaceAsset {
     pub id: Uuid,
@@ -237,12 +266,11 @@ impl AssetPageContent {
 
 impl PropertyDisplayData {
     pub fn from_asset(asset: &MarketplaceAsset) -> Self {
-        // Prefer dynamic count from `investments` (single source of truth) over drift-prone
-        // `assets.tokens_available`. Falls back to stored field if subquery absent.
-        let tokens_sold = asset
-            .tokens_sold_actual
-            .map(|n| n.clamp(0, asset.tokens_total as i64) as i32)
-            .unwrap_or(asset.tokens_total - asset.tokens_available);
+        let tokens_sold = effective_tokens_sold(
+            asset.tokens_total,
+            asset.tokens_available,
+            asset.tokens_sold_actual,
+        );
         let tokens_available_dyn = (asset.tokens_total - tokens_sold).max(0);
         let funded_pct = if asset.tokens_total > 0 {
             ((tokens_sold as f64 / asset.tokens_total as f64) * 100.0) as i32
@@ -321,13 +349,13 @@ impl PropertyDisplayData {
             short_description: asset.short_description.clone(),
             description: asset.description.clone(),
             asset_type: asset.asset_type.clone(),
-            location_city: asset.location_city.clone(),
-            location_country: asset.location_country.clone(),
+            location_city: clean_display_text(&asset.location_city),
+            location_country: clean_country_display(&asset.location_country),
             bedrooms: asset.bedrooms,
             bathrooms: asset.bathrooms,
             lease_type: asset.lease_type.clone(),
             term_months: asset.term_months,
-            area: asset.area.clone(),
+            area: clean_display_text(&asset.area),
             image_urls,
             cover_image_url,
             funding_status: asset.funding_status.clone(),
@@ -601,10 +629,11 @@ pub struct CommodityDisplayData {
 impl CommodityDisplayData {
     /// Build a template-friendly `CommodityDisplayData` from a raw `CommodityAsset`.
     pub fn from_asset(asset: &CommodityAsset) -> Self {
-        let tokens_sold = asset
-            .tokens_sold_actual
-            .map(|n| n.clamp(0, asset.tokens_total as i64) as i32)
-            .unwrap_or(asset.tokens_total - asset.tokens_available);
+        let tokens_sold = effective_tokens_sold(
+            asset.tokens_total,
+            asset.tokens_available,
+            asset.tokens_sold_actual,
+        );
         let tokens_available_dyn = (asset.tokens_total - tokens_sold).max(0);
         let funded_pct = if asset.tokens_total > 0 {
             ((tokens_sold as f64 / asset.tokens_total as f64) * 100.0) as i32
@@ -863,6 +892,13 @@ mod tests {
         asset.tokens_available = asset.tokens_total;
         let display = CommodityDisplayData::from_asset(&asset);
         assert_eq!(display.funded_percentage, 0);
+    }
+
+    #[test]
+    fn test_effective_tokens_sold_never_under_reports_stored_funding() {
+        assert_eq!(effective_tokens_sold(10_000, 6_000, Some(0)), 4_000);
+        assert_eq!(effective_tokens_sold(10_000, 6_000, Some(4_500)), 4_500);
+        assert_eq!(effective_tokens_sold(10_000, 6_000, Some(99_000)), 10_000);
     }
 
     #[test]

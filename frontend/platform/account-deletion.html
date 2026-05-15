@@ -1,133 +1,144 @@
-{% with title="POOOL", no_index=True, extra_css=['error-pages'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Delete Account", no_index=True, extra_css=['leaderboard', 'cards-template', 'ds-cards', 'developer-leaderboard-navbar', 'settings', 'error-pages', 'developer-ui'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'poool-confirm'] %}{% include "components/head.html" %}{% endwith %}
 
-<body>
-  <div class="page">
-    <div class="container">
+<body class="account-deletion-page fouc-guard">
+  {% include 'components/mobile-menu.html' %}
 
-      <!-- Logo -->
-      <div class="logo-wrap">
-        <a href="/settings"><img src="/static/images/icons/logo-pool.svg" alt="POOOL" /></a>
-      </div>
+  <div id="marketplace-page" class="marketplace-page account-deletion-dashboard">
+    <div id="marketplace-sidebar" class="marketplace-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
 
-      <!-- Success state (shown after submit) -->
-      <div id="deletion-success" role="alert">
-        <div class="success-icon" aria-hidden="true">
-          <svg  width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M23.333 7L10.5 19.833 4.667 14" stroke="#0000FF" stroke-width="2.5" stroke-linecap="round"
+    <main id="account-deletion-main" class="ds-main marketplace-main account-deletion-main" aria-labelledby="account-deletion-title">
+      {% if is_developer %}
+      {% with dev_nav_title="Delete Account", dev_nav_active="settings", dev_nav_show_search=true %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+      {% else %}
+      {% with investor_topbar_title="Delete Account", investor_topbar_class="settings-topbar", investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+      {% endif %}
+
+      <div class="account-deletion-shell">
+        <div class="account-deletion-container">
+
+      <section id="deletion-success" class="ds-card account-deletion-success" role="alert" aria-live="polite">
+        <div class="account-deletion-status-icon account-deletion-status-icon--success" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
         </div>
-        <div class="success-title">Deletion request received</div>
-        <p class="success-body">
-          Your account deletion request has been submitted. You will receive a confirmation email shortly.<br><br>
-          Per <strong>GDPR Article 17</strong>, your data will be permanently deleted within <strong>30 days</strong>.
-          You will be logged out shortly.
-        </p>
-        <p style="font-size:13px;color:#a4a7ae;margin-top:24px;">Logging you out in <span
-            id="logout-countdown">10</span> seconds…</p>
-      </div>
+        <div>
+          <h2 class="success-title">Deletion request received</h2>
+          <p class="success-body">
+            Your account deletion request has been submitted. You will receive a confirmation email shortly.
+          </p>
+          <p class="success-body">
+            Per <strong>GDPR Article 17</strong>, your data will be permanently deleted within <strong>30 days</strong>.
+            You will be logged out shortly.
+          </p>
+          <p class="success-countdown">Logging you out in <span id="logout-countdown">10</span> seconds…</p>
+        </div>
+      </section>
 
-      <!-- Page content -->
-      <div id="deletion-page-content">
-
-        <!-- Warning icon -->
-        <div class="warn-icon-wrap" aria-hidden="true">
-          <svg  width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <path
-              d="M16 11v7M16 21h.013M28 22L18 4.667a2.333 2.333 0 00-4 0L4 22a2.333 2.333 0 002 3.5h20A2.333 2.333 0 0028 22z"
-              stroke="#D92D20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+      <section id="deletion-page-content" class="ds-card ds-card--elevated account-deletion-card">
+        <div class="account-deletion-card__header">
+          <div class="account-deletion-status-icon account-deletion-status-icon--danger" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <span class="ds-badge ds-badge--danger">Irreversible action</span>
         </div>
 
-        <div class="page-badge" aria-label="GDPR Article 17">
-          ⚠️ Irreversible action
-        </div>
-
-        <h1>Delete your account</h1>
-        <p class="subtitle">
+        <h2 id="account-deletion-title" class="account-deletion-title">Delete your account</h2>
+        <p class="account-deletion-subtitle">
           This will permanently delete your POOOL account, investments record, and all associated personal data in
           accordance with <strong>GDPR Article 17 (Right to Erasure)</strong>.
         </p>
 
-        <!-- Consequences -->
-        <div class="consequences" role="note" aria-label="What will be deleted">
-          <div class="consequences-title">
-            <svg  width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 6v3.5M8 11h.007M14 8A6 6 0 112 8a6 6 0 0112 0z" stroke="#b42318" stroke-width="1.5"
-                stroke-linecap="round" />
-            </svg>
-            The following will be permanently deleted or anonymized
-          </div>
-          <ul class="consequences-list">
-            <li>Your account login credentials and profile data (name, address, phone)</li>
-            <li>Notification preferences and settings</li>
-            <li>OAuth connections (Google, Facebook)</li>
-            <li>Session data and referral codes</li>
-          </ul>
-          <div class="consequences-title" style="margin-top: 12px; color: #344054;">
-            <svg  width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 6v3.5M8 11h.007M14 8A6 6 0 112 8a6 6 0 0112 0z" stroke="#0000d4" stroke-width="1.5"
-                stroke-linecap="round" />
-            </svg>
-            Retained per financial regulations (5-10 years)
-          </div>
-          <ul class="consequences-list" style="color: #475467;">
-            <li>KYC / identity verification records</li>
-            <li>Wallet transaction history</li>
-            <li>Investment records (anonymized)</li>
-            <li>Audit logs</li>
-          </ul>
+        <div class="account-deletion-sections" role="note" aria-label="Deletion and retention details">
+          <section class="account-deletion-info account-deletion-info--danger" aria-labelledby="deleted-data-title">
+            <h2 id="deleted-data-title" class="account-deletion-info__title">
+              <span class="account-deletion-info__icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 5.5V9m0 2h.007M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0Z" stroke="currentColor"
+                    stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </span>
+              Permanently deleted or anonymized
+            </h2>
+            <ul class="account-deletion-list">
+              <li>Your account login credentials and profile data (name, address, phone)</li>
+              <li>Notification preferences and settings</li>
+              <li>OAuth connections (Google, Facebook)</li>
+              <li>Session data and referral codes</li>
+            </ul>
+          </section>
+
+          <section class="account-deletion-info account-deletion-info--neutral" aria-labelledby="retained-data-title">
+            <h2 id="retained-data-title" class="account-deletion-info__title">
+              <span class="account-deletion-info__icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 5.5V9m0 2h.007M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0Z" stroke="currentColor"
+                    stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </span>
+              Retained per financial regulations (5-10 years)
+            </h2>
+            <ul class="account-deletion-list">
+              <li>KYC / identity verification records</li>
+              <li>Wallet transaction history</li>
+              <li>Investment records (anonymized)</li>
+              <li>Audit logs</li>
+            </ul>
+          </section>
         </div>
 
-        <!-- Form -->
-        <form class="deletion-form" id="deletion-form" onsubmit="submitDeletionRequest(event)" novalidate>
-
-          <div class="form-group">
-            <label class="form-label" for="del-password">
-              Your current password <span class="required" aria-hidden="true">*</span>
-            </label>
-            <input id="del-password" class="form-input" type="password" name="current_password"
+        <form class="account-deletion-form" id="deletion-form" onsubmit="submitDeletionRequest(event)" novalidate>
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required" for="del-password">Your current password</label>
+            <input id="del-password" class="ds-input" type="password" name="current_password"
               placeholder="Enter your password to confirm" autocomplete="current-password" required />
           </div>
 
-          <div class="confirm-box">
-            <p>To confirm deletion, type the following phrase in the box below:</p>
-            <p><span class="confirm-code" id="confirm-phrase">delete my account</span></p>
+          <div class="account-deletion-confirm">
+            <span class="account-deletion-confirm__label">Confirmation phrase</span>
+            <span class="account-deletion-confirm__code" id="confirm-phrase">delete my account</span>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="del-confirm">
-              Type to confirm <span class="required" aria-hidden="true">*</span>
-            </label>
-            <input id="del-confirm" class="form-input confirm-input" type="text" name="confirmation"
+          <div class="ds-form-group">
+            <label class="ds-form-label ds-form-label--required" for="del-confirm">Type to confirm</label>
+            <input id="del-confirm" class="ds-input" type="text" name="confirmation"
               placeholder='Type "delete my account"' autocomplete="off" required oninput="validateConfirmation(this)" />
+            <p class="ds-form-hint">Enter the phrase exactly as shown above.</p>
           </div>
 
-          <label class="checkbox-row">
+          <label class="ds-checkbox-group account-deletion-checkbox">
             <input type="checkbox" id="del-understand" name="understood" required />
-            <span class="checkbox-label">
+            <span class="ds-checkbox-label">
               I understand this action is <strong>permanent and irreversible</strong>. POOOL cannot restore my account
               or data once deletion is complete.
             </span>
           </label>
 
-          <div id="deletion-error" class="hidden"
-            style="color: #D92D20; font-size: 14px; margin-top: 10px; display: none; padding: 12px; border-radius: 8px; background: #FEF3F2; border: 1px solid #FECDCA;">
-          </div>
+          <div id="deletion-error" class="ds-form-error account-deletion-error"></div>
 
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <button type="submit" id="del-submit" class="btn-danger" disabled>
+          <div class="account-deletion-actions">
+            <button type="submit" id="del-submit" class="ds-btn ds-btn--danger ds-btn--lg" disabled>
               Permanently delete account
             </button>
-            <a href="/settings" id="del-cancel" class="btn-cancel">
+            <a href="/settings" id="del-cancel" class="ds-btn ds-btn--secondary ds-btn--lg">
               Cancel — keep my account
             </a>
           </div>
-
         </form>
-      </div><!-- end #deletion-page-content -->
+      </section>
 
-    </div>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script>
@@ -154,6 +165,10 @@
       e.preventDefault();
       const btn = document.getElementById("del-submit");
       const errBox = document.getElementById("deletion-error");
+      const confirmInput = document.getElementById("del-confirm");
+      validateConfirmation(confirmInput);
+      if (btn.disabled) return;
+
       btn.disabled = true;
       btn.textContent = "Deleting account…";
       errBox.style.display = "none";
@@ -174,7 +189,7 @@
         const resp = await fetch("/api/settings/delete-account", {
           method: "POST",
           headers,
-          body: JSON.stringify({ current_password: password }),
+          body: JSON.stringify({ current_password: password, confirm: "DELETE" }),
         });
 
         const data = await resp.json().catch(() => ({}));
@@ -196,13 +211,13 @@
           }, 1000);
         } else {
           errBox.textContent = data.message || "Failed to delete account. Please try again.";
-          errBox.style.display = "block";
+          errBox.style.display = "flex";
           btn.disabled = false;
           btn.textContent = "Permanently delete account";
         }
       } catch (err) {
         errBox.textContent = "Network error. Please try again.";
-        errBox.style.display = "block";
+        errBox.style.display = "flex";
         btn.disabled = false;
         btn.textContent = "Permanently delete account";
       }

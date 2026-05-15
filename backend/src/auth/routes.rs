@@ -899,7 +899,11 @@ pub async fn signup_submit(
         });
     }
 
-    // ── Referral System Tracking ─────────────────────────────────
+    // ── Referral Attribution (Affiliate-only) ────────────────────
+    // The legacy `referral_tracking` parallel path was removed (audit GAP-07,
+    // see migration 155). Only the new affiliate attribution writes here.
+    // Existing `referral_tracking` rows remain read-only for historical
+    // dashboards and the double-payout guard in check_and_track_affiliate_commission.
     if let Some(mut code_str) = referral_code.filter(|c| !c.trim().is_empty()) {
         code_str = code_str.trim().to_string();
 
@@ -910,38 +914,6 @@ pub async fn signup_submit(
 
         code_str = just_code;
 
-        // 1. Resolve code to referrer user_id and their tier
-        let row = sqlx::query!(
-            r#"SELECT rc.user_id, referral_bonus 
-               FROM referral_codes rc
-               JOIN user_tiers ut ON ut.user_id = rc.user_id
-               JOIN tiers t ON t.id = ut.tier_id
-               WHERE rc.code = $1 LIMIT 1"#,
-            code_str
-        )
-        .fetch_optional(&state.db)
-        .await
-        .ok()
-        .flatten();
-
-        if let Some(r) = row {
-            // Found a valid referrer
-            // 2. Insert into referral_tracking (status = 'pending')
-            let _ = sqlx::query!(
-                "INSERT INTO referral_tracking (referrer_id, referred_id, referrer_reward, referred_reward, status, created_at, subid) \
-                 VALUES ($1, $2, $3, $4, 'pending', NOW(), $5)",
-                r.user_id,
-                user.id,
-                r.referral_bonus, // For the referrer: tier's direct bonus
-                500, // Fixed initial reward for THE REFERRED ($5.00)
-                subid
-            )
-            .execute(&state.db)
-            .await;
-        }
-
-        // Also track in the new affiliate system (Phase 18)
-        // If code matches an active affiliate, create affiliate_referrals record
         if let Err(e) = crate::rewards::service::attribute_affiliate_referral(
             &state.db,
             &code_str,

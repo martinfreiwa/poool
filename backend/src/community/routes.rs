@@ -268,12 +268,56 @@ fn extract_meta_tag(html: &str, property: &str) -> Option<String> {
 
 // ─── Route Handlers ──────────────────────────────────────────────────────────
 
+/// M6-FEAT.3: map a URL to (embed_kind, embed_id) for inline player cards.
+/// Recognised: YouTube (watch?v=, youtu.be/, /embed/, /shorts/) and Loom
+/// (loom.com/share/<id>). Anything else returns `None` so the generic OG
+/// link card is used instead.
+fn extract_video_embed(url: &str) -> Option<(String, String)> {
+    let parsed = url::Url::parse(url).ok()?;
+    let host = parsed.host_str()?.trim_start_matches("www.");
+    match host {
+        "youtube.com" | "m.youtube.com" => {
+            // /watch?v=ID, /embed/ID, /shorts/ID
+            if parsed.path() == "/watch" {
+                let id = parsed
+                    .query_pairs()
+                    .find(|(k, _)| k == "v")
+                    .map(|(_, v)| v.to_string())?;
+                if !id.is_empty() {
+                    return Some(("youtube".into(), id));
+                }
+            }
+            let segs: Vec<&str> = parsed.path().split('/').filter(|s| !s.is_empty()).collect();
+            if segs.len() >= 2 && (segs[0] == "embed" || segs[0] == "shorts") && !segs[1].is_empty()
+            {
+                return Some(("youtube".into(), segs[1].to_string()));
+            }
+            None
+        }
+        "youtu.be" => {
+            let segs: Vec<&str> = parsed.path().split('/').filter(|s| !s.is_empty()).collect();
+            segs.first()
+                .filter(|s| !s.is_empty())
+                .map(|s| ("youtube".into(), s.to_string()))
+        }
+        "loom.com" => {
+            let segs: Vec<&str> = parsed.path().split('/').filter(|s| !s.is_empty()).collect();
+            if segs.len() >= 2 && segs[0] == "share" && !segs[1].is_empty() {
+                return Some(("loom".into(), segs[1].to_string()));
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
 pub fn map_to_post_display(
     p: &models::Post,
     author_name: String,
     author_avatar: Option<String>,
     author_badges: Vec<String>,
     current_user_reacted: bool,
+    is_bookmarked: bool,
 ) -> PostDisplay {
     let mut author_initials = String::new();
     let parts: Vec<&str> = author_name.split_whitespace().collect();
@@ -299,7 +343,12 @@ pub fn map_to_post_display(
         .content_sanitized
         .clone()
         .unwrap_or_else(|| p.content.clone());
-    let re = regex::Regex::new(r"(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+)").unwrap();
+    // W3.5: also capture `$slug` so we can render asset tickers as links
+    // straight to the marketplace card. Slug accepts a-z, 0-9, hyphen.
+    let re = regex::Regex::new(
+        r"(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+|\$[a-zA-Z0-9_-]+)",
+    )
+    .unwrap();
     let rendered_content = if p.post_type == "announcement" {
         raw_content.clone()
     } else {
@@ -312,6 +361,14 @@ pub fn map_to_post_display(
                 format!(
                     "<a class='hashtag-tag' href='/community/hashtag/{}'>{}</a>",
                     tag, matched
+                )
+            } else if matched.starts_with('$') {
+                // W3.5 \u2014 asset ticker. Link to the marketplace search page;
+                // FE upgrades it to a "Buy now" mini-CTA on hover.
+                let slug = matched[1..].to_lowercase();
+                format!(
+                    "<a class='asset-tag' data-asset-slug='{}' href='/marketplace?q={}'>{}</a>",
+                    slug, slug, matched
                 )
             } else {
                 let user = &matched[1..];
@@ -336,6 +393,26 @@ pub fn map_to_post_display(
         .map(|u| crate::storage::service::rewrite_gcs_url(&u))
         .collect();
 
+    // UX.20: average adult reading speed ≈ 200 wpm. Only surface a badge
+    // when the post would take at least a minute to read so we don't
+    // clutter every short status.
+    let word_count = raw_content.split_whitespace().count();
+    let read_time_minutes = if word_count >= 200 {
+        Some(((word_count as f32) / 200.0).ceil() as i32)
+    } else {
+        None
+    };
+
+    // M6-FEAT.3: rich-media embed (YouTube/Loom) when the OG link points
+    // at one of those providers. Falls back to the generic preview card.
+    let (embed_kind, embed_id) = p
+        .link_preview
+        .as_ref()
+        .and_then(|v| v.get("url").and_then(|u| u.as_str()))
+        .and_then(extract_video_embed)
+        .map(|(k, i)| (Some(k), Some(i)))
+        .unwrap_or((None, None));
+
     PostDisplay {
         id: p.id,
         author_name,
@@ -353,12 +430,25 @@ pub fn map_to_post_display(
         reaction_count: p.reaction_count,
         comment_count: p.comment_count,
         current_user_reacted,
+        is_bookmarked,
         is_hidden: p.is_hidden,
         is_pinned: p.is_pinned,
         disclaimer_shown: p.disclaimer_shown,
         verified_owner: false,
         created_at: p.created_at,
         created_at_display: p.created_at.format("%b %e, %H:%M").to_string(),
+        read_time_minutes,
+        embed_kind,
+        embed_id,
+        // Callers populate this themselves (feed-level) so non-feed paths
+        // can opt out of the extra round-trip when they don't render the
+        // quote card.
+        quoted: None,
+        // UX.14: ditto — feed-level callers hydrate this via the flair
+        // batch helper. Detail/admin paths are free to skip the lookup.
+        author_flair: None,
+        author_top_contributor: false,
+        author_tier: None,
     }
 }
 
@@ -399,12 +489,18 @@ pub async fn get_feed_data(
     let authors =
         user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
-    let reacted_post_ids = if let Some(current_user) = user {
-        let post_ids: Vec<Uuid> = posts.iter().map(|p| p.id).collect();
+    let post_ids: Vec<Uuid> = posts.iter().map(|p| p.id).collect();
+    let (reacted_post_ids, bookmarked_post_ids) = if let Some(current_user) = user {
         if post_ids.is_empty() {
-            std::collections::HashSet::new()
+            (
+                std::collections::HashSet::new(),
+                std::collections::HashSet::new(),
+            )
         } else {
-            sqlx::query_scalar::<_, Uuid>(
+            // Single round-trip per signal: fetches all reactions/bookmarks
+            // for the visible page in one query, replacing the FE per-post
+            // GET /bookmark/status N+1 storm.
+            let reacted = sqlx::query_scalar::<_, Uuid>(
                 "SELECT post_id FROM reactions WHERE user_id = $1 AND post_id = ANY($2) AND reaction_type = 'fire'",
             )
             .bind(current_user.id)
@@ -412,11 +508,40 @@ pub async fn get_feed_data(
             .fetch_all(&c_pool)
             .await?
             .into_iter()
-            .collect()
+            .collect();
+            let bookmarked = sqlx::query_scalar::<_, Uuid>(
+                "SELECT post_id FROM bookmarks WHERE user_id = $1 AND post_id = ANY($2)",
+            )
+            .bind(current_user.id)
+            .bind(&post_ids)
+            .fetch_all(&c_pool)
+            .await?
+            .into_iter()
+            .collect();
+            (reacted, bookmarked)
         }
     } else {
-        std::collections::HashSet::new()
+        (
+            std::collections::HashSet::new(),
+            std::collections::HashSet::new(),
+        )
     };
+
+    // UX.16 — batch-fetch quoted post briefs so each card can render the
+    // shared post without an extra request per row.
+    let quoted_brief_map = fetch_quoted_briefs(&state, &c_pool, &posts).await;
+    // UX.14 — batch-fetch user flairs.
+    let flair_map = service::get_flairs_batch(&c_pool, &user_ids)
+        .await
+        .unwrap_or_default();
+    // UX.17 — top-50 by XP gets a "Top Contributor" badge.
+    let top_contributor_set = service::get_top_contributor_set(&c_pool, 50)
+        .await
+        .unwrap_or_default();
+    // W3.4 — portfolio tier (cross-DB lookup against the core investments table).
+    let tier_map = user_bridge::get_portfolio_tiers_batch(&state.db, &user_ids)
+        .await
+        .unwrap_or_default();
 
     let mut feed = Vec::with_capacity(posts.len());
 
@@ -427,16 +552,97 @@ pub async fn get_feed_data(
             .map(|a| a.display_name.clone())
             .unwrap_or_else(|| "Anonymous".into());
 
-        feed.push(map_to_post_display(
+        let mut display = map_to_post_display(
             &p,
             author_name,
             author.and_then(|a| a.avatar_url.clone()),
             author_badges,
             reacted_post_ids.contains(&p.id),
-        ));
+            bookmarked_post_ids.contains(&p.id),
+        );
+        if let Some(qid) = p.quoted_post_id {
+            display.quoted = quoted_brief_map.get(&qid).cloned();
+        }
+        display.author_flair = flair_map.get(&p.user_id).cloned();
+        display.author_top_contributor = top_contributor_set.contains(&p.user_id);
+        display.author_tier = tier_map.get(&p.user_id).cloned();
+        feed.push(display);
     }
 
     Ok(feed)
+}
+
+/// UX.16 — batch-resolve `posts.quoted_post_id` → QuotedPostBrief.
+/// One Postgres round-trip + one user-bridge call regardless of page size.
+async fn fetch_quoted_briefs(
+    state: &AppState,
+    c_pool: &sqlx::PgPool,
+    posts: &[crate::community::models::Post],
+) -> std::collections::HashMap<Uuid, crate::community::models::QuotedPostBrief> {
+    use sqlx::Row;
+    let quoted_ids: Vec<Uuid> = posts.iter().filter_map(|p| p.quoted_post_id).collect();
+    if quoted_ids.is_empty() {
+        return std::collections::HashMap::new();
+    }
+    let rows = match sqlx::query(
+        r#"
+        SELECT id, user_id, COALESCE(content_sanitized, content) AS content, created_at
+        FROM posts
+        WHERE id = ANY($1) AND is_hidden = FALSE
+        "#,
+    )
+    .bind(&quoted_ids)
+    .fetch_all(c_pool)
+    .await
+    {
+        Ok(r) => r,
+        Err(_) => return std::collections::HashMap::new(),
+    };
+    let user_ids: Vec<Uuid> = rows
+        .iter()
+        .filter_map(|r| r.try_get::<Uuid, _>("user_id").ok())
+        .collect();
+    let info_map = crate::community::user_bridge::get_users_info_batch(
+        &state.db,
+        state.redis.as_ref(),
+        &user_ids,
+    )
+    .await
+    .unwrap_or_default();
+
+    let mut out = std::collections::HashMap::with_capacity(rows.len());
+    for r in rows {
+        let id: Uuid = match r.try_get("id") {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let uid: Uuid = r.try_get("user_id").unwrap_or_default();
+        let content: String = r.try_get("content").unwrap_or_default();
+        let created_at: chrono::DateTime<chrono::Utc> = r
+            .try_get("created_at")
+            .unwrap_or_else(|_| chrono::Utc::now());
+        let info = info_map.get(&uid);
+        let truncated = if content.chars().count() > 280 {
+            let mut s: String = content.chars().take(277).collect();
+            s.push_str("…");
+            s
+        } else {
+            content
+        };
+        out.insert(
+            id,
+            crate::community::models::QuotedPostBrief {
+                id,
+                author_name: info
+                    .map(|i| i.display_name.clone())
+                    .unwrap_or_else(|| "Anonymous".to_string()),
+                author_avatar: info.and_then(|i| i.avatar_url.clone()),
+                content: truncated,
+                created_at_display: created_at.format("%b %e, %H:%M").to_string(),
+            },
+        );
+    }
+    out
 }
 
 async fn get_feed(
@@ -505,6 +711,17 @@ async fn get_post_detail(
     } else {
         false
     };
+    let is_bookmarked = if let Some(ref current_user) = user {
+        sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM bookmarks WHERE post_id = $1 AND user_id = $2)",
+        )
+        .bind(p.id)
+        .bind(current_user.id)
+        .fetch_one(&c_pool)
+        .await?
+    } else {
+        false
+    };
 
     let response = map_to_post_display(
         &p,
@@ -512,6 +729,7 @@ async fn get_post_detail(
         author_info.and_then(|a| a.avatar_url.clone()),
         author_badges,
         current_user_reacted,
+        is_bookmarked,
     );
 
     Ok(Json(response))
@@ -2490,19 +2708,9 @@ pub fn router() -> Router<AppState> {
             "/api/community/notifications/preferences",
             get(get_notification_preferences).put(update_notification_preferences),
         )
-        // Phase 3 task 32: verified-owner badge request flow.
-        .route(
-            "/api/community/profile/verify-request",
-            post(submit_verification_request),
-        )
-        .route(
-            "/api/admin/community/verification-requests",
-            get(admin_list_verification_requests),
-        )
-        .route(
-            "/api/admin/community/verification-requests/:id/review",
-            post(admin_review_verification_request),
-        )
+        // Phase 3 task 32 verified-owner badge request flow REMOVED 2026-05-15.
+        // Replaced by the asset-linked /api/community/verified-owner-requests
+        // flow (14.8.16) — see `submit_verified_owner_request` below.
         .route("/api/community/profile", put(update_profile))
         .route("/api/community/profile/:id", get(get_profile))
         // Phase 3 task 20: followers / following list views.
@@ -2621,6 +2829,19 @@ pub fn router() -> Router<AppState> {
         )
         // Challenges (M5)
         .route("/api/community/challenges", get(list_challenges))
+        // Challenge submissions (14.8.11 follow-up)
+        .route(
+            "/api/community/challenges/:id/submit",
+            post(submit_challenge_entry),
+        )
+        .route(
+            "/api/community/challenges/:id/submissions",
+            get(list_challenge_submissions),
+        )
+        .route(
+            "/api/community/challenges/submissions/:sid/vote",
+            post(toggle_submission_vote),
+        )
         // Notifications (M5)
         .route("/api/community/notifications", get(list_notifications))
         .route(
@@ -2635,11 +2856,9 @@ pub fn router() -> Router<AppState> {
             "/api/community/notifications/:id/read",
             post(mark_notification_read),
         )
-        // 14.8.15 — notification preferences
-        .route(
-            "/api/community/notification-prefs",
-            get(get_notification_prefs).put(update_notification_prefs),
-        )
+        // 14.8.15 notification preferences (per-column system) REMOVED 2026-05-15.
+        // Canonical endpoint is `/api/community/notifications/preferences`,
+        // which is the one `notify_user` actually consults.
         // 14.8.24 — admin community settings
         .route(
             "/api/admin/community/settings",
@@ -2746,10 +2965,14 @@ pub fn router() -> Router<AppState> {
             get(admin_get_leaderboard),
         )
         .route("/api/admin/community/users/:id/xp", post(admin_award_xp))
-        // Admin Audit Log (M2-ADMIN.7)
+        // Admin Audit Log (M2-ADMIN.7) + CSV export (CO.13)
         .route(
             "/api/admin/community/audit-log",
             get(admin_get_community_audit_log),
+        )
+        .route(
+            "/api/admin/community/audit-log.csv",
+            get(admin_export_community_audit_log_csv),
         )
         // Bookmarks (UX.6)
         .route("/api/community/bookmarks", get(list_bookmarks))
@@ -2772,6 +2995,11 @@ pub fn router() -> Router<AppState> {
         // Phase 3 task 28: autocomplete suggestions for the post composer.
         .route("/api/community/mentions/suggest", get(suggest_mentions))
         .route("/api/community/hashtags/suggest", get(suggest_hashtags))
+        .route("/api/community/assets/suggest", get(suggest_assets))
+        // M6-FEAT.4 — searchable member directory
+        .route("/api/community/members", get(list_community_members))
+        // UX.8 — trending posts (sidebar widget)
+        .route("/api/community/trending", get(list_trending_posts))
 }
 
 // ─── Social Handlers ─────────────────────────────────────────────────────────
@@ -2779,6 +3007,16 @@ pub fn router() -> Router<AppState> {
 #[derive(serde::Deserialize)]
 pub struct UpdateProfileReq {
     pub bio: Option<String>,
+    /// UX.14: optional short flair shown next to the display name. Empty
+    /// string clears the flair; omitted leaves the existing value alone.
+    pub flair: Option<String>,
+    /// Privacy toggles. None = leave unchanged. Wired by the
+    /// /community/me/edit page; consumed by the feed query, member
+    /// directory, and DM-create handler.
+    pub is_public_profile: Option<bool>,
+    pub allow_dms_from_strangers: Option<bool>,
+    /// Cross-DB: maps to `leaderboard_preferences.visible` in core.
+    pub leaderboard_visible: Option<bool>,
 }
 
 async fn get_profile_me(
@@ -2853,6 +3091,19 @@ async fn get_profile_me(
     .await?
     .unwrap_or((false, 0));
 
+    // Cross-DB read: leaderboard visibility lives on
+    // `leaderboard_preferences.visible` in the core DB. Default TRUE when
+    // the row hasn't been created yet (matches the FE optimistic default).
+    let leaderboard_visible: bool = sqlx::query_scalar(
+        "SELECT visible FROM leaderboard_preferences WHERE user_id = $1",
+    )
+    .bind(user.id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(true);
+
     Ok(Json(serde_json::json!({
         "user_id": profile.user_id,
         "bio": profile.bio,
@@ -2861,6 +3112,10 @@ async fn get_profile_me(
         "follower_count": profile.follower_count,
         "following_count": profile.following_count,
         "badges": profile.badges,
+        "flair": profile.flair,
+        "is_public_profile": profile.is_public_profile,
+        "allow_dms_from_strangers": profile.allow_dms_from_strangers,
+        "leaderboard_visible": leaderboard_visible,
         "is_community_banned": is_banned,
         "ban_reason": ban_reason,
         "has_pending_appeal": has_pending_appeal,
@@ -2925,181 +3180,10 @@ async fn update_notification_preferences(
     ))
 }
 
-// Phase 3 task 32: verified-owner badge request flow.
-
-#[derive(Deserialize)]
-struct VerificationRequestReq {
-    pub statement: String,
-    pub proof_url: Option<String>,
-}
-
-async fn submit_verification_request(
-    jar: CookieJar,
-    State(state): State<AppState>,
-    headers: axum::http::HeaderMap,
-    Json(payload): Json<VerificationRequestReq>,
-) -> Result<impl IntoResponse, AppError> {
-    let user = middleware::get_current_user(&jar, &state.db)
-        .await
-        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
-    require_csrf_header(&headers, &jar)?;
-
-    let statement = payload.statement.trim();
-    if statement.len() < 20 || statement.len() > 2000 {
-        return Err(AppError::BadRequest(
-            "Statement must be between 20 and 2000 characters".into(),
-        ));
-    }
-    let c_pool = get_community_pool(&state)?;
-    check_user_not_banned(&c_pool, user.id).await?;
-
-    let existing: Option<Uuid> = sqlx::query_scalar(
-        "SELECT id FROM verification_requests WHERE user_id = $1 AND status = 'pending' LIMIT 1",
-    )
-    .bind(user.id)
-    .fetch_optional(&c_pool)
-    .await?;
-    if existing.is_some() {
-        return Err(AppError::BadRequest(
-            "You already have a pending verification request.".into(),
-        ));
-    }
-
-    let id: Uuid = sqlx::query_scalar(
-        "INSERT INTO verification_requests (user_id, statement, proof_url) VALUES ($1, $2, $3) RETURNING id",
-    )
-    .bind(user.id)
-    .bind(statement)
-    .bind(payload.proof_url.as_deref())
-    .fetch_one(&c_pool)
-    .await?;
-
-    Ok(Json(serde_json::json!({ "id": id, "status": "pending" })))
-}
-
-async fn admin_list_verification_requests(
-    _admin: crate::admin::extractors::AdminUser,
-    State(state): State<AppState>,
-    Query(q): Query<std::collections::HashMap<String, String>>,
-) -> Result<impl IntoResponse, AppError> {
-    let c_pool = get_community_pool(&state)?;
-    let status = q.get("status").map(|s| s.as_str()).unwrap_or("pending");
-    let rows = sqlx::query_as::<
-        _,
-        (
-            Uuid,
-            Uuid,
-            String,
-            Option<String>,
-            String,
-            Option<String>,
-            chrono::DateTime<chrono::Utc>,
-            Option<chrono::DateTime<chrono::Utc>>,
-        ),
-    >(
-        "SELECT id, user_id, statement, proof_url, status, admin_notes, created_at, resolved_at \
-         FROM verification_requests \
-         WHERE ($1 = 'all' OR status = $1) \
-         ORDER BY created_at DESC",
-    )
-    .bind(status)
-    .fetch_all(&c_pool)
-    .await?;
-
-    let entries: Vec<serde_json::Value> = rows
-        .into_iter()
-        .map(
-            |(id, user_id, statement, proof_url, status, notes, created_at, resolved_at)| {
-                serde_json::json!({
-                    "id": id,
-                    "user_id": user_id,
-                    "statement": statement,
-                    "proof_url": proof_url,
-                    "status": status,
-                    "admin_notes": notes,
-                    "created_at": created_at,
-                    "resolved_at": resolved_at,
-                })
-            },
-        )
-        .collect();
-
-    Ok(Json(serde_json::json!({ "requests": entries })))
-}
-
-#[derive(Deserialize)]
-struct AdminReviewVerificationReq {
-    pub action: String,
-    pub admin_notes: Option<String>,
-}
-
-async fn admin_review_verification_request(
-    admin: crate::admin::extractors::AdminUser,
-    State(state): State<AppState>,
-    Path(req_id): Path<Uuid>,
-    Json(payload): Json<AdminReviewVerificationReq>,
-) -> Result<impl IntoResponse, AppError> {
-    let c_pool = get_community_pool(&state)?;
-    let status = match payload.action.as_str() {
-        "approve" => "approved",
-        "reject" => "rejected",
-        _ => {
-            return Err(AppError::BadRequest(
-                "Action must be 'approve' or 'reject'".into(),
-            ));
-        }
-    };
-
-    // Update + return the target user id so we can flip the verified_owner
-    // flag on every post they have authored.
-    let target_user_id: Option<Uuid> = sqlx::query_scalar(
-        "UPDATE verification_requests SET status = $1, admin_notes = $2, resolved_at = NOW() \
-         WHERE id = $3 AND status = 'pending' RETURNING user_id",
-    )
-    .bind(status)
-    .bind(payload.admin_notes.as_deref())
-    .bind(req_id)
-    .fetch_optional(&c_pool)
-    .await?;
-
-    let target_user_id = target_user_id
-        .ok_or_else(|| AppError::BadRequest("Request not found or already resolved".into()))?;
-
-    if status == "approved" {
-        // WS1.3: backfill existing posts, then flip the profile flag so any
-        // future posts inherit verified_owner automatically.
-        sqlx::query("UPDATE posts SET verified_owner = true WHERE user_id = $1")
-            .bind(target_user_id)
-            .execute(&c_pool)
-            .await
-            .ok();
-        sqlx::query("UPDATE community_profiles SET is_verified_owner = true WHERE user_id = $1")
-            .bind(target_user_id)
-            .execute(&c_pool)
-            .await
-            .ok();
-    } else if status == "rejected" {
-        // Don't touch existing badges on reject — only block future
-        // auto-inheritance if they were never granted.
-    }
-
-    crate::community::audit::log(
-        &c_pool,
-        admin.user.id,
-        if status == "approved" {
-            "verification.approve"
-        } else {
-            "verification.reject"
-        },
-        "verification_request",
-        Some(req_id),
-        Some(target_user_id),
-        Some(serde_json::json!({"status": status})),
-    )
-    .await;
-
-    Ok(Json(serde_json::json!({"success": true, "status": status})))
-}
+// Phase 3 task 32 (statement-only verified-owner request) REMOVED 2026-05-15.
+// Replaced by the asset-linked verified-owner-requests flow (14.8.16) — see
+// `submit_verified_owner_request` further down. The legacy
+// `verification_requests` table is dropped by migration 038.
 
 // Phase 3 task 30: return moderation actions taken against the viewer so
 // they can see their own moderation history.
@@ -3148,7 +3232,34 @@ async fn update_profile(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
-    crate::community::service::update_user_profile(&c_pool, user.id, payload.bio).await?;
+    // Community-side bio + flair + new privacy toggles. None for any field
+    // = leave unchanged, so the FE can PUT a single key for instant save.
+    crate::community::service::update_user_profile(
+        &c_pool,
+        user.id,
+        payload.bio,
+        payload.flair.map(Some),
+        payload.is_public_profile,
+        payload.allow_dms_from_strangers,
+    )
+    .await?;
+
+    // Cross-DB: leaderboard visibility lives in the core
+    // `leaderboard_preferences` table (per-user UNIQUE row).
+    if let Some(visible) = payload.leaderboard_visible {
+        sqlx::query(
+            r#"
+            INSERT INTO leaderboard_preferences (user_id, visible, updated_at)
+            VALUES ($1, $2, NOW())
+            ON CONFLICT (user_id) DO UPDATE
+                SET visible = EXCLUDED.visible, updated_at = NOW()
+            "#,
+        )
+        .bind(user.id)
+        .bind(visible)
+        .execute(&state.db)
+        .await?;
+    }
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -3417,13 +3528,19 @@ async fn list_user_posts(
         user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
 
-    // Reactions the viewer has placed on these posts.
-    let reacted_set: std::collections::HashSet<Uuid> = if let Some(ref v) = viewer {
-        let post_ids: Vec<Uuid> = posts.iter().map(|p| p.id).collect();
+    // Reactions + bookmarks the viewer has placed on these posts.
+    let post_ids: Vec<Uuid> = posts.iter().map(|p| p.id).collect();
+    let (reacted_set, bookmarked_set): (
+        std::collections::HashSet<Uuid>,
+        std::collections::HashSet<Uuid>,
+    ) = if let Some(ref v) = viewer {
         if post_ids.is_empty() {
-            std::collections::HashSet::new()
+            (
+                std::collections::HashSet::new(),
+                std::collections::HashSet::new(),
+            )
         } else {
-            sqlx::query_scalar::<_, Uuid>(
+            let reacted = sqlx::query_scalar::<_, Uuid>(
                 "SELECT post_id FROM reactions WHERE user_id = $1 AND post_id = ANY($2) AND reaction_type = 'fire'",
             )
             .bind(v.id)
@@ -3431,10 +3548,23 @@ async fn list_user_posts(
             .fetch_all(&c_pool)
             .await?
             .into_iter()
-            .collect()
+            .collect();
+            let bookmarked = sqlx::query_scalar::<_, Uuid>(
+                "SELECT post_id FROM bookmarks WHERE user_id = $1 AND post_id = ANY($2)",
+            )
+            .bind(v.id)
+            .bind(&post_ids)
+            .fetch_all(&c_pool)
+            .await?
+            .into_iter()
+            .collect();
+            (reacted, bookmarked)
         }
     } else {
-        std::collections::HashSet::new()
+        (
+            std::collections::HashSet::new(),
+            std::collections::HashSet::new(),
+        )
     };
 
     let feed: Vec<models::PostDisplay> = posts
@@ -3451,6 +3581,7 @@ async fn list_user_posts(
                 author.and_then(|a| a.avatar_url.clone()),
                 author_badges,
                 reacted_set.contains(&p.id),
+                bookmarked_set.contains(&p.id),
             )
         })
         .collect();
@@ -4678,6 +4809,7 @@ async fn search_community(
             auth.and_then(|a| a.avatar_url.clone()),
             author_badges,
             false,
+            false,
         ));
     }
 
@@ -4773,6 +4905,41 @@ async fn create_circle(
     Ok(Json(circle))
 }
 
+/// Hydrate a list of `CircleMember` rows with display_name + avatar_url from
+/// the cross-DB user bridge. Falls back to a generic label so the FE never
+/// renders "Investor #abcdef" UUID stubs.
+async fn enrich_circle_members(
+    state: &AppState,
+    members: Vec<crate::community::circles::CircleMember>,
+) -> Vec<serde_json::Value> {
+    if members.is_empty() {
+        return Vec::new();
+    }
+    let user_ids: Vec<Uuid> = members.iter().map(|m| m.user_id).collect();
+    let info_map = crate::community::user_bridge::get_users_info_batch(
+        &state.db,
+        state.redis.as_ref(),
+        &user_ids,
+    )
+    .await
+    .unwrap_or_default();
+    members
+        .into_iter()
+        .map(|m| {
+            let info = info_map.get(&m.user_id);
+            serde_json::json!({
+                "user_id": m.user_id,
+                "role": m.role,
+                "joined_at": m.joined_at,
+                "display_name": info
+                    .map(|i| i.display_name.clone())
+                    .unwrap_or_else(|| "Anonymous Investor".to_string()),
+                "avatar_url": info.and_then(|i| i.avatar_url.clone()),
+            })
+        })
+        .collect()
+}
+
 async fn get_my_circle(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -4787,7 +4954,8 @@ async fn get_my_circle(
     match circle {
         Some(c) => {
             let members = crate::community::circles::get_circle_members(&c_pool, c.id).await?;
-            Ok(Json(serde_json::json!({"circle": c, "members": members})))
+            let enriched = enrich_circle_members(&state, members).await;
+            Ok(Json(serde_json::json!({"circle": c, "members": enriched})))
         }
         None => Ok(Json(serde_json::json!({"circle": null, "members": []}))),
     }
@@ -4807,9 +4975,10 @@ async fn get_circle_detail(
         .await?
         .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
     let members = crate::community::circles::get_circle_members(&c_pool, circle_id).await?;
+    let enriched = enrich_circle_members(&state, members).await;
 
     Ok(Json(
-        serde_json::json!({"circle": circle, "members": members}),
+        serde_json::json!({"circle": circle, "members": enriched}),
     ))
 }
 
@@ -4818,6 +4987,8 @@ struct UpdateCircleReq {
     name: Option<String>,
     description: Option<String>,
     emoji: Option<String>,
+    // CO.2: optional banner URL. Send empty string to clear, omit to leave alone.
+    banner_url: Option<String>,
 }
 
 async fn update_circle(
@@ -4838,6 +5009,7 @@ async fn update_circle(
         payload.name.as_deref(),
         payload.description.as_deref(),
         payload.emoji.as_deref(),
+        payload.banner_url.as_deref(),
     )
     .await?;
     Ok(Json(circle))
@@ -4868,7 +5040,8 @@ async fn get_circle_members(
 
     let c_pool = get_community_pool(&state)?;
     let members = crate::community::circles::get_circle_members(&c_pool, circle_id).await?;
-    Ok(Json(serde_json::json!({"members": members})))
+    let enriched = enrich_circle_members(&state, members).await;
+    Ok(Json(serde_json::json!({"members": enriched})))
 }
 
 async fn join_circle(
@@ -5596,6 +5769,234 @@ async fn list_challenges(
     Ok(Json(serde_json::json!({ "challenges": challenges })))
 }
 
+// ─── Challenge Submissions (14.8.11 follow-up) ─────────────────────────────
+
+#[derive(Deserialize)]
+struct SubmitChallengeReq {
+    content: String,
+}
+
+/// POST /api/community/challenges/:id/submit — create or replace the user's
+/// entry for a `requirement_type='submission'` challenge.
+async fn submit_challenge_entry(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(challenge_id): Path<Uuid>,
+    Json(payload): Json<SubmitChallengeReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    let content = payload.content.trim();
+    if content.is_empty() {
+        return Err(AppError::BadRequest("Submission cannot be empty.".into()));
+    }
+    if content.chars().count() > 5_000 {
+        return Err(AppError::BadRequest(
+            "Submission must be 5,000 characters or fewer.".into(),
+        ));
+    }
+
+    // Confirm challenge exists and is a submission-type, active.
+    let kind: Option<(String, bool)> = sqlx::query_as(
+        "SELECT requirement_type, is_active FROM challenges WHERE id = $1",
+    )
+    .bind(challenge_id)
+    .fetch_optional(&c_pool)
+    .await?;
+    let (req_type, is_active) =
+        kind.ok_or_else(|| AppError::NotFound("Challenge not found.".into()))?;
+    if !is_active {
+        return Err(AppError::BadRequest("Challenge is not active.".into()));
+    }
+    if req_type != "submission" {
+        return Err(AppError::BadRequest(
+            "This challenge does not accept submissions.".into(),
+        ));
+    }
+
+    let id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO challenge_submissions (challenge_id, user_id, content)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (challenge_id, user_id) DO UPDATE
+            SET content = EXCLUDED.content, updated_at = NOW()
+        RETURNING id
+        "#,
+    )
+    .bind(challenge_id)
+    .bind(user.id)
+    .bind(content)
+    .fetch_one(&c_pool)
+    .await?;
+
+    Ok(Json(
+        serde_json::json!({ "submission_id": id, "status": "ok" }),
+    ))
+}
+
+/// GET /api/community/challenges/:id/submissions — list submissions ordered
+/// by votes desc; includes whether the current user has voted.
+async fn list_challenge_submissions(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(challenge_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    use sqlx::Row;
+    let rows = sqlx::query(
+        r#"
+        SELECT s.id, s.user_id, s.content, s.vote_count, s.created_at,
+               EXISTS (
+                   SELECT 1 FROM challenge_submission_votes v
+                   WHERE v.submission_id = s.id AND v.voter_id = $2
+               ) AS has_voted
+        FROM challenge_submissions s
+        WHERE s.challenge_id = $1
+        ORDER BY s.vote_count DESC, s.created_at ASC
+        LIMIT 200
+        "#,
+    )
+    .bind(challenge_id)
+    .bind(user.id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    // Hydrate display_name + avatar via the user bridge in one batch.
+    let user_ids: Vec<Uuid> = rows
+        .iter()
+        .filter_map(|r| r.try_get::<Uuid, _>("user_id").ok())
+        .collect();
+    let info_map = crate::community::user_bridge::get_users_info_batch(
+        &state.db,
+        state.redis.as_ref(),
+        &user_ids,
+    )
+    .await
+    .unwrap_or_default();
+
+    let submissions: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|row| {
+            let uid: Uuid = row.try_get("user_id").unwrap_or_default();
+            let info = info_map.get(&uid);
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "user_id": uid,
+                "display_name": info
+                    .map(|i| i.display_name.clone())
+                    .unwrap_or_else(|| "Anonymous Investor".to_string()),
+                "avatar_url": info.and_then(|i| i.avatar_url.clone()),
+                "content": row.try_get::<String, _>("content").unwrap_or_default(),
+                "vote_count": row.try_get::<i32, _>("vote_count").unwrap_or(0),
+                "has_voted": row.try_get::<bool, _>("has_voted").unwrap_or(false),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+            })
+        })
+        .collect();
+    Ok(Json(
+        serde_json::json!({ "submissions": submissions }),
+    ))
+}
+
+/// POST /api/community/challenges/submissions/:sid/vote — toggle vote.
+async fn toggle_submission_vote(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(submission_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    // Don't allow self-voting (cheap sybil).
+    let owner: Option<(Uuid, Uuid)> = sqlx::query_as(
+        "SELECT user_id, challenge_id FROM challenge_submissions WHERE id = $1",
+    )
+    .bind(submission_id)
+    .fetch_optional(&c_pool)
+    .await?;
+    let (owner_id, challenge_id) =
+        owner.ok_or_else(|| AppError::NotFound("Submission not found.".into()))?;
+    if owner_id == user.id {
+        return Err(AppError::BadRequest(
+            "You cannot vote for your own submission.".into(),
+        ));
+    }
+
+    // Toggle: delete if exists, otherwise insert.
+    let existed: Option<()> = sqlx::query_scalar(
+        "DELETE FROM challenge_submission_votes
+         WHERE submission_id = $1 AND voter_id = $2 RETURNING TRUE",
+    )
+    .bind(submission_id)
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await?
+    .map(|_: bool| ());
+
+    let has_voted = if existed.is_some() {
+        false
+    } else {
+        sqlx::query("INSERT INTO challenge_submission_votes (submission_id, voter_id) VALUES ($1, $2)")
+            .bind(submission_id)
+            .bind(user.id)
+            .execute(&c_pool)
+            .await?;
+        true
+    };
+
+    let vote_count: i32 = sqlx::query_scalar(
+        "SELECT vote_count FROM challenge_submissions WHERE id = $1",
+    )
+    .bind(submission_id)
+    .fetch_one(&c_pool)
+    .await?;
+
+    // Mirror vote count into challenge_progress so the existing list endpoint
+    // and completion sweep treat votes as progress for submission challenges.
+    let req_value: Option<i32> = sqlx::query_scalar(
+        "SELECT requirement_value FROM challenges WHERE id = $1 AND requirement_type = 'submission'",
+    )
+    .bind(challenge_id)
+    .fetch_optional(&c_pool)
+    .await?;
+    if let Some(req_value) = req_value {
+        let _ = sqlx::query(
+            r#"
+            INSERT INTO challenge_progress (user_id, challenge_id, current_value, is_completed, completed_at)
+            VALUES ($1, $2, LEAST($3, $4), $3 >= $4, CASE WHEN $3 >= $4 THEN NOW() END)
+            ON CONFLICT (user_id, challenge_id) DO UPDATE
+                SET current_value = LEAST(EXCLUDED.current_value, $4),
+                    is_completed = (EXCLUDED.current_value >= $4),
+                    completed_at = CASE
+                        WHEN challenge_progress.completed_at IS NOT NULL THEN challenge_progress.completed_at
+                        WHEN EXCLUDED.current_value >= $4 THEN NOW()
+                        ELSE NULL
+                    END,
+                    updated_at = NOW()
+            "#,
+        )
+        .bind(owner_id)
+        .bind(challenge_id)
+        .bind(vote_count)
+        .bind(req_value)
+        .execute(&c_pool)
+        .await;
+    }
+
+    Ok(Json(
+        serde_json::json!({ "has_voted": has_voted, "vote_count": vote_count }),
+    ))
+}
+
 // ─── Notifications Handlers (M5) ────────────────────────────────────────────
 
 async fn list_notifications(
@@ -5661,90 +6062,8 @@ async fn mark_notification_read(
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
-// ─── Notification preferences (14.8.15) ──────────────────────────────────
-
-#[derive(Deserialize)]
-struct NotificationPrefsPayload {
-    pub post_like: Option<bool>,
-    pub post_comment: Option<bool>,
-    pub mention: Option<bool>,
-    pub follow: Option<bool>,
-    pub announcement: Option<bool>,
-    pub ama: Option<bool>,
-    pub challenge: Option<bool>,
-    pub reward: Option<bool>,
-}
-
-async fn get_notification_prefs(
-    jar: CookieJar,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
-    let user = middleware::get_current_user(&jar, &state.db)
-        .await
-        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
-    let c_pool = get_community_pool(&state)?;
-    crate::community::service::ensure_community_profile(&c_pool, user.id).await?;
-
-    use sqlx::Row;
-    let row = sqlx::query(
-        "SELECT notif_post_like, notif_post_comment, notif_mention, notif_follow,
-                notif_announcement, notif_ama, notif_challenge, notif_reward
-         FROM community_profiles WHERE user_id = $1",
-    )
-    .bind(user.id)
-    .fetch_one(&c_pool)
-    .await?;
-
-    Ok(Json(serde_json::json!({
-        "post_like": row.try_get::<bool, _>("notif_post_like").unwrap_or(true),
-        "post_comment": row.try_get::<bool, _>("notif_post_comment").unwrap_or(true),
-        "mention": row.try_get::<bool, _>("notif_mention").unwrap_or(true),
-        "follow": row.try_get::<bool, _>("notif_follow").unwrap_or(true),
-        "announcement": row.try_get::<bool, _>("notif_announcement").unwrap_or(true),
-        "ama": row.try_get::<bool, _>("notif_ama").unwrap_or(true),
-        "challenge": row.try_get::<bool, _>("notif_challenge").unwrap_or(true),
-        "reward": row.try_get::<bool, _>("notif_reward").unwrap_or(true),
-    })))
-}
-
-async fn update_notification_prefs(
-    jar: CookieJar,
-    State(state): State<AppState>,
-    Json(payload): Json<NotificationPrefsPayload>,
-) -> Result<impl IntoResponse, AppError> {
-    let user = middleware::get_current_user(&jar, &state.db)
-        .await
-        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
-    let c_pool = get_community_pool(&state)?;
-    crate::community::service::ensure_community_profile(&c_pool, user.id).await?;
-
-    sqlx::query(
-        "UPDATE community_profiles SET
-            notif_post_like     = COALESCE($2, notif_post_like),
-            notif_post_comment  = COALESCE($3, notif_post_comment),
-            notif_mention       = COALESCE($4, notif_mention),
-            notif_follow        = COALESCE($5, notif_follow),
-            notif_announcement  = COALESCE($6, notif_announcement),
-            notif_ama           = COALESCE($7, notif_ama),
-            notif_challenge     = COALESCE($8, notif_challenge),
-            notif_reward        = COALESCE($9, notif_reward),
-            updated_at = NOW()
-         WHERE user_id = $1",
-    )
-    .bind(user.id)
-    .bind(payload.post_like)
-    .bind(payload.post_comment)
-    .bind(payload.mention)
-    .bind(payload.follow)
-    .bind(payload.announcement)
-    .bind(payload.ama)
-    .bind(payload.challenge)
-    .bind(payload.reward)
-    .execute(&c_pool)
-    .await?;
-
-    Ok(Json(serde_json::json!({ "success": true })))
-}
+// 14.8.15 per-column notification prefs REMOVED 2026-05-15. Canonical
+// JSONB endpoint lives at `/api/community/notifications/preferences`.
 
 async fn mark_all_notifications_read(
     jar: CookieJar,
@@ -6671,10 +6990,11 @@ async fn admin_get_circle_detail(
         .await?
         .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
     let members = crate::community::circles::get_circle_members(&c_pool, circle_id).await?;
+    let enriched = enrich_circle_members(&state, members).await;
 
     Ok(Json(serde_json::json!({
         "circle": circle,
-        "members": members,
+        "members": enriched,
     })))
 }
 
@@ -7015,6 +7335,96 @@ async fn admin_get_community_audit_log(
     ))
 }
 
+/// CO.13: stream the community audit log as CSV. Same filters as the JSON
+/// endpoint (`entity_type`, `action`, `target_user_id`) so an admin can
+/// download exactly what they're looking at on the page. Capped at 10k
+/// rows per export to keep the response under Cloud Run's request size.
+async fn admin_export_community_audit_log_csv(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let entity_type_filter = q.get("entity_type").cloned();
+    let action_filter = q.get("action").cloned();
+    let target_user_filter = q
+        .get("target_user_id")
+        .and_then(|v| Uuid::parse_str(v).ok());
+
+    let mut conditions = vec!["1=1".to_string()];
+    if let Some(ref et) = entity_type_filter {
+        conditions.push(format!("entity_type = '{}'", et.replace('\'', "")));
+    }
+    if let Some(ref act) = action_filter {
+        conditions.push(format!("action = '{}'", act.replace('\'', "")));
+    }
+    if let Some(target) = target_user_filter {
+        conditions.push(format!("target_user_id = '{}'", target));
+    }
+    let where_clause = conditions.join(" AND ");
+
+    let sql = format!(
+        "SELECT id, actor_user_id, action, entity_type, entity_id, target_user_id, details, created_at \
+         FROM community_audit_logs WHERE {} ORDER BY created_at DESC LIMIT 10000",
+        where_clause
+    );
+    let rows = sqlx::query_as::<
+        _,
+        (
+            Uuid,
+            Option<Uuid>,
+            String,
+            String,
+            Option<Uuid>,
+            Option<Uuid>,
+            serde_json::Value,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(&sql)
+    .fetch_all(&c_pool)
+    .await?;
+
+    fn csv_escape(s: &str) -> String {
+        if s.contains(',') || s.contains('"') || s.contains('\n') {
+            format!("\"{}\"", s.replace('"', "\"\""))
+        } else {
+            s.to_string()
+        }
+    }
+
+    let mut body = String::with_capacity(rows.len() * 200);
+    body.push_str("id,actor_user_id,action,entity_type,entity_id,target_user_id,details,created_at\n");
+    for r in rows {
+        body.push_str(&format!(
+            "{},{},{},{},{},{},{},{}\n",
+            r.0,
+            r.1.map(|v| v.to_string()).unwrap_or_default(),
+            csv_escape(&r.2),
+            csv_escape(&r.3),
+            r.4.map(|v| v.to_string()).unwrap_or_default(),
+            r.5.map(|v| v.to_string()).unwrap_or_default(),
+            csv_escape(&r.6.to_string()),
+            r.7.to_rfc3339(),
+        ));
+    }
+
+    let filename = format!(
+        "community-audit-log-{}.csv",
+        chrono::Utc::now().format("%Y%m%d-%H%M%S")
+    );
+    Ok((
+        axum::http::StatusCode::OK,
+        [
+            (axum::http::header::CONTENT_TYPE, "text/csv; charset=utf-8".to_string()),
+            (
+                axum::http::header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{}\"", filename),
+            ),
+        ],
+        body,
+    ))
+}
+
 // ─── Ban Appeals Handlers (M7-BE.5) ──────────────────────────────────────────
 
 async fn submit_ban_appeal(
@@ -7326,6 +7736,7 @@ pub async fn get_bookmark_feed_data(
             author.and_then(|a| a.avatar_url.clone()),
             author_badges,
             false,
+            true, // every post here is bookmarked by definition
         ));
     }
     Ok(feed)
@@ -7637,6 +8048,218 @@ async fn suggest_mentions(
     Ok(Json(serde_json::json!({ "users": users })))
 }
 
+// ─── UX.8: Trending posts (sidebar widget) ──────────────────────────
+
+#[derive(Deserialize)]
+struct TrendingQuery {
+    pub limit: Option<i64>,
+}
+
+/// GET /api/community/trending — top posts by engagement in last 7 days.
+/// Score = reaction_count + 2 * comment_count (comments weighted higher
+/// because they're a stronger engagement signal than a one-tap reaction).
+async fn list_trending_posts(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(q): Query<TrendingQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let _user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    let limit = q.limit.unwrap_or(3).clamp(1, 10);
+    use sqlx::Row;
+    let rows = sqlx::query(
+        r#"
+        SELECT id, user_id, content, reaction_count, comment_count, created_at
+        FROM posts
+        WHERE is_hidden = FALSE
+          AND created_at > NOW() - INTERVAL '7 days'
+        ORDER BY (reaction_count + 2 * comment_count) DESC, created_at DESC
+        LIMIT $1
+        "#,
+    )
+    .bind(limit)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let user_ids: Vec<Uuid> = rows
+        .iter()
+        .filter_map(|r| r.try_get::<Uuid, _>("user_id").ok())
+        .collect();
+    let info_map = crate::community::user_bridge::get_users_info_batch(
+        &state.db,
+        state.redis.as_ref(),
+        &user_ids,
+    )
+    .await
+    .unwrap_or_default();
+
+    let posts: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            let uid: Uuid = r.try_get("user_id").unwrap_or_default();
+            let info = info_map.get(&uid);
+            let content: String = r.try_get("content").unwrap_or_default();
+            let snippet = if content.chars().count() > 140 {
+                let mut s: String = content.chars().take(137).collect();
+                s.push_str("…");
+                s
+            } else {
+                content
+            };
+            serde_json::json!({
+                "id": r.try_get::<Uuid, _>("id").ok(),
+                "author_name": info
+                    .map(|i| i.display_name.clone())
+                    .unwrap_or_else(|| "Anonymous".to_string()),
+                "content": snippet,
+                "reaction_count": r.try_get::<i32, _>("reaction_count").unwrap_or(0),
+                "comment_count": r.try_get::<i32, _>("comment_count").unwrap_or(0),
+            })
+        })
+        .collect();
+    Ok(Json(serde_json::json!({ "posts": posts })))
+}
+
+// ─── M6-FEAT.4: Member Directory ────────────────────────────────────
+
+#[derive(Deserialize)]
+struct MemberDirectoryQuery {
+    /// Display-name substring (case-insensitive). Empty returns top members.
+    pub q: Option<String>,
+    /// `xp` (default), `recent`, `posts`. Anything else falls back to `xp`.
+    pub sort: Option<String>,
+    pub page: Option<i64>,
+}
+
+/// GET /api/community/members?q=&sort=&page= — paginated member list with
+/// display_name, avatar, level, post count, follower count.
+async fn list_community_members(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(q): Query<MemberDirectoryQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let _user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    let page = q.page.unwrap_or(1).max(1);
+    let limit: i64 = 30;
+    let offset = (page - 1) * limit;
+    let sort = q.sort.as_deref().unwrap_or("xp");
+    let order_clause = match sort {
+        "recent" => "cp.created_at DESC",
+        "posts" => "cp.post_count DESC, cp.xp_total DESC",
+        _ => "cp.xp_total DESC, cp.post_count DESC",
+    };
+    let q_text = q.q.as_deref().unwrap_or("").trim();
+
+    use sqlx::Row;
+    // First pass: get the user_ids + community-side stats. The display_name
+    // filter happens in a second step against the user bridge so we don't
+    // need to denormalise names into the community DB.
+    let candidate_rows = sqlx::query(&format!(
+        r#"
+        SELECT cp.user_id, cp.xp_total, cp.level, cp.post_count, cp.follower_count, cp.created_at
+        FROM community_profiles cp
+        WHERE cp.is_shadowbanned = FALSE AND cp.is_community_banned = FALSE
+        ORDER BY {order}
+        LIMIT $1 OFFSET $2
+        "#,
+        order = order_clause,
+    ))
+    .bind(if q_text.is_empty() { limit } else { 200 }) // overfetch when filtering
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let user_ids: Vec<Uuid> = candidate_rows
+        .iter()
+        .filter_map(|r| r.try_get::<Uuid, _>("user_id").ok())
+        .collect();
+    let info_map = crate::community::user_bridge::get_users_info_batch(
+        &state.db,
+        state.redis.as_ref(),
+        &user_ids,
+    )
+    .await
+    .unwrap_or_default();
+
+    let q_lower = q_text.to_lowercase();
+    let mut members: Vec<serde_json::Value> = Vec::with_capacity(candidate_rows.len());
+    for row in candidate_rows {
+        let uid: Uuid = row.try_get("user_id").unwrap_or_default();
+        let info = info_map.get(&uid);
+        let display_name = info
+            .map(|i| i.display_name.clone())
+            .unwrap_or_else(|| "Anonymous Investor".to_string());
+        if !q_lower.is_empty() && !display_name.to_lowercase().contains(&q_lower) {
+            continue;
+        }
+        members.push(serde_json::json!({
+            "user_id": uid,
+            "display_name": display_name,
+            "avatar_url": info.and_then(|i| i.avatar_url.clone()),
+            "xp_total": row.try_get::<i64, _>("xp_total").unwrap_or(0),
+            "level": row.try_get::<i32, _>("level").unwrap_or(1),
+            "post_count": row.try_get::<i32, _>("post_count").unwrap_or(0),
+            "follower_count": row.try_get::<i32, _>("follower_count").unwrap_or(0),
+        }));
+        if members.len() as i64 >= limit {
+            break;
+        }
+    }
+
+    Ok(Json(serde_json::json!({
+        "members": members,
+        "page": page,
+        "page_size": limit,
+    })))
+}
+
+/// `$` ticker autocomplete — published assets by name/slug prefix.
+/// Reads from the Core DB (assets table); community DB pool not used.
+async fn suggest_assets(
+    State(state): State<AppState>,
+    Query(q): Query<SuggestQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let prefix = q.q.trim().trim_start_matches('$');
+    if prefix.is_empty() {
+        return Ok(Json(serde_json::json!({ "assets": [] })));
+    }
+    let pattern = format!("%{}%", prefix.to_lowercase());
+    let rows = sqlx::query_as::<_, (Uuid, String, String, String)>(
+        r#"
+        SELECT id, slug, title, asset_type
+        FROM assets
+        WHERE published = TRUE
+          AND (LOWER(title) LIKE $1 OR LOWER(slug) LIKE $1)
+        ORDER BY
+          CASE WHEN LOWER(slug) LIKE $1 THEN 0 ELSE 1 END,
+          title ASC
+        LIMIT 10
+        "#,
+    )
+    .bind(&pattern)
+    .fetch_all(&state.db)
+    .await?;
+    let assets: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|(id, slug, title, asset_type)| {
+            serde_json::json!({
+                "asset_id": id,
+                "slug": slug,
+                "title": title,
+                "asset_type": asset_type,
+            })
+        })
+        .collect();
+    Ok(Json(serde_json::json!({ "assets": assets })))
+}
+
 /// Get posts by a specific hashtag
 #[derive(Deserialize)]
 pub struct HashtagPostsQuery {
@@ -7690,6 +8313,7 @@ pub async fn get_hashtag_feed_data(
             author.and_then(|a| a.avatar_url.clone()),
             author_badges,
             false,
+            false, // hashtag SSR helper has no viewer context yet
         ));
     }
     Ok((clean_tag, feed))
@@ -7834,6 +8458,7 @@ async fn get_posts_by_hashtag(
             author_name,
             author.and_then(|a| a.avatar_url.clone()),
             author_badges,
+            false,
             false,
         ));
     }

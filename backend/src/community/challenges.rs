@@ -8,6 +8,10 @@ pub const REQUIREMENT_TYPES: &[&str] = &[
     "write_review",
     "join_circle",
     "login_streak",
+    // Vote-based: progress = total upvotes received on the user's submission.
+    // Increment is driven by `challenge_submission_votes` insert, not by
+    // `increment_progress`.
+    "submission",
 ];
 
 pub const FREQUENCIES: &[&str] = &["one_time", "daily", "weekly"];

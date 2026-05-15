@@ -625,3 +625,163 @@
     .funnel-grid { flex-wrap: wrap; gap: 16px; }
     .funnel-arr { display: none; }
 }
+
+/* ── Team-Membership Banner (Phase 2 — Developer-Team-Affiliate) ────── */
+.affiliate-team-banner {
+    background: linear-gradient(135deg, #EEF1FF 0%, #F5F7FF 100%);
+    border: 1px solid #C7D1FF;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+.affiliate-team-banner__content {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.affiliate-team-banner__icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #0000FF;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.affiliate-team-banner__text {
+    flex: 1;
+    min-width: 0;
+}
+.affiliate-team-banner__text strong {
+    display: block;
+    font-size: 14px;
+    color: #181D27;
+    margin-bottom: 2px;
+}
+.affiliate-team-banner__msg {
+    font-size: 13px;
+    color: #535862;
+    margin: 0 0 8px 0;
+}
+.affiliate-team-banner__link-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+.affiliate-team-banner__link-label {
+    font-size: 12px;
+    color: #717680;
+    font-weight: 500;
+}
+.affiliate-team-banner__link-row code {
+    font-family: 'SFMono-Regular', Menlo, monospace;
+    font-size: 12px;
+    background: #fff;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #C7D1FF;
+    word-break: break-all;
+}
+.affiliate-team-banner__copy {
+    background: transparent;
+    border: 0;
+    color: #0000FF;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+.affiliate-team-banner__copy:hover { color: #0000DD; }
+.affiliate-team-banner__status {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.affiliate-team-banner__status--active {
+    background: #DBFAE7;
+    color: #137333;
+}
+.affiliate-team-banner__status--pending {
+    background: #FFF1E0;
+    color: #C66D18;
+}
+
+@media (max-width: 640px) {
+    .affiliate-team-banner__content { flex-direction: column; }
+    .affiliate-team-banner__status { align-self: flex-start; }
+}
+
+/* ── Mode Switcher (Phase 5 — Personal vs Business) ─────────────────── */
+.affiliate-mode-switcher {
+    margin-bottom: 16px;
+}
+.affiliate-mode-switcher__group {
+    display: inline-flex;
+    gap: 2px;
+    padding: 4px;
+    background: #F1F2F4;
+    border-radius: 10px;
+}
+.affiliate-mode-switcher__btn {
+    background: transparent;
+    border: 0;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    color: #717680;
+    line-height: 1.2;
+    transition: background 0.12s ease, color 0.12s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 140px;
+}
+.affiliate-mode-switcher__btn span {
+    font-size: 13px;
+    font-weight: 600;
+    color: inherit;
+}
+.affiliate-mode-switcher__btn small {
+    font-size: 11px;
+    color: #717680;
+    margin-top: 2px;
+}
+.affiliate-mode-switcher__btn--active {
+    background: #fff;
+    color: #181D27;
+    box-shadow: 0 1px 2px rgba(20, 24, 33, 0.08);
+}
+.affiliate-mode-switcher__btn--active small { color: #535862; }
+.affiliate-mode-switcher__btn:hover:not(.affiliate-mode-switcher__btn--active) {
+    color: #181D27;
+}
+
+@media (max-width: 640px) {
+    .affiliate-mode-switcher__btn {
+        min-width: 0;
+        flex: 1 1 50%;
+    }
+    .affiliate-mode-switcher__group { display: flex; width: 100%; }
+}
+
+/* ── Mode Switcher: Business-mode KPI label suffix (P1 a11y fix) ────── */
+body[data-affiliate-context="business"] .kpi-label::after {
+    content: " (informational)";
+    color: #717680;
+    font-weight: 400;
+    font-size: 0.85em;
+    margin-left: 4px;
+}
+body[data-affiliate-context="business"] #request-payout-btn {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

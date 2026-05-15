@@ -28,6 +28,23 @@ pub struct Post {
     pub comment_count: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    // UX.16 — quote-repost target (NULL for original posts).
+    #[sqlx(default)]
+    pub quoted_post_id: Option<Uuid>,
+    // CO.7 — when set, the post is hidden from feeds until this timestamp.
+    #[sqlx(default)]
+    pub scheduled_for: Option<DateTime<Utc>>,
+}
+
+/// Brief render of a quoted post — excerpted content + author preview.
+/// Always one level deep so quote chains can't recursively bloat payloads.
+#[derive(Debug, Serialize, Clone)]
+pub struct QuotedPostBrief {
+    pub id: Uuid,
+    pub author_name: String,
+    pub author_avatar: Option<String>,
+    pub content: String,
+    pub created_at_display: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -108,6 +125,14 @@ pub struct CreatePostRequest {
     pub poll_question: Option<String>,
     pub poll_options: Option<Vec<String>>,
     pub poll_expires_hours: Option<i32>,
+    // UX.16: Quote-repost — references the post being shared. The
+    // backend stores the id; the feed read joins it back to a brief
+    // "quoted card" payload so threads stay one level deep.
+    pub quoted_post_id: Option<Uuid>,
+    // CO.7: optional ISO8601 future timestamp. Post is created
+    // immediately but hidden from feeds until this time. Past values
+    // are rejected; NULL = publish now.
+    pub scheduled_for: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -128,12 +153,35 @@ pub struct PostDisplay {
     pub reaction_count: i32,
     pub comment_count: i32,
     pub current_user_reacted: bool,
+    pub is_bookmarked: bool,
     pub is_hidden: bool,
     pub is_pinned: bool,
     pub disclaimer_shown: bool,
     pub verified_owner: bool,
     pub created_at: DateTime<Utc>,
     pub created_at_display: String,
+    /// UX.20: estimated reading time (minutes) for long posts. `None` for
+    /// posts under one minute — the partial only renders the badge when set.
+    pub read_time_minutes: Option<i32>,
+    /// M6-FEAT.3: rich-media embed kind extracted from `link_preview.url`.
+    /// `Some("youtube"|"loom")` triggers the player-card render path.
+    pub embed_kind: Option<String>,
+    /// M6-FEAT.3: provider-specific id (e.g. YouTube video id) used to build
+    /// thumbnail URLs without a second roundtrip.
+    pub embed_id: Option<String>,
+    /// UX.16: when this post quotes another, the brief render lives here.
+    pub quoted: Option<QuotedPostBrief>,
+    /// UX.14: optional author flair (short label + emoji). Hydrated via
+    /// `get_flairs_batch` at the route layer; partial renders nothing
+    /// when None.
+    pub author_flair: Option<String>,
+    /// UX.17: true when the author is currently in the top-N by XP.
+    /// Recomputed on every feed read (cheap; one indexed query).
+    pub author_top_contributor: bool,
+    /// W3.4: portfolio-value tier (Bronze/Silver/Gold/Platinum) derived
+    /// from the author's total invested capital. None when they have no
+    /// holdings yet.
+    pub author_tier: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

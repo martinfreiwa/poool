@@ -1,0 +1,455 @@
+{% with title="Developer Application – POOOL", no_index=True,
+  extra_css=['leaderboard', 'developer-leaderboard-navbar', 'developer-onboarding'],
+  extra_js=['profile-dropdown', 'mobile-navigation'] %}
+{% include "components/head.html" %}{% endwith %}
+
+<body id="developer-onboarding-body" class="fouc-guard">
+{% include 'components/mobile-menu.html' %}
+
+<div class="lb-page">
+  <div class="lb-sidebar">
+    {% include 'components/sidebar.html' %}
+  </div>
+
+  <main class="ds-main lb-main">
+    {% with investor_topbar_title="Become a Developer", investor_topbar_variant="settings" %}
+    {% include 'components/investor-topbar.html' %}
+    {% endwith %}
+
+    <!-- Stepper -->
+    <div class="onb-stepper" id="onb-stepper" aria-label="Application steps">
+      <div class="onb-step onb-step--active" id="step-ind-1">
+        <div class="onb-step__circle" id="step-circle-1">1</div>
+        <div class="onb-step__label">Personal</div>
+      </div>
+      <div class="onb-step__line" id="line-1"></div>
+      <div class="onb-step" id="step-ind-2">
+        <div class="onb-step__circle" id="step-circle-2">2</div>
+        <div class="onb-step__label">Portfolio</div>
+      </div>
+      <div class="onb-step__line" id="line-2"></div>
+      <div class="onb-step" id="step-ind-3">
+        <div class="onb-step__circle" id="step-circle-3">3</div>
+        <div class="onb-step__label">Review</div>
+      </div>
+    </div>
+
+    <div class="lb-container">
+
+      <!-- ── Step 1: Personal Details ── -->
+      <div class="onb-step-content onb-step-content--active" id="content-step-1">
+        <div class="ds-card onb-card">
+          <div class="ds-card__header">
+            <div class="onb-eyebrow">Step 1 of 3</div>
+            <h2 class="ds-card__title">Personal Details</h2>
+            <p class="ds-card__subtitle">We need a few details to verify your identity and get in touch with you.</p>
+          </div>
+          <div class="ds-card__body">
+
+            <div class="onb-row">
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required" for="ob-first-name">First Name</label>
+                <input class="ds-input" type="text" id="ob-first-name" placeholder="Martin" autocomplete="given-name">
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required" for="ob-last-name">Last Name</label>
+                <input class="ds-input" type="text" id="ob-last-name" placeholder="Freiwald" autocomplete="family-name">
+              </div>
+            </div>
+
+            <div class="ds-form-group">
+              <label class="ds-form-label" for="ob-email">Email Address</label>
+              <input class="ds-input" type="email" id="ob-email" readonly autocomplete="email">
+              <span class="ds-form-hint">Pulled from your account — contact support to change.</span>
+            </div>
+
+            <div class="onb-row">
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required" for="ob-phone">Phone Number</label>
+                <input class="ds-input" type="tel" id="ob-phone" placeholder="+62 812 000 0000" autocomplete="tel">
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="ob-whatsapp">WhatsApp Number</label>
+                <input class="ds-input" type="tel" id="ob-whatsapp" placeholder="Same as phone">
+                <span class="ds-form-hint">Optional — preferred contact channel.</span>
+              </div>
+            </div>
+
+            <div class="onb-row">
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required" for="ob-nationality">Nationality</label>
+                <select class="ds-select" id="ob-nationality" autocomplete="country">
+                  <option value="">Select…</option>
+                  <option value="DE">Germany</option>
+                  <option value="ID">Indonesia</option>
+                  <option value="AU">Australia</option>
+                  <option value="US">United States</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="CH">Switzerland</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required" for="ob-country">Country of Residence</label>
+                <select class="ds-select" id="ob-country" autocomplete="country">
+                  <option value="">Select…</option>
+                  <option value="ID">Indonesia (Bali)</option>
+                  <option value="DE">Germany</option>
+                  <option value="AU">Australia</option>
+                  <option value="US">United States</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="ds-form-group">
+              <label class="ds-form-label" for="ob-website">LinkedIn or Website</label>
+              <input class="ds-input" type="url" id="ob-website" placeholder="https://linkedin.com/in/yourname">
+              <span class="ds-form-hint">Optional — helps us learn more about you.</span>
+            </div>
+
+          </div>
+          <div class="ds-card__footer onb-footer">
+            <a href="/marketplace" class="ds-btn ds-btn--ghost">Cancel</a>
+            <button class="ds-btn ds-btn--primary" onclick="goToStep(2)">Continue →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Step 2: Portfolio ── -->
+      <div class="onb-step-content" id="content-step-2">
+        <div class="ds-card onb-card">
+          <div class="ds-card__header">
+            <div class="onb-eyebrow">Step 2 of 3</div>
+            <h2 class="ds-card__title">Your Property Portfolio</h2>
+            <p class="ds-card__subtitle">Help us understand the size and nature of your portfolio so we can set you up for success on POOOL.</p>
+          </div>
+          <div class="ds-card__body">
+
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">How many properties do you plan to list on POOOL?</label>
+              <div class="onb-radio-group" id="rg-assets-count">
+                <div class="onb-radio-card onb-radio-card--selected" onclick="selectRadio(this,'assets-count','1')" tabindex="0" role="radio" aria-checked="true">
+                  <div class="onb-radio-card__dot"></div>
+                  <div>
+                    <div class="onb-radio-card__label">1 property</div>
+                    <div class="onb-radio-card__sub">Just getting started</div>
+                  </div>
+                </div>
+                <div class="onb-radio-card" onclick="selectRadio(this,'assets-count','2-5')" tabindex="0" role="radio" aria-checked="false">
+                  <div class="onb-radio-card__dot"></div>
+                  <div>
+                    <div class="onb-radio-card__label">2 – 5 properties</div>
+                    <div class="onb-radio-card__sub">Small portfolio</div>
+                  </div>
+                </div>
+                <div class="onb-radio-card" onclick="selectRadio(this,'assets-count','6-10')" tabindex="0" role="radio" aria-checked="false">
+                  <div class="onb-radio-card__dot"></div>
+                  <div>
+                    <div class="onb-radio-card__label">6 – 10 properties</div>
+                    <div class="onb-radio-card__sub">Mid-size portfolio</div>
+                  </div>
+                </div>
+                <div class="onb-radio-card" onclick="selectRadio(this,'assets-count','10+')" tabindex="0" role="radio" aria-checked="false">
+                  <div class="onb-radio-card__dot"></div>
+                  <div>
+                    <div class="onb-radio-card__label">10+ properties</div>
+                    <div class="onb-radio-card__sub">Large portfolio</div>
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="assets-count" value="1">
+            </div>
+
+            <div class="ds-card__divider"></div>
+
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">What types of properties do you own?</label>
+              <div class="onb-check-group">
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Villa</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">House</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Apartment</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Commercial</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Land</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Other</span></div>
+              </div>
+            </div>
+
+            <div class="ds-card__divider"></div>
+
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required">Where are your properties located?</label>
+              <div class="onb-check-group">
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Canggu</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Uluwatu</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Seminyak</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Ubud</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Sanur</span></div>
+                <div class="onb-check-card" onclick="toggleCheck(this)" tabindex="0"><div class="onb-check-card__box"></div><span class="onb-check-card__label">Outside Bali</span></div>
+              </div>
+            </div>
+
+            <div class="ds-card__divider"></div>
+
+            <div class="onb-row">
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required" for="ob-asset-value">Estimated total asset value</label>
+                <select class="ds-select" id="ob-asset-value">
+                  <option value="">Select range…</option>
+                  <option value="<500k">Under $500,000</option>
+                  <option value="500k-1m">$500k – $1M</option>
+                  <option value="1m-5m">$1M – $5M</option>
+                  <option value="5m-10m">$5M – $10M</option>
+                  <option value="10m+">$10M+</option>
+                </select>
+                <span class="ds-form-hint">Approximate combined value across all assets.</span>
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required" for="ob-monthly-income">Estimated monthly rental income</label>
+                <select class="ds-select" id="ob-monthly-income">
+                  <option value="">Select range…</option>
+                  <option value="<5k">Under $5,000</option>
+                  <option value="5k-15k">$5,000 – $15,000</option>
+                  <option value="15k-50k">$15,000 – $50,000</option>
+                  <option value="50k-100k">$50,000 – $100,000</option>
+                  <option value="100k+">$100,000+</option>
+                </select>
+                <span class="ds-form-hint">Gross monthly across all listed properties.</span>
+              </div>
+            </div>
+
+            <div class="ds-form-group">
+              <label class="ds-form-label" for="ob-bio">Tell us about your experience as a property developer</label>
+              <textarea class="ds-textarea" id="ob-bio" rows="4" placeholder="e.g. I've been developing villas in Canggu since 2018, with a focus on eco-friendly builds and long-term lease structures…"></textarea>
+              <span class="ds-form-hint">Optional — helps us understand your background.</span>
+            </div>
+
+          </div>
+          <div class="ds-card__footer onb-footer">
+            <button class="ds-btn ds-btn--ghost" onclick="goToStep(1)">← Back</button>
+            <button class="ds-btn ds-btn--primary" onclick="goToStep(3)">Review Application →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Step 3: Review & Submit ── -->
+      <div class="onb-step-content" id="content-step-3">
+        <div class="ds-card onb-card">
+          <div class="ds-card__header">
+            <div class="onb-eyebrow">Step 3 of 3</div>
+            <h2 class="ds-card__title">Review Your Application</h2>
+            <p class="ds-card__subtitle">Check everything looks right. Our team will review your details — but you get immediate access to the developer dashboard.</p>
+          </div>
+          <div class="ds-card__body">
+
+            <div class="onb-notice">
+              <div class="onb-notice__icon">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M9 8v4M9 5.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="onb-notice__text">
+                <strong>Immediate access, manual review.</strong> You'll be taken to your developer dashboard right away. Our team reviews applications within 2 business days. You'll hear from us at <strong id="review-email"></strong>.
+              </div>
+            </div>
+
+            <div class="onb-review-section">
+              <div class="onb-review-section__title">Personal Details</div>
+              <div class="onb-review-row"><span class="onb-review-key">Name</span><span class="onb-review-val" id="rv-name">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Email</span><span class="onb-review-val" id="rv-email">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Phone</span><span class="onb-review-val" id="rv-phone">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Nationality</span><span class="onb-review-val" id="rv-nationality">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Residence</span><span class="onb-review-val" id="rv-country">—</span></div>
+            </div>
+
+            <div class="ds-card__divider"></div>
+
+            <div class="onb-review-section">
+              <div class="onb-review-section__title">Portfolio</div>
+              <div class="onb-review-row"><span class="onb-review-key">Properties to list</span><span class="onb-review-val" id="rv-assets">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Property types</span><span class="onb-review-val" id="rv-types">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Locations</span><span class="onb-review-val" id="rv-locations">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Total asset value</span><span class="onb-review-val" id="rv-value">—</span></div>
+              <div class="onb-review-row"><span class="onb-review-key">Monthly income</span><span class="onb-review-val" id="rv-income">—</span></div>
+            </div>
+
+            <p style="font-size:13px;color:var(--muted-text,#667085);line-height:1.6;margin-top:8px;">
+              By submitting you confirm this information is accurate and agree to POOOL's
+              <a href="#" style="color:var(--btn-primary-bg,#0000FF);">Developer Terms of Service</a>.
+            </p>
+
+          </div>
+          <div class="ds-card__footer onb-footer">
+            <button class="ds-btn ds-btn--ghost" onclick="goToStep(2)">← Back</button>
+            <button class="ds-btn ds-btn--primary ds-btn--lg" id="btn-submit" onclick="submitApplication()">
+              Submit &amp; Access Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /lb-container -->
+  </main>
+</div><!-- /lb-page -->
+
+<script>
+(function () {
+  var currentStep = 1;
+
+  var ASSET_LABELS = {
+    '1': '1 property', '2-5': '2 – 5 properties',
+    '6-10': '6 – 10 properties', '10+': '10+ properties'
+  };
+  var COUNTRY_LABELS = {
+    'DE':'Germany','ID':'Indonesia (Bali)','AU':'Australia','US':'United States',
+    'GB':'United Kingdom','NL':'Netherlands','CH':'Switzerland','other':'Other'
+  };
+  var VALUE_LABELS = {
+    '<500k':'Under $500,000','500k-1m':'$500k – $1M','1m-5m':'$1M – $5M',
+    '5m-10m':'$5M – $10M','10m+':'$10M+'
+  };
+  var INCOME_LABELS = {
+    '<5k':'Under $5,000','5k-15k':'$5,000 – $15,000','15k-50k':'$15,000 – $50,000',
+    '50k-100k':'$50,000 – $100,000','100k+':'$100,000+'
+  };
+
+  // Pre-fill email from API
+  fetch('/api/me').then(function(r){ return r.json(); }).then(function(u) {
+    if (u && u.email) {
+      var el = document.getElementById('ob-email');
+      if (el) el.value = u.email;
+      var re = document.getElementById('review-email');
+      if (re) re.textContent = u.email;
+    }
+    if (u && u.first_name) {
+      var fn = document.getElementById('ob-first-name');
+      if (fn) fn.value = u.first_name;
+    }
+    if (u && u.last_name) {
+      var ln = document.getElementById('ob-last-name');
+      if (ln) ln.value = u.last_name;
+    }
+    if (u && u.phone_number) {
+      var ph = document.getElementById('ob-phone');
+      if (ph) ph.value = u.phone_number;
+    }
+  }).catch(function(){});
+
+  window.goToStep = function(step) {
+    document.querySelectorAll('.onb-step-content').forEach(function(el) {
+      el.classList.remove('onb-step-content--active');
+    });
+    document.getElementById('content-step-' + step).classList.add('onb-step-content--active');
+    currentStep = step;
+
+    for (var i = 1; i <= 3; i++) {
+      var ind = document.getElementById('step-ind-' + i);
+      var circle = document.getElementById('step-circle-' + i);
+      var line = document.getElementById('line-' + i);
+      ind.classList.remove('onb-step--active', 'onb-step--done');
+      if (i < step) {
+        ind.classList.add('onb-step--done');
+        circle.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      } else if (i === step) {
+        ind.classList.add('onb-step--active');
+        circle.textContent = i;
+      } else {
+        circle.textContent = i;
+      }
+      if (line) line.classList.toggle('onb-step__line--done', i < step);
+    }
+
+    // Populate review values on step 3
+    if (step === 3) {
+      var firstName = (document.getElementById('ob-first-name').value || '').trim();
+      var lastName  = (document.getElementById('ob-last-name').value || '').trim();
+      setText('rv-name', [firstName, lastName].filter(Boolean).join(' ') || '—');
+      setText('rv-email', document.getElementById('ob-email').value || '—');
+      setText('rv-phone', document.getElementById('ob-phone').value || '—');
+      var nat = document.getElementById('ob-nationality').value;
+      setText('rv-nationality', COUNTRY_LABELS[nat] || nat || '—');
+      var cty = document.getElementById('ob-country').value;
+      setText('rv-country', COUNTRY_LABELS[cty] || cty || '—');
+      setText('rv-assets', ASSET_LABELS[document.getElementById('assets-count').value] || '—');
+
+      var types = Array.from(document.querySelectorAll('#content-step-2 .ds-form-group:nth-child(3) .onb-check-card--selected .onb-check-card__label')).map(function(el){return el.textContent;});
+      setText('rv-types', types.length ? types.join(', ') : '—');
+
+      var locs = Array.from(document.querySelectorAll('#content-step-2 .ds-form-group:nth-child(5) .onb-check-card--selected .onb-check-card__label')).map(function(el){return el.textContent;});
+      setText('rv-locations', locs.length ? locs.join(', ') : '—');
+
+      setText('rv-value', VALUE_LABELS[document.getElementById('ob-asset-value').value] || '—');
+      setText('rv-income', INCOME_LABELS[document.getElementById('ob-monthly-income').value] || '—');
+
+      var email = document.getElementById('ob-email').value;
+      var re = document.getElementById('review-email');
+      if (re && email) re.textContent = email;
+    }
+
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
+
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  window.selectRadio = function(card, hiddenId, value) {
+    card.closest('.onb-radio-group').querySelectorAll('.onb-radio-card').forEach(function(c) {
+      c.classList.remove('onb-radio-card--selected');
+      c.setAttribute('aria-checked', 'false');
+    });
+    card.classList.add('onb-radio-card--selected');
+    card.setAttribute('aria-checked', 'true');
+    var h = document.getElementById(hiddenId);
+    if (h) h.value = value;
+  };
+
+  window.toggleCheck = function(card) {
+    card.classList.toggle('onb-check-card--selected');
+  };
+
+  window.submitApplication = function() {
+    var btn = document.getElementById('btn-submit');
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+
+    var csrfToken = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : '';
+
+    fetch('/api/developer/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+      body: JSON.stringify({
+        first_name: document.getElementById('ob-first-name').value,
+        last_name: document.getElementById('ob-last-name').value,
+        phone: document.getElementById('ob-phone').value,
+        whatsapp: document.getElementById('ob-whatsapp').value,
+        nationality: document.getElementById('ob-nationality').value,
+        country: document.getElementById('ob-country').value,
+        website: document.getElementById('ob-website').value,
+        assets_count: document.getElementById('assets-count').value,
+        asset_value: document.getElementById('ob-asset-value').value,
+        monthly_income: document.getElementById('ob-monthly-income').value,
+        bio: document.getElementById('ob-bio').value
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok || data.success) {
+        // Mark review banner to show on developer dashboard
+        localStorage.setItem('dev_application_review', '1');
+        window.location.href = '/developer/dashboard';
+      } else {
+        if (btn) { btn.disabled = false; btn.textContent = 'Submit & Access Dashboard'; }
+        alert(data.error || 'Something went wrong. Please try again.');
+      }
+    })
+    .catch(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit & Access Dashboard'; }
+      alert('Network error. Please try again.');
+    });
+  };
+})();
+</script>
+</body>
+</html>

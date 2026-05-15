@@ -21,9 +21,13 @@ pub struct AffiliateFraudScanQuery {
 
 /// GET /api/admin/rewards  All rewards data: tiers, user tiers, balances, and referrals
 pub async fn api_admin_rewards(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "rewards.manage")
+        .await?;
+
     // 1. Tiers
     let tiers_rows = sqlx::query!(
         r#"SELECT name, min_invest, max_invest, cashback_pct::float8 as "cashback_pct!", 
@@ -221,13 +225,17 @@ pub struct AdminAdjustRewardsPayload {
 
 /// POST /api/admin/rewards/balances/:user_id/adjust
 pub async fn api_admin_rewards_balance_adjust(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(payload): Json<AdminAdjustRewardsPayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "rewards.manage")
+        .await?;
+
     let uid = ApiError::parse_uuid(&user_id)?;
-    let admin_user = _admin.user.clone();
+    let admin_user = admin.user.clone();
 
     // Validate: at least one non-zero adjustment
     if payload.cashback == 0 && payload.referrals == 0 && payload.promotions == 0 {
@@ -327,11 +335,15 @@ pub struct AdminUpdateTierPayload {
 ///
 /// Updates fields like investment limits, cashback rates, and rewards.
 pub async fn api_admin_tier_update(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(tier_name): axum::extract::Path<String>,
     Json(payload): Json<AdminUpdateTierPayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "rewards.manage")
+        .await?;
+
     let result = sqlx::query(
         r#"UPDATE tiers SET 
            min_invest = $1, max_invest = $2, cashback_pct = $3, 
@@ -381,10 +393,14 @@ pub struct AdminCreateTierPayload {
 
 /// POST /api/admin/rewards/tiers - Create a new tier.
 pub async fn api_admin_tier_create(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<AdminCreateTierPayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "rewards.manage")
+        .await?;
+
     let result = sqlx::query(
         r#"INSERT INTO tiers (name, min_invest, max_invest, cashback_pct, referral_bonus, badge_color, sort_order)
            VALUES ($1, $2, $3, $4, $5, $6, $7)"#
@@ -408,145 +424,9 @@ pub async fn api_admin_tier_create(
     }
 }
 
-/// PATCH /api/admin/rewards/referrals/:ref_id - Update referral status.
-///
-/// Handles status transitions (pending, qualified, paid, flagged) and
-/// automatically credits users when marked as 'paid'.
-///
-/// The 'paid' flow is wrapped in a transaction with an idempotency guard:
-/// only a transition from 'qualified' → 'paid' triggers reward crediting,
-/// preventing double-credits on duplicate requests.
-pub async fn api_admin_referral_update(
-    _admin: AdminUser,
-    State(state): State<AppState>,
-    axum::extract::Path(ref_id): axum::extract::Path<String>,
-    Json(body): Json<serde_json::Value>,
-) -> Result<axum::response::Response, ApiError> {
-    let uid = ApiError::parse_uuid(&ref_id)?;
-    let admin_user = _admin.user.clone();
-
-    let new_status = match body.get("status").and_then(|v| v.as_str()) {
-        Some(s) => s.to_string(),
-        None => {
-            return Err(ApiError::BadRequest("Status is required".to_string()));
-        }
-    };
-
-    // Validate allowed statuses
-    if !["pending", "qualified", "paid", "flagged"].contains(&new_status.as_str()) {
-        return Err(ApiError::BadRequest("Invalid status value".to_string()));
-    }
-
-    // For 'paid' status, use a transaction to prevent double-crediting
-    if new_status == "paid" {
-        let mut tx = state.db.begin().await.map_err(|e| {
-            tracing::error!("Failed to begin referral tx: {e}");
-            ApiError::Internal("Server error".to_string())
-        })?;
-
-        // Idempotency guard: only transition from 'qualified' to 'paid'
-        let rows_affected = sqlx::query(
-            "UPDATE referral_tracking SET status = 'paid', qualified_at = COALESCE(qualified_at, NOW()) WHERE id = $1 AND status = 'qualified'"
-        )
-        .bind(uid)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to update referral {ref_id}: {e}");
-            ApiError::Internal("Database error".to_string())
-        })?
-        .rows_affected();
-
-        if rows_affected == 0 {
-            // Either not found or already paid/not qualified
-            let _ = tx.rollback().await;
-            return Err(ApiError::BadRequest(
-                "Referral not found or not in 'qualified' status".to_string(),
-            ));
-        }
-
-        // Fetch rewards amounts and user IDs within the same transaction
-        let row = sqlx::query!(
-            "SELECT referrer_id, referred_id, referrer_reward, referred_reward FROM referral_tracking WHERE id = $1",
-            uid
-        ).fetch_optional(&mut *tx).await.map_err(|e| {
-            tracing::error!("Failed to fetch referral details: {e}");
-            ApiError::Internal("Database error".to_string())
-        })?;
-
-        if let Some(r) = row {
-            // Credit Referrer
-            sqlx::query(
-                "INSERT INTO rewards_balances (user_id, referrals) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET referrals = rewards_balances.referrals + EXCLUDED.referrals"
-            ).bind(r.referrer_id).bind(r.referrer_reward).execute(&mut *tx).await.map_err(|e| {
-                tracing::error!("Failed to credit referrer: {e}");
-                ApiError::Internal("Database error".to_string())
-            })?;
-
-            // Credit Referred
-            sqlx::query(
-                "INSERT INTO rewards_balances (user_id, referrals) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET referrals = rewards_balances.referrals + EXCLUDED.referrals"
-            ).bind(r.referred_id).bind(r.referred_reward).execute(&mut *tx).await.map_err(|e| {
-                tracing::error!("Failed to credit referred: {e}");
-                ApiError::Internal("Database error".to_string())
-            })?;
-
-            // Audit log
-            let _ = sqlx::query(
-                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
-            )
-            .bind(admin_user.id)
-            .bind("referral.marked_paid")
-            .bind("referral_tracking")
-            .bind(uid)
-            .bind(serde_json::json!({
-                "referrer_id": r.referrer_id,
-                "referred_id": r.referred_id,
-                "referrer_reward": r.referrer_reward,
-                "referred_reward": r.referred_reward
-            }))
-            .execute(&mut *tx).await;
-        }
-
-        tx.commit().await.map_err(|e| {
-            tracing::error!("Failed to commit referral tx: {e}");
-            ApiError::Internal("Server error".to_string())
-        })?;
-
-        return Ok(Json(serde_json::json!({"status":"updated"})).into_response());
-    }
-
-    // Non-paid status transitions (no financial impact, no transaction needed)
-    let result = sqlx::query(
-        "UPDATE referral_tracking SET status = $1, qualified_at = CASE WHEN $1 = 'qualified' THEN NOW() ELSE qualified_at END WHERE id = $2"
-    )
-    .bind(&new_status)
-    .bind(uid)
-    .execute(&state.db)
-    .await;
-
-    match result {
-        Ok(r) if r.rows_affected() > 0 => {
-            // Audit log
-            let _ = sqlx::query(
-                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
-            )
-            .bind(admin_user.id)
-            .bind(format!("referral.status_changed_to_{}", new_status))
-            .bind("referral_tracking")
-            .bind(uid)
-            .bind(serde_json::json!({"new_status": new_status}))
-            .execute(&state.db).await;
-
-            Ok(Json(serde_json::json!({"status":"updated"})).into_response())
-        }
-        Ok(_) => Err(ApiError::NotFound("Referral not found".to_string())),
-        Err(e) => {
-            tracing::error!("Failed to update referral {ref_id}: {e}");
-            Err(ApiError::Internal("Database error".to_string()))
-        }
-    }
-}
+// `api_admin_referral_update` removed (audit GAP-07, migration 155). The
+// legacy referral_tracking system is no longer written to from any path.
+// Existing rows remain visible to dashboards / leaderboard for history.
 
 //
 // Admin Affiliate Management API
@@ -563,7 +443,8 @@ pub async fn api_admin_affiliates_pending(
 
     let rows = sqlx::query!(
         r#"SELECT a.user_id::text as id, u.email,
-                  a.traffic_source, a.audience_size, a.main_url, a.phone_number, a.company_name, a.tax_id,
+                  a.traffic_source, a.audience_size, a.main_url, a.phone_number, a.company_name,
+                  a.tax_id_last4,
                   a.created_at::text, COALESCE(up.first_name, '') as first_name, COALESCE(up.last_name, '') as last_name
            FROM affiliates a
            JOIN users u ON u.id = a.user_id
@@ -595,9 +476,16 @@ pub async fn api_admin_affiliates_pending(
     // Per-application backend fraud signals: detect re-use of phone, tax ID,
     // company name, and email domain across other affiliates. Cheap aggregate
     // counts; complements the frontend heuristics (disposable domains, etc.).
+    // Dupe detection now matches on `tax_id_encrypted` (full ciphertext)
+    // rather than the dropped plaintext column. Ciphertext equality requires
+    // identical (key, nonce, plaintext) — but nonces are random per row, so
+    // identical plaintext yields different ciphertext. The cheap fallback is
+    // `tax_id_last4` for a coarse signal; admins follow up via the case
+    // workflow. A deterministic hash (HMAC over plaintext with a separate
+    // key) would be the strong fix; tracked separately.
     let dupe_rows = sqlx::query!(
         r#"WITH siblings AS (
-              SELECT a.user_id, a.phone_number, a.tax_id, a.company_name,
+              SELECT a.user_id, a.phone_number, a.tax_id_last4, a.company_name,
                      LOWER(SPLIT_PART(u.email, '@', 2)) AS email_domain
               FROM affiliates a
               JOIN users u ON u.id = a.user_id
@@ -608,9 +496,9 @@ pub async fn api_admin_affiliates_pending(
                               AND s2.phone_number = s.phone_number
                               AND s2.user_id <> s.user_id), 0) AS "phone_dupe!",
                   COALESCE((SELECT COUNT(*) FROM siblings s2
-                            WHERE s2.tax_id IS NOT NULL
-                              AND s2.tax_id = s.tax_id
-                              AND s2.user_id <> s.user_id), 0) AS "tax_dupe!",
+                            WHERE s2.tax_id_last4 IS NOT NULL
+                              AND s2.tax_id_last4 = s.tax_id_last4
+                              AND s2.user_id <> s.user_id), 0) AS "tax_last4_dupe!",
                   COALESCE((SELECT COUNT(*) FROM siblings s2
                             WHERE s2.company_name IS NOT NULL
                               AND LOWER(s2.company_name) = LOWER(s.company_name)
@@ -649,8 +537,11 @@ pub async fn api_admin_affiliates_pending(
                 if d.phone_dupe > 0 {
                     signals.push(serde_json::json!({ "kind": "phone_dupe", "score": 35, "label": format!("Phone reused by {} other affiliate(s)", d.phone_dupe) }));
                 }
-                if d.tax_dupe > 0 {
-                    signals.push(serde_json::json!({ "kind": "tax_dupe", "score": 50, "label": format!("Tax ID reused by {} other affiliate(s)", d.tax_dupe) }));
+                if d.tax_last4_dupe > 0 {
+                    // Coarser signal than plaintext tax-id match (we now key
+                    // on last4 only). Lower score to reflect higher false-
+                    // positive rate; admins still see the flag and can dig in.
+                    signals.push(serde_json::json!({ "kind": "tax_last4_dupe", "score": 25, "label": format!("Tax ID last-4 reused by {} other affiliate(s)", d.tax_last4_dupe) }));
                 }
                 if d.company_dupe > 0 {
                     signals.push(serde_json::json!({ "kind": "company_dupe", "score": 15, "label": format!("Company name matches {} other affiliate(s)", d.company_dupe) }));
@@ -664,7 +555,9 @@ pub async fn api_admin_affiliates_pending(
                 "id": r.id, "email": r.email, "user_name": if user_name.is_empty() { r.email.clone() } else { user_name },
                 "traffic_source": r.traffic_source,
                 "audience_size": r.audience_size, "main_url": r.main_url, "phone_number": r.phone_number,
-                "company_name": r.company_name, "tax_id": r.tax_id, "created_at": r.created_at,
+                "company_name": r.company_name,
+                "tax_id_last4": r.tax_id_last4,
+                "created_at": r.created_at,
                 "fraud_signals": signals
             })
         })
@@ -1551,6 +1444,9 @@ pub async fn api_admin_affiliate_batch_payout(
 pub struct ClawbackPayload {
     /// Administrative reason for the clawback
     pub reason: String,
+    /// Specific paid commission IDs to reverse. Required (non-empty).
+    /// Each must belong to the affiliate and currently be in status='paid'.
+    pub commission_ids: Vec<uuid::Uuid>,
 }
 
 /// GET /api/admin/rewards/affiliates/fraud-scan
@@ -1794,6 +1690,15 @@ pub async fn api_admin_affiliate_clawback(
         .require_permission(&state.db, "affiliates.manage")
         .await?;
 
+    if payload.commission_ids.is_empty() {
+        return Err(ApiError::BadRequest(
+            "commission_ids must list at least one paid commission".into(),
+        ));
+    }
+    if payload.reason.trim().is_empty() {
+        return Err(ApiError::BadRequest("reason is required".into()));
+    }
+
     let affiliate_id = ApiError::parse_uuid(&id)?;
     let mut tx = state
         .db
@@ -1801,21 +1706,28 @@ pub async fn api_admin_affiliate_clawback(
         .await
         .map_err(|_| ApiError::Internal("Transaction start failed".into()))?;
 
-    // Lock paid commissions
+    // Lock only the requested commissions, scoped to this affiliate and status='paid'.
+    // Any id that doesn't match (wrong affiliate, wrong status, or not found) is
+    // silently excluded — the count check below rejects partial matches.
     let commissions = sqlx::query!(
-        "SELECT id, provisional_amount_cents FROM affiliate_commissions WHERE affiliate_id = $1 AND status = 'paid' FOR UPDATE",
-        affiliate_id
+        "SELECT id, provisional_amount_cents FROM affiliate_commissions \
+         WHERE affiliate_id = $1 AND status = 'paid' AND id = ANY($2) FOR UPDATE",
+        affiliate_id,
+        &payload.commission_ids
     )
-    .fetch_all(&mut *tx).await.map_err(|_| ApiError::Internal("Fetch error".into()))?;
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|_| ApiError::Internal("Fetch error".into()))?;
 
-    if commissions.is_empty() {
+    if commissions.len() != payload.commission_ids.len() {
         let _ = tx.rollback().await;
         return Err(ApiError::BadRequest(
-            "No paid commissions to clawback".into(),
+            "One or more commission_ids do not belong to this affiliate or are not in 'paid' status".into(),
         ));
     }
 
     let total_clawback_cents: i64 = commissions.iter().map(|c| c.provisional_amount_cents).sum();
+    let locked_ids: Vec<uuid::Uuid> = commissions.iter().map(|c| c.id).collect();
 
     // Deduct from affiliate wallet — cap at available balance to prevent negative
     let dest_wallet = sqlx::query!(
@@ -1844,16 +1756,23 @@ pub async fn api_admin_affiliate_clawback(
             .map_err(|_| ApiError::Internal("Failed to credit treasury".into()))?;
     }
 
-    // Update commissions to 'clawed_back'
-    sqlx::query!("UPDATE affiliate_commissions SET status = 'clawed_back', updated_at = NOW() WHERE affiliate_id = $1 AND status = 'paid'", affiliate_id)
-        .execute(&mut *tx).await
-        .map_err(|_| ApiError::Internal("Failed to update commissions".into()))?;
+    // Update only the locked commissions to 'clawed_back'
+    sqlx::query!(
+        "UPDATE affiliate_commissions SET status = 'clawed_back', updated_at = NOW() \
+         WHERE id = ANY($1) AND status = 'paid'",
+        &locked_ids
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| ApiError::Internal("Failed to update commissions".into()))?;
 
     sqlx::query!(
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata) VALUES ($1, 'affiliate_clawback', 'affiliates', $2, $3)",
         admin.user.id,
         affiliate_id,
         serde_json::json!({
+            "commission_ids": locked_ids,
+            "commission_count": locked_ids.len(),
             "clawback_total_cents": total_clawback_cents,
             "actual_deducted_cents": actual_deducted,
             "shortfall_cents": total_clawback_cents - actual_deducted,
@@ -1869,6 +1788,7 @@ pub async fn api_admin_affiliate_clawback(
     tracing::info!(
         admin_id = %admin.user.id,
         affiliate_id = %affiliate_id,
+        commission_count = locked_ids.len(),
         total_cents = total_clawback_cents,
         deducted_cents = actual_deducted,
         "[P0-FINANCIAL] Affiliate clawback executed"
@@ -1876,6 +1796,8 @@ pub async fn api_admin_affiliate_clawback(
 
     Ok(Json(serde_json::json!({
         "success": true,
+        "commission_ids": locked_ids,
+        "commission_count": locked_ids.len(),
         "clawed_back_cents": total_clawback_cents,
         "actual_deducted_cents": actual_deducted,
         "shortfall_cents": total_clawback_cents - actual_deducted

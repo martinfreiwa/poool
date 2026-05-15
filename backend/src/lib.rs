@@ -280,8 +280,34 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
 
-    let auth_rate_limiter = auth::rate_limit::RateLimiter::disabled();
-    tracing::info!("Rate limiter: disabled");
+    // Rate limiter: prefer Redis when available so limits are shared across
+    // every backend instance. Fall back to in-memory if Redis is not
+    // configured (single-instance only — counts will not aggregate across
+    // replicas). The disabled() no-op backend is gated behind an explicit
+    // POOOL_RATE_LIMIT_DISABLED=true env var for test/dev convenience.
+    //
+    // Window + max are sized for the strictest caller (click_throttle,
+    // affiliate_onboard, signup attempts): 10 events per 15 minutes per key.
+    // Keys are namespaced by caller (e.g. `click_throttle:<ip>`,
+    // `affiliate_onboard:<user_id>`), so this is a per-action-per-actor budget.
+    let rate_limit_disabled = matches!(
+        std::env::var("POOOL_RATE_LIMIT_DISABLED").as_deref(),
+        Ok("1") | Ok("true") | Ok("TRUE")
+    );
+    let auth_rate_limiter = if rate_limit_disabled {
+        tracing::warn!("Rate limiter: DISABLED via POOOL_RATE_LIMIT_DISABLED");
+        auth::rate_limit::RateLimiter::disabled()
+    } else if let Some(ref pool) = redis_pool {
+        tracing::info!("Rate limiter: Redis-backed (10 req / 15 min per key)");
+        auth::rate_limit::RateLimiter::new_redis(
+            pool.clone(),
+            10,
+            std::time::Duration::from_secs(15 * 60),
+        )
+    } else {
+        tracing::info!("Rate limiter: in-memory (10 req / 15 min per key, per-instance only)");
+        auth::rate_limit::RateLimiter::new(10, std::time::Duration::from_secs(15 * 60))
+    };
 
     let leaderboard_last_refresh = std::sync::Arc::new(tokio::sync::RwLock::new(
         None::<chrono::DateTime<chrono::Utc>>,
@@ -437,6 +463,56 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(rewards::service::run_affiliate_tier_progression_worker(
         pool.clone(),
     ));
+
+    // Affiliate rollup worker (15 min) — leader-gated so only one instance
+    // does the recompute in a multi-replica deployment. See migration 159.
+    {
+        let p = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            pool.clone(),
+            common::leader::LockKey::AffiliateRollup,
+            move || {
+                let p = p.clone();
+                async move {
+                    rewards::workers::run_affiliate_rollup_worker(p).await;
+                }
+            },
+        ));
+    }
+
+    // referral_clicks partition maintainer (daily, leader-gated). Creates
+    // future partitions so click ingestion never fails for lack of a
+    // partition. See migration 160.
+    {
+        let p = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            pool.clone(),
+            common::leader::LockKey::AffiliateClickPartitionMaint,
+            move || {
+                let p = p.clone();
+                async move {
+                    rewards::workers::run_referral_clicks_partition_maint_worker(p).await;
+                }
+            },
+        ));
+    }
+
+    // referral_clicks retention worker (daily, leader-gated). Drops
+    // partitions older than REFERRAL_CLICKS_RETENTION_MONTHS (default 24).
+    // Audit-driven: unbounded growth was a P0.
+    {
+        let p = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            pool.clone(),
+            common::leader::LockKey::AffiliateClickPartitionRetention,
+            move || {
+                let p = p.clone();
+                async move {
+                    rewards::workers::run_referral_clicks_partition_retention_worker(p).await;
+                }
+            },
+        ));
+    }
 
     // Rate limiter cleanup (every 10 minutes)
     tokio::spawn(async move {
@@ -1271,6 +1347,7 @@ pub fn build_platform_router(state: AppState) -> Router {
         .route("/community/hashtag/:tag", get(page_community_hashtag))
         // WS3.2 — full community profile page.
         .route("/community/me", get(page_community_my_profile))
+        .route("/community/me/edit", get(page_community_profile_edit))
         .route("/community/u/:user_id", get(page_community_user_profile))
         .route("/community/badge/:id", get(page_community_badge))
         .route(
@@ -3169,6 +3246,22 @@ async fn page_community_my_profile(
         return axum::response::Redirect::to("/auth/login").into_response();
     };
     render_community_profile(jar, state, user.id, true).await
+}
+
+/// GET /community/me/edit — full settings page replacing the in-page modal.
+/// Lets the user update bio, flair, avatar, and submit a verified-owner
+/// request. Requires login.
+async fn page_community_profile_edit(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db).await;
+    if user.is_none() {
+        return axum::response::Redirect::to("/auth/login").into_response();
+    }
+    common::routes_helper::serve_protected(jar, &state, "community-profile-edit.html")
+        .await
+        .into_response()
 }
 
 async fn page_community_user_profile(

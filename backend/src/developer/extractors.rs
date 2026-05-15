@@ -37,15 +37,15 @@ where
             .await
             .ok_or_else(|| ApiError::Unauthorized("Authentication required".to_string()))?;
 
-        // Developer role check matches the existing developer/routes.rs helper.
+        // Role check mirrors user_has_developer_access in routes.rs.
         let is_developer: bool = sqlx::query_scalar(
             r#"
             SELECT EXISTS(
                 SELECT 1 FROM user_roles ur
                 JOIN roles r ON r.id = ur.role_id
                 WHERE ur.user_id = $1
-                  AND r.name IN ('developer', 'asset_owner')
-                  AND ur.is_active = TRUE
+                  AND r.name IN ('developer', 'asset_owner', 'admin', 'super_admin')
+                  AND COALESCE(ur.is_active, TRUE) = TRUE
             )
             "#,
         )

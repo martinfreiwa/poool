@@ -1542,11 +1542,11 @@ pub async fn delete_account_selective(
     sqlx::query(
         r#"UPDATE support_tickets SET
             subject = 'Deleted user ticket',
-            user_email = $2
+            message = 'Deleted user message',
+            updated_at = NOW()
            WHERE user_id = $1"#,
     )
     .bind(user_id)
-    .bind(&anon_email)
     .execute(&mut *tx)
     .await?;
 

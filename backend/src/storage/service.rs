@@ -305,13 +305,36 @@ pub fn rewrite_gcs_url(url: &str) -> String {
 
 fn legacy_static_image_url(file_name: &str) -> Option<String> {
     match file_name {
-        "martin_pfp.png" => Some("/static/images/profiles/martin_pfp.png".to_string()),
-        "villa1.webp" => Some("/static/images/seed/villa1.webp".to_string()),
-        "tokenization_cover.png" => Some("/static/images/ui/tokenization_cover.png".to_string()),
-        "bali_property.png" => Some("/static/images/seed/bali_property.png".to_string()),
-        "diversify_cover.png" => Some("/static/images/ui/diversify_cover.png".to_string()),
-        "platform_update.png" => Some("/static/images/ui/platform_update.png".to_string()),
-        "passive_income.png" => Some("/static/images/ui/passive_income.png".to_string()),
+        "martin_pfp.png" | "martin_pfp.webp" => {
+            Some("/static/images/profiles/martin_pfp.webp".to_string())
+        }
+        "villa1.jpg" | "villa1.webp" => Some("/static/images/seed/villa1.webp".to_string()),
+        "villa1_2.jpg" | "villa1_2.webp" => Some("/static/images/seed/villa1_2.webp".to_string()),
+        "villa1_3.jpg" | "villa1_3.webp" => Some("/static/images/seed/villa1_3.webp".to_string()),
+        "villa1_4.jpg" | "villa1_4.webp" => Some("/static/images/seed/villa1_4.webp".to_string()),
+        "villa2_1.jpg" | "villa2_1.webp" => Some("/static/images/seed/villa2_1.webp".to_string()),
+        "villa2_2.jpg" | "villa2_2.webp" => Some("/static/images/seed/villa2_2.webp".to_string()),
+        "villa3_1.jpg" | "villa3_1.webp" => Some("/static/images/seed/villa3_1.webp".to_string()),
+        "villa3_2.jpg" | "villa3_2.webp" => Some("/static/images/seed/villa3_2.webp".to_string()),
+        "villa4_1.jpg" | "villa4_1.webp" => Some("/static/images/seed/villa4_1.webp".to_string()),
+        "villa4_2.jpg" | "villa4_2.webp" => Some("/static/images/seed/villa4_2.webp".to_string()),
+        "villa5.jpg" | "villa5.webp" => Some("/static/images/seed/villa5.webp".to_string()),
+        "villa6.jpg" | "villa6.webp" => Some("/static/images/seed/villa6.webp".to_string()),
+        "tokenization_cover.png" | "tokenization_cover.webp" => {
+            Some("/static/images/ui/tokenization_cover.webp".to_string())
+        }
+        "bali_property.png" | "bali_property.webp" => {
+            Some("/static/images/seed/bali_property.webp".to_string())
+        }
+        "diversify_cover.png" | "diversify_cover.webp" => {
+            Some("/static/images/ui/diversify_cover.webp".to_string())
+        }
+        "platform_update.png" | "platform_update.webp" => {
+            Some("/static/images/ui/platform_update.webp".to_string())
+        }
+        "passive_income.png" | "passive_income.webp" => {
+            Some("/static/images/ui/passive_income.webp".to_string())
+        }
         _ => None,
     }
 }
@@ -420,16 +443,28 @@ mod tests {
             "/static/images/seed/villa1.webp"
         );
         assert_eq!(
+            rewrite_gcs_url("/images/villa1.jpg"),
+            "/static/images/seed/villa1.webp"
+        );
+        assert_eq!(
+            rewrite_gcs_url("/images/villa4_2.jpg"),
+            "/static/images/seed/villa4_2.webp"
+        );
+        assert_eq!(
             rewrite_gcs_url("/images/tokenization_cover.png"),
-            "/static/images/ui/tokenization_cover.png"
+            "/static/images/ui/tokenization_cover.webp"
         );
         assert_eq!(
             rewrite_gcs_url("/images/bali_property.png"),
-            "/static/images/seed/bali_property.png"
+            "/static/images/seed/bali_property.webp"
         );
         assert_eq!(
             rewrite_gcs_url("/images/martin_pfp.png"),
-            "/static/images/profiles/martin_pfp.png"
+            "/static/images/profiles/martin_pfp.webp"
+        );
+        assert_eq!(
+            rewrite_gcs_url("/images/martin_pfp.webp"),
+            "/static/images/profiles/martin_pfp.webp"
         );
     }
 

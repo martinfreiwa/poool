@@ -136,13 +136,92 @@
           </div>
           <p class="affiliate-review-eyebrow">Affiliate access required</p>
           <h1 id="affiliate-materials-locked-title" class="affiliate-review-title">Marketing materials unlock after approval</h1>
-          <p class="affiliate-review-copy">Your affiliate status is currently {{ affiliate_status | default('unregistered') }}. Approved brand assets and custom material review are available only to active affiliates.</p>
+          <p class="affiliate-review-copy">Your affiliate status is currently {{ affiliate_status | default('unregistered') }}. Approved brand assets and custom material review are available only to active affiliates. The compliance reference below is available to all applicants.</p>
           <div class="affiliate-review-actions">
             <a href="/affiliate/onboarding" class="ds-btn ds-btn--primary">Continue Application</a>
             <a href="/affiliate/dashboard" class="ds-btn ds-btn--secondary">Back to Dashboard</a>
           </div>
         </section>
         {% endif %}
+
+        <!-- ═══ Say / Do-Not-Say Reference Card (visible to all applicants and active affiliates) ═══ -->
+        <div class="ds-card" style="margin-top: 24px;">
+            <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+              <h3 style="margin: 0 0 4px;">Say / Do-Not-Say Reference</h3>
+              <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Quick compliance reference for affiliate communications. Use the left column wording. Avoid the right column under all circumstances.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="background: rgba(3, 255, 136, 0.06); border: 1px solid rgba(3, 255, 136, 0.4); border-radius: 8px; padding: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a8f50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <strong style="color: #0a8f50;">Say</strong>
+                </div>
+                <ul style="margin: 0; padding: 0 0 0 18px; font-size: 13px; line-height: 1.7;">
+                  <li>"POOOL is a fractional real-world asset platform — review the official information here: [your link]"</li>
+                  <li>"You can find official fees, risks, and asset details on POOOL's pages."</li>
+                  <li>"I'm sharing my referral link if you want to explore POOOL through the official site."</li>
+                  <li>"Investment decisions are yours — POOOL's official materials are the right place to start."</li>
+                  <li>"Here's where to find the risk disclosure: [official POOOL page]"</li>
+                </ul>
+              </div>
+              <div style="background: rgba(240, 68, 56, 0.06); border: 1px solid rgba(240, 68, 56, 0.4); border-radius: 8px; padding: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b42318" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <strong style="color: #b42318;">Do Not Say</strong>
+                </div>
+                <ul style="margin: 0; padding: 0 0 0 18px; font-size: 13px; line-height: 1.7;">
+                  <li>"This is guaranteed / safe / risk-free."</li>
+                  <li>"You should buy this villa / start with this asset."</li>
+                  <li>"You will definitely make X% return."</li>
+                  <li>"Send me the funds and I'll arrange it."</li>
+                  <li>"DM me and I'll help you choose the right one."</li>
+                  <li>"I can get you special terms / a private bonus / faster processing."</li>
+                  <li>"This is the best investment / lowest-risk listing."</li>
+                </ul>
+              </div>
+            </div>
+            <p style="margin: 16px 0 0; padding: 10px 12px; background: #F9FAFB; border-left: 3px solid #0000FF; font-size: 13px; color: var(--text-secondary);"><strong>Default rule:</strong> if it sounds like advice, a sales pitch, a guarantee, or a private deal — do not say it. Redirect to official POOOL information instead.</p>
+          </div>
+
+          <!-- ═══ Channel-Specific Allowed Examples ═══ -->
+          <div class="ds-card" style="margin-top: 24px;">
+            <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+              <h3 style="margin: 0 0 4px;">Allowed Examples by Channel</h3>
+              <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Reference patterns for compliant referral content across the channels you may use.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+                <h4 style="margin: 0 0 8px; font-size: 14px;">Public posts</h4>
+                <p style="margin: 0 0 8px; font-size: 13px; color: var(--text-secondary);">"If you want to see how POOOL works, you can review the official pages, fees, and risk information here: [referral link]"</p>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);"><strong>Format:</strong> general description · approved visuals · official links · no specific asset rec · no return claim.</p>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+                <h4 style="margin: 0 0 8px; font-size: 14px;">Videos / Reels</h4>
+                <p style="margin: 0 0 8px; font-size: 13px; color: var(--text-secondary);">"Here is a platform I'm following — if you want to review the official information yourself, here is my referral link."</p>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);"><strong>Format:</strong> informational · high-level · no "best one to buy" · no "you should invest now" · no personalized recommendations.</p>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+                <h4 style="margin: 0 0 8px; font-size: 14px;">Stories</h4>
+                <p style="margin: 0 0 8px; font-size: 13px; color: var(--text-secondary);">"Want to check out POOOL? Here's my referral link." · "Official info, fees, and risk details on the platform here."</p>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);"><strong>Format:</strong> short CTA to review official info · referral sticker / swipe-up if approved · no pressure language · no advice.</p>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+                <h4 style="margin: 0 0 8px; font-size: 14px;">Blog / Long-form</h4>
+                <p style="margin: 0 0 8px; font-size: 13px; color: var(--text-secondary);">"An overview of POOOL's platform features, citing official POOOL pages for product, fee, and risk information."</p>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);"><strong>Format:</strong> factual · cites/links official POOOL pages · no personalized recommendation · no investment conclusion · no unapproved forecasts.</p>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+                <h4 style="margin: 0 0 8px; font-size: 14px;">Profile bio / link in bio</h4>
+                <p style="margin: 0 0 8px; font-size: 13px; color: var(--text-secondary);">Approved referral link in profile bio · approved landing page · post caption · story link.</p>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);"><strong>Format:</strong> own approved referral link only · directs to approved official POOOL pages · not paired with prohibited advisory or closing behavior.</p>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; background: #FEF6E7; border-color: #F4C430;">
+                <h4 style="margin: 0 0 8px; font-size: 14px; color: #6E4D00;">Private chat / DM</h4>
+                <p style="margin: 0 0 8px; font-size: 13px; color: #6E4D00;">Inbound interest from a friend asking what POOOL is — answer factually, then share your referral link only. No cold outreach. No follow-up to push commitment.</p>
+                <p style="margin: 0; font-size: 12px; color: #6E4D00;"><strong>⚠ Caution:</strong> private cold outreach is prohibited. Repeated follow-up messaging counts as systematic promotion and falls under affiliate rules.</p>
+              </div>
+            </div>
+          </div>
       </div>
     </main>
   </div>

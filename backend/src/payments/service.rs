@@ -27,6 +27,23 @@ pub const BANK_DETAILS_IDR: &str = r#"{
     "account_number": ""
 }"#;
 
+pub const TEST_BANK_DETAILS_USD: &str = r#"{
+    "bank": "POOOL Sandbox Bank",
+    "bank_address": "Test environment only",
+    "account_name": "POOOL E2E Test Account",
+    "company_address": "Do not transfer funds",
+    "iban": "TEST-USD-NO-REAL-TRANSFER",
+    "bic_swift": "TESTONLY"
+}"#;
+
+pub const TEST_BANK_DETAILS_IDR: &str = r#"{
+    "bank": "POOOL Sandbox Bank",
+    "bank_address": "Test environment only",
+    "account_name": "POOOL E2E Test Account",
+    "company_address": "Do not transfer funds",
+    "account_number": "TEST-IDR-NO-REAL-TRANSFER"
+}"#;
+
 // ─── FX Rate Cache (Phase 1.10 — Decimal-based) ────────────────
 
 use rust_decimal::Decimal;
@@ -38,6 +55,177 @@ static CACHED_IDR_RATE: std::sync::OnceLock<RwLock<Option<(Decimal, u64)>>> =
 
 fn fx_cache() -> &'static RwLock<Option<(Decimal, u64)>> {
     CACHED_IDR_RATE.get_or_init(|| RwLock::new(None))
+}
+
+async fn completed_subtotal_for_user_asset(
+    conn: &mut sqlx::PgConnection,
+    user_id: Uuid,
+    asset_id: Uuid,
+) -> Result<i64, String> {
+    sqlx::query_scalar(
+        r#"
+        SELECT COALESCE(SUM(oi.subtotal_cents), 0)::bigint
+        FROM orders o
+        JOIN order_items oi ON oi.order_id = o.id
+        WHERE o.user_id = $1
+          AND oi.asset_id = $2
+          AND o.status = 'completed'
+        "#,
+    )
+    .bind(user_id)
+    .bind(asset_id)
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(|e| format!("Completed investment subtotal lookup failed: {}", e))
+}
+
+async fn upsert_active_investment(
+    conn: &mut sqlx::PgConnection,
+    user_id: Uuid,
+    asset_id: Uuid,
+    tokens_qty: i32,
+    subtotal: i64,
+) -> Result<(), String> {
+    sqlx::query(
+        r#"
+        INSERT INTO investments (user_id, asset_id, tokens_owned, purchase_value_cents, current_value_cents, status)
+        VALUES ($1, $2, $3, $4, $4, 'active')
+        ON CONFLICT (user_id, asset_id) DO UPDATE
+        SET tokens_owned = investments.tokens_owned + $3,
+            purchase_value_cents = investments.purchase_value_cents + $4,
+            current_value_cents = investments.current_value_cents + $4,
+            status = 'active',
+            updated_at = NOW()
+        "#,
+    )
+    .bind(user_id)
+    .bind(asset_id)
+    .bind(tokens_qty)
+    .bind(subtotal)
+    .execute(&mut *conn)
+    .await
+    .map_err(|e| format!("Investment upsert failed: {}", e))?;
+
+    Ok(())
+}
+
+async fn allocate_order_item_investment(
+    conn: &mut sqlx::PgConnection,
+    user_id: Uuid,
+    asset_id: Uuid,
+    tokens_qty: i32,
+    subtotal: i64,
+) -> Result<(), String> {
+    let completed_subtotal = completed_subtotal_for_user_asset(conn, user_id, asset_id).await?;
+    let expected_with_item = completed_subtotal.saturating_add(subtotal);
+    let existing = sqlx::query_as::<_, (i32, i64, String)>(
+        r#"
+        SELECT tokens_owned, purchase_value_cents, status
+        FROM investments
+        WHERE user_id = $1 AND asset_id = $2
+        FOR UPDATE
+        "#,
+    )
+    .bind(user_id)
+    .bind(asset_id)
+    .fetch_optional(&mut *conn)
+    .await
+    .map_err(|e| format!("Investment lookup failed: {}", e))?;
+
+    if let Some((_tokens_owned, purchase_value_cents, status)) = existing {
+        let pending_allocation_already_reflected =
+            purchase_value_cents >= expected_with_item || status == "funding_in_progress";
+
+        if pending_allocation_already_reflected {
+            if status == "funding_in_progress" {
+                sqlx::query(
+                    "UPDATE investments SET status = 'active', updated_at = NOW()
+                     WHERE user_id = $1 AND asset_id = $2",
+                )
+                .bind(user_id)
+                .bind(asset_id)
+                .execute(&mut *conn)
+                .await
+                .map_err(|e| format!("Investment status activation failed: {}", e))?;
+            }
+            return Ok(());
+        }
+    }
+
+    upsert_active_investment(conn, user_id, asset_id, tokens_qty, subtotal).await
+}
+
+async fn revert_pending_order_item_investment(
+    conn: &mut sqlx::PgConnection,
+    user_id: Uuid,
+    asset_id: Uuid,
+    tokens_qty: i32,
+    subtotal: i64,
+) -> Result<(), String> {
+    let completed_subtotal = completed_subtotal_for_user_asset(conn, user_id, asset_id).await?;
+    let expected_with_pending = completed_subtotal.saturating_add(subtotal);
+    let existing = sqlx::query_as::<_, (i32, i64, String)>(
+        r#"
+        SELECT tokens_owned, purchase_value_cents, status
+        FROM investments
+        WHERE user_id = $1 AND asset_id = $2
+        FOR UPDATE
+        "#,
+    )
+    .bind(user_id)
+    .bind(asset_id)
+    .fetch_optional(&mut *conn)
+    .await
+    .map_err(|e| format!("Investment lookup failed: {}", e))?;
+
+    let Some((tokens_owned, purchase_value_cents, status)) = existing else {
+        return Ok(());
+    };
+
+    let pending_allocation_reflected =
+        status == "funding_in_progress" || purchase_value_cents >= expected_with_pending;
+    if !pending_allocation_reflected {
+        return Ok(());
+    }
+
+    if tokens_owned <= tokens_qty || purchase_value_cents <= subtotal {
+        sqlx::query(
+            r#"
+            UPDATE investments
+            SET tokens_owned = 0,
+                purchase_value_cents = 0,
+                current_value_cents = 0,
+                status = 'failed',
+                updated_at = NOW()
+            WHERE user_id = $1 AND asset_id = $2
+            "#,
+        )
+        .bind(user_id)
+        .bind(asset_id)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| format!("Failed to clear pending investment: {}", e))?;
+    } else {
+        sqlx::query(
+            r#"
+            UPDATE investments
+            SET tokens_owned = tokens_owned - $1,
+                purchase_value_cents = purchase_value_cents - $2,
+                current_value_cents = current_value_cents - $2,
+                updated_at = NOW()
+            WHERE user_id = $3 AND asset_id = $4
+            "#,
+        )
+        .bind(tokens_qty)
+        .bind(subtotal)
+        .bind(user_id)
+        .bind(asset_id)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| format!("Failed to revert pending investment allocation: {}", e))?;
+    }
+
+    Ok(())
 }
 
 /// Default IDR rate as Decimal (fallback when API is unreachable).
@@ -365,7 +553,7 @@ pub async fn confirm_deposit_with_audit(
 /// 4. Deduct wallet balance
 /// 5. Reduce asset token availability
 /// 6. Create order + order_items
-/// 7. Create/update investments
+/// 7. Create/update investments only for completed wallet payments
 /// 8. Clear cart
 /// 9. Generate invoice
 pub async fn execute_checkout(
@@ -654,7 +842,9 @@ pub async fn execute_checkout(
     .await
     .map_err(|e| format!("Order creation failed: {}", e))?;
 
-    // 7. Create order items, update asset availability, create investments
+    // 7. Create order items and reserve asset availability.
+    // Wallet payments are completed immediately, so they allocate investments now.
+    // Bank transfers remain pending review and allocate investments only after approval.
     for item in &cart_items {
         let (_ci_id, asset_id, tokens_qty, _ci_price, _title, asset_price, _tokens_avail) = item;
         let subtotal = *asset_price * (*tokens_qty as i64);
@@ -694,33 +884,9 @@ pub async fn execute_checkout(
         .await
         .map_err(|e| format!("Funding status update failed: {}", e))?;
 
-        // Upsert investment record
-        // If bank transfer, set status to 'funding_in_progress'
-        let investment_status = if payment_method == "wallet" {
-            "active"
-        } else {
-            "funding_in_progress"
-        };
-
-        sqlx::query(
-            r#"
-            INSERT INTO investments (user_id, asset_id, tokens_owned, purchase_value_cents, current_value_cents, status)
-            VALUES ($1, $2, $3, $4, $4, $5)
-            ON CONFLICT (user_id, asset_id) DO UPDATE
-            SET tokens_owned = investments.tokens_owned + $3,
-                purchase_value_cents = investments.purchase_value_cents + $4,
-                current_value_cents = investments.current_value_cents + $4,
-                status = CASE WHEN $5 = 'active' THEN 'active' ELSE investments.status END
-            "#,
-        )
-        .bind(user_id)
-        .bind(asset_id)
-        .bind(tokens_qty)
-        .bind(subtotal)
-        .bind(investment_status)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| format!("Investment upsert failed: {}", e))?;
+        if payment_method == "wallet" {
+            upsert_active_investment(&mut *tx, user_id, *asset_id, *tokens_qty, subtotal).await?;
+        }
     }
 
     // 7.5 Update investment limits (Phase 17.2)
@@ -799,44 +965,49 @@ pub async fn execute_checkout(
     sqlx::query(
         r#"
         INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)
-        VALUES ($1, 'checkout.completed', 'order', $2, $3)
+        VALUES ($1, $2, 'order', $3, $4)
         "#,
     )
     .bind(user_id)
+    .bind(if payment_method == "wallet" {
+        "checkout.completed"
+    } else {
+        "checkout.pending_review"
+    })
     .bind(order_id)
-    .bind(serde_json::json!({ "payment_method": payment_method }))
+    .bind(serde_json::json!({
+        "payment_method": payment_method,
+        "order_status": order_status
+    }))
     .execute(&mut *tx)
     .await
     .map_err(|e| format!("Audit log failed: {}", e))?;
 
-    // 11.5 Call Referral Qualification
-    if let Err(e) = crate::rewards::service::check_and_qualify_referral(&mut tx, user_id).await {
-        tracing::error!(
-            "Failed to check/qualify referral for user {}: {}",
+    let postback_data = if payment_method == "wallet" {
+        // 11.5 Legacy referral_tracking qualification removed (audit GAP-07,
+        // migration 155). Only the affiliate-commission path runs below.
+
+        // 11.6 Track Affiliate Commission (Phase 18) after completed payment only.
+        match crate::rewards::service::check_and_track_affiliate_commission(
+            &mut tx,
             user_id,
-            e
-        );
-    }
-
-    // 11.6 Track Affiliate Commission (Phase 18)
-    let postback_result = crate::rewards::service::check_and_track_affiliate_commission(
-        &mut tx,
-        user_id,
-        order_id,
-        grand_total_cents,
-    )
-    .await;
-
-    let postback_data = match postback_result {
-        Ok(data) => data,
-        Err(e) => {
-            tracing::error!(
-                "Failed to track affiliate commission for user {}: {}",
-                user_id,
-                e
-            );
-            None
+            order_id,
+            grand_total_cents,
+        )
+        .await
+        {
+            Ok(data) => data,
+            Err(e) => {
+                tracing::error!(
+                    "Failed to track affiliate commission for user {}: {}",
+                    user_id,
+                    e
+                );
+                None
+            }
         }
+    } else {
+        None
     };
 
     // 12. Commit everything
@@ -957,7 +1128,11 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
 
     // 1. Find pending bank orders older than 48 hours
     let expired_orders = sqlx::query_as::<_, (Uuid,)>(
-        "SELECT id FROM orders WHERE status = 'pending' AND payment_method = 'bank' AND created_at < NOW() - INTERVAL '48 hours' FOR UPDATE"
+        "SELECT id FROM orders
+         WHERE status = 'pending'
+           AND payment_method IN ('bank', 'bank_transfer')
+           AND created_at < NOW() - INTERVAL '48 hours'
+         FOR UPDATE",
     )
     .fetch_all(&mut *tx)
     .await
@@ -978,6 +1153,12 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
         .fetch_all(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
+
+        let user_id: Uuid = sqlx::query_scalar("SELECT user_id FROM orders WHERE id = $1")
+            .bind(order_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
         for (qty, asset_id) in items {
             // 2. Restore tokens to asset
@@ -1009,52 +1190,8 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
             .await
             .map_err(|e| e.to_string())?;
 
-            // Update investment: subtract tokens and value
-            // We first identify if this subtraction will result in 0 tokens.
-            // If so, we must DELETE the record to satisfy the "tokens_owned > 0" constraint.
-            let user_id: Uuid = sqlx::query_scalar("SELECT user_id FROM orders WHERE id = $1")
-                .bind(order_id)
-                .fetch_one(&mut *tx)
-                .await
-                .map_err(|e| e.to_string())?;
-
-            let current_tokens: i32 = sqlx::query_scalar(
-                "SELECT tokens_owned FROM investments WHERE asset_id = $1 AND user_id = $2 FOR UPDATE"
-            )
-            .bind(asset_id)
-            .bind(user_id)
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| format!("Failed to fetch investment for cleanup: {}", e))?;
-
-            if current_tokens <= qty {
-                // If the entire investment is being reverted, delete the row
-                sqlx::query("DELETE FROM investments WHERE asset_id = $1 AND user_id = $2")
-                    .bind(asset_id)
-                    .bind(user_id)
-                    .execute(&mut *tx)
-                    .await
-                    .map_err(|e| format!("Failed to delete expired investment: {}", e))?;
-            } else {
-                // Otherwise update with subtraction
-                sqlx::query(
-                    r#"
-                    UPDATE investments
-                    SET tokens_owned = tokens_owned - $1,
-                        purchase_value_cents = purchase_value_cents - $2,
-                        current_value_cents = current_value_cents - $2,
-                        updated_at = NOW()
-                    WHERE asset_id = $3 AND user_id = $4
-                    "#,
-                )
-                .bind(qty)
-                .bind(subtotal)
-                .bind(asset_id)
-                .bind(user_id)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| format!("Failed to update investment for cleanup: {}", e))?;
-            }
+            revert_pending_order_item_investment(&mut *tx, user_id, asset_id, qty, subtotal)
+                .await?;
         }
 
         // 3. Mark order as failed (expired)
@@ -1142,37 +1279,31 @@ pub async fn approve_order(
         return Err(format!("Cannot approve order with status: {}", status));
     }
 
-    // Capture asset IDs for milestones
-    let order_assets: Vec<Uuid> =
-        sqlx::query_scalar("SELECT asset_id FROM order_items WHERE order_id = $1")
-            .bind(order_id)
-            .fetch_all(&mut *tx)
-            .await
-            .map_err(|e| format!("Failed to get order items: {}", e))?;
+    let order_items = sqlx::query_as::<_, (Uuid, i32, i64)>(
+        "SELECT asset_id, tokens_quantity, subtotal_cents FROM order_items WHERE order_id = $1",
+    )
+    .bind(order_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to get order items: {}", e))?;
 
-    // 2. Update order status to completed
+    let order_assets: Vec<Uuid> = order_items
+        .iter()
+        .map(|(asset_id, _, _)| *asset_id)
+        .collect();
+
+    // 2. Allocate investments only after manual payment verification.
+    for (asset_id, tokens_qty, subtotal) in &order_items {
+        allocate_order_item_investment(&mut *tx, user_id, *asset_id, *tokens_qty, *subtotal)
+            .await?;
+    }
+
+    // 3. Update order status to completed
     sqlx::query("UPDATE orders SET status = 'completed', completed_at = NOW() WHERE id = $1")
         .bind(order_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| format!("Failed to update order status: {}", e))?;
-
-    // 3. Update investments from funding_in_progress to active
-    sqlx::query(
-        r#"
-        UPDATE investments SET status = 'active'
-        WHERE user_id = $1
-          AND status = 'funding_in_progress'
-          AND asset_id IN (
-              SELECT asset_id FROM order_items WHERE order_id = $2
-          )
-        "#,
-    )
-    .bind(user_id)
-    .bind(order_id)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| format!("Failed to update investments: {}", e))?;
 
     // Auto-update funding_status to 'funded'
     sqlx::query(
@@ -1233,14 +1364,8 @@ pub async fn approve_order(
         );
     }
 
-    // 4.5 Check Referral Qualification
-    if let Err(e) = crate::rewards::service::check_and_qualify_referral(&mut tx, user_id).await {
-        tracing::error!(
-            "Failed to check/qualify referral for user {}: {}",
-            user_id,
-            e
-        );
-    }
+    // 4.5 Legacy referral_tracking qualification removed (audit GAP-07,
+    // migration 155). Only the affiliate-commission path runs below.
 
     // 4.6 Track Affiliate Commission (Phase 18)
     let order_total: i64 = sqlx::query_scalar("SELECT total_cents FROM orders WHERE id = $1")
@@ -1345,27 +1470,7 @@ pub async fn reject_order(
         .await
         .map_err(|e| format!("Failed to fetch subtotal details: {}", e))?;
 
-        sqlx::query(
-            r#"
-            UPDATE investments
-            SET tokens_owned = GREATEST(0, tokens_owned - $1),
-                purchase_value_cents = GREATEST(0, purchase_value_cents - $2),
-                current_value_cents = GREATEST(0, current_value_cents - $2),
-                status = CASE
-                    WHEN tokens_owned - $1 <= 0 THEN 'failed'
-                    ELSE status
-                END,
-                updated_at = NOW()
-            WHERE user_id = $3 AND asset_id = $4
-            "#,
-        )
-        .bind(qty)
-        .bind(subtotal)
-        .bind(user_id)
-        .bind(asset_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| format!("Failed to update investment for asset {}: {}", asset_id, e))?;
+        revert_pending_order_item_investment(&mut *tx, user_id, *asset_id, *qty, subtotal).await?;
 
         // 4. Restore tokens to the asset
         sqlx::query("UPDATE assets SET tokens_available = tokens_available + $1 WHERE id = $2")

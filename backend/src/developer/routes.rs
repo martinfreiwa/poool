@@ -318,6 +318,67 @@ pub async fn page_developer_assets(
     Html(html).into_response()
 }
 
+/// GET /developer/affiliate-team — Members-Landing der Team-Affiliate-Sektion.
+/// Sub-Pages unter /developer/affiliate-team/{customers,products,settings}.
+pub async fn page_developer_affiliate_team(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/affiliate-team.html")
+        .await
+}
+
+/// GET /developer/affiliate-team/customers — Customers list page.
+pub async fn page_developer_affiliate_team_customers(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/affiliate-team-customers.html",
+    )
+    .await
+}
+
+/// GET /developer/affiliate-team/products — Product sales aggregation page.
+pub async fn page_developer_affiliate_team_products(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/affiliate-team-products.html",
+    )
+    .await
+}
+
+/// GET /developer/affiliate-team/settings — Team settings (display name + slug).
+pub async fn page_developer_affiliate_team_settings(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/affiliate-team-settings.html",
+    )
+    .await
+}
+
 /// GET /developer/add-asset — Render the add-new-asset form.
 pub async fn page_developer_add_asset(
     jar: CookieJar,
@@ -355,6 +416,65 @@ pub async fn page_developer_document_upload(
         "developer/document-upload-step3.html",
     )
     .await
+}
+
+/// GET /developer/onboarding — Prototype: developer application onboarding form.
+pub async fn page_developer_onboarding(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/developer-onboarding.html")
+        .await
+}
+
+/// POST /api/developer/apply — Save developer application + auto-grant developer role.
+pub async fn api_developer_apply(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    body: axum::extract::Json<serde_json::Value>,
+) -> impl IntoResponse {
+    use axum::http::StatusCode;
+
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return (StatusCode::UNAUTHORIZED, axum::Json(serde_json::json!({"ok": false, "error": "Please log in"}))).into_response(),
+    };
+
+    // Auto-grant developer role if not already a developer
+    let is_developer: bool = sqlx::query_scalar!(
+        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer','admin','super_admin'))",
+        user.id
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(Some(false))
+    .unwrap_or(false);
+
+    if !is_developer {
+        let role_id: Option<uuid::Uuid> = sqlx::query_scalar("SELECT id FROM roles WHERE name = 'developer'")
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
+        if let Some(rid) = role_id {
+            let _ = sqlx::query(
+                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+            )
+            .bind(user.id)
+            .bind(rid)
+            .execute(&state.db)
+            .await;
+        }
+    }
+
+    // Log application data (future: persist to developer_applications table)
+    tracing::info!(
+        user_id = %user.id,
+        assets_count = ?body.get("assets_count"),
+        asset_value = ?body.get("asset_value"),
+        "Developer application submitted"
+    );
+
+    (StatusCode::OK, axum::Json(serde_json::json!({"ok": true, "redirect": "/developer/dashboard"}))).into_response()
 }
 
 /// GET /developer/application-form — Render the developer application form.
@@ -431,6 +551,17 @@ pub async fn page_developer_submissions(
         return response;
     }
     crate::common::routes_helper::serve_protected(jar, &state, "developer/submissions.html").await
+}
+
+/// GET /developer/ranking — Leaderboard embedded in the developer shell.
+pub async fn page_developer_ranking(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/ranking.html").await
 }
 
 /// GET /developer/operations — Villa-Returns P2 monthly operations dashboard.

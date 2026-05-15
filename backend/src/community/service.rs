@@ -60,6 +60,8 @@ pub async fn get_community_feed(
             JOIN community_profiles cp ON p.user_id = cp.user_id
             WHERE p.is_hidden = false
               AND cp.is_shadowbanned = false
+              -- CO.7: hide future-scheduled posts until their time arrives
+              AND (p.scheduled_for IS NULL OR p.scheduled_for <= NOW())
               AND (ac.category = $1 OR $1 = '')
               AND ($2 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $2))
               {block_mute}
@@ -85,6 +87,8 @@ pub async fn get_community_feed(
             JOIN community_profiles cp ON p.user_id = cp.user_id
             WHERE p.is_hidden = false
               AND cp.is_shadowbanned = false
+              -- CO.7: hide future-scheduled posts until their time arrives
+              AND (p.scheduled_for IS NULL OR p.scheduled_for <= NOW())
               AND ($1 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
               {block_mute}
             {order_clause}
@@ -466,10 +470,66 @@ pub async fn create_user_post(
     let mod_result =
         crate::community::moderation::moderate_content(&req.content, is_high_level_user);
 
+    // UX.16 — quote-repost validation. Reject self-quoting (silly) and
+    // chains (one level deep). The quoted post must exist and not be
+    // hidden. We don't enforce author block/mute here — the feed query
+    // already hides those, so the quote card simply renders nothing.
+    if let Some(quoted_id) = req.quoted_post_id {
+        let quoted_meta: Option<(Uuid, bool, Option<Uuid>)> = sqlx::query_as(
+            "SELECT user_id, is_hidden, quoted_post_id FROM posts WHERE id = $1",
+        )
+        .bind(quoted_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        match quoted_meta {
+            None => {
+                return Err(AppError::BadRequest(
+                    "The post you're quoting no longer exists.".into(),
+                ));
+            }
+            Some((author_id, _, _)) if author_id == user_id => {
+                return Err(AppError::BadRequest(
+                    "You can't quote your own post — just edit it instead.".into(),
+                ));
+            }
+            Some((_, true, _)) => {
+                return Err(AppError::BadRequest(
+                    "This post has been removed and can't be shared.".into(),
+                ));
+            }
+            Some((_, _, Some(_))) => {
+                return Err(AppError::BadRequest(
+                    "Quote chains aren't supported — quote the original post instead.".into(),
+                ));
+            }
+            _ => {}
+        }
+    }
+
+    // CO.7 — validate scheduled timestamp. Cap how far ahead a post can be
+    // queued so we don't accumulate forgotten zombie drafts indefinitely.
+    let scheduled_for = match req.scheduled_for {
+        Some(ts) => {
+            let now = chrono::Utc::now();
+            if ts <= now {
+                return Err(AppError::BadRequest(
+                    "scheduled_for must be in the future".into(),
+                ));
+            }
+            if ts > now + chrono::Duration::days(60) {
+                return Err(AppError::BadRequest(
+                    "scheduled_for can be at most 60 days from now".into(),
+                ));
+            }
+            Some(ts)
+        }
+        None => None,
+    };
+
     let post_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO posts (user_id, post_type, content, content_sanitized, asset_id, image_urls, is_hidden, hidden_reason, disclaimer_shown)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO posts (user_id, post_type, content, content_sanitized, asset_id, image_urls, is_hidden, hidden_reason, disclaimer_shown, quoted_post_id, scheduled_for)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id
         "#,
     )
@@ -482,6 +542,8 @@ pub async fn create_user_post(
     .bind(mod_result.is_flagged)
     .bind(&mod_result.flag_reason)
     .bind(mod_result.needs_disclaimer)
+    .bind(req.quoted_post_id)
+    .bind(scheduled_for)
     .fetch_one(&mut *tx)
     .await?;
 
@@ -906,13 +968,100 @@ pub async fn update_user_profile(
     pool: &PgPool,
     user_id: Uuid,
     bio: Option<String>,
+    flair: Option<Option<String>>,
+    is_public_profile: Option<bool>,
+    allow_dms_from_strangers: Option<bool>,
 ) -> Result<(), AppError> {
-    sqlx::query("UPDATE community_profiles SET bio = $1, updated_at = NOW() WHERE user_id = $2")
-        .bind(bio)
-        .bind(user_id)
-        .execute(pool)
-        .await?;
+    // Cap flair to 24 chars + trim. Empty string clears (passed as Some(None)).
+    let flair_normalized: Option<Option<String>> = flair.map(|opt| {
+        opt.and_then(|s| {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.chars().take(24).collect())
+            }
+        })
+    });
+
+    // Make sure the row exists so partial updates don't quietly drop.
+    ensure_community_profile(pool, user_id).await?;
+
+    // CASE-based update so callers can choose to leave any field untouched
+    // (None) vs explicitly set (Some(_)). Lets the FE PUT a single key
+    // for instant per-toggle save.
+    sqlx::query(
+        r#"UPDATE community_profiles SET
+            bio = COALESCE($1, bio),
+            flair = CASE WHEN $2::BOOL THEN $3 ELSE flair END,
+            is_public_profile = COALESCE($4, is_public_profile),
+            allow_dms_from_strangers = COALESCE($5, allow_dms_from_strangers),
+            updated_at = NOW()
+           WHERE user_id = $6"#,
+    )
+    .bind(bio)
+    .bind(flair_normalized.is_some())
+    .bind(flair_normalized.flatten())
+    .bind(is_public_profile)
+    .bind(allow_dms_from_strangers)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
     Ok(())
+}
+
+/// UX.17: dynamic "Top Contributor" set. Returns the user_ids that
+/// currently sit in the top `limit` slots of the community by `xp_total`.
+/// Cheap (one indexed query) and idempotent — callers can intersect with
+/// the visible page of authors to flag who deserves the badge.
+pub async fn get_top_contributor_set(
+    pool: &PgPool,
+    limit: i64,
+) -> Result<std::collections::HashSet<Uuid>, AppError> {
+    let limit = limit.clamp(1, 500);
+    let ids: Vec<Uuid> = sqlx::query_scalar(
+        "SELECT user_id FROM community_profiles
+         WHERE is_shadowbanned = FALSE AND is_community_banned = FALSE
+         ORDER BY xp_total DESC
+         LIMIT $1",
+    )
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+    Ok(ids.into_iter().collect())
+}
+
+/// UX.14: batch-resolve user_id → flair for feed/profile rendering.
+/// Only returns entries for users who actually set a flair to keep the
+/// downstream HashMap small. Failure is non-fatal; caller treats absence
+/// as "no flair".
+pub async fn get_flairs_batch(
+    pool: &PgPool,
+    user_ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, String>, AppError> {
+    if user_ids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT user_id, flair FROM community_profiles
+         WHERE user_id = ANY($1) AND flair IS NOT NULL AND flair <> ''",
+    )
+    .bind(user_ids)
+    .fetch_all(pool)
+    .await?;
+    let mut out = std::collections::HashMap::with_capacity(rows.len());
+    for r in rows {
+        let uid: Uuid = match r.try_get("user_id") {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let flair: String = r.try_get("flair").unwrap_or_default();
+        if !flair.is_empty() {
+            out.insert(uid, flair);
+        }
+    }
+    Ok(out)
 }
 
 // ─── Gamification & Badges ──────────────────────────────────────────────────
@@ -965,6 +1114,11 @@ pub struct UserProfileDisplay {
     pub following_count: i32,
     pub post_count: i32,
     pub badges: Vec<BadgeDisplay>,
+    /// UX.14: optional short flair (max 24 chars).
+    pub flair: Option<String>,
+    /// Privacy toggles surfaced for the /community/me/edit page.
+    pub is_public_profile: bool,
+    pub allow_dms_from_strangers: bool,
 }
 
 pub async fn is_following(
@@ -991,7 +1145,9 @@ pub async fn get_user_profile(
 
     use sqlx::Row;
     let row = sqlx::query(
-        "SELECT bio, follower_count, following_count, post_count 
+        "SELECT bio, follower_count, following_count, post_count, flair,
+                COALESCE(is_public_profile, TRUE) AS is_public_profile,
+                COALESCE(allow_dms_from_strangers, TRUE) AS allow_dms_from_strangers
          FROM community_profiles WHERE user_id = $1",
     )
     .bind(user_id)
@@ -1029,6 +1185,11 @@ pub async fn get_user_profile(
         following_count: row.try_get("following_count")?,
         post_count: row.try_get("post_count")?,
         badges,
+        flair: row.try_get::<Option<String>, _>("flair").ok().flatten(),
+        is_public_profile: row.try_get::<bool, _>("is_public_profile").unwrap_or(true),
+        allow_dms_from_strangers: row
+            .try_get::<bool, _>("allow_dms_from_strangers")
+            .unwrap_or(true),
     })
 }
 

@@ -80,4 +80,7 @@ cd "$BACKEND_DIR"
 
 # SQLX_OFFLINE=true is set in .env — uses pre-baked query cache so no live DB
 # connection is needed at compile time.
+# Villa-Returns B1 — daily NAV snapshot job. To enable in dev, prefix with:
+#   VILLA_NAV_SNAPSHOT_ENABLED=true VILLA_NAV_SNAPSHOT_INTERVAL_SECS=15
+# In prod, set via Cloud Run env.
 cargo run

@@ -1,0 +1,77 @@
+{% with title="Affiliate Team Members – POOOL", no_index=True,
+extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-members'] %}{% include
+"components/head.html" %}{% endwith %}
+
+<body id="developer-affiliate-team-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="developer-dashboard-page">
+    <div class="developer-dashboard-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
+      <div class="ds-main__content">
+        {% include 'developer/_affiliate_team_shell.html' %}
+
+        <!-- KPI tile strip — only rendered on the main affiliate-team
+             dashboard. Sub-pages (customers, products, settings) use the
+             same shell minus this section. -->
+        <section class="metrics-section" aria-label="Team performance">
+          <div class="ds-card ds-stat-card metric-card">
+            <div class="ds-stat-card__label">Active Members</div>
+            <div class="ds-stat-card__value" id="dat-tile-members">—</div>
+          </div>
+          <div class="ds-card ds-stat-card metric-card">
+            <div class="ds-stat-card__label">Lifetime Commission</div>
+            <div class="ds-stat-card__value" id="dat-tile-lifetime">—</div>
+          </div>
+          <div class="ds-card ds-stat-card metric-card">
+            <div class="ds-stat-card__label">Pending</div>
+            <div class="ds-stat-card__value" id="dat-tile-pending">—</div>
+          </div>
+          <div class="ds-card ds-stat-card metric-card">
+            <div class="ds-stat-card__label">Payable</div>
+            <div class="ds-stat-card__value" id="dat-tile-payable">—</div>
+          </div>
+          <div class="ds-card ds-stat-card metric-card">
+            <div class="ds-stat-card__label">Paid Out</div>
+            <div class="ds-stat-card__value" id="dat-tile-paid">—</div>
+          </div>
+        </section>
+
+        <section class="ds-card dat-content-card">
+          <div class="dat-section__intro">
+            <h3 class="dat-section__title">Team Members</h3>
+            <p class="dat-section__hint">Employees with a business affiliate link. Commissions flow to you as the developer.</p>
+          </div>
+          <div class="dat-table-wrap">
+            <table class="dat-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Business Link</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dat-members-tbody">
+                <tr><td colspan="6" class="dat-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      {% include 'developer/_affiliate_team_invite_modal.html' %}
+    </main>
+  </div>
+</body>

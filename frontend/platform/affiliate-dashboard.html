@@ -11,7 +11,46 @@
       {% with investor_topbar_title="Partner Syndicate", investor_topbar_variant="affiliate-dashboard" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="affiliate-dashboard-container">
-        
+
+        <!-- Mode Switcher (Phase 5 — Personal vs Business) -->
+        <div id="affiliate-mode-switcher" class="affiliate-mode-switcher" hidden>
+          <div class="affiliate-mode-switcher__group" role="tablist" aria-label="Affiliate context">
+            <button class="affiliate-mode-switcher__btn affiliate-mode-switcher__btn--active" data-mode="personal" role="tab" aria-selected="true">
+              <span>Personal</span>
+              <small>Provisionen an dich</small>
+            </button>
+            <button class="affiliate-mode-switcher__btn" data-mode="business" role="tab" aria-selected="false">
+              <span>Business</span>
+              <small>Reporting für Team-Owner</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Team-Membership Banner (Phase 2 — Developer-Team-Affiliate) -->
+        <div id="affiliate-team-banner" class="affiliate-team-banner" hidden>
+          <div class="affiliate-team-banner__content">
+            <div class="affiliate-team-banner__icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              </svg>
+            </div>
+            <div class="affiliate-team-banner__text">
+              <strong id="affiliate-team-banner-title">You're a Team Member</strong>
+              <p id="affiliate-team-banner-msg" class="affiliate-team-banner__msg">Your business affiliate link routes commissions to your developer.</p>
+              <div class="affiliate-team-banner__link-row" id="affiliate-team-banner-link-row" hidden>
+                <span class="affiliate-team-banner__link-label">Business Link:</span>
+                <code id="affiliate-team-banner-link-code"></code>
+                <button type="button" class="affiliate-team-banner__copy" id="affiliate-team-banner-copy" title="Copy link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+            <span id="affiliate-team-banner-status" class="affiliate-team-banner__status"></span>
+          </div>
+        </div>
+
         <!-- Header -->
 
         <!-- KPI Cards Grid -->

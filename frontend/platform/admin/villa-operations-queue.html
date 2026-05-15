@@ -2,81 +2,150 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Villa Operations Queue | Admin | POOOL</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operations Queue | Admin | POOOL</title>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script src="/static/js/user-data.js"></script>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
-  <style>
-    .voq-shell { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
-    .voq-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .voq-header h1 { font-size: 22px; margin: 0; }
-    .voq-empty { text-align: center; padding: 48px 24px; color: var(--admin-text-muted, #6b7280); background: var(--admin-card-bg, #fff); border-radius: 8px; }
-    .voq-table { width: 100%; border-collapse: collapse; background: var(--admin-card-bg, #fff); border-radius: 8px; overflow: hidden; font-size: 13px; }
-    .voq-table th, .voq-table td { padding: 10px 12px; text-align: left; }
-    .voq-table th { background: var(--admin-card-header-bg, #f9fafb); font-weight: 600; color: var(--admin-text-muted, #6b7280); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-    .voq-table tbody tr { border-top: 1px solid var(--admin-border, #e5e7eb); }
-    .voq-num { text-align: right; font-variant-numeric: tabular-nums; }
-    .voq-badge { padding: 3px 10px; border-radius: 10px; font-size: 11px; }
-    .voq-badge.correction { background: var(--admin-warn-bg, #fffbeb); color: var(--admin-warn, #d97706); }
-    .voq-actions { display: flex; gap: 6px; justify-content: flex-end; }
-    .voq-btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--admin-border, #d1d5db); background: var(--admin-card-bg, #fff); cursor: pointer; font: inherit; font-size: 12px; text-decoration: none; color: inherit; }
-    .voq-btn.primary { background: var(--admin-accent, #2563eb); color: white; border-color: var(--admin-accent, #2563eb); }
-    .voq-btn.danger { color: var(--admin-danger, #dc2626); border-color: var(--admin-danger, #dc2626); }
-    .voq-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .voq-self-note { font-size: 11px; color: var(--admin-text-muted, #6b7280); font-style: italic; margin-top: 4px; }
-    .voq-correction-note { font-size: 11px; color: var(--admin-warn, #d97706); margin-top: 4px; }
-  </style>
+  <script src="/static/js/admin-global-search.js"></script>
+  <script src="/static/js/admin-page-kit.js"></script>
 </head>
-<body>
-  <main class="voq-shell">
-    <div class="voq-header">
-      <div>
-        <h1>Villa Operations — Approval Queue</h1>
-        <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 4px 0 0;">
-          Submitted monthly operations rows awaiting approval. 4-eyes enforced — you cannot approve rows you submitted.
-        </p>
-      </div>
-      <button class="voq-btn" id="btn-refresh" type="button">Refresh</button>
-    </div>
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
 
-    <div id="voq-empty" class="voq-empty" style="display: none;">No rows awaiting approval.</div>
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Operations Queue</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-search">
+            <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" placeholder="Search admin (Cmd/Ctrl+K)…" id="admin-global-search" aria-label="Global admin search" />
+          </div>
+        </div>
+      </header>
 
-    <table class="voq-table" id="voq-table">
-      <thead>
-        <tr>
-          <th>Villa</th>
-          <th>Period</th>
-          <th class="voq-num">Distributable (IDR)</th>
-          <th>Submitter</th>
-          <th>Submitted</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="voq-tbody">
-        <tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--admin-text-muted, #6b7280);">Loading…</td></tr>
-      </tbody>
-    </table>
-  </main>
+      <div class="admin-content">
 
-  <!-- Reject modal -->
-  <div id="voq-reject-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: var(--admin-card-bg, #fff); padding: 24px; border-radius: 8px; max-width: 420px; width: 100%;">
-      <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 700;">Reject submission</h3>
-      <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 12px;">
-        Row will return to <code>draft</code> with this reason. Developer will see it on their dashboard.
+        <!-- Page header -->
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+          <div>
+            <h1 class="admin-page-title">Operations Approval Queue</h1>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin: 4px 0 0;">
+              Monthly operations submitted by developers awaiting admin review. 4-eyes enforced — you cannot approve submissions you made.
+            </p>
+          </div>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-refresh" type="button" style="flex-shrink: 0;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8a6 6 0 11-1.76-4.24L14 5"/><path d="M14 2v3h-3"/></svg>
+            Refresh
+          </button>
+        </div>
+
+        <!-- KPI cards -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+          <div class="admin-kpi-card" style="padding: 16px;">
+            <div class="admin-kpi-header" style="margin-bottom: 8px;">
+              <span class="admin-kpi-label">Pending Approval</span>
+              <div class="admin-kpi-icon admin-kpi-icon--warning">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v5l3 3"/></svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px;" id="stat-pending">—</div>
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Awaiting review</div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px;">
+            <div class="admin-kpi-header" style="margin-bottom: 8px;">
+              <span class="admin-kpi-label">Blocked (self-submitted)</span>
+              <div class="admin-kpi-icon admin-kpi-icon--blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px;" id="stat-self">—</div>
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Need another admin to approve</div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px;">
+            <div class="admin-kpi-header" style="margin-bottom: 8px;">
+              <span class="admin-kpi-label">Total Distributable</span>
+              <div class="admin-kpi-icon admin-kpi-icon--green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 22px; font-variant-numeric: tabular-nums;" id="stat-distributable">—</div>
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">IDR across all pending</div>
+          </div>
+        </div>
+
+        <!-- Table card -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+
+            <!-- Empty state -->
+            <div id="voq-empty" style="display: none; padding: 56px 24px; text-align: center; color: var(--admin-text-muted);">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 12px; display: block; opacity: 0.35;"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              <p style="font-size: 15px; font-weight: 600; color: var(--admin-text-primary); margin: 0 0 4px;">All clear</p>
+              <p style="font-size: 13px; margin: 0;">No submissions awaiting approval right now.</p>
+            </div>
+
+            <table class="admin-table" id="voq-table">
+              <thead>
+                <tr>
+                  <th style="min-width: 220px;">Villa</th>
+                  <th style="width: 90px;">Period</th>
+                  <th style="width: 170px; text-align: right;">Distributable (IDR)</th>
+                  <th style="min-width: 200px;">Submitter</th>
+                  <th style="width: 160px;">Submitted</th>
+                  <th style="width: 210px;"></th>
+                </tr>
+              </thead>
+              <tbody id="voq-tbody">
+                <tr>
+                  <td colspan="6" style="padding: 36px; text-align: center; color: var(--admin-text-muted);">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /.admin-content -->
+    </main>
+  </div><!-- /.admin-wrapper -->
+
+  <!-- ── Reject modal ── -->
+  <div id="voq-reject-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;"
+    role="dialog" aria-modal="true" aria-labelledby="voq-reject-title">
+    <div style="background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl, 12px); padding: 28px; max-width: 440px; width: 90%; box-shadow: 0 24px 60px rgba(0,0,0,0.3); animation: admin-fadeIn 0.2s ease-out;">
+      <h3 id="voq-reject-title" style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: var(--admin-text-primary);">Reject submission</h3>
+      <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0 0 20px;">
+        The row returns to <code style="font-size: 12px; background: var(--admin-border); padding: 1px 5px; border-radius: 4px;">draft</code> status. The developer will see your reason on their dashboard.
       </p>
-      <label style="display: block; font-size: 13px; margin-bottom: 4px;">Reason (required)</label>
-      <textarea id="voq-reject-reason" rows="3"
-        style="width: 100%; padding: 8px 10px; border: 1px solid var(--admin-border, #d1d5db); border-radius: 6px; font: inherit; margin-bottom: 12px;"></textarea>
-      <div id="voq-reject-error" style="color: var(--admin-danger, #dc2626); font-size: 13px; min-height: 18px; margin-bottom: 12px;"></div>
+      <div class="admin-form-group">
+        <label class="admin-form-label" for="voq-reject-reason">
+          Reason <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <textarea class="admin-textarea" id="voq-reject-reason" rows="3" placeholder="Describe what needs to be corrected…"></textarea>
+      </div>
+      <div id="voq-reject-error" style="color: var(--admin-danger); font-size: 13px; min-height: 18px; margin-bottom: 12px;"></div>
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
-        <button class="voq-btn" id="voq-reject-cancel" type="button">Cancel</button>
-        <button class="voq-btn danger" id="voq-reject-confirm" type="button">Reject</button>
+        <button class="admin-btn admin-btn--secondary" id="voq-reject-cancel" type="button">Cancel</button>
+        <button class="admin-btn admin-btn--danger" id="voq-reject-confirm" type="button">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5L5 15M15 15L5 5"/></svg>
+          Reject
+        </button>
       </div>
     </div>
   </div>

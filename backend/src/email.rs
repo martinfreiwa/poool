@@ -102,6 +102,61 @@ fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
             )
         }
 
+        "team_invitation_received" => {
+            let team_name = metadata.get("team_name").and_then(|v| v.as_str()).unwrap_or("a POOOL Affiliate Team");
+            let inviter = metadata.get("inviter_name").and_then(|v| v.as_str()).unwrap_or("the team owner");
+            let token = metadata.get("token").and_then(|v| v.as_str()).unwrap_or("");
+            let accept_url = metadata.get("accept_url").and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("https://platform.poool.app/affiliate/team/accept?token={}", token));
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">You've been invited to {team}</h2>
+  <p>{inviter} has invited you to join <strong>{team}</strong> as a team-affiliate. Commissions from referrals via your business link will route to the team owner, while your personal affiliate link (if any) remains entirely yours.</p>
+  <p><a href="{accept}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
+  <p style="color:#717680;font-size:13px;">Or paste this token in your affiliate dashboard:</p>
+  <code style="display:inline-block;background:#F4F4F5;border:1px solid #E9EAEB;padding:8px 12px;border-radius:6px;font-family:monospace;word-break:break-all;">{token}</code>
+  <p style="color:#717680;font-size:13px;margin-top:24px;">This invitation expires in 14 days. If you didn't expect this email, you can safely ignore it.</p>
+</div>"#,
+                team = html_escape_email(team_name),
+                inviter = html_escape_email(inviter),
+                accept = html_escape_email(&accept_url),
+                token = html_escape_email(token))
+        }
+
+        "team_member_approved" => {
+            let team_name = metadata.get("team_name").and_then(|v| v.as_str()).unwrap_or("a POOOL Affiliate Team");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Welcome to {team}</h2>
+  <p>You're now an active member of <strong>{team}</strong>. Your business affiliate link is live — commissions from referrals route to the team owner.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+</div>"#, team = html_escape_email(team_name))
+        }
+
+        "team_member_removed" => {
+            let team_name = metadata.get("team_name").and_then(|v| v.as_str()).unwrap_or("the POOOL Affiliate Team");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your team membership has ended</h2>
+  <p>You've been removed from <strong>{team}</strong>. Your business affiliate link is no longer active. Historical commissions remain with the team owner per program rules. Your personal affiliate link (if any) continues to work independently.</p>
+  <p style="color:#717680;font-size:13px;margin-top:24px;">Questions? Contact support@poool.app</p>
+</div>"#, team = html_escape_email(team_name))
+        }
+
+        "team_self_request_received" => {
+            let team_name = metadata.get("team_name").and_then(|v| v.as_str()).unwrap_or("your team");
+            let requester = metadata.get("requester_email").and_then(|v| v.as_str()).unwrap_or("a user");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">New join request for {team}</h2>
+  <p><strong>{requester}</strong> has requested to join your affiliate team. Review and approve the request in your team dashboard.</p>
+  <p><a href="https://platform.poool.app/developer/affiliate-team" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Review Request</a></p>
+</div>"#,
+                team = html_escape_email(team_name),
+                requester = html_escape_email(requester))
+        }
+
         _ => format!(
             r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;"><p>You have a new notification from POOOL.</p></div>"#
         ),
@@ -150,9 +205,20 @@ pub async fn trigger_transactional_email(
         "affiliate_payout_released" => "Your POOOL Affiliate Payout Details",
         "affiliate_commission_earned" => "New Commission Tracked - POOOL Partner Syndicate",
 
+        // Developer-Team-Affiliate (Phase 2+)
+        "team_invitation_received"     => "You've been invited to a POOOL Affiliate Team",
+        "team_member_approved"         => "You're now an active POOOL Affiliate Team member",
+        "team_member_removed"          => "You were removed from a POOOL Affiliate Team",
+        "team_self_request_received"   => "New team join request — POOOL Affiliate",
+
         "support_ticket_reply" => "New reply on your support ticket",
         "support_ticket_new" => "New support ticket submitted",
         "support_ticket_resolved" => "Your support ticket has been resolved",
+
+        // Villa-Returns operations lifecycle
+        "operations_rejected"  => "Action Required: Operations Submission Rejected",
+        "operations_approved"  => "Operations Approved — Pending Publish",
+        "operations_published" => "Operations Published — Now Live",
 
         _ => "You Have a New Notification",
     };

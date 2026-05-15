@@ -343,42 +343,42 @@ INSERT INTO assets (
 
 -- Property 1 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset1, '/images/villa1.jpg', 'Luxury Clifftop Villa exterior', 0, TRUE),
-    (v_asset1, '/images/villa1_2.jpg', 'Infinity pool with ocean view', 1, FALSE),
-    (v_asset1, '/images/villa1_3.jpg', 'Modern interior living area', 2, FALSE),
-    (v_asset1, '/images/villa1_4.jpg', 'Ocean view terrace', 3, FALSE);
+    (v_asset1, '/images/villa1.webp', 'Luxury Clifftop Villa exterior', 0, TRUE),
+    (v_asset1, '/images/villa1_2.webp', 'Infinity pool with ocean view', 1, FALSE),
+    (v_asset1, '/images/villa1_3.webp', 'Modern interior living area', 2, FALSE),
+    (v_asset1, '/images/villa1_4.webp', 'Ocean view terrace', 3, FALSE);
 
 -- Property 2 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset2, '/images/villa2_1.jpg', 'Modern Surf Villa exterior', 0, TRUE),
-    (v_asset2, '/images/villa2_2.jpg', 'Tropical garden and pool', 1, FALSE);
+    (v_asset2, '/images/villa2_1.webp', 'Modern Surf Villa exterior', 0, TRUE),
+    (v_asset2, '/images/villa2_2.webp', 'Tropical garden and pool', 1, FALSE);
 
 -- Property 3 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset3, '/images/villa3_1.jpg', 'Boutique Resort entrance', 0, TRUE),
-    (v_asset3, '/images/villa3_2.jpg', 'Resort common area', 1, FALSE);
+    (v_asset3, '/images/villa3_1.webp', 'Boutique Resort entrance', 0, TRUE),
+    (v_asset3, '/images/villa3_2.webp', 'Resort common area', 1, FALSE);
 
 -- Property 4 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset4, '/images/villa4_1.jpg', 'Vacation Rental Villa', 0, TRUE),
-    (v_asset4, '/images/villa4_2.jpg', 'Panoramic temple view', 1, FALSE);
+    (v_asset4, '/images/villa4_1.webp', 'Vacation Rental Villa', 0, TRUE),
+    (v_asset4, '/images/villa4_2.webp', 'Panoramic temple view', 1, FALSE);
 
 -- Property 5 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset5, '/images/villa5.jpg', 'Renovation flip project', 0, TRUE);
+    (v_asset5, '/images/villa5.webp', 'Renovation flip project', 0, TRUE);
 
 -- Property 6 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset6, '/images/villa6.jpg', 'New development site', 0, TRUE);
+    (v_asset6, '/images/villa6.webp', 'New development site', 0, TRUE);
 
 -- Property 7 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset7, '/images/villa3_1.jpg', 'Funded pool villa', 0, TRUE),
-    (v_asset7, '/images/villa1_2.jpg', 'Pool area', 1, FALSE);
+    (v_asset7, '/images/villa3_1.webp', 'Funded pool villa', 0, TRUE),
+    (v_asset7, '/images/villa1_2.webp', 'Pool area', 1, FALSE);
 
 -- Property 8 images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_asset8, '/images/villa2_1.jpg', 'Beachfront retreat', 0, TRUE);
+    (v_asset8, '/images/villa2_1.webp', 'Beachfront retreat', 0, TRUE);
 
 -- Commodity images (rice) – all 5 gallery images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
@@ -389,10 +389,10 @@ INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) V
     (v_com1, '/static/images/commodities/rice/zhao-yangjun-dDAzpSUAbgI-unsplash.webp', 'Rice field landscape', 4, FALSE);
 
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_com2, '/static/images/commodities/rice/hoach-le-dinh-PeRt3uMmjYM-unsplash.jpg', 'Cacao beans', 0, TRUE);
+    (v_com2, '/static/images/commodities/rice/hoach-le-dinh-PeRt3uMmjYM-unsplash.webp', 'Cacao beans', 0, TRUE);
 
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_com3, '/static/images/commodities/rice/winston-chen-kXoEdaZ3SFw-unsplash.jpg', 'Coffee beans', 0, TRUE);
+    (v_com3, '/static/images/commodities/rice/winston-chen-kXoEdaZ3SFw-unsplash.webp', 'Coffee beans', 0, TRUE);
 
 
 -- ── 5. Insert Investments (user owns tokens in some assets) ──

@@ -49,7 +49,11 @@
                     </template>
                   </span>
                 </template>
-                <template x-if="!ch.completed">
+                <template x-if="!ch.completed && ch.requirement_type === 'submission'">
+                  <button type="button" class="ds-btn ds-btn--primary ds-btn--sm community-challenge-card__cta"
+                          @click="openSubmitModal(ch)">Submit your entry</button>
+                </template>
+                <template x-if="!ch.completed && ch.requirement_type !== 'submission'">
                   <a class="ds-btn ds-btn--primary ds-btn--sm community-challenge-card__cta"
                      :href="challengeAction(ch).href"
                      x-text="challengeAction(ch).label"></a>
@@ -58,9 +62,59 @@
                   <span class="ds-badge ds-badge--info community-challenge-card__reward" x-text="'Badge: ' + ch.badge_reward"></span>
                 </template>
               </div>
+
+              <!-- Submission entries (vote-based challenges only) -->
+              <template x-if="ch.requirement_type === 'submission'">
+                <div class="community-challenge-card__submissions" style="margin-top:12px;">
+                  <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" @click="toggleSubmissions(ch)">
+                    <span x-text="ch.submissionsOpen ? 'Hide entries' : 'View entries'"></span>
+                  </button>
+                  <div x-show="ch.submissionsOpen" x-cloak style="margin-top:8px;">
+                    <template x-for="s in (ch.submissions || [])" :key="s.id">
+                      <div class="community-submission-row"
+                           style="display:flex; gap:10px; align-items:flex-start; padding:10px; border:1px solid var(--ds-border, #E5E7EB); border-radius:8px; margin-bottom:6px;">
+                        <div style="flex:1; min-width:0;">
+                          <div style="font-weight:600; font-size:13px;" x-text="s.display_name"></div>
+                          <div style="font-size:13px; color:var(--ds-text-secondary,#475467); white-space:pre-wrap;" x-text="s.content"></div>
+                        </div>
+                        <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
+                                :style="s.has_voted ? 'background:var(--ds-color-primary,#03FF88); color:#0a0b2e;' : ''"
+                                @click="toggleVote(ch, s)"
+                                aria-label="Toggle vote">
+                          <span x-text="(s.has_voted ? '★ ' : '☆ ') + s.vote_count"></span>
+                        </button>
+                      </div>
+                    </template>
+                    <p x-show="(ch.submissions || []).length === 0" class="ds-helper-text">No entries yet — be the first.</p>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </template>
+      </div>
+
+      <!-- Submit Entry Modal -->
+      <div x-show="submitModalOpen" x-cloak class="community-modal" role="dialog" aria-modal="true"
+           aria-labelledby="challenge-submit-title"
+           style="display:flex; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;"
+           @click.self="closeSubmitModal()">
+        <div class="ds-card community-modal__panel" style="max-width:520px; width:90%;">
+          <h3 id="challenge-submit-title" class="ds-text-md community-modal__title"
+              x-text="'Submit entry — ' + (submitChallenge ? submitChallenge.title : '')"></h3>
+          <p class="ds-text-body community-modal__description">Your entry will be visible to the community. Other members can upvote it; the highest voted entries earn the reward.</p>
+          <label for="challenge-submit-content" class="ds-sr-only">Entry content</label>
+          <textarea id="challenge-submit-content" x-model="submitContent"
+                    class="ds-input" rows="5" maxlength="5000"
+                    placeholder="Tell us your idea, strategy, or insight…"></textarea>
+          <div class="ds-helper-text" x-text="(submitContent || '').length + ' / 5000'"></div>
+          <div class="ds-form-error" x-show="submitError" x-text="submitError" role="alert"></div>
+          <div class="community-modal__actions">
+            <button type="button" class="ds-btn ds-btn--secondary" @click="closeSubmitModal()">Cancel</button>
+            <button type="button" class="ds-btn ds-btn--primary" :disabled="submitBusy" @click="submitEntry()"
+                    x-text="submitBusy ? 'Submitting…' : 'Submit'"></button>
+          </div>
+        </div>
       </div>
 
       <!-- Empty State -->

@@ -16,7 +16,9 @@ use crate::auth::routes::AppState;
 use crate::developer::extractors::DeveloperUser;
 use axum::extract::{Multipart, Path, Query, State};
 use axum::Json;
+use chrono::Datelike;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 /// Period documents (receipts / invoices / statements) cap at 20 MB,
@@ -29,51 +31,187 @@ pub struct OperationsQuery {
     pub month: Option<i32>,
 }
 
-#[derive(Debug, Serialize, sqlx::FromRow)]
-pub struct DashboardEntry {
-    pub asset_id: Uuid,
-    pub asset_title: String,
-    pub latest_period_year: Option<i32>,
-    pub latest_period_month: Option<i32>,
-    pub latest_status: Option<String>,
-    pub latest_rejected_reason: Option<String>,
+// ─── Matrix dashboard response types ─────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+pub struct MatrixPeriodCell {
+    pub month: i32,
+    pub log_id: i64,
+    pub status: String,
+    pub rejected_reason: Option<String>,
+    pub recorded_at: chrono::DateTime<chrono::Utc>,
+    pub has_period_docs: bool,
 }
 
-/// GET /api/developer/operations/dashboard — list assigned villas + per-month status.
+#[derive(Debug, Serialize)]
+pub struct MatrixAssetEntry {
+    pub asset_id: Uuid,
+    pub asset_title: String,
+    pub listed_year: i32,
+    pub listed_month: i32,
+    pub prior_published_count: i64,
+    pub prior_expected_count: i64,
+    pub annual_doc_year: i32,
+    pub annual_doc_uploaded: bool,
+    pub periods: Vec<MatrixPeriodCell>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MatrixDashboardResponse {
+    pub year: i32,
+    pub assets: Vec<MatrixAssetEntry>,
+}
+
+// Flat row returned by the SQL query — assembled into MatrixAssetEntry in Rust.
+#[derive(Debug, sqlx::FromRow)]
+struct MatrixFlatRow {
+    asset_id: Uuid,
+    asset_title: String,
+    listed_year: i32,
+    listed_month: i32,
+    prior_published_count: i64,
+    prior_expected_count: i64,
+    annual_doc_year: i32,
+    annual_doc_uploaded: bool,
+    period_month: Option<i32>,
+    log_id: Option<i64>,
+    period_status: Option<String>,
+    rejected_reason: Option<String>,
+    recorded_at: Option<chrono::DateTime<chrono::Utc>>,
+    has_period_docs: bool,
+}
+
+/// GET /api/developer/operations/dashboard?year=YYYY
+/// Returns all assigned villas with per-month status for the requested year.
 pub async fn api_developer_operations_dashboard(
     dev: DeveloperUser,
     State(state): State<AppState>,
-) -> Result<Json<Vec<DashboardEntry>>, ApiError> {
-    let rows: Vec<DashboardEntry> = sqlx::query_as(
+    Query(q): Query<OperationsQuery>,
+) -> Result<Json<MatrixDashboardResponse>, ApiError> {
+    let year = q
+        .year
+        .unwrap_or_else(|| chrono::Utc::now().year());
+
+    let rows: Vec<MatrixFlatRow> = sqlx::query_as(
         r#"
-        WITH latest AS (
-            SELECT DISTINCT ON (l.asset_id)
-                   l.asset_id, l.period_year, l.period_month, l.status, l.rejected_reason
-            FROM villa_operations_log l
-            JOIN developer_asset_links dal ON dal.asset_id = l.asset_id
+        WITH
+        dev_assets AS (
+            SELECT a.id AS asset_id, a.title AS asset_title, dal.effective_from
+            FROM developer_asset_links dal
+            JOIN assets a ON a.id = dal.asset_id
             WHERE dal.developer_user_id = $1 AND dal.effective_until IS NULL
-            ORDER BY l.asset_id, l.recorded_at DESC
+        ),
+        latest_year_ops AS (
+            SELECT DISTINCT ON (l.asset_id, l.period_month)
+                   l.asset_id, l.id AS log_id, l.period_month,
+                   l.status, l.rejected_reason, l.recorded_at
+            FROM villa_operations_log l
+            WHERE l.period_year = $2
+              AND l.asset_id IN (SELECT asset_id FROM dev_assets)
+            ORDER BY l.asset_id, l.period_month, l.recorded_at DESC
+        ),
+        period_docs_agg AS (
+            SELECT asset_id, period_month
+            FROM villa_period_documents
+            WHERE period_year = $2
+              AND asset_id IN (SELECT asset_id FROM dev_assets)
+            GROUP BY asset_id, period_month
+        ),
+        prior_ops_latest AS (
+            SELECT DISTINCT ON (l.asset_id, l.period_year, l.period_month)
+                   l.asset_id, l.status
+            FROM villa_operations_log l
+            WHERE l.period_year < $2
+              AND l.asset_id IN (SELECT asset_id FROM dev_assets)
+            ORDER BY l.asset_id, l.period_year, l.period_month, l.recorded_at DESC
+        ),
+        prior_agg AS (
+            SELECT asset_id,
+                   COUNT(*) FILTER (WHERE status IN ('published','approved')) AS published_count,
+                   COUNT(*)                                                    AS expected_count
+            FROM prior_ops_latest
+            GROUP BY asset_id
+        ),
+        annual_docs_agg AS (
+            SELECT asset_id
+            FROM villa_annual_documents
+            WHERE period_year = $2 - 1
+              AND asset_id IN (SELECT asset_id FROM dev_assets)
+            GROUP BY asset_id
         )
         SELECT
-            a.id   AS asset_id,
-            a.title AS asset_title,
-            latest.period_year       AS latest_period_year,
-            latest.period_month      AS latest_period_month,
-            latest.status            AS latest_status,
-            latest.rejected_reason   AS latest_rejected_reason
-        FROM developer_asset_links dal
-        JOIN assets a ON a.id = dal.asset_id
-        LEFT JOIN latest ON latest.asset_id = a.id
-        WHERE dal.developer_user_id = $1 AND dal.effective_until IS NULL
-        ORDER BY a.title
+            da.asset_id,
+            da.asset_title,
+            EXTRACT(YEAR  FROM da.effective_from)::int  AS listed_year,
+            EXTRACT(MONTH FROM da.effective_from)::int  AS listed_month,
+            COALESCE(pa.published_count, 0)              AS prior_published_count,
+            COALESCE(pa.expected_count,  0)              AS prior_expected_count,
+            ($2 - 1)                                     AS annual_doc_year,
+            (ad.asset_id IS NOT NULL)                    AS annual_doc_uploaded,
+            lyo.period_month,
+            lyo.log_id,
+            lyo.status                                   AS period_status,
+            lyo.rejected_reason,
+            lyo.recorded_at,
+            (pda.asset_id IS NOT NULL)                   AS has_period_docs
+        FROM dev_assets da
+        LEFT JOIN latest_year_ops lyo ON lyo.asset_id = da.asset_id
+        LEFT JOIN period_docs_agg pda  ON pda.asset_id = da.asset_id
+                                      AND pda.period_month = lyo.period_month
+        LEFT JOIN prior_agg pa         ON pa.asset_id  = da.asset_id
+        LEFT JOIN annual_docs_agg ad   ON ad.asset_id  = da.asset_id
+        ORDER BY da.asset_title, lyo.period_month
         "#,
     )
     .bind(dev.user.id)
+    .bind(year)
     .fetch_all(&state.db)
     .await
     .map_err(ApiError::Database)?;
 
-    Ok(Json(rows))
+    // Group flat rows by asset_id (BTreeMap preserves insertion order by key,
+    // but assets arrive in title order from SQL so we keep a Vec for ordering).
+    let mut seen: BTreeMap<Uuid, usize> = BTreeMap::new();
+    let mut assets: Vec<MatrixAssetEntry> = Vec::new();
+
+    for row in rows {
+        let idx = if let Some(&i) = seen.get(&row.asset_id) {
+            i
+        } else {
+            let i = assets.len();
+            assets.push(MatrixAssetEntry {
+                asset_id: row.asset_id,
+                asset_title: row.asset_title.clone(),
+                listed_year: row.listed_year,
+                listed_month: row.listed_month,
+                prior_published_count: row.prior_published_count,
+                prior_expected_count: row.prior_expected_count,
+                annual_doc_year: row.annual_doc_year,
+                annual_doc_uploaded: row.annual_doc_uploaded,
+                periods: Vec::new(),
+            });
+            seen.insert(row.asset_id, i);
+            i
+        };
+
+        if let (Some(month), Some(log_id), Some(status), Some(recorded_at)) = (
+            row.period_month,
+            row.log_id,
+            row.period_status,
+            row.recorded_at,
+        ) {
+            assets[idx].periods.push(MatrixPeriodCell {
+                month,
+                log_id,
+                status,
+                rejected_reason: row.rejected_reason,
+                recorded_at,
+                has_period_docs: row.has_period_docs,
+            });
+        }
+    }
+
+    Ok(Json(MatrixDashboardResponse { year, assets }))
 }
 
 /// POST /api/developer/villas/:asset_id/operations — create draft (dev-owned fields only).
@@ -104,46 +242,59 @@ pub async fn api_developer_villa_operations_create(
             expense_cleaning_idr_cents, expense_maintenance_idr_cents,
             expense_utilities_idr_cents, expense_staff_idr_cents,
             expense_pool_garden_idr_cents, expense_pest_idr_cents,
-            expense_other_idr_cents, ota_fees_idr_cents,
-            payment_fees_idr_cents, refunds_idr_cents, mgmt_fee_idr_cents,
+            expense_other_idr_cents,
+            expense_property_tax_idr_cents, expense_insurance_idr_cents,
+            expense_accounting_idr_cents, expense_internet_idr_cents,
+            expense_capex_idr_cents,
+            ota_fees_idr_cents, payment_fees_idr_cents, refunds_idr_cents, mgmt_fee_idr_cents,
             total_opex_idr_cents, net_rental_income_idr_cents,
             reserve_applied_idr_cents, platform_fee_idr_cents,
             withholding_idr_cents, distributable_idr_cents,
+            mgmt_reported_distributable_idr_cents,
             status, supersedes_id, correction_reason, submitted_by
         ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-            $16, $17, $18, $19, $20, $21, $22, $23, $24, 'draft', $25, $26, $27
+            $1,  $2,  $3,  $4,  $5,  $6,  $7,  $8,  $9,  $10, $11, $12, $13, $14,
+            $15, $16, $17, $18, $19,
+            $20, $21, $22, $23,
+            $24, $25, $26, $27, $28, $29, $30,
+            'draft', $31, $32, $33
         )
         RETURNING *
         "#,
     )
-    .bind(asset_id)
-    .bind(input.period_year)
-    .bind(input.period_month)
-    .bind(input.gross_rental_idr_cents)
-    .bind(input.currency_code.unwrap_or_else(|| "IDR".to_string()))
-    .bind(input.nights_available)
-    .bind(input.nights_booked)
-    .bind(input.expense_cleaning_idr_cents)
-    .bind(input.expense_maintenance_idr_cents)
-    .bind(input.expense_utilities_idr_cents)
-    .bind(input.expense_staff_idr_cents)
-    .bind(input.expense_pool_garden_idr_cents)
-    .bind(input.expense_pest_idr_cents)
-    .bind(input.expense_other_idr_cents)
-    .bind(input.ota_fees_idr_cents)
-    .bind(input.payment_fees_idr_cents)
-    .bind(input.refunds_idr_cents)
-    .bind(input.mgmt_fee_idr_cents)
-    .bind(totals.total_opex_idr_cents)
-    .bind(totals.net_rental_income_idr_cents)
-    .bind(totals.reserve_applied_idr_cents)
-    .bind(totals.platform_fee_idr_cents)
-    .bind(totals.withholding_idr_cents)
-    .bind(totals.distributable_idr_cents)
-    .bind(input.supersedes_id)
-    .bind(input.correction_reason)
-    .bind(dev.user.id)
+    .bind(asset_id)                                         // $1
+    .bind(input.period_year)                                // $2
+    .bind(input.period_month)                               // $3
+    .bind(input.gross_rental_idr_cents)                     // $4
+    .bind(input.currency_code.unwrap_or_else(|| "IDR".to_string())) // $5
+    .bind(input.nights_available)                           // $6
+    .bind(input.nights_booked)                              // $7
+    .bind(input.expense_cleaning_idr_cents)                 // $8
+    .bind(input.expense_maintenance_idr_cents)              // $9
+    .bind(input.expense_utilities_idr_cents)                // $10
+    .bind(input.expense_staff_idr_cents)                    // $11
+    .bind(input.expense_pool_garden_idr_cents)              // $12
+    .bind(input.expense_pest_idr_cents)                     // $13
+    .bind(input.expense_other_idr_cents)                    // $14
+    .bind(input.expense_property_tax_idr_cents)             // $15
+    .bind(input.expense_insurance_idr_cents)                // $16
+    .bind(input.expense_accounting_idr_cents)               // $17
+    .bind(input.expense_internet_idr_cents)                 // $18
+    .bind(input.expense_capex_idr_cents)                    // $19
+    .bind(input.ota_fees_idr_cents)                         // $20
+    .bind(input.payment_fees_idr_cents)                     // $21
+    .bind(input.refunds_idr_cents)                          // $22
+    .bind(input.mgmt_fee_idr_cents)                         // $23
+    .bind(totals.total_opex_idr_cents)                      // $24
+    .bind(totals.net_rental_income_idr_cents)               // $25
+    .bind(totals.reserve_applied_idr_cents)                 // $26
+    .bind(totals.platform_fee_idr_cents)                    // $27
+    .bind(totals.withholding_idr_cents)                     // $28
+    .bind(totals.distributable_idr_cents)                   // $29
+    .bind(input.mgmt_reported_distributable_idr_cents)      // $30
+    .bind(input.supersedes_id)                              // $31
+    .bind(input.correction_reason)                          // $32
+    .bind(dev.user.id)                                      // $33
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
@@ -189,51 +340,63 @@ pub async fn api_developer_villa_operations_update(
     let row: VillaOperationsRow = sqlx::query_as(
         r#"
         UPDATE villa_operations_log SET
-            gross_rental_idr_cents       = $2,
-            nights_available             = $3,
-            nights_booked                = $4,
-            expense_cleaning_idr_cents   = $5,
-            expense_maintenance_idr_cents= $6,
-            expense_utilities_idr_cents  = $7,
-            expense_staff_idr_cents      = $8,
-            expense_pool_garden_idr_cents= $9,
-            expense_pest_idr_cents       = $10,
-            expense_other_idr_cents      = $11,
-            ota_fees_idr_cents           = $12,
-            payment_fees_idr_cents       = $13,
-            refunds_idr_cents            = $14,
-            mgmt_fee_idr_cents           = $15,
-            total_opex_idr_cents         = $16,
-            net_rental_income_idr_cents  = $17,
-            reserve_applied_idr_cents    = $18,
-            platform_fee_idr_cents       = $19,
-            withholding_idr_cents        = $20,
-            distributable_idr_cents      = $21
+            gross_rental_idr_cents                   = $2,
+            nights_available                         = $3,
+            nights_booked                            = $4,
+            expense_cleaning_idr_cents               = $5,
+            expense_maintenance_idr_cents            = $6,
+            expense_utilities_idr_cents              = $7,
+            expense_staff_idr_cents                  = $8,
+            expense_pool_garden_idr_cents            = $9,
+            expense_pest_idr_cents                   = $10,
+            expense_other_idr_cents                  = $11,
+            expense_property_tax_idr_cents           = $12,
+            expense_insurance_idr_cents              = $13,
+            expense_accounting_idr_cents             = $14,
+            expense_internet_idr_cents               = $15,
+            expense_capex_idr_cents                  = $16,
+            ota_fees_idr_cents                       = $17,
+            payment_fees_idr_cents                   = $18,
+            refunds_idr_cents                        = $19,
+            mgmt_fee_idr_cents                       = $20,
+            total_opex_idr_cents                     = $21,
+            net_rental_income_idr_cents              = $22,
+            reserve_applied_idr_cents                = $23,
+            platform_fee_idr_cents                   = $24,
+            withholding_idr_cents                    = $25,
+            distributable_idr_cents                  = $26,
+            mgmt_reported_distributable_idr_cents    = $27
         WHERE id = $1 AND status = 'draft'
         RETURNING *
         "#,
     )
-    .bind(log_id)
-    .bind(input.gross_rental_idr_cents)
-    .bind(input.nights_available)
-    .bind(input.nights_booked)
-    .bind(input.expense_cleaning_idr_cents)
-    .bind(input.expense_maintenance_idr_cents)
-    .bind(input.expense_utilities_idr_cents)
-    .bind(input.expense_staff_idr_cents)
-    .bind(input.expense_pool_garden_idr_cents)
-    .bind(input.expense_pest_idr_cents)
-    .bind(input.expense_other_idr_cents)
-    .bind(input.ota_fees_idr_cents)
-    .bind(input.payment_fees_idr_cents)
-    .bind(input.refunds_idr_cents)
-    .bind(input.mgmt_fee_idr_cents)
-    .bind(totals.total_opex_idr_cents)
-    .bind(totals.net_rental_income_idr_cents)
-    .bind(totals.reserve_applied_idr_cents)
-    .bind(totals.platform_fee_idr_cents)
-    .bind(totals.withholding_idr_cents)
-    .bind(totals.distributable_idr_cents)
+    .bind(log_id)                                           // $1
+    .bind(input.gross_rental_idr_cents)                     // $2
+    .bind(input.nights_available)                           // $3
+    .bind(input.nights_booked)                              // $4
+    .bind(input.expense_cleaning_idr_cents)                 // $5
+    .bind(input.expense_maintenance_idr_cents)              // $6
+    .bind(input.expense_utilities_idr_cents)                // $7
+    .bind(input.expense_staff_idr_cents)                    // $8
+    .bind(input.expense_pool_garden_idr_cents)              // $9
+    .bind(input.expense_pest_idr_cents)                     // $10
+    .bind(input.expense_other_idr_cents)                    // $11
+    .bind(input.expense_property_tax_idr_cents)             // $12
+    .bind(input.expense_insurance_idr_cents)                // $13
+    .bind(input.expense_accounting_idr_cents)               // $14
+    .bind(input.expense_internet_idr_cents)                 // $15
+    .bind(input.expense_capex_idr_cents)                    // $16
+    .bind(input.ota_fees_idr_cents)                         // $17
+    .bind(input.payment_fees_idr_cents)                     // $18
+    .bind(input.refunds_idr_cents)                          // $19
+    .bind(input.mgmt_fee_idr_cents)                         // $20
+    .bind(totals.total_opex_idr_cents)                      // $21
+    .bind(totals.net_rental_income_idr_cents)               // $22
+    .bind(totals.reserve_applied_idr_cents)                 // $23
+    .bind(totals.platform_fee_idr_cents)                    // $24
+    .bind(totals.withholding_idr_cents)                     // $25
+    .bind(totals.distributable_idr_cents)                   // $26
+    .bind(input.mgmt_reported_distributable_idr_cents)      // $27
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;

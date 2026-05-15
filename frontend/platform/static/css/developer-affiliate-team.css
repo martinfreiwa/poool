@@ -1,0 +1,292 @@
+/* Developer Affiliate Team page — uses Design-System primitives
+ * (.ds-card, .ds-stat-card, .metric-card, .dev-assets-segmented).
+ * Only page-specific layout + table styling lives here.
+ */
+
+/* ── Page header ─────────────────────────────────────────────── */
+.dat-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.dat-page-header__title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary, #181D27);
+}
+.dat-page-header__subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+}
+.dat-page-header__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Content card (per-page content section) ─────────────────── */
+.dat-content-card {
+  padding: 20px 24px 24px;
+}
+.dat-section__intro {
+  margin-bottom: 16px;
+}
+.dat-section__title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+}
+.dat-section__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+}
+.dat-section__controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+.dat-filter-label {
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+}
+.dat-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--bg-default, #fff);
+  color: var(--text-primary, #181D27);
+}
+
+/* ── Tables ──────────────────────────────────────────────────── */
+.dat-table-wrap {
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 10px;
+  overflow-x: auto;
+  background: var(--bg-default, #fff);
+}
+.dat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.dat-table th,
+.dat-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle, #F1F2F4);
+  vertical-align: middle;
+  color: var(--text-primary, #181D27);
+}
+.dat-table th {
+  background: var(--bg-subtle, #FAFAFA);
+  color: var(--text-secondary, #717680);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.dat-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.dat-table tbody tr:hover {
+  background: var(--bg-subtle, #FAFAFA);
+}
+.dat-empty {
+  text-align: center;
+  color: var(--text-secondary, #717680);
+  padding: 24px 16px;
+  font-style: italic;
+}
+.dat-code {
+  background: var(--bg-subtle, #F4F4F5);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 12px;
+}
+
+/* ── Status pills (consistent with admin team page) ─────────── */
+.dat-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: capitalize;
+  background: #F1F2F4;
+  color: #535862;
+}
+.dat-status--active { background: #E6F4EA; color: #137333; }
+.dat-status--invited,
+.dat-status--pending_developer_approval { background: #FFF1E0; color: #C66D18; }
+.dat-status--qualified,
+.dat-status--paid { background: #E6F4EA; color: #137333; }
+.dat-status--under_holdback { background: #EEF1FF; color: #2B45B5; }
+.dat-status--disqualified,
+.dat-status--expired,
+.dat-status--removed { background: #FDE7E7; color: #B42318; }
+
+/* ── Action buttons in table cells ───────────────────────────── */
+.dat-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ds-btn--small {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+.ds-btn--danger {
+  background: var(--bg-default, #fff);
+  border: 1px solid #FDA29B;
+  color: #B42318;
+}
+.ds-btn--danger:hover {
+  background: #FFFBFA;
+}
+
+/* ── Settings form ───────────────────────────────────────────── */
+.dat-settings-form {
+  max-width: 560px;
+}
+.dat-form-row {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dat-form-row label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #181D27);
+}
+.dat-form-row__optional {
+  color: var(--text-secondary, #717680);
+  font-weight: 400;
+}
+.dat-form-row input {
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--bg-default, #fff);
+  color: var(--text-primary, #181D27);
+}
+.dat-form-row input:focus {
+  outline: 2px solid var(--accent-primary, #0000FF);
+  outline-offset: -1px;
+}
+.dat-form-row__hint {
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+.dat-form-row__hint code {
+  background: var(--bg-subtle, #F4F4F5);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+}
+.dat-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+/* ── Invite modal ────────────────────────────────────────────── */
+.dat-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dat-modal[hidden] {
+  display: none;
+}
+.dat-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 24, 33, 0.45);
+}
+.dat-modal__panel {
+  position: relative;
+  padding: 24px;
+  width: min(440px, calc(100% - 32px));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.16);
+}
+.dat-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.dat-modal__header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.dat-modal__close {
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-secondary, #717680);
+  cursor: pointer;
+  padding: 0 4px;
+}
+.dat-invite-preview {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-subtle, #F4F4F5);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.dat-invite-preview code {
+  display: block;
+  margin-top: 6px;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  word-break: break-all;
+  background: var(--bg-default, #fff);
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+}
+
+/* ── Sidebar active-state for new nav item ───────────────────── */
+.sidebar__nav-item--active > .sidebar__nav-item-content {
+  background: #EEF1FF;
+  border-radius: 8px;
+}
+.sidebar__nav-item--active .sidebar__nav-text {
+  color: var(--accent-primary, #0000FF);
+  font-weight: 600;
+}
+.sidebar__nav-item--active .nav-icon {
+  stroke: var(--accent-primary, #0000FF);
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .dat-page-header {
+    flex-direction: column;
+  }
+  .dat-section {
+    padding: 16px;
+  }
+  .dat-table th,
+  .dat-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}

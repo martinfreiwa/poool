@@ -1,0 +1,156 @@
+{% with title="Ranking | Developer", no_index=True, extra_css=['leaderboard', 'marketplace', 'developer-assets', 'developer-leaderboard-navbar', 'developer-ui', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'htmx-init', 'marketplace-search', 'poool-dropdown'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="developer-ranking-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div id="developer-ranking-page" class="marketplace-page">
+    <div id="developer-ranking-sidebar" class="marketplace-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main marketplace-main developer-lb-shell-main">
+      {% with dev_nav_title="Ranking", dev_nav_active="ranking" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
+      <div class="lb-container" style="padding-top:0">
+
+        <!-- 1. LOADING STATE (Skeleton) -->
+        <div id="lb-loading-layer" class="lb-loading-layer">
+          <div class="lb-skeleton-bento">
+            <div class="skeleton-box sk-bento-item"></div>
+            <div class="skeleton-box sk-bento-item"></div>
+            <div class="skeleton-box sk-bento-item"></div>
+          </div>
+          <div class="skeleton-box sk-table"></div>
+        </div>
+
+        <!-- 2. ERROR STATE -->
+        <div id="lb-error-layer" class="lb-error-layer">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <h3 class="state-title">Failed to load leaderboard</h3>
+          <p class="state-desc">We couldn't fetch the rankings. Please try again or contact support.</p>
+          <button class="retry-btn ds-btn ds-btn--primary" onclick="location.reload()">Retry Connection</button>
+        </div>
+
+        <!-- 3. EMPTY STATE -->
+        <div id="lb-empty-layer" class="lb-empty-layer">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 21h8M12 17v4M7 4h10M17 4v8a5 5 0 0 1-10 0V4" />
+          </svg>
+          <h3 class="state-title">Be the first on the leaderboard</h3>
+          <p class="state-desc">Start investing to earn your Investor Score and climb the rankings.</p>
+          <a href="/marketplace" class="retry-btn ds-btn ds-btn--primary">Explore Marketplace</a>
+        </div>
+
+        <!-- 4. CONTENT STATE -->
+        <div id="lb-content-layer" class="lb-content-layer hidden">
+
+          <div class="lb-inline-status hidden" id="lb-inline-status" role="status" aria-live="polite"></div>
+
+          <!-- My Rank summary card -->
+          <div id="lb-my-rank-card" class="lb-summary-grid">
+            <div class="lb-pulse-card" style="grid-column: 1 / -1; padding: 24px;">
+              <p class="lb-pulse-eyebrow">Your Standing</p>
+              <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;">
+                <span id="lb-my-rank" class="lb-spotlight-title" style="font-size: 40px;">#—</span>
+                <span id="lb-my-metric-label" class="lb-last-updated">Start investing to get ranked.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filters / Controls Row -->
+          <div class="lb-summary-grid" style="margin-top: 16px;">
+            <div class="lb-pulse-card" style="padding: 20px; gap: 12px;">
+              <p class="lb-pulse-eyebrow">Find Investor</p>
+              <input
+                id="lb-search-input"
+                type="search"
+                class="ds-input lb-search-card-control"
+                placeholder="Search by display name..."
+                aria-label="Search leaderboard by display name"
+                autocomplete="off"
+                oninput="debounceSearch(event)"
+              />
+              <div id="lb-tier-filter" class="lb-topbar-tabs" role="tablist" aria-label="Filter by tier">
+                <button type="button" class="lb-topbar-tab active" data-tier-id="" onclick="switchTier('', this)">All Tiers</button>
+                <button type="button" class="lb-topbar-tab" data-tier-id="1" onclick="switchTier('1', this)">Intro</button>
+                <button type="button" class="lb-topbar-tab" data-tier-id="2" onclick="switchTier('2', this)">Plus</button>
+                <button type="button" class="lb-topbar-tab" data-tier-id="3" onclick="switchTier('3', this)">Pro</button>
+                <button type="button" class="lb-topbar-tab" data-tier-id="4" onclick="switchTier('4', this)">Elite</button>
+                <button type="button" class="lb-topbar-tab" data-tier-id="5" onclick="switchTier('5', this)">Premium</button>
+              </div>
+            </div>
+            <div class="lb-pulse-card" style="padding: 20px; gap: 12px;">
+              <p class="lb-pulse-eyebrow">Visibility</p>
+              <div class="lb-visibility-row">
+                <input type="checkbox" id="lb-visibility-toggle" onchange="toggleVisibility(this)" />
+                <label id="lb-visibility-label" for="lb-visibility-toggle" style="cursor: pointer;">Hidden from public rankings</label>
+              </div>
+              <span id="lb-preference-status" class="lb-last-updated" aria-live="polite"></span>
+              <span id="lb-last-updated" class="lb-last-updated"></span>
+            </div>
+          </div>
+
+          <!-- Summary grid -->
+          <div id="lb-summary-grid" class="lb-summary-grid" style="margin-top: 16px;">
+            <div class="lb-bento-grid" id="lb-bento-grid" style="grid-column: 1 / -1;"></div>
+            <div class="lb-minor-grid" id="lb-minor-grid" style="grid-column: 1 / -1;"></div>
+          </div>
+
+          <!-- Rankings Ledger Table -->
+          <div class="lb-ledger-card">
+            <div class="lb-ledger-header">
+              <h2 class="lb-ledger-title">Global Tier Listings</h2>
+              <div class="lb-ledger-actions" style="display:flex;align-items:center;gap:12px;">
+                <span id="lb-total-participants" class="lb-ledger-title" style="opacity: 0.6;"></span>
+                <button id="lb-refresh-btn" type="button" class="ds-btn ds-btn--secondary ds-btn--sm" hidden
+                  onclick="adminRefreshLeaderboard(this)" aria-label="Refresh leaderboard scores (admin only)">
+                  Refresh now
+                </button>
+                <span id="lb-refresh-status" class="lb-last-updated" role="status" aria-live="polite"></span>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="lb-ledger-table" id="lb-rankings-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Entity</th>
+                    <th class="col-mix">Asset Mix</th>
+                    <th class="text-right" id="lb-table-metric-header">Holdings</th>
+                    <th class="text-right col-yield">Yield (ROI)</th>
+                    <th class="text-right col-status">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="lb-rankings-body"></tbody>
+              </table>
+            </div>
+            <div class="lb-ledger-footer">
+              <div class="lb-per-page">
+                <span>Rows per page:</span>
+                <select id="lb-per-page-select" class="ds-select lb-select-mini" onchange="changePerPage(this.value)">
+                  <option value="10" selected>10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="lb-pagination" id="lb-pagination-controls"></div>
+            </div>
+          </div>
+
+        </div><!-- /lb-content-layer -->
+      </div><!-- /lb-container -->
+    </main>
+  </div>
+
+  <script src="/static/js/leaderboard.js?v=8"></script>
+  <script src="/static/js/legal-enhancements.js"></script>
+</body>
+
+</html>

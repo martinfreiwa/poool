@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Developer Affiliate Teams | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Manage developer affiliate teams, members, and audit trail." />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-developer-affiliate-teams.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Developer Affiliate Teams</span>
+          </nav>
+        </div>
+      </header>
+
+      <section class="admin-content adat-page">
+        <header class="adat-header">
+          <h2>Developer Affiliate Teams</h2>
+          <p class="adat-subtitle">Verwaltung aller Team-Affiliate-Kontexte. Suspend / Resume / Terminate stoppen neue Attributions, historische Commissions bleiben unverändert.</p>
+        </header>
+
+        <!-- Status filter + KPI summary -->
+        <div class="adat-toolbar">
+          <div class="adat-filter">
+            <label for="adat-status-filter">Status</label>
+            <select id="adat-status-filter">
+              <option value="all">All</option>
+              <option value="active" selected>Active</option>
+              <option value="paused">Paused</option>
+              <option value="terminated">Terminated</option>
+            </select>
+          </div>
+          <div class="adat-kpis">
+            <span class="adat-kpi"><span class="adat-kpi__label">Teams:</span> <strong id="adat-kpi-count">—</strong></span>
+            <span class="adat-kpi"><span class="adat-kpi__label">Active members:</span> <strong id="adat-kpi-members">—</strong></span>
+            <span class="adat-kpi"><span class="adat-kpi__label">Lifetime commission:</span> <strong id="adat-kpi-lifetime">—</strong></span>
+          </div>
+        </div>
+
+        <!-- Teams table -->
+        <div class="adat-table-wrap">
+          <table class="adat-table" id="adat-teams-table">
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Developer</th>
+                <th>Status</th>
+                <th>Members</th>
+                <th>Pending</th>
+                <th>Payable</th>
+                <th>Lifetime</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adat-teams-tbody">
+              <tr><td colspan="9" class="adat-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Detail Drawer -->
+        <aside class="adat-drawer" id="adat-drawer" hidden>
+          <header class="adat-drawer__header">
+            <h3 id="adat-drawer-title">Team detail</h3>
+            <button type="button" class="adat-drawer__close" data-close-drawer aria-label="Close">×</button>
+          </header>
+          <div class="adat-drawer__body" id="adat-drawer-body">
+            Loading…
+          </div>
+        </aside>
+        <div class="adat-drawer__backdrop" id="adat-drawer-backdrop" hidden data-close-drawer></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-developer-affiliate-teams.js"></script>
+</body>
+
+</html>

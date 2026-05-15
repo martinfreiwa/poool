@@ -22,6 +22,9 @@ pub struct Circle {
     pub token_gate_asset_id: Option<Uuid>,
     pub token_gate_min_value_cents: Option<i64>,
     pub token_gate_asset_name: Option<String>,
+    // CO.2: optional custom banner image. NULL = default CSS background.
+    #[sqlx(default)]
+    pub banner_url: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -120,7 +123,8 @@ pub async fn get_my_circle(pool: &PgPool, user_id: Uuid) -> Result<Option<Circle
     Ok(circle)
 }
 
-/// Update circle name/description (owner only).
+/// Update circle name/description/banner (owner only). Pass `Some("")` for
+/// `banner_url` to clear it; pass `None` to leave the existing value untouched.
 pub async fn update_circle(
     pool: &PgPool,
     circle_id: Uuid,
@@ -128,6 +132,7 @@ pub async fn update_circle(
     name: Option<&str>,
     description: Option<&str>,
     emoji: Option<&str>,
+    banner_url: Option<&str>,
 ) -> Result<Circle, AppError> {
     // Verify ownership
     let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
@@ -141,11 +146,16 @@ pub async fn update_circle(
         ));
     }
 
+    // Convert "" → SQL NULL so owners can clear the banner; treat anything
+    // else as a literal value to set. None leaves the column alone.
+    let banner_arg: Option<Option<&str>> = banner_url.map(|s| if s.is_empty() { None } else { Some(s) });
+
     let circle = sqlx::query_as::<_, Circle>(
         r#"UPDATE circles SET
             name = COALESCE($2, name),
             description = COALESCE($3, description),
             avatar_emoji = COALESCE($4, avatar_emoji),
+            banner_url = CASE WHEN $5::BOOL THEN $6 ELSE banner_url END,
             updated_at = NOW()
            WHERE id = $1 RETURNING *"#,
     )
@@ -153,6 +163,8 @@ pub async fn update_circle(
     .bind(name)
     .bind(description)
     .bind(emoji)
+    .bind(banner_arg.is_some())
+    .bind(banner_arg.flatten())
     .fetch_one(pool)
     .await?;
 
@@ -410,6 +422,28 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
 
     // Award Gamification Challenge
     crate::community::challenges::increment_progress(pool, user_id, "join_circle", 1).await?;
+
+    // CO.5: auto-send a welcome notification to the new member so the
+    // first interaction with the circle is something concrete (not a
+    // "you joined" silence). Fire-and-forget — failure here must NOT
+    // unwind the join itself.
+    if let Ok(Some(name)) = sqlx::query_scalar::<_, String>("SELECT name FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await
+    {
+        let welcome = format!("Welcome to {}! Say hello in the circle feed.", name);
+        let _ = crate::community::notifications::notify_user(
+            pool,
+            user_id,
+            None,
+            "system_alert",
+            Some(circle_id),
+            &welcome,
+            Some("/community?tab=circle"),
+        )
+        .await;
+    }
 
     Ok(())
 }

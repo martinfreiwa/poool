@@ -33,6 +33,44 @@ fn build_display_name(
     }
 }
 
+/// W3.4: derive a portfolio "tier" from total invested capital. Pure
+/// function so we can compute it from any cents value (per-user batch sum
+/// or a single-user sidebar lookup).
+pub fn portfolio_tier_for_cents(cents: i64) -> Option<&'static str> {
+    if cents >= 10_000_000 { Some("Platinum") }       // ≥ $100k
+    else if cents >= 1_000_000 { Some("Gold") }       // ≥ $10k
+    else if cents >= 100_000 { Some("Silver") }       // ≥ $1k
+    else if cents > 0 { Some("Bronze") }
+    else { None }
+}
+
+/// W3.4: batch-resolve user_id → portfolio tier label. Single core-DB
+/// query that sums purchase_value_cents per user. Skips users with zero
+/// holdings so the resulting map only contains positive answers.
+pub async fn get_portfolio_tiers_batch(
+    core_pool: &PgPool,
+    user_ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, String>, AppError> {
+    if user_ids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let rows: Vec<(Uuid, i64)> = sqlx::query_as(
+        "SELECT user_id, COALESCE(SUM(purchase_value_cents), 0)::BIGINT
+         FROM investments WHERE user_id = ANY($1)
+         GROUP BY user_id",
+    )
+    .bind(user_ids)
+    .fetch_all(core_pool)
+    .await?;
+    let mut out = std::collections::HashMap::with_capacity(rows.len());
+    for (uid, total) in rows {
+        if let Some(tier) = portfolio_tier_for_cents(total) {
+            out.insert(uid, tier.to_string());
+        }
+    }
+    Ok(out)
+}
+
 /// Fetches basic user information (Name + Avatar) from the Core DB.
 /// Used to enrich community posts and comments on the fly.
 /// FIX-F9: Caches in Redis for 5 minutes.

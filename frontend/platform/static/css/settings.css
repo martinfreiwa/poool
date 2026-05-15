@@ -1508,6 +1508,43 @@
 .settings-badge--info    { background: #EFF4FF; color: #1849A9; }
 .settings-badge--muted   { background: #F2F4F7; color: #475467; }
 
+/* ----- Role badges -------------------------------------------------------- */
+.settings-roles-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 0;
+}
+.settings-role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+.settings-role-badge--investor { background: #EFF4FF; color: #1849A9; }
+.settings-role-badge--developer { background: #ECFDF3; color: #027A48; }
+
+.settings-role-apply-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    background: transparent;
+    color: var(--btn-primary-bg, #0000FF);
+    border: 1px solid var(--btn-primary-bg, #0000FF);
+    text-decoration: none;
+    transition: background .12s, color .12s;
+}
+.settings-role-apply-btn:hover {
+    background: #EFF4FF;
+}
+
 /* ----- OAuth rows --------------------------------------------------------- */
 .settings-oauth-row {
     display: grid;

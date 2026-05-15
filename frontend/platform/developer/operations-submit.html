@@ -1,204 +1,325 @@
-{% with title="Submit Monthly Operations | Developer", no_index=True, extra_css=['leaderboard', 'marketplace', 'developer-assets', 'developer-leaderboard-navbar', 'developer-ui', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-operations-submit'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Submit Monthly Operations | Developer", no_index=True, extra_css=['leaderboard', 'marketplace', 'developer-assets', 'developer-leaderboard-navbar', 'developer-ui', 'poool-icon-custom', 'developer-operations-submit'], extra_js=['developer-operations-submit'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-operations-submit-body" class="fouc-guard">
-  <style>
-    /* Layout only — visual language stays in the ds-* system. */
-    .ops-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
-  </style>
 
-  {% include 'components/mobile-menu.html' %}
+  <!-- Legacy breadcrumb (JS writes here; kept hidden for compatibility) -->
+  <p id="dop-breadcrumb" style="display:none"></p>
 
-  <div id="developer-operations-submit-page" class="marketplace-page">
-    <div id="developer-operations-submit-sidebar" class="marketplace-sidebar">
-      {% include 'components/sidebar.html' %}
+  <!-- ── Topbar ── -->
+  <header class="dops-topbar">
+    <div class="dops-topbar__left">
+      <a href="/developer/operations" class="dops-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Operations
+      </a>
+      <span class="dops-sep">/</span>
+      <span class="dops-title" id="dops-asset-name">Loading…</span>
+      <span class="dops-period-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span id="dops-period-text">— / —</span>
+      </span>
+      <span id="dop-status" class="dops-status-badge"></span>
     </div>
+    <div class="dops-topbar__right">
+      <span class="dops-error-bar" id="dop-error"></span>
+      <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="btn-save-draft">Save draft</button>
+      <button type="button" class="ds-btn ds-btn--primary ds-btn--sm" id="btn-submit">Submit for approval</button>
+    </div>
+  </header>
 
-    <main class="ds-main marketplace-main developer-lb-shell-main">
-      {% with dev_nav_title="Submit Monthly Operations", dev_nav_active="operations" %}
-      {% include "components/developer-topbar.html" %}
-      {% endwith %}
+  <!-- ── Split shell ── -->
+  <div class="dops-shell">
 
-      <div class="admin-content">
-        <nav class="admin-breadcrumbs">
-          <a href="/developer/operations">Operations</a>
-          <span class="separator">›</span>
-          <span class="current">Submit Monthly Operations</span>
-        </nav>
+    <!-- Left: scrollable form column -->
+    <div class="dops-form-col">
+      <form id="dop-form" novalidate>
 
-        <p id="dop-breadcrumb" class="ds-text-caption ds-text--muted ds-mb-16"></p>
-
-        <div id="dop-status" class="ds-flex ds-items-center ds-gap-8 ds-mb-16" style="display: none;"></div>
-
-        <form id="dop-form" novalidate>
-          <div class="ops-grid">
-            <section class="ds-card">
-              <div class="ds-card__header">
-                <h2 class="ds-card__title">Rental &amp; occupancy</h2>
-              </div>
-              <div class="ds-card__body ds-flex ds-flex-col ds-gap-16">
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-gross-rental">Gross rental (IDR cents)</label>
-                  <input class="ds-input" id="dop-gross-rental" type="number" name="gross_rental_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-nights-available">Nights available</label>
-                  <input class="ds-input" id="dop-nights-available" type="number" name="nights_available" min="0" max="31" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-nights-booked">Nights booked</label>
-                  <input class="ds-input" id="dop-nights-booked" type="number" name="nights_booked" min="0" max="31" step="1" />
-                </div>
-              </div>
-            </section>
-
-            <section class="ds-card">
-              <div class="ds-card__header">
-                <div>
-                  <h2 class="ds-card__title">Operating expenses</h2>
-                  <p class="ds-card__subtitle">All amounts in IDR cents.</p>
-                </div>
-              </div>
-              <div class="ds-card__body ds-flex ds-flex-col ds-gap-16">
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-expense-cleaning">Cleaning</label>
-                  <input class="ds-input" id="dop-expense-cleaning" type="number" name="expense_cleaning_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-expense-maintenance">Maintenance</label>
-                  <input class="ds-input" id="dop-expense-maintenance" type="number" name="expense_maintenance_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-expense-utilities">Utilities</label>
-                  <input class="ds-input" id="dop-expense-utilities" type="number" name="expense_utilities_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-expense-staff">Staff &amp; security</label>
-                  <input class="ds-input" id="dop-expense-staff" type="number" name="expense_staff_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-expense-pool-garden">Pool &amp; garden</label>
-                  <input class="ds-input" id="dop-expense-pool-garden" type="number" name="expense_pool_garden_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-expense-pest">Pest control</label>
-                  <input class="ds-input" id="dop-expense-pest" type="number" name="expense_pest_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-expense-other">Other</label>
-                  <input class="ds-input" id="dop-expense-other" type="number" name="expense_other_idr_cents" min="0" step="1" />
-                </div>
-              </div>
-            </section>
-
-            <section class="ds-card">
-              <div class="ds-card__header">
-                <div>
-                  <h2 class="ds-card__title">Adjustments &amp; fees</h2>
-                  <p class="ds-card__subtitle">All amounts in IDR cents.</p>
-                </div>
-              </div>
-              <div class="ds-card__body ds-flex ds-flex-col ds-gap-16">
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-ota-fees">OTA fees</label>
-                  <input class="ds-input" id="dop-ota-fees" type="number" name="ota_fees_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-payment-fees">Payment fees</label>
-                  <input class="ds-input" id="dop-payment-fees" type="number" name="payment_fees_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-refunds">Refunds</label>
-                  <input class="ds-input" id="dop-refunds" type="number" name="refunds_idr_cents" min="0" step="1" />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-mgmt-fee">Management fee paid</label>
-                  <input class="ds-input" id="dop-mgmt-fee" type="number" name="mgmt_fee_idr_cents" min="0" step="1" />
-                </div>
-              </div>
-            </section>
-
-            <section class="ds-card ds-card--elevated">
-              <div class="ds-card__header">
-                <div>
-                  <h2 class="ds-card__title">Computed preview</h2>
-                  <p class="ds-card__subtitle">Read-only — the server is the authority on publish.</p>
-                </div>
-              </div>
-              <div class="ds-card__body ds-flex ds-flex-col ds-gap-16">
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-occupancy">Occupancy</label>
-                  <input class="ds-input" id="dop-pv-occupancy" readonly />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-adr">ADR (IDR cents)</label>
-                  <input class="ds-input" id="dop-pv-adr" readonly />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-opex">Total OpEx</label>
-                  <input class="ds-input" id="dop-pv-opex" readonly />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-net">Net rental income</label>
-                  <input class="ds-input" id="dop-pv-net" readonly />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-reserve">Reserve applied (admin config)</label>
-                  <input class="ds-input" id="dop-pv-reserve" readonly />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-platform">Platform fee (admin config)</label>
-                  <input class="ds-input" id="dop-pv-platform" readonly />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-withholding">Withholding (admin config)</label>
-                  <input class="ds-input" id="dop-pv-withholding" readonly />
-                </div>
-                <div class="ds-form-group">
-                  <label class="ds-form-label" for="dop-pv-distributable">Distributable (estimate)</label>
-                  <input class="ds-input" id="dop-pv-distributable" readonly />
-                </div>
-              </div>
-            </section>
+        <!-- § 1  Rental & Occupancy -->
+        <div class="dops-section">
+          <div class="dops-section-head">
+            <div class="dops-section-num">1</div>
+            <div class="dops-section-head__text">
+              <div class="dops-section-title">Rental &amp; occupancy</div>
+              <div class="dops-section-sub">All amounts in IDR cents</div>
+            </div>
           </div>
-
-          <div class="ds-flex ds-gap-12 ds-mt-24">
-            <button type="button" class="ds-btn ds-btn--secondary" id="btn-save-draft">Save draft</button>
-            <button type="button" class="ds-btn ds-btn--primary" id="btn-submit">Submit for approval</button>
-          </div>
-          <div class="ds-form-error" id="dop-error"></div>
-        </form>
-
-        <section class="ds-card ds-mt-24" id="dop-docs-section" style="display: none;">
-          <div class="ds-card__header">
-            <h2 class="ds-card__title">Period documents — receipts, invoices, statements</h2>
-          </div>
-          <div class="ds-card__body">
-            <div id="dop-docs-list" class="ds-mb-16"></div>
-            <div class="ds-flex ds-gap-16 ds-flex-wrap">
-              <div class="ds-form-group ds-flex-1">
-                <label class="ds-form-label" for="dop-doc-type">Document type</label>
-                <select class="ds-select" id="dop-doc-type">
-                  <option value="receipt">Receipt</option>
-                  <option value="invoice">Invoice</option>
-                  <option value="bank_statement">Bank statement</option>
-                  <option value="payout_statement">Payout statement</option>
-                  <option value="other">Other</option>
-                </select>
+          <div class="dops-section-body">
+            <div class="ds-form-group">
+              <label class="ds-form-label" for="dop-gross-rental">Gross rental (IDR cents)</label>
+              <input class="ds-input" id="dop-gross-rental" type="text" inputmode="numeric" name="gross_rental_idr_cents" placeholder="Rp 0" />
+            </div>
+            <div class="dops-grid-2">
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-nights-available">Nights available</label>
+                <input class="ds-input" id="dop-nights-available" type="text" inputmode="numeric" name="nights_available" placeholder="0" data-nocurrency />
               </div>
-              <div class="ds-form-group ds-flex-1">
-                <label class="ds-form-label" for="dop-doc-file">File (PDF or image, max 20 MB)</label>
-                <input class="ds-input" type="file" id="dop-doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-nights-booked">Nights booked</label>
+                <input class="ds-input" id="dop-nights-booked" type="text" inputmode="numeric" name="nights_booked" placeholder="0" data-nocurrency />
               </div>
             </div>
-            <div class="ds-mt-16">
-              <button type="button" class="ds-btn ds-btn--primary" id="btn-upload-doc">Upload &amp; link</button>
-            </div>
-            <div class="ds-form-error" id="dop-docs-error"></div>
           </div>
-        </section>
+        </div>
+
+        <!-- § 2  Operating Expenses -->
+        <div class="dops-section">
+          <div class="dops-section-head">
+            <div class="dops-section-num">2</div>
+            <div class="dops-section-head__text">
+              <div class="dops-section-title">Operating expenses</div>
+              <div class="dops-section-sub">All amounts in IDR cents</div>
+            </div>
+          </div>
+          <div class="dops-section-body">
+            <div class="dops-grid-2">
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-cleaning">Cleaning</label>
+                <input class="ds-input" id="dop-expense-cleaning" type="text" inputmode="numeric" name="expense_cleaning_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-maintenance">Maintenance</label>
+                <input class="ds-input" id="dop-expense-maintenance" type="text" inputmode="numeric" name="expense_maintenance_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-utilities">Utilities</label>
+                <input class="ds-input" id="dop-expense-utilities" type="text" inputmode="numeric" name="expense_utilities_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-staff">Staff &amp; security</label>
+                <input class="ds-input" id="dop-expense-staff" type="text" inputmode="numeric" name="expense_staff_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-pool-garden">Pool &amp; garden</label>
+                <input class="ds-input" id="dop-expense-pool-garden" type="text" inputmode="numeric" name="expense_pool_garden_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-pest">Pest control</label>
+                <input class="ds-input" id="dop-expense-pest" type="text" inputmode="numeric" name="expense_pest_idr_cents" placeholder="Rp 0" />
+              </div>
+            </div>
+
+            <div class="dops-grid-2">
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-property-tax">Property tax / PBB</label>
+                <input class="ds-input" id="dop-expense-property-tax" type="text" inputmode="numeric" name="expense_property_tax_idr_cents" placeholder="Rp 0" />
+                <p class="ds-form-hint">Pajak Bumi dan Bangunan — amortize annual bill monthly</p>
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-insurance">Insurance</label>
+                <input class="ds-input" id="dop-expense-insurance" type="text" inputmode="numeric" name="expense_insurance_idr_cents" placeholder="Rp 0" />
+                <p class="ds-form-hint">Fire, liability &amp; contents — monthly portion of annual premium</p>
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-accounting">Accounting &amp; legal</label>
+                <input class="ds-input" id="dop-expense-accounting" type="text" inputmode="numeric" name="expense_accounting_idr_cents" placeholder="Rp 0" />
+                <p class="ds-form-hint">Notary, audit, accountant fees — amortize annually</p>
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-expense-internet">Internet &amp; streaming</label>
+                <input class="ds-input" id="dop-expense-internet" type="text" inputmode="numeric" name="expense_internet_idr_cents" placeholder="Rp 0" />
+                <p class="ds-form-hint">WiFi, Netflix, TV subscriptions for guests</p>
+              </div>
+            </div>
+
+            <!-- Custom expense rows (JS-managed) -->
+            <div id="dops-custom-expenses-list" class="dops-custom-expenses"></div>
+
+            <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm dops-add-expense-btn" id="btn-add-expense">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add custom expense
+            </button>
+
+            <div class="ds-form-group">
+              <label class="ds-form-label" for="dop-expense-other">Other (miscellaneous)</label>
+              <input class="ds-input" id="dop-expense-other" type="text" inputmode="numeric" name="expense_other_idr_cents" placeholder="Rp 0" />
+            </div>
+
+            <div class="ds-form-group" style="background:var(--ds-surface-raised,#F9FAFB);border:1px solid var(--ds-border,#E5E7EB);border-radius:8px;padding:14px 16px;">
+              <div class="dops-label-row">
+                <label class="ds-form-label" for="dop-expense-capex" style="margin:0;">Renovation / refurbishment</label>
+                <span class="dops-label-opt" style="background:#FEF3C7;color:#92400E;font-weight:600;">CapEx · excluded from yield</span>
+              </div>
+              <input class="ds-input" id="dop-expense-capex" type="text" inputmode="numeric" name="expense_capex_idr_cents" placeholder="Rp 0" style="margin-top:8px;" />
+              <p class="ds-form-hint">One-time capital spend this period. Tracked separately — does not reduce the distributable amount reported to investors.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- § 3  Adjustments & Fees -->
+        <div class="dops-section">
+          <div class="dops-section-head">
+            <div class="dops-section-num">3</div>
+            <div class="dops-section-head__text">
+              <div class="dops-section-title">Adjustments &amp; fees</div>
+              <div class="dops-section-sub">All amounts in IDR cents</div>
+            </div>
+          </div>
+          <div class="dops-section-body">
+            <div class="dops-grid-2">
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-ota-fees">OTA fees</label>
+                <input class="ds-input" id="dop-ota-fees" type="text" inputmode="numeric" name="ota_fees_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-payment-fees">Payment fees</label>
+                <input class="ds-input" id="dop-payment-fees" type="text" inputmode="numeric" name="payment_fees_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-refunds">Refunds</label>
+                <input class="ds-input" id="dop-refunds" type="text" inputmode="numeric" name="refunds_idr_cents" placeholder="Rp 0" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label" for="dop-mgmt-fee">Management fee paid</label>
+                <input class="ds-input" id="dop-mgmt-fee" type="text" inputmode="numeric" name="mgmt_fee_idr_cents" placeholder="Rp 0" />
+              </div>
+            </div>
+            <div class="ds-form-group">
+              <div class="dops-label-row">
+                <label class="ds-form-label" for="dop-mgmt-reported-distributable">Actual amount transferred to SPV (IDR cents)</label>
+                <span class="dops-label-opt">optional</span>
+              </div>
+              <input class="ds-input" id="dop-mgmt-reported-distributable" type="text" inputmode="numeric" name="mgmt_reported_distributable_idr_cents" placeholder="Management company's reported transfer" />
+              <p class="ds-form-hint">PDF §2: "Distributable property amount". Used by admin to reconcile against POOOL's calculated distributable.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- § 4  Supporting Documents -->
+        <div class="dops-section" id="dop-docs-section">
+          <div class="dops-section-head">
+            <div class="dops-section-num">4</div>
+            <div class="dops-section-head__text">
+              <div class="dops-section-title">Supporting documents</div>
+              <div class="dops-section-sub">Receipts, invoices, bank statements, payout statements</div>
+            </div>
+          </div>
+          <div class="dops-section-body">
+
+            <!-- Locked state: shown before first save -->
+            <div id="dop-docs-locked" class="dops-docs-locked">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              <p>Save as draft first to attach supporting documents.</p>
+              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="btn-save-draft-docs">Save draft</button>
+            </div>
+
+            <!-- Upload form: shown once logId exists -->
+            <div id="dop-docs-upload-form" style="display:none">
+              <!-- Attached documents -->
+              <div id="dop-docs-list" class="dops-docs-list"></div>
+
+              <!-- Compact shared dropzone -->
+              <label class="dops-dropzone" id="dop-dropzone">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242"/>
+                  <path d="M12 12v9"/><path d="M16 16l-4-4-4 4"/>
+                </svg>
+                <span>Drop files here &nbsp;·&nbsp; <strong>click to browse</strong></span>
+                <span class="dops-dropzone__hint">PDF · PNG · JPG · WEBP · max 20 MB</span>
+                <input type="file" id="dop-doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple />
+              </label>
+
+              <!-- Pending queue (rows created by JS) -->
+              <div id="dops-upload-queue" class="dops-upload-queue"></div>
+
+              <div class="dops-upload-actions">
+                <button type="button" class="ds-btn ds-btn--primary ds-btn--sm" id="btn-upload-all" style="display:none">
+                  Upload document
+                </button>
+              </div>
+              <div class="ds-form-error" id="dop-docs-error"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Hidden computed preview inputs (JS compatibility) -->
+        <input type="hidden" id="dop-pv-occupancy" />
+        <input type="hidden" id="dop-pv-adr" />
+        <input type="hidden" id="dop-pv-opex" />
+        <input type="hidden" id="dop-pv-net" />
+        <input type="hidden" id="dop-pv-reserve" />
+        <input type="hidden" id="dop-pv-platform" />
+        <input type="hidden" id="dop-pv-withholding" />
+        <input type="hidden" id="dop-pv-distributable" />
+
+      </form>
+    </div><!-- /.dops-form-col -->
+
+    <!-- Right: live summary panel -->
+    <aside class="dops-summary-col">
+
+      <!-- Hero: distributable + occupancy -->
+      <div class="dops-sum-hero">
+        <div class="dops-sum-hero__eyebrow">
+          <span class="dops-sum-hero__label">Live estimate</span>
+          <span class="dops-sum-hero__sub">Updates as you type · IDR</span>
+        </div>
+        <div class="dops-sum-hero__amount" id="dops-distrib-amount">0</div>
+        <div class="dops-sum-hero__hint">Distributable · before investor split</div>
+
+        <!-- Occupancy ring -->
+        <div class="dops-occ">
+          <svg class="dops-occ__ring" viewBox="0 0 44 44" fill="none">
+            <circle cx="22" cy="22" r="18" stroke="var(--card-border-color,#E5E7EB)" stroke-width="4"/>
+            <circle cx="22" cy="22" r="18" stroke="var(--btn-primary-bg,#0000FF)" stroke-width="4"
+              stroke-linecap="round"
+              stroke-dasharray="113.1" stroke-dashoffset="113.1"
+              transform="rotate(-90 22 22)"
+              id="dops-occ-ring-circle"
+              style="transition:stroke-dashoffset 0.3s ease"/>
+          </svg>
+          <div>
+            <div class="dops-occ__pct" id="dops-occ-pct">0.0%</div>
+            <div class="dops-occ__label">Occupancy rate</div>
+          </div>
+        </div>
       </div>
-    </main>
-  </div>
+
+      <!-- Metric rows -->
+      <div class="dops-sum-metrics">
+        <div class="dops-metric-section">Revenue</div>
+        <div class="dops-metric">
+          <span class="dops-metric__key">Gross rental</span>
+          <span class="dops-metric__val" id="dops-mv-gross">0</span>
+        </div>
+        <div class="dops-metric">
+          <span class="dops-metric__key">ADR (per booked night)</span>
+          <span class="dops-metric__val" id="dops-mv-adr">0</span>
+        </div>
+
+        <div class="dops-metric-section">Deductions</div>
+        <div class="dops-metric">
+          <span class="dops-metric__key">Total OpEx</span>
+          <span class="dops-metric__val dops-metric__val--neg" id="dops-mv-opex">0</span>
+        </div>
+        <div class="dops-metric" id="dops-mv-custom-row" style="display:none">
+          <span class="dops-metric__key dops-metric__key--indent">Custom expenses</span>
+          <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-custom">0</span>
+        </div>
+        <div class="dops-metric">
+          <span class="dops-metric__key">Net rental income</span>
+          <span class="dops-metric__val" id="dops-mv-net">0</span>
+        </div>
+
+        <div class="dops-metric-section">Fees &amp; reserves</div>
+        <div class="dops-metric">
+          <span class="dops-metric__key">Reserve</span>
+          <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-reserve">0</span>
+        </div>
+        <div class="dops-metric">
+          <span class="dops-metric__key">Platform fee</span>
+          <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-platform">0</span>
+        </div>
+        <div class="dops-metric">
+          <span class="dops-metric__key">Withholding tax</span>
+          <span class="dops-metric__val dops-metric__val--muted" id="dops-mv-withholding">0</span>
+        </div>
+      </div>
+
+    </aside><!-- /.dops-summary-col -->
+
+  </div><!-- /.dops-shell -->
+
 </body>
 
 </html>

@@ -94,7 +94,7 @@
         <div class="community-composer__toolbar" role="toolbar" aria-label="Add to post">
           <span class="community-composer__toolbar-label">Add to your post</span>
           <div class="community-composer__toolbar-actions">
-            <input type="file" id="post-image-file-input" class="ds-sr-only" accept="image/jpeg,image/png,image/webp" onchange="uploadPostImage(event)">
+            <input type="file" id="post-image-file-input" class="ds-sr-only" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="uploadPostImage(event)">
             <button type="button" class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm" onclick="document.getElementById('post-image-file-input').click()" aria-label="Add photo">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
@@ -119,6 +119,20 @@
         </div>
 
         <div class="ds-helper-text community-composer__upload-status" id="post-image-uploading" hidden>Uploading image...</div>
+
+        <!-- CO.7 — optional schedule. Toggle reveals a datetime-local input. -->
+        <div style="display:flex; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap;">
+          <button type="button" id="post-schedule-toggle" class="ds-btn ds-btn--ghost ds-btn--sm"
+                  onclick="window.toggleSchedulePicker && window.toggleSchedulePicker()"
+                  aria-pressed="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Schedule
+          </button>
+          <input type="datetime-local" id="post-schedule-input" class="ds-input"
+                 hidden style="flex:1; min-width:180px;">
+          <button type="button" id="post-schedule-clear" class="ds-btn ds-btn--ghost ds-btn--sm"
+                  onclick="window.clearScheduledPost && window.clearScheduledPost()" hidden>Clear</button>
+        </div>
 
         <button type="button" class="ds-btn ds-btn--primary ds-btn--full" id="submit-post-btn" onclick="submitUserPost()">Post</button>
       </div>
@@ -187,6 +201,58 @@
           <div class="community-loading-state community-loading-state--inline">Loading trending tags...</div>
         </div>
       </div>
+
+      <!-- UX.8: Trending Posts (recommended for you) -->
+      <div class="community-trending-card" id="trending-posts-widget">
+        <div class="trending-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+          </svg>
+          Hot Posts This Week
+        </div>
+        <div id="trending-posts-container">
+          <div class="community-loading-state community-loading-state--inline">Loading…</div>
+        </div>
+      </div>
+      <script>
+        // UX.8: hot-posts widget. Sidebar-only injection so the main feed
+        // ranking stays "by date" — surfacing trending content here gives
+        // users a "what should I read first?" entry point.
+        (function () {
+          const container = document.getElementById('trending-posts-container');
+          if (!container) return;
+          fetch('/api/community/trending?limit=3', { credentials: 'same-origin' })
+            .then(r => r.ok ? r.json() : { posts: [] })
+            .then(data => {
+              const posts = Array.isArray(data.posts) ? data.posts : [];
+              if (posts.length === 0) {
+                container.innerHTML = '<div class="community-loading-state community-loading-state--inline">No hot posts yet.</div>';
+                return;
+              }
+              container.replaceChildren();
+              posts.forEach((p) => {
+                const a = document.createElement('a');
+                a.href = '/community/post/' + p.id;
+                a.style.cssText = 'display:block; padding:10px 0; border-bottom:1px solid var(--ds-border,#E5E7EB); text-decoration:none; color:inherit;';
+                const author = document.createElement('div');
+                author.style.cssText = 'font-size:12px; font-weight:600; color:var(--ds-text-secondary,#475467);';
+                author.textContent = p.author_name || 'Anonymous';
+                const snippet = document.createElement('div');
+                snippet.style.cssText = 'font-size:13px; margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;';
+                snippet.textContent = p.content || '';
+                const stats = document.createElement('div');
+                stats.style.cssText = 'font-size:11px; color:var(--ds-text-secondary,#475467); margin-top:4px;';
+                stats.textContent = `🔥 ${p.reaction_count || 0} · 💬 ${p.comment_count || 0}`;
+                a.append(author, snippet, stats);
+                container.appendChild(a);
+              });
+            })
+            .catch(() => {
+              container.innerHTML = '<div class="community-loading-state community-loading-state--inline">Failed to load.</div>';
+            });
+        })();
+      </script>
 
       <!-- Upcoming AMA -->
       <div class="community-ama-card" id="sidebar-ama-widget" style="display: none;">

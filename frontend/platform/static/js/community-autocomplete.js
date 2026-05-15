@@ -13,6 +13,7 @@
   const TRIGGERS = {
     "@": { endpoint: "/api/community/mentions/suggest", labelKey: "display_name", insertPrefix: "@" },
     "#": { endpoint: "/api/community/hashtags/suggest",  labelKey: "tag",          insertPrefix: "#" },
+    "$": { endpoint: "/api/community/assets/suggest",    labelKey: "slug",         insertPrefix: "$" },
   };
 
   function debounce(fn, wait) {
@@ -138,6 +139,13 @@
             label: `#${h.tag}`,
             value: h.tag,
             subtitle: h.post_count ? `${h.post_count} posts` : "",
+          }));
+        }
+        if (info.char === "$") {
+          return (data.assets || []).map((a) => ({
+            label: `$${a.slug}`,
+            value: a.slug,
+            subtitle: a.title || a.asset_type || "",
           }));
         }
         return [];

@@ -2,11 +2,12 @@
 and grow together.",
 extra_css=['community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed',
 'community-circles', 'community-challenges', 'community-ban-appeal', 'community-autocomplete', 'community-mobile-tabs',
-'community-dms'] %}{%
+'community-dms', 'pwa-install'] %}{%
 include
 "components/head.html" %}{% endwith %}
 
-
+<link rel="manifest" href="/static/manifest.webmanifest">
+<meta name="theme-color" content="#03FF88">
 
 
 
@@ -108,6 +109,9 @@ include
               }
               if (tab === 'leaderboard') {
                 window.dispatchEvent(new Event('load-global-leaderboard'));
+              }
+              if (tab === 'members') {
+                window.dispatchEvent(new Event('load-community-members'));
               }
               if (tab === 'dms' && typeof window.loadDmThreads === 'function') {
                 window.loadDmThreads();
@@ -541,14 +545,13 @@ include
                 prefs: {},
                 prefsStatus: '',
                 prefsKinds: [
-                  { key: 'mention',      label: 'Mentions' },
-                  { key: 'new_follower', label: 'New followers' },
-                  { key: 'post_like',    label: 'Reactions on your posts' },
-                  { key: 'post_comment', label: 'Comments on your posts' },
-                  { key: 'announcement', label: 'Platform announcements' },
-                  { key: 'reward',       label: 'Rewards' },
-                  { key: 'level_up',     label: 'Level-ups' },
-                  { key: 'system',       label: 'System messages' },
+                  { key: 'mention',             label: 'Mentions' },
+                  { key: 'new_follower',        label: 'New followers' },
+                  { key: 'post_like',           label: 'Reactions on your posts' },
+                  { key: 'comment_reply',       label: 'Comments / replies on your posts' },
+                  { key: 'ama_answer',          label: 'AMA answers' },
+                  { key: 'challenge_completed', label: 'Challenge milestones' },
+                  { key: 'level_up',            label: 'Level-ups' },
                 ],
 
                 async init() {
@@ -615,6 +618,7 @@ include
                       }
                       this.notifications = [...this.notifications, ...data.notifications];
                       this.offset += this.limit;
+                      this.syncAppBadge();
                     }
                   } catch (e) {
                     console.error('Failed to load notifications', e);
@@ -623,10 +627,25 @@ include
                   }
                 },
 
+                // MOB.3: mirror unread count onto the OS app icon when
+                // installed as a PWA. Falls back to no-op on browsers that
+                // don't expose the Badging API.
+                syncAppBadge() {
+                  const unread = this.notifications.filter(n => !n.is_read).length;
+                  try {
+                    if (unread > 0 && navigator.setAppBadge) {
+                      navigator.setAppBadge(unread).catch(() => {});
+                    } else if (navigator.clearAppBadge) {
+                      navigator.clearAppBadge().catch(() => {});
+                    }
+                  } catch (_) { /* unsupported */ }
+                },
+
                 async markAllAsRead() {
                   try {
                     await fetch('/api/community/notifications/read-all', { method: 'POST', credentials: 'same-origin' });
                     this.notifications.forEach(n => n.is_read = true);
+                    this.syncAppBadge();
                     window.dispatchEvent(new Event('notifications-read'));
                   } catch (e) {
                     console.error(e);
@@ -638,6 +657,7 @@ include
                     try {
                       await fetch(`/api/community/notifications/${notif.id}/read`, { method: 'POST', credentials: 'same-origin' });
                       notif.is_read = true;
+                      this.syncAppBadge();
                       window.dispatchEvent(new Event('notifications-read'));
                     } catch (e) {
                       console.error(e);
@@ -788,6 +808,117 @@ include
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
+             TAB: MEMBERS (M6-FEAT.4 — searchable directory)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="community-members-tab" class="community-tab-panel hidden" x-data="memberDirectory()" x-init="bind()">
+          <div class="community-members">
+            <div class="community-members__header">
+              <h2 class="ds-text-xl">Member Directory</h2>
+              <p class="ds-text-body">Find investors by name, level, or activity.</p>
+            </div>
+
+            <div class="community-members__controls" style="display:flex; gap:8px; align-items:center; margin:12px 0;">
+              <input type="text" x-model="query" @input.debounce.250ms="reload()"
+                placeholder="Search by name…" class="ds-input" style="flex:1;">
+              <select x-model="sort" @change="reload()" class="ds-input" aria-label="Sort">
+                <option value="xp">Top by XP</option>
+                <option value="posts">Most posts</option>
+                <option value="recent">Newest members</option>
+              </select>
+            </div>
+
+            <div x-show="loading" class="community-loading-state">Loading members…</div>
+            <div x-show="!loading && error" class="ds-card community-members__error">
+              <p class="ds-text-subtitle" x-text="error"></p>
+              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" @click="reload()">Retry</button>
+            </div>
+
+            <div x-show="!loading && !error && members.length === 0" class="ds-card" style="padding:24px; text-align:center;">
+              <p class="ds-text-subtitle">No members match your search.</p>
+            </div>
+
+            <ul x-show="!loading && !error && members.length > 0" class="community-members__list" style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px;">
+              <template x-for="m in members" :key="m.user_id">
+                <li class="ds-card community-member-card" style="padding:14px; display:flex; gap:10px; align-items:center; cursor:pointer;"
+                    @click="openProfile(m.user_id)" tabindex="0"
+                    @keydown.enter="openProfile(m.user_id)">
+                  <div class="ds-avatar ds-avatar--md" style="flex-shrink:0;">
+                    <template x-if="m.avatar_url"><img :src="m.avatar_url" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;"></template>
+                    <template x-if="!m.avatar_url"><span x-text="(m.display_name || '?').charAt(0).toUpperCase()"></span></template>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div class="ds-text-body" style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" x-text="m.display_name"></div>
+                    <div class="ds-text-caption" x-text="'L' + m.level + ' · ' + m.xp_total.toLocaleString() + ' XP'"></div>
+                    <div class="ds-text-caption" x-text="m.post_count + ' posts · ' + m.follower_count + ' followers'"></div>
+                  </div>
+                </li>
+              </template>
+            </ul>
+
+            <div x-show="!loading && !error && hasMore" style="text-align:center; margin-top:16px;">
+              <button type="button" class="ds-btn ds-btn--secondary" @click="loadMore()">Load more</button>
+            </div>
+          </div>
+          <script>
+            document.addEventListener('alpine:init', () => {
+              if (window.__memberDirectoryRegistered) return;
+              window.__memberDirectoryRegistered = true;
+              Alpine.data('memberDirectory', () => ({
+                loading: false,
+                error: '',
+                members: [],
+                query: '',
+                sort: 'xp',
+                page: 1,
+                hasMore: true,
+                _loaded: false,
+                bind() {
+                  window.addEventListener('load-community-members', () => this.load());
+                },
+                async load() {
+                  if (this._loaded) return;
+                  await this._fetch(true);
+                },
+                async reload() {
+                  this.page = 1;
+                  this.members = [];
+                  this.hasMore = true;
+                  await this._fetch(true);
+                },
+                async loadMore() {
+                  this.page += 1;
+                  await this._fetch(false);
+                },
+                async _fetch(reset) {
+                  this.loading = true;
+                  this.error = '';
+                  try {
+                    const url = new URL('/api/community/members', window.location.origin);
+                    if (this.query.trim()) url.searchParams.set('q', this.query.trim());
+                    if (this.sort) url.searchParams.set('sort', this.sort);
+                    url.searchParams.set('page', String(this.page));
+                    const res = await fetch(url.toString(), { credentials: 'same-origin' });
+                    if (!res.ok) throw new Error('Failed to load members.');
+                    const data = await res.json();
+                    const incoming = Array.isArray(data.members) ? data.members : [];
+                    this.members = reset ? incoming : [...this.members, ...incoming];
+                    this.hasMore = incoming.length >= (data.page_size || 30);
+                    this._loaded = true;
+                  } catch (e) {
+                    this.error = e.message || 'Failed to load.';
+                  } finally {
+                    this.loading = false;
+                  }
+                },
+                openProfile(id) {
+                  if (typeof window.openUserProfile === 'function') window.openUserProfile(id);
+                },
+              }));
+            });
+          </script>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
              TAB 7: SAVED / BOOKMARKED POSTS (UX.6)
              ═══════════════════════════════════════════════════════════ -->
         <div id="community-saved-tab" class="community-tab-panel hidden">
@@ -860,12 +991,31 @@ include
                 onclick="closeCommunityModal('community-dm-new-modal')">×</button>
             </div>
             <div class="ds-modal__body">
-              <div class="ds-form-group">
+              <!-- Stage 1: pick a recipient -->
+              <div id="community-dm-new-search-stage" class="ds-form-group">
                 <label for="community-dm-search" class="ds-label">Search for a user</label>
                 <input id="community-dm-search" type="text" class="ds-input" placeholder="Type a name...">
                 <div id="community-dm-search-results" class="community-dms__search-results"></div>
               </div>
+
+              <!-- Stage 2: compose first message (hidden until a recipient is picked) -->
+              <div id="community-dm-new-compose-stage" class="ds-form-group" hidden>
+                <div class="ds-helper-text" style="margin-bottom:8px;">
+                  To: <strong id="community-dm-new-recipient-name">…</strong>
+                </div>
+                <label for="community-dm-new-message" class="ds-label">Your message</label>
+                <textarea id="community-dm-new-message" class="ds-input" rows="3" maxlength="4000"
+                  placeholder="Write your first message... (1–4000 chars)"></textarea>
+                <div class="ds-helper-text" style="margin-top:4px;">
+                  <span id="community-dm-new-counter">0</span> / 4000
+                </div>
+              </div>
+
               <div id="community-dm-new-status" class="ds-helper-text"></div>
+            </div>
+            <div class="ds-modal__footer community-page-modal__footer" id="community-dm-new-footer" hidden>
+              <button type="button" class="ds-btn ds-btn--secondary" id="community-dm-new-back-btn">Back</button>
+              <button type="button" class="ds-btn ds-btn--primary" id="community-dm-new-send-btn">Send</button>
             </div>
           </div>
         </div>
@@ -1051,85 +1201,44 @@ include
           </div>
         </div>
 
-        <!-- Edit Profile Modal -->
-        <div id="edit-profile-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="closeCommunityModal('edit-profile-modal')">
-          </div>
+        <!-- Quote Repost Modal (UX.16) -->
+        <div id="quote-post-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="quote-post-title" style="display: none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('quote-post-modal')"></div>
           <div class="ds-modal__content community-page-modal__content--md">
             <div class="ds-modal__header">
-              <h3 id="edit-profile-title" class="ds-modal__title">Edit Profile</h3>
-              <button type="button" class="ds-modal__close"
-                aria-label="Close profile editor" onclick="closeCommunityModal('edit-profile-modal')">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <h3 id="quote-post-title" class="ds-modal__title">Share with your thoughts</h3>
+              <button type="button" class="ds-modal__close" aria-label="Close quote dialog" onclick="closeCommunityModal('quote-post-modal')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
             </div>
             <div class="ds-modal__body">
-              <!-- Phase 3 task 19: profile picture upload. Reuses POST /api/upload/avatar
-                   which writes to users.avatar_url; we surface the resulting URL in the
-                   preview and let the user save it together with the bio. -->
-              <div class="ds-form-group community-edit-profile__avatar-group">
-                <label class="ds-label">Profile picture</label>
-                <div class="community-edit-profile__avatar-row">
-                  <div id="edit-profile-avatar-preview" class="community-edit-profile__avatar-preview" aria-hidden="true"></div>
-                  <div class="community-edit-profile__avatar-actions">
-                    <input type="file" id="edit-profile-avatar-input" class="ds-sr-only"
-                      accept="image/jpeg,image/png,image/webp"
-                      onchange="window.uploadProfileAvatar(event)">
-                    <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
-                      onclick="document.getElementById('edit-profile-avatar-input').click()">
-                      Change photo
-                    </button>
-                    <div class="ds-helper-text">JPEG, PNG or WebP. Max 5 MB.</div>
-                    <div id="edit-profile-avatar-status" class="ds-helper-text" hidden></div>
-                  </div>
-                </div>
-              </div>
+              <input type="hidden" id="quote-post-id">
               <div class="ds-form-group">
-                <label for="edit-profile-bio" class="ds-label">Bio</label>
-                <textarea id="edit-profile-bio" class="ds-input" rows="3"
-                  placeholder="Tell the community about your investment style..." maxlength="160"></textarea>
-                <div class="ds-helper-text">Maximum 160 characters.</div>
-              </div>
-              <!-- Phase 3 task 30: collapsed moderation history (warnings, mutes, etc). -->
-              <details id="edit-profile-mod-log" class="community-mod-log-details" hidden>
-                <summary class="community-mod-log__summary">Moderation history</summary>
-                <div id="edit-profile-mod-log-body" class="community-mod-log__body">Loading...</div>
-              </details>
-              <!-- Phase 3 task 32: verified-owner badge request. -->
-              <details class="community-verify-request">
-                <summary class="community-mod-log__summary">Request Verified Owner badge</summary>
-                <div class="community-verify-request__body">
-                  <p class="ds-helper-text">
-                    Tell us which asset you own and how we can verify it. We'll review and award the Verified Owner badge if approved.
-                  </p>
-                  <textarea id="verify-request-statement" class="ds-input" rows="3" maxlength="2000"
-                    placeholder="I own X shares of asset Y, purchased via transaction Z..."></textarea>
-                  <input type="hidden" id="verify-request-proof-url">
-                  <div class="community-verify-request__attach-row">
-                    <input type="file" id="verify-request-file" class="ds-sr-only" accept="image/jpeg,image/png,image/webp"
-                      onchange="window.uploadVerifyProof(event)">
-                    <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
-                      onclick="document.getElementById('verify-request-file').click()">Attach proof image</button>
-                    <span id="verify-request-proof-name" class="ds-helper-text"></span>
-                  </div>
-                  <div id="verify-request-status" class="ds-helper-text"></div>
-                  <button type="button" class="ds-btn ds-btn--primary ds-btn--sm"
-                    onclick="window.submitVerifyRequest()">Submit request</button>
+                <label for="quote-post-content" class="ds-label">Add your take</label>
+                <textarea id="quote-post-content" class="ds-input" rows="4" maxlength="5000"
+                  placeholder="Why are you sharing this?"></textarea>
+                <div class="ds-helper-text">
+                  <span id="quote-post-counter">0</span> / 5000 characters
                 </div>
-              </details>
+              </div>
+              <!-- Snapshot of the post being quoted, populated by JS on open. -->
+              <div id="quote-post-preview" style="margin-top:12px; padding:12px; border:1px solid var(--ds-border, #E5E7EB); border-left:3px solid var(--ds-color-primary, #03FF88); border-radius:8px; background:var(--ds-bg-secondary, #F9FAFB);">
+                <div style="font-weight:600; font-size:13px;" id="quote-post-author">…</div>
+                <div style="font-size:13px; white-space:pre-wrap; margin-top:4px;" id="quote-post-snippet">…</div>
+              </div>
+              <div id="quote-post-error" class="ds-form-error" role="alert" hidden></div>
             </div>
             <div class="ds-modal__footer community-page-modal__footer">
-              <button type="button" class="ds-btn ds-btn--secondary"
-                onclick="closeCommunityModal('edit-profile-modal')">Cancel</button>
-              <button type="button" class="ds-btn ds-btn--primary" id="save-profile-btn"
-                onclick="saveProfileDetails()">Save Changes</button>
+              <button type="button" class="ds-btn ds-btn--secondary" onclick="closeCommunityModal('quote-post-modal')">Cancel</button>
+              <button type="button" class="ds-btn ds-btn--primary" id="submit-quote-post-btn" onclick="submitQuotePost()">Share</button>
             </div>
           </div>
         </div>
+
+        <!-- Legacy Edit Profile Modal removed — replaced by /community/me/edit sub-page. -->
 
         <!-- User Profile Modal (M3-FE.2) -->
         <div id="user-profile-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-name" style="display: none;">
@@ -1231,9 +1340,80 @@ include
 
 
 
+  <!-- MOB.5: Mobile bottom nav. Hidden ≥769px so desktop keeps the topbar. -->
+  <nav class="community-bottom-nav" aria-label="Quick navigation"
+       style="position:fixed; bottom:0; left:0; right:0; z-index:998;
+              display:none; background:var(--ds-bg-elevated, #fff);
+              border-top:1px solid var(--ds-border, #E5E7EB);
+              padding:6px 0 calc(6px + env(safe-area-inset-bottom));
+              justify-content:space-around;">
+    <button type="button" class="community-bottom-nav__btn" data-bottom-tab="feed"
+            aria-label="Feed"
+            style="background:transparent; border:0; flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; color:var(--ds-text-secondary,#475467); font-size:11px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l2-2 7-7 7 7 2 2"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+      <span>Feed</span>
+    </button>
+    <button type="button" class="community-bottom-nav__btn" data-bottom-tab="members"
+            aria-label="Members"
+            style="background:transparent; border:0; flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; color:var(--ds-text-secondary,#475467); font-size:11px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Members</span>
+    </button>
+    <button type="button" class="community-bottom-nav__btn" data-bottom-tab="notifications"
+            aria-label="Notifications"
+            style="background:transparent; border:0; flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; color:var(--ds-text-secondary,#475467); font-size:11px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Alerts</span>
+    </button>
+    <button type="button" class="community-bottom-nav__btn" data-bottom-tab="dms"
+            aria-label="Messages"
+            style="background:transparent; border:0; flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; color:var(--ds-text-secondary,#475467); font-size:11px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      <span>Messages</span>
+    </button>
+    <button type="button" class="community-bottom-nav__btn" data-bottom-tab="saved"
+            aria-label="Saved"
+            style="background:transparent; border:0; flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; color:var(--ds-text-secondary,#475467); font-size:11px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <span>Saved</span>
+    </button>
+  </nav>
+  <style>
+    @media (max-width: 768px) {
+      .community-bottom-nav { display: flex !important; }
+      /* Reserve room so feed content isn't hidden behind the bar. */
+      .lb-container { padding-bottom: 80px; }
+    }
+    .community-bottom-nav__btn--active {
+      color: var(--ds-color-primary, #03FF88) !important;
+    }
+  </style>
+  <script>
+    (function () {
+      // Wire bottom-nav taps to the existing tab-switch system. Marks the
+      // active button so users see what surface they're on.
+      function activate(tab) {
+        if (typeof window.activateCommunityTab === 'function') {
+          window.activateCommunityTab(tab);
+        }
+        document.querySelectorAll('.community-bottom-nav__btn').forEach((b) => {
+          b.classList.toggle('community-bottom-nav__btn--active', b.dataset.bottomTab === tab);
+        });
+      }
+      document.querySelectorAll('.community-bottom-nav__btn').forEach((btn) => {
+        btn.addEventListener('click', () => activate(btn.dataset.bottomTab));
+      });
+      // Highlight the initial tab from the URL ?tab=foo (default 'feed').
+      const initialTab = new URLSearchParams(window.location.search).get('tab') || 'feed';
+      const initialBtn = document.querySelector(`.community-bottom-nav__btn[data-bottom-tab="${initialTab}"]`);
+      if (initialBtn) initialBtn.classList.add('community-bottom-nav__btn--active');
+    })();
+  </script>
+
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
-  <script src="/static/js/community-amas.js"></script>
+  <!-- community-amas.js is already loaded via extra_js at the top of the page;
+       a second <script> tag here would double-bind the htmx:afterSwap handler. -->
 </body>
 
 </html>

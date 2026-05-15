@@ -64,6 +64,10 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M7.5 4.21l4.5 2.6 4.5-2.6M7.5 19.79V14.6L3 12M21 12l-4.5 2.6v5.19M12 6.81v5.2"/></svg>
                             <span>Asset Tokenization</span>
                         </a>
+                        <a href="/admin/villa-operations-queue" class="admin-nav-item ${isPathActive(["/admin/villa-operations-queue", "/admin/villa-operations-entry"]) ? "active" : ""}" id="nav-ops-queue">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+                            <span>Operations Queue</span>
+                        </a>
                     </div>
 
                     <!-- Finance -->
@@ -117,6 +121,10 @@
                         <a href="/admin/affiliate-fraud.html" class="admin-nav-item ${isPathActive(["/admin/affiliate-fraud.html", "/admin/admin-affiliate-fraud.html"]) ? "active" : ""}" id="nav-affiliate-fraud">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             <span>Syndicate Fraud</span>
+                        </a>
+                        <a href="/admin/affiliate-teams" class="admin-nav-item ${isPathActive(["/admin/affiliate-teams"]) ? "active" : ""}" id="nav-affiliate-teams">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <span>Affiliate Teams</span>
                         </a>
                     </div>
 
@@ -198,58 +206,64 @@
                         </a>
                     </div>
 
-                    <!-- Community -->
-                    <div class="admin-nav-section">
-                        <span class="admin-nav-section-label">Community</span>
-                        <a href="/admin/community/" class="admin-nav-item ${isPathActive(["/admin/community/", "/admin/community/index.html"]) ? "active" : ""}" id="nav-com-overview">
+                    <!-- Community (collapsible nav group) -->
+                    <div class="admin-nav-section admin-nav-group-section" data-group-id="community">
+                        <button type="button" class="admin-nav-item admin-nav-group-trigger ${isPathActive(["/admin/community/", "/admin/community/index.html", "/admin/community/announcements.html", "/admin/community/posts.html", "/admin/community/post-detail.html", "/admin/community/comments.html", "/admin/community/reports.html", "/admin/community/appeals.html", "/admin/community/users.html", "/admin/community/user-detail.html", "/admin/community/badges.html", "/admin/community/amas.html", "/admin/community/challenges.html", "/admin/community/circles.html", "/admin/community/circle-detail.html", "/admin/community/leaderboard.html"]) ? "active" : ""}" id="nav-community-trigger">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                            <span>Overview</span>
-                        </a>
-                        <a href="/admin/community/announcements.html" class="admin-nav-item ${isPathActive(["/admin/community/announcements.html"]) ? "active" : ""}" id="nav-com-announcements">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            <span>Announcements</span>
-                        </a>
-                        <a href="/admin/community/posts.html" class="admin-nav-item ${isPathActive(["/admin/community/posts.html", "/admin/community/post-detail.html"]) ? "active" : ""}" id="nav-com-posts">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            <span>Posts</span>
-                        </a>
-                        <a href="/admin/community/comments.html" class="admin-nav-item ${isPathActive(["/admin/community/comments.html"]) ? "active" : ""}" id="nav-com-comments">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                            <span>Comments</span>
-                        </a>
-                        <a href="/admin/community/reports.html" class="admin-nav-item ${isPathActive(["/admin/community/reports.html"]) ? "active" : ""}" id="nav-com-reports">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                            <span>Moderation Queue</span>
-                            <span id="com-reports-badge" class="admin-nav-badge admin-nav-badge--danger" style="display:none"></span>
-                        </a>
-                        <a href="/admin/community/appeals.html" class="admin-nav-item ${isPathActive(["/admin/community/appeals.html"]) ? "active" : ""}" id="nav-com-appeals">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                            <span>Ban Appeals</span>
-                        </a>
-                        <a href="/admin/community/users.html" class="admin-nav-item ${isPathActive(["/admin/community/users.html", "/admin/community/user-detail.html"]) ? "active" : ""}" id="nav-com-users">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                            <span>Community Users</span>
-                        </a>
-                        <a href="/admin/community/badges.html" class="admin-nav-item ${isPathActive(["/admin/community/badges.html"]) ? "active" : ""}" id="nav-com-badges">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
-                            <span>Badges</span>
-                        </a>
-                        <a href="/admin/community/amas.html" class="admin-nav-item ${isPathActive(["/admin/community/amas.html"]) ? "active" : ""}" id="nav-com-amas">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                            <span>Expert AMAs</span>
-                        </a>
-                        <a href="/admin/community/challenges.html" class="admin-nav-item ${isPathActive(["/admin/community/challenges.html"]) ? "active" : ""}" id="nav-com-challenges">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            <span>Challenges</span>
-                        </a>
-                        <a href="/admin/community/circles.html" class="admin-nav-item ${isPathActive(["/admin/community/circles.html", "/admin/community/circle-detail.html"]) ? "active" : ""}" id="nav-com-circles">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
-                            <span>Circles</span>
-                        </a>
-                        <a href="/admin/community/leaderboard.html" class="admin-nav-item ${isPathActive(["/admin/community/leaderboard.html"]) ? "active" : ""}" id="nav-com-leaderboard">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
-                            <span>Leaderboard</span>
-                        </a>
+                            <span>Community</span>
+                            <svg class="admin-nav-group-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="admin-nav-group-items">
+                            <a href="/admin/community/" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/", "/admin/community/index.html"]) ? "active" : ""}" id="nav-com-overview">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                <span>Overview</span>
+                            </a>
+                            <a href="/admin/community/announcements.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/announcements.html"]) ? "active" : ""}" id="nav-com-announcements">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                <span>Announcements</span>
+                            </a>
+                            <a href="/admin/community/posts.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/posts.html", "/admin/community/post-detail.html"]) ? "active" : ""}" id="nav-com-posts">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                <span>Posts</span>
+                            </a>
+                            <a href="/admin/community/comments.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/comments.html"]) ? "active" : ""}" id="nav-com-comments">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                <span>Comments</span>
+                            </a>
+                            <a href="/admin/community/reports.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/reports.html"]) ? "active" : ""}" id="nav-com-reports">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                <span>Moderation Queue</span>
+                                <span id="com-reports-badge" class="admin-nav-badge admin-nav-badge--danger" style="display:none"></span>
+                            </a>
+                            <a href="/admin/community/appeals.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/appeals.html"]) ? "active" : ""}" id="nav-com-appeals">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                <span>Ban Appeals</span>
+                            </a>
+                            <a href="/admin/community/users.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/users.html", "/admin/community/user-detail.html"]) ? "active" : ""}" id="nav-com-users">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                <span>Community Users</span>
+                            </a>
+                            <a href="/admin/community/badges.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/badges.html"]) ? "active" : ""}" id="nav-com-badges">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+                                <span>Badges</span>
+                            </a>
+                            <a href="/admin/community/amas.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/amas.html"]) ? "active" : ""}" id="nav-com-amas">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                <span>Expert AMAs</span>
+                            </a>
+                            <a href="/admin/community/challenges.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/challenges.html"]) ? "active" : ""}" id="nav-com-challenges">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                <span>Challenges</span>
+                            </a>
+                            <a href="/admin/community/circles.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/circles.html", "/admin/community/circle-detail.html"]) ? "active" : ""}" id="nav-com-circles">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                                <span>Circles</span>
+                            </a>
+                            <a href="/admin/community/leaderboard.html" class="admin-nav-item admin-nav-sub-item ${isPathActive(["/admin/community/leaderboard.html"]) ? "active" : ""}" id="nav-com-leaderboard">
+                                <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+                                <span>Leaderboard</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Blog -->
@@ -607,6 +621,7 @@
         updateNotificationBadges();
         injectHealthPill();
         wireSidebarCollapse();
+        wireNavGroups();
         wireAvatarStatus();
     }
 
@@ -781,6 +796,41 @@
             pill.style.fontWeight = "700";
             pill.style.letterSpacing = "0.05em";
         }
+    }
+
+    // ── Collapsible nav groups (dropdown parent items, persists in localStorage) ──
+    function wireNavGroups() {
+        const sidebar = document.getElementById("main-admin-sidebar");
+        if (!sidebar) return;
+        const KEY = "admin_sidebar_nav_groups_collapsed";
+        const collapsed = new Set(JSON.parse(localStorage.getItem(KEY) || "[]"));
+
+        sidebar.querySelectorAll(".admin-nav-group-section[data-group-id]").forEach((section) => {
+            const groupId = section.dataset.groupId;
+            const trigger = section.querySelector(".admin-nav-group-trigger");
+            if (!trigger) return;
+
+            // Auto-expand if a child page is currently active
+            const hasActive = section.querySelector(".admin-nav-group-items .admin-nav-item.active");
+            if (hasActive) {
+                collapsed.delete(groupId);
+            }
+
+            const isCollapsed = collapsed.has(groupId);
+            trigger.setAttribute("aria-expanded", String(!isCollapsed));
+            if (isCollapsed) section.classList.add("admin-nav-group--collapsed");
+
+            trigger.addEventListener("click", () => {
+                const nowCollapsed = section.classList.toggle("admin-nav-group--collapsed");
+                trigger.setAttribute("aria-expanded", String(!nowCollapsed));
+                if (nowCollapsed) collapsed.add(groupId);
+                else collapsed.delete(groupId);
+                localStorage.setItem(KEY, JSON.stringify([...collapsed]));
+            });
+        });
+
+        // Persist final collapsed state (after auto-expand adjustments)
+        localStorage.setItem(KEY, JSON.stringify([...collapsed]));
     }
 
     // ── Collapsible sidebar sections (persists open/closed in localStorage) ──

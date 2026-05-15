@@ -125,6 +125,45 @@
   display: block;
 }
 
+.sidebar__logo--with-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+}
+
+.sidebar__logo--with-badge img {
+  width: auto;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.sidebar__role-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sidebar__role-badge--developer {
+  background: #EEF4FF;
+  border: 1px solid rgba(0, 0, 255, 0.15);
+  color: #0000FF;
+}
+
+.sidebar__role-badge--investor {
+  background: #ECFDF3;
+  border: 1px solid rgba(2, 122, 72, 0.2);
+  color: #027A48;
+}
+
 /* ===========================
    Search Input
    From: .sidebar-search-wrapper (sidebar-navigation.css:100-112)

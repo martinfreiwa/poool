@@ -16,6 +16,14 @@ pub async fn page_admin_dashboard(
     render_admin_template(&state, "admin/index.html")
 }
 
+/// GET /admin/affiliate-teams — Developer-Team-Affiliate admin overview (Phase 4).
+pub async fn page_admin_affiliate_teams(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    render_admin_template(&state, "admin/admin-developer-affiliate-teams.html")
+}
+
 /// GET /admin/villas/:asset_id/operations/:year/:month — Villa-Returns P2 entry page.
 /// URL params are read client-side via `window.location.pathname`.
 pub async fn page_admin_villa_operations_entry(

@@ -285,6 +285,17 @@
     }
     const displayEmail = $("settings-display-email");
     if (displayEmail) displayEmail.textContent = d.email || "";
+
+    const rolesEl = $("settings-roles-display");
+    if (rolesEl) {
+      const badges = ['<span class="settings-role-badge settings-role-badge--investor">Investor</span>'];
+      if (d.is_developer) {
+        badges.push('<span class="settings-role-badge settings-role-badge--developer">Developer</span>');
+      } else {
+        badges.push('<a href="/developer/onboarding" class="settings-role-apply-btn">Apply as Developer →</a>');
+      }
+      rolesEl.innerHTML = badges.join("");
+    }
   }
 
   // ─── Populate: Address ────────────────────────────────────────
@@ -901,7 +912,10 @@
   function bindDirectModalButtons() {
     $("btn-change-password")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-password"); });
     $("btn-change-phone")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-phone"); });
-    $("btn-delete-account")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-delete-account"); });
+    $("btn-delete-account")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = "/account-deletion";
+    });
     $("btn-retry-load")?.addEventListener("click", (e) => { e.preventDefault(); loadSettings(); });
   }
 

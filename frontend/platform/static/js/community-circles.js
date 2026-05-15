@@ -5,6 +5,13 @@
 window.initCommunityCircles = function () {
     if (!document.getElementById('xp-level-icon')) return;
 
+    // Lightweight toast helper — falls back to window.alert only if toast.js
+    // failed to load. Default kind is 'error' so unannotated failure paths
+    // get the right styling.
+    const toast = (msg, kind) => (typeof window.showToast === 'function')
+        ? window.showToast(msg, kind || 'error')
+        : window.alert(msg);
+
     const XP_REASON_LABELS = {
         'post_created': '📝 Post Created',
         'comment_created': '💬 Comment Posted',
@@ -53,15 +60,20 @@ window.initCommunityCircles = function () {
 
     // ─── Load XP Summary ─────────────────────────────────────────
 
+    // Cache the last known level so we can fire the level-up animation
+    // when the next /xp poll shows the user has crossed a tier.
+    let _lastKnownLevel = null;
+
     async function loadXpSummary() {
         try {
             const res = await fetch('/api/community/xp');
             if (!res.ok) return;
             const data = await res.json();
+            const newLevel = Number(data.level || 1);
 
             document.getElementById('xp-level-icon').textContent = data.level_icon || '🌱';
             document.getElementById('xp-level-name').textContent = data.level_name || 'Seedling';
-            document.getElementById('xp-level-num').textContent = 'Level ' + (data.level || 1);
+            document.getElementById('xp-level-num').textContent = 'Level ' + newLevel;
             document.getElementById('xp-total').textContent = (data.xp_total || 0).toLocaleString();
             document.getElementById('xp-progress-bar').style.width = (data.progress_pct || 0) + '%';
             document.getElementById('xp-to-next').textContent = (data.xp_to_next || 0).toLocaleString() + ' XP to next level';
@@ -75,6 +87,18 @@ window.initCommunityCircles = function () {
             } else if (streakEl) {
                 streakEl.hidden = true;
             }
+
+            // Level-up celebration: only fire when we have a previous
+            // baseline AND the level actually increased. First-load won't
+            // pop the modal because _lastKnownLevel is null.
+            if (_lastKnownLevel !== null && newLevel > _lastKnownLevel) {
+                try {
+                    showLevelUpAnimation(newLevel, data.level_name || '');
+                } catch (e) {
+                    console.error('showLevelUpAnimation failed', e);
+                }
+            }
+            _lastKnownLevel = newLevel;
         } catch (e) {
             console.error('Failed to load XP summary', e);
         }
@@ -161,32 +185,56 @@ window.initCommunityCircles = function () {
             document.getElementById('circle-total-xp').textContent = (c.total_xp || 0).toLocaleString();
             document.getElementById('circle-level').textContent = 'Lv.' + c.level + ' ' + c.level_name;
 
-            // Set invite link
+            // Cache circle id for invite/role-mgmt actions
+            window.currentCircleId = c.id;
+
+            // CO.2 — render banner if set
+            const banner = document.getElementById('circle-banner');
+            if (banner) {
+                if (c.banner_url) {
+                    banner.style.backgroundImage = `url(${c.banner_url})`;
+                    banner.hidden = false;
+                } else {
+                    banner.style.backgroundImage = '';
+                    banner.hidden = true;
+                }
+            }
+
+            // Set referral link (signup auto-joins this owner's circle)
             document.getElementById('circle-invite-link').value = window.location.origin + '/signup?ref=' + c.owner_id;
 
-            // Hide leave button for owners
+            // Hide leave button for owners (find ME, not "any owner")
             const members = data.members || [];
-            const currentMember = members.find(m => m.role === 'owner');
-            if (currentMember) {
+            const myUserId = (window.__POOOL_USER && window.__POOOL_USER.id) || null;
+            const me = myUserId ? members.find(m => m.user_id === myUserId) : null;
+            const myRole = me ? me.role : null;
+            if (myRole === 'owner') {
                 document.getElementById('leave-circle-btn').style.display = 'none';
             }
 
-            // Render members
-            renderMembers(members, c.id);
+            // Render members with role-mgmt actions
+            renderMembers(members, c.id, myUserId, myRole);
 
         } catch (e) {
             console.error('Failed to load circle', e);
         }
     }
 
-    function renderMembers(members, circleId) {
+    function renderMembers(members, circleId, myUserId, myRole) {
         const container = document.getElementById('circle-member-list');
         const colors = ['#E3F2FD', '#F3E5F5', '#E8F5E9', '#FFF3E0', '#FCE4EC', '#E0F2F1'];
+        const canManage = myRole === 'owner' || myRole === 'admin';
 
         container.replaceChildren();
         members.forEach((m, i) => {
             const bg = colors[i % colors.length];
-            const initials = (m.user_id || '').substring(0, 2).toUpperCase();
+            const displayName = m.display_name || ('Investor #' + (m.user_id || '').substring(0, 6));
+            const initials = displayName
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((s) => s.charAt(0).toUpperCase())
+                .join('') || displayName.substring(0, 2).toUpperCase();
             const joined = new Date(m.joined_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
             const row = document.createElement('div');
@@ -194,15 +242,22 @@ window.initCommunityCircles = function () {
 
             const avatar = document.createElement('div');
             avatar.className = 'circle-member-avatar';
-            avatar.style.background = bg;
-            avatar.textContent = initials;
+            if (m.avatar_url) {
+                avatar.style.backgroundImage = `url(${m.avatar_url})`;
+                avatar.style.backgroundSize = 'cover';
+                avatar.style.backgroundPosition = 'center';
+                avatar.textContent = '';
+            } else {
+                avatar.style.background = bg;
+                avatar.textContent = initials;
+            }
 
             const info = document.createElement('div');
             info.className = 'circle-member-info';
 
             const name = document.createElement('span');
             name.className = 'circle-member-name';
-            name.textContent = `Investor #${(m.user_id || '').substring(0, 6)}`;
+            name.textContent = displayName;
 
             if (m.role === 'owner' || m.role === 'admin') {
                 const roleLabel = document.createElement('span');
@@ -224,6 +279,27 @@ window.initCommunityCircles = function () {
             row.appendChild(avatar);
             row.appendChild(info);
             row.appendChild(status);
+
+            // Role management actions (owner: full control; admin: kick members only)
+            const isSelf = myUserId && m.user_id === myUserId;
+            if (canManage && !isSelf && m.role !== 'owner') {
+                const actions = document.createElement('div');
+                actions.className = 'circle-member-actions';
+                actions.style.cssText = 'display:flex; gap:6px; margin-left:8px;';
+
+                if (myRole === 'owner') {
+                    if (m.role === 'admin') {
+                        actions.appendChild(makeRowBtn('Demote', () => window.changeMemberRole(m.user_id, displayName, 'member')));
+                    } else {
+                        actions.appendChild(makeRowBtn('Promote', () => window.changeMemberRole(m.user_id, displayName, 'admin')));
+                    }
+                    actions.appendChild(makeRowBtn('Transfer', () => window.transferCircleOwnership(m.user_id, displayName), 'secondary'));
+                }
+                actions.appendChild(makeRowBtn('Kick', () => window.kickCircleMember(m.user_id, displayName), 'danger'));
+
+                row.appendChild(actions);
+            }
+
             container.appendChild(row);
         });
 
@@ -375,7 +451,7 @@ window.initCommunityCircles = function () {
 
     window.handleCreateCircle = async function () {
         const name = document.getElementById('circle-name-input').value.trim();
-        if (!name) return alert('Please enter a circle name');
+        if (!name) return toast('Please enter a circle name');
 
         const desc = document.getElementById('circle-desc-input').value.trim();
         const emoji = document.getElementById('circle-emoji-input').value.trim() || '🟢';
@@ -397,7 +473,7 @@ window.initCommunityCircles = function () {
             }
             loadAll();
         } catch (e) {
-            alert('Failed to create circle: ' + e.message);
+            toast('Failed to create circle: ' + e.message);
         }
     };
 
@@ -411,7 +487,7 @@ window.initCommunityCircles = function () {
             }
             loadAll();
         } catch (e) {
-            alert('Failed to leave circle: ' + e.message);
+            toast('Failed to leave circle: ' + e.message);
         }
     };
 
@@ -421,7 +497,7 @@ window.initCommunityCircles = function () {
             if (!res.ok) throw new Error(await res.text());
             loadAll();
         } catch (e) {
-            alert('Failed: ' + e.message);
+            toast('Failed: ' + e.message);
         }
     };
 
@@ -431,25 +507,30 @@ window.initCommunityCircles = function () {
             if (!res.ok) throw new Error(await res.text());
             loadAll();
         } catch (e) {
-            alert('Failed: ' + e.message);
+            toast('Failed: ' + e.message);
         }
     };
 
     window.openCircleSettings = async function () {
         try {
             const res = await fetch('/api/community/circles/me', { credentials: 'same-origin' });
-            if (!res.ok) { alert('Could not load circle data.'); return; }
+            if (!res.ok) { toast('Could not load circle data.'); return; }
             const data = await res.json();
-            if (!data.circle) { alert('You are not in a circle.'); return; }
+            if (!data.circle) { toast('You are not in a circle.'); return; }
 
             const c = data.circle;
             window._currentCircleId = c.id;
+            // Snapshot original gate state so save can detect a no-op vs real change
+            window._currentCircleGate = {
+                asset_id: c.token_gate_asset_id || null,
+                min_value_cents: typeof c.token_gate_min_value_cents === 'number' ? c.token_gate_min_value_cents : null,
+            };
 
             // Pre-fill fields
             document.getElementById('settings-circle-name').value = c.name || '';
             document.getElementById('settings-circle-desc').value = c.description || '';
             document.getElementById('settings-circle-emoji').value = c.avatar_emoji || '🟢';
-            
+
             // Set toggle state
             const isPublic = !!c.is_public;
             const checkbox = document.getElementById('settings-circle-public');
@@ -457,6 +538,21 @@ window.initCommunityCircles = function () {
             const track = document.getElementById('settings-toggle-track');
             if (track && track.parentElement) {
                 track.parentElement.classList.toggle('community-modal__switch--on', isPublic);
+            }
+
+            // CO.2 — circle banner field. Snapshot the current URL so the
+            // PUT only sends a change (or empty string for clear).
+            window._currentCircleBanner = c.banner_url || null;
+            applyBannerPreview(c.banner_url || null);
+            const hidden = document.getElementById('settings-circle-banner-url');
+            if (hidden) hidden.value = c.banner_url || '';
+
+            // Token-gate fields (W3.1)
+            await loadGateAssetOptions(c.token_gate_asset_id || '');
+            const minInput = document.getElementById('settings-circle-gate-min');
+            if (minInput) {
+                const cents = c.token_gate_min_value_cents;
+                minInput.value = (typeof cents === 'number' && cents > 0) ? Math.round(cents / 100) : '';
             }
 
             // Show modal
@@ -467,16 +563,100 @@ window.initCommunityCircles = function () {
             }
         } catch (e) {
             console.error('Failed to open circle settings', e);
-            alert('Error loading settings: ' + e.message);
+            toast('Error loading settings: ' + e.message);
         }
     };
 
+    // CO.2 — banner preview helper. Renders the current image inside the
+    // settings preview panel and toggles the "Remove" button visibility.
+    function applyBannerPreview(url) {
+        const preview = document.getElementById('settings-circle-banner-preview');
+        const clearBtn = document.getElementById('settings-circle-banner-clear-btn');
+        if (!preview) return;
+        if (url) {
+            preview.style.backgroundImage = `url(${url})`;
+            preview.textContent = '';
+            if (clearBtn) clearBtn.hidden = false;
+        } else {
+            preview.style.backgroundImage = '';
+            preview.textContent = 'No banner yet';
+            if (clearBtn) clearBtn.hidden = true;
+        }
+    }
+
+    window.uploadCircleBanner = async function (event) {
+        const file = event && event.target && event.target.files && event.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast('Banner must be smaller than 5 MB.');
+            event.target.value = '';
+            return;
+        }
+        const status = document.getElementById('settings-circle-banner-status');
+        if (status) status.textContent = 'Uploading…';
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch('/api/upload/post-image', { method: 'POST', credentials: 'same-origin', body: fd });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || ('Upload failed (' + res.status + ')'));
+            const url = data.image_url;
+            const hidden = document.getElementById('settings-circle-banner-url');
+            if (hidden) hidden.value = url;
+            applyBannerPreview(url);
+            if (status) status.textContent = 'Banner ready — Save to apply.';
+        } catch (e) {
+            console.error('uploadCircleBanner failed', e);
+            if (status) status.textContent = e.message || 'Upload failed.';
+        } finally {
+            event.target.value = '';
+        }
+    };
+
+    window.clearCircleBanner = function () {
+        const hidden = document.getElementById('settings-circle-banner-url');
+        if (hidden) hidden.value = '';
+        applyBannerPreview(null);
+        const status = document.getElementById('settings-circle-banner-status');
+        if (status) status.textContent = 'Banner will be removed on Save.';
+    };
+
+    // Load published assets into the token-gate <select>. Cached for the session.
+    let _gateAssetsCache = null;
+    async function loadGateAssetOptions(selectedAssetId) {
+        const sel = document.getElementById('settings-circle-gate-asset');
+        if (!sel) return;
+        if (!_gateAssetsCache) {
+            try {
+                const res = await fetch('/api/marketplace/secondary/assets', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('asset list failed (' + res.status + ')');
+                const data = await res.json();
+                _gateAssetsCache = Array.isArray(data) ? data : (data.assets || []);
+            } catch (e) {
+                console.error('loadGateAssetOptions failed', e);
+                _gateAssetsCache = [];
+            }
+        }
+        sel.replaceChildren();
+        const ph = document.createElement('option');
+        ph.value = '';
+        ph.textContent = 'No token gate';
+        sel.appendChild(ph);
+        for (const a of _gateAssetsCache) {
+            const opt = document.createElement('option');
+            opt.value = a.id;
+            opt.textContent = a.name || a.title || a.slug || ('Asset ' + String(a.id).slice(0, 8));
+            sel.appendChild(opt);
+        }
+        sel.value = selectedAssetId || '';
+    }
+
     window.handleSaveCircleSettings = async function () {
         const circleId = window._currentCircleId;
-        if (!circleId) { alert('No circle selected'); return; }
+        if (!circleId) { toast('No circle selected'); return; }
 
         const name = document.getElementById('settings-circle-name').value.trim();
-        if (!name) { alert('Circle name is required.'); return; }
+        if (!name) { toast('Circle name is required.'); return; }
 
         const description = document.getElementById('settings-circle-desc').value.trim();
         const emoji = document.getElementById('settings-circle-emoji').value.trim() || '🟢';
@@ -488,12 +668,23 @@ window.initCommunityCircles = function () {
         saveBtn.disabled = true;
 
         try {
-            // Update name/description/emoji
+            // CO.2 — only include banner_url in the body if it actually changed.
+            // The backend reads "field present" as "set this", so omitting it
+            // leaves the existing value alone; sending empty string clears it.
+            const bannerHidden = document.getElementById('settings-circle-banner-url');
+            const newBanner = bannerHidden ? bannerHidden.value : null;
+            const oldBanner = (window._currentCircleBanner == null) ? '' : String(window._currentCircleBanner);
+            const updateBody = { name, description: description || null, emoji };
+            if ((newBanner || '') !== oldBanner) {
+                updateBody.banner_url = newBanner || '';
+            }
+
+            // Update name/description/emoji/banner
             const updateRes = await fetch(`/api/community/circles/${circleId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ name, description: description || null, emoji })
+                body: JSON.stringify(updateBody)
             });
             if (!updateRes.ok) {
                 const err = await updateRes.text();
@@ -512,6 +703,32 @@ window.initCommunityCircles = function () {
                 throw new Error(err);
             }
 
+            // Update token-gate (W3.1) — only POST if values changed
+            const gateAssetEl = document.getElementById('settings-circle-gate-asset');
+            const gateMinEl = document.getElementById('settings-circle-gate-min');
+            if (gateAssetEl) {
+                const newAssetId = gateAssetEl.value || null;
+                const minDollars = parseFloat(gateMinEl ? gateMinEl.value : '');
+                const newMinCents = (newAssetId && Number.isFinite(minDollars) && minDollars > 0)
+                    ? Math.round(minDollars * 100)
+                    : null;
+                const original = window._currentCircleGate || { asset_id: null, min_value_cents: null };
+                const changed = (original.asset_id || null) !== newAssetId
+                    || (original.min_value_cents || null) !== newMinCents;
+                if (changed) {
+                    const gateRes = await fetch(`/api/community/circles/${circleId}/token-gate`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ asset_id: newAssetId, min_value_cents: newMinCents }),
+                    });
+                    if (!gateRes.ok) {
+                        const err = await gateRes.text();
+                        throw new Error('Token gate: ' + err);
+                    }
+                }
+            }
+
             // Close modal and reload data
             if (typeof window.closeCommunityModal === 'function') {
                 window.closeCommunityModal('circle-settings-modal');
@@ -520,7 +737,7 @@ window.initCommunityCircles = function () {
             }
             if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
         } catch (e) {
-            alert('Failed to save settings: ' + e.message);
+            toast('Failed to save settings: ' + e.message);
         } finally {
             saveBtn.textContent = originalText;
             saveBtn.disabled = false;
@@ -547,7 +764,77 @@ window.initCommunityCircles = function () {
             }
             if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
         } catch (e) {
-            alert('Failed to delete circle: ' + e.message);
+            toast('Failed to delete circle: ' + e.message);
+        }
+    };
+
+    function makeRowBtn(label, onClick, variant) {
+        const cls = variant === 'danger'
+            ? 'ds-btn ds-btn--ghost ds-btn--sm'
+            : variant === 'secondary'
+                ? 'ds-btn ds-btn--secondary ds-btn--sm'
+                : 'ds-btn ds-btn--primary ds-btn--sm';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = cls;
+        btn.textContent = label;
+        if (variant === 'danger') {
+            btn.style.color = '#B42318';
+        }
+        btn.onclick = onClick;
+        return btn;
+    }
+
+    async function postJson(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: body == null ? undefined : JSON.stringify(body),
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `Request failed (${res.status})`);
+        }
+        return res.json().catch(() => ({}));
+    }
+
+    window.changeMemberRole = async function (userId, displayName, role) {
+        const circleId = window.currentCircleId;
+        if (!circleId) return;
+        try {
+            await postJson(`/api/community/circles/${circleId}/roles`, { user_id: userId, role });
+            if (window.showToast) window.showToast(`${displayName || 'Member'} → ${role}`, 'success');
+            if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
+        } catch (e) {
+            toast('Role change failed: ' + e.message, 'error');
+        }
+    };
+
+    window.kickCircleMember = async function (userId, displayName) {
+        const circleId = window.currentCircleId;
+        if (!circleId) return;
+        if (!confirm(`Remove ${displayName || 'this member'} from the circle?`)) return;
+        try {
+            await postJson(`/api/community/circles/${circleId}/kick/${userId}`);
+            if (window.showToast) window.showToast(`${displayName || 'Member'} removed`, 'success');
+            if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
+        } catch (e) {
+            toast('Remove failed: ' + e.message, 'error');
+        }
+    };
+
+    window.transferCircleOwnership = async function (userId, displayName) {
+        const circleId = window.currentCircleId;
+        if (!circleId) return;
+        const name = displayName || 'this member';
+        if (!confirm(`Transfer ownership to ${name}? You will become a regular admin and cannot undo this without their consent.`)) return;
+        try {
+            await postJson(`/api/community/circles/${circleId}/transfer`, { new_owner_id: userId });
+            if (window.showToast) window.showToast(`Ownership transferred to ${name}`, 'success');
+            if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
+        } catch (e) {
+            toast('Transfer failed: ' + e.message, 'error');
         }
     };
 
@@ -558,6 +845,102 @@ window.initCommunityCircles = function () {
         const btn = input.nextElementSibling;
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+    };
+
+    // ─── Search & Invite Existing Investors ──────────────────────────
+    let _inviteSearchTimer = null;
+
+    window.searchUsersToInvite = function (raw) {
+        const query = (raw || '').trim();
+        const resultsEl = document.getElementById('circle-invite-results');
+        const statusEl = document.getElementById('circle-invite-status');
+        if (!resultsEl) return;
+        clearTimeout(_inviteSearchTimer);
+        statusEl.textContent = '';
+        if (query.length < 2) {
+            resultsEl.style.display = 'none';
+            resultsEl.replaceChildren();
+            return;
+        }
+        _inviteSearchTimer = setTimeout(async () => {
+            try {
+                const res = await fetch('/api/community/mentions/suggest?q=' + encodeURIComponent(query), { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('search failed (' + res.status + ')');
+                const data = await res.json();
+                const users = Array.isArray(data.users) ? data.users : [];
+                resultsEl.replaceChildren();
+                if (users.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'community-invite-results__empty ds-helper-text';
+                    empty.textContent = 'No matches.';
+                    resultsEl.appendChild(empty);
+                } else {
+                    for (const u of users) {
+                        const row = document.createElement('button');
+                        row.type = 'button';
+                        row.className = 'community-invite-results__row';
+                        row.style.cssText = 'display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:0; background:transparent; cursor:pointer; text-align:left; border-radius:8px;';
+                        row.onmouseover = () => { row.style.background = 'var(--ds-color-surface-hover, #F2F4F7)'; };
+                        row.onmouseout = () => { row.style.background = 'transparent'; };
+
+                        const avatar = document.createElement('div');
+                        avatar.style.cssText = 'width:28px; height:28px; border-radius:50%; background:#E3F2FD; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px; flex-shrink:0;';
+                        if (u.avatar_url) {
+                            avatar.style.background = `url(${u.avatar_url}) center/cover`;
+                        } else {
+                            avatar.textContent = (u.display_name || '?').charAt(0).toUpperCase();
+                        }
+
+                        const name = document.createElement('span');
+                        name.textContent = u.display_name || ('User ' + String(u.user_id).slice(0, 8));
+                        name.style.cssText = 'flex:1; font-size:14px;';
+
+                        const action = document.createElement('span');
+                        action.textContent = 'Invite';
+                        action.style.cssText = 'font-size:12px; color:var(--ds-color-primary, #03FF88); font-weight:600;';
+
+                        row.appendChild(avatar);
+                        row.appendChild(name);
+                        row.appendChild(action);
+                        row.onclick = () => window.inviteUserToCircle(u.user_id, u.display_name);
+                        resultsEl.appendChild(row);
+                    }
+                }
+                resultsEl.style.display = 'block';
+            } catch (e) {
+                console.error('searchUsersToInvite failed', e);
+                statusEl.textContent = 'Search failed. Try again.';
+            }
+        }, 200);
+    };
+
+    window.inviteUserToCircle = async function (userId, displayName) {
+        const circleId = window.currentCircleId;
+        const statusEl = document.getElementById('circle-invite-status');
+        if (!circleId) {
+            statusEl.textContent = 'Circle not loaded yet.';
+            return;
+        }
+        statusEl.textContent = 'Sending invite…';
+        try {
+            const res = await fetch(`/api/community/circles/${circleId}/invite`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ invitee_id: userId }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Invite failed (${res.status})`);
+            statusEl.textContent = `Invite sent to ${displayName || 'user'}.`;
+            if (window.showToast) window.showToast(`Invite sent to ${displayName || 'user'}`, 'success');
+            const search = document.getElementById('circle-invite-search');
+            if (search) search.value = '';
+            const resultsEl = document.getElementById('circle-invite-results');
+            if (resultsEl) { resultsEl.replaceChildren(); resultsEl.style.display = 'none'; }
+        } catch (e) {
+            console.error('inviteUserToCircle failed', e);
+            statusEl.textContent = e.message || 'Failed to send invite.';
+        }
     };
 
     // ─── Level-Up Animation ──────────────────────────────────────
@@ -654,7 +1037,7 @@ window.initCommunityCircles = function () {
             if (!res.ok) throw new Error(await res.text());
             loadAll();
         } catch (e) {
-            alert('Failed to approve: ' + e.message);
+            toast('Failed to approve: ' + e.message);
         }
     };
 
@@ -664,7 +1047,7 @@ window.initCommunityCircles = function () {
             if (!res.ok) throw new Error(await res.text());
             loadAll();
         } catch (e) {
-            alert('Failed to decline: ' + e.message);
+            toast('Failed to decline: ' + e.message);
         }
     };
 
@@ -682,7 +1065,7 @@ window.initCommunityCircles = function () {
             }
             loadAll();
         } catch (e) {
-            alert('Failed to join circle: ' + e.message);
+            toast('Failed to join circle: ' + e.message);
         }
     };
 
@@ -699,7 +1082,7 @@ window.initCommunityCircles = function () {
             myJoinRequestCircleIds.add(circleId);
             loadCircleLeaderboard(); // Re-render to show "Pending"
         } catch (e) {
-            alert('Failed to send request: ' + e.message);
+            toast('Failed to send request: ' + e.message);
         }
     };
 

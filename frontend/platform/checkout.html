@@ -91,7 +91,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           </div>
 
           <!-- Confirm Payment Button (below order summary) -->
-          <button type="button" class="ds-btn ds-btn--primary ds-btn--lg" id="checkout-confirm-btn" style="width: 100%; gap: 8px;">
+          <button type="button" class="ds-btn ds-btn--primary ds-btn--lg" id="checkout-confirm-btn" style="width: 100%; gap: 8px;" disabled>
             <span class="button-text">Confirm Payment</span>
             <svg  class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span class="spinner"></span>
@@ -189,7 +189,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
                 <!-- Confirmation Checkbox -->
                 <div class="checkout-confirmation-box" style="margin-top: 16px; margin-bottom: 20px;">
                   <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: #344054; line-height: 1.5;">
-                    <input type="checkbox" id="bank-terms-checkbox" style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
+                    <input type="checkbox" id="bank-terms-checkbox" name="bank_transfer_ack" style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
                     <span id="bank-terms-text">I confirm that I will include the <strong>Reference ID</strong> in the transfer description and that I will cover all bank transfer fees (e.g., SWIFT 'OUR' instruction).</span>
                   </label>
                 </div>
@@ -302,6 +302,32 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
         if (serverErrorEl) serverErrorEl.innerHTML = "";
       }
 
+      function displayIdrRate() {
+        return cartData && Number(cartData.usd_to_idr_rate)
+          ? Number(cartData.usd_to_idr_rate)
+          : 15500;
+      }
+
+      function requiredDisclosuresAccepted() {
+        var form = document.getElementById("checkout-form");
+        if (!form) return false;
+        return Array.from(form.querySelectorAll("input[type='checkbox'][required]"))
+          .every(function (input) { return input.checked; });
+      }
+
+      function bankTransferReady() {
+        if (selectedPaymentMethod !== "bank") return true;
+        var bankTermsCheckbox = document.getElementById("bank-terms-checkbox");
+        var fileInput = document.getElementById("proof-upload");
+        return !!(
+          bankTermsCheckbox &&
+          bankTermsCheckbox.checked &&
+          fileInput &&
+          fileInput.files &&
+          fileInput.files.length > 0
+        );
+      }
+
       // ── Init on DOMContentLoaded ────────────────────────────────
       document.addEventListener("DOMContentLoaded", async function () {
         try {
@@ -394,6 +420,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
 
         var bankTermsCheckbox = document.getElementById("bank-terms-checkbox");
         if (bankTermsCheckbox) {
+          bankTermsCheckbox.addEventListener("change", updateConfirmButton);
           var bankTermsLabel = bankTermsCheckbox.closest("label");
           document.addEventListener("click", function (event) {
             if (!bankTermsLabel || bankTermsLabel.contains(event.target)) return;
@@ -411,6 +438,10 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
             }
           }, true);
         }
+
+        document.querySelectorAll("#checkout-form input[type='checkbox']").forEach(function (input) {
+          input.addEventListener("change", updateConfirmButton);
+        });
       });
 
       // ── Render Functions ────────────────────────────────────────
@@ -427,11 +458,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           function (sum, i) { return sum + (i.token_price_cents * i.tokens_quantity); }, 0
         );
 
-        var idrRateGlobal = 16000;
-        if (window.CurrencyService) {
-           var fetchedRate = await window.CurrencyService.fetchExchangeRate();
-           if (fetchedRate) idrRateGlobal = fetchedRate;
-        }
+        var idrRateGlobal = displayIdrRate();
 
         var html = "";
         cartData.items.forEach(function (item, idx) {
@@ -662,11 +689,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
       async function renderSummary() {
         if (!cartData || !cartData.items) return;
 
-        var idrRate = 16000;
-        if (window.CurrencyService) {
-           var fetchedRate = await window.CurrencyService.fetchExchangeRate();
-           if (fetchedRate) idrRate = fetchedRate;
-        }
+        var idrRate = displayIdrRate();
         
         var summaryItems = document.getElementById("summary-items");
         var html = "";
@@ -789,8 +812,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
         var btn = document.getElementById("checkout-confirm-btn");
         if (!btn) return;
 
-        // Button is fully enabled, validation happens on submit (better UX)
-        btn.disabled = false;
+        btn.disabled = !(requiredDisclosuresAccepted() && bankTransferReady());
       }
 
       var checkoutInProgress = false;
@@ -876,6 +898,12 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           var formData = new FormData();
           formData.append("payment_method", selectedPaymentMethod);
           formData.append("payment_currency", selectedCurrency);
+
+          document.querySelectorAll("#checkout-form input[type='checkbox'][name]").forEach(function (input) {
+            if (input.checked) {
+              formData.append(input.name, "on");
+            }
+          });
 
           var hasFile = false;
           if (selectedPaymentMethod === "bank") {

@@ -875,18 +875,18 @@ pub async fn submit_affiliate_onboarding_handler(
         INSERT INTO affiliates (
             user_id, referral_code, status,
             traffic_source, audience_size, main_url, phone_number,
-            tax_id, tax_id_encrypted, tax_id_last4, company_name
+            tax_id_encrypted, tax_id_last4, tax_id_key_version, company_name
         )
-        VALUES ($1, $2, 'pending_approval', $3, $4, $5, $6, NULL, $7, $8, $9)
-        ON CONFLICT (user_id) DO UPDATE SET 
+        VALUES ($1, $2, 'pending_approval', $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (user_id) DO UPDATE SET
             status = 'pending_approval',
             traffic_source = EXCLUDED.traffic_source,
             audience_size = EXCLUDED.audience_size,
             main_url = EXCLUDED.main_url,
             phone_number = EXCLUDED.phone_number,
-            tax_id = NULL,
             tax_id_encrypted = EXCLUDED.tax_id_encrypted,
             tax_id_last4 = EXCLUDED.tax_id_last4,
+            tax_id_key_version = EXCLUDED.tax_id_key_version,
             company_name = EXCLUDED.company_name
         "#,
     )
@@ -898,6 +898,7 @@ pub async fn submit_affiliate_onboarding_handler(
     .bind(phone_number)
     .bind(&tax_id_storage.encrypted)
     .bind(&tax_id_storage.last4)
+    .bind(tax_id_storage.key_version)
     .bind(company_name.as_deref())
     .execute(&mut *tx)
     .await;
@@ -993,13 +994,16 @@ pub async fn submit_affiliate_onboarding_handler(
 pub async fn get_affiliate_dashboard_handler(
     jar: CookieJar,
     State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> axum::response::Response {
     let user_id = match require_user_id(&jar, &state).await {
         Ok(id) => id,
         Err(r) => return r,
     };
 
-    match service::get_affiliate_dashboard(&state.db, user_id).await {
+    let context = service::DashboardContext::from_query(params.get("context").map(|s| s.as_str()));
+
+    match service::get_affiliate_dashboard_with_context(&state.db, user_id, context).await {
         Ok(data) => {
             // A.4 Security Gap Fix: Return explicit 403 if user is not an affiliate
             if data.get("is_affiliate").and_then(|v| v.as_bool()) == Some(false) {

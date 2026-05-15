@@ -10,7 +10,7 @@ VALUES (
     'Martin Freiwald',
     'martin-freiwald',
     'Co-founder of POOOL. Passionate about real estate tokenization and fractional investing.',
-    '/images/martin_pfp.png',
+    '/images/martin_pfp.webp',
     'poool_finance',
     'https://www.linkedin.com/company/poool-finance/',
     '{"real estate", "tokenization", "fintech"}'

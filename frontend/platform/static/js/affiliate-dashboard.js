@@ -39,9 +39,18 @@
         return formatCurrency((Number(cents) || 0) / 100);
     }
 
+    // Current dashboard context — 'personal' | 'business'. Defaults to personal.
+    // Persisted in URL param ?ctx= and re-read on every load.
+    function currentContext() {
+        const url = new URL(window.location.href);
+        const ctx = (url.searchParams.get('ctx') || '').toLowerCase();
+        return ctx === 'business' ? 'business' : 'personal';
+    }
+
     async function loadDashboard() {
         try {
-            const res = await fetch('/api/affiliate/dashboard');
+            const ctx = currentContext();
+            const res = await fetch(`/api/affiliate/dashboard?context=${ctx}`);
             if (!res.ok) {
                 if (res.status === 403 || res.status === 401) {
                     window.location.href = '/affiliate/onboarding';
@@ -51,7 +60,7 @@
             }
 
             dashboardData = await res.json();
-            
+
             // Pending applicants stay in the affiliate flow until admin approval.
             if (dashboardData.status === 'pending_approval') {
                 renderPendingReviewState();
@@ -59,10 +68,35 @@
             }
 
             renderDashboard();
+            applyContextStyling(ctx, dashboardData);
         } catch (err) {
             console.error('Affiliate Dashboard Load Error:', err);
             setStatus('Could not load affiliate dashboard data. Please refresh and try again.', 'error');
         }
+    }
+
+    /// Adjusts visible chrome based on the active context. In Business mode
+    /// we relabel the "Earnings" tiles to make clear that commissions flow
+    /// to the team owner, and disable the payout request button.
+    function applyContextStyling(ctx, data) {
+        const isBusiness = ctx === 'business';
+        document.body.dataset.affiliateContext = ctx;
+
+        const payoutBtn = document.getElementById('request-payout-btn');
+        if (payoutBtn) {
+            payoutBtn.disabled = isBusiness;
+            payoutBtn.title = isBusiness
+                ? 'Business commissions are paid to the team owner — not requestable from here.'
+                : '';
+        }
+
+        // Visible "informational" tag next to each KPI label in business mode.
+        // CSS attached to `body[data-affiliate-context="business"] .kpi-label::after`.
+        // Keep the dataset attribute so legacy CSS / future selectors can use it.
+        document.querySelectorAll('.kpi-label').forEach((el) => {
+            if (isBusiness) el.dataset.businessSuffix = ' (informational)';
+            else delete el.dataset.businessSuffix;
+        });
     }
 
     function renderDashboard() {
@@ -489,11 +523,111 @@
         }
     }
 
+    // ── Team-Membership Banner (Phase 2 — Developer-Team-Affiliate) ─────
+    async function loadTeamBanner() {
+        try {
+            const res = await fetch('/api/affiliate/team/my-membership', { credentials: 'same-origin' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data || data.status === 'none') return;
+
+            const banner = document.getElementById('affiliate-team-banner');
+            const title = document.getElementById('affiliate-team-banner-title');
+            const msg = document.getElementById('affiliate-team-banner-msg');
+            const statusEl = document.getElementById('affiliate-team-banner-status');
+            const linkRow = document.getElementById('affiliate-team-banner-link-row');
+            const linkCode = document.getElementById('affiliate-team-banner-link-code');
+            const copyBtn = document.getElementById('affiliate-team-banner-copy');
+            if (!banner) return;
+
+            switch (data.status) {
+                case 'invited':
+                    title.textContent = 'You have a team invitation';
+                    msg.textContent = `${data.team_name || 'A developer team'} has invited you. Use your invitation token to accept.`;
+                    statusEl.textContent = 'Invited';
+                    statusEl.className = 'affiliate-team-banner__status affiliate-team-banner__status--pending';
+                    break;
+                case 'pending_developer_approval':
+                    title.textContent = 'Join request pending';
+                    msg.textContent = `Your request to join ${data.team_name || 'this team'} is awaiting developer approval.`;
+                    statusEl.textContent = 'Pending';
+                    statusEl.className = 'affiliate-team-banner__status affiliate-team-banner__status--pending';
+                    break;
+                case 'active':
+                    title.textContent = `You're part of ${data.team_name || 'a team'}`;
+                    msg.textContent = 'Your business affiliate link routes commissions to the developer who owns this team. Your personal affiliate link below remains independent.';
+                    statusEl.textContent = 'Active';
+                    statusEl.className = 'affiliate-team-banner__status affiliate-team-banner__status--active';
+                    if (data.business_link_code) {
+                        linkRow.hidden = false;
+                        const origin = window.location.origin;
+                        const fullUrl = `${origin}/r/${data.business_link_code}`;
+                        linkCode.textContent = fullUrl;
+                        if (copyBtn) {
+                            copyBtn.addEventListener('click', () => {
+                                navigator.clipboard?.writeText(fullUrl);
+                                copyBtn.setAttribute('title', 'Copied!');
+                                setTimeout(() => copyBtn.setAttribute('title', 'Copy link'), 1500);
+                            });
+                        }
+                    }
+                    break;
+            }
+            banner.hidden = false;
+        } catch (e) {
+            // silent — banner is optional
+            console.debug('team membership check skipped:', e);
+        }
+    }
+
+    // ── Mode Switcher (Phase 5) ─────────────────────────────────────────
+    function setActiveMode(mode) {
+        const buttons = document.querySelectorAll('#affiliate-mode-switcher .affiliate-mode-switcher__btn');
+        buttons.forEach((btn) => {
+            const isActive = btn.dataset.mode === mode;
+            btn.classList.toggle('affiliate-mode-switcher__btn--active', isActive);
+            btn.setAttribute('aria-selected', String(isActive));
+        });
+    }
+
+    async function switchMode(mode) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('ctx', mode);
+        window.history.replaceState({}, '', url);
+        setActiveMode(mode);
+        await loadDashboard();
+        await loadSubIDStats();
+    }
+
+    /// Decides whether to surface the mode switcher. Shown only if the user
+    /// is a team member (has business context) — for everyone else there's
+    /// only the personal context, so the switcher is noise.
+    async function setupModeSwitcher() {
+        try {
+            const res = await fetch('/api/affiliate/team/my-membership', { credentials: 'same-origin' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data || data.status !== 'active') return;
+
+            const sw = document.getElementById('affiliate-mode-switcher');
+            if (!sw) return;
+            sw.hidden = false;
+            setActiveMode(currentContext());
+            sw.querySelectorAll('.affiliate-mode-switcher__btn').forEach((btn) => {
+                btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+            });
+        } catch (e) {
+            console.debug('mode switcher setup skipped:', e);
+        }
+    }
+
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('link-gen-subid')?.addEventListener('input', updateDynamicLink);
         document.getElementById('link-gen-utm')?.addEventListener('input', updateDynamicLink);
         loadDashboard();
         loadSubIDStats();
+        loadTeamBanner();
+        setupModeSwitcher();
     });
 })();

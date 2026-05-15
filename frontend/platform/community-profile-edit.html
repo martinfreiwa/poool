@@ -1,0 +1,694 @@
+{% with title="Edit Community Profile",
+   meta_description="Update your community bio, flair, and avatar.",
+   extra_css=['ds-cards', 'leaderboard', 'settings', 'community'],
+   extra_js=['htmx-init', 'profile-dropdown', 'mobile-navigation'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="community-profile-edit-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="lb-page">
+    <div class="lb-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main lb-main">
+      {% with investor_topbar_title="Edit Community Profile",
+         investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
+      <div class="lb-container community-profile-edit">
+
+        <div class="settings-layout-grid">
+          <!-- Section nav (sticky on desktop) -->
+          <aside class="settings-nav" aria-label="Profile sections">
+            <nav>
+              <a href="#sec-basics" class="settings-nav__link" data-section="sec-basics">Profile basics</a>
+              <a href="#sec-privacy" class="settings-nav__link" data-section="sec-privacy">Privacy &amp; visibility</a>
+              <a href="#sec-links" class="settings-nav__link" data-section="sec-links">Notifications</a>
+              <a href="#sec-mod-log" class="settings-nav__link" data-section="sec-mod-log">Moderation history</a>
+              <a href="#sec-verify" class="settings-nav__link" data-section="sec-verify">Verified Owner</a>
+              <a href="#sec-danger" class="settings-nav__link settings-nav__link--danger" data-section="sec-danger">Danger zone</a>
+            </nav>
+          </aside>
+
+          <div class="settings-sections community-profile-edit__sections">
+
+        <span id="sec-basics" class="settings-anchor" aria-hidden="true"></span>
+        <!-- Card 1: Profile basics — identity hero + bio + flair -->
+        <section class="community-profile-edit__section" aria-labelledby="profile-basics-title">
+          <div class="ds-card">
+            <div class="ds-card__header">
+              <h2 id="profile-basics-title" class="ds-card__title">Profile basics</h2>
+              <p class="ds-card__subtitle">How you appear in posts, comments, and the member directory.</p>
+            </div>
+            <div class="ds-card__body">
+
+              <!-- Identity hero block — same shape as /settings Core Profile -->
+              <div class="settings-avatar-row community-profile-edit__identity">
+                <div class="settings-photo-current" aria-hidden="true">
+                  <img id="settings-avatar-img" src="/static/images/avatar-placeholder.svg" alt="">
+                </div>
+                <div class="settings-identity-text">
+                  <div id="settings-display-name" class="settings-identity-name">—</div>
+                  <div id="settings-display-email" class="settings-identity-email">—</div>
+                </div>
+                <button id="btn-photo-upload" type="button"
+                        class="ds-btn ds-btn--ghost ds-btn--sm settings-change-photo-btn"
+                        aria-label="Change profile photo"
+                        onclick="document.getElementById('profile-photo-upload').click()">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  Change Photo
+                </button>
+                <input type="file" id="profile-photo-upload"
+                       accept="image/jpeg,image/png,image/webp" capture="user"
+                       class="ds-sr-only" onchange="uploadAvatar(event)">
+              </div>
+
+              <hr class="settings-divider settings-divider--edge-32">
+
+              <div class="ds-form-group">
+                <label for="edit-profile-bio" class="ds-label">Bio</label>
+                <textarea id="edit-profile-bio" class="ds-input" rows="3" maxlength="160"
+                          placeholder="Tell the community about your investment style…"></textarea>
+                <p class="ds-helper-text">
+                  <span id="edit-profile-bio-counter">0</span> / 160 characters
+                </p>
+              </div>
+
+              <div class="ds-form-group">
+                <label for="edit-profile-flair" class="ds-label">Flair</label>
+                <input id="edit-profile-flair" type="text" class="ds-input" maxlength="24"
+                       placeholder="🏝️ Bali bull · 24 chars max">
+                <p class="ds-helper-text">
+                  Up to 24 characters — shown as a pill next to your name.
+                  <span id="edit-profile-flair-counter">0</span> / 24
+                </p>
+              </div>
+
+            </div>
+            <div class="ds-card__footer community-profile-edit__footer">
+              <a href="/community/me" class="ds-btn ds-btn--secondary">Cancel</a>
+              <button type="button" id="save-profile-btn" class="ds-btn ds-btn--primary"
+                      onclick="saveProfile()">Save changes</button>
+              <p id="save-profile-status" class="ds-helper-text community-profile-edit__status" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
+
+        <span id="sec-privacy" class="settings-anchor" aria-hidden="true"></span>
+        <!-- Card 2: Privacy & visibility -->
+        <section class="community-profile-edit__section" aria-labelledby="privacy-title">
+          <div class="ds-card">
+            <div class="ds-card__header">
+              <h2 id="privacy-title" class="ds-card__title">Privacy &amp; visibility</h2>
+              <p class="ds-card__subtitle">Control who can see and contact you in the community.</p>
+            </div>
+            <div class="ds-card__body community-profile-edit__rows">
+              <div class="community-profile-edit__row">
+                <div class="community-profile-edit__row-label">
+                  <div class="community-profile-edit__row-name">Show me on the leaderboard</div>
+                  <div class="community-profile-edit__row-desc">When off, your name and avatar are hidden from public rankings.</div>
+                </div>
+                <label class="community-toggle">
+                  <input type="checkbox" id="pref-leaderboard" checked>
+                  <span class="community-toggle__track"></span>
+                </label>
+              </div>
+              <div class="community-profile-edit__row">
+                <div class="community-profile-edit__row-label">
+                  <div class="community-profile-edit__row-name">Allow direct messages</div>
+                  <div class="community-profile-edit__row-desc">When off, only people you follow can start a DM with you.</div>
+                </div>
+                <label class="community-toggle">
+                  <input type="checkbox" id="pref-dms" checked>
+                  <span class="community-toggle__track"></span>
+                </label>
+              </div>
+              <div class="community-profile-edit__row">
+                <div class="community-profile-edit__row-label">
+                  <div class="community-profile-edit__row-name">Public profile</div>
+                  <div class="community-profile-edit__row-desc">Show your bio, flair, and posts to logged-out visitors.</div>
+                </div>
+                <label class="community-toggle">
+                  <input type="checkbox" id="pref-public-profile" checked>
+                  <span class="community-toggle__track"></span>
+                </label>
+              </div>
+            </div>
+            <div class="ds-card__footer community-profile-edit__footer">
+              <p class="ds-helper-text community-profile-edit__status" id="privacy-status" role="status" aria-live="polite">
+                Toggles save automatically.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <span id="sec-links" class="settings-anchor" aria-hidden="true"></span>
+        <!-- Card 3: Notifications & relationships shortcuts -->
+        <section class="community-profile-edit__section" aria-labelledby="links-title">
+          <div class="ds-card">
+            <div class="ds-card__header">
+              <h2 id="links-title" class="ds-card__title">Notifications &amp; relationships</h2>
+              <p class="ds-card__subtitle">Quick links to the rest of your community settings.</p>
+            </div>
+            <div class="ds-card__body community-profile-edit__rows">
+              <a class="community-profile-edit__link-row" href="/settings/notifications/community">
+                <div>
+                  <div class="community-profile-edit__row-name">Notification preferences</div>
+                  <div class="community-profile-edit__row-desc">Choose which community events trigger notifications.</div>
+                </div>
+                <span aria-hidden="true">→</span>
+              </a>
+              <a class="community-profile-edit__link-row" href="/community?tab=saved">
+                <div>
+                  <div class="community-profile-edit__row-name">Saved posts</div>
+                  <div class="community-profile-edit__row-desc">Posts you've bookmarked for later.</div>
+                </div>
+                <span aria-hidden="true">→</span>
+              </a>
+              <a class="community-profile-edit__link-row" href="/community/me">
+                <div>
+                  <div class="community-profile-edit__row-name">View public profile</div>
+                  <div class="community-profile-edit__row-desc">See exactly what other investors see when they open your profile.</div>
+                </div>
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <span id="sec-mod-log" class="settings-anchor" aria-hidden="true"></span>
+        <!-- Card 4: Moderation history -->
+        <section class="community-profile-edit__section" aria-labelledby="mod-log-title">
+          <div class="ds-card">
+            <div class="ds-card__header">
+              <h2 id="mod-log-title" class="ds-card__title">Moderation history</h2>
+              <p class="ds-card__subtitle">Warnings, mutes, and other actions taken against your account.</p>
+            </div>
+            <div class="ds-card__body">
+              <div id="mod-log-body" class="ds-helper-text">Loading…</div>
+            </div>
+          </div>
+        </section>
+
+        <span id="sec-verify" class="settings-anchor" aria-hidden="true"></span>
+        <!-- Card 5: Verified Owner request -->
+        <section class="community-profile-edit__section" aria-labelledby="verify-owner-title">
+          <div class="ds-card">
+            <div class="ds-card__header">
+              <h2 id="verify-owner-title" class="ds-card__title">Request Verified Owner badge</h2>
+              <p class="ds-card__subtitle">Pick an asset from your portfolio and we'll review proof of ownership.</p>
+            </div>
+            <div class="ds-card__body">
+              <div class="ds-form-group">
+                <label for="verify-asset" class="ds-label">Asset</label>
+                <select id="verify-asset" class="ds-input">
+                  <option value="">Loading your portfolio…</option>
+                </select>
+              </div>
+              <div class="ds-form-group">
+                <label for="verify-note" class="ds-label">Notes (optional)</label>
+                <textarea id="verify-note" class="ds-input" rows="3" maxlength="2000"
+                          placeholder="Anything that will help us verify (transaction hash, purchase date, etc.)"></textarea>
+              </div>
+              <input type="hidden" id="verify-evidence-url">
+              <div class="ds-form-group community-profile-edit__attach-row">
+                <input type="file" id="verify-file" class="ds-sr-only" accept="image/jpeg,image/png,image/webp"
+                       capture="environment" onchange="uploadVerifyProof(event)">
+                <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
+                        onclick="document.getElementById('verify-file').click()">Attach proof image</button>
+                <span id="verify-file-name" class="ds-helper-text"></span>
+              </div>
+            </div>
+            <div class="ds-card__footer community-profile-edit__footer">
+              <button type="button" class="ds-btn ds-btn--primary" onclick="submitVerify()">Submit request</button>
+              <p id="verify-status" class="ds-helper-text community-profile-edit__status" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
+
+        <span id="sec-danger" class="settings-anchor" aria-hidden="true"></span>
+        <!-- Card 6: Danger zone -->
+        <section class="community-profile-edit__section" aria-labelledby="danger-title">
+          <div class="ds-card community-profile-edit__danger">
+            <div class="ds-card__header">
+              <h2 id="danger-title" class="ds-card__title">Danger zone</h2>
+              <p class="ds-card__subtitle">Permanent actions affecting your community presence and account.</p>
+            </div>
+            <div class="ds-card__body community-profile-edit__rows">
+              <div class="community-profile-edit__row">
+                <div class="community-profile-edit__row-label">
+                  <div class="community-profile-edit__row-name">Leave all circles</div>
+                  <div class="community-profile-edit__row-desc">Removes you from any private circles you're a member of.</div>
+                </div>
+                <a class="ds-btn ds-btn--secondary ds-btn--sm" href="/community?tab=circle">Open circles</a>
+              </div>
+              <div class="community-profile-edit__row">
+                <div class="community-profile-edit__row-label">
+                  <div class="community-profile-edit__row-name">Delete account</div>
+                  <div class="community-profile-edit__row-desc">Closes your POOOL account and anonymises your community history.</div>
+                </div>
+                <a class="ds-btn ds-btn--ghost ds-btn--sm community-profile-edit__danger-btn"
+                   href="/account-deletion">Delete account</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+          </div> <!-- /.settings-sections -->
+        </div> <!-- /.settings-layout-grid -->
+
+      </div>
+    </main>
+  </div>
+
+  <style>
+    /* Page-scoped layout. The shell uses leaderboard's lb-page / lb-main /
+       lb-container so the sidebar offset, topbar height and content top
+       padding match the rest of the investor dashboard (DESIGN.md §17). */
+    .community-profile-edit {
+      max-width: var(--page-max-width, 1200px);
+    }
+    .community-profile-edit__section { display: block; }
+    .community-profile-edit__sections {
+      display: flex;
+      flex-direction: column;
+      gap: var(--section-gap, 24px);
+    }
+    /* Anchor offset so sticky-link clicks land below the topbar instead
+       of with the title hidden under it. */
+    .settings-anchor {
+      display: block;
+      height: 0;
+      scroll-margin-top: 88px;
+    }
+
+    /* Identity hero — same shape as /settings Core Profile.
+       Falls back to plain styling if settings.css isn't loaded for any reason. */
+    .community-profile-edit__identity {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .community-profile-edit__rows {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .community-profile-edit__row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      border-top: 1px solid var(--ds-border, #E5E7EB);
+    }
+    .community-profile-edit__row:first-child { border-top: 0; padding-top: 0; }
+    .community-profile-edit__row:last-child { padding-bottom: 0; }
+    .community-profile-edit__row-label { flex: 1; min-width: 0; }
+    .community-profile-edit__row-name {
+      font-weight: 600;
+      color: var(--ds-text-primary, #101828);
+      font-size: 14px;
+    }
+    .community-profile-edit__row-desc {
+      color: var(--ds-text-secondary, #475467);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .community-profile-edit__link-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      border-top: 1px solid var(--ds-border, #E5E7EB);
+      text-decoration: none;
+      color: inherit;
+    }
+    .community-profile-edit__link-row:first-child { border-top: 0; padding-top: 0; }
+    .community-profile-edit__link-row:hover .community-profile-edit__row-name {
+      color: var(--ds-color-primary, #001DCA);
+    }
+    .community-profile-edit__link-row > span { color: var(--ds-text-secondary, #475467); font-size: 18px; }
+
+    /* Toggle — minimal switch using checkbox, no extra deps. */
+    .community-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .community-toggle input { opacity: 0; width: 0; height: 0; }
+    .community-toggle__track {
+      position: absolute; inset: 0;
+      background: #D0D5DD; border-radius: 999px; cursor: pointer;
+      transition: background 150ms;
+    }
+    .community-toggle__track::before {
+      content: ''; position: absolute;
+      width: 18px; height: 18px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%;
+      transition: transform 150ms;
+    }
+    .community-toggle input:checked + .community-toggle__track { background: var(--ds-color-primary, #001DCA); }
+    .community-toggle input:checked + .community-toggle__track::before { transform: translateX(20px); }
+
+    .community-profile-edit__attach-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .community-profile-edit__footer {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .community-profile-edit__footer .community-profile-edit__status {
+      flex-basis: 100%; margin: 0;
+    }
+
+    /* Danger zone — subtle red accent without going full destructive */
+    .community-profile-edit__danger {
+      border-color: var(--ds-color-error-200, #FECDCA);
+    }
+    .community-profile-edit__danger-btn {
+      color: #B42318;
+    }
+  </style>
+
+  <script>
+    (function () {
+      'use strict';
+
+      function csrfHeaders(extra) {
+        const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+        const token = m ? decodeURIComponent(m[1]) : '';
+        return token ? Object.assign({}, extra || {}, { 'X-CSRF-Token': token }) : (extra || {});
+      }
+
+      function setStatus(id, msg, isError) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg || '';
+        el.style.color = isError ? '#B42318' : '';
+      }
+
+      function paintAvatar(url) {
+        const img = document.getElementById('settings-avatar-img');
+        if (!img) return;
+        img.src = url || '/static/images/avatar-placeholder.svg';
+      }
+
+      function bindCounter(inputId, counterId, max) {
+        const input = document.getElementById(inputId);
+        const counter = document.getElementById(counterId);
+        if (!input || !counter) return;
+        const update = () => { counter.textContent = String(input.value.length); };
+        input.addEventListener('input', update);
+        update();
+      }
+
+      // ─── Load current profile ─────────────────────────────
+      async function loadProfile() {
+        try {
+          const res = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('Failed to load profile');
+          const profile = await res.json();
+          document.getElementById('edit-profile-bio').value = profile.bio || '';
+          document.getElementById('edit-profile-flair').value = profile.flair || '';
+          document.getElementById('edit-profile-bio-counter').textContent = String((profile.bio || '').length);
+          document.getElementById('edit-profile-flair-counter').textContent = String((profile.flair || '').length);
+          paintAvatar(profile.avatar_url || (window.__POOOL_USER && window.__POOOL_USER.avatar_url) || null);
+          // Identity text — name + email come from /api/me cached on window
+          const u = window.__POOOL_USER || {};
+          const nameEl = document.getElementById('settings-display-name');
+          const mailEl = document.getElementById('settings-display-email');
+          if (nameEl) nameEl.textContent = u.name || profile.display_name || 'Member';
+          if (mailEl) mailEl.textContent = u.email || '';
+          // Privacy toggles — server defaults to TRUE for missing values.
+          const lb = document.getElementById('pref-leaderboard');
+          const dms = document.getElementById('pref-dms');
+          const pub = document.getElementById('pref-public-profile');
+          if (lb) lb.checked = profile.leaderboard_visible !== false;
+          if (dms) dms.checked = profile.allow_dms_from_strangers !== false;
+          if (pub) pub.checked = profile.is_public_profile !== false;
+        } catch (e) {
+          setStatus('save-profile-status', 'Failed to load profile.', true);
+          console.error(e);
+        }
+      }
+
+      // ─── Privacy toggles (instant per-key save) ────────────
+      // Maps the DOM checkbox id to the JSON key the backend reads.
+      const PRIVACY_KEYS = {
+        'pref-leaderboard': 'leaderboard_visible',
+        'pref-dms': 'allow_dms_from_strangers',
+        'pref-public-profile': 'is_public_profile',
+      };
+
+      async function saveOnePrivacy(checkboxEl) {
+        const key = PRIVACY_KEYS[checkboxEl.id];
+        if (!key) return;
+        const next = checkboxEl.checked;
+        setStatus('privacy-status', 'Saving…');
+        try {
+          const body = {};
+          body[key] = next;
+          const res = await fetch('/api/community/profile', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          setStatus('privacy-status', 'Saved.');
+        } catch (e) {
+          // Roll the toggle back so the UI reflects what's actually stored.
+          checkboxEl.checked = !next;
+          setStatus('privacy-status', 'Save failed — reverted.', true);
+        }
+      }
+
+      function bindPrivacyToggles() {
+        Object.keys(PRIVACY_KEYS).forEach((id) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('change', () => saveOnePrivacy(el));
+        });
+      }
+
+      async function loadModLog() {
+        const body = document.getElementById('mod-log-body');
+        try {
+          const res = await fetch('/api/community/profile/me/moderation-log', { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('Failed');
+          const data = await res.json();
+          const entries = (data && data.entries) || [];
+          if (entries.length === 0) {
+            body.textContent = 'No moderation actions on record. Keep it that way!';
+            return;
+          }
+          body.replaceChildren();
+          entries.forEach((e) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'padding:8px 0; border-bottom:1px solid var(--ds-border,#E5E7EB);';
+            const action = document.createElement('div');
+            action.style.fontWeight = '600';
+            action.textContent = (e.action || '').replace(/_/g, ' ');
+            const when = document.createElement('div');
+            when.className = 'ds-helper-text';
+            when.textContent = e.created_at ? new Date(e.created_at).toLocaleString() : '';
+            row.append(action, when);
+            body.appendChild(row);
+          });
+        } catch (e) {
+          body.textContent = 'Could not load moderation history.';
+        }
+      }
+
+      // ─── Save profile ─────────────────────────────────────
+      window.saveProfile = async function () {
+        const btn = document.getElementById('save-profile-btn');
+        const bio = document.getElementById('edit-profile-bio').value.trim();
+        const flair = document.getElementById('edit-profile-flair').value.trim();
+        btn.disabled = true;
+        const oldText = btn.textContent;
+        btn.textContent = 'Saving…';
+        setStatus('save-profile-status', '');
+        try {
+          const res = await fetch('/api/community/profile', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ bio: bio, flair: flair }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || ('HTTP ' + res.status));
+          }
+          setStatus('save-profile-status', 'Saved.');
+          if (window.showToast) window.showToast('Profile updated', 'success');
+        } catch (e) {
+          setStatus('save-profile-status', e.message || 'Save failed.', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
+      };
+
+      // ─── Avatar upload ────────────────────────────────────
+      window.uploadAvatar = async function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          setStatus('save-profile-status', 'Photo must be smaller than 5 MB.', true);
+          event.target.value = '';
+          return;
+        }
+        setStatus('save-profile-status', 'Uploading…');
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch('/api/upload/avatar', { method: 'POST', credentials: 'same-origin', body: fd });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Upload failed');
+          paintAvatar(data.avatar_url || data.url || data.image_url || null);
+          setStatus('save-profile-status', 'Photo updated.');
+          if (window.__POOOL_USER) window.__POOOL_USER.avatar_url = data.avatar_url || data.url || data.image_url || null;
+        } catch (e) {
+          setStatus('save-profile-status', e.message || 'Upload failed.', true);
+        } finally {
+          event.target.value = '';
+        }
+      };
+
+      // ─── Verify-owner request ─────────────────────────────
+      let _portfolioLoaded = false;
+      async function loadPortfolioAssets() {
+        if (_portfolioLoaded) return;
+        const sel = document.getElementById('verify-asset');
+        try {
+          const res = await fetch('/api/portfolio', { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('Portfolio fetch failed');
+          const data = await res.json();
+          const items = Array.isArray(data.investments) ? data.investments : [];
+          const seen = new Set();
+          const unique = items.filter((i) => {
+            if (seen.has(i.asset_id)) return false;
+            seen.add(i.asset_id);
+            return true;
+          });
+          sel.replaceChildren();
+          if (unique.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = ''; opt.textContent = 'No assets in your portfolio yet';
+            sel.appendChild(opt);
+            sel.disabled = true;
+          } else {
+            const ph = document.createElement('option'); ph.value = ''; ph.textContent = 'Select an asset…'; sel.appendChild(ph);
+            for (const inv of unique) {
+              const opt = document.createElement('option');
+              opt.value = inv.asset_id;
+              opt.textContent = inv.asset_title || ('Asset ' + String(inv.asset_id).slice(0, 8));
+              sel.appendChild(opt);
+            }
+            sel.disabled = false;
+          }
+          _portfolioLoaded = true;
+        } catch (e) {
+          sel.replaceChildren();
+          const opt = document.createElement('option');
+          opt.value = ''; opt.textContent = 'Failed to load portfolio';
+          sel.appendChild(opt);
+        }
+      }
+
+      window.uploadVerifyProof = async function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          setStatus('verify-status', 'Max 5 MB.', true);
+          event.target.value = '';
+          return;
+        }
+        setStatus('verify-status', 'Uploading proof…');
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch('/api/upload/post-image', { method: 'POST', credentials: 'same-origin', body: fd });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Upload failed');
+          document.getElementById('verify-evidence-url').value = data.image_url;
+          document.getElementById('verify-file-name').textContent = file.name;
+          setStatus('verify-status', 'Proof attached. Submit when ready.');
+        } catch (e) {
+          setStatus('verify-status', e.message || 'Upload failed.', true);
+        } finally {
+          event.target.value = '';
+        }
+      };
+
+      window.submitVerify = async function () {
+        const sel = document.getElementById('verify-asset');
+        const note = document.getElementById('verify-note').value.trim();
+        const evidence = document.getElementById('verify-evidence-url').value || null;
+        const assetId = sel.value;
+        if (!assetId) { setStatus('verify-status', 'Pick an asset from your portfolio.', true); return; }
+        setStatus('verify-status', 'Submitting…');
+        try {
+          const res = await fetch('/api/community/verified-owner-requests', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ asset_id: assetId, evidence_url: evidence, note: note || null }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
+          setStatus('verify-status', 'Request submitted. We will review and notify you.');
+          if (window.showToast) window.showToast('Verification request submitted', 'success');
+          document.getElementById('verify-note').value = '';
+          document.getElementById('verify-evidence-url').value = '';
+          document.getElementById('verify-file-name').textContent = '';
+          sel.value = '';
+        } catch (e) {
+          setStatus('verify-status', e.message || 'Failed to submit.', true);
+        }
+      };
+
+      // ─── Sub-nav scroll-spy ───────────────────────────────
+      // Highlights the side-nav link whose anchor is currently nearest
+      // the top of the viewport. Uses IntersectionObserver so it stays
+      // cheap as more sections are added.
+      function setupNavSpy() {
+        const links = document.querySelectorAll('.settings-nav__link[data-section]');
+        if (!links.length || !('IntersectionObserver' in window)) return;
+        const byId = new Map();
+        links.forEach((l) => byId.set(l.dataset.section, l));
+        const visible = new Set();
+        const obs = new IntersectionObserver((entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) visible.add(e.target.id);
+            else visible.delete(e.target.id);
+          });
+          if (!visible.size) return;
+          // Use the first anchor in document order from the visible set so
+          // scrolling down through stacked sections updates predictably.
+          const ordered = Array.from(byId.keys()).filter((id) => visible.has(id));
+          const winner = ordered[0];
+          links.forEach((l) => {
+            l.classList.toggle('settings-nav__link--active', l.dataset.section === winner);
+          });
+        }, { rootMargin: '-90px 0px -65% 0px', threshold: 0 });
+        document.querySelectorAll('.settings-anchor').forEach((a) => obs.observe(a));
+      }
+
+      // Init
+      bindCounter('edit-profile-bio', 'edit-profile-bio-counter', 160);
+      bindCounter('edit-profile-flair', 'edit-profile-flair-counter', 24);
+      bindPrivacyToggles();
+      loadProfile();
+      loadModLog();
+      loadPortfolioAssets();
+      setupNavSpy();
+    })();
+  </script>
+</body>
+</html>

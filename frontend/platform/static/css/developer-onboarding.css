@@ -1,0 +1,325 @@
+/* ─── Developer Onboarding ─────────────────────────────────────────── */
+
+/* ── Stepper ──────────────────────────────────────────────────────── */
+.onb-stepper {
+  display: flex;
+  align-items: flex-start;          /* labels sit below circles */
+  max-width: 680px;                 /* match card width */
+  margin: 28px 0 20px;
+  padding: 0 var(--page-padding-x, 32px);
+  box-sizing: border-box;
+}
+.onb-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.onb-step__circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--input-border-color, #D0D5DD);
+  background: var(--card-bg, #fff);
+  color: var(--muted-text, #98A2B3);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .2s, background .2s, color .2s;
+  flex-shrink: 0;
+}
+.onb-step--active .onb-step__circle {
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: var(--btn-primary-bg, #0000FF);
+  color: var(--btn-primary-color, #98FB96);
+}
+.onb-step--done .onb-step__circle {
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: #EBF0FF;
+  color: var(--btn-primary-bg, #0000FF);
+}
+.onb-step__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text, #98A2B3);
+  white-space: nowrap;
+}
+.onb-step--active .onb-step__label { color: var(--btn-primary-bg, #0000FF); }
+.onb-step--done .onb-step__label   { color: var(--body-color, #344054); }
+.onb-step__line {
+  flex: 1;
+  height: 2px;
+  background: var(--input-border-color, #D0D5DD);
+  margin-top: 17px;           /* center on 36px circle */
+  transition: background .2s;
+}
+.onb-step__line--done { background: var(--btn-primary-bg, #0000FF); }
+
+/* ── Card overrides ────────────────────────────────────────────────── */
+
+/* Constrain card and give it a bit more breathing room */
+.onb-card {
+  max-width: 680px;
+  padding: 32px;
+}
+
+/* Stack header vertically — ds-card__header defaults to flex row */
+.onb-card .ds-card__header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 28px;
+}
+.onb-card .ds-card__title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--page-title-color, #101828);
+  margin-top: 8px;
+}
+.onb-card .ds-card__subtitle {
+  font-size: 14px;
+  color: var(--muted-text, #667085);
+  line-height: 1.6;
+  margin-top: 6px;
+  max-width: 520px;
+}
+
+/* Give dividers between question groups more air */
+.onb-card .ds-card__divider {
+  margin: 28px 0;
+}
+
+/* Footer: override ds-card__footer justify-end → space-between */
+.onb-card .ds-card__footer {
+  justify-content: space-between;
+  margin-top: 0;
+  padding-top: 24px;
+}
+
+/* ── Eyebrow ──────────────────────────────────────────────────────── */
+.onb-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+/* ── Step content visibility ─────────────────────────────────────── */
+.onb-step-content { display: none; }
+.onb-step-content--active { display: block; }
+
+/* ── Form spacing ────────────────────────────────────────────────── */
+.onb-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Extra gap between consecutive form groups */
+.onb-card .ds-form-group {
+  margin-bottom: 20px;
+}
+.onb-card .ds-form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Radio cards ──────────────────────────────────────────────────── */
+.onb-radio-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.onb-radio-card {
+  border: 1.5px solid var(--input-border-color, #D0D5DD);
+  border-radius: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color .12s, background .12s;
+  user-select: none;
+}
+.onb-radio-card:hover {
+  border-color: #9999FF;
+  background: #FAFAFE;
+}
+.onb-radio-card--selected {
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: #F0F0FF;
+}
+.onb-radio-card__dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--input-border-color, #D0D5DD);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .12s, background .12s;
+}
+.onb-radio-card--selected .onb-radio-card__dot {
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: var(--btn-primary-bg, #0000FF);
+}
+.onb-radio-card--selected .onb-radio-card__dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+}
+.onb-radio-card__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--body-color, #344054);
+  line-height: 1.3;
+}
+.onb-radio-card__sub {
+  font-size: 12px;
+  color: var(--muted-text, #667085);
+  margin-top: 3px;
+}
+
+/* ── Checkbox cards ──────────────────────────────────────────────── */
+.onb-check-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+.onb-check-card {
+  border: 1.5px solid var(--input-border-color, #D0D5DD);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: border-color .12s, background .12s;
+  user-select: none;
+}
+.onb-check-card:hover { border-color: #9999FF; background: #FAFAFE; }
+.onb-check-card--selected {
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: #F0F0FF;
+}
+.onb-check-card__box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid var(--input-border-color, #D0D5DD);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .12s, background .12s;
+}
+.onb-check-card--selected .onb-check-card__box {
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: var(--btn-primary-bg, #0000FF);
+}
+.onb-check-card--selected .onb-check-card__box::after {
+  content: '';
+  display: block;
+  width: 9px;
+  height: 6px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
+}
+.onb-check-card__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--body-color, #344054);
+}
+
+/* ── Review rows ─────────────────────────────────────────────────── */
+.onb-review-section { margin-bottom: 4px; }
+.onb-review-section__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted-text, #98A2B3);
+  margin-bottom: 8px;
+}
+.onb-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+}
+.onb-review-row:last-child { border-bottom: none; }
+.onb-review-key { font-size: 14px; color: var(--muted-text, #667085); }
+.onb-review-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--page-title-color, #101828);
+  text-align: right;
+  max-width: 55%;
+}
+
+/* ── Notice banner ───────────────────────────────────────────────── */
+.onb-notice {
+  background: #F0F4FF;
+  border: 1px solid #C7D2FE;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.onb-notice__icon {
+  flex-shrink: 0;
+  color: var(--btn-primary-bg, #0000FF);
+  margin-top: 1px;
+}
+.onb-notice__text {
+  font-size: 14px;
+  color: var(--body-color, #344054);
+  line-height: 1.6;
+}
+.onb-notice__text strong { color: #1841C7; }
+
+/* ── Under-review banner on developer dashboard ──────────────────── */
+.dev-review-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: var(--section-gap, 24px);
+}
+.dev-review-banner__icon { flex-shrink: 0; color: #B45309; }
+.dev-review-banner__text { font-size: 14px; color: #78350F; line-height: 1.5; flex: 1; }
+.dev-review-banner__text strong { font-weight: 700; }
+.dev-review-banner__dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #B45309;
+  padding: 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.dev-review-banner__dismiss:hover { background: #FEF3C7; }
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .onb-stepper { padding: 0 16px; margin: 20px 0 16px; }
+  .onb-row { grid-template-columns: 1fr; }
+  .onb-radio-group { grid-template-columns: 1fr; }
+  .onb-check-group { grid-template-columns: repeat(2, 1fr); }
+  .onb-card { padding: 20px; }
+}

@@ -1,4 +1,4 @@
-{% with title="Operations | Developer", no_index=True, extra_css=['leaderboard', 'marketplace', 'developer-assets', 'developer-leaderboard-navbar', 'developer-ui', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-operations-dashboard'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Operations | Developer", no_index=True, extra_css=['leaderboard', 'marketplace', 'developer-assets', 'developer-leaderboard-navbar', 'developer-ui', 'developer-operations', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-operations-dashboard'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-operations-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -13,36 +13,321 @@
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
-      <div class="admin-content">
-        <div class="ds-table-container">
-          <div class="ds-table-container__header">
-            <div>
-              <h2 class="ds-table-container__title">Monthly Operations</h2>
-              <p class="ds-text-caption ds-text--muted">Villas assigned to you. Submit monthly operations data; admin reviews and publishes.</p>
+      <div class="admin-content" id="ops-content">
+
+        <!-- Loading skeleton (hidden once data resolves) -->
+        <div class="ops-skeleton" id="ops-skeleton" aria-hidden="true">
+          <div class="ops-skeleton__stats">
+            <div class="ops-skeleton__stat"></div>
+            <div class="ops-skeleton__stat"></div>
+            <div class="ops-skeleton__stat"></div>
+            <div class="ops-skeleton__stat"></div>
+            <div class="ops-skeleton__stat"></div>
+          </div>
+          <div class="ops-skeleton__matrix">
+            <div class="ops-skeleton__row ops-skeleton__row--head"></div>
+            <div class="ops-skeleton__row"></div>
+            <div class="ops-skeleton__row"></div>
+            <div class="ops-skeleton__row"></div>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="ops-stats-grid" id="ops-stats" style="display:none">
+          <div class="dev-stat">
+            <div class="ops-stat__top">
+              <div class="ops-stat__num ops-stat__num--red" id="stat-missing">—</div>
+              <div class="ops-stat__icon" style="background:var(--badge-danger-bg,#FEF3F2)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--btn-danger-bg,#D92D20)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+            </div>
+            <div class="ops-stat__label">Missing submissions</div>
+            <div class="ops-stat__trend">Need immediate action</div>
+          </div>
+          <div class="dev-stat">
+            <div class="ops-stat__top">
+              <div class="ops-stat__num ops-stat__num--amber" id="stat-drafts">—</div>
+              <div class="ops-stat__icon" style="background:var(--badge-warning-bg,#FFFAEB)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--badge-warning-color,#B54708)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+            </div>
+            <div class="ops-stat__label">Drafts in progress</div>
+            <div class="ops-stat__trend">Ready to submit</div>
+          </div>
+          <div class="dev-stat">
+            <div class="ops-stat__top">
+              <div class="ops-stat__num ops-stat__num--blue" id="stat-review">—</div>
+              <div class="ops-stat__icon" style="background:var(--badge-info-bg,#EEF4FF)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--btn-primary-bg,#0000FF)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+              </div>
+            </div>
+            <div class="ops-stat__label">Awaiting review</div>
+            <div class="ops-stat__trend">Submitted to admin</div>
+          </div>
+          <div class="dev-stat">
+            <div class="ops-stat__top">
+              <div class="ops-stat__num ops-stat__num--green" id="stat-published">—</div>
+              <div class="ops-stat__icon" style="background:var(--badge-success-bg,#ECFDF3)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--badge-success-color,#027A48)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+            </div>
+            <div class="ops-stat__label">Published this year</div>
+            <div class="ops-stat__trend">Across all assets</div>
+          </div>
+          <div class="dev-stat">
+            <div class="ops-stat__top">
+              <div class="ops-stat__num ops-stat__num--amber" id="stat-docs">—</div>
+              <div class="ops-stat__icon" style="background:var(--badge-warning-bg,#FFFAEB)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--badge-warning-color,#B54708)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12.01" y2="18"/><line x1="12" y1="11" x2="12" y2="14"/></svg>
+              </div>
+            </div>
+            <div class="ops-stat__label">Docs missing</div>
+            <div class="ops-stat__trend">Period documents</div>
+          </div>
+        </div>
+
+        <!-- "Nothing due yet" info banner (all villas listed too recently to have reports due) -->
+        <div class="ops-info-banner" id="ops-nothing-due" style="display:none" role="status">
+          <div class="ops-info-banner__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+          </div>
+          <div class="ops-info-banner__body">
+            <div class="ops-info-banner__title" id="ops-nothing-due-title">No reports due yet.</div>
+            <div class="ops-info-banner__sub" id="ops-nothing-due-sub"></div>
+          </div>
+        </div>
+
+        <!-- Action queue card -->
+        <div class="ops-action-queue" id="ops-urgent-banner" style="display:none" role="region" aria-label="Submissions required">
+          <div class="ops-action-queue__header">
+            <div class="ops-action-queue__header-left">
+              <div class="ops-action-queue__header-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div>
+                <div class="ops-action-queue__title" id="ops-banner-title">Submissions required</div>
+                <div class="ops-action-queue__subtitle">Click a row to open the submission form</div>
+              </div>
+            </div>
+            <button class="ops-action-queue__dismiss" id="ops-banner-dismiss" title="Dismiss" aria-label="Dismiss">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 3L3 11M3 3l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="ops-action-queue__rows" id="ops-banner-chips"></div>
+        </div>
+
+        <!-- Mobile card list (rendered only at narrow widths) -->
+        <div class="ops-mobile-list" id="ops-mobile-list" style="display:none" role="region" aria-label="Operations by villa"></div>
+
+        <!-- Matrix card -->
+        <div class="ops-matrix-wrap" id="ops-matrix-wrap" style="display:none">
+
+          <div class="ops-matrix-topbar">
+            <div class="ops-matrix-topbar-inner">
+              <div>
+                <p class="ops-matrix-title">Monthly Submissions</p>
+                <p class="ops-matrix-sub">Sticky columns · click any cell to submit or view</p>
+              </div>
+              <div class="ops-year-tabs" id="ops-year-tabs"></div>
             </div>
           </div>
 
-          <div class="ds-table-scroll">
-            <table class="ds-table" id="dev-table">
-              <thead>
-                <tr>
-                  <th class="ds-table-th">Villa</th>
-                  <th class="ds-table-th">Latest period</th>
-                  <th class="ds-table-th">Status</th>
-                  <th class="ds-table-th">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="dev-tbody"></tbody>
+          <div class="ops-matrix-controls">
+            <div class="ops-filter-tabs">
+              <button class="ops-filter-tab active" data-filter="all">
+                All <span class="ops-filter-count ops-filter-count--red" id="fc-all" style="display:none"></span>
+              </button>
+              <button class="ops-filter-tab" data-filter="action">
+                Needs action <span class="ops-filter-count ops-filter-count--red" id="fc-action" style="display:none"></span>
+              </button>
+              <button class="ops-filter-tab" data-filter="docs">
+                Missing docs <span class="ops-filter-count ops-filter-count--amber" id="fc-docs" style="display:none"></span>
+              </button>
+              <button class="ops-filter-tab" data-filter="rejected">Rejected</button>
+            </div>
+          </div>
+
+          <div class="ops-table-scroll">
+            <table class="ops-matrix">
+              <thead id="ops-matrix-thead"></thead>
+              <tbody id="ops-matrix-tbody"></tbody>
             </table>
           </div>
 
-          <div class="ds-table-empty" id="dev-empty" style="display: none;">
-            <div class="ds-table-empty__icon">🏠</div>
-            <div class="ds-table-empty__title">No villas assigned yet</div>
-            <p class="ds-table-empty__description">Villas assigned to you for monthly operations reporting will appear here.</p>
+          <div class="ops-legend">
+            <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#6ce9a6"></div>Published</div>
+            <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#93b4fd"></div>Approved</div>
+            <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#c4b5fd"></div>Submitted</div>
+            <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#fcd34d"></div>Draft</div>
+            <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#fca5a5;border:1.5px dashed #f87171"></div>Missing</div>
+            <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#fca5a5"></div>Rejected</div>
+            <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#d1d5db"></div>Future</div>
+            <div class="ops-legend-item">
+              <div style="width:8px;height:8px;background:#F79009;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #F79009;flex-shrink:0"></div>
+              Docs missing
+            </div>
+            <div class="ops-legend-item">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;background:#D92D20;color:#fff;font-size:9px;font-weight:900;border-radius:50%;flex-shrink:0;line-height:1">!</span>
+              Deadline passed
+            </div>
+            <div class="ops-legend-item">
+              <span style="display:inline-flex;align-items:center;gap:3px;font-size:8.5px;color:#B54708;font-weight:700">
+                <svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 10.5,10"/></svg>
+                Late
+              </span>
+              Submitted after deadline
+            </div>
+            <div class="ops-legend-hint">Click any cell to submit or view</div>
           </div>
+
+        </div><!-- /matrix-wrap -->
+
+        <!-- Empty state (no villas assigned) -->
+        <div class="dae-empty" id="ops-empty" role="region" aria-labelledby="ops-empty-title" style="display:none">
+
+          <!-- Hero -->
+          <div class="dae-empty__hero">
+            <div class="dae-empty__hero-copy">
+              <span class="dae-empty__eyebrow">POOOL Operations</span>
+              <h2 id="ops-empty-title" class="dae-empty__title">No villas assigned yet.<br>You're all set to go.</h2>
+              <p class="dae-empty__lede">
+                Once POOOL assigns villas to your account, you'll submit monthly operations reports right here —
+                financials, occupancy, and documents tracked in one place.
+              </p>
+              <div class="dae-empty__actions">
+                <a href="/developer/assets" class="ds-btn ds-btn--primary dae-empty__cta-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 21V12h6v9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>View your assets</span>
+                </a>
+                <a href="/developer/dashboard" class="ds-btn dae-empty__cta-secondary">Go to dashboard</a>
+              </div>
+            </div>
+
+            <div class="dae-empty__hero-art" aria-hidden="true">
+              <svg viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="ops-bg-grad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#EEF4FF"/>
+                    <stop offset="1" stop-color="#F0FFF6"/>
+                  </linearGradient>
+                  <linearGradient id="ops-card-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#FFFFFF"/>
+                    <stop offset="1" stop-color="#F8FAFF"/>
+                  </linearGradient>
+                  <linearGradient id="ops-bar-grad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stop-color="#0000FF"/>
+                    <stop offset="1" stop-color="#03FF88"/>
+                  </linearGradient>
+                </defs>
+                <!-- Background -->
+                <rect width="320" height="240" rx="16" fill="url(#ops-bg-grad)"/>
+                <circle cx="268" cy="52" r="44" fill="#D7E3FF" opacity="0.6"/>
+                <circle cx="56" cy="192" r="32" fill="#C6F7D9" opacity="0.5"/>
+                <!-- Main card -->
+                <rect x="32" y="32" width="168" height="176" rx="12" fill="url(#ops-card-grad)" stroke="#D7E3FF" stroke-width="1.5"/>
+                <!-- Card header -->
+                <rect x="48" y="48" width="72" height="7" rx="3.5" fill="#0000FF" opacity="0.2"/>
+                <rect x="48" y="61" width="100" height="5" rx="2.5" fill="#E5E7EB"/>
+                <!-- Month column headers -->
+                <rect x="48" y="80" width="22" height="14" rx="4" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
+                <rect x="76" y="80" width="22" height="14" rx="4" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
+                <rect x="104" y="80" width="22" height="14" rx="4" fill="#EEF4FF" stroke="#C7D7FF" stroke-width="1"/>
+                <rect x="132" y="80" width="22" height="14" rx="4" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
+                <!-- Row 1 -->
+                <rect x="48" y="102" width="100" height="7" rx="3.5" fill="#E5E7EB"/>
+                <rect x="48" y="116" width="22" height="18" rx="5" fill="#ECFDF3" stroke="#A6F4C5" stroke-width="1"/>
+                <rect x="76" y="116" width="22" height="18" rx="5" fill="#ECFDF3" stroke="#A6F4C5" stroke-width="1"/>
+                <rect x="104" y="116" width="22" height="18" rx="5" fill="#EEF4FF" stroke="#C7D7FF" stroke-width="1"/>
+                <rect x="132" y="116" width="22" height="18" rx="5" fill="#FFFAEB" stroke="#FDE68A" stroke-width="1"/>
+                <!-- Row 2 -->
+                <rect x="48" y="142" width="100" height="7" rx="3.5" fill="#E5E7EB"/>
+                <rect x="48" y="156" width="22" height="18" rx="5" fill="#ECFDF3" stroke="#A6F4C5" stroke-width="1"/>
+                <rect x="76" y="156" width="22" height="18" rx="5" fill="#FEF3F2" stroke="#FECDCA" stroke-width="1"/>
+                <rect x="104" y="156" width="22" height="18" rx="5" fill="#EEF4FF" stroke="#C7D7FF" stroke-width="1"/>
+                <rect x="132" y="156" width="22" height="18" rx="5" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
+                <!-- Progress bar at bottom -->
+                <rect x="48" y="184" width="136" height="6" rx="3" fill="#E5E7EB"/>
+                <rect x="48" y="184" width="88" height="6" rx="3" fill="url(#ops-bar-grad)"/>
+                <!-- Floating stat card -->
+                <rect x="196" y="72" width="88" height="72" rx="10" fill="#FFFFFF" stroke="#D7E3FF" stroke-width="1.5"/>
+                <text x="240" y="96" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="8" fill="#717680">ON TIME</text>
+                <text x="240" y="122" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="800" font-size="20" fill="#0000FF">—</text>
+                <!-- Floating badge -->
+                <rect x="204" y="164" width="72" height="22" rx="11" fill="#03FF88" opacity="0.18" stroke="#03FF88" stroke-width="1"/>
+                <text x="240" y="179" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="8" fill="#0A0D12">AWAITING VILLAS</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Metric placeholders -->
+          <div class="dae-empty__metrics" role="list" aria-label="Operations overview">
+            <div class="ds-card ds-stat-card dae-empty__metric" role="listitem">
+              <span class="ds-stat-card__label">Villas assigned</span>
+              <span class="ds-stat-card__value">—</span>
+              <span class="dae-empty__metric-hint">Assigned by POOOL</span>
+            </div>
+            <div class="ds-card ds-stat-card dae-empty__metric" role="listitem">
+              <span class="ds-stat-card__label">Reports due</span>
+              <span class="ds-stat-card__value">—</span>
+              <span class="dae-empty__metric-hint">This period</span>
+            </div>
+            <div class="ds-card ds-stat-card dae-empty__metric" role="listitem">
+              <span class="ds-stat-card__label">On-time rate</span>
+              <span class="ds-stat-card__value">—</span>
+              <span class="dae-empty__metric-hint">Submission accuracy</span>
+            </div>
+          </div>
+
+          <!-- How it works -->
+          <ol class="dae-empty__steps" aria-label="How operations reporting works">
+            <li class="dae-empty__step">
+              <span class="dae-empty__step-num">01</span>
+              <div class="dae-empty__step-body">
+                <h4 class="dae-empty__step-title">Get villa assignments</h4>
+                <p class="dae-empty__step-desc">POOOL assigns villas to your account based on your portfolio. Keep your developer profile complete to qualify.</p>
+                <a href="/developer/dashboard" class="dae-empty__step-link">Go to dashboard →</a>
+              </div>
+            </li>
+            <li class="dae-empty__step">
+              <span class="dae-empty__step-num">02</span>
+              <div class="dae-empty__step-body">
+                <h4 class="dae-empty__step-title">Submit monthly reports</h4>
+                <p class="dae-empty__step-desc">Each period, upload occupancy data, financials, and required documents for every villa assigned to you.</p>
+                <span class="dae-empty__step-link" style="opacity:0.5;">Unlocks when assigned</span>
+              </div>
+            </li>
+            <li class="dae-empty__step">
+              <span class="dae-empty__step-num">03</span>
+              <div class="dae-empty__step-body">
+                <h4 class="dae-empty__step-title">Track your history</h4>
+                <p class="dae-empty__step-desc">Review past submissions, POOOL feedback, and approval status in a full audit trail per villa and period.</p>
+                <span class="dae-empty__step-link" style="opacity:0.5;">Unlocks when assigned</span>
+              </div>
+            </li>
+          </ol>
+
         </div>
-      </div>
+
+        <!-- Error state -->
+        <div class="ds-table-empty ops-matrix-empty" id="ops-error" style="display:none">
+          <div class="ds-table-empty__icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D92D20" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <p class="ds-table-empty__title" id="ops-error-title">Failed to load</p>
+          <p class="ds-table-empty__description">Please refresh the page or contact support if the issue persists.</p>
+        </div>
+
+      </div><!-- /admin-content -->
     </main>
   </div>
 </body>

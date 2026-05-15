@@ -891,6 +891,65 @@
               </table>
             </div>
 
+            <!-- Forecast Assumptions — direct admin edit + 5-year projection -->
+            <div class="admin-card" style="padding: 24px; margin-top: 24px;" id="forecast-assumptions-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Forecast assumptions</h3>
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-add-forecast-year" type="button">+ Add year</button>
+              </div>
+              <p style="font-size: 13px; color: var(--admin-text-muted, #6b7280); margin: 0 0 16px;">
+                Admin-set inputs per year. All rates in basis points (100 bps = 1%). Changes auto-compute the 5-year projection below.
+              </p>
+
+              <!-- Editable assumptions table -->
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;" id="forecast-assumptions-table">
+                  <thead>
+                    <tr style="background: var(--admin-card-header-bg, #f9fafb);">
+                      <th style="text-align: left; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">Year</th>
+                      <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">Occ %</th>
+                      <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">ADR (IDR)</th>
+                      <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">Rent growth %</th>
+                      <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">Exp inflation %</th>
+                      <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">Net yield %</th>
+                      <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">Appreciation %</th>
+                      <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap;">Exit yield %</th>
+                      <th style="padding: 8px 10px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="forecast-assumptions-tbody">
+                    <tr><td colspan="9" style="padding: 24px; text-align: center; color: var(--admin-text-muted);">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="forecast-assumptions-error" style="font-size: 12px; color: var(--admin-danger, #D92D20); margin-top: 8px;"></div>
+
+              <!-- 5-year projection output -->
+              <div style="margin-top: 28px;">
+                <h4 style="font-size: 13px; font-weight: 700; margin: 0 0 4px;">5-year projection</h4>
+                <p style="font-size: 12px; color: var(--admin-text-muted); margin: 0 0 12px;">
+                  Computed from assumptions above. Yield and appreciation compound annually. Initial investment normalised to 100.
+                </p>
+                <div style="overflow-x: auto;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;" id="forecast-projection-table">
+                    <thead>
+                      <tr style="background: var(--admin-card-header-bg, #f9fafb);">
+                        <th style="text-align: left; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase;">Year</th>
+                        <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase;">Occ %</th>
+                        <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase;">Net yield %</th>
+                        <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase;">Appreciation %</th>
+                        <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase;">Total return %</th>
+                        <th style="text-align: right; padding: 8px 10px; font-weight: 600; color: var(--admin-text-muted); font-size: 11px; text-transform: uppercase;">Cumulative value</th>
+                      </tr>
+                    </thead>
+                    <tbody id="forecast-projection-tbody">
+                      <tr><td colspan="6" style="padding: 16px; text-align: center; color: var(--admin-text-muted);">No assumptions set yet.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
             <!-- Villa-Returns P2.4b: Valuations panel -->
             <div class="admin-card" style="padding: 24px; margin-top: 24px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">

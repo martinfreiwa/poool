@@ -38,6 +38,7 @@
     document.getElementById("btn-enter-month")?.addEventListener("click", openLatestMonthEntry);
     document.getElementById("btn-new-valuation")?.addEventListener("click", openNewValuation);
     document.getElementById("btn-save-villa-config")?.addEventListener("click", saveVillaConfig);
+    document.getElementById("btn-add-forecast-year")?.addEventListener("click", addForecastYear);
   });
 
   async function hydrate() {
@@ -47,6 +48,7 @@
       loadValuations(),
       loadPendingCapex(),
       loadPendingForecasts(),
+      loadForecastAssumptions(),
       loadVillaConfig(),
     ]);
   }
@@ -405,6 +407,194 @@
       await loadPendingForecasts();
     } catch (err) {
       alert(`Forecast ${action} failed: ${err.message}`);
+    }
+  }
+
+  // ─── Forecast assumptions (direct admin edit) ───────────────────────────────
+
+  let _forecastAssumptions = []; // cache for projection recompute
+
+  async function loadForecastAssumptions() {
+    const tbody = document.getElementById("forecast-assumptions-tbody");
+    const errEl = document.getElementById("forecast-assumptions-error");
+    if (!tbody) return;
+    try {
+      const resp = await fetch(`/api/admin/villas/${encodeURIComponent(assetId)}/forecast-assumptions`);
+      if (!resp.ok) throw new Error(await responseError(resp));
+      _forecastAssumptions = await resp.json();
+      renderForecastAssumptions(_forecastAssumptions);
+      renderForecastProjection(_forecastAssumptions);
+      if (errEl) errEl.textContent = "";
+    } catch (err) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="padding:16px;text-align:center;color:var(--admin-danger,#D92D20);">${err.message}</td></tr>`;
+    }
+  }
+
+  function renderForecastAssumptions(rows) {
+    const tbody = document.getElementById("forecast-assumptions-tbody");
+    if (!tbody) return;
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--admin-text-muted);">No assumptions yet — click "+ Add year" to set them.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = "";
+    for (const r of rows) {
+      tbody.appendChild(buildAssumptionRow(r));
+    }
+  }
+
+  function buildAssumptionRow(r) {
+    const tr = document.createElement("tr");
+    tr.style.borderBottom = "1px solid var(--admin-border, #e5e7eb)";
+    tr.dataset.year = r.forecast_year;
+
+    const bps2pct = v => v == null ? "" : (v / 100).toFixed(2);
+    const cents2idr = v => v == null ? "" : Math.round(v / 100).toLocaleString("en-US");
+
+    const fields = [
+      { key: "year",    val: r.forecast_year, type: "year",   align: "left"  },
+      { key: "projected_occupancy_bps",         val: bps2pct(r.projected_occupancy_bps),         type: "pct",    align: "right" },
+      { key: "projected_adr_idr_cents",         val: cents2idr(r.projected_adr_idr_cents),        type: "idr",    align: "right" },
+      { key: "projected_rent_growth_bps",       val: bps2pct(r.projected_rent_growth_bps),        type: "pct",    align: "right" },
+      { key: "projected_expense_inflation_bps", val: bps2pct(r.projected_expense_inflation_bps),  type: "pct",    align: "right" },
+      { key: "projected_annual_net_yield_bps",  val: bps2pct(r.projected_annual_net_yield_bps),   type: "pct",    align: "right" },
+      { key: "projected_appreciation_bps",      val: bps2pct(r.projected_appreciation_bps),       type: "pct",    align: "right" },
+      { key: "projected_exit_yield_bps",        val: bps2pct(r.projected_exit_yield_bps),         type: "pct",    align: "right" },
+    ];
+
+    for (const f of fields) {
+      const td = document.createElement("td");
+      td.style.cssText = `padding: 6px 10px; text-align: ${f.align};`;
+      if (f.key === "year") {
+        td.textContent = f.val;
+        td.style.fontWeight = "600";
+      } else {
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.value = f.val;
+        inp.dataset.key = f.key;
+        inp.dataset.type = f.type;
+        inp.style.cssText = "width:72px;padding:4px 6px;border:1px solid var(--admin-border,#d1d5db);border-radius:4px;font:inherit;font-size:12px;text-align:right;";
+        td.appendChild(inp);
+      }
+      tr.appendChild(td);
+    }
+
+    // Save button cell
+    const tdBtn = document.createElement("td");
+    tdBtn.style.padding = "6px 10px";
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "admin-btn admin-btn--primary admin-btn--sm";
+    saveBtn.textContent = "Save";
+    saveBtn.addEventListener("click", () => saveForecastYear(tr, r.forecast_year));
+    tdBtn.appendChild(saveBtn);
+    tr.appendChild(tdBtn);
+
+    return tr;
+  }
+
+  function addForecastYear() {
+    const year = parseInt(prompt("Forecast year (e.g. " + new Date().getFullYear() + "):", new Date().getFullYear() + 1), 10);
+    if (!year || year < 2000 || year > 2100) return;
+    if (_forecastAssumptions.some(r => r.forecast_year === year)) {
+      alert(`Year ${year} already exists.`);
+      return;
+    }
+    const stub = {
+      forecast_year: year,
+      projected_occupancy_bps: null, projected_adr_idr_cents: null,
+      projected_rent_growth_bps: null, projected_expense_inflation_bps: null,
+      projected_annual_net_yield_bps: null, projected_appreciation_bps: null,
+      projected_exit_yield_bps: null,
+    };
+    _forecastAssumptions.push(stub);
+    _forecastAssumptions.sort((a, b) => a.forecast_year - b.forecast_year);
+    renderForecastAssumptions(_forecastAssumptions);
+    // Scroll the new row into view
+    const tbody = document.getElementById("forecast-assumptions-tbody");
+    const rows = tbody ? tbody.querySelectorAll("tr") : [];
+    rows[rows.length - 1]?.scrollIntoView({ block: "nearest" });
+  }
+
+  async function saveForecastYear(tr, year) {
+    const errEl = document.getElementById("forecast-assumptions-error");
+    const btn = tr.querySelector("button");
+    if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+    if (errEl) errEl.textContent = "";
+
+    // Collect input values from the row
+    const inputs = tr.querySelectorAll("input[data-key]");
+    const payload = { forecast_year: year };
+    for (const inp of inputs) {
+      const key = inp.dataset.key;
+      const raw = inp.value.trim().replace(/,/g, "");
+      if (raw === "") { payload[key] = null; continue; }
+      if (inp.dataset.type === "pct") {
+        // convert % → bps
+        payload[key] = Math.round(parseFloat(raw) * 100);
+      } else if (inp.dataset.type === "idr") {
+        // IDR display is already in whole IDR (not cents) — convert back to cents
+        payload[key] = Math.round(parseFloat(raw) * 100);
+      } else {
+        payload[key] = parseInt(raw, 10);
+      }
+    }
+
+    try {
+      const resp = await fetch(
+        `/api/admin/villas/${encodeURIComponent(assetId)}/forecast-assumptions`,
+        { method: "PUT", headers: csrfHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(payload) }
+      );
+      if (!resp.ok) throw new Error(await responseError(resp));
+      const updated = await resp.json();
+      // Update local cache
+      const idx = _forecastAssumptions.findIndex(r => r.forecast_year === year);
+      if (idx >= 0) _forecastAssumptions[idx] = updated;
+      else _forecastAssumptions.push(updated);
+      _forecastAssumptions.sort((a, b) => a.forecast_year - b.forecast_year);
+      renderForecastProjection(_forecastAssumptions);
+      if (btn) { btn.disabled = false; btn.textContent = "Saved ✓"; setTimeout(() => { if (btn) btn.textContent = "Save"; }, 2000); }
+    } catch (err) {
+      if (errEl) errEl.textContent = `Save failed (year ${year}): ${err.message}`;
+      if (btn) { btn.disabled = false; btn.textContent = "Save"; }
+    }
+  }
+
+  function renderForecastProjection(assumptions) {
+    const tbody = document.getElementById("forecast-projection-tbody");
+    if (!tbody) return;
+    const rows = assumptions.filter(r =>
+      r.projected_annual_net_yield_bps != null || r.projected_appreciation_bps != null
+    );
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--admin-text-muted);">Set net yield % and appreciation % assumptions above to generate a projection.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = "";
+    let cumulative = 100; // normalised to 100
+    for (const r of rows) {
+      const yieldPct  = (r.projected_annual_net_yield_bps  ?? 0) / 100;
+      const appPct    = (r.projected_appreciation_bps      ?? 0) / 100;
+      const occPct    = (r.projected_occupancy_bps         ?? 0) / 100;
+      const totalPct  = yieldPct + appPct;
+      cumulative     *= (1 + totalPct / 100);
+
+      const fmt1 = n => n.toFixed(2) + "%";
+      const fmtC = n => n.toFixed(1);
+
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid var(--admin-border, #e5e7eb)";
+      const totalColor = totalPct >= 0 ? "color:var(--admin-success,#059669)" : "color:var(--admin-danger,#D92D20)";
+      tr.innerHTML = `
+        <td style="padding:7px 10px;font-weight:600;">${r.forecast_year}</td>
+        <td style="padding:7px 10px;text-align:right;">${occPct ? fmt1(occPct) : "—"}</td>
+        <td style="padding:7px 10px;text-align:right;">${fmt1(yieldPct)}</td>
+        <td style="padding:7px 10px;text-align:right;">${fmt1(appPct)}</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:600;${totalColor}">${fmt1(totalPct)}</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:700;">${fmtC(cumulative)}</td>
+      `;
+      tbody.appendChild(tr);
     }
   }
 

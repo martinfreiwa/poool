@@ -1,0 +1,211 @@
+{% with title="Complaints and Investigations | POOOL", meta_description="POOOL Complaint and Investigation procedures available to affiliates and referred users.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart',
+'portfolio-assets-table', 'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards'], extra_js=['htmx-init',
+'profile-dropdown'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="rewards-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+  <div id="portfolio-page" class="portfolio-page">
+    <div id="portfolio-sidebar" class="portfolio-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+    <main id="legal-main" class="ds-main marketplace-main" style="background: #f9fafb">
+      <div style="max-width: 860px; margin: 0 auto; padding: 40px 24px 80px 24px">
+        <div style="margin-bottom: 32px">
+          <a href="/affiliate" style="
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: #717680;
+                text-decoration: none;
+                font-size: 14px;
+                margin-bottom: 16px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12L6 8L10 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Back to Affiliate Program
+          </a>
+          <h1 style="
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--page-title-color);
+                margin: 16px 0 8px 0;
+              ">
+            Complaints and Investigations
+          </h1>
+          <p style="color: #717680; font-size: 14px">
+            POOOL Affiliate Program — Phase 1 (Controlled Referral Program) &middot; Last Updated: 6 May 2026
+          </p>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px">
+            Company: PT. POOOL INTERNATIONAL GROUP &middot; Website: www.poool.app
+          </p>
+        </div>
+
+        <div style="
+              background: #fff;
+              border: 1px solid var(--table-border-color);
+              border-radius: 12px;
+              padding: 32px;
+              line-height: 1.7;
+              color: #414651;
+              font-size: 15px;
+            ">
+          <style>
+            #legal-main .aff-h2 {
+              font-size: 17px;
+              font-weight: 600;
+              color: var(--page-title-color);
+              margin: 32px 0 12px 0;
+              padding-top: 20px;
+              border-top: 1px solid #f2f4f7;
+            }
+            #legal-main .aff-h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+            #legal-main .aff-ul { margin: 8px 0 16px 18px; padding: 0; }
+            #legal-main .aff-ul li { margin: 4px 0; }
+            #legal-main p { margin: 8px 0 12px 0; }
+            #legal-main p strong { color: #101828; }
+          </style>
+
+          <p style="background: #FEF6E7; border: 1px solid #F4C430; border-radius: 8px; padding: 12px 16px; color: #6E4D00; font-size: 14px; margin-bottom: 24px;">
+            <strong>Phase 1 launch document.</strong> Some items marked for legal review remain placeholders pending final sign-off. Where this page conflicts with the executed master document, the executed document controls.
+          </p>
+
+<h2 class="aff-h2">1. Purpose</h2>
+<p>This SOP governs how POOOL receives, logs, triages, investigates, decides, communicates, escalates, and closes affiliate-related complaints and case triggers. Its purpose is to ensure that:</p>
+<ul class="aff-ul"><li>complaints and misconduct signals are not handled ad hoc</li><li>urgent risks can be contained quickly</li><li>evidence is preserved and reviewable</li><li>decisions are consistent, reason-coded, and auditable</li><li>financial and qualification impacts are controlled</li><li>customers and program integrity are protected</li><li>and enforcement actions are tied to documented facts and approved authority. This SOP is an internal operational control document. It must be read together with the POOOL Affiliate Terms &amp; Conditions, Affiliate Code of Conduct, Approved Marketing Materials Policy, Qualified Referral &amp; Payout Policy, tax-handling controls, privacy controls, and the broader monitoring / suspension / clawback framework.</li></ul>
+<h2 class="aff-h2">2. Core Rule Any material affiliate-related complaint, violation signal, referral di</h2>
+<p>spute, or payout-risk case must be handled through a documented case process. No material case should be:</p>
+<ul class="aff-ul"><li>ignored</li><li>resolved only in informal chat</li><li>closed without an evidence record</li><li>closed without a documented rationale</li><li>or allowed to proceed to payout release if serious unresolved risk remains. Where risk to customers, qualification integrity, payout integrity, privacy, or program integrity exists, POOOL may apply interim protective measures before final determination. That control logic is consistent with the approved baseline and the existing Program documents.</li></ul>
+<h2 class="aff-h2">3. Scope</h2>
+<p>This SOP applies to cases involving one or more of the following:</p>
+<ul class="aff-ul"><li>customer complaints about affiliate behavior</li><li>suspected prohibited conduct</li><li>misleading or pressure-based communication</li><li>disclosure failures</li><li>unapproved material use</li><li>advice / recommendation / guarantee conduct</li><li>private cold outreach</li><li>side deals</li><li>payment handling</li><li>self-referral</li><li>related-party referral abuse</li><li>referral-ring activity</li><li>qualification disputes</li><li>payout disputes</li><li>reversal-related investigations</li><li>fraud or abuse concerns</li><li>affiliate cooperation failures</li><li>data/privacy-related issues arising in affiliate activity</li><li>and any linked freeze, suspension, denial, offset, clawback, or removal action. This SOP also applies where an issue is raised by:</li><li>a customer</li><li>an affiliate</li><li>support</li><li>compliance</li><li>finance</li><li>product / engineering</li><li>management</li><li>or automated / manual monitoring.</li></ul>
+<h2 class="aff-h2">4. Definitions</h2>
+<p>For purposes of this SOP: “Case” means a logged complaint, incident, dispute, alert, or investigation matter handled under this SOP. “Case Owner” means the internal person or function responsible for coordinating the case through closure. “High-Risk Case” means a case involving significant customer harm risk, payment handling, explicit guarantee conduct, fraud, referral-ring activity, serious privacy concerns, material payout exposure, legal demand, or similar critical factors. “Interim Control” means a temporary protective action applied before final determination, including freeze, restriction, takedown, deactivation, or suspension. “Financial Correction” means denial, exclusion, reversal, offset, payout hold, tier-credit exclusion, or clawback action linked to the case. “Evidence Hold” means an instruction or system status requiring preservation of relevant records, content, logs, and files for review, dispute, or legal/compliance purposes. “Reopened Case” means a previously closed case reopened due to new evidence, control failure, repeated conduct, or review instruction.</p>
+<h2 class="aff-h2">5. Relationship to Other Program Documents</h2>
+<p><strong>5.1</strong> This SOP governs:</p>
+<ul class="aff-ul"><li>intake</li><li>logging</li><li>triage</li><li>evidence preservation</li><li>investigation steps</li><li>internal escalation</li><li>decision documentation</li><li>communications</li><li>closure</li><li>reopening</li><li>and remediation follow-up.</li></ul>
+<p><strong>5.2</strong> This SOP does not by itself determine:</p>
+<ul class="aff-ul"><li>the full contractual rights and remedies between POOOL and the Affiliate</li><li>the final contractual basis for suspension or termination</li><li>final referral qualification or payability rules</li><li>final tax-law treatment</li><li>or full privacy-law analysis.</li></ul>
+<p><strong>5.3</strong> Those matters remain governed by the relevant Program Documents, including:</p>
+<ul class="aff-ul"><li>the Affiliate Terms &amp; Conditions</li><li>the Affiliate Code of Conduct</li><li>the Approved Marketing Materials Policy</li><li>the Qualified Referral &amp; Payout Policy</li><li>tax-handling controls</li><li>privacy controls</li><li>and monitoring / suspension / clawback rules.</li></ul>
+<h2 class="aff-h2">6. Roles and Responsibilities</h2>
+<p><strong>6.1</strong> Support Support:</p>
+<ul class="aff-ul"><li>receives customer-facing complaints</li><li>logs cases using approved intake standards</li><li>uses only approved support language</li><li>collects basic evidence</li><li>and escalates rather than improvises.</li></ul>
+<p><strong>6.2</strong> Affiliate Operations Affiliate Operations:</p>
+<ul class="aff-ul"><li>owns the standard case workflow</li><li>assigns or coordinates Case Owners</li><li>handles affiliate-side operational communication</li><li>reviews onboarding/training/history</li><li>and coordinates corrective follow-up.</li></ul>
+<p><strong>6.3</strong> Compliance Compliance:</p>
+<ul class="aff-ul"><li>reviews conduct breaches</li><li>assesses severity</li><li>reviews disclosure and materials issues</li><li>recommends or approves enforcement within its authority</li><li>and coordinates with legal/privacy where needed.</li></ul>
+<p><strong>6.4</strong> Finance Finance:</p>
+<ul class="aff-ul"><li>handles payout holds and release blocks</li><li>assesses reversal / refund / chargeback exposure</li><li>supports offset / clawback execution</li><li>and confirms payout-batch handling where a case affects money movement.</li></ul>
+<p><strong>6.5</strong> Product / Engineering Product / Engineering:</p>
+<ul class="aff-ul"><li>supports evidence retrieval</li><li>system-log review</li><li>referral-status verification</li><li>admin control activation</li><li>and technical incident analysis.</li></ul>
+<p><strong>6.6</strong> Legal / Privacy Review Legal / Privacy review:</p>
+<ul class="aff-ul"><li>handles jurisdiction-sensitive, privacy-sensitive, regulatory, legal-demand, cross-border, or otherwise high-risk cases.</li></ul>
+<p><strong>6.7</strong> Management Management:</p>
+<ul class="aff-ul"><li>is informed or approves serious, critical, repeat-pattern, large-exposure, or reputationally sensitive outcomes according to the approval matrix.</li></ul>
+<p><strong>6.8</strong> Recusal / Conflict Rule A person must not be the sole decision-maker for a case where they:</p>
+<ul class="aff-ul"><li>are personally involved</li><li>are the subject of the allegation</li><li>directly approved the challenged conduct</li><li>directly benefit from the financial outcome</li><li>or have another material conflict of interest.</li></ul>
+<h2 class="aff-h2">7. Case Types</h2>
+<p>POOOL should classify each case into one or more categories: 1. Customer Conduct Complaint 2. Content / Communication Breach 3. Qualification / Payout Dispute 4. Fraud / Abuse Case 5. Disclosure / Process Failure 6. Data / Privacy Related Case 7. Cross-Functional High-Risk Case Multiple categories may apply to one case.</p>
+<h2 class="aff-h2">8. Intake Rules</h2>
+<p><strong>8.1</strong> Approved intake sources Cases may enter through:</p>
+<ul class="aff-ul"><li>customer support</li><li>affiliate support</li><li>internal escalation form</li><li>compliance monitoring flag</li><li>finance review flag</li><li>support escalation</li><li>management escalation</li><li>or approved case email / ticketing channel.</li></ul>
+<p><strong>8.2</strong> Required intake fields Each case intake should capture at minimum:</p>
+<ul class="aff-ul"><li>case ID</li><li>intake date/time</li><li>source</li><li>complainant type</li><li>affiliate ID if known</li><li>customer/referral ID if known</li><li>issue category</li><li>channel involved</li><li>summary</li><li>initial risk indicator</li><li>assigned Case Owner or interim owner</li><li>and whether immediate protection review is required.</li></ul>
+<p><strong>8.3</strong> Intake sufficiency rule A case may be opened with incomplete evidence, but the file must show:</p>
+<ul class="aff-ul"><li>what is known</li><li>what is unknown</li><li>what is alleged</li><li>and what evidence still needs to be collected.</li></ul>
+<p><strong>8.4</strong> Immediate-risk override If intake suggests immediate protection risk, the case must be escalated for urgent same-day review even if the record is incomplete. This includes payment handling, explicit guarantees, serious customer-harm allegations, fraud, systematic private solicitation, and side-deal allegations.</p>
+<h2 class="aff-h2">9. Case Status Model Each case should move through controlled statuses such as</h2>
+<p>:</p>
+<ul class="aff-ul"><li>Open</li><li>Intake Complete</li><li>Under Review</li><li>Evidence Pending</li><li>Interim Controls Active</li><li>Cross-Functional Review</li><li>Decision Pending</li><li>Closed</li><li>Reopened The case file should also record whether:</li><li>customer communication is pending</li><li>affiliate communication is pending</li><li>finance action is pending</li><li>product action is pending</li><li>legal/privacy review is pending</li><li>or remediation follow-up remains open.</li></ul>
+<h2 class="aff-h2">10. Evidence Collection Standards</h2>
+<p><strong>10.1</strong> Core evidence rule Evidence should be collected as early as possible and preserved in a retrievable case file.</p>
+<p><strong>10.2</strong> Evidence types Where relevant and available, collect:</p>
+<ul class="aff-ul"><li>screenshots</li><li>URLs</li><li>post / story / caption copies</li><li>video references or files</li><li>message transcripts</li><li>support records</li><li>complaint statements</li><li>affiliate responses</li><li>attribution records</li><li>referral-status records</li><li>KYC / qualification state</li><li>payout state</li><li>material version used</li><li>onboarding / training records</li><li>prior warnings</li><li>and admin action logs.</li></ul>
+<p><strong>10.3</strong> Volatile-content preservation Where content may disappear, be edited, or be deleted, preserve the available version promptly.</p>
+<p><strong>10.4</strong> Evidence labeling Each evidence item should be labeled with:</p>
+<ul class="aff-ul"><li>case ID</li><li>evidence type</li><li>source</li><li>timestamp</li><li>collector</li><li>and description.</li></ul>
+<p><strong>10.5</strong> Integrity rule Do not alter original evidence except to create clearly marked working copies, excerpts, or summaries.</p>
+<p><strong>10.6</strong> Missing-evidence rule If evidence cannot be obtained, record:</p>
+<ul class="aff-ul"><li>what could not be obtained</li><li>why</li><li>what substitute evidence exists</li><li>and whether the case proceeds on available information only.</li></ul>
+<p><strong>10.7</strong> Evidence access rule Access to case evidence should be limited to personnel with a legitimate review need, especially where private messages, customer data, payout-impact records, or privacy-sensitive materials are involved.</p>
+<p><strong>10.8</strong> Evidence hold For serious, critical, clawback-related, legal, privacy, or repeat-pattern cases, the Case Owner should mark the file with an Evidence Hold or equivalent retention flag.</p>
+<h2 class="aff-h2">11. Triage Levels</h2>
+<p>Level 1 — Minor / Low Risk Examples:</p>
+<ul class="aff-ul"><li>outdated material use</li><li>first-time low-impact copy drift</li><li>minor process confusion</li><li>low-impact complaint with no advice, payment, fraud, or repeat pattern. Typical handling:</li><li>normal queue review</li><li>warning</li><li>correction</li><li>retraining where needed. Level 2 — Moderate / Material Risk Examples:</li><li>repeated non-compliant wording</li><li>unapproved material use</li><li>possible recommendation-style wording</li><li>repeated missing disclosures</li><li>referral disputes with payout impact. Typical handling:</li><li>formal review</li><li>evidence request</li><li>targeted hold or freeze if needed</li><li>compliance involvement. Level 3 — Serious / High Risk Examples:</li><li>advice allegation</li><li>asset recommendation allegation</li><li>systematic private outreach</li><li>side-deal allegation</li><li>suspicious payout case</li><li>suspected self-referral</li><li>significant misleading content</li><li>repeated prior issues. Typical handling:</li><li>urgent formal case</li><li>freeze relevant referrals / payouts</li><li>consider temporary suspension</li><li>cross-functional escalation. Level 4 — Critical / Immediate Protection Case Examples:</li><li>payment handling</li><li>explicit guarantees</li><li>fraud / manipulation</li><li>confirmed referral ring</li><li>impersonation</li><li>repeated serious misconduct after notice</li><li>material customer-harm risk</li><li>sensitive media / legal / regulatory exposure. Typical handling:</li><li>urgent escalation</li><li>immediate interim controls</li><li>management and legal/privacy review where applicable</li><li>preservation of all relevant records</li><li>no payout release pending final determination. This is consistent with the current SOP draft and the program’s payout-control logic.</li></ul>
+<h2 class="aff-h2">12. Escalation Paths</h2>
+<p><strong>12.1</strong> Default path Support / Intake → Affiliate Operations → Compliance review → Finance / Product / Legal input as needed → Decision owner</p>
+<p><strong>12.2</strong> Mandatory compliance escalation Escalate to Compliance where the case involves:</p>
+<ul class="aff-ul"><li>advice</li><li>recommendation</li><li>guarantee</li><li>missing required disclosures</li><li>unapproved materials</li><li>private outreach</li><li>self-referral</li><li>related-party abuse</li><li>referral ring</li><li>fraud / abuse</li><li>or repeated breach behavior.</li></ul>
+<p><strong>12.3</strong> Mandatory finance escalation Escalate to Finance where the case involves:</p>
+<ul class="aff-ul"><li>pending payout</li><li>payable commission</li><li>reversal/refund/chargeback impact</li><li>offset or clawback</li><li>tax / payout readiness issues</li><li>or payout-batch release impact.</li></ul>
+<p><strong>12.4</strong> Mandatory legal/privacy escalation Escalate to Legal / Privacy where the case involves:</p>
+<ul class="aff-ul"><li>privacy-sensitive evidence</li><li>a legal demand</li><li>regulatory complaint or threat</li><li>severe customer-harm allegations</li><li>cross-border handling</li><li>or any case designated high-risk by management.</li></ul>
+<p><strong>12.5</strong> Management escalation Escalate to Management for:</p>
+<ul class="aff-ul"><li>critical cases</li><li>permanent-removal proposals</li><li>large financial exposure</li><li>repeat-pattern affiliate issues</li><li>or material reputational risk.</li></ul>
+<h2 class="aff-h2">13. Interim Control Logic</h2>
+<p><strong>13.1</strong> Purpose Interim controls are temporary protective measures used to stop or contain risk while facts are reviewed.</p>
+<p><strong>13.2</strong> Types of interim controls POOOL may apply one or more of the following:</p>
+<ul class="aff-ul"><li>link freeze / deactivation</li><li>payout freeze</li><li>referral qualification freeze</li><li>tier-credit freeze or exclusion</li><li>material access restriction</li><li>dashboard restriction</li><li>temporary affiliate status restriction</li><li>content takedown request</li><li>temporary suspension</li><li>evidence-hold flag.</li></ul>
+<p><strong>13.3</strong> Triggers Interim controls may be applied where:</p>
+<ul class="aff-ul"><li>qualification is disputed</li><li>serious breach indicators exist</li><li>customer harm may continue</li><li>fraud or manipulation risk is open</li><li>reversal risk exists</li><li>payout release would be unsafe</li><li>evidence is still being collected</li><li>or continued activity could worsen exposure.</li></ul>
+<p><strong>13.4</strong> Approval matrix POOOL should maintain an internal approval matrix for interim controls. Recommended working logic:</p>
+<ul class="aff-ul"><li>Level 1: normally no freeze unless specific reason exists</li><li>Level 2: targeted hold/freeze by Operations/Compliance within authority</li><li>Level 3 / 4: immediate interim controls with Compliance notification</li><li>payout freeze affecting payment release: Finance involvement required</li><li>suspension, permanent removal, or major clawback cases: elevated approval required</li></ul>
+<p><strong>13.5</strong> Communication rule Where appropriate and legally permissible, the Affiliate should be informed that:</p>
+<ul class="aff-ul"><li>a review is open</li><li>one or more functions are temporarily restricted</li><li>and further details will follow subject to investigation needs.</li></ul>
+<h2 class="aff-h2">14. Investigation Process</h2>
+<p>Step 1 — Open case</p>
+<ul class="aff-ul"><li>assign case ID</li><li>classify the case</li><li>assign Case Owner</li><li>record initial facts</li><li>assign triage level. Step 2 — Preserve evidence</li><li>save content</li><li>collect logs</li><li>preserve volatile evidence</li><li>preserve status history</li><li>apply Evidence Hold where needed. Step 3 — Assess immediate protection needs</li><li>decide whether interim controls are required</li><li>apply urgent controls where necessary. Step 4 — Gather facts</li><li>obtain internal system data</li><li>gather customer statements</li><li>request affiliate explanation where appropriate</li><li>gather onboarding/training/material-history information</li><li>review prior case history. Step 5 — Analyze against rule set Assess the conduct against:</li><li>Terms</li><li>Code of Conduct</li><li>Marketing Materials Policy</li><li>Qualified Referral &amp; Payout Policy</li><li>disclosure requirements</li><li>monitoring / suspension / clawback controls. Step 6 — Determine outcome Possible outcomes include:</li><li>no breach found</li><li>corrective breach</li><li>serious breach</li><li>critical breach</li><li>qualification issue only</li><li>payout issue only</li><li>process failure</li><li>mixed outcome. Step 7 — Apply action Possible actions include:</li><li>no action</li><li>warning</li><li>correction</li><li>retraining</li><li>takedown</li><li>referral exclusion</li><li>payout denial</li><li>payout freeze</li><li>suspension</li><li>clawback review</li><li>permanent removal</li><li>or process remediation. Step 8 — Document and communicate</li><li>finalize decision summary</li><li>update statuses</li><li>send approved communications</li><li>assign follow-up tasks</li><li>close or monitor the case.</li></ul>
+<h2 class="aff-h2">15. Financial Correction Bridge</h2>
+<p><strong>15.1</strong> If a case affects referral qualification, payable status, payout release, offset, reversal, or clawback, the case file must be linked to the corresponding qualification / payout record or equivalent system object.</p>
+<p><strong>15.2</strong> The case file should record:</p>
+<ul class="aff-ul"><li>affected referral IDs</li><li>affected commission IDs</li><li>affected payout batch if applicable</li><li>amount at issue</li><li>status change</li><li>and reason code.</li></ul>
+<p><strong>15.3</strong> Serious or critical unresolved cases affecting payout must block payout release until the case status and the financial status are reconciled. That is already reflected in the current SOP and should remain explicit.</p>
+<h2 class="aff-h2">16. Decision Documentation Standards</h2>
+<p>Every case must end with a documented decision record containing at minimum:</p>
+<ul class="aff-ul"><li>case ID</li><li>allegation or trigger summary</li><li>evidence reviewed</li><li>rules implicated</li><li>triage level</li><li>interim controls used</li><li>action taken</li><li>affected referrals / commissions if any</li><li>rationale</li><li>decision owner</li><li>approval level where required</li><li>date/time</li><li>and follow-up requirements. For payout-impact cases also record:</li><li>amount at issue</li><li>payout status</li><li>hold/freeze decision</li><li>reversal / offset / clawback status</li><li>and Finance sign-off if relevant.</li></ul>
+<h2 class="aff-h2">17. Standard Outcomes</h2>
+<p>Standard outcome categories should include:</p>
+<ul class="aff-ul"><li>No Breach / No Action</li><li>Corrective Outcome</li><li>Restricted Outcome</li><li>Suspended Outcome</li><li>Financial Correction Outcome</li><li>Permanent Removal Outcome</li><li>Process Remediation Outcome</li><li>Referred to Legal / Privacy Each outcome should be reason-coded.</li></ul>
+<h2 class="aff-h2">18. Communication Standards</h2>
+<p><strong>18.1</strong> Customer and Affiliate communications must:</p>
+<ul class="aff-ul"><li>use approved templates or approved controlled language</li><li>remain factual and minimal</li><li>avoid prejudging facts before final determination</li><li>avoid unnecessary disclosure of internal details</li><li>and remain consistent with privacy, legal, and case-integrity requirements.</li></ul>
+<p><strong>18.2</strong> Support must not improvise legal conclusions or promise a specific result.</p>
+<p><strong>18.3</strong> Complaining customers may be told that the matter was received, reviewed, and appropriately handled, but internal details may be withheld where necessary for privacy, security, legal, or integrity reasons.</p>
+<p><strong>18.4</strong> Affiliates under review may be required to provide evidence or explanation within the timeframe set by POOOL, subject to applicable law.</p>
+<h2 class="aff-h2">19. Closure Procedure A case may be closed only after</h2>
+<p>:</p>
+<ul class="aff-ul"><li>reasonably available evidence has been reviewed</li><li>the decision has been documented</li><li>required system actions are completed</li><li>communications are sent or recorded</li><li>financial impacts are reconciled where relevant</li><li>and follow-up remediation tasks are assigned.</li></ul>
+<p><strong>19.1</strong> Closure statuses Recommended closure statuses:</p>
+<ul class="aff-ul"><li>Closed — No Action</li><li>Closed — Corrective Action</li><li>Closed — Warning Issued</li><li>Closed — Restricted / Frozen</li><li>Closed — Suspended</li><li>Closed — Financial Correction</li><li>Closed — Removed</li><li>Closed — Referred to Legal / Privacy</li><li>Closed — Process Remediation Required</li></ul>
+<p><strong>19.2</strong> Reopening rule A case may be reopened where:</p>
+<ul class="aff-ul"><li>new evidence is received</li><li>a repeated pattern emerges</li><li>a linked financial event later reverses</li><li>a legal / privacy / management instruction requires reopening</li><li>or a control failure is later identified.</li></ul>
+<h2 class="aff-h2">20. Record Retention and Case Access</h2>
+<p><strong>20.1</strong> For every case, POOOL should retain:</p>
+<ul class="aff-ul"><li>intake record</li><li>evidence log</li><li>preserved files / screenshots / URLs</li><li>customer / affiliate communications</li><li>decision summary</li><li>status-change history</li><li>payout / freeze / clawback records</li><li>approval records</li><li>and closure record.</li></ul>
+<p><strong>20.2</strong> Retention periods must follow POOOL’s retention schedule and any legal, tax, complaint, fraud, audit, privacy, or litigation hold requirements.</p>
+<p><strong>20.3</strong> Cases involving clawback, legal escalation, privacy review, repeated misconduct, or customer-harm concerns should carry appropriate hold flags.</p>
+<p><strong>20.4</strong> Access to case files should be role-limited and need-based.</p>
+<h2 class="aff-h2">21. Reason Codes</h2>
+<p>POOOL should maintain standardized reason codes, including:</p>
+<ul class="aff-ul"><li>guarantee / return claim</li><li>advice / recommendation</li><li>private cold outreach</li><li>unapproved material</li><li>missing disclosure</li><li>payment handling</li><li>side deal</li><li>self-referral</li><li>related-party referral abuse</li><li>referral ring</li><li>payout dispute</li><li>attribution dispute</li><li>reversal / refund / chargeback</li><li>fraud / manipulation</li><li>non-cooperation</li><li>process failure</li><li>other.</li></ul>
+<h2 class="aff-h2">22. Review and Change Control</h2>
+<p><strong>22.1</strong> This SOP should be reviewed:</p>
+<ul class="aff-ul"><li>before launch</li><li>after pilot-stage learnings</li><li>after serious incidents</li><li>after material policy changes</li><li>and periodically during active operation.</li></ul>
+<p><strong>22.2</strong> Material changes should be version-controlled and communicated to relevant teams.</p>
+<p><strong>22.3</strong> Templates, macros, and implementation checklists may be maintained separately, but must remain harmonized with this SOP.</p>
+<p><strong>22.4</strong> Summary pages, onboarding copy, support snippets, and admin helper text do not amend this SOP unless POOOL expressly states otherwise in writing.</p>
+
+
+          <p style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #f2f4f7; font-size: 14px; color: #717680;">
+            Questions about the Affiliate Program? Contact <a href="mailto:affiliate@poool.app" style="color: #0000FF; text-decoration: none;">affiliate@poool.app</a>.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>

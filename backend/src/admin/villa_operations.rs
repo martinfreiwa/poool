@@ -13,6 +13,7 @@
 //! DB error).
 
 use crate::admin::extractors::{AdminUser, ApiError};
+use crate::admin::villa_nav_snapshot;
 use crate::auth::routes::AppState;
 use axum::extract::{Path, Query, State};
 use axum::Json;
@@ -38,11 +39,17 @@ pub struct VillaOperationsInput {
     pub expense_pool_garden_idr_cents: i64,
     pub expense_pest_idr_cents: i64,
     pub expense_other_idr_cents: i64,
+    pub expense_property_tax_idr_cents: i64,
+    pub expense_insurance_idr_cents: i64,
+    pub expense_accounting_idr_cents: i64,
+    pub expense_internet_idr_cents: i64,
+    pub expense_capex_idr_cents: i64,
     pub ota_fees_idr_cents: i64,
     pub payment_fees_idr_cents: i64,
     pub refunds_idr_cents: i64,
     pub mgmt_fee_idr_cents: i64,
     pub reserve_override_idr_cents: Option<i64>,
+    pub mgmt_reported_distributable_idr_cents: Option<i64>,
     pub correction_reason: Option<String>,
     pub supersedes_id: Option<i64>,
 }
@@ -69,6 +76,11 @@ pub struct VillaOperationsRow {
     pub expense_pool_garden_idr_cents: i64,
     pub expense_pest_idr_cents: i64,
     pub expense_other_idr_cents: i64,
+    pub expense_property_tax_idr_cents: i64,
+    pub expense_insurance_idr_cents: i64,
+    pub expense_accounting_idr_cents: i64,
+    pub expense_internet_idr_cents: i64,
+    pub expense_capex_idr_cents: i64,
     pub ota_fees_idr_cents: i64,
     pub payment_fees_idr_cents: i64,
     pub refunds_idr_cents: i64,
@@ -83,11 +95,13 @@ pub struct VillaOperationsRow {
     pub withholding_idr_cents: i64,
     pub distributable_idr_cents: i64,
     pub distributable_usd_cents: i64,
+    pub mgmt_reported_distributable_idr_cents: Option<i64>,
     pub status: String,
     pub supersedes_id: Option<i64>,
     pub correction_reason: Option<String>,
     pub submitted_by: Option<Uuid>,
     pub approved_by: Option<Uuid>,
+    pub rejected_reason: Option<String>,
     pub published_at: Option<chrono::DateTime<chrono::Utc>>,
     pub recorded_at: chrono::DateTime<chrono::Utc>,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -117,6 +131,8 @@ pub fn compute_totals(
     withholding_bps: i32,
     reserve_override: Option<i64>,
 ) -> ComputedTotals {
+    // CapEx (expense_capex_idr_cents) is intentionally excluded — it is tracked
+    // for transparency but is not an operating expense and must not reduce distributable.
     let total_opex = (input.expense_cleaning_idr_cents as i128)
         + (input.expense_maintenance_idr_cents as i128)
         + (input.expense_utilities_idr_cents as i128)
@@ -124,6 +140,10 @@ pub fn compute_totals(
         + (input.expense_pool_garden_idr_cents as i128)
         + (input.expense_pest_idr_cents as i128)
         + (input.expense_other_idr_cents as i128)
+        + (input.expense_property_tax_idr_cents as i128)
+        + (input.expense_insurance_idr_cents as i128)
+        + (input.expense_accounting_idr_cents as i128)
+        + (input.expense_internet_idr_cents as i128)
         + (input.ota_fees_idr_cents as i128)
         + (input.payment_fees_idr_cents as i128)
         + (input.mgmt_fee_idr_cents as i128)
@@ -218,47 +238,60 @@ pub async fn api_admin_villa_operations_create(
             expense_cleaning_idr_cents, expense_maintenance_idr_cents,
             expense_utilities_idr_cents, expense_staff_idr_cents,
             expense_pool_garden_idr_cents, expense_pest_idr_cents,
-            expense_other_idr_cents, ota_fees_idr_cents,
-            payment_fees_idr_cents, refunds_idr_cents, mgmt_fee_idr_cents,
+            expense_other_idr_cents,
+            expense_property_tax_idr_cents, expense_insurance_idr_cents,
+            expense_accounting_idr_cents, expense_internet_idr_cents,
+            expense_capex_idr_cents,
+            ota_fees_idr_cents, payment_fees_idr_cents, refunds_idr_cents, mgmt_fee_idr_cents,
             total_opex_idr_cents, net_rental_income_idr_cents,
             reserve_override_idr_cents, reserve_applied_idr_cents,
             platform_fee_idr_cents, withholding_idr_cents, distributable_idr_cents,
+            mgmt_reported_distributable_idr_cents,
             status, supersedes_id, correction_reason, submitted_by
         ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-            $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, 'draft', $26, $27, $28
+            $1,  $2,  $3,  $4,  $5,  $6,  $7,  $8,  $9,  $10, $11, $12, $13, $14,
+            $15, $16, $17, $18, $19,
+            $20, $21, $22, $23,
+            $24, $25, $26, $27, $28, $29, $30, $31,
+            'draft', $32, $33, $34
         )
         RETURNING *
         "#,
     )
-    .bind(asset_id)
-    .bind(input.period_year)
-    .bind(input.period_month)
-    .bind(input.gross_rental_idr_cents)
-    .bind(input.currency_code.unwrap_or_else(|| "IDR".to_string()))
-    .bind(input.nights_available)
-    .bind(input.nights_booked)
-    .bind(input.expense_cleaning_idr_cents)
-    .bind(input.expense_maintenance_idr_cents)
-    .bind(input.expense_utilities_idr_cents)
-    .bind(input.expense_staff_idr_cents)
-    .bind(input.expense_pool_garden_idr_cents)
-    .bind(input.expense_pest_idr_cents)
-    .bind(input.expense_other_idr_cents)
-    .bind(input.ota_fees_idr_cents)
-    .bind(input.payment_fees_idr_cents)
-    .bind(input.refunds_idr_cents)
-    .bind(input.mgmt_fee_idr_cents)
-    .bind(totals.total_opex_idr_cents)
-    .bind(totals.net_rental_income_idr_cents)
-    .bind(input.reserve_override_idr_cents)
-    .bind(totals.reserve_applied_idr_cents)
-    .bind(totals.platform_fee_idr_cents)
-    .bind(totals.withholding_idr_cents)
-    .bind(totals.distributable_idr_cents)
-    .bind(input.supersedes_id)
-    .bind(input.correction_reason.clone())
-    .bind(admin.user.id)
+    .bind(asset_id)                                         // $1
+    .bind(input.period_year)                                // $2
+    .bind(input.period_month)                               // $3
+    .bind(input.gross_rental_idr_cents)                     // $4
+    .bind(input.currency_code.unwrap_or_else(|| "IDR".to_string())) // $5
+    .bind(input.nights_available)                           // $6
+    .bind(input.nights_booked)                              // $7
+    .bind(input.expense_cleaning_idr_cents)                 // $8
+    .bind(input.expense_maintenance_idr_cents)              // $9
+    .bind(input.expense_utilities_idr_cents)                // $10
+    .bind(input.expense_staff_idr_cents)                    // $11
+    .bind(input.expense_pool_garden_idr_cents)              // $12
+    .bind(input.expense_pest_idr_cents)                     // $13
+    .bind(input.expense_other_idr_cents)                    // $14
+    .bind(input.expense_property_tax_idr_cents)             // $15
+    .bind(input.expense_insurance_idr_cents)                // $16
+    .bind(input.expense_accounting_idr_cents)               // $17
+    .bind(input.expense_internet_idr_cents)                 // $18
+    .bind(input.expense_capex_idr_cents)                    // $19
+    .bind(input.ota_fees_idr_cents)                         // $20
+    .bind(input.payment_fees_idr_cents)                     // $21
+    .bind(input.refunds_idr_cents)                          // $22
+    .bind(input.mgmt_fee_idr_cents)                         // $23
+    .bind(totals.total_opex_idr_cents)                      // $24
+    .bind(totals.net_rental_income_idr_cents)               // $25
+    .bind(input.reserve_override_idr_cents)                 // $26
+    .bind(totals.reserve_applied_idr_cents)                 // $27
+    .bind(totals.platform_fee_idr_cents)                    // $28
+    .bind(totals.withholding_idr_cents)                     // $29
+    .bind(totals.distributable_idr_cents)                   // $30
+    .bind(input.mgmt_reported_distributable_idr_cents)      // $31
+    .bind(input.supersedes_id)                              // $32
+    .bind(input.correction_reason.clone())                  // $33
+    .bind(admin.user.id)                                    // $34
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
@@ -298,53 +331,65 @@ pub async fn api_admin_villa_operations_update(
     let row: VillaOperationsRow = sqlx::query_as(
         r#"
         UPDATE villa_operations_log SET
-            gross_rental_idr_cents       = $2,
-            nights_available             = $3,
-            nights_booked                = $4,
-            expense_cleaning_idr_cents   = $5,
-            expense_maintenance_idr_cents= $6,
-            expense_utilities_idr_cents  = $7,
-            expense_staff_idr_cents      = $8,
-            expense_pool_garden_idr_cents= $9,
-            expense_pest_idr_cents       = $10,
-            expense_other_idr_cents      = $11,
-            ota_fees_idr_cents           = $12,
-            payment_fees_idr_cents       = $13,
-            refunds_idr_cents            = $14,
-            mgmt_fee_idr_cents           = $15,
-            total_opex_idr_cents         = $16,
-            net_rental_income_idr_cents  = $17,
-            reserve_override_idr_cents   = $18,
-            reserve_applied_idr_cents    = $19,
-            platform_fee_idr_cents       = $20,
-            withholding_idr_cents        = $21,
-            distributable_idr_cents      = $22
+            gross_rental_idr_cents                   = $2,
+            nights_available                         = $3,
+            nights_booked                            = $4,
+            expense_cleaning_idr_cents               = $5,
+            expense_maintenance_idr_cents            = $6,
+            expense_utilities_idr_cents              = $7,
+            expense_staff_idr_cents                  = $8,
+            expense_pool_garden_idr_cents            = $9,
+            expense_pest_idr_cents                   = $10,
+            expense_other_idr_cents                  = $11,
+            expense_property_tax_idr_cents           = $12,
+            expense_insurance_idr_cents              = $13,
+            expense_accounting_idr_cents             = $14,
+            expense_internet_idr_cents               = $15,
+            expense_capex_idr_cents                  = $16,
+            ota_fees_idr_cents                       = $17,
+            payment_fees_idr_cents                   = $18,
+            refunds_idr_cents                        = $19,
+            mgmt_fee_idr_cents                       = $20,
+            total_opex_idr_cents                     = $21,
+            net_rental_income_idr_cents              = $22,
+            reserve_override_idr_cents               = $23,
+            reserve_applied_idr_cents                = $24,
+            platform_fee_idr_cents                   = $25,
+            withholding_idr_cents                    = $26,
+            distributable_idr_cents                  = $27,
+            mgmt_reported_distributable_idr_cents    = $28
         WHERE id = $1 AND status IN ('draft','submitted')
         RETURNING *
         "#,
     )
-    .bind(log_id)
-    .bind(input.gross_rental_idr_cents)
-    .bind(input.nights_available)
-    .bind(input.nights_booked)
-    .bind(input.expense_cleaning_idr_cents)
-    .bind(input.expense_maintenance_idr_cents)
-    .bind(input.expense_utilities_idr_cents)
-    .bind(input.expense_staff_idr_cents)
-    .bind(input.expense_pool_garden_idr_cents)
-    .bind(input.expense_pest_idr_cents)
-    .bind(input.expense_other_idr_cents)
-    .bind(input.ota_fees_idr_cents)
-    .bind(input.payment_fees_idr_cents)
-    .bind(input.refunds_idr_cents)
-    .bind(input.mgmt_fee_idr_cents)
-    .bind(totals.total_opex_idr_cents)
-    .bind(totals.net_rental_income_idr_cents)
-    .bind(input.reserve_override_idr_cents)
-    .bind(totals.reserve_applied_idr_cents)
-    .bind(totals.platform_fee_idr_cents)
-    .bind(totals.withholding_idr_cents)
-    .bind(totals.distributable_idr_cents)
+    .bind(log_id)                                           // $1
+    .bind(input.gross_rental_idr_cents)                     // $2
+    .bind(input.nights_available)                           // $3
+    .bind(input.nights_booked)                              // $4
+    .bind(input.expense_cleaning_idr_cents)                 // $5
+    .bind(input.expense_maintenance_idr_cents)              // $6
+    .bind(input.expense_utilities_idr_cents)                // $7
+    .bind(input.expense_staff_idr_cents)                    // $8
+    .bind(input.expense_pool_garden_idr_cents)              // $9
+    .bind(input.expense_pest_idr_cents)                     // $10
+    .bind(input.expense_other_idr_cents)                    // $11
+    .bind(input.expense_property_tax_idr_cents)             // $12
+    .bind(input.expense_insurance_idr_cents)                // $13
+    .bind(input.expense_accounting_idr_cents)               // $14
+    .bind(input.expense_internet_idr_cents)                 // $15
+    .bind(input.expense_capex_idr_cents)                    // $16
+    .bind(input.ota_fees_idr_cents)                         // $17
+    .bind(input.payment_fees_idr_cents)                     // $18
+    .bind(input.refunds_idr_cents)                          // $19
+    .bind(input.mgmt_fee_idr_cents)                         // $20
+    .bind(totals.total_opex_idr_cents)                      // $21
+    .bind(totals.net_rental_income_idr_cents)               // $22
+    .bind(input.reserve_override_idr_cents)                 // $23
+    .bind(totals.reserve_applied_idr_cents)                 // $24
+    .bind(totals.platform_fee_idr_cents)                    // $25
+    .bind(totals.withholding_idr_cents)                     // $26
+    .bind(totals.distributable_idr_cents)                   // $27
+    .bind(input.mgmt_reported_distributable_idr_cents)      // $28
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
@@ -506,6 +551,47 @@ pub async fn api_admin_villa_operations_publish(
 
     tx.commit().await.map_err(ApiError::Database)?;
 
+    // Kick off a NAV snapshot in the background — fire-and-forget, does not block response.
+    // run_snapshot_for_all_assets is idempotent (UPSERTs on asset_id + snapshot_date).
+    {
+        let pool = state.db.clone();
+        tokio::spawn(async move {
+            if let Err(e) = villa_nav_snapshot::run_snapshot_for_all_assets(&pool).await {
+                tracing::warn!("post-publish NAV snapshot failed: {e}");
+            }
+        });
+    }
+
+    // Auto-distribute immediately after publish: generate dividend_payouts rows and
+    // credit investor wallets in one background task. Both steps are idempotent so
+    // the manual "Distribute" button on the UI remains a safe no-op retry.
+    {
+        let pool      = state.db.clone();
+        let actor_id  = admin.user.id;
+        let asset_id_ = row.asset_id;
+        let log_id_   = row.id;
+        tokio::spawn(async move {
+            match distribute_core(&pool, asset_id_, log_id_, actor_id).await {
+                Err(e) => {
+                    tracing::warn!("post-publish auto-distribute failed: {e:?}");
+                }
+                Ok(dist) => {
+                    tracing::info!(
+                        "post-publish auto-distribute: created={} skipped={} total={}",
+                        dist.created, dist.skipped, dist.total_paid_cents
+                    );
+                    match process_payouts_core(&pool, asset_id_, log_id_, actor_id).await {
+                        Err(e) => tracing::warn!("post-publish auto-process-payouts failed: {e:?}"),
+                        Ok(pp) => tracing::info!(
+                            "post-publish auto-process-payouts: paid={} total={}",
+                            pp.paid_count, pp.paid_total_cents
+                        ),
+                    }
+                }
+            }
+        });
+    }
+
     // Notify the submitter that their row is live (W15).
     if let Some(submitter_id) = row.submitted_by {
         let _ = sqlx::query(
@@ -528,6 +614,19 @@ pub async fn api_admin_villa_operations_publish(
             row.asset_id, row.period_year, row.period_month, row.id
         ))
         .execute(&state.db)
+        .await;
+
+        let _ = crate::email::trigger_transactional_email(
+            &state.db,
+            &submitter_id,
+            "operations_published",
+            serde_json::json!({
+                "period_year":          row.period_year,
+                "period_month":         row.period_month,
+                "asset_id":             row.asset_id,
+                "distributable_idr":    row.distributable_idr_cents,
+            }),
+        )
         .await;
     }
 
@@ -852,6 +951,19 @@ pub async fn api_admin_villa_operations_reject(
         ))
         .execute(&state.db)
         .await;
+
+        let _ = crate::email::trigger_transactional_email(
+            &state.db,
+            &submitter_id,
+            "operations_rejected",
+            serde_json::json!({
+                "period_year":  row.period_year,
+                "period_month": row.period_month,
+                "asset_id":     row.asset_id,
+                "reason":       input.reason.clone(),
+            }),
+        )
+        .await;
     }
 
     write_audit(
@@ -878,12 +990,15 @@ pub struct ProcessPayoutsResult {
     pub skipped_already_paid: i64,
 }
 
-pub async fn api_admin_villa_operations_process_payouts(
-    admin: AdminUser,
-    State(state): State<AppState>,
-    Path((asset_id, log_id)): Path<(Uuid, i64)>,
-) -> Result<Json<ProcessPayoutsResult>, ApiError> {
-    let log_row = load_row(&state.db, log_id).await?;
+/// Core process-payouts logic — extracted so it can be called from both the
+/// HTTP handler and the post-publish background task.
+pub(crate) async fn process_payouts_core(
+    pool: &PgPool,
+    asset_id: Uuid,
+    log_id: i64,
+    actor_id: Uuid,
+) -> Result<ProcessPayoutsResult, ApiError> {
+    let log_row = load_row(pool, log_id).await?;
     if log_row.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
     }
@@ -909,7 +1024,7 @@ pub async fn api_admin_villa_operations_process_payouts(
         "#,
     )
     .bind(log_id)
-    .fetch_all(&state.db)
+    .fetch_all(pool)
     .await
     .map_err(ApiError::Database)?;
 
@@ -920,7 +1035,7 @@ pub async fn api_admin_villa_operations_process_payouts(
         "#,
     )
     .bind(log_id)
-    .fetch_one(&state.db)
+    .fetch_one(pool)
     .await
     .unwrap_or(0);
 
@@ -934,11 +1049,11 @@ pub async fn api_admin_villa_operations_process_payouts(
     let payout_currency: String =
         sqlx::query_scalar("SELECT COALESCE(payout_currency, 'USD') FROM assets WHERE id = $1")
             .bind(asset_id)
-            .fetch_one(&state.db)
+            .fetch_one(pool)
             .await
             .map_err(ApiError::Database)?;
 
-    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    let mut tx = pool.begin().await.map_err(ApiError::Database)?;
     for p in &pending {
         // 1. Ensure user's cash wallet in the asset's payout currency.
         let wallet_id: Uuid = sqlx::query_scalar(
@@ -1024,7 +1139,7 @@ pub async fn api_admin_villa_operations_process_payouts(
         .await
         .map_err(ApiError::Database)?;
 
-        // 6. Notify the investor (W15).
+        // 6. In-app notification for the investor (W15).
         let _ = sqlx::query(
             r#"
             INSERT INTO notifications (user_id, title, message, type, action_url)
@@ -1037,13 +1152,30 @@ pub async fn api_admin_villa_operations_process_payouts(
             log_row.period_year, log_row.period_month
         ))
         .bind(format!(
-            "USD {:.2} credited to your cash wallet for {}-{:02} villa rental dividend.",
+            "{} {:.2} credited to your cash wallet for {}-{:02} villa rental dividend.",
+            payout_currency,
             (p.amount_cents as f64) / 100.0,
             log_row.period_year,
             log_row.period_month
         ))
         .execute(&mut *tx)
         .await;
+
+        // 7. Transactional email — fire-and-forget outside the tx.
+        let email_pool = pool.clone();
+        let email_user = p.user_id;
+        let email_meta = serde_json::json!({
+            "period_year":    log_row.period_year,
+            "period_month":   log_row.period_month,
+            "amount_cents":   p.amount_cents,
+            "currency":       payout_currency.clone(),
+            "asset_id":       asset_id,
+        });
+        tokio::spawn(async move {
+            let _ = crate::email::trigger_transactional_email(
+                &email_pool, &email_user, "dividend_payout", email_meta,
+            ).await;
+        });
 
         paid_count += 1;
         paid_total += p.amount_cents;
@@ -1055,7 +1187,7 @@ pub async fn api_admin_villa_operations_process_payouts(
         VALUES ($1, 'villa_ops.process_payouts', 'villa_operations_log', NULL, $2)
         "#,
     )
-    .bind(admin.user.id)
+    .bind(actor_id)
     .bind(serde_json::json!({
         "log_id": log_id,
         "asset_id": asset_id,
@@ -1068,11 +1200,20 @@ pub async fn api_admin_villa_operations_process_payouts(
 
     tx.commit().await.map_err(ApiError::Database)?;
 
-    Ok(Json(ProcessPayoutsResult {
+    Ok(ProcessPayoutsResult {
         paid_count,
         paid_total_cents: paid_total,
         skipped_already_paid: already_paid,
-    }))
+    })
+}
+
+pub async fn api_admin_villa_operations_process_payouts(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path((asset_id, log_id)): Path<(Uuid, i64)>,
+) -> Result<Json<ProcessPayoutsResult>, ApiError> {
+    let result = process_payouts_core(&state.db, asset_id, log_id, admin.user.id).await?;
+    Ok(Json(result))
 }
 
 /// GET /api/admin/villa-operations-queue — cross-asset queue of submitted rows.
@@ -1236,12 +1377,15 @@ pub struct DistributeResult {
     pub currency: String,
 }
 
-pub async fn api_admin_villa_operations_distribute(
-    admin: AdminUser,
-    State(state): State<AppState>,
-    Path((asset_id, log_id)): Path<(Uuid, i64)>,
-) -> Result<Json<DistributeResult>, ApiError> {
-    let row = load_row(&state.db, log_id).await?;
+/// Core distribute logic — extracted so it can be called from both the HTTP
+/// handler and the post-publish background task.
+pub(crate) async fn distribute_core(
+    pool: &PgPool,
+    asset_id: Uuid,
+    log_id: i64,
+    actor_id: Uuid,
+) -> Result<DistributeResult, ApiError> {
+    let row = load_row(pool, log_id).await?;
     if row.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
     }
@@ -1271,7 +1415,7 @@ pub async fn api_admin_villa_operations_distribute(
         "#,
     )
     .bind(asset_id)
-    .fetch_optional(&state.db)
+    .fetch_optional(pool)
     .await
     .map_err(ApiError::Database)?
     .ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
@@ -1303,12 +1447,12 @@ pub async fn api_admin_villa_operations_distribute(
     };
 
     if total_distributable <= 0 {
-        return Ok(Json(DistributeResult {
+        return Ok(DistributeResult {
             created: 0,
             skipped: 0,
             total_paid_cents: 0,
             currency: payout_currency,
-        }));
+        });
     }
 
     // Record date = end of period_month, day=record_day at 23:59:59 UTC.
@@ -1338,7 +1482,7 @@ pub async fn api_admin_villa_operations_distribute(
     );
     let eligible: Vec<Eligible> = sqlx::query_as(&eligible_sql)
         .bind(asset_id)
-        .fetch_all(&state.db)
+        .fetch_all(pool)
         .await
         .map_err(ApiError::Database)?;
 
@@ -1347,7 +1491,7 @@ pub async fn api_admin_villa_operations_distribute(
     let mut total_paid: i64 = 0;
 
     // One tx for the whole batch.
-    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+    let mut tx = pool.begin().await.map_err(ApiError::Database)?;
     for inv in &eligible {
         // Pro-rata payout, integer arithmetic. `i128` intermediate.
         let amount: i64 =
@@ -1396,7 +1540,7 @@ pub async fn api_admin_villa_operations_distribute(
         VALUES ($1, 'villa_ops.distribute', 'villa_operations_log', NULL, $2)
         "#,
     )
-    .bind(admin.user.id)
+    .bind(actor_id)
     .bind(serde_json::json!({
         "log_id": log_id,
         "asset_id": asset_id,
@@ -1412,12 +1556,21 @@ pub async fn api_admin_villa_operations_distribute(
 
     tx.commit().await.map_err(ApiError::Database)?;
 
-    Ok(Json(DistributeResult {
+    Ok(DistributeResult {
         created,
         skipped,
         total_paid_cents: total_paid,
         currency: payout_currency,
-    }))
+    })
+}
+
+pub async fn api_admin_villa_operations_distribute(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path((asset_id, log_id)): Path<(Uuid, i64)>,
+) -> Result<Json<DistributeResult>, ApiError> {
+    let result = distribute_core(&state.db, asset_id, log_id, admin.user.id).await?;
+    Ok(Json(result))
 }
 
 /// GET /api/admin/villas/:asset_id/config-summary — full Villa-Returns config bundle.
@@ -1704,6 +1857,18 @@ async fn transition(
                 row.asset_id, row.period_year, row.period_month, row.id
             ))
             .execute(pool)
+            .await;
+
+            let _ = crate::email::trigger_transactional_email(
+                pool,
+                &submitter_id,
+                "operations_approved",
+                serde_json::json!({
+                    "period_year":  row.period_year,
+                    "period_month": row.period_month,
+                    "asset_id":     row.asset_id,
+                }),
+            )
             .await;
         }
     }

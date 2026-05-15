@@ -50,6 +50,9 @@ pub enum LockKey {
     PrimaryEscrowAutoRefund = 3006,
     MarketplaceSettingsScheduler = 1006,
     MarketplaceAlertEscalation = 1007,
+    AffiliateRollup = 3007,
+    AffiliateClickPartitionMaint = 3008,
+    AffiliateClickPartitionRetention = 3009,
 }
 
 impl LockKey {
@@ -78,6 +81,9 @@ impl LockKey {
             LockKey::PrimaryEscrowAutoRefund => "primary_escrow_auto_refund",
             LockKey::MarketplaceSettingsScheduler => "marketplace_settings_scheduler",
             LockKey::MarketplaceAlertEscalation => "marketplace_alert_escalation",
+            LockKey::AffiliateRollup => "affiliate_rollup",
+            LockKey::AffiliateClickPartitionMaint => "affiliate_click_partition_maint",
+            LockKey::AffiliateClickPartitionRetention => "affiliate_click_partition_retention",
         }
     }
 }

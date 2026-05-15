@@ -1118,13 +1118,22 @@
         </div>
         <span class="mobile-burger-menu__nav-text">My Submissions</span>
       </a>
-      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+      <a href="/developer/operations" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
-          <img src="/static/images/Menu%20developer/Ranking.svg" alt="Ranking" class="mobile-burger-menu__nav-icon" />
+          <svg class="mobile-burger-menu__nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/>
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <path d="M9 12h6M9 16h6"/>
+          </svg>
         </div>
-        <span class="mobile-burger-menu__nav-text">Ranking</span>
-        <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
-      </div>
+        <span class="mobile-burger-menu__nav-text">Operations</span>
+      </a>
+      <a href="/developer/ranking" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img src="/static/images/Menu%20developer/Ranking.svg" alt="Leaderboard" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Leaderboard</span>
+      </a>
       <a href="/developer/settings" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
           <img src="/static/images/Menu%20developer/Settings.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
@@ -1336,6 +1345,13 @@
           path.includes("/developer/asset-detail")
         ) {
           activateItem("/developer/assets");
+        } else if (
+          path.includes("/developer/operations") ||
+          path.includes("/developer/villas/")
+        ) {
+          activateItem("/developer/operations");
+        } else if (path.includes("/developer/ranking")) {
+          activateItem("/developer/ranking");
         } else if (path.includes("/developer/settings")) {
           activateItem("/developer/settings");
         } else if (path.includes("/developer/support")) {

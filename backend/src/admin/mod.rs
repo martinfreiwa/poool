@@ -2,6 +2,7 @@ use crate::auth::routes::AppState;
 
 /// RBAC and invitation management for admin users.
 pub mod access;
+pub mod affiliate_teams;
 pub mod extractors;
 
 /// Module
@@ -587,10 +588,9 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/rewards/tiers/:tier_name",
             patch(api_admin_tier_update),
         )
-        .route(
-            "/api/admin/rewards/referrals/:ref_id",
-            patch(api_admin_referral_update),
-        )
+        // Legacy `PATCH /api/admin/rewards/referrals/:ref_id` removed (audit
+        // GAP-07, migration 155). New affiliate commissions use the affiliate
+        // payout pipeline instead.
         // Affiliates Onboarding & Payouts
         .route(
             "/api/admin/rewards/affiliates/pending",
@@ -1298,6 +1298,11 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/villas/:asset_id/forecast-suggestions/:id/discard",
             put(villa_forecast::api_admin_forecast_suggestion_discard),
         )
+        .route(
+            "/api/admin/villas/:asset_id/forecast-assumptions",
+            get(villa_forecast::api_admin_forecast_assumptions_list)
+                .put(villa_forecast::api_admin_forecast_assumption_upsert),
+        )
         // ── Villa-Returns B3 — deduction policy ──────────────────────
         .route(
             "/api/villa-expense-categories",
@@ -1354,6 +1359,39 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/admin/villas/:asset_id/valuations/:val_id/edit",
             get(pages::page_admin_villa_valuation_entry),
+        )
+        // ── Developer-Team-Affiliate Admin (Phase 4) ────────────────
+        .route(
+            "/api/admin/affiliate-teams",
+            get(affiliate_teams::api_admin_affiliate_teams_list),
+        )
+        .route(
+            "/api/admin/affiliate-teams/:team_id",
+            get(affiliate_teams::api_admin_affiliate_team_detail),
+        )
+        .route(
+            "/api/admin/affiliate-teams/:team_id/suspend",
+            post(affiliate_teams::api_admin_affiliate_team_suspend),
+        )
+        .route(
+            "/api/admin/affiliate-teams/:team_id/resume",
+            post(affiliate_teams::api_admin_affiliate_team_resume),
+        )
+        .route(
+            "/api/admin/affiliate-teams/:team_id/terminate",
+            post(affiliate_teams::api_admin_affiliate_team_terminate),
+        )
+        .route(
+            "/api/admin/affiliate-teams/members/:membership_id/remove",
+            post(affiliate_teams::api_admin_affiliate_team_member_remove),
+        )
+        .route(
+            "/api/admin/affiliate-teams/members/:membership_id/move",
+            post(affiliate_teams::api_admin_affiliate_team_member_move),
+        )
+        .route(
+            "/admin/affiliate-teams",
+            get(pages::page_admin_affiliate_teams),
         )
         // ── Villa-Returns P2.3 — approvals queue ────────────────────
         // Path avoids /api/admin/approvals/* which is already segmented by

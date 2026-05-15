@@ -1,4 +1,22 @@
 window.initCommunityFeed = function() {
+    // Lightweight toast helper — falls back to window.alert only if toast.js
+    // failed to load. Default kind is 'error' so unannotated failure paths
+    // get the right styling.
+    const toast = (msg, kind) => (typeof window.showToast === 'function')
+        ? window.showToast(msg, kind || 'error')
+        : window.alert(msg);
+
+    // MOB.6: tiny haptic helper. Vibration API only works on Android-style
+    // touch devices that opt in; iOS Safari and desktop are no-ops. Call
+    // sites should keep durations short (≤10ms) so the device feels snappy
+    // rather than buzzy.
+    function haptic(ms) {
+        try {
+            if (navigator.vibrate) navigator.vibrate(ms || 10);
+        } catch (_) { /* permission denied / unsupported */ }
+    }
+    window.pooolHaptic = haptic;
+
     function getCsrfToken() {
         if (typeof window.getCsrfToken === 'function') return window.getCsrfToken();
         if (typeof window.csrfToken === 'function') return window.csrfToken();
@@ -68,6 +86,7 @@ window.initCommunityFeed = function() {
         const countSpan = btn.querySelector('span');
         const currentCount = Number.parseInt(countSpan.textContent, 10) || 0;
         btn.disabled = true;
+        haptic(8);
 
         try {
             const res = await fetch(`/api/community/posts/${postId}/reactions`, {
@@ -181,6 +200,18 @@ window.initCommunityFeed = function() {
 
     // ─── COMMENTS LOGIC ───────────────────────────────────────
     
+    // UX.12 extension: comment-textarea drafts. Per-post key so multiple
+    // half-written comments survive a tab close. Cleared on successful submit.
+    function commentDraftKey(postId) { return 'poool:community:comment:' + postId + ':v1'; }
+    function restoreCommentDraft(postId) {
+        const ta = document.getElementById('comment-input-' + postId);
+        if (!ta) return;
+        try {
+            const draft = localStorage.getItem(commentDraftKey(postId));
+            if (draft && !ta.value) ta.value = draft;
+        } catch (_) { /* localStorage disabled */ }
+    }
+
     window.toggleComments = async function(postId, trigger) {
         const section = document.getElementById(`comments-section-${postId}`);
         const isOpening = section.hidden
@@ -196,9 +227,30 @@ window.initCommunityFeed = function() {
         }
         if (isOpening) {
             section.style.display = 'block';
+            restoreCommentDraft(postId);
             await loadComments(postId);
         }
     };
+
+    // Delegated, debounced auto-save for any comment textarea in the document.
+    // Survives HTMX swaps and feed reloads without a per-card binding.
+    let _commentDraftTimer = null;
+    document.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLTextAreaElement)) return;
+        if (!target.id || !target.id.startsWith('comment-input-')) return;
+        const postId = target.id.replace('comment-input-', '');
+        clearTimeout(_commentDraftTimer);
+        _commentDraftTimer = setTimeout(() => {
+            try {
+                if (target.value && target.value.trim()) {
+                    localStorage.setItem(commentDraftKey(postId), target.value);
+                } else {
+                    localStorage.removeItem(commentDraftKey(postId));
+                }
+            } catch (_) { /* quota / disabled */ }
+        }, 500);
+    });
 
     window.loadComments = async function(postId) {
         const listContainer = document.getElementById(`comments-list-${postId}`);
@@ -360,11 +412,39 @@ window.initCommunityFeed = function() {
                 return row;
             };
 
+            // UX.7 — collapsible reply threads. If a parent has more than
+            // two replies we hide them behind a "Show N replies" toggle so
+            // the comment column stays scannable.
             topLevel.forEach((c) => {
                 const parentRow = buildCommentRow(c, false);
                 listContainer.appendChild(parentRow);
+
                 const replies = repliesByParent.get(c.id) || [];
-                replies.forEach((r) => listContainer.appendChild(buildCommentRow(r, true)));
+                if (replies.length === 0) return;
+
+                const repliesWrap = document.createElement('div');
+                repliesWrap.className = 'community-comment-replies';
+                replies.forEach((r) => repliesWrap.appendChild(buildCommentRow(r, true)));
+
+                if (replies.length > 2) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.type = 'button';
+                    toggleBtn.className = 'ds-btn ds-btn--ghost ds-btn--sm community-comment-replies-toggle';
+                    let collapsed = true;
+                    const labelCollapsed = `▾ Show ${replies.length} replies`;
+                    const labelExpanded = '▴ Hide replies';
+                    toggleBtn.textContent = labelCollapsed;
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                    repliesWrap.hidden = true;
+                    toggleBtn.addEventListener('click', () => {
+                        collapsed = !collapsed;
+                        repliesWrap.hidden = collapsed;
+                        toggleBtn.textContent = collapsed ? labelCollapsed : labelExpanded;
+                        toggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                    });
+                    listContainer.appendChild(toggleBtn);
+                }
+                listContainer.appendChild(repliesWrap);
             });
         } catch (e) {
             console.error(e);
@@ -428,7 +508,7 @@ window.initCommunityFeed = function() {
         const input = document.getElementById(`comment-input-${postId}`);
         const content = input.value.trim();
         if (!content) return;
-        
+
         try {
             input.disabled = true;
             const res = await fetch(`/api/community/posts/${postId}/comments`, {
@@ -443,10 +523,12 @@ window.initCommunityFeed = function() {
             }
             input.value = '';
             input.disabled = false;
+            // UX.12: drop the per-post comment draft after successful post.
+            try { localStorage.removeItem(commentDraftKey(postId)); } catch (_) {}
             await loadComments(postId); // reload list
         } catch (e) {
             console.error(e);
-            alert("Failed to post comment: " + e.message);
+            toast("Failed to post comment: " + e.message);
             input.disabled = false;
         }
     };
@@ -462,120 +544,14 @@ window.initCommunityFeed = function() {
         configurable: true,
     });
 
-    window.openUserProfile = async function(userId) {
-        currentProfileId = userId;
-        if (typeof window.openCommunityModal === 'function') {
-            window.openCommunityModal('user-profile-modal');
-        } else {
-            document.getElementById('user-profile-modal').style.display = 'block';
-        }
-        document.getElementById('profile-loading-state').style.display = 'block';
-        document.getElementById('profile-content-state').style.display = 'none';
-
-        try {
-            const res = await fetch(`/api/community/profile/${userId}`, { credentials: 'same-origin' });
-            if (!res.ok) throw new Error("Profile not found");
-            const profile = await res.json();
-
-            // Populate Modal
-            document.getElementById('profile-modal-name').innerText = profile.display_name;
-            document.getElementById('profile-modal-bio').innerText = profile.bio || "This user hasn't written a bio yet.";
-            document.getElementById('profile-modal-followers').innerText = profile.follower_count;
-            document.getElementById('profile-modal-following').innerText = profile.following_count;
-            document.getElementById('profile-modal-posts').innerText = profile.post_count;
-            // WS3.6: link to the full profile page.
-            const viewFull = document.getElementById('profile-modal-view-full');
-            if (viewFull) viewFull.href = '/community/u/' + encodeURIComponent(userId);
-
-            const badgesContainer = document.getElementById('profile-modal-badges');
-            badgesContainer.replaceChildren();
-            if (profile.badges && profile.badges.length > 0) {
-                profile.badges.forEach((badge) => {
-                    // 14.8.13 — clickable badge linking to /community/badge/:id SSR page.
-                    // Falls back to <div> if id missing (older payloads).
-                    const badgeEl = badge.id
-                        ? document.createElement('a')
-                        : document.createElement('div');
-                    if (badge.id) {
-                        badgeEl.href = `/community/badge/${badge.id}`;
-                    }
-                    badgeEl.title = badge.name || '';
-                    badgeEl.className = 'community-profile-badge';
-
-                    const icon = document.createElement('span');
-                    icon.textContent = badge.icon || '';
-                    const name = document.createElement('span');
-                    name.className = 'community-profile-badge__name';
-                    name.textContent = badge.name || 'Badge';
-
-                    badgeEl.appendChild(icon);
-                    badgeEl.appendChild(name);
-                    badgesContainer.appendChild(badgeEl);
-                });
-            } else {
-                appendTextEmptyState(badgesContainer, 'No badges earned yet.', 'font-size:13px; color:#98A2B3;');
-            }
-
-            const avatarContainer = document.getElementById('profile-modal-avatar');
-            avatarContainer.replaceChildren();
-            if (profile.avatar_url) {
-                avatarContainer.classList.add('community-profile-modal__avatar--has-image');
-                const img = document.createElement('img');
-                img.src = profile.avatar_url;
-                img.alt = '';
-                img.className = 'community-profile-modal__avatar-img';
-                avatarContainer.appendChild(img);
-            } else {
-                avatarContainer.classList.add('community-profile-modal__avatar--has-image');
-                const parts = String(profile.display_name || 'User').split(' ');
-                const init = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2);
-                const initials = document.createElement('span');
-                initials.id = 'profile-modal-initials';
-                initials.textContent = init.toUpperCase();
-                avatarContainer.appendChild(initials);
-            }
-
-            const followBtn = document.getElementById('profile-modal-follow-btn');
-            // Remove previous listeners
-            const newBtn = followBtn.cloneNode(true);
-            followBtn.parentNode.replaceChild(newBtn, followBtn);
-            
-            if (profile.is_following) {
-                newBtn.innerText = "Unfollow";
-                newBtn.className = "ds-btn ds-btn--secondary";
-            } else {
-                newBtn.innerText = "Follow User";
-                newBtn.className = "ds-btn ds-btn--primary";
-            }
-            newBtn.style.width = "100%";
-            
-            newBtn.onclick = () => toggleFollow(userId, profile.is_following, newBtn);
-
-            // 14.8.2: wire mute + block secondary actions.
-            const muteBtn = document.getElementById('profile-modal-mute-btn');
-            const blockBtn = document.getElementById('profile-modal-block-btn');
-            if (muteBtn) {
-                const freshMute = muteBtn.cloneNode(false);
-                freshMute.textContent = profile.is_muted ? 'Unmute' : 'Mute';
-                muteBtn.parentNode.replaceChild(freshMute, muteBtn);
-                freshMute.onclick = () => window.toggleMute(userId, profile.is_muted === true, freshMute);
-            }
-            if (blockBtn) {
-                const freshBlock = blockBtn.cloneNode(false);
-                freshBlock.textContent = profile.is_blocked ? 'Unblock' : 'Block';
-                freshBlock.className =
-                    'ds-btn ds-btn--ghost ds-btn--sm community-profile-modal__danger';
-                blockBtn.parentNode.replaceChild(freshBlock, blockBtn);
-                freshBlock.onclick = () => window.toggleBlock(userId, profile.is_blocked === true, freshBlock);
-            }
-
-            document.getElementById('profile-loading-state').style.display = 'none';
-            document.getElementById('profile-content-state').style.display = 'block';
-
-        } catch (e) {
-            console.error(e);
-            document.getElementById('profile-loading-state').innerHTML = `<p class="community-state-inline community-state-inline--error">Failed to load profile.</p>`;
-        }
+    // openUserProfile now navigates to the dedicated /community/u/:id sub-page
+    // instead of opening the in-page modal. The full sub-page renders the
+    // same data plus the user's posts and a real follow/mute/block toolbar
+    // with no z-index quirks. The legacy modal markup in community.html is
+    // unused and can be removed in a follow-up commit.
+    window.openUserProfile = function (userId) {
+        if (!userId) return;
+        window.location.href = '/community/u/' + encodeURIComponent(userId);
     };
 
     window.toggleFollow = async function(userId, currentlyFollowing, btnElement) {
@@ -609,7 +585,7 @@ window.initCommunityFeed = function() {
             // Bind the new toggle state
             btnElement.onclick = () => toggleFollow(userId, !currentlyFollowing, btnElement);
         } catch (e) {
-            alert(e.message || "Failed to toggle follow status");
+            toast(e.message || "Failed to toggle follow status");
             btnElement.innerText = currentlyFollowing ? "Unfollow" : "Follow User";
         } finally {
             btnElement.disabled = false;
@@ -621,6 +597,7 @@ window.initCommunityFeed = function() {
         const countEl = btn.querySelector('.community-comment-row__reaction-count');
         const wasPressed = btn.getAttribute('aria-pressed') === 'true';
         btn.disabled = true;
+        haptic(8);
         try {
             const res = await fetch(`/api/community/comments/${commentId}/reactions`, {
                 method: 'POST',
@@ -787,13 +764,44 @@ window.initCommunityFeed = function() {
     };
 
     const contentInput = document.getElementById('post-content-input');
+    // UX.12: composer drafts auto-saved to localStorage so an accidental
+    // navigation doesn't lose work. Cleared on successful submit. Per-user
+    // namespacing isn't necessary because the draft only lives in the
+    // current browser profile.
+    const DRAFT_KEY = 'poool:community:draft:v1';
+    let _draftSaveTimer = null;
+    function saveDraft(value) {
+        clearTimeout(_draftSaveTimer);
+        _draftSaveTimer = setTimeout(() => {
+            try {
+                if (value && value.trim()) {
+                    localStorage.setItem(DRAFT_KEY, value);
+                } else {
+                    localStorage.removeItem(DRAFT_KEY);
+                }
+            } catch (_) { /* quota / disabled */ }
+        }, 500);
+    }
+    window._clearCommunityDraft = function () {
+        try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+    };
     if (contentInput) {
         contentInput.addEventListener('input', () => {
             const val = contentInput.value.toLowerCase();
             const investmentKeywords = ["invest", "return", "yield", "profit", "dividend", "roi", "price target", "buy now", "sell now"];
             const needsDisclaimer = investmentKeywords.some(k => val.includes(k));
             document.getElementById('post-disclaimer-warning').style.display = needsDisclaimer ? 'block' : 'none';
+            saveDraft(contentInput.value);
         });
+        // Restore on init only when the textarea is currently empty (don't
+        // overwrite a freshly composed message).
+        try {
+            const draft = localStorage.getItem(DRAFT_KEY);
+            if (draft && !contentInput.value) {
+                contentInput.value = draft;
+                contentInput.dispatchEvent(new Event('input'));
+            }
+        } catch (_) { /* localStorage disabled */ }
     }
 
 
@@ -867,13 +875,13 @@ window.initCommunityFeed = function() {
         if (!e.target.files || e.target.files.length === 0) return;
         
         if (window.postImageUrls.length >= 4) {
-            alert("Maximum 4 images allowed per post.");
+            toast("Maximum 4 images allowed per post.");
             return;
         }
 
         const file = e.target.files[0];
         if (file.size > 5 * 1024 * 1024) {
-            alert("Image must be smaller than 5MB");
+            toast("Image must be smaller than 5MB");
             return;
         }
 
@@ -900,7 +908,7 @@ window.initCommunityFeed = function() {
             
         } catch (err) {
             console.error(err);
-            alert(err.message);
+            toast(err.message);
         } finally {
             document.getElementById('post-image-uploading').style.display = 'none';
             e.target.value = ''; // reset file input
@@ -945,12 +953,53 @@ window.initCommunityFeed = function() {
         renderPostImagePreviews();
     };
 
+    // CO.7 — schedule picker helpers. Show/hide the datetime input and let
+    // the user clear a previously chosen time. submitUserPost picks the
+    // value up at send time.
+    window.toggleSchedulePicker = function () {
+        const input = document.getElementById('post-schedule-input');
+        const clear = document.getElementById('post-schedule-clear');
+        const toggle = document.getElementById('post-schedule-toggle');
+        if (!input) return;
+        const opening = input.hidden;
+        input.hidden = !opening;
+        if (clear) clear.hidden = !opening;
+        if (toggle) toggle.setAttribute('aria-pressed', opening ? 'true' : 'false');
+        if (opening && !input.value) {
+            // Default to one hour ahead so the user has a sensible starting point.
+            const d = new Date(Date.now() + 60 * 60 * 1000);
+            const pad = (n) => String(n).padStart(2, '0');
+            input.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+        if (opening) input.focus();
+    };
+    window.clearScheduledPost = function () {
+        const input = document.getElementById('post-schedule-input');
+        const clear = document.getElementById('post-schedule-clear');
+        const toggle = document.getElementById('post-schedule-toggle');
+        if (input) { input.value = ''; input.hidden = true; }
+        if (clear) clear.hidden = true;
+        if (toggle) toggle.setAttribute('aria-pressed', 'false');
+    };
+
     window.submitUserPost = async function() {
         const postType = document.getElementById('post-type-input').value;
         const content = document.getElementById('post-content-input').value.trim();
+
+        if (!content) return toast("Content cannot be empty");
         
-        if (!content) return alert("Content cannot be empty");
-        
+        // CO.7 — pick up scheduled timestamp if the picker is open + filled.
+        let scheduledFor = null;
+        const scheduleInput = document.getElementById('post-schedule-input');
+        if (scheduleInput && !scheduleInput.hidden && scheduleInput.value) {
+            const ts = new Date(scheduleInput.value);
+            if (!Number.isNaN(ts.getTime()) && ts.getTime() > Date.now()) {
+                scheduledFor = ts.toISOString();
+            } else if (!Number.isNaN(ts.getTime())) {
+                return toast("Scheduled time must be in the future.");
+            }
+        }
+
         const requestBody = {
             post_type: postType,
             content: content,
@@ -960,6 +1009,8 @@ window.initCommunityFeed = function() {
             poll_question: null,
             poll_options: null,
             poll_expires_hours: null,
+            // CO.7: ISO8601 future timestamp; backend hides post until then.
+            scheduled_for: scheduledFor,
         };
 
         // Add poll if enabled
@@ -998,12 +1049,19 @@ window.initCommunityFeed = function() {
             document.getElementById('post-disclaimer-warning').style.display = 'none';
             window.postImageUrls = [];
             renderPostImagePreviews();
-            
+            // UX.12: drop the draft so it doesn't reappear on the next visit
+            if (typeof window._clearCommunityDraft === 'function') window._clearCommunityDraft();
+            // CO.7: reset the schedule picker so the next compose starts clean
+            if (typeof window.clearScheduledPost === 'function') window.clearScheduledPost();
+            if (scheduledFor && window.showToast) {
+                window.showToast('Scheduled — your post will appear at the chosen time.', 'success');
+            }
+
             // Refresh feed via HTMX event
             document.body.dispatchEvent(new Event('reload-feed'));
         } catch (e) {
             console.error(e);
-            alert("Failed to submit post: " + e.message);
+            toast("Failed to submit post: " + e.message);
         } finally {
             submitBtn.innerText = oldText;
             submitBtn.disabled = false;
@@ -1030,16 +1088,15 @@ window.initCommunityFeed = function() {
     document.body.addEventListener('htmx:afterSwap', markOwnPosts);
     document.body.addEventListener('reload-feed', () => setTimeout(markOwnPosts, 0));
     window.addEventListener('load', markOwnPosts);
-    // user-data.js publishes __POOOL_USER asynchronously; retry briefly so
-    // posts rendered before /api/me resolves still get the kebab on the next
-    // tick.
-    let ownPostsRetries = 0;
-    const ownPostsInterval = setInterval(() => {
-        if (window.__POOOL_USER || ownPostsRetries++ > 20) {
-            clearInterval(ownPostsInterval);
-            markOwnPosts();
-        }
-    }, 200);
+    // user-data.js publishes __POOOL_USER asynchronously and fires
+    // `poool:user-ready` once the /api/me payload lands. Listening once
+    // beats the old 200ms × 20 polling loop and removes the 4 s window
+    // where the kebab menu was missing on slow connections.
+    if (window.__POOOL_USER) {
+        markOwnPosts();
+    } else {
+        window.addEventListener('poool:user-ready', markOwnPosts, { once: true });
+    }
 
     window.togglePostOwnerMenu = function (postId, triggerBtn) {
         const dropdown = document.getElementById(`owner-menu-${postId}`);
@@ -1063,6 +1120,188 @@ window.initCommunityFeed = function() {
         document.querySelectorAll('.feed-post-owner-menu__dropdown').forEach((d) => d.setAttribute('hidden', ''));
         document.querySelectorAll('.feed-post-owner-menu__toggle[aria-expanded="true"]').forEach((t) => t.setAttribute('aria-expanded', 'false'));
     });
+
+    // ─── MOB.8: Pull-to-refresh on touch devices ────────────────
+    // Lightweight, no library. Watches touchstart/move on the feed
+    // container, only kicks in when scrollY is 0 and the user drags down
+    // past the threshold. Reuses the existing `reload-feed` event so
+    // HTMX swaps the partial without a hard reload.
+    (function setupPullToRefresh() {
+        const TRIGGER_PX = 70;
+        const MAX_PULL = 120;
+        let startY = null;
+        let pulling = false;
+        let indicator = null;
+
+        function ensureIndicator() {
+            if (indicator) return indicator;
+            indicator = document.createElement('div');
+            indicator.id = 'community-ptr-indicator';
+            indicator.setAttribute('aria-hidden', 'true');
+            indicator.style.cssText = 'position:fixed; top:8px; left:50%; transform:translateX(-50%) translateY(-100%); '
+                + 'background:var(--ds-bg-elevated, #fff); color:var(--ds-text-primary, #101828); '
+                + 'padding:6px 14px; border-radius:999px; font-size:13px; z-index:1500; '
+                + 'box-shadow:0 4px 12px rgba(0,0,0,0.1); transition:transform 0.15s ease;';
+            indicator.textContent = '↓ Pull to refresh';
+            document.body.appendChild(indicator);
+            return indicator;
+        }
+
+        function shouldArm(event) {
+            // Only on touch primary screens scrolled to the top, on the feed page.
+            if (!('ontouchstart' in window)) return false;
+            if (window.scrollY > 0) return false;
+            if (!location.pathname.startsWith('/community')) return false;
+            // Don't hijack pull when target is a textarea / input (could be a real swipe).
+            const t = event.target;
+            if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT')) return false;
+            return true;
+        }
+
+        document.addEventListener('touchstart', (event) => {
+            if (!shouldArm(event)) { startY = null; return; }
+            startY = event.touches[0].clientY;
+            pulling = false;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (event) => {
+            if (startY === null) return;
+            const deltaY = event.touches[0].clientY - startY;
+            if (deltaY <= 0) return;
+            pulling = true;
+            const ind = ensureIndicator();
+            const pull = Math.min(deltaY, MAX_PULL);
+            const offset = -100 + (pull / MAX_PULL) * 110;
+            ind.style.transform = `translateX(-50%) translateY(${offset}%)`;
+            ind.textContent = pull >= TRIGGER_PX ? '↻ Release to refresh' : '↓ Pull to refresh';
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            if (!pulling || startY === null) { startY = null; pulling = false; return; }
+            const ind = ensureIndicator();
+            const final = parseFloat(ind.style.transform.match(/translateY\(([-0-9.]+)%\)/)?.[1] || '-100');
+            const pulled = (final + 100) / 110 * MAX_PULL;
+            if (pulled >= TRIGGER_PX) {
+                ind.textContent = '↻ Refreshing…';
+                ind.style.transform = 'translateX(-50%) translateY(0%)';
+                document.body.dispatchEvent(new Event('reload-feed'));
+                setTimeout(() => {
+                    ind.style.transform = 'translateX(-50%) translateY(-100%)';
+                }, 700);
+            } else {
+                ind.style.transform = 'translateX(-50%) translateY(-100%)';
+            }
+            startY = null;
+            pulling = false;
+        }, { passive: true });
+    })();
+
+    // ─── MOB.11: Web Share API with clipboard fallback ──────────
+    window.sharePostLink = async function (url, authorName) {
+        if (!url) return;
+        const title = authorName ? `Post by ${authorName} on POOOL` : 'Post on POOOL';
+        // Modern phones expose the OS share sheet via navigator.share.
+        // Desktop browsers (and any context where share isn't allowed)
+        // fall through to clipboard copy + toast.
+        if (typeof navigator.share === 'function') {
+            try {
+                await navigator.share({ title, url });
+                return;
+            } catch (e) {
+                // AbortError = user cancelled; treat silently.
+                if (e && e.name === 'AbortError') return;
+                // Any other error → fall through to clipboard path.
+                console.warn('navigator.share failed; falling back to clipboard', e);
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+            if (window.showToast) window.showToast('Link copied to clipboard', 'success');
+        } catch (e) {
+            console.error('Failed to copy link', e);
+            toast('Failed to copy link.');
+        }
+    };
+
+    // ─── UX.16: Quote Repost ────────────────────────────────────
+    window.openQuoteComposer = function (postId, authorName, content) {
+        const idEl = document.getElementById('quote-post-id');
+        const ta = document.getElementById('quote-post-content');
+        const authorEl = document.getElementById('quote-post-author');
+        const snipEl = document.getElementById('quote-post-snippet');
+        const counterEl = document.getElementById('quote-post-counter');
+        const errEl = document.getElementById('quote-post-error');
+        if (!idEl || !ta) return;
+        idEl.value = postId;
+        ta.value = '';
+        if (counterEl) counterEl.textContent = '0';
+        if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+        if (authorEl) authorEl.textContent = authorName || 'Anonymous';
+        if (snipEl) {
+            const text = String(content || '').trim();
+            snipEl.textContent = text.length > 280 ? text.slice(0, 277) + '…' : text;
+        }
+        // Bind counter once
+        if (ta.dataset.counterBound !== '1') {
+            ta.dataset.counterBound = '1';
+            ta.addEventListener('input', () => {
+                if (counterEl) counterEl.textContent = String(ta.value.length);
+            });
+        }
+        if (typeof window.openCommunityModal === 'function') {
+            window.openCommunityModal('quote-post-modal');
+        } else {
+            document.getElementById('quote-post-modal').style.display = 'flex';
+        }
+    };
+
+    window.submitQuotePost = async function () {
+        const idEl = document.getElementById('quote-post-id');
+        const ta = document.getElementById('quote-post-content');
+        const errEl = document.getElementById('quote-post-error');
+        const btn = document.getElementById('submit-quote-post-btn');
+        const quotedId = idEl ? idEl.value : '';
+        const content = (ta ? ta.value : '').trim();
+        if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+        if (!quotedId) return;
+        if (!content) {
+            if (errEl) { errEl.hidden = false; errEl.textContent = 'Add a comment to share this post.'; }
+            return;
+        }
+        const oldText = btn ? btn.textContent : '';
+        if (btn) { btn.textContent = 'Sharing…'; btn.disabled = true; }
+        try {
+            const res = await fetch('/api/community/posts', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    post_type: 'general',
+                    content,
+                    asset_id: null,
+                    image_urls: null,
+                    poll_question: null,
+                    poll_options: null,
+                    poll_expires_hours: null,
+                    quoted_post_id: quotedId,
+                }),
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.error || ('Failed (' + res.status + ')'));
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('quote-post-modal');
+            } else {
+                document.getElementById('quote-post-modal').style.display = 'none';
+            }
+            if (window.showToast) window.showToast('Shared with your followers', 'success');
+            document.body.dispatchEvent(new Event('reload-feed'));
+        } catch (e) {
+            console.error('submitQuotePost failed', e);
+            if (errEl) { errEl.hidden = false; errEl.textContent = e.message || 'Failed to share.'; }
+        } finally {
+            if (btn) { btn.textContent = oldText || 'Share'; btn.disabled = false; }
+        }
+    };
 
     window.openEditPostModal = function (postId) {
         const card = document.getElementById(`post-${postId}`);
@@ -1153,7 +1392,7 @@ window.initCommunityFeed = function() {
         } catch (err) {
             console.error('Delete post failed', err);
             if (window.showToast) window.showToast('Failed to delete post', 'error');
-            else alert(err.message);
+            else toast(err.message);
         }
     };
 
@@ -1188,10 +1427,10 @@ window.initCommunityFeed = function() {
             } else {
                 document.getElementById('report-post-modal').style.display = 'none';
             }
-            alert('Report submitted successfully. Our team will review it shortly.');
+            toast('Report submitted. Our team will review it shortly.', 'success');
         } catch (e) {
             console.error(e);
-            alert("Failed to submit report: " + e.message);
+            toast("Failed to submit report: " + e.message);
         }
     };
 
@@ -1816,24 +2055,13 @@ window.initCommunityFeed = function() {
     // UX.6: BOOKMARK FUNCTIONS
     // ═══════════════════════════════════════════════════════════════
 
-    async function checkBookmarkStatus(postId, btn) {
-        try {
-            const res = await fetch(`/api/community/posts/${postId}/bookmark/status`, { credentials: 'same-origin' });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.bookmarked) {
-                    btn.classList.add('bookmarked');
-                    btn.title = 'Remove Bookmark';
-                    btn.setAttribute('aria-label', 'Remove saved post');
-                    btn.setAttribute('aria-pressed', 'true');
-                }
-            }
-        } catch (e) {
-            // Silently fail — non-critical
-        }
-    }
+    // checkBookmarkStatus removed 2026-05-15: server now renders the
+    // initial bookmarked state directly on the button (see PostDisplay.is_bookmarked
+    // and partials/community_post_card.html), eliminating the per-post
+    // /bookmark/status N+1 fetch storm.
 
     window.toggleBookmark = async function(postId, btn) {
+        haptic(8);
         // Optimistic toggle
         const wasBookmarked = btn.classList.contains('bookmarked');
         btn.classList.toggle('bookmarked');
@@ -2017,7 +2245,7 @@ window.initCommunityFeed = function() {
             }
         } catch (e) {
             console.error('Vote failed:', e);
-            alert('Failed to vote: ' + e.message);
+            toast('Failed to vote: ' + e.message);
         }
     }
 
@@ -2163,190 +2391,13 @@ window.initCommunityFeed = function() {
     // ═══════════════════════════════════════════════════════════════
     // UX.15: EDIT COMMUNITY PROFILE
     // ═══════════════════════════════════════════════════════════════
-
-    function paintAvatarPreview(url) {
-        const preview = document.getElementById('edit-profile-avatar-preview');
-        if (!preview) return;
-        if (url) {
-            preview.style.backgroundImage = `url("${url}")`;
-            preview.dataset.avatarUrl = url;
-        } else {
-            preview.style.backgroundImage = '';
-            delete preview.dataset.avatarUrl;
-        }
-    }
-
-    window.openProfileEditModal = async function() {
-        const modal = document.getElementById('edit-profile-modal');
-        if (!modal) return;
-
-        try {
-            const res = await fetch('/api/community/profile/me');
-            if (res.ok) {
-                const profile = await res.json();
-                document.getElementById('edit-profile-bio').value = profile.bio || '';
-                paintAvatarPreview(profile.avatar_url || (window.__POOOL_USER && window.__POOOL_USER.avatar_url) || null);
-            }
-        } catch (e) {
-            console.error('Failed to load profile for editing', e);
-        }
-
-        if (typeof window.openCommunityModal === 'function') {
-            window.openCommunityModal('edit-profile-modal');
-        } else {
-            modal.style.display = 'block';
-        }
-    };
-
-    // Phase 3 task 19: client side of the avatar upload. Reuses the existing
-    // POST /api/upload/avatar endpoint (writes to users.avatar_url) and paints
-    // the new image into the preview immediately so the save button just needs
-    // to flush the bio change.
-    window.uploadProfileAvatar = async function (event) {
-        const file = event && event.target && event.target.files && event.target.files[0];
-        if (!file) return;
-        const statusEl = document.getElementById('edit-profile-avatar-status');
-        const showStatus = (text, error) => {
-            if (!statusEl) return;
-            statusEl.textContent = text;
-            statusEl.hidden = false;
-            statusEl.style.color = error ? '#B42318' : '#475467';
-        };
-        if (file.size > 5 * 1024 * 1024) {
-            showStatus('Image must be 5 MB or smaller.', true);
-            event.target.value = '';
-            return;
-        }
-        showStatus('Uploading...');
-        const form = new FormData();
-        form.append('file', file);
-        try {
-            const res = await fetch('/api/upload/avatar', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: csrfHeaders(),
-                body: form,
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
-            paintAvatarPreview(data.avatar_url);
-            showStatus('Photo updated. Save changes to keep the new picture.');
-            // Reflect immediately in sidebar avatar.
-            const sidebarAvatar = document.getElementById('my-profile-avatar-circle');
-            if (sidebarAvatar) {
-                sidebarAvatar.style.backgroundImage = `url("${data.avatar_url}")`;
-                sidebarAvatar.style.backgroundSize = 'cover';
-                sidebarAvatar.style.backgroundPosition = 'center';
-                sidebarAvatar.textContent = '';
-            }
-            if (window.__POOOL_USER) window.__POOOL_USER.avatar_url = data.avatar_url;
-        } catch (err) {
-            console.error('Avatar upload failed', err);
-            showStatus(err.message || 'Upload failed.', true);
-        } finally {
-            event.target.value = '';
-        }
-    };
-
-    // ─── Phase 3 task 32: Verified Owner request flow ───────────
-    window.uploadVerifyProof = async function (event) {
-        const file = event && event.target && event.target.files && event.target.files[0];
-        if (!file) return;
-        const statusEl = document.getElementById('verify-request-status');
-        const nameEl = document.getElementById('verify-request-proof-name');
-        const proofInput = document.getElementById('verify-request-proof-url');
-        if (file.size > 5 * 1024 * 1024) {
-            statusEl.textContent = 'Image must be 5 MB or smaller.';
-            event.target.value = '';
-            return;
-        }
-        statusEl.textContent = 'Uploading proof...';
-        const form = new FormData();
-        form.append('file', file);
-        try {
-            const res = await fetch('/api/upload/post-image', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: csrfHeaders(),
-                body: form,
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
-            proofInput.value = data.image_url;
-            nameEl.textContent = file.name;
-            statusEl.textContent = 'Proof attached.';
-        } catch (err) {
-            console.error('Verify proof upload failed', err);
-            statusEl.textContent = err.message || 'Upload failed.';
-        } finally {
-            event.target.value = '';
-        }
-    };
-
-    window.submitVerifyRequest = async function () {
-        const statement = (document.getElementById('verify-request-statement').value || '').trim();
-        const proof = document.getElementById('verify-request-proof-url').value || null;
-        const statusEl = document.getElementById('verify-request-status');
-        statusEl.textContent = '';
-        if (statement.length < 20) {
-            statusEl.textContent = 'Statement must be at least 20 characters.';
-            return;
-        }
-        try {
-            const res = await fetch('/api/community/profile/verify-request', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ statement, proof_url: proof }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-            statusEl.textContent = 'Request submitted. We will review and notify you.';
-            if (window.showToast) window.showToast('Verification request submitted', 'success');
-            document.getElementById('verify-request-statement').value = '';
-            document.getElementById('verify-request-proof-url').value = '';
-            document.getElementById('verify-request-proof-name').textContent = '';
-        } catch (err) {
-            console.error('Verify request failed', err);
-            statusEl.textContent = err.message || 'Failed to submit.';
-        }
-    };
-
-    window.saveProfileDetails = async function() {
-        const bio = document.getElementById('edit-profile-bio').value.trim();
-        const btn = document.getElementById('save-profile-btn');
-        const originalText = btn.textContent;
-        btn.textContent = 'Saving...';
-        btn.disabled = true;
-        
-        try {
-            const res = await fetch('/api/community/profile', {
-                method: 'PUT',
-                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ bio: bio })
-            });
-            
-            if (res.ok) {
-                const updatedProfile = await res.json();
-                const bioEl = document.getElementById('my-profile-bio');
-                if (bioEl) bioEl.textContent = updatedProfile.bio || "No bio yet • Start your journey 🌱";
-                if (typeof window.closeCommunityModal === 'function') {
-                    window.closeCommunityModal('edit-profile-modal');
-                } else {
-                    document.getElementById('edit-profile-modal').style.display = 'none';
-                }
-                if (window.showToast) window.showToast('Profile updated successfully');
-            } else {
-                const err = await res.json();
-                alert(err.error || 'Failed to update profile');
-            }
-        } catch (e) {
-            console.error('Failed to save profile', e);
-            alert('A network error occurred');
-        } finally {
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
+    //
+    // The legacy in-page modal was retired in favour of /community/me/edit.
+    // openProfileEditModal is the only surface remaining — every call site
+    // funnels through it for a consistent navigation contract. The page
+    // itself owns its own avatar/bio/flair/verify-owner handlers.
+    window.openProfileEditModal = function () {
+        window.location.href = '/community/me/edit';
     };
 
     renderSsrPostDetail();

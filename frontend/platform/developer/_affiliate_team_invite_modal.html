@@ -1,0 +1,26 @@
+<!-- Shared Invite Modal used by every /developer/affiliate-team/* sub-page. -->
+
+<div class="dat-modal" id="dat-invite-modal" role="dialog" aria-modal="true" aria-labelledby="dat-invite-title" hidden>
+  <div class="dat-modal__backdrop" data-close="invite"></div>
+  <div class="dat-modal__panel ds-card">
+    <header class="dat-modal__header">
+      <h3 id="dat-invite-title">Invite Member</h3>
+      <button type="button" class="dat-modal__close" data-close="invite" aria-label="Close">×</button>
+    </header>
+    <form id="dat-invite-form">
+      <div class="dat-form-row">
+        <label for="dat-invite-email">Email of registered user</label>
+        <input type="email" id="dat-invite-email" required autocomplete="off"/>
+        <small class="dat-form-row__hint">The recipient must already have a POOOL account.</small>
+      </div>
+      <div class="dat-form-actions">
+        <button type="button" class="ds-btn" data-close="invite">Cancel</button>
+        <button type="submit" class="ds-btn ds-btn--primary">Send Invitation</button>
+      </div>
+    </form>
+    <div class="dat-invite-preview" id="dat-invite-preview" hidden>
+      <p>Invitation created. Share this token until email outbox is wired up:</p>
+      <code id="dat-invite-token"></code>
+    </div>
+  </div>
+</div>

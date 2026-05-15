@@ -27,11 +27,26 @@
         activePage = "portfolio";
       } else if (path.includes("/cart") || path.includes("/checkout")) {
         activePage = "cart";
+      } else if (path.includes("/developer/affiliate-team")) {
+        // Developer team-affiliate sub-pages — match before generic /affiliate.
+        // Parent expand + child active-state.
+        activePage = "affiliate-team-parent";
+        if (path.includes("/developer/affiliate-team/customers")) {
+          activeChild = "nav-child-affiliate-team-customers";
+        } else if (path.includes("/developer/affiliate-team/products")) {
+          activeChild = "nav-child-affiliate-team-products";
+        } else if (path.includes("/developer/affiliate-team/settings")) {
+          activeChild = "nav-child-affiliate-team-settings";
+        } else {
+          activeChild = "nav-child-affiliate-team-members";
+        }
       } else if (path.includes("/affiliate")) {
         activePage = "affiliate";
       } else if (path.includes("/rewards")) {
         activePage = "rewards";
 
+      } else if (path.includes("/developer/ranking")) {
+        activePage = "ranking";
       } else if (path.includes("/leaderboard")) {
         activePage = "leaderboard";
       } else if (path.includes("/community")) {
@@ -202,19 +217,44 @@
             </a>
           </div>
 
-          <!-- Ranking (formerly Reports) -->
+          <!-- Affiliate Team (Phase 2 — Developer-Team-Affiliate, expandable) -->
+          <div id="nav-item-affiliate-team-parent" class="sidebar__nav-item">
+            <div id="nav-item-affiliate-team-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
+              data-item-id="affiliate-team-parent" style="cursor: pointer">
+              <div id="nav-text-icon-affiliate-team-parent" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-affiliate-team-parent" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </div>
+                <span id="nav-text-affiliate-team-parent" class="sidebar__nav-text">Affiliate Team</span>
+              </div>
+              <svg id="nav-chevron-affiliate-team-parent" class="sidebar__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div id="nav-children-affiliate-team-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
+              <a id="nav-child-affiliate-team-members" href="/developer/affiliate-team" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Members</span></a>
+              <a id="nav-child-affiliate-team-customers" href="/developer/affiliate-team/customers" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Customers</span></a>
+              <a id="nav-child-affiliate-team-products" href="/developer/affiliate-team/products" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Products</span></a>
+              <a id="nav-child-affiliate-team-settings" href="/developer/affiliate-team/settings" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Settings</span></a>
+            </div>
+          </div>
+
+          <!-- Leaderboard -->
           <div id="nav-item-ranking" class="sidebar__nav-item">
-            <div id="nav-item-ranking-content" class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+            <a id="nav-item-ranking-content" href="/developer/ranking" class="sidebar__nav-item-content">
               <div id="nav-text-icon-ranking" class="sidebar__nav-text-icon">
                 <div id="nav-icon-wrapper-ranking" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/Menu%20developer/Ranking.svg" alt="Ranking" class="nav-icon"
+                  <img  src="/static/images/Menu%20developer/Ranking.svg" alt="Leaderboard" class="nav-icon"
                     width="20" height="20" />
                 </div>
-                <span id="nav-text-ranking" class="sidebar__nav-text">Ranking</span>
+                <span id="nav-text-ranking" class="sidebar__nav-text">Leaderboard</span>
               </div>
-              <!-- Soon Badge -->
-              <div class="soon-badge"><span>Soon</span></div>
-            </div>
+            </a>
           </div>
           <!-- Settings -->
           <div id="nav-item-settings" class="sidebar__nav-item">
@@ -279,7 +319,7 @@
           <!-- Avatar Group -->
           <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
             <div id="account-avatar" class="sidebar__account-avatar">
-              <img loading="lazy" src="/static/images/ui/Image.webp" alt="" />
+              <img loading="lazy" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%232E2EF9'/%3E%3C/svg%3E" alt="" />
               <div id="account-online-indicator" class="sidebar__account-online"></div>
             </div>
             <div id="account-text-wrapper" class="sidebar__account-text">
@@ -328,7 +368,7 @@
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/ui/Image.webp" alt="" />
+                        <img loading="lazy" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%232E2EF9'/%3E%3C/svg%3E" alt="" />
                         <div class="profile-avatar-border"></div>
                         <div class="profile-online-indicator"></div>
                       </div>
@@ -347,7 +387,7 @@
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/ui/Featured%20icon.webp" alt="" />
+                        <img loading="lazy" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%232E2EF9'/%3E%3C/svg%3E" alt="" />
                         <div class="profile-avatar-border"></div>
                         <div class="profile-online-indicator"></div>
                       </div>
@@ -569,7 +609,7 @@
           <!-- Avatar Group -->
           <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
             <div id="account-avatar" class="sidebar__account-avatar">
-              <img loading="lazy" src="/static/images/ui/Image.webp" alt="" />
+              <img loading="lazy" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%232E2EF9'/%3E%3C/svg%3E" alt="" />
               <div id="account-online-indicator" class="sidebar__account-online"></div>
             </div>
             <div id="account-text-wrapper" class="sidebar__account-text">
@@ -618,7 +658,7 @@
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/ui/Image.webp" alt="" />
+                        <img loading="lazy" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%232E2EF9'/%3E%3C/svg%3E" alt="" />
                         <div class="profile-avatar-border"></div>
                         <div class="profile-online-indicator"></div>
                       </div>
@@ -637,7 +677,7 @@
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/ui/Featured%20icon.webp" alt="" />
+                        <img loading="lazy" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%232E2EF9'/%3E%3C/svg%3E" alt="" />
                         <div class="profile-avatar-border"></div>
                         <div class="profile-online-indicator"></div>
                       </div>
@@ -787,7 +827,10 @@
     if (profileType === "admin") {
       window.location.href = "/admin/";
     } else if (profileType === "developer") {
-      window.location.href = "/developer/dashboard";
+      // If already a developer go to dashboard; otherwise start onboarding
+      fetch('/api/me').then(function(r){return r.json();}).then(function(u){
+        window.location.href = u && u.is_developer ? "/developer/dashboard" : "/developer/onboarding";
+      }).catch(function(){ window.location.href = "/developer/onboarding"; });
     } else {
       // Investor
       window.location.href = "/marketplace";

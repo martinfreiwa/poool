@@ -2331,6 +2331,7 @@ body.youtube-modal-active {
   outline: none;
   min-width: 60px;
   display: inline-block;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .calc-slider-value[contenteditable="true"]:hover {
@@ -2338,8 +2339,20 @@ body.youtube-modal-active {
 }
 
 .calc-slider-value[contenteditable="true"]:focus {
-  background: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.3);
+  background: transparent;
+  box-shadow: none;
+}
+
+.calc-slider-labels ::selection,
+.calc-slider-value[contenteditable="true"]::selection {
+  background: transparent;
+  color: inherit;
+}
+
+.calc-slider-labels ::-moz-selection,
+.calc-slider-value[contenteditable="true"]::-moz-selection {
+  background: transparent;
+  color: inherit;
 }
 
 .calc-slider-value[contenteditable="true"]:empty:before {

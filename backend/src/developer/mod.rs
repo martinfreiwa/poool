@@ -33,6 +33,22 @@ pub fn router() -> Router<AppState> {
         )
         .route("/developer/dashboard", get(page_developer_dashboard))
         .route("/developer/assets", get(page_developer_assets))
+        .route(
+            "/developer/affiliate-team",
+            get(page_developer_affiliate_team),
+        )
+        .route(
+            "/developer/affiliate-team/customers",
+            get(page_developer_affiliate_team_customers),
+        )
+        .route(
+            "/developer/affiliate-team/products",
+            get(page_developer_affiliate_team_products),
+        )
+        .route(
+            "/developer/affiliate-team/settings",
+            get(page_developer_affiliate_team_settings),
+        )
         .route("/developer/add-asset", get(page_developer_add_asset))
         .route(
             "/developer/property-content",
@@ -41,6 +57,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/developer/document-upload-step3",
             get(page_developer_document_upload),
+        )
+        .route(
+            "/developer/onboarding",
+            get(routes::page_developer_onboarding),
+        )
+        .route(
+            "/api/developer/apply",
+            post(routes::api_developer_apply),
         )
         .route(
             "/developer/application-form",
@@ -88,6 +112,10 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/developer/assets/:id/pending-changes",
             get(change_requests::get_pending),
+        )
+        .route(
+            "/developer/ranking",
+            get(routes::page_developer_ranking),
         )
         // ── Villa-Returns P2 — developer operations workflow ─────────
         .route(

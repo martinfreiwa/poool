@@ -1,0 +1,57 @@
+{% with title="Affiliate Team Customers – POOOL", no_index=True,
+extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-customers'] %}{% include
+"components/head.html" %}{% endwith %}
+
+<body id="developer-affiliate-team-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="developer-dashboard-page">
+    <div class="developer-dashboard-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
+      <div class="ds-main__content">
+        {% include 'developer/_affiliate_team_shell.html' %}
+
+        <section class="ds-card dat-content-card">
+          <div class="dat-section__intro">
+            <h3 class="dat-section__title">Customers</h3>
+            <p class="dat-section__hint">Customers acquired via your team's business affiliate links.</p>
+            <div class="dat-section__controls">
+              <label class="dat-filter-label" for="dat-cust-filter">Member</label>
+              <select id="dat-cust-filter" class="dat-select">
+                <option value="">All members</option>
+              </select>
+            </div>
+          </div>
+          <div class="dat-table-wrap">
+            <table class="dat-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Via Member</th>
+                  <th>Status</th>
+                  <th>Invested</th>
+                  <th>Commission</th>
+                  <th>Acquired</th>
+                </tr>
+              </thead>
+              <tbody id="dat-customers-tbody">
+                <tr><td colspan="6" class="dat-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      {% include 'developer/_affiliate_team_invite_modal.html' %}
+    </main>
+  </div>
+</body>

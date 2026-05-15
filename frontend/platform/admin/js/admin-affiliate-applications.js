@@ -421,7 +421,7 @@
     document.getElementById('details-audience').textContent = app.audience_size || '—';
     renderDetailsUrl(app.main_url);
     document.getElementById('details-company').textContent = app.company_name || '—';
-    document.getElementById('details-tax').textContent = app.tax_id || '—';
+    document.getElementById('details-tax').textContent = app.tax_id_last4 ? `***-**-${app.tax_id_last4}` : '—';
     document.getElementById('details-phone').textContent = app.phone_number || '—';
 
     // Backend fraud signals

@@ -96,6 +96,11 @@ if (typeof window.getCsrfToken === "undefined") {
 
       // Store user data for other scripts that may need it
       window.__POOOL_USER = user;
+      // Notify late subscribers (community kebab menu, etc.) that the user
+      // payload is now available without forcing them to poll.
+      try {
+        window.dispatchEvent(new CustomEvent('poool:user-ready', { detail: user }));
+      } catch (_) { /* no CustomEvent — older Edge etc., harmless */ }
 
       // ── Enrich Sentry with user context ────────────────────
       if (typeof Sentry !== 'undefined' && Sentry.setUser) {
@@ -155,36 +160,31 @@ if (typeof window.getCsrfToken === "undefined") {
           img.alt = user.name;
         });
 
-      // ── Generate initials avatar (replace placeholder image) ──
+      // ── Generate initials avatar (replace ALL placeholder images) ──
       var initialsDataUrl = generateInitialsAvatar(user.initials);
-      document
-        .querySelectorAll(
-          ".sidebar__account-avatar img, " +
-          ".mobile-burger-menu__avatar img, " +
-          ".admin-sidebar-avatar",
-        )
-        .forEach(function (img) {
-          // Only replace if still using the default placeholder
-          if (
-            img.src.includes("Image.webp") ||
-            img.src.includes("Featured icon")
-          ) {
-            img.src = initialsDataUrl;
-          }
-        });
+      var avatarSrc = user.avatar_url || initialsDataUrl;
+      var PLACEHOLDERS = ["Image.webp", "Featured%20icon", "Featured icon"];
 
-      // Also update profile dropdown avatars for the current account
-      document
-        .querySelectorAll(
-          "#menu-item-current-account .profile-avatar img, " +
-          "#mobile-menu-item-current-account .mobile-profile-avatar img",
-        )
-        .forEach(function (img) {
-          if (img.src.includes("Image.webp")) {
-            img.src = initialsDataUrl;
+      function isPlaceholder(src) {
+        return PLACEHOLDERS.some(function (p) { return src.includes(p); });
+      }
+
+      function replaceAvatars(selector) {
+        document.querySelectorAll(selector).forEach(function (img) {
+          if (isPlaceholder(img.src)) {
+            img.src = avatarSrc;
             img.alt = user.name;
           }
         });
+      }
+
+      // Main sidebar + mobile avatars — always replace (placeholder is an inline SVG, not a URL)
+      document.querySelectorAll(".sidebar__account-avatar img, .mobile-burger-menu__avatar img, .admin-sidebar-avatar").forEach(function(img) {
+        img.src = avatarSrc;
+        img.alt = user.name;
+      });
+      // All profile switcher avatars (investor, developer, any others)
+      replaceAvatars(".profile-switcher .profile-avatar img, #profile-switch-section .profile-avatar img, .profile-menu-item .profile-avatar img, .mobile-profile-menu-item .mobile-profile-avatar img");
 
       // ── Update data attributes for profile switcher ─────────
       document
@@ -196,20 +196,6 @@ if (typeof window.getCsrfToken === "undefined") {
         .querySelectorAll('[data-profile-id="olivia-developer"]')
         .forEach(function (el) {
           el.setAttribute("data-profile-id", user.email + "-developer");
-        });
-
-      // Fix initials for developer accounts as well
-      document
-        .querySelectorAll(
-          "#menu-item-account-olivia-developer .profile-avatar img, " +
-          "#mobile-menu-item-account-olivia-developer .mobile-profile-avatar img, " +
-          "#menu-item-account-developer .profile-avatar img"
-        )
-        .forEach(function (img) {
-          if (img.src.includes("Featured%20icon.webp") || img.src.includes("Featured icon.webp")) {
-             img.src = initialsDataUrl;
-             img.alt = user.name;
-          }
         });
 
       // ── Update selected state in switcher ───────────────────
@@ -235,7 +221,7 @@ if (typeof window.getCsrfToken === "undefined") {
                         <div class="profile-account-content">
                             <div class="profile-avatar-group">
                                 <div class="profile-avatar">
-                                    <img src="${initialsDataUrl}" alt="${escHtml(user.name)}">
+                                    <img src="${avatarSrc}" alt="${escHtml(user.name)}">
                                     <div class="profile-avatar-border"></div>
                                     <div class="profile-online-indicator"></div>
                                 </div>
@@ -275,7 +261,7 @@ if (typeof window.getCsrfToken === "undefined") {
                         <div class="mobile-profile-account-content">
                             <div class="mobile-profile-avatar-group">
                                 <div class="mobile-profile-avatar">
-                                    <img src="${initialsDataUrl}" alt="${escHtml(user.name)}">
+                                    <img src="${avatarSrc}" alt="${escHtml(user.name)}">
                                     <div class="mobile-profile-avatar-border"></div>
                                     <div class="mobile-profile-online-indicator"></div>
                                 </div>
@@ -298,7 +284,7 @@ if (typeof window.getCsrfToken === "undefined") {
         }
         // 3. Admin Dashboard Injection (if we are in /admin/)
         if (window.location.pathname.startsWith("/admin/")) {
-          setupAdminDashboardSwitcher(user, initialsDataUrl);
+          setupAdminDashboardSwitcher(user, avatarSrc);
         }
       }
 

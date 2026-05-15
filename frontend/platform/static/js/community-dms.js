@@ -260,7 +260,7 @@
     if (!modal) return;
     document.getElementById('community-dm-search').value = '';
     document.getElementById('community-dm-search-results').replaceChildren();
-    document.getElementById('community-dm-new-status').textContent = '';
+    showSearchStage();
     if (typeof window.openCommunityModal === 'function') {
       window.openCommunityModal('community-dm-new-modal');
     } else {
@@ -331,11 +331,68 @@
     return row;
   }
 
-  async function startConversation(u) {
+  // The modal has 2 stages: search → compose. We stash the picked
+  // recipient on this module-local var so the Send handler can read it.
+  let _pendingRecipient = null;
+
+  function showSearchStage() {
+    document.getElementById('community-dm-new-search-stage').hidden = false;
+    document.getElementById('community-dm-new-compose-stage').hidden = true;
+    document.getElementById('community-dm-new-footer').hidden = true;
     const status = document.getElementById('community-dm-new-status');
-    const content = prompt(`Send a first message to ${u.display_name || 'this user'}:`);
-    if (!content) return;
-    status.textContent = 'Creating conversation...';
+    if (status) {
+      status.textContent = '';
+      status.style.color = '';
+    }
+    _pendingRecipient = null;
+  }
+
+  function showComposeStage(u) {
+    _pendingRecipient = u;
+    document.getElementById('community-dm-new-search-stage').hidden = true;
+    document.getElementById('community-dm-new-compose-stage').hidden = false;
+    document.getElementById('community-dm-new-footer').hidden = false;
+    const nameEl = document.getElementById('community-dm-new-recipient-name');
+    if (nameEl) nameEl.textContent = u.display_name || 'this user';
+    const ta = document.getElementById('community-dm-new-message');
+    if (ta) {
+      ta.value = '';
+      const counter = document.getElementById('community-dm-new-counter');
+      if (counter) counter.textContent = '0';
+      // Wire counter once
+      if (ta.dataset.counterBound !== '1') {
+        ta.dataset.counterBound = '1';
+        ta.addEventListener('input', () => {
+          const c = document.getElementById('community-dm-new-counter');
+          if (c) c.textContent = String(ta.value.length);
+        });
+      }
+      // Defer focus so the modal's autofocus on first focusable doesn't
+      // steal the cursor back to the search input.
+      setTimeout(() => ta.focus(), 0);
+    }
+  }
+
+  // Triggered when the user picks someone from the search results.
+  function startConversation(u) {
+    showComposeStage(u);
+  }
+
+  async function sendNewConversation() {
+    const u = _pendingRecipient;
+    if (!u) return;
+    const ta = document.getElementById('community-dm-new-message');
+    const status = document.getElementById('community-dm-new-status');
+    const sendBtn = document.getElementById('community-dm-new-send-btn');
+    const content = (ta.value || '').trim();
+    if (content.length < 1) {
+      status.style.color = '#B42318';
+      status.textContent = 'Message cannot be empty.';
+      return;
+    }
+    status.style.color = '';
+    status.textContent = 'Creating conversation…';
+    sendBtn.disabled = true;
     try {
       const res = await fetch('/api/community/dms/threads', {
         method: 'POST',
@@ -353,6 +410,7 @@
       } else {
         document.getElementById('community-dm-new-modal').style.display = 'none';
       }
+      showSearchStage();
       await loadThreads();
       openThread({
         thread_id: data.thread_id,
@@ -363,6 +421,8 @@
     } catch (err) {
       status.style.color = '#B42318';
       status.textContent = `Failed: ${err.message}`;
+    } finally {
+      sendBtn.disabled = false;
     }
   }
 
@@ -376,6 +436,22 @@
       search.addEventListener('input', () => {
         clearTimeout(searchDebounce);
         searchDebounce = setTimeout(() => searchUsers(search.value.trim()), 200);
+      });
+    }
+
+    // Compose-stage controls
+    const backBtn = document.getElementById('community-dm-new-back-btn');
+    if (backBtn) backBtn.addEventListener('click', showSearchStage);
+    const sendBtn = document.getElementById('community-dm-new-send-btn');
+    if (sendBtn) sendBtn.addEventListener('click', sendNewConversation);
+    const messageTa = document.getElementById('community-dm-new-message');
+    if (messageTa) {
+      messageTa.addEventListener('keydown', (event) => {
+        // Ctrl/Cmd+Enter sends — easier than reaching for the button.
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+          event.preventDefault();
+          sendNewConversation();
+        }
       });
     }
 

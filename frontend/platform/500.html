@@ -9,17 +9,9 @@ to fix it.", no_index=True, extra_css=['error-pages'] %}{% include "components/h
       <img src="/static/images/icons/logo-pool.svg" alt="POOOL" />
     </a>
 
-    <!-- Illustration -->
-    <div class="error-icon-wrap" aria-hidden="true">
-      <div class="error-icon-ring error-icon-ring--red">
-        <div class="error-icon-inner error-icon-inner--red">
-          <svg  viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M20 13.333v8.334M20 26.667h.017M17.15 5.833L3.65 29.167c-.488.845-.732 1.267-.696 1.614a1.667 1.667 0 00.67 1.198c.28.187.758.187 1.71.187h29.333c.953 0 1.43 0 1.71-.187a1.667 1.667 0 00.67-1.198c.036-.347-.208-.769-.696-1.614L22.85 5.833c-.487-.843-.73-1.265-1.046-1.407a1.667 1.667 0 00-1.408 0c-.316.142-.56.564-1.046 1.407z"
-              stroke="#D92D20" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-      </div>
+    <!-- Brand mark -->
+    <div class="error-brand-mark" aria-hidden="true">
+      <img src="/static/images/icons/logo-pool.svg" alt="" />
     </div>
 
     <!-- Badge -->
@@ -34,14 +26,14 @@ to fix it.", no_index=True, extra_css=['error-pages'] %}{% include "components/h
 
     <!-- Actions -->
     <div class="error-actions">
-      <button id="error-500-retry" onclick="window.location.reload()" class="btn btn--primary">
+      <button id="error-500-retry" onclick="window.location.reload()" class="btn btn--primary ds-btn ds-btn--primary ds-btn--lg">
         <svg  width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M1.333 8A6.667 6.667 0 1014 5.333M1.333 8V3.333M1.333 8H6" stroke="currentColor" stroke-width="1.5"
             stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         Try again
       </button>
-      <a id="error-500-go-home" href="/marketplace" class="btn btn--secondary">
+      <a id="error-500-go-home" href="/marketplace" class="btn btn--secondary ds-btn ds-btn--secondary ds-btn--lg">
         <svg  width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M2 6l6-4.667L14 6v7.333a.667.667 0 01-.667.667H10.5V10H5.5v4H2.667A.667.667 0 012 13.333V6z"
             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />

@@ -1310,6 +1310,7 @@ pub struct UserProfile {
     pub city: Option<String>,
     pub address_line_1: Option<String>,
     pub postal_code: Option<String>,
+    pub avatar_url: Option<String>,
 }
 
 /// Get the user's display profile by their session token.
@@ -1334,6 +1335,7 @@ pub async fn get_user_profile(
             Option<String>,
             Option<String>,
             Option<String>,
+            Option<String>,
         ),
     >(
         r#"
@@ -1345,7 +1347,8 @@ pub async fn get_user_profile(
                p.country,
                p.city,
                p.address_line_1,
-               p.postal_code
+               p.postal_code,
+               u.avatar_url
         FROM users u
         JOIN user_sessions s ON u.id = s.user_id
         LEFT JOIN user_profiles p ON u.id = p.user_id
@@ -1369,6 +1372,7 @@ pub async fn get_user_profile(
         city,
         address_line_1,
         postal_code,
+        avatar_url,
     )) = row
     else {
         return Ok(None);
@@ -1440,6 +1444,7 @@ pub async fn get_user_profile(
         city,
         address_line_1,
         postal_code,
+        avatar_url,
     }))
 }
 

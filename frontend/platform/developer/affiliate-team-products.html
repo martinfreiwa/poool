@@ -1,0 +1,49 @@
+{% with title="Affiliate Team Products – POOOL", no_index=True,
+extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-products'] %}{% include
+"components/head.html" %}{% endwith %}
+
+<body id="developer-affiliate-team-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="developer-dashboard-page">
+    <div class="developer-dashboard-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
+      <div class="ds-main__content">
+        {% include 'developer/_affiliate_team_shell.html' %}
+
+        <section class="ds-card dat-content-card">
+          <div class="dat-section__intro">
+            <h3 class="dat-section__title">Product Sales</h3>
+            <p class="dat-section__hint">Assets sold via your team's business affiliate links.</p>
+          </div>
+          <div class="dat-table-wrap">
+            <table class="dat-table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Units sold</th>
+                  <th>Gross revenue</th>
+                  <th>Commission</th>
+                </tr>
+              </thead>
+              <tbody id="dat-products-tbody">
+                <tr><td colspan="4" class="dat-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      {% include 'developer/_affiliate_team_invite_modal.html' %}
+    </main>
+  </div>
+</body>

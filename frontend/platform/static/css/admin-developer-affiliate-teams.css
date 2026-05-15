@@ -1,0 +1,188 @@
+/* Admin: Developer Affiliate Teams page styles — Phase 4 */
+
+.adat-page { padding: 24px; max-width: 1400px; }
+.adat-header h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
+.adat-subtitle { color: #717680; font-size: 13px; margin: 0 0 20px; }
+
+.adat-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.adat-filter { display: flex; gap: 8px; align-items: center; }
+.adat-filter label { font-size: 13px; color: #717680; }
+.adat-filter select {
+  padding: 6px 10px;
+  border: 1px solid #E9EAEB;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+}
+.adat-kpis { display: flex; gap: 16px; flex-wrap: wrap; }
+.adat-kpi { font-size: 13px; color: #535862; }
+.adat-kpi__label { color: #717680; margin-right: 4px; }
+.adat-kpi strong { color: #181D27; font-weight: 700; }
+
+.adat-table-wrap {
+  background: #fff;
+  border: 1px solid #E9EAEB;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+.adat-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.adat-table th, .adat-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #F1F2F4;
+  vertical-align: middle;
+}
+.adat-table th {
+  background: #FAFAFA;
+  color: #717680;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+.adat-table tbody tr:hover { background: #FAFBFC; }
+.adat-empty { text-align: center; color: #717680; font-style: italic; padding: 24px; }
+.adat-slug { font-size: 11px; color: #717680; margin-top: 2px; }
+
+.adat-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: capitalize;
+  background: #F1F2F4;
+  color: #535862;
+}
+.adat-status--active { background: #E6F4EA; color: #137333; }
+.adat-status--paused { background: #FFF1E0; color: #C66D18; }
+.adat-status--terminated { background: #FDE7E7; color: #B42318; }
+.adat-status--invited, .adat-status--pending_developer_approval { background: #EEF1FF; color: #2B45B5; }
+.adat-status--removed { background: #FDE7E7; color: #B42318; }
+
+.adat-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+.adat-btn-small {
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+}
+
+/* Drawer */
+.adat-drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(640px, 100%);
+  background: #fff;
+  border-left: 1px solid #E9EAEB;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.08);
+  z-index: 1200;
+  overflow-y: auto;
+}
+.adat-drawer[hidden] { display: none; }
+.adat-drawer__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 33, 0.32);
+  z-index: 1100;
+}
+.adat-drawer__backdrop[hidden] { display: none; }
+.adat-drawer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #E9EAEB;
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+.adat-drawer__header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.adat-drawer__close {
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  cursor: pointer;
+  color: #717680;
+  padding: 0 4px;
+}
+.adat-drawer__body { padding: 24px; }
+
+.adat-detail-section { margin-bottom: 24px; }
+.adat-detail-section h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #717680;
+  font-weight: 600;
+}
+.adat-dl {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.adat-dl dt { color: #717680; }
+.adat-dl dd { margin: 0; color: #181D27; }
+
+.adat-inline-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.adat-inline-table th, .adat-inline-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid #F1F2F4;
+}
+.adat-inline-table th {
+  background: #FAFAFA;
+  color: #717680;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.adat-inline-table code {
+  background: #F4F4F5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+}
+
+.adat-audit {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+}
+.adat-audit li {
+  padding: 8px 0;
+  border-bottom: 1px solid #F1F2F4;
+}
+.adat-audit time { color: #717680; margin-right: 8px; }
+.adat-audit strong { color: #181D27; }
+.adat-audit-meta {
+  margin: 4px 0 0 0;
+  background: #F4F4F5;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+  max-height: 120px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+  .adat-page { padding: 16px; }
+  .adat-toolbar { flex-direction: column; align-items: flex-start; }
+  .adat-drawer { width: 100%; }
+}

@@ -108,3 +108,6 @@ artifacts/
 contracts/echidna-corpus/
 contracts/crytic-export/
 contracts/report.md
+
+# Embedded skill repos (cloned per-machine)
+.agent/skills/

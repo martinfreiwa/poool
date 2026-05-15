@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operations — Developer Portal</title>
+
+<!-- Real site CSS stack, same order as operations-dashboard.html -->
+<link rel="stylesheet" href="/static/css/fonts.css">
+<link rel="stylesheet" href="/static/css/dashboard-tokens.css">
+<link rel="stylesheet" href="/static/css/ds-typography.css">
+<link rel="stylesheet" href="/static/css/ds-utilities.css">
+<link rel="stylesheet" href="/static/css/ds-cards.css">
+<link rel="stylesheet" href="/static/css/ds-buttons.css">
+<link rel="stylesheet" href="/static/css/ds-badges.css">
+<link rel="stylesheet" href="/static/css/ds-tables.css">
+<link rel="stylesheet" href="/static/css/ds-page-layout.css">
+<link rel="stylesheet" href="/static/css/marketplace.css">
+<link rel="stylesheet" href="/static/css/developer-leaderboard-navbar.css">
+<link rel="stylesheet" href="/static/css/sidebar-developer.css">
+<link rel="stylesheet" href="/static/css/developer-ui.css">
+
+<style>
+/* ── Proto tag ── */
+.proto-tag {
+  position: fixed; top: 12px; right: 16px; z-index: 9999;
+  background: #0000FF; color: #98FB96;
+  font-family: var(--font-family); font-size: 11px; font-weight: 700;
+  padding: 4px 12px; border-radius: 20px; letter-spacing: 0.4px;
+  pointer-events: none;
+}
+
+/* ── Shell overrides ── */
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--content-bg, #FAFAFA); font-family: var(--font-family, 'TT Norms Pro', sans-serif); margin: 0; }
+
+/* Sidebar — proto-only (real pages use the component template) */
+.ops-sidebar-proto {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-width, 256px);
+  background: #fff;
+  border-right: 1px solid var(--card-border-color, #E5E7EB);
+  display: flex; flex-direction: column;
+  z-index: 100;
+}
+.ops-sidebar__logo {
+  padding: 20px 20px 24px;
+  font-weight: 900; font-size: 24px; color: #0000FF; letter-spacing: -1.5px;
+}
+.ops-nav-section {
+  padding: 12px 12px 4px;
+  font-size: 10px; font-weight: 700; color: #9ca3af;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+/* Nav item — matching real sidebar structure */
+.ops-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; margin: 1px 8px;
+  font-size: 13.5px; font-weight: 500; color: #475467;
+  cursor: pointer; text-decoration: none;
+  border-radius: 6px; transition: background 0.1s;
+}
+.ops-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; color: #717680; }
+.ops-nav-item:hover:not(.active) { background: rgba(3,255,136,0.05); color: #101828; }
+/* Active state matches real sidebar: green tint, dark blue text */
+.ops-nav-item.active {
+  background: rgba(3, 255, 136, 0.15);
+  color: var(--page-title-color, #181D27); font-weight: 600;
+}
+.ops-nav-item.active svg { filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%); }
+/* Badges — matching sidebar-developer.css */
+.ops-nav-badge {
+  margin-left: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 8px; height: 20px;
+  background: #FAFAFA; border: 1px solid var(--table-border-color, #E9EAEB);
+  border-radius: 16px; font-size: 11px; font-weight: 500; color: #17b26a;
+  flex-shrink: 0;
+}
+.ops-nav-badge--soon {
+  background: #EEF4FF; border-color: #C7D7FE; color: #1B2559;
+}
+.ops-sidebar__bottom {
+  margin-top: auto; padding: 16px 20px;
+  border-top: 1px solid #E9EAEB;
+}
+.ops-sidebar__user { display: flex; align-items: center; gap: 10px; }
+.ops-sidebar__avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #0000FF; color: #98FB96;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.ops-sidebar__user-name { font-size: 13px; font-weight: 600; color: #101828; }
+.ops-sidebar__user-email { font-size: 11px; color: #9ca3af; }
+
+/* Marketplace-main min-height override (real CSS sets 1735px which is too tall for proto) */
+.marketplace-main { min-height: 100vh !important; }
+
+/* admin-content padding matching real pages */
+.admin-content {
+  flex: 1;
+  padding: 28px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
+  max-width: var(--page-max-width, 1200px);
+  display: flex; flex-direction: column; gap: var(--section-gap, 24px);
+}
+
+/* ── Deadline pill (header-right action) ── */
+.ops-deadline {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #FFFAEB; border: 1px solid #FEC84B;
+  color: #B54708; font-size: 13px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+  font-family: var(--font-family);
+}
+
+/* ── Stats grid ── */
+.ops-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+/* dev-stat values from developer-ui.css — padding: 20px, min-height: 104px */
+.dev-stat {
+  padding: 20px;
+  min-height: 104px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ops-stat__top { display: flex; align-items: flex-start; justify-content: space-between; }
+.ops-stat__num {
+  font-size: 28px; font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums; margin: 0;
+}
+.ops-stat__num--red    { color: #D92D20; }
+.ops-stat__num--amber  { color: #B54708; }
+.ops-stat__num--green  { color: #027A48; }
+.ops-stat__num--blue   { color: #0000FF; }
+.ops-stat__num--muted  { color: #667085; }
+.ops-stat__icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.ops-stat__label { font-size: 12px; color: #667085; font-weight: 500; margin-top: 6px; }
+.ops-stat__trend { font-size: 11px; color: #9ca3af; }
+
+/* ── Urgency banner ── */
+.ops-urgent-banner {
+  display: flex; align-items: stretch;
+  background: #fff; border: 1px solid #FECDCA; border-radius: 12px;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10,13,18,0.05));
+  overflow: hidden;
+}
+.ops-urgent-banner__stripe { width: 4px; background: #D92D20; flex-shrink: 0; }
+.ops-urgent-banner__body { flex: 1; padding: 12px 16px; display: flex; align-items: center; gap: 16px; }
+.ops-urgent-banner__icon {
+  width: 34px; height: 34px; background: #FEF3F2; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ops-urgent-banner__icon svg { width: 16px; height: 16px; color: #D92D20; }
+.ops-urgent-banner__text { flex: 1; }
+.ops-urgent-banner__title { font-size: 13px; font-weight: 700; color: #101828; }
+.ops-urgent-banner__items { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ops-urgent-banner__chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #FEF3F2; border: 1px solid #FECDCA;
+  color: #B42318; font-size: 11px; font-weight: 600;
+  padding: 3px 9px; border-radius: 20px; text-decoration: none;
+  transition: background 0.1s; font-family: var(--font-family);
+}
+.ops-urgent-banner__chip:hover { background: #fee2e2; }
+.ops-urgent-banner__chip--warn { background: #FFFAEB; border-color: #FDE68A; color: #B54708; }
+.ops-urgent-banner__chip--warn:hover { background: #fef3c7; }
+.ops-urgent-banner__dismiss {
+  padding: 0 16px; color: #9ca3af; cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; background: none; border: none;
+}
+.ops-urgent-banner__dismiss:hover { color: #6b7280; }
+
+/* ── Matrix card (wraps ds-table-container) ── */
+.ops-matrix-wrap {
+  background: #fff; border: 1px solid var(--table-border-color, #E9EAEB);
+  border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden;
+}
+.ops-matrix-topbar { padding: 16px 20px 0; }
+.ops-matrix-title { font-size: 16px; font-weight: 700; color: #101828; margin: 0 0 2px; }
+.ops-matrix-sub { font-size: 12px; color: #667085; margin: 0; }
+
+/* Controls: filter tabs + year switcher */
+.ops-matrix-controls {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  gap: 12px;
+}
+/* Filter tabs — matching page-tabs style from dashboard-tokens.css */
+.ops-filter-tabs { display: flex; align-items: center; gap: 0; }
+.ops-filter-tab {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 12px 14px; font-size: 13px; font-weight: 500;
+  color: var(--tab-color-inactive, #667085); cursor: pointer;
+  border: none; background: none;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  font-family: var(--font-family); white-space: nowrap;
+  transition: color 0.12s;
+}
+.ops-filter-tab.active {
+  color: var(--tab-color-active, #1B2559);
+  border-bottom-color: var(--tab-indicator-color, #1B2559);
+  font-weight: var(--tab-font-weight-active, 600);
+}
+.ops-filter-tab:hover:not(.active) { color: #344054; }
+.ops-filter-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 99px; font-size: 10px; font-weight: 700;
+}
+.ops-filter-count--red   { background: #FEF3F2; color: #B42318; }
+.ops-filter-count--amber { background: #FFFAEB; color: #B54708; }
+
+/* Year pill tabs */
+.ops-year-tabs {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 3px; background: #F9FAFB;
+  border: 1px solid #E9EAEB; border-radius: 10px;
+}
+.ops-year-tab {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 28px; padding: 4px 12px; border: none; border-radius: 7px;
+  background: transparent; color: #717680; cursor: pointer;
+  font-family: var(--font-family); font-weight: 600; font-size: 12px;
+  transition: all 0.1s;
+}
+.ops-year-tab.active {
+  background: #fff; color: #101828;
+  box-shadow: 0 1px 2px rgba(10,13,18,0.08);
+}
+.ops-year-tab:not(.active):hover { color: #344054; }
+
+/* ── Table scroll ── */
+.ops-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Matrix table ── */
+.ops-matrix {
+  width: 100%; border-collapse: collapse; position: relative;
+}
+.ops-col-asset   { width: 230px; min-width: 230px; }
+.ops-col-history { width: 84px;  min-width: 84px; }
+.ops-col-progress{ width: 80px;  min-width: 80px; }
+.ops-col-month   { width: 64px;  min-width: 64px; }
+
+/* Sticky columns */
+.ops-matrix th.ops-col-asset,
+.ops-matrix td.ops-asset-cell {
+  position: sticky; left: 0; z-index: 2;
+  background: #fff; box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+}
+.ops-matrix th.ops-col-history,
+.ops-matrix td.ops-hist-cell {
+  position: sticky; left: 230px; z-index: 2;
+  background: #fff; box-shadow: 2px 0 4px rgba(0,0,0,0.03);
+}
+.ops-matrix th.ops-col-progress,
+.ops-matrix td.ops-progress-cell {
+  position: sticky; right: 0; z-index: 2;
+  background: #fff; box-shadow: -2px 0 4px rgba(0,0,0,0.04);
+}
+
+/* Header — matching ds-table tokens */
+.ops-matrix thead th {
+  background: var(--table-header-bg, #FAFAFA);
+  padding: var(--table-header-padding, 12px 8px);
+  font-size: var(--table-header-font-size, 12px);
+  font-weight: var(--table-header-font-weight, 600);
+  color: var(--table-header-color, #717680);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  text-align: center;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  white-space: nowrap;
+}
+.ops-matrix thead th.ops-col-asset  { text-align: left; padding-left: 20px; }
+.ops-matrix thead th.ops-col-history { font-size: 10px; }
+.ops-matrix thead th.ops-col-progress { font-size: 10px; }
+.ops-matrix thead th.ops-th-current { background: #EEF4FF; color: #0000FF; }
+.ops-th-cur-label {
+  display: block; font-size: 9px; color: #6366f1;
+  font-weight: 700; text-transform: none; letter-spacing: 0; margin-top: 1px;
+}
+
+/* Asset cell */
+.ops-asset-cell {
+  padding: 14px 12px 14px 20px; vertical-align: middle;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+.ops-asset-name { font-size: 13.5px; font-weight: 700; color: #101828; line-height: 1.3; }
+.ops-asset-meta { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+.ops-asset-annual {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 5px; font-size: 11px; font-weight: 600;
+  padding: 2px 7px; border-radius: 20px;
+}
+.ops-asset-annual--ok   { background: var(--badge-success-bg, #ECFDF3); color: var(--badge-success-color, #027A48); }
+.ops-asset-annual--warn { background: var(--badge-warning-bg, #FFFAEB); color: var(--badge-warning-color, #B54708); }
+.ops-asset-annual--miss { background: var(--badge-danger-bg, #FEF3F2);  color: var(--badge-danger-color, #B42318); }
+.ops-asset-warn {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #B54708; font-weight: 600; margin-top: 4px; line-height: 1.3;
+}
+.ops-asset-reject {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #B42318; font-weight: 600; margin-top: 4px;
+}
+
+/* History cell */
+.ops-hist-cell {
+  padding: 10px 6px; text-align: center; vertical-align: middle;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+.ops-hist-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 20px;
+  white-space: nowrap;
+}
+.ops-hist-ok   { background: var(--badge-success-bg, #ECFDF3); color: var(--badge-success-color, #027A48); }
+.ops-hist-part { background: var(--badge-warning-bg, #FFFAEB); color: var(--badge-warning-color, #B54708); }
+.ops-hist-none { color: #d1d5db; font-size: 11px; font-style: italic; font-weight: 400; }
+
+/* Progress cell — uses ds-progress tokens */
+.ops-progress-cell {
+  padding: 10px 12px; text-align: center; vertical-align: middle;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-left: 1px solid var(--table-border-color, #E9EAEB);
+}
+.ops-progress-cell__fraction {
+  font-size: 12px; font-weight: 700; color: #101828;
+  font-variant-numeric: tabular-nums; margin-bottom: 5px;
+}
+/* ds-progress system */
+.ds-progress {
+  height: var(--progress-sm-height, 6px);
+  background: var(--progress-track-bg, #D5D7DA);
+  border-radius: var(--progress-border-radius, 30px);
+  overflow: hidden;
+}
+.ds-progress__fill {
+  height: 100%; border-radius: var(--progress-border-radius, 30px);
+  background: var(--progress-fill-bg, #98FB96);
+  transition: width 0.3s;
+}
+.ds-progress__fill--warn   { background: #FDE68A; }
+.ds-progress__fill--danger { background: #FDA29B; }
+
+/* Status cells */
+.ops-status-cell {
+  padding: 0; text-align: center; vertical-align: middle;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-left: 1px solid var(--table-border-color, #E9EAEB);
+  position: relative;
+}
+.ops-status-cell.is-current { background: #F5F7FF; }
+.ops-status-cell.is-current .ops-dot__icon { box-shadow: 0 0 0 2px #e0e4ff; }
+
+/* Row hover — matching --table-row-hover-bg */
+.ops-matrix tbody tr:hover .ops-status-cell { background: var(--table-row-hover-bg, #F8F9FC); }
+.ops-matrix tbody tr:hover .ops-status-cell.is-current { background: #EEF1FF; }
+.ops-matrix tbody tr:hover .ops-asset-cell,
+.ops-matrix tbody tr:hover .ops-hist-cell,
+.ops-matrix tbody tr:hover .ops-progress-cell { background: var(--table-row-hover-bg, #F8F9FC); }
+.ops-matrix tbody tr:last-child td { border-bottom: none; }
+
+/* Dot */
+.ops-dot {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0; min-height: 64px;
+  padding: 10px 4px; cursor: default; position: relative;
+}
+.ops-dot__icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+}
+.ops-dot__date { font-size: 9px; color: #9ca3af; margin-top: 4px; line-height: 1.2; font-weight: 500; }
+.ops-dot__status-label { font-size: 9px; font-weight: 600; margin-top: 4px; line-height: 1.2; }
+
+/* Status colors — using ds-badge token values */
+.ops-dot--published .ops-dot__icon { background: var(--badge-success-bg, #ECFDF3); color: var(--badge-success-color, #027A48); }
+.ops-dot--published .ops-dot__status-label { color: var(--badge-success-color, #027A48); }
+.ops-dot--approved  .ops-dot__icon { background: var(--badge-info-bg, #EEF4FF); color: var(--badge-info-color, #1B2559); }
+.ops-dot--approved  .ops-dot__status-label { color: var(--badge-info-color, #1B2559); }
+.ops-dot--submitted .ops-dot__icon { background: #EDE9FE; color: #5B21B6; }
+.ops-dot--submitted .ops-dot__status-label { color: #5B21B6; }
+.ops-dot--draft     .ops-dot__icon { background: var(--badge-warning-bg, #FFFAEB); color: var(--badge-warning-color, #B54708); }
+.ops-dot--draft     .ops-dot__status-label { color: var(--badge-warning-color, #B54708); }
+.ops-dot--missing   .ops-dot__icon { background: var(--badge-danger-bg, #FEF3F2); color: var(--badge-danger-color, #B42318); border: 1.5px dashed #FECDCA; }
+.ops-dot--missing   .ops-dot__status-label { color: var(--badge-danger-color, #B42318); }
+.ops-dot--rejected  .ops-dot__icon { background: var(--badge-danger-bg, #FEF3F2); color: var(--badge-danger-color, #B42318); }
+.ops-dot--rejected  .ops-dot__status-label { color: var(--badge-danger-color, #B42318); }
+.ops-dot--future    .ops-dot__icon { background: var(--badge-neutral-bg, #F2F4F7); color: #D0D5DD; font-size: 15px; font-weight: 300; }
+
+/* Doc warning dot */
+.ops-dot__doc-badge {
+  position: absolute; top: 8px; right: 8px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #F79009; border: 1.5px solid #fff;
+}
+
+/* Overdue cell */
+.ops-status-cell.is-overdue { background: #FFF8F8; }
+.ops-matrix tbody tr:hover .ops-status-cell.is-overdue { background: #FEF2F2; }
+.ops-dot--missing.is-overdue-dot .ops-dot__icon,
+.ops-dot--draft.is-overdue-dot .ops-dot__icon,
+.ops-dot--rejected.is-overdue-dot .ops-dot__icon {
+  border: 1.5px solid #FDA29B !important;
+  box-shadow: 0 0 0 2px rgba(217,45,32,0.08);
+}
+.ops-dot__overdue-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: #D92D20; color: #fff;
+  font-size: 7.5px; font-weight: 800; letter-spacing: 0.05em;
+  padding: 1px 5px; border-radius: 3px; margin-top: 4px;
+  text-transform: uppercase; white-space: nowrap;
+}
+.ops-dot__late-submit {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 8.5px; color: #B54708; font-weight: 700; margin-top: 2px; line-height: 1;
+}
+
+/* Hover action overlay — uses ds-btn classes for the buttons */
+.ops-dot__hover-action {
+  position: absolute; inset: 0;
+  background: rgba(0,0,255,0.06);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  opacity: 0; transition: opacity 0.15s;
+}
+.ops-status-cell:hover .ops-dot__hover-action { opacity: 1; }
+/* Override ds-btn sizes for the tiny cell context */
+.ops-dot__hover-action .ds-btn {
+  height: 26px !important; padding: 0 10px !important; font-size: 10px !important;
+}
+.ops-dot__hover-note {
+  font-size: 9px; color: #344054; font-weight: 600;
+  font-family: var(--font-family);
+}
+
+/* Legend row */
+.ops-legend {
+  display: flex; gap: 14px; padding: 11px 20px;
+  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  background: #FAFAFA; flex-wrap: wrap; align-items: center;
+}
+.ops-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #667085; }
+.ops-legend-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+.ops-legend-hint { margin-left: auto; font-size: 11px; color: #9ca3af; font-style: italic; }
+</style>
+</head>
+<body id="developer-operations-body">
+<div class="proto-tag">PROTOTYPE — Option A Enhanced</div>
+
+<div class="marketplace-page">
+
+  <!-- ── Sidebar (proto-only visual, matches real sidebar CSS) ── -->
+  <aside class="marketplace-sidebar ops-sidebar-proto">
+    <div class="ops-sidebar__logo">POOOL</div>
+
+    <div class="ops-nav-section">Developer Portal</div>
+    <a href="#" class="ops-nav-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a href="#" class="ops-nav-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 8h12M2 13h7"/><rect x="10" y="10" width="5" height="5" rx="1"/></svg>
+      Assets
+    </a>
+    <a href="#" class="ops-nav-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10,10"/></svg>
+      Submissions
+    </a>
+    <a href="#" class="ops-nav-item active">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="1"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/></svg>
+      Operations
+      <span class="ops-nav-badge">5</span>
+    </a>
+    <a href="#" class="ops-nav-item" style="color:#9ca3af">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="8,2 10,6 14,6.5 11,9.5 11.8,14 8,12 4.2,14 5,9.5 2,6.5 6,6"/></svg>
+      Ranking
+      <span class="ops-nav-badge ops-nav-badge--soon">Soon</span>
+    </a>
+
+    <div class="ops-nav-section" style="margin-top:12px">Account</div>
+    <a href="#" class="ops-nav-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+      Settings
+    </a>
+    <a href="#" class="ops-nav-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H5"/></svg>
+      Support
+    </a>
+
+    <div class="ops-sidebar__bottom">
+      <div class="ops-sidebar__user">
+        <div class="ops-sidebar__avatar">MW</div>
+        <div>
+          <div class="ops-sidebar__user-name">Martin W.</div>
+          <div class="ops-sidebar__user-email">martin@poool.app</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="marketplace-main developer-lb-shell-main">
+
+    <!-- Topbar — matching developer-lb-topbar exactly -->
+    <header class="lb-topbar developer-lb-topbar">
+      <div class="lb-topbar-inner">
+        <div class="lb-topbar-left">
+          <h1 class="lb-topbar-title">Operations</h1>
+        </div>
+        <div class="lb-topbar-right">
+          <div class="ops-deadline">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10,10"/></svg>
+            Submit by May 28 · 13 days left
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="admin-content">
+
+      <!-- Subtitle -->
+      <p class="page-subtitle" style="margin:0">Monthly reporting · 4 properties · 2026</p>
+
+      <!-- Stats row — dev-stat class from developer-ui.css -->
+      <div class="ops-stats-grid">
+        <div class="dev-stat">
+          <div class="ops-stat__top">
+            <div class="ops-stat__num ops-stat__num--red">3</div>
+            <div class="ops-stat__icon" style="background:#FEF3F2">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#D92D20" stroke-width="2"><path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="#D92D20"/></svg>
+            </div>
+          </div>
+          <div class="ops-stat__label">Missing submissions</div>
+          <div class="ops-stat__trend">Need immediate action</div>
+        </div>
+        <div class="dev-stat">
+          <div class="ops-stat__top">
+            <div class="ops-stat__num ops-stat__num--amber">2</div>
+            <div class="ops-stat__icon" style="background:#FFFAEB">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#B54708" stroke-width="2"><path d="M3 14V2h10v12M6 6h4M6 9h4"/></svg>
+            </div>
+          </div>
+          <div class="ops-stat__label">Drafts in progress</div>
+          <div class="ops-stat__trend">Ready to submit</div>
+        </div>
+        <div class="dev-stat">
+          <div class="ops-stat__top">
+            <div class="ops-stat__num ops-stat__num--blue">1</div>
+            <div class="ops-stat__icon" style="background:#EEF4FF">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#0000FF" stroke-width="2"><circle cx="8" cy="8" r="6"/><polyline points="5,8 7,10 11,6"/></svg>
+            </div>
+          </div>
+          <div class="ops-stat__label">Awaiting review</div>
+          <div class="ops-stat__trend">Submitted to admin</div>
+        </div>
+        <div class="dev-stat">
+          <div class="ops-stat__top">
+            <div class="ops-stat__num ops-stat__num--green">11</div>
+            <div class="ops-stat__icon" style="background:#ECFDF3">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#027A48" stroke-width="2"><path d="M2 8l4 4 8-8"/></svg>
+            </div>
+          </div>
+          <div class="ops-stat__label">Published this year</div>
+          <div class="ops-stat__trend">Across all assets</div>
+        </div>
+        <div class="dev-stat">
+          <div class="ops-stat__top">
+            <div class="ops-stat__num ops-stat__num--amber">2</div>
+            <div class="ops-stat__icon" style="background:#FFFAEB">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#B54708" stroke-width="2"><path d="M4 2v12M4 2h7l2 3-2 3H4M4 8h5"/></svg>
+            </div>
+          </div>
+          <div class="ops-stat__label">Docs missing</div>
+          <div class="ops-stat__trend">Period documents</div>
+        </div>
+      </div>
+
+      <!-- Urgent banner -->
+      <div class="ops-urgent-banner" id="urgentBanner">
+        <div class="ops-urgent-banner__stripe"></div>
+        <div class="ops-urgent-banner__body">
+          <div class="ops-urgent-banner__icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8.5"/><circle cx="8" cy="10.5" r="0.6" fill="currentColor"/></svg>
+          </div>
+          <div class="ops-urgent-banner__text">
+            <div class="ops-urgent-banner__title">Action required before May 28</div>
+            <div class="ops-urgent-banner__items">
+              <a href="#" class="ops-urgent-banner__chip">Canggu Studio · Feb rejected</a>
+              <a href="#" class="ops-urgent-banner__chip">Canggu Studio · Mar missing</a>
+              <a href="#" class="ops-urgent-banner__chip">Canggu Studio · Apr missing</a>
+              <a href="#" class="ops-urgent-banner__chip ops-urgent-banner__chip--warn">Sunset Heights · Apr draft</a>
+              <a href="#" class="ops-urgent-banner__chip ops-urgent-banner__chip--warn">Seminyak Beach · Apr missing</a>
+            </div>
+          </div>
+        </div>
+        <button class="ops-urgent-banner__dismiss" onclick="document.getElementById('urgentBanner').style.display='none'" title="Dismiss">×</button>
+      </div>
+
+      <!-- Matrix card -->
+      <div class="ops-matrix-wrap">
+
+        <div class="ops-matrix-topbar">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+            <div>
+              <p class="ops-matrix-title">Monthly Submissions</p>
+              <p class="ops-matrix-sub">Sticky columns · hover a cell to act · Apr = latest closed month</p>
+            </div>
+            <div class="ops-year-tabs" style="flex-shrink:0;margin-top:2px">
+              <button class="ops-year-tab">2024</button>
+              <button class="ops-year-tab">2025</button>
+              <button class="ops-year-tab active">2026</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls: filter tabs only -->
+        <div class="ops-matrix-controls">
+          <div class="ops-filter-tabs">
+            <button class="ops-filter-tab active">
+              All <span class="ops-filter-count ops-filter-count--red">5</span>
+            </button>
+            <button class="ops-filter-tab">
+              Needs action <span class="ops-filter-count ops-filter-count--red">3</span>
+            </button>
+            <button class="ops-filter-tab">
+              Missing docs <span class="ops-filter-count ops-filter-count--amber">2</span>
+            </button>
+            <button class="ops-filter-tab">Rejected</button>
+          </div>
+        </div>
+
+        <!-- Scrollable table -->
+        <div class="ops-table-scroll">
+          <table class="ops-matrix">
+            <thead>
+              <tr>
+                <th class="ops-col-asset">Asset</th>
+                <th class="ops-col-history">Prior yrs</th>
+                <th class="ops-col-month">Jan</th>
+                <th class="ops-col-month">Feb</th>
+                <th class="ops-col-month">Mar</th>
+                <th class="ops-col-month ops-th-current">
+                  Apr
+                  <span class="ops-th-cur-label">← current</span>
+                </th>
+                <th class="ops-col-month">May</th>
+                <th class="ops-col-month">Jun</th>
+                <th class="ops-col-month">Jul</th>
+                <th class="ops-col-month">Aug</th>
+                <th class="ops-col-month">Sep</th>
+                <th class="ops-col-month">Oct</th>
+                <th class="ops-col-month">Nov</th>
+                <th class="ops-col-month">Dec</th>
+                <th class="ops-col-progress">2026</th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- ── Sunset Heights ── -->
+              <tr>
+                <td class="ops-asset-cell">
+                  <div class="ops-asset-name">Sunset Heights Villa</div>
+                  <div class="ops-asset-meta">Seminyak, Bali · since Jan 2025</div>
+                  <span class="ops-asset-annual ops-asset-annual--ok">Annual 2025 ✓</span>
+                </td>
+                <td class="ops-hist-cell"><span class="ops-hist-pill ops-hist-ok">✓ 24/24</span></td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--published">
+                    <div class="ops-dot__icon">✓</div>
+                    <div class="ops-dot__date">Jan 14</div>
+                  </div>
+                </td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--published">
+                    <div class="ops-dot__icon">✓</div>
+                    <div class="ops-dot__date">Feb 3</div>
+                  </div>
+                </td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--approved">
+                    <div class="ops-dot__icon">A</div>
+                    <div class="ops-dot__status-label">Approved</div>
+                  </div>
+                </td>
+                <!-- Apr current — draft -->
+                <td class="ops-status-cell is-current">
+                  <div class="ops-dot ops-dot--draft">
+                    <div class="ops-dot__icon">D</div>
+                    <div class="ops-dot__status-label">Draft</div>
+                  </div>
+                  <div class="ops-dot__hover-action">
+                    <a href="#" class="ds-btn ds-btn--primary ds-btn--sm">Submit →</a>
+                    <span class="ops-dot__hover-note">Draft saved · Apr 2026</span>
+                  </div>
+                </td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-progress-cell">
+                  <div class="ops-progress-cell__fraction">3 / 4</div>
+                  <div class="ds-progress"><div class="ds-progress__fill" style="width:75%"></div></div>
+                </td>
+              </tr>
+
+              <!-- ── Seminyak Beach House ── -->
+              <tr>
+                <td class="ops-asset-cell">
+                  <div class="ops-asset-name">Seminyak Beach House</div>
+                  <div class="ops-asset-meta">Seminyak, Bali · since Jan 2025</div>
+                  <div class="ops-asset-warn">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/></svg>
+                    Period docs missing · Apr 2026
+                  </div>
+                  <span class="ops-asset-annual ops-asset-annual--ok">Annual 2025 ✓</span>
+                </td>
+                <td class="ops-hist-cell"><span class="ops-hist-pill ops-hist-ok">✓ 24/24</span></td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--published">
+                    <div class="ops-dot__icon">✓</div>
+                    <div class="ops-dot__date">Jan 9</div>
+                  </div>
+                </td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--published">
+                    <div class="ops-dot__icon">✓</div>
+                    <div class="ops-dot__date">Feb 11</div>
+                  </div>
+                </td>
+                <!-- Mar — submitted May 12, deadline was Apr 28 → late submit -->
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--submitted">
+                    <div class="ops-dot__icon">S</div>
+                    <div class="ops-dot__date">May 12</div>
+                    <span class="ops-dot__late-submit"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;vertical-align:middle"><circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 10.5,10"/></svg> Late</span>
+                  </div>
+                </td>
+                <!-- Apr current — missing + docs warning -->
+                <td class="ops-status-cell is-current">
+                  <div class="ops-dot ops-dot--missing">
+                    <div class="ops-dot__icon">!</div>
+                    <div class="ops-dot__status-label">Missing</div>
+                  </div>
+                  <div class="ops-dot__doc-badge" title="Period documents not uploaded"></div>
+                  <div class="ops-dot__hover-action">
+                    <a href="#" class="ds-btn ds-btn--primary ds-btn--sm">Submit →</a>
+                    <span class="ops-dot__hover-note">⚠ Upload docs first</span>
+                  </div>
+                </td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-progress-cell">
+                  <div class="ops-progress-cell__fraction">2 / 4</div>
+                  <div class="ds-progress"><div class="ds-progress__fill ds-progress__fill--warn" style="width:50%"></div></div>
+                </td>
+              </tr>
+
+              <!-- ── Ubud Jungle Retreat ── -->
+              <tr>
+                <td class="ops-asset-cell">
+                  <div class="ops-asset-name">Ubud Jungle Retreat</div>
+                  <div class="ops-asset-meta">Ubud, Bali · since Jun 2025</div>
+                  <div class="ops-asset-warn">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/></svg>
+                    Period docs missing · Mar 2026
+                  </div>
+                  <span class="ops-asset-annual ops-asset-annual--warn">Annual 2025 pending</span>
+                </td>
+                <td class="ops-hist-cell"><span class="ops-hist-pill ops-hist-ok" title="Jun–Dec 2025">✓ 7/7</span></td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--published">
+                    <div class="ops-dot__icon">✓</div>
+                    <div class="ops-dot__date">Jan 22</div>
+                  </div>
+                </td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--approved">
+                    <div class="ops-dot__icon">A</div>
+                    <div class="ops-dot__status-label">Approved</div>
+                  </div>
+                </td>
+                <!-- Mar — draft + docs warning + overdue -->
+                <td class="ops-status-cell is-overdue">
+                  <div class="ops-dot ops-dot--draft is-overdue-dot">
+                    <div class="ops-dot__icon">D</div>
+                    <div class="ops-dot__status-label">Draft</div>
+                    <span class="ops-dot__overdue-tag"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;vertical-align:middle"><circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 10.5,10"/><line x1="8" y1="11" x2="8" y2="11.5" stroke-width="2.8"/></svg> Overdue</span>
+                  </div>
+                  <div class="ops-dot__doc-badge" title="Period documents not uploaded"></div>
+                  <div class="ops-dot__hover-action">
+                    <a href="#" class="ds-btn ds-btn--primary ds-btn--sm">Submit →</a>
+                    <span class="ops-dot__hover-note">⚠ Upload docs first</span>
+                  </div>
+                </td>
+                <!-- Apr current — missing -->
+                <td class="ops-status-cell is-current">
+                  <div class="ops-dot ops-dot--missing">
+                    <div class="ops-dot__icon">!</div>
+                    <div class="ops-dot__status-label">Missing</div>
+                  </div>
+                  <div class="ops-dot__hover-action">
+                    <a href="#" class="ds-btn ds-btn--primary ds-btn--sm">Submit →</a>
+                    <span class="ops-dot__hover-note">Not started · Apr 2026</span>
+                  </div>
+                </td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-progress-cell">
+                  <div class="ops-progress-cell__fraction">1 / 4</div>
+                  <div class="ds-progress"><div class="ds-progress__fill ds-progress__fill--danger" style="width:25%"></div></div>
+                </td>
+              </tr>
+
+              <!-- ── Canggu Studio Loft ── -->
+              <tr>
+                <td class="ops-asset-cell">
+                  <div class="ops-asset-name">Canggu Studio Loft</div>
+                  <div class="ops-asset-meta">Canggu, Bali · since Jan 2026</div>
+                  <div class="ops-asset-reject">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="8" cy="8" r="6"/><line x1="6" y1="6" x2="10" y2="10"/><line x1="10" y1="6" x2="6" y2="10"/></svg>
+                    Feb rejected · "Incorrect expense totals"
+                  </div>
+                  <span class="ops-asset-annual ops-asset-annual--miss">Annual 2025 missing</span>
+                </td>
+                <td class="ops-hist-cell"><span class="ops-hist-none">First year</span></td>
+                <td class="ops-status-cell">
+                  <div class="ops-dot ops-dot--published">
+                    <div class="ops-dot__icon">✓</div>
+                    <div class="ops-dot__date">Jan 7</div>
+                  </div>
+                </td>
+                <!-- Feb — rejected + overdue -->
+                <td class="ops-status-cell is-overdue">
+                  <div class="ops-dot ops-dot--rejected is-overdue-dot">
+                    <div class="ops-dot__icon">R</div>
+                    <div class="ops-dot__status-label">Rejected</div>
+                    <span class="ops-dot__overdue-tag"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;vertical-align:middle"><circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 10.5,10"/><line x1="8" y1="11" x2="8" y2="11.5" stroke-width="2.8"/></svg> Overdue</span>
+                  </div>
+                  <div class="ops-dot__hover-action">
+                    <a href="#" class="ds-btn ds-btn--danger ds-btn--sm">Fix &amp; Resubmit</a>
+                    <span class="ops-dot__hover-note">Incorrect expense totals</span>
+                  </div>
+                </td>
+                <!-- Mar — missing + overdue -->
+                <td class="ops-status-cell is-overdue">
+                  <div class="ops-dot ops-dot--missing is-overdue-dot">
+                    <div class="ops-dot__icon">!</div>
+                    <div class="ops-dot__status-label">Missing</div>
+                    <span class="ops-dot__overdue-tag"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;vertical-align:middle"><circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 10.5,10"/><line x1="8" y1="11" x2="8" y2="11.5" stroke-width="2.8"/></svg> Overdue</span>
+                  </div>
+                  <div class="ops-dot__hover-action">
+                    <a href="#" class="ds-btn ds-btn--primary ds-btn--sm">Submit →</a>
+                    <span class="ops-dot__hover-note">Not started · Mar 2026</span>
+                  </div>
+                </td>
+                <!-- Apr current — missing -->
+                <td class="ops-status-cell is-current">
+                  <div class="ops-dot ops-dot--missing">
+                    <div class="ops-dot__icon">!</div>
+                    <div class="ops-dot__status-label">Missing</div>
+                  </div>
+                  <div class="ops-dot__hover-action">
+                    <a href="#" class="ds-btn ds-btn--primary ds-btn--sm">Submit →</a>
+                    <span class="ops-dot__hover-note">Not started · Apr 2026</span>
+                  </div>
+                </td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-status-cell"><div class="ops-dot ops-dot--future"><div class="ops-dot__icon">—</div></div></td>
+                <td class="ops-progress-cell">
+                  <div class="ops-progress-cell__fraction" style="color:#D92D20">0 / 4</div>
+                  <div class="ds-progress"><div class="ds-progress__fill ds-progress__fill--danger" style="width:0%"></div></div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div><!-- /scroll -->
+
+        <!-- Legend -->
+        <div class="ops-legend">
+          <div class="ops-legend-item"><div class="ops-legend-dot" style="background:var(--badge-success-bg,#ECFDF3)"></div>Published</div>
+          <div class="ops-legend-item"><div class="ops-legend-dot" style="background:var(--badge-info-bg,#EEF4FF)"></div>Approved</div>
+          <div class="ops-legend-item"><div class="ops-legend-dot" style="background:#EDE9FE"></div>Submitted</div>
+          <div class="ops-legend-item"><div class="ops-legend-dot" style="background:var(--badge-warning-bg,#FFFAEB)"></div>Draft</div>
+          <div class="ops-legend-item"><div class="ops-legend-dot" style="background:var(--badge-danger-bg,#FEF3F2);border:1.5px dashed #FECDCA"></div>Missing</div>
+          <div class="ops-legend-item"><div class="ops-legend-dot" style="background:var(--badge-danger-bg,#FEF3F2)"></div>Rejected</div>
+          <div class="ops-legend-item"><div class="ops-legend-dot" style="background:var(--badge-neutral-bg,#F2F4F7)"></div>Future</div>
+          <div class="ops-legend-item">
+            <div style="width:8px;height:8px;background:#F79009;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #F79009"></div>
+            Docs missing
+          </div>
+          <div class="ops-legend-item">
+            <span style="display:inline-flex;align-items:center;gap:3px;background:#D92D20;color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:3px;text-transform:uppercase"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 10.5,10"/><line x1="8" y1="11" x2="8" y2="11.5" stroke-width="2.8"/></svg> Overdue</span>
+            Deadline passed
+          </div>
+          <div class="ops-legend-item">
+            <span style="display:inline-flex;align-items:center;gap:3px;font-size:8.5px;color:#B54708;font-weight:700"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 10.5,10"/></svg> Late</span>
+            Submitted after deadline
+          </div>
+          <div class="ops-legend-hint">Hover any cell to reveal actions</div>
+        </div>
+
+      </div><!-- /matrix-wrap -->
+
+    </div><!-- /admin-content -->
+  </main>
+</div>
+
+<script>
+document.querySelectorAll('.ops-filter-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ops-filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+document.querySelectorAll('.ops-year-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ops-year-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+{% with title="Qualified Referral and Payout Policy | POOOL", meta_description="POOOL Qualified Referral and Payout Policy explaining when referrals qualify and when commissions become payable.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart',
+'portfolio-assets-table', 'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards'], extra_js=['htmx-init',
+'profile-dropdown'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="rewards-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+  <div id="portfolio-page" class="portfolio-page">
+    <div id="portfolio-sidebar" class="portfolio-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+    <main id="legal-main" class="ds-main marketplace-main" style="background: #f9fafb">
+      <div style="max-width: 860px; margin: 0 auto; padding: 40px 24px 80px 24px">
+        <div style="margin-bottom: 32px">
+          <a href="/affiliate" style="
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: #717680;
+                text-decoration: none;
+                font-size: 14px;
+                margin-bottom: 16px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12L6 8L10 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Back to Affiliate Program
+          </a>
+          <h1 style="
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--page-title-color);
+                margin: 16px 0 8px 0;
+              ">
+            Qualified Referral and Payout Policy
+          </h1>
+          <p style="color: #717680; font-size: 14px">
+            POOOL Affiliate Program — Phase 1 (Controlled Referral Program) &middot; Last Updated: 6 May 2026
+          </p>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px">
+            Company: PT. POOOL INTERNATIONAL GROUP &middot; Website: www.poool.app
+          </p>
+        </div>
+
+        <div style="
+              background: #fff;
+              border: 1px solid var(--table-border-color);
+              border-radius: 12px;
+              padding: 32px;
+              line-height: 1.7;
+              color: #414651;
+              font-size: 15px;
+            ">
+          <style>
+            #legal-main .aff-h2 {
+              font-size: 17px;
+              font-weight: 600;
+              color: var(--page-title-color);
+              margin: 32px 0 12px 0;
+              padding-top: 20px;
+              border-top: 1px solid #f2f4f7;
+            }
+            #legal-main .aff-h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+            #legal-main .aff-ul { margin: 8px 0 16px 18px; padding: 0; }
+            #legal-main .aff-ul li { margin: 4px 0; }
+            #legal-main p { margin: 8px 0 12px 0; }
+            #legal-main p strong { color: #101828; }
+          </style>
+
+          <p style="background: #FEF6E7; border: 1px solid #F4C430; border-radius: 8px; padding: 12px 16px; color: #6E4D00; font-size: 14px; margin-bottom: 24px;">
+            <strong>Phase 1 launch document.</strong> Some items marked for legal review remain placeholders pending final sign-off. Where this page conflicts with the executed master document, the executed document controls.
+          </p>
+
+<h2 class="aff-h2">1. Purpose</h2>
+<p>This Qualified Referral &amp; Payout Policy (“ Policy ”) governs the operational and control logic for:</p>
+<ul class="aff-ul"><li>referral attribution</li><li>referral qualification</li><li>commission eligibility</li><li>holdback and review</li><li>payout readiness</li><li>payability</li><li>disqualification</li><li>reversals</li><li>anti-fraud review</li><li>self-referral and referral-ring prohibition</li><li>disputes</li><li>evidence standards</li><li>and payout release. This Policy exists to ensure that commissions are paid only on properly cleared and eligible referrals and that POOOL can consistently support product, finance, compliance, operations, support, and enforcement with one controlled rule set. This Policy must be applied together with:</li><li>the Affiliate Terms &amp; Conditions</li><li>the Affiliate Code of Conduct</li><li>the Approved Marketing Materials Policy</li><li>the Affiliate Tax SOP / tax-handling framework</li><li>the Affiliate Privacy Notice / privacy controls</li><li>and the Monitoring, Suspension &amp; Clawback framework.</li></ul>
+<h2 class="aff-h2">2. Core Rule</h2>
+<p><strong>2.1</strong> A referral becomes commission-payable only if it becomes a Qualified Referral under this Policy and remains eligible through final payout approval.</p>
+<p><strong>2.2</strong> No Affiliate has a right to commission merely because:</p>
+<ul class="aff-ul"><li>a referral link was clicked</li><li>a user registered</li><li>onboarding started</li><li>KYC started</li><li>KYC completed</li><li>an order was initiated</li><li>an investment was pending</li><li>or a dashboard displayed provisional earnings.</li></ul>
+<p><strong>2.3</strong> Commission becomes payable only after:</p>
+<ul class="aff-ul"><li>valid attribution</li><li>completed required onboarding</li><li>completed KYC</li><li>completed first eligible paid investment</li><li>holdback/review clearance</li><li>absence of any Disqualifying Event</li><li>payout and tax readiness</li><li>and final payout approval.</li></ul>
+<p><strong>2.4</strong> Tracked is not the same as Qualified, and Qualified is not the same as Payable.</p>
+<h2 class="aff-h2">3. Definitions</h2>
+<p>For purposes of this Policy: “Attributed Referral” means a referral path validly linked to an Affiliate under POOOL’s approved attribution system. “Disqualifying Event” means any event that prevents a referral or commission from becoming or remaining qualified or payable, including invalid attribution, incomplete KYC, missing qualifying investment, fraud, self-referral, related-party self-referral, referral-ring activity, policy breach, reversal, refund, chargeback, cancellation, incomplete payout/tax readiness, or any other event recognized under the Program rules. “Holdback Period” means the review period following the first eligible paid investment before any related commission may become payable. “Manual Override” means an exception-based status, attribution, qualification, or payout adjustment approved outside normal automated logic. “Payable Commission” means a commission that has satisfied all qualification, holdback, review, payout-readiness, and payout-approval requirements and is approved for release in the relevant payout cycle. “Qualified Referral” means a referral satisfying all qualification conditions defined by POOOL, including valid attribution, completed KYC, completed first eligible paid investment, holdback/review clearance, and absence of any Disqualifying Event. “Related-Party Referral Abuse” means self-benefiting or coordinated referral behavior using a household member, family member, controlled entity, nominee, assistant, proxy, shared economic beneficiary, or similar related structure to create commission or tier credit improperly.</p>
+<h2 class="aff-h2">4. Relationship to Other Program Documents</h2>
+<p><strong>4.1</strong> This Policy governs the operational meaning of:</p>
+<ul class="aff-ul"><li>referral qualification</li><li>payable status</li><li>payout release controls</li><li>reversals</li><li>disqualification</li><li>dispute review</li><li>and evidence standards.</li></ul>
+<p><strong>4.2</strong> This Policy does not by itself determine:</p>
+<ul class="aff-ul"><li>the full contractual rights and remedies between POOOL and the Affiliate</li><li>the final tax-law treatment of payouts</li><li>the full privacy-law treatment of data</li><li>or the full disciplinary framework outside qualification/payout logic.</li></ul>
+<p><strong>4.3</strong> Those matters remain governed by the Affiliate Terms &amp; Conditions, Tax SOP / tax-handling framework, Privacy framework, Monitoring / Suspension / Clawback framework, and other applicable Program Documents.</p>
+<h2 class="aff-h2">5. Status Model</h2>
+<p><strong>5.1</strong> For operational clarity, POOOL should maintain a staged referral and commission status model. Referral lifecycle statuses</p>
+<ul class="aff-ul"><li>Attributed</li><li>Registered</li><li>Onboarding Completed, if separately tracked</li><li>KYC Approved</li><li>First Eligible Paid Investment Completed</li><li>Under Holdback / Review</li><li>Qualified</li><li>Disqualified</li><li>Reversed Commission lifecycle statuses</li><li>Provisionally Tracked</li><li>On Hold</li><li>Payable</li><li>Paid</li><li>Frozen</li><li>Offset</li><li>Clawback Pending</li><li>Clawed Back</li></ul>
+<p><strong>5.2</strong> Additional sub-statuses may be used where needed, including:</p>
+<ul class="aff-ul"><li>Pending Documentation</li><li>Pending Tax Setup</li><li>Pending Payout Setup</li><li>Under Investigation</li><li>Manual Review Required</li><li>Related-Party Review</li><li>Fraud Review</li></ul>
+<p><strong>5.3</strong> These stages must remain operationally separate. Product, finance, support, and reporting must not collapse them into one generic “commission” status.</p>
+<h2 class="aff-h2">6. Valid</h2>
+<p>Attribution</p>
+<p><strong>6.1</strong> A referral counts only if it is validly attributable to the Affiliate under POOOL’s approved attribution system.</p>
+<p><strong>6.2</strong> Attribution must be:</p>
+<ul class="aff-ul"><li>technically recorded</li><li>linked to the correct Affiliate ID</li><li>associated with an approved referral link, code, or approved referral flow</li><li>and not invalidated by fraud, manipulation, override abuse, or policy breach.</li></ul>
+<p><strong>6.3</strong> Missing, corrupted, uncertain, disputed, or manipulated attribution may result in:</p>
+<ul class="aff-ul"><li>no qualification</li><li>payout hold</li><li>manual review</li><li>tier-credit exclusion</li><li>or disqualification.</li></ul>
+<p><strong>6.4</strong> POOOL’s system of record governs attribution unless corrected through an approved and logged internal review process.</p>
+<h2 class="aff-h2">7. Qualification Requirements A referral becomes a Qualified Referral only when all of the following are satisfied</h2>
+<p>:</p>
+<p><strong>7.1</strong> Valid Attribution The user is validly attributed to the Affiliate under Section 6.</p>
+<p><strong>7.2</strong> Completed Required Onboarding The user has completed the onboarding steps required for the relevant referral-to-investment journey.</p>
+<p><strong>7.3</strong> Completed KYC The user has successfully completed all required KYC and verification checks.</p>
+<p><strong>7.4</strong> Completed First Eligible Paid Investment The user has completed a first eligible paid investment through official POOOL flows.</p>
+<p><strong>7.5</strong> Minimum Investment Rule Met, if Applicable If POOOL adopts a minimum qualifying investment threshold, that threshold must be satisfied.</p>
+<p><strong>7.6</strong> Holdback / Review Cleared The applicable Holdback Period has expired and the related checks are complete.</p>
+<p><strong>7.7</strong> No Disqualifying Event No fraud issue, self-referral issue, related-party circumvention, referral-ring issue, policy-breach issue, reversal issue, or other disqualifying issue applies.</p>
+<p><strong>7.8</strong> Affiliate Payout Readiness Cleared The Affiliate’s payout and tax setup is complete and the commission passes final payout controls.</p>
+<p><strong>7.9</strong> A click, signup, incomplete onboarding, incomplete KYC, or initiated-but-unsettled investment does not by itself create a Qualified Referral.</p>
+<h2 class="aff-h2">8. KYC Requirement</h2>
+<p><strong>8.1</strong> A referral cannot qualify unless the referred user successfully completes all required KYC and verification requirements.</p>
+<p><strong>8.2</strong> A referral with incomplete, failed, rejected, or unresolved KYC review cannot become a Qualified Referral.</p>
+<h2 class="aff-h2">9. First Eligible Paid</h2>
+<p>Investment Requirement</p>
+<p><strong>9.1</strong> A referral can qualify only if the referred user completes a first eligible paid investment through official POOOL flows.</p>
+<p><strong>9.2</strong> The investment must be:</p>
+<ul class="aff-ul"><li>actually paid</li><li>settled or accepted as completed under POOOL’s operational rules</li><li>and not merely initiated or left pending indefinitely.</li></ul>
+<p><strong>9.3</strong> If POOOL adopts a minimum investment threshold for qualification, the first paid investment must meet or exceed that threshold.</p>
+<p><strong>9.4</strong> An investment that later fails, reverses, or is invalidated does not support qualification.</p>
+<h2 class="aff-h2">10. Holdback and Review Period</h2>
+<p><strong>10.1</strong> After the first eligible paid investment is completed, the related referral enters a Holdback Period.</p>
+<p><strong>10.2</strong> During holdback:</p>
+<ul class="aff-ul"><li>commission is provisional only</li><li>no payout is due</li><li>the referral remains subject to qualification review</li><li>fraud, compliance, reversal, and attribution checks remain open</li><li>and the referral may still be disqualified.</li></ul>
+<p><strong>10.3</strong> The recommended launch default Holdback Period is 30 days from the first eligible paid investment event unless POOOL later approves another period in writing.</p>
+<p><strong>10.4</strong> No referral may move into Payable status before holdback has expired and final checks are complete.</p>
+<h2 class="aff-h2">11. Payable Status and Payout Release</h2>
+<p><strong>11.1</strong> Commission becomes Payable only when all of the following are true:</p>
+<ul class="aff-ul"><li>the referral is marked Qualified</li><li>holdback has expired</li><li>no unresolved Disqualifying Event exists</li><li>the Affiliate is active or otherwise payout-eligible under POOOL’s rules</li><li>the Affiliate’s payout profile is complete</li><li>the Affiliate’s tax profile is complete</li><li>required finance/compliance controls have been completed</li><li>finance/compliance has not blocked the payout</li><li>and the payout is approved for release in the relevant payout cycle.</li></ul>
+<p><strong>11.2</strong> POOOL may operate payout cycles on a defined internal schedule.</p>
+<p><strong>11.3</strong> Inclusion in a payout cycle remains subject to final checks up to release.</p>
+<p><strong>11.4</strong> Provisional dashboard figures do not create a guaranteed payout entitlement.</p>
+<p><strong>11.5</strong> No payout may be released unless the commission is already Payable under this Policy and finance has approved release in the system of record.</p>
+<h2 class="aff-h2">12. Holds, Blocks, and Freezes</h2>
+<p><strong>12.1</strong> POOOL may hold, block, or freeze a referral, commission, or payout where:</p>
+<ul class="aff-ul"><li>attribution is disputed</li><li>KYC is incomplete</li><li>holdback is still running</li><li>fraud review is open</li><li>reversal risk is open</li><li>self-referral is suspected</li><li>related-party circumvention is suspected</li><li>referral-ring activity is suspected</li><li>policy breach is suspected</li><li>payout or tax profile is incomplete</li><li>the Affiliate is inactive or suspension-affected for payout purposes</li><li>or any other material program-integrity issue exists.</li></ul>
+<p><strong>12.2</strong> A hold or freeze may affect:</p>
+<ul class="aff-ul"><li>referral qualification</li><li>payable status</li><li>payout release</li><li>tier-credit inclusion</li><li>or all of the above.</li></ul>
+<p><strong>12.3</strong> A hold or freeze is an interim protective measure and does not by itself determine final liability.</p>
+<h2 class="aff-h2">13. Anti-Fraud and Abuse Rules</h2>
+<p><strong>13.1</strong> A referral is not qualified, or ceases to remain qualified, where fraud, abuse, manipulation, or bad-faith conduct is detected.</p>
+<p><strong>13.2</strong> This includes, without limitation:</p>
+<ul class="aff-ul"><li>fake accounts</li><li>synthetic, false, or stolen identity use</li><li>fabricated onboarding activity</li><li>attribution manipulation</li><li>improper campaign routing</li><li>suspicious account clustering</li><li>abusive payment patterns</li><li>rule evasion</li><li>coordinated behavior intended to improperly generate commission or tier credit</li><li>or related-party referral abuse.</li></ul>
+<p><strong>13.3</strong> POOOL may:</p>
+<ul class="aff-ul"><li>disqualify affected referrals</li><li>freeze related payouts</li><li>suspend related accounts</li><li>reverse tier credit</li><li>and escalate to clawback or removal as required.</li></ul>
+<h2 class="aff-h2">14. No Self-Referral Rule</h2>
+<p><strong>14.1</strong> An Affiliate may not earn commission, tier credit, or payout from referring themselves.</p>
+<p><strong>14.2</strong> Self-referral includes, without limitation:</p>
+<ul class="aff-ul"><li>using one’s own referral link or code for one’s own account</li><li>using a controlled account</li><li>using a related person or proxy account for one’s own economic benefit</li><li>routing one’s own investment activity through one’s referral path</li><li>or any similar self-benefit structure.</li></ul>
+<p><strong>14.3</strong> Confirmed self-referral results in:</p>
+<ul class="aff-ul"><li>referral disqualification</li><li>removal of related commission</li><li>removal of related tier credit</li><li>and possible enforcement action.</li></ul>
+<h2 class="aff-h2">15. No Referral-Ring Rule</h2>
+<p><strong>15.1</strong> Affiliates must not participate in referral rings, reciprocal referral arrangements, circular referral behavior, or coordinated referral abuse.</p>
+<p><strong>15.2</strong> This includes, without limitation:</p>
+<ul class="aff-ul"><li>two or more Affiliates referring each other</li><li>coordinated household or related-party loops</li><li>reciprocal attribution swaps</li><li>circular sign-up structures</li><li>or other patterns designed to manufacture commission eligibility or tier progression.</li></ul>
+<p><strong>15.3</strong> Suspected or confirmed referral-ring behavior may result in:</p>
+<ul class="aff-ul"><li>disqualification of affected referrals</li><li>payout freeze</li><li>investigation</li><li>tier recalculation</li><li>clawback</li><li>suspension</li><li>or permanent removal.</li></ul>
+<h2 class="aff-h2">16. Policy-Breach Exclusion</h2>
+<p><strong>16.1</strong> A referral is not qualified if it was generated through material breach of the affiliate rules.</p>
+<p><strong>16.2</strong> This includes referrals sourced through:</p>
+<ul class="aff-ul"><li>personal investment advice</li><li>asset recommendation</li><li>guarantees or return claims</li><li>private cold outreach</li><li>side deals</li><li>payment handling</li><li>unapproved materials</li><li>or other prohibited conduct.</li></ul>
+<p><strong>16.3</strong> POOOL may exclude such referrals even if the referred user completed KYC and invested.</p>
+<h2 class="aff-h2">17. Reversals, Refunds, Chargebacks, and Cancellations</h2>
+<p><strong>17.1</strong> A referral is not qualified, or may be reclassified out of qualified/payable status, if the qualifying event is later reversed or invalidated, including through:</p>
+<ul class="aff-ul"><li>refund</li><li>reversal</li><li>chargeback</li><li>cancellation</li><li>failed settlement</li><li>administrative invalidation</li><li>compliance rejection</li><li>or similar unwind event.</li></ul>
+<p><strong>17.2</strong> If payout has already been made, POOOL may:</p>
+<ul class="aff-ul"><li>reverse future payable amounts</li><li>offset future commissions</li><li>freeze future payouts</li><li>or claw back the affected amount.</li></ul>
+<h2 class="aff-h2">18. Disqualification Events A referral must be treated as disqualified where one or m</h2>
+<p>ore of the following apply:</p>
+<ul class="aff-ul"><li>invalid attribution</li><li>incomplete or failed KYC</li><li>no first eligible paid investment</li><li>minimum threshold not met where applicable</li><li>holdback not yet cleared</li><li>fraud or abuse flag</li><li>self-referral</li><li>related-party circumvention</li><li>referral ring</li><li>policy breach</li><li>reversal/refund/chargeback/cancellation</li><li>incomplete payout/tax readiness of the Affiliate</li><li>inactive or non-payout-eligible Affiliate status where relevant</li><li>or any other disqualifying factor recognized by POOOL’s approved rules.</li></ul>
+<h2 class="aff-h2">19. Commission Rate and Tier</h2>
+<p>Interaction</p>
+<p><strong>19.1</strong> The applicable commission rate is the rate assigned to the Affiliate’s valid Tier under the Program rules at the time determined by POOOL’s payout logic.</p>
+<p><strong>19.2</strong> Tier qualification is based only on the Affiliate’s own qualified referral volume within the approved Lookback Period.</p>
+<p><strong>19.3</strong> Disqualified, reversed, frozen, or otherwise excluded referrals may be removed from:</p>
+<ul class="aff-ul"><li>commission eligibility</li><li>payable status</li><li>and tier-credit calculations.</li></ul>
+<p><strong>19.4</strong> POOOL may recalculate tier status where previously counted volume is later disqualified.</p>
+<h2 class="aff-h2">20. Dispute Handling</h2>
+<p><strong>20.1</strong> If an Affiliate disputes referral status, qualification, payable status, payout amount, reversal, or exclusion, the dispute must be raised through POOOL’s approved support or review process.</p>
+<p><strong>20.2</strong> A dispute should include, where available:</p>
+<ul class="aff-ul"><li>Affiliate ID</li><li>affected referral or commission reference</li><li>date range</li><li>nature of the dispute</li><li>and any supporting evidence.</li></ul>
+<p><strong>20.3</strong> POOOL may:</p>
+<ul class="aff-ul"><li>request additional evidence</li><li>pause payout pending review</li><li>rely on system-of-record data</li><li>or reject unsupported claims.</li></ul>
+<p><strong>20.4</strong> POOOL’s internal records and approved investigation process govern unless corrected through a formal internal determination.</p>
+<p><strong>20.5</strong> Filing a dispute does not by itself require payout release.</p>
+<h2 class="aff-h2">21. Evidence Standards</h2>
+<p><strong>21.1</strong> For any referral to move into Payable status, POOOL should be able to evidence the qualification path in its system of record.</p>
+<p><strong>21.2</strong> Required evidence should include, at minimum:</p>
+<ul class="aff-ul"><li>valid Affiliate attribution</li><li>referred user ID</li><li>registration status</li><li>onboarding completion if separately tracked</li><li>KYC approval status and timestamp</li><li>first eligible paid investment record</li><li>amount and settlement status where required</li><li>holdback start and end timestamps</li><li>fraud/review flags</li><li>reversal/refund/chargeback status</li><li>self-referral, related-party, and referral-ring screening status</li><li>Affiliate payout readiness</li><li>Affiliate tax readiness</li><li>and final payout approval status.</li></ul>
+<p><strong>21.3</strong> Where evidence is missing, incomplete, inconsistent, or disputed, payout may be held or denied.</p>
+<h2 class="aff-h2">22. System-of-Record Rule</h2>
+<p><strong>22.1</strong> POOOL’s internal systems of record govern the status of:</p>
+<ul class="aff-ul"><li>attribution</li><li>qualification</li><li>payable status</li><li>payout release</li><li>reversal</li><li>freeze</li><li>dispute</li><li>and clawback handling.</li></ul>
+<p><strong>22.2</strong> Manual overrides, if permitted, must be:</p>
+<ul class="aff-ul"><li>authorized</li><li>reason-coded</li><li>logged</li><li>and auditable.</li></ul>
+<h2 class="aff-h2">23. No Automatic Entitlement Rule</h2>
+<p><strong>23.1</strong> Display of provisional earnings, dashboard estimates, or pending commission figures does not create a vested right to payment.</p>
+<p><strong>23.2</strong> Until all qualification, holdback, anti-fraud, finance, tax, and payout checks are passed, the commission remains conditional.</p>
+<p><strong>23.3</strong> Even after payout, commissions may remain subject to correction, reversal, offset, or clawback where permitted under the Program rules.</p>
+<h2 class="aff-h2">24. Operational Enforcement Link</h2>
+<p>This Policy is enforceable through:</p>
+<ul class="aff-ul"><li>warning</li><li>referral freeze</li><li>payout freeze</li><li>qualification hold</li><li>denial of affected commission</li><li>tier recalculation</li><li>clawback</li><li>suspension</li><li>and permanent removal, depending on the facts and severity of the case.</li></ul>
+<h2 class="aff-h2">25. Amendment and Review</h2>
+<p>POOOL may update this Policy from time to time. Material changes may require:</p>
+<ul class="aff-ul"><li>refreshed Affiliate acceptance</li><li>updated training</li><li>operational reconfiguration</li><li>or revised payout logic.</li></ul>
+
+
+          <p style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #f2f4f7; font-size: 14px; color: #717680;">
+            Questions about the Affiliate Program? Contact <a href="mailto:affiliate@poool.app" style="color: #0000FF; text-decoration: none;">affiliate@poool.app</a>.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>
