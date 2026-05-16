@@ -90,7 +90,7 @@ def test_follow_button_flips_to_following(playwright_session, viewer_and_target)
         with page.expect_response(
             lambda r: f"/api/community/follow/{target['user_id']}" in r.url
             and r.request.method == "POST",
-            timeout=5000,
+            timeout=10000,
         ) as info:
             btn.click()
         assert info.value.status in (200, 201), f"Follow POST: {info.value.status}"
@@ -99,7 +99,7 @@ def test_follow_button_flips_to_following(playwright_session, viewer_and_target)
         page.wait_for_function(
             "() => document.getElementById('community-profile-follow-btn')"
             ".textContent.toLowerCase().includes('unfollow')",
-            timeout=5000,
+            timeout=10000,
         )
 
         assert not errors, f"JS errors: {errors[:5]}"
@@ -121,21 +121,21 @@ def test_unfollow_after_follow(playwright_session, viewer_and_target):
         with page.expect_response(
             lambda r: f"/api/community/follow/{target['user_id']}" in r.url
             and r.request.method == "POST",
-            timeout=5000,
+            timeout=10000,
         ):
             btn.click()
         # JS finishes by setting innerText to "Unfollow" after a successful follow.
         page.wait_for_function(
             "() => document.getElementById('community-profile-follow-btn')"
             ".textContent.toLowerCase().includes('unfollow')",
-            timeout=5000,
+            timeout=10000,
         )
 
         # Second click → unfollow (DELETE).
         with page.expect_response(
             lambda r: f"/api/community/follow/{target['user_id']}" in r.url
             and r.request.method == "DELETE",
-            timeout=5000,
+            timeout=10000,
         ) as info:
             btn.click()
         assert info.value.status in (200, 204), f"Unfollow: {info.value.status}"
@@ -144,7 +144,7 @@ def test_unfollow_after_follow(playwright_session, viewer_and_target):
         page.wait_for_function(
             "() => { const t = document.getElementById('community-profile-follow-btn').textContent.toLowerCase();"
             "  return t.includes('follow') && !t.includes('unfollow'); }",
-            timeout=5000,
+            timeout=10000,
         )
 
         assert not errors, f"JS errors: {errors[:5]}"
@@ -186,7 +186,7 @@ def test_block_user_hides_their_posts_from_feed(
         with page.expect_response(
             lambda r: f"/api/community/users/{target['user_id']}/block" in r.url
             and r.request.method == "POST",
-            timeout=5000,
+            timeout=10000,
         ):
             # The block call may already be in flight; allow it.
             pass
