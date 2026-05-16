@@ -1359,21 +1359,25 @@ pub async fn api_admin_affiliate_batch_payout(
     .await
     .map_err(|_| ApiError::Internal("Failed to update payout requests".into()))?;
 
-    // 9. Automated Tax Invoice Generation (Phase 19 Placeholder)
-    // Generates a structured PDF Credit Statement for tax/compliance purposes
-    let _invoice_pdf_path = format!(
-        "gcs://poool-invoices/affiliates/{}/batch_{}.pdf",
-        affiliate_id, batch_id
-    );
-    tracing::info!(
-        "Tax Invoice/Credit Statement generated for payout batch {} at {}",
-        batch_id,
-        _invoice_pdf_path
-    );
-
     tx.commit()
         .await
         .map_err(|_| ApiError::Internal("Commit failed".into()))?;
+
+    // Phase-3 fresh: issue the affiliate invoice for this batch+affiliate.
+    // Non-fatal — the payout is already committed; an invoice failure
+    // (e.g. transient pool issue) is loggable but does not roll back the
+    // money movement. Issuing here also fires the in-app bell ping via
+    // `notify_payout_released` inside `issue_affiliate_invoice`.
+    if let Err(e) =
+        crate::rewards::service::issue_affiliate_invoice(&state.db, batch_id, affiliate_id).await
+    {
+        tracing::warn!(
+            batch_id = %batch_id,
+            affiliate_id = %affiliate_id,
+            error = %e,
+            "issue_affiliate_invoice failed post-payout (non-fatal)"
+        );
+    }
 
     // Branded payout notification via the durable outbox.
     let _ = crate::email::trigger_transactional_email(

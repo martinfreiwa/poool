@@ -2416,6 +2416,191 @@ mod affiliate_material_upload_tests {
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-3 fresh: affiliate invoice register
+// ──────────────────────────────────────────────────────────────────────────
+
+/// GET /api/affiliate/invoices — paginated list of the caller's invoices.
+pub async fn api_affiliate_invoices_list(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+
+    let page: i64 = params
+        .get("page")
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(1)
+        .max(1);
+    let limit: i64 = params
+        .get("limit")
+        .and_then(|l| l.parse().ok())
+        .unwrap_or(25)
+        .clamp(1, 100);
+    let offset = (page - 1) * limit;
+
+    let rows = sqlx::query(
+        r#"SELECT id::text, invoice_number, amount_cents, currency,
+                  commission_count, issued_at::text
+             FROM affiliate_invoices
+            WHERE affiliate_id = $1
+         ORDER BY issued_at DESC
+            LIMIT $2 OFFSET $3"#,
+    )
+    .bind(user_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM affiliate_invoices WHERE affiliate_id = $1",
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let items: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            let amt: i64 = r.try_get("amount_cents").unwrap_or(0);
+            serde_json::json!({
+                "id": r.try_get::<String, _>("id").unwrap_or_default(),
+                "invoice_number": r.try_get::<String, _>("invoice_number").unwrap_or_default(),
+                "amount_cents": amt,
+                "amount_display": service::invoice_amount_display(amt),
+                "currency": r.try_get::<String, _>("currency").unwrap_or_default(),
+                "commission_count": r.try_get::<i32, _>("commission_count").unwrap_or(0),
+                "issued_at": r.try_get::<String, _>("issued_at").unwrap_or_default(),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "items": items,
+        "page": page,
+        "limit": limit,
+        "total": total
+    }))
+    .into_response())
+}
+
+/// GET /affiliate/invoices/:id — printable HTML invoice (browser → Save as PDF).
+pub async fn page_affiliate_invoice(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(invoice_id): axum::extract::Path<uuid::Uuid>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(r) => return r,
+    };
+
+    let inv = sqlx::query(
+        r#"SELECT id::text, invoice_number, payout_batch_id::text, amount_cents,
+                  currency, commission_count, issued_at::text,
+                  recipient_email, recipient_full_name,
+                  bank_account_holder, bank_iban_last4, bank_bic, bank_country
+             FROM affiliate_invoices
+            WHERE id = $1 AND affiliate_id = $2"#,
+    )
+    .bind(invoice_id)
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await;
+
+    let row = match inv {
+        Ok(Some(r)) => r,
+        Ok(None) => {
+            return (
+                axum::http::StatusCode::NOT_FOUND,
+                Html("<h1>Invoice not found</h1>"),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Html(format!("<pre>{}</pre>", e)),
+            )
+                .into_response()
+        }
+    };
+
+    let amount_cents: i64 = row.try_get("amount_cents").unwrap_or(0);
+    let batch_id_str: String = row.try_get("payout_batch_id").unwrap_or_default();
+    let batch_id: uuid::Uuid = match uuid::Uuid::parse_str(&batch_id_str) {
+        Ok(u) => u,
+        Err(_) => uuid::Uuid::nil(),
+    };
+
+    // Pull commission line items for this batch+affiliate. We don't join
+    // to investments — keeping the template stand-alone.
+    let lines = sqlx::query(
+        r#"SELECT ac.created_at::date::text AS d,
+                  ac.tier_at_execution      AS tier,
+                  ac.provisional_amount_cents AS commission,
+                  COALESCE(ord.gross_cents, 0)::bigint AS gross
+             FROM affiliate_commissions ac
+             LEFT JOIN LATERAL (
+                  SELECT (
+                      SELECT COALESCE(MAX(provisional_amount_cents) * 10, 0)
+                  ) AS gross_cents
+             ) ord ON true
+            WHERE ac.payout_batch_id = $1 AND ac.affiliate_id = $2
+         ORDER BY ac.created_at ASC"#,
+    )
+    .bind(batch_id)
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let line_items: Vec<serde_json::Value> = lines
+        .iter()
+        .map(|r| {
+            let commission: i64 = r.try_get("commission").unwrap_or(0);
+            let gross: i64 = r.try_get("gross").unwrap_or(0);
+            serde_json::json!({
+                "date": r.try_get::<String, _>("d").unwrap_or_default(),
+                "tier": r.try_get::<String, _>("tier").unwrap_or_default(),
+                "gross_eur": service::invoice_amount_display(gross),
+                "commission_eur": service::invoice_amount_display(commission),
+            })
+        })
+        .collect();
+
+    let ctx = serde_json::json!({
+        "invoice_number": row.try_get::<String, _>("invoice_number").unwrap_or_default(),
+        "amount_cents": amount_cents,
+        "amount_display": service::invoice_amount_display(amount_cents),
+        "currency": row.try_get::<String, _>("currency").unwrap_or_else(|_| "EUR".into()),
+        "commission_count": row.try_get::<i32, _>("commission_count").unwrap_or(0),
+        "issued_at": row.try_get::<String, _>("issued_at").unwrap_or_default(),
+        "recipient_email": row.try_get::<Option<String>, _>("recipient_email").unwrap_or_default(),
+        "recipient_full_name": row.try_get::<Option<String>, _>("recipient_full_name").unwrap_or_default(),
+        "bank_account_holder": row.try_get::<Option<String>, _>("bank_account_holder").unwrap_or_default(),
+        "bank_iban_last4": row.try_get::<Option<String>, _>("bank_iban_last4").unwrap_or_default(),
+        "bank_bic": row.try_get::<Option<String>, _>("bank_bic").unwrap_or_default(),
+        "bank_country": row.try_get::<Option<String>, _>("bank_country").unwrap_or_default(),
+        "lines": line_items,
+        "title": "Affiliate payout statement",
+    });
+
+    crate::common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "affiliate-invoice.html",
+        ctx,
+    )
+    .await
+}
+
 #[cfg(test)]
 mod data_export_tests {
     use super::data_export_readme;

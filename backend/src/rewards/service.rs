@@ -2728,6 +2728,179 @@ pub async fn anonymize_affiliate_user(pool: &PgPool, user_id: Uuid) -> Result<()
 /// Background loop: every 30s pick up `queued` postbacks whose
 /// `next_attempt_at` has passed, fire HTTP GET, update status with exponential
 /// backoff. Caps at 6 attempts → `failed_giveup`.
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-3 fresh: affiliate invoice register (per payout batch)
+// ──────────────────────────────────────────────────────────────────────────
+
+/// One row from the invoice line-items query, suitable for the
+/// minijinja invoice template.
+#[derive(serde::Serialize)]
+pub struct InvoiceLine {
+    pub date: String,
+    pub tier: String,
+    pub gross_eur: String,
+    pub commission_eur: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct AffiliateInvoice {
+    pub id: Uuid,
+    pub invoice_number: String,
+    pub payout_batch_id: Uuid,
+    pub affiliate_id: Uuid,
+    pub amount_cents: i64,
+    pub currency: String,
+    pub commission_count: i32,
+    pub issued_at: String,
+    pub recipient_email: Option<String>,
+    pub recipient_full_name: Option<String>,
+    pub bank_account_holder: Option<String>,
+    pub bank_iban_last4: Option<String>,
+    pub bank_bic: Option<String>,
+    pub bank_country: Option<String>,
+}
+
+/// Issue (or refresh) a Phase-3 affiliate invoice for one (batch, affiliate)
+/// pair. Idempotent via the (payout_batch_id, affiliate_id) unique index —
+/// a retried batch resolves to the existing row via ON CONFLICT.
+///
+/// On a FRESH row this also fires `notify_payout_released`. On an
+/// idempotent re-call (row already existed) the notification is suppressed
+/// to avoid double-ping.
+pub async fn issue_affiliate_invoice(
+    pool: &PgPool,
+    batch_id: Uuid,
+    affiliate_user_id: Uuid,
+) -> Result<Uuid, AppError> {
+    // 1. Aggregate the commission rows attached to this batch+affiliate.
+    let agg = sqlx::query(
+        r#"SELECT COALESCE(SUM(provisional_amount_cents), 0)::bigint AS amt,
+                  COUNT(*)::int                                       AS cnt
+             FROM affiliate_commissions
+            WHERE payout_batch_id = $1 AND affiliate_id = $2"#,
+    )
+    .bind(batch_id)
+    .bind(affiliate_user_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("invoice agg failed: {e}")))?;
+
+    let amount_cents: i64 = agg.try_get("amt").unwrap_or(0);
+    let commission_count: i32 = agg.try_get("cnt").unwrap_or(0);
+
+    if commission_count == 0 {
+        return Err(AppError::BadRequest(
+            "No commissions tied to this batch+affiliate pair.".into(),
+        ));
+    }
+
+    // 2. Snapshot recipient at issue time so a later profile change
+    // doesn't rewrite history.
+    let user_row = sqlx::query(
+        r#"SELECT email, full_name FROM users WHERE id = $1"#,
+    )
+    .bind(affiliate_user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("user lookup failed: {e}")))?;
+    let recipient_email: Option<String> =
+        user_row.as_ref().and_then(|r| r.try_get("email").ok());
+    let recipient_full_name: Option<String> =
+        user_row.as_ref().and_then(|r| r.try_get("full_name").ok());
+
+    let team_row = sqlx::query(
+        r#"SELECT bank_account_holder, bank_iban_last4, bank_bic,
+                  COALESCE(bank_country, '') AS bank_country
+             FROM developer_teams
+            WHERE owner_user_id = $1
+         ORDER BY created_at ASC
+            LIMIT 1"#,
+    )
+    .bind(affiliate_user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("team lookup failed: {e}")))?;
+    let bank_account_holder: Option<String> =
+        team_row.as_ref().and_then(|r| r.try_get("bank_account_holder").ok());
+    let bank_iban_last4: Option<String> =
+        team_row.as_ref().and_then(|r| r.try_get("bank_iban_last4").ok());
+    let bank_bic: Option<String> =
+        team_row.as_ref().and_then(|r| r.try_get("bank_bic").ok());
+    let bank_country: Option<String> = team_row.as_ref().and_then(|r| {
+        let raw: Option<String> = r.try_get("bank_country").ok();
+        raw.filter(|s| !s.is_empty())
+    });
+
+    // 3. Upsert invoice row using next_affiliate_invoice_number() seq.
+    //
+    // The DO UPDATE branch is the idempotent-retry path. We refresh the
+    // amount/count snapshot and recipient metadata in case the batch was
+    // amended between the first call and the retry.
+    let upsert = sqlx::query(
+        r#"INSERT INTO affiliate_invoices
+              (invoice_number, payout_batch_id, affiliate_id, amount_cents,
+               currency, commission_count,
+               recipient_email, recipient_full_name, bank_account_holder,
+               bank_iban_last4, bank_bic, bank_country)
+           VALUES (next_affiliate_invoice_number(), $1, $2, $3,
+                   'EUR', $4,
+                   $5, $6, $7,
+                   $8, $9, $10)
+           ON CONFLICT (payout_batch_id, affiliate_id) DO UPDATE
+              SET amount_cents = EXCLUDED.amount_cents,
+                  commission_count = EXCLUDED.commission_count,
+                  recipient_email = COALESCE(EXCLUDED.recipient_email, affiliate_invoices.recipient_email),
+                  recipient_full_name = COALESCE(EXCLUDED.recipient_full_name, affiliate_invoices.recipient_full_name),
+                  bank_account_holder = COALESCE(EXCLUDED.bank_account_holder, affiliate_invoices.bank_account_holder),
+                  bank_iban_last4 = COALESCE(EXCLUDED.bank_iban_last4, affiliate_invoices.bank_iban_last4),
+                  bank_bic = COALESCE(EXCLUDED.bank_bic, affiliate_invoices.bank_bic),
+                  bank_country = COALESCE(EXCLUDED.bank_country, affiliate_invoices.bank_country),
+                  updated_at = NOW()
+        RETURNING id, (xmax = 0) AS is_fresh"#,
+    )
+    .bind(batch_id)
+    .bind(affiliate_user_id)
+    .bind(amount_cents)
+    .bind(commission_count)
+    .bind(recipient_email)
+    .bind(recipient_full_name)
+    .bind(bank_account_holder)
+    .bind(bank_iban_last4)
+    .bind(bank_bic)
+    .bind(bank_country)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("invoice upsert failed: {e}")))?;
+
+    let invoice_id: Uuid = upsert
+        .try_get("id")
+        .map_err(|e| AppError::Internal(format!("invoice id parse: {e}")))?;
+    let is_fresh: bool = upsert.try_get("is_fresh").unwrap_or(false);
+
+    // 4. One-time in-app ping on the FIRST issue only. Idempotent retries
+    // do not re-notify.
+    if is_fresh {
+        crate::rewards::notifications::notify_payout_released(
+            pool,
+            affiliate_user_id,
+            invoice_id,
+            amount_cents,
+            "EUR",
+        )
+        .await;
+    }
+
+    Ok(invoice_id)
+}
+
+/// Format an integer-minor-units amount as a 2-decimal string.
+/// Pulled into a free fn so the route + template renderer share it.
+pub fn invoice_amount_display(cents: i64) -> String {
+    let sign = if cents < 0 { "-" } else { "" };
+    let abs = cents.unsigned_abs();
+    format!("{}{}.{:02}", sign, abs / 100, abs % 100)
+}
+
 pub async fn run_affiliate_postback_worker(pool: PgPool) {
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
@@ -2831,6 +3004,16 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn invoice_amount_display_matches_decimal_pattern() {
+        assert_eq!(invoice_amount_display(0), "0.00");
+        assert_eq!(invoice_amount_display(5), "0.05");
+        assert_eq!(invoice_amount_display(199), "1.99");
+        assert_eq!(invoice_amount_display(12_345), "123.45");
+        assert_eq!(invoice_amount_display(-12_345), "-123.45");
+        assert_eq!(invoice_amount_display(1_000_000), "10000.00");
+    }
 
     #[test]
     fn iban_mod97_accepts_known_good_and_rejects_typos() {
