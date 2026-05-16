@@ -120,10 +120,12 @@ pub async fn require_step_up_2fa(
     .unwrap_or(false);
 
     if !totp_enabled {
+        // Audit L#10: do NOT log `amount_cents` — log aggregators would
+        // otherwise see a per-user "wants to do $X txn" stream. The
+        // coarse action enum is operationally useful and not PII.
         tracing::info!(
             user_id = %user_id,
             action = ?action,
-            amount_cents = amount_cents,
             "Step-up 2FA required — user has not enrolled TOTP"
         );
         return Err(AppError::TwoFactorRequired);
@@ -138,7 +140,6 @@ pub async fn require_step_up_2fa(
     tracing::info!(
         user_id = %user_id,
         action = ?action,
-        amount_cents = amount_cents,
         "Step-up 2FA required for financial operation"
     );
     Err(AppError::TwoFactorRequired)
