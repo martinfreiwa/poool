@@ -1,8 +1,10 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
+use crate::common::idempotency::{self, Reservation};
 use crate::common::sanitize;
 use axum::{
     extract::{Json, State},
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
 };
 use chrono::Datelike;
@@ -820,9 +822,16 @@ pub struct AdminUpdateBalancePayload {
 }
 
 /// POST /api/admin/users/:user_id/balance - Adjust a user's wallet balance.
+///
+/// Audit H#2: this endpoint moves money. A retried HTTP request without
+/// idempotency silently double-credits (or double-debits) the wallet.
+/// Requests carrying `Idempotency-Key` are deduped against
+/// `idempotency_keys` keyed by `(key, admin.id)`; replays return the
+/// cached JSON, concurrent duplicates get 409.
 pub async fn api_admin_user_update_balance(
     admin: AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(payload): Json<AdminUpdateBalancePayload>,
 ) -> Result<axum::response::Response, ApiError> {
@@ -837,122 +846,161 @@ pub async fn api_admin_user_update_balance(
         return Err(ApiError::BadRequest("Amount must not be zero".to_string()));
     }
 
-    let mut tx = match state.db.begin().await {
-        Ok(t) => t,
-        Err(_) => {
-            return Err(ApiError::Internal("Failed to start tx".to_string()));
+    // Reserve the Idempotency-Key for (header, admin.id). Replays
+    // short-circuit with the cached JSON; in-flight duplicates get 409.
+    let reservation = idempotency::try_reserve(
+        &state.db,
+        &headers,
+        admin_user,
+        &format!("/api/admin/users/{user_id}/balance"),
+        "POST",
+    )
+    .await;
+    let idem_key = match reservation {
+        Reservation::NoKey => None,
+        Reservation::Reserved(k) => Some(k),
+        Reservation::CachedJson { status, body } => {
+            return Ok((status, Json(body)).into_response());
+        }
+        Reservation::CachedRedirect { .. } => {
+            return Err(ApiError::Internal(
+                "Unexpected cached redirect on balance update".into(),
+            ));
+        }
+        Reservation::InProgress => {
+            return Err(ApiError::Conflict(
+                "Balance update already in progress for this Idempotency-Key".into(),
+            ));
         }
     };
 
-    // If it's a reward category, we treat it as an update to the 'rewards' wallet
-    // BUT we also update the rewards_balances categorization table.
-    let (target_wallet_type, reward_col) = match payload.wallet_type.as_str() {
-        "cashback" => ("rewards", Some("cashback")),
-        "referrals" => ("rewards", Some("referrals")),
-        "promotions" => ("rewards", Some("promotions")),
-        _ => (payload.wallet_type.as_str(), None),
-    };
+    // Body wrapped so we can centralize idempotency release on any
+    // failure path. `body_result` carries the success JSON; the outer
+    // match converts it into an HTTP response and persists the cached
+    // body for replays.
+    let body_result: Result<serde_json::Value, ApiError> = async {
+        let mut tx = state
+            .db
+            .begin()
+            .await
+            .map_err(|_| ApiError::Internal("Failed to start tx".to_string()))?;
 
-    // Get or create wallet
-    let wallet_row: Option<(uuid::Uuid, i64)> = match sqlx::query_as(
-        r#"SELECT id, balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = $2 FOR UPDATE"#
-    )
-    .bind(uid)
-    .bind(target_wallet_type)
-    .fetch_optional(&mut *tx)
-    .await
-    {
-        Ok(Some(row)) => Some(row),
-        Ok(None) => None,
-        Err(_) => return Err(ApiError::Internal("Failed to query wallet".to_string())),
-    };
+        // If it's a reward category, treat as an update to the 'rewards'
+        // wallet BUT also update the rewards_balances categorization
+        // table.
+        let (target_wallet_type, reward_col) = match payload.wallet_type.as_str() {
+            "cashback" => ("rewards", Some("cashback")),
+            "referrals" => ("rewards", Some("referrals")),
+            "promotions" => ("rewards", Some("promotions")),
+            _ => (payload.wallet_type.as_str(), None),
+        };
 
-    let (wallet_id, current_balance) = if let Some((id, bal)) = wallet_row {
-        (id, bal)
-    } else {
-        match sqlx::query_scalar(
-            r#"INSERT INTO wallets (user_id, wallet_type, currency) VALUES ($1, $2, 'USD') RETURNING id"#
+        // Get or create wallet (FOR UPDATE so concurrent admin writes
+        // serialize).
+        let wallet_row: Option<(uuid::Uuid, i64)> = sqlx::query_as(
+            r#"SELECT id, balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = $2 FOR UPDATE"#,
         )
         .bind(uid)
         .bind(target_wallet_type)
-        .fetch_one(&mut *tx).await {
-            Ok(id) => (id, 0_i64),
-            Err(_) => return Err(ApiError::Internal("Failed to create wallet".to_string())),
-        }
-    };
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|_| ApiError::Internal("Failed to query wallet".to_string()))?;
 
-    if payload.amount_cents < 0 && current_balance + payload.amount_cents < 0 {
-        return Err(ApiError::BadRequest(format!(
-            "Insufficient funds: trying to deduct {}, but wallet only has {}",
-            -payload.amount_cents, current_balance
-        )));
-    }
-
-    // Add transaction
-    let tx_type = if payload.amount_cents >= 0 {
-        "admin_credit"
-    } else {
-        "admin_debit"
-    };
-    let insert_tx = sqlx::query(
-        r#"INSERT INTO wallet_transactions (wallet_id, type, amount_cents, status, description) VALUES ($1, $2, $3, 'completed', $4)"#
-    )
-    .bind(wallet_id)
-    .bind(tx_type)
-    .bind(payload.amount_cents)
-    .bind(format!("Admin adjustment [{}]: {}", payload.wallet_type, payload.reason))
-    .execute(&mut *tx).await;
-
-    if insert_tx.is_err() {
-        return Err(ApiError::Internal(
-            "Failed to insert transaction".to_string(),
-        ));
-    }
-
-    // Update wallet balance
-    let update_wallet_res = sqlx::query(
-        r#"UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW() WHERE id = $2 RETURNING balance_cents"#
-    )
-    .bind(payload.amount_cents)
-    .bind(wallet_id)
-    .fetch_one(&mut *tx).await;
-
-    let new_bal: i64 = match update_wallet_res {
-        Ok(r) => sqlx::Row::get(&r, "balance_cents"),
-        Err(_) => {
-            return Err(ApiError::Internal("Failed to update balance".to_string()));
-        }
-    };
-
-    // If reward category, update rewards_balances
-    if let Some(col) = reward_col {
-        let sql = format!(
-            "INSERT INTO rewards_balances (user_id, {}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET {} = rewards_balances.{} + EXCLUDED.{}",
-            col, col, col, col
-        );
-        sqlx::query(&sql)
+        let (wallet_id, current_balance) = if let Some((id, bal)) = wallet_row {
+            (id, bal)
+        } else {
+            let id: uuid::Uuid = sqlx::query_scalar(
+                r#"INSERT INTO wallets (user_id, wallet_type, currency) VALUES ($1, $2, 'USD') RETURNING id"#,
+            )
             .bind(uid)
-            .bind(payload.amount_cents)
-            .execute(&mut *tx)
+            .bind(target_wallet_type)
+            .fetch_one(&mut *tx)
             .await
-            .map_err(ApiError::from)?;
+            .map_err(|_| ApiError::Internal("Failed to create wallet".to_string()))?;
+            (id, 0_i64)
+        };
+
+        if payload.amount_cents < 0 && current_balance + payload.amount_cents < 0 {
+            return Err(ApiError::BadRequest(format!(
+                "Insufficient funds: trying to deduct {}, but wallet only has {}",
+                -payload.amount_cents, current_balance
+            )));
+        }
+
+        let tx_type = if payload.amount_cents >= 0 {
+            "admin_credit"
+        } else {
+            "admin_debit"
+        };
+        sqlx::query(
+            r#"INSERT INTO wallet_transactions (wallet_id, type, amount_cents, status, description) VALUES ($1, $2, $3, 'completed', $4)"#,
+        )
+        .bind(wallet_id)
+        .bind(tx_type)
+        .bind(payload.amount_cents)
+        .bind(format!(
+            "Admin adjustment [{}]: {}",
+            payload.wallet_type, payload.reason
+        ))
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| ApiError::Internal("Failed to insert transaction".to_string()))?;
+
+        let update_wallet_res = sqlx::query(
+            r#"UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW() WHERE id = $2 RETURNING balance_cents"#,
+        )
+        .bind(payload.amount_cents)
+        .bind(wallet_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|_| ApiError::Internal("Failed to update balance".to_string()))?;
+        let new_bal: i64 = sqlx::Row::get(&update_wallet_res, "balance_cents");
+
+        if let Some(col) = reward_col {
+            let sql = format!(
+                "INSERT INTO rewards_balances (user_id, {}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET {} = rewards_balances.{} + EXCLUDED.{}",
+                col, col, col, col
+            );
+            sqlx::query(&sql)
+                .bind(uid)
+                .bind(payload.amount_cents)
+                .execute(&mut *tx)
+                .await
+                .map_err(ApiError::from)?;
+        }
+
+        sqlx::query(
+            r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, 'admin.balance_update', 'users', $2, $3)"#,
+        )
+        .bind(admin_user)
+        .bind(uid)
+        .bind(serde_json::json!({"user_id": uid, "wallet_id": wallet_id, "category": payload.wallet_type, "amount_cents": payload.amount_cents, "new_balance": new_bal, "reason": payload.reason}))
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
+
+        tx.commit()
+            .await
+            .map_err(|_| ApiError::Internal("Failed to commit tx".to_string()))?;
+
+        Ok(serde_json::json!({"success": true, "new_balance_cents": new_bal}))
     }
+    .await;
 
-    // Log in audit log
-    sqlx::query(
-        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, 'admin.balance_update', 'users', $2, $3)"#
-    )
-    .bind(admin_user)
-    .bind(uid)
-    .bind(serde_json::json!({"user_id": uid, "wallet_id": wallet_id, "category": payload.wallet_type, "amount_cents": payload.amount_cents, "new_balance": new_bal, "reason": payload.reason}))
-    .execute(&mut *tx).await
-    .map_err(ApiError::from)?;
-
-    if tx.commit().await.is_err() {
-        return Err(ApiError::Internal("Failed to commit tx".to_string()));
+    match body_result {
+        Ok(body) => {
+            if let Some(k) = &idem_key {
+                idempotency::commit_json(&state.db, k, StatusCode::OK, &body).await;
+            }
+            Ok(Json(body).into_response())
+        }
+        Err(e) => {
+            if let Some(k) = &idem_key {
+                idempotency::release(&state.db, k).await;
+            }
+            Err(e)
+        }
     }
-
-    Ok(Json(serde_json::json!({"success": true, "new_balance_cents": new_bal})).into_response())
 }
 
 //
