@@ -50,6 +50,21 @@ document.addEventListener("alpine:init", () => {
       days: 7,
     },
 
+    // Workflows tab state
+    workflows: [],
+    workflowSearch: "",
+    workflowCategoryFilter: "all",
+
+    // Preview modal
+    preview: {
+      show: false,
+      sending: false,
+      event_type: null,
+      template_id: null,
+      subject: "",
+      html: "",
+    },
+
     // Toast
     toast: {
       show: false,
@@ -71,6 +86,156 @@ document.addEventListener("alpine:init", () => {
       this.$watch("campaign.audience", () => this.refreshAudienceCount());
       await this.loadData();
       this.refreshAudienceCount();
+      this.loadWorkflows();
+    },
+
+    async loadWorkflows() {
+      try {
+        const r = await fetch("/api/admin/emails/workflows");
+        if (!r.ok) throw new Error("Failed to load workflows");
+        const d = await r.json();
+        this.workflows = d.workflows || [];
+      } catch (_) {
+        // Non-fatal — workflows tab will show "no workflows".
+      }
+    },
+
+    get workflowCategories() {
+      return [...new Set(this.workflows.map((w) => w.category))].sort();
+    },
+
+    get filteredWorkflows() {
+      let list = this.workflows;
+      if (this.workflowCategoryFilter && this.workflowCategoryFilter !== "all") {
+        list = list.filter((w) => w.category === this.workflowCategoryFilter);
+      }
+      if (this.workflowSearch) {
+        const s = this.workflowSearch.toLowerCase();
+        list = list.filter(
+          (w) =>
+            w.event_type.toLowerCase().includes(s) ||
+            (w.subject && w.subject.toLowerCase().includes(s)) ||
+            (w.summary && w.summary.toLowerCase().includes(s)),
+        );
+      }
+      return list;
+    },
+
+    async openWorkflowPreview(workflow) {
+      this.preview = {
+        show: true,
+        sending: false,
+        event_type: workflow.event_type,
+        template_id: null,
+        subject: "Loading…",
+        html: "",
+      };
+      try {
+        const r = await fetch("/api/admin/emails/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_type: workflow.event_type }),
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err.error || "Preview failed");
+        }
+        const d = await r.json();
+        this.preview.subject = d.subject || workflow.subject || "(no subject)";
+        this.preview.html = d.html || "";
+        this.$nextTick(() => this._writePreviewIframe());
+      } catch (err) {
+        this.preview.subject = "Preview failed";
+        this.preview.html = `<pre style="color:#B42318;padding:16px;">${err.message}</pre>`;
+        this.$nextTick(() => this._writePreviewIframe());
+      }
+    },
+
+    async openTemplatePreview(t) {
+      this.preview = {
+        show: true,
+        sending: false,
+        event_type: null,
+        template_id: t.id,
+        subject: "Loading…",
+        html: "",
+      };
+      try {
+        const r = await fetch("/api/admin/emails/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ template_id: t.id }),
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err.error || "Preview failed");
+        }
+        const d = await r.json();
+        this.preview.subject = d.subject || t.subject || "(no subject)";
+        this.preview.html = d.html || "";
+        this.$nextTick(() => this._writePreviewIframe());
+      } catch (err) {
+        this.preview.subject = "Preview failed";
+        this.preview.html = `<pre style="color:#B42318;padding:16px;">${err.message}</pre>`;
+        this.$nextTick(() => this._writePreviewIframe());
+      }
+    },
+
+    _writePreviewIframe(retries = 6) {
+      // Modal mount + iframe-doc readiness are both async. Poll briefly
+      // (≤ ~300ms total) so the first preview after opening the modal
+      // doesn't land before the iframe DOM is alive.
+      const frame = this.$refs.previewFrame;
+      const doc = frame?.contentDocument || frame?.contentWindow?.document;
+      if (!frame || !doc) {
+        if (retries > 0) {
+          setTimeout(() => this._writePreviewIframe(retries - 1), 50);
+        }
+        return;
+      }
+      doc.open();
+      doc.write(
+        `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:24px;background:#fff;">${this.preview.html}</body></html>`,
+      );
+      doc.close();
+    },
+
+    closePreview() {
+      this.preview.show = false;
+    },
+
+    async sendTestEvent(workflow) {
+      this.preview.event_type = workflow.event_type;
+      this.preview.template_id = null;
+      await this._doTestSend({ event_type: workflow.event_type });
+    },
+
+    async sendTestFromPreview() {
+      const body = this.preview.event_type
+        ? { event_type: this.preview.event_type }
+        : { template_id: this.preview.template_id };
+      await this._doTestSend(body);
+    },
+
+    async _doTestSend(body) {
+      this.preview.sending = true;
+      try {
+        const r = await fetch("/api/admin/emails/test-send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err.error || `Test send failed (${r.status})`);
+        }
+        const d = await r.json();
+        this.showToast(`Test sent to ${d.to}`);
+      } catch (err) {
+        this.showToast(err.message, "error");
+      } finally {
+        this.preview.sending = false;
+      }
     },
 
     async refreshAudienceCount() {

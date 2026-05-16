@@ -26,10 +26,7 @@ pub fn render_template(template: &str, context: &serde_json::Value) -> String {
     match tmpl.render(context) {
         Ok(rendered) => rendered,
         Err(err) => {
-            tracing::warn!(
-                "render_template: render error {} — returning raw body",
-                err
-            );
+            tracing::warn!("render_template: render error {} — returning raw body", err);
             template.to_string()
         }
     }
@@ -499,8 +496,12 @@ fn verify_unsubscribe_token(user_id: Uuid, class: &str, token: &str) -> bool {
     if expected.len() != token.len() {
         return false;
     }
-    expected.as_bytes().iter().zip(token.as_bytes().iter())
-        .fold(0u8, |acc, (a, b)| acc | (a ^ b)) == 0
+    expected
+        .as_bytes()
+        .iter()
+        .zip(token.as_bytes().iter())
+        .fold(0u8, |acc, (a, b)| acc | (a ^ b))
+        == 0
 }
 
 /// Build the per-recipient one-click unsubscribe URL for the

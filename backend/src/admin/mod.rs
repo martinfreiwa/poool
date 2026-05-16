@@ -791,7 +791,10 @@ pub fn router() -> axum::Router<AppState> {
             get(api_admin_emails_audience_count),
         )
         .route("/api/admin/emails/logs", get(api_admin_emails_logs))
-        .route("/api/admin/emails/workflows", get(api_admin_emails_workflows))
+        .route(
+            "/api/admin/emails/workflows",
+            get(api_admin_emails_workflows),
+        )
         .route("/api/admin/emails/preview", post(api_admin_emails_preview))
         .route(
             "/api/admin/emails/test-send",

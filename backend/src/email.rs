@@ -6,8 +6,10 @@ use sqlx::PgPool;
 use std::time::Duration;
 use tracing::info;
 
-/// Build an HTML email body for a transactional event.
-fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
+/// Build an HTML email body for a transactional event. Exposed `pub(crate)`
+/// so the admin preview + workflows-tab endpoints can render arbitrary
+/// events against sample metadata without going through the database.
+pub(crate) fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
     match event_type {
         "kyc_approved" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
@@ -542,17 +544,12 @@ fn html_escape_email(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
-/// The unified event bus / mail trigger for all transactional systems.
-/// Writes to transactional_email_outbox for durable delivery with retry,
-/// then attempts immediate send. Falls back gracefully if outbox insert fails.
-#[allow(dead_code)]
-pub async fn trigger_transactional_email(
-    pool: &PgPool,
-    user_id: &uuid::Uuid,
-    event_type: &str,
-    metadata: serde_json::Value,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let subject = match event_type {
+/// Subject-line lookup for a given event-type. Exposed `pub` so the admin
+/// workflows + preview endpoints can show the subject without needing to
+/// trigger an actual send. Adding a new event? Update the match arm AND
+/// the `EVENT_REGISTRY` consumed by the workflows view.
+pub fn subject_for_event(event_type: &str) -> &'static str {
+    match event_type {
         "welcome" => "Welcome to POOOL!",
         "verify_email" => "Please Verify Your Email",
         "password_reset" => "Password Reset Code",
@@ -598,7 +595,20 @@ pub async fn trigger_transactional_email(
         "operations_published" => "Operations Published — Now Live",
 
         _ => "You Have a New Notification",
-    };
+    }
+}
+
+/// The unified event bus / mail trigger for all transactional systems.
+/// Writes to transactional_email_outbox for durable delivery with retry,
+/// then attempts immediate send. Falls back gracefully if outbox insert fails.
+#[allow(dead_code)]
+pub async fn trigger_transactional_email(
+    pool: &PgPool,
+    user_id: &uuid::Uuid,
+    event_type: &str,
+    metadata: serde_json::Value,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let subject = subject_for_event(event_type);
 
     let user_email = match sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = $1")
         .bind(user_id)
@@ -821,8 +831,7 @@ mod tests {
 
     #[test]
     fn kyc_rejected_renders_reason_when_provided() {
-        let html =
-            build_email_html("kyc_rejected", &json!({ "rejection_reason": "ID expired" }));
+        let html = build_email_html("kyc_rejected", &json!({ "rejection_reason": "ID expired" }));
         assert!(html.contains("ID expired"));
     }
 
@@ -834,8 +843,10 @@ mod tests {
 
     #[test]
     fn deposit_confirmed_includes_amount_when_provided() {
-        let html =
-            build_email_html("deposit_confirmed", &json!({ "amount_display": "€1,500.00" }));
+        let html = build_email_html(
+            "deposit_confirmed",
+            &json!({ "amount_display": "€1,500.00" }),
+        );
         assert!(html.contains("€1,500.00"));
         assert!(html.contains("Credited:"));
     }

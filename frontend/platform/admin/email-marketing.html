@@ -46,14 +46,11 @@
       </header>
 
       <div class="admin-content">
-        <!-- Page Header -->
-        <div class="admin-page-header">
-          <h1 class="admin-page-title">Email Engine & Marketing Hub</h1>
-          <p class="admin-page-subtitle">
-            Manage transactional templates, track deliverability, and send
-            marketing campaigns.
-          </p>
-        </div>
+        <!-- Page subtitle only — the title duplicates the breadcrumb above,
+             so we keep just a one-line description for context. -->
+        <p class="admin-page-subtitle" style="margin: 4px 0 20px;">
+          Manage transactional workflows, edit templates, send marketing campaigns, and track deliverability.
+        </p>
 
         <!-- Toast -->
         <div x-show="toast.show" x-transition style="
@@ -77,6 +74,9 @@
         <div class="admin-tabs" style="margin-bottom: 20px">
           <button @click="activeTab = 'overview'" class="admin-tab" :class="activeTab === 'overview' ? 'active' : ''">
             Dashboard & Analytics
+          </button>
+          <button @click="activeTab = 'workflows'" class="admin-tab" :class="activeTab === 'workflows' ? 'active' : ''">
+            Workflows
           </button>
           <button @click="activeTab = 'templates'" class="admin-tab" :class="activeTab === 'templates' ? 'active' : ''">
             Template Editor
@@ -205,6 +205,77 @@
           </div>
         </div>
 
+        <!-- ═══ WORKFLOWS ═══ -->
+        <div x-show="activeTab === 'workflows'" x-cloak>
+          <div class="admin-card" style="padding: 0">
+            <div style="
+                  padding: 24px;
+                  border-bottom: 1px solid var(--admin-border);
+                  display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;
+                ">
+              <div>
+                <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+                  Transactional Workflows
+                </h3>
+                <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0;">
+                  Every transactional email the platform emits. Click any
+                  row to preview the rendered HTML with sample data, or
+                  send a test copy to your own admin address.
+                </p>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <select x-model="workflowCategoryFilter" class="admin-select" style="width:160px;">
+                  <option value="all">All categories</option>
+                  <template x-for="cat in workflowCategories" :key="cat">
+                    <option :value="cat" x-text="cat"></option>
+                  </template>
+                </select>
+                <input type="text" x-model.debounce.300ms="workflowSearch" class="admin-input" placeholder="Search workflows…" style="width:220px;" />
+              </div>
+            </div>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width:120px;">Category</th>
+                  <th>Event</th>
+                  <th>Subject</th>
+                  <th style="width:90px;">Opt-out</th>
+                  <th style="width:160px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="w in filteredWorkflows" :key="w.event_type">
+                  <tr>
+                    <td>
+                      <span class="admin-badge admin-badge--neutral" x-text="w.category"></span>
+                    </td>
+                    <td>
+                      <div style="font-weight:600;color:var(--admin-text-primary);font-family:ui-monospace,monospace;font-size:12px;" x-text="w.event_type"></div>
+                      <div style="font-size:12px;color:var(--admin-text-muted);margin-top:2px;" x-text="w.summary"></div>
+                    </td>
+                    <td x-text="w.subject" style="font-size:13px;"></td>
+                    <td>
+                      <span :class="w.optional ? 'admin-badge admin-badge--warning' : 'admin-badge admin-badge--success'"
+                            x-text="w.optional ? 'Optional' : 'Mandatory'"></span>
+                    </td>
+                    <td>
+                      <div style="display:flex;gap:6px;">
+                        <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="openWorkflowPreview(w)">Preview</button>
+                        <button class="admin-btn admin-btn--primary admin-btn--sm" @click="sendTestEvent(w)">Test send</button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <tr x-show="filteredWorkflows.length === 0">
+                  <td colspan="5" style="text-align:center;padding:24px;color:var(--admin-text-muted);">
+                    No workflows match the current filter.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- ═══ TEMPLATE EDITOR ═══ -->
         <div x-show="activeTab === 'templates'" x-cloak>
           <!-- Template List View -->
@@ -244,7 +315,7 @@
                     <th>Subject</th>
                     <th>Version</th>
                     <th>Updated</th>
-                    <th style="width: 160px">Actions</th>
+                    <th style="width: 230px">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -261,6 +332,9 @@
                       <td x-text="new Date(t.updated_at).toLocaleDateString()"></td>
                       <td>
                         <div style="display:flex;gap:6px;">
+                          <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="openTemplatePreview(t)" title="Preview rendered email">
+                            Preview
+                          </button>
                           <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="editTemplate(t)">
                             Edit
                           </button>
@@ -577,6 +651,44 @@
                   Next
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PREVIEW MODAL ═══ -->
+      <div x-show="preview.show" x-cloak x-transition.opacity
+           @keydown.escape.window="closePreview()"
+           style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:32px;">
+        <div @click.outside="closePreview()"
+             style="background:var(--admin-surface);border-radius:var(--admin-radius-lg);max-width:780px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--admin-border);">
+          <!-- Header -->
+          <div style="padding:18px 24px;border-bottom:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div style="min-width:0;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--admin-text-muted);">Preview as customer</div>
+              <h3 style="margin:4px 0 0;font-size:16px;font-weight:700;color:var(--admin-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="preview.subject || 'Loading…'"></h3>
+              <div style="font-size:12px;color:var(--admin-text-muted);font-family:ui-monospace,monospace;margin-top:2px;" x-text="preview.event_type ? 'event: ' + preview.event_type : (preview.template_id ? 'template: ' + preview.template_id : '')"></div>
+            </div>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="closePreview()" aria-label="Close preview">✕</button>
+          </div>
+          <!-- Iframe body -->
+          <div style="flex:1;overflow:auto;background:#f4f4f5;padding:16px;">
+            <iframe x-ref="previewFrame" sandbox="allow-same-origin"
+                    style="width:100%;height:520px;border:1px solid var(--admin-border);border-radius:8px;background:#fff;"
+                    title="Email preview"></iframe>
+          </div>
+          <!-- Footer -->
+          <div style="padding:16px 24px;border-top:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <span style="font-size:12px;color:var(--admin-text-muted);">
+              Sample data is used — variables like
+              <code>&#123;&#123;first_name&#125;&#125;</code> resolve to the registered defaults.
+            </span>
+            <div style="display:flex;gap:8px;">
+              <button class="admin-btn admin-btn--secondary" @click="closePreview()">Close</button>
+              <button class="admin-btn admin-btn--primary" @click="sendTestFromPreview()" :disabled="preview.sending">
+                <span x-show="!preview.sending">Send test to me</span>
+                <span x-show="preview.sending">Sending…</span>
+              </button>
             </div>
           </div>
         </div>

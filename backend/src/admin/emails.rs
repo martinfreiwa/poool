@@ -6,6 +6,251 @@ use axum::{
 };
 use sqlx::Row;
 
+/// Static catalog of every transactional event the platform emits.
+///
+/// Powers the Workflows tab in the admin email-marketing page so an admin
+/// can see at a glance which events have wired bodies, what category they
+/// belong to, what sample metadata they accept, and whether they're
+/// optional (opt-out-able by the recipient) or mandatory.
+///
+/// Tuple shape: (event_type, category, summary, sample_metadata_json).
+/// `sample_metadata_json` is consumed by the preview endpoint as the
+/// default render context when no overrides are supplied. Keep the JSON
+/// shape in sync with what `build_email_html` reads.
+pub const EVENT_REGISTRY: &[(&str, &str, &str, &str)] = &[
+    // ── Auth / security (handled by dedicated auth/service.rs paths) ──
+    (
+        "welcome",
+        "Auth",
+        "Sent after a new user verifies their email.",
+        r#"{"first_name":"Maria"}"#,
+    ),
+    (
+        "verify_email",
+        "Auth",
+        "One-time verification link for a new sign-up.",
+        r#"{"verify_url":"https://platform.poool.app/verify?t=..."}"#,
+    ),
+    (
+        "password_reset",
+        "Auth",
+        "Password reset code (separate outbox for retry).",
+        r#"{"reset_url":"https://platform.poool.app/reset?t=..."}"#,
+    ),
+    (
+        "2fa_setup",
+        "Auth",
+        "Confirmation that the user enrolled in 2FA.",
+        r#"{}"#,
+    ),
+    (
+        "new_login",
+        "Auth",
+        "Notice for a sign-in from a new device/location.",
+        r#"{"location":"Munich, DE","ip":"203.0.113.42"}"#,
+    ),
+    // ── KYC ──────────────────────────────────────────────────────────
+    (
+        "kyc_submitted",
+        "KYC",
+        "Receipt confirmation after documents are uploaded.",
+        r#"{}"#,
+    ),
+    (
+        "kyc_approved",
+        "KYC",
+        "Identity verified — user can now invest.",
+        r#"{}"#,
+    ),
+    (
+        "kyc_rejected",
+        "KYC",
+        "Resubmission required (carries reason from compliance).",
+        r#"{"rejection_reason":"ID photo too dark — please retake in daylight."}"#,
+    ),
+    // ── Wallet ───────────────────────────────────────────────────────
+    (
+        "deposit_submitted",
+        "Wallet",
+        "Proof of wire uploaded, awaiting verification.",
+        r#"{"amount_display":"€2,500.00","reference":"POOOL-7F3A2B","processing_hours":24}"#,
+    ),
+    (
+        "deposit_confirmed",
+        "Wallet",
+        "Wire confirmed and wallet credited.",
+        r#"{"amount_display":"€2,500.00"}"#,
+    ),
+    (
+        "withdraw_requested",
+        "Wallet",
+        "Withdrawal pending admin review.",
+        r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
+    ),
+    (
+        "withdraw_approved",
+        "Wallet",
+        "Withdrawal approved and SEPA dispatched.",
+        r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
+    ),
+    (
+        "withdraw_rejected",
+        "Wallet",
+        "Withdrawal rejected (funds returned to wallet).",
+        r#"{"amount_display":"€500.00","admin_notes":"Beneficiary name mismatch."}"#,
+    ),
+    (
+        "withdrawal_processed",
+        "Wallet",
+        "Bank settled — final confirmation.",
+        r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
+    ),
+    // ── Returns / orders / invoices ─────────────────────────────────
+    (
+        "dividend_payout",
+        "Returns",
+        "Dividend credited to wallet.",
+        r#"{"asset_name":"Villa Bali #12","amount_display":"€42.50"}"#,
+    ),
+    (
+        "monthly_statement",
+        "Returns",
+        "Monthly performance/tax summary ready.",
+        r#"{"month":"April 2026","download_url":"https://platform.poool.app/statements/2026-04"}"#,
+    ),
+    (
+        "order_confirmation",
+        "Orders",
+        "Investment order confirmed.",
+        r#"{"asset_name":"Penthouse Marbella","amount_display":"€1,000.00","order_id":"ord-7F3A2B"}"#,
+    ),
+    (
+        "invoice_available",
+        "Orders",
+        "PDF invoice ready for download.",
+        r#"{"invoice_number":"INV-2026-042","download_url":"https://platform.poool.app/invoices/INV-2026-042"}"#,
+    ),
+    (
+        "asset_funded",
+        "Assets",
+        "An asset the user follows hit 100% funding.",
+        r#"{"asset_name":"Penthouse Marbella","asset_url":"https://platform.poool.app/assets/penthouse-marbella"}"#,
+    ),
+    // ── Affiliate Partner Syndicate ─────────────────────────────────
+    (
+        "affiliate_application_received",
+        "Affiliate",
+        "Application acknowledged, review pending.",
+        r#"{}"#,
+    ),
+    (
+        "affiliate_approved",
+        "Affiliate",
+        "Application approved — link is live.",
+        r#"{"tier":"Access","commission_rate_bps":50}"#,
+    ),
+    (
+        "affiliate_rejected",
+        "Affiliate",
+        "Application rejected with reason.",
+        r#"{"reason":"Audience does not align with POOOL investor profile."}"#,
+    ),
+    (
+        "affiliate_suspended",
+        "Affiliate",
+        "Account on hold pending compliance review.",
+        r#"{"reason":"Unusual referral concentration"}"#,
+    ),
+    (
+        "affiliate_payout_released",
+        "Affiliate",
+        "Commission payout dispatched.",
+        r#"{"amount_cents":12345,"currency":"EUR","bank_last4":"4567"}"#,
+    ),
+    (
+        "affiliate_commission_earned",
+        "Affiliate",
+        "New commission tracked from referred investment.",
+        r#"{"amount_cents":5000,"currency":"EUR","referred_name":"Anna L.","holdback_days":30}"#,
+    ),
+    // ── Developer-Team Affiliate ────────────────────────────────────
+    (
+        "team_invitation_received",
+        "Team",
+        "Invited to join a developer's affiliate team.",
+        r#"{"team_name":"Acme Capital","inviter_name":"Maria","token":"abc123"}"#,
+    ),
+    (
+        "team_member_approved",
+        "Team",
+        "Self-request to join a team was approved.",
+        r#"{"team_name":"Acme Capital"}"#,
+    ),
+    (
+        "team_member_removed",
+        "Team",
+        "Membership ended.",
+        r#"{"team_name":"Acme Capital"}"#,
+    ),
+    (
+        "team_self_request_received",
+        "Team",
+        "Inviter notified of a new join request.",
+        r#"{"team_name":"Acme Capital","requester_email":"new@partner.test"}"#,
+    ),
+    (
+        "team_invitation_accepted",
+        "Team",
+        "Inviter notified that their invitation was accepted.",
+        r#"{"team_name":"Acme Capital","member_name":"Maria"}"#,
+    ),
+    // ── Support ─────────────────────────────────────────────────────
+    (
+        "support_ticket_reply",
+        "Support",
+        "Customer-facing: new reply on a ticket.",
+        r#"{"ticket_subject":"KYC review status","reply_preview":"Hi — your documents are under review. We expect a decision within 24h.","ticket_id":"tk-123"}"#,
+    ),
+    (
+        "support_ticket_new",
+        "Support",
+        "Admin-facing: new ticket submitted.",
+        r#"{"ticket_subject":"Cannot deposit","user_email":"user@example.test","priority":"high"}"#,
+    ),
+    (
+        "support_ticket_resolved",
+        "Support",
+        "Customer-facing: ticket marked resolved.",
+        r#"{"ticket_subject":"KYC review status"}"#,
+    ),
+    // ── Villa-Returns operations ────────────────────────────────────
+    (
+        "operations_rejected",
+        "Operations",
+        "Monthly operations submission rejected.",
+        r#"{"asset_name":"Villa Bali #12","rejection_reason":"Missing occupancy data for week 32"}"#,
+    ),
+    (
+        "operations_approved",
+        "Operations",
+        "Operations approved, awaiting publish.",
+        r#"{"asset_name":"Villa Bali #12"}"#,
+    ),
+    (
+        "operations_published",
+        "Operations",
+        "Operations live on the asset page.",
+        r#"{"asset_name":"Villa Bali #12"}"#,
+    ),
+    // ── Admin-triggered marketing ───────────────────────────────────
+    (
+        "marketing_campaign",
+        "Marketing",
+        "Custom template sent to a user segment.",
+        r#"{"first_name":"Maria","email":"maria@example.test"}"#,
+    ),
+];
+
 //
 //  Admin Email Marketing API
 //
@@ -455,12 +700,11 @@ pub async fn api_admin_emails_campaign(
         )));
     }
 
-    let t_row =
-        sqlx::query("SELECT subject, html_template FROM email_templates WHERE id = $1")
-            .bind(uid)
-            .fetch_optional(&state.db)
-            .await
-            .map_err(ApiError::from)?;
+    let t_row = sqlx::query("SELECT subject, html_template FROM email_templates WHERE id = $1")
+        .bind(uid)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(ApiError::from)?;
     let Some(r) = t_row else {
         return Err(ApiError::NotFound("Template not found".to_string()));
     };
@@ -570,7 +814,10 @@ pub async fn api_admin_emails_logs(
     let search_pattern = if search.is_empty() {
         None
     } else {
-        Some(format!("%{}%", search.replace('%', "\\%").replace('_', "\\_")))
+        Some(format!(
+            "%{}%",
+            search.replace('%', "\\%").replace('_', "\\_")
+        ))
     };
 
     let rows = sqlx::query(
@@ -604,8 +851,7 @@ pub async fn api_admin_emails_logs(
         })
         .collect();
 
-    Ok(Json(serde_json::json!({ "logs": logs, "filters": { "days": days } }))
-        .into_response())
+    Ok(Json(serde_json::json!({ "logs": logs, "filters": { "days": days } })).into_response())
 }
 
 /// Query string for `api_admin_emails_logs`.
@@ -642,6 +888,157 @@ pub async fn api_admin_emails_audience_count(
         .unwrap_or(0);
 
     Ok(Json(serde_json::json!({ "segment": segment, "count": count })).into_response())
+}
+
+/// GET /api/admin/emails/workflows — list every transactional event the
+/// platform emits, with its category, summary, default subject, optional
+/// vs mandatory classification, and the sample metadata used by the
+/// preview endpoint.
+pub async fn api_admin_emails_workflows(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "emails.view").await?;
+
+    let workflows: Vec<serde_json::Value> = EVENT_REGISTRY
+        .iter()
+        .map(|(event, category, summary, sample_json)| {
+            let sample: serde_json::Value =
+                serde_json::from_str(sample_json).unwrap_or(serde_json::Value::Null);
+            serde_json::json!({
+                "event_type": event,
+                "category": category,
+                "summary": summary,
+                "subject": crate::email::subject_for_event(event),
+                "optional": crate::common::email::is_optional_email_event(event),
+                "sample_metadata": sample,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "workflows": workflows })).into_response())
+}
+
+/// POST /api/admin/emails/preview
+///
+/// Renders an email body (and subject) without sending. Two modes:
+///   * `{event_type, sample_data?}` — renders a transactional event with
+///     its registered sample metadata. Pass `sample_data` to override.
+///   * `{template_id, sample_data?}` — renders a stored template via
+///     MiniJinja with the supplied context.
+///
+/// Always returns `{subject, html, mode, event_type?}` — never sends a
+/// real email.
+pub async fn api_admin_emails_preview(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(body): Json<PreviewRequest>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "emails.view").await?;
+
+    let (subject, html) = render_preview_payload(&state, &body).await?;
+    let mode = if body.event_type.is_some() {
+        "event"
+    } else {
+        "template"
+    };
+
+    Ok(Json(serde_json::json!({
+        "mode": mode,
+        "event_type": body.event_type,
+        "template_id": body.template_id,
+        "subject": subject,
+        "html": html,
+    }))
+    .into_response())
+}
+
+/// POST /api/admin/emails/test-send
+///
+/// Renders the same way as `/preview` then dispatches a single mail to
+/// the calling admin's own address via Resend. Bypasses the outbox so
+/// admins get immediate feedback. Requires `emails.send` (test sends
+/// still cost provider quota and could be abused).
+pub async fn api_admin_emails_test_send(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(body): Json<PreviewRequest>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "emails.send").await?;
+
+    // Render via the same helpers the preview endpoint uses — pure function
+    // calls, no double DB round-trip.
+    let (subject, html) = render_preview_payload(&state, &body).await?;
+
+    let admin_email = admin.user.email.clone();
+    let prefixed_subject = format!("[TEST] {subject}");
+    crate::common::email::send_email(&admin_email, &prefixed_subject, &html)
+        .await
+        .map_err(|e| ApiError::Internal(format!("send_email failed: {}", e.detail())))?;
+
+    Ok(Json(serde_json::json!({
+        "status": "sent",
+        "to": admin_email,
+        "subject": prefixed_subject,
+    }))
+    .into_response())
+}
+
+/// Shared preview rendering — used by both `api_admin_emails_preview`
+/// (returns JSON to the browser) and `api_admin_emails_test_send`
+/// (forwards the body to Resend). Returns `(subject, html)`.
+async fn render_preview_payload(
+    state: &AppState,
+    body: &PreviewRequest,
+) -> Result<(String, String), ApiError> {
+    if let Some(event_type) = body.event_type.as_deref() {
+        let registry_entry = EVENT_REGISTRY.iter().find(|(e, _, _, _)| *e == event_type);
+        let default_sample: serde_json::Value = registry_entry
+            .and_then(|(_, _, _, json)| serde_json::from_str(json).ok())
+            .unwrap_or(serde_json::Value::Null);
+        let metadata = body.sample_data.clone().unwrap_or(default_sample);
+        let html = crate::email::build_email_html(event_type, &metadata);
+        let subject = crate::email::subject_for_event(event_type).to_string();
+        return Ok((subject, html));
+    }
+
+    if let Some(template_id) = body.template_id.as_deref() {
+        let uid = ApiError::parse_uuid(template_id)?;
+        let row = sqlx::query("SELECT subject, html_template FROM email_templates WHERE id = $1")
+            .bind(uid)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(ApiError::from)?;
+        let Some(r) = row else {
+            return Err(ApiError::NotFound("Template not found".to_string()));
+        };
+        let subject: String = r.get("subject");
+        let html: String = r.get("html_template");
+        let ctx = body.sample_data.clone().unwrap_or_else(|| {
+            serde_json::json!({
+                "first_name": "Maria",
+                "email": "maria@example.test",
+            })
+        });
+        let rendered_subject = crate::common::email::render_template(&subject, &ctx);
+        let rendered_html = crate::common::email::render_template(&html, &ctx);
+        return Ok((rendered_subject, rendered_html));
+    }
+
+    Err(ApiError::BadRequest(
+        "Either event_type or template_id is required".to_string(),
+    ))
+}
+
+/// Request body shared by `api_admin_emails_preview` and `api_admin_emails_test_send`.
+#[derive(serde::Deserialize)]
+pub struct PreviewRequest {
+    /// Render a built-in transactional event (one of the entries in `EVENT_REGISTRY`).
+    pub event_type: Option<String>,
+    /// Render a stored email_templates row by UUID. Mutually exclusive with event_type.
+    pub template_id: Option<String>,
+    /// Optional JSON context override. Defaults to the event's registered sample.
+    pub sample_data: Option<serde_json::Value>,
 }
 
 #[cfg(test)]
@@ -715,5 +1112,107 @@ mod tests {
         assert!(crate::common::email::is_optional_email_event(
             MARKETING_CAMPAIGN_EVENT_TYPE
         ));
+    }
+
+    // ── EVENT_REGISTRY (Workflows tab + Preview endpoint) ─────────────
+
+    #[test]
+    fn event_registry_entries_are_unique() {
+        let mut seen = std::collections::HashSet::new();
+        for (event, _, _, _) in EVENT_REGISTRY {
+            assert!(
+                seen.insert(*event),
+                "duplicate event_type in EVENT_REGISTRY: {event}"
+            );
+        }
+    }
+
+    #[test]
+    fn event_registry_sample_metadata_is_valid_json() {
+        for (event, _, _, sample) in EVENT_REGISTRY {
+            let parsed: serde_json::Value = serde_json::from_str(sample)
+                .unwrap_or_else(|e| panic!("event '{event}' has invalid sample JSON: {e}"));
+            assert!(
+                parsed.is_object() || parsed.is_null(),
+                "event '{event}' sample must be a JSON object or null"
+            );
+        }
+    }
+
+    #[test]
+    fn event_registry_covers_all_subjects_in_email_rs() {
+        // Every event we render a body for via build_email_html should be
+        // in the workflows registry so the admin UI can list it. A
+        // missing entry means the workflows tab silently omits a real
+        // production email.
+        let registry_events: std::collections::HashSet<&str> =
+            EVENT_REGISTRY.iter().map(|(e, _, _, _)| *e).collect();
+        for event in [
+            "kyc_approved",
+            "kyc_rejected",
+            "kyc_submitted",
+            "deposit_confirmed",
+            "deposit_submitted",
+            "withdraw_requested",
+            "withdraw_approved",
+            "withdraw_rejected",
+            "withdrawal_processed",
+            "dividend_payout",
+            "monthly_statement",
+            "order_confirmation",
+            "invoice_available",
+            "asset_funded",
+            "operations_rejected",
+            "operations_approved",
+            "operations_published",
+            "support_ticket_reply",
+            "support_ticket_new",
+            "support_ticket_resolved",
+            "team_invitation_received",
+            "team_member_approved",
+            "team_member_removed",
+            "team_self_request_received",
+            "team_invitation_accepted",
+            "affiliate_application_received",
+            "affiliate_approved",
+            "affiliate_rejected",
+            "affiliate_suspended",
+            "affiliate_payout_released",
+            "affiliate_commission_earned",
+        ] {
+            assert!(
+                registry_events.contains(event),
+                "event '{event}' has a build_email_html body but is missing \
+                 from EVENT_REGISTRY — admins won't see it in the workflows \
+                 tab"
+            );
+        }
+    }
+
+    #[test]
+    fn event_registry_categories_are_known() {
+        let known: std::collections::HashSet<&str> = [
+            "Auth",
+            "KYC",
+            "Wallet",
+            "Returns",
+            "Orders",
+            "Assets",
+            "Affiliate",
+            "Team",
+            "Support",
+            "Operations",
+            "Marketing",
+        ]
+        .iter()
+        .copied()
+        .collect();
+        for (event, category, _, _) in EVENT_REGISTRY {
+            assert!(
+                known.contains(*category),
+                "event '{event}' has unknown category '{category}' — update \
+                 the known-set or fix the registry"
+            );
+        }
     }
 }
