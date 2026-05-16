@@ -1,8 +1,10 @@
 use super::extractors::ApiError;
 use crate::auth::routes::AppState;
+use crate::common::idempotency::{self, Reservation};
 use crate::payments;
 use axum::{
     extract::{Json, State},
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
 };
 use axum_extra::extract::CookieJar;
@@ -182,16 +184,56 @@ pub struct AdminDepositConfirmPayload {
 }
 
 /// POST /api/admin/deposits/:tx_id/confirm
+///
+/// Confirms a pending deposit and credits the user wallet.
+///
+/// Hardened against double-confirm via `Idempotency-Key` (audit H#1):
+/// repeating the same header within 24h replays the original JSON
+/// response without firing a second `deposit_confirmed` email.
+///
+/// The post-confirm transactional email is enqueued *synchronously*
+/// into `transactional_email_outbox` (audit M#5) — a pod restart
+/// between the DB commit and the email enqueue no longer drops the
+/// user's notification, because `trigger_transactional_email`'s first
+/// step is the durable outbox INSERT.
 pub async fn api_admin_deposit_confirm(
     jar: CookieJar,
     State(state): State<AppState>,
+    headers: HeaderMap,
     axum::extract::Path(tx_id): axum::extract::Path<String>,
     payload: Option<Json<AdminDepositConfirmPayload>>,
 ) -> Result<axum::response::Response, ApiError> {
     let admin = require_deposit_permission(&jar, &state, "deposits.write").await?;
     let uid = ApiError::parse_uuid(&tx_id)?;
 
-    // First, look up the provider reference for the deposit request
+    // Reserve the Idempotency-Key for (header, admin.id). Replays return
+    // the cached JSON; in-flight duplicates get 409.
+    let reservation = idempotency::try_reserve(
+        &state.db,
+        &headers,
+        admin.id,
+        &format!("/api/admin/deposits/{tx_id}/confirm"),
+        "POST",
+    )
+    .await;
+    let idem_key = match reservation {
+        Reservation::NoKey => None,
+        Reservation::Reserved(k) => Some(k),
+        Reservation::CachedJson { status, body } => {
+            return Ok((status, Json(body)).into_response());
+        }
+        Reservation::CachedRedirect { .. } => {
+            return Err(ApiError::Internal(
+                "Unexpected cached redirect on confirm".into(),
+            ));
+        }
+        Reservation::InProgress => {
+            return Err(ApiError::Conflict(
+                "Confirmation already in progress for this Idempotency-Key".into(),
+            ));
+        }
+    };
+
     let provider_ref: Option<String> =
         sqlx::query_scalar("SELECT provider_reference FROM deposit_requests WHERE id = $1")
             .bind(uid)
@@ -202,6 +244,9 @@ pub async fn api_admin_deposit_confirm(
     let provider_ref = match provider_ref {
         Some(r) => r,
         None => {
+            if let Some(k) = &idem_key {
+                idempotency::release(&state.db, k).await;
+            }
             return Err(ApiError::NotFound("Deposit request not found".to_string()));
         }
     };
@@ -222,38 +267,43 @@ pub async fn api_admin_deposit_confirm(
     .await
     {
         Ok(_) => {
-            // Fire deposit confirmation email (best-effort, non-blocking)
-            let db_clone = state.db.clone();
-            let uid_str = uid.to_string();
-            let admin_id_str = admin.id.to_string();
-            tokio::spawn(async move {
-                // Pull both the user id AND the amount in one round-trip so the
-                // email can include "Credited: USD 1,234.00" instead of a bare
-                // notification with no figure.
-                if let Ok(Some((user_id, amount_cents))) = sqlx::query_as::<_, (uuid::Uuid, i64)>(
-                    "SELECT user_id, amount_cents FROM deposit_requests WHERE id = $1",
+            // Enqueue confirmation email *synchronously* — the outbox
+            // INSERT inside `trigger_transactional_email` is the durability
+            // anchor. Keep it before the response so a pod restart between
+            // commit and enqueue cannot drop the user's email. Immediate
+            // send is then attempted by `trigger_transactional_email`
+            // itself; the periodic outbox worker retries on failure.
+            if let Ok(Some((user_id, amount_cents))) = sqlx::query_as::<_, (uuid::Uuid, i64)>(
+                "SELECT user_id, amount_cents FROM deposit_requests WHERE id = $1",
+            )
+            .bind(uid)
+            .fetch_optional(&state.db)
+            .await
+            {
+                let amount_display = crate::common::currency::format_usd(amount_cents);
+                let _ = crate::email::trigger_transactional_email(
+                    &state.db,
+                    &user_id,
+                    "deposit_confirmed",
+                    serde_json::json!({
+                        "deposit_id": uid.to_string(),
+                        "confirmed_by": admin.id.to_string(),
+                        "amount_display": amount_display,
+                    }),
                 )
-                .bind(uid)
-                .fetch_optional(&db_clone)
-                .await
-                {
-                    let amount_display = crate::common::currency::format_usd(amount_cents);
-                    let _ = crate::email::trigger_transactional_email(
-                        &db_clone,
-                        &user_id,
-                        "deposit_confirmed",
-                        serde_json::json!({
-                            "deposit_id": uid_str,
-                            "confirmed_by": admin_id_str,
-                            "amount_display": amount_display,
-                        }),
-                    )
-                    .await;
-                }
-            });
-            Ok(Json(serde_json::json!({"status": "confirmed"})).into_response())
+                .await;
+            }
+
+            let body = serde_json::json!({"status": "confirmed"});
+            if let Some(k) = &idem_key {
+                idempotency::commit_json(&state.db, k, StatusCode::OK, &body).await;
+            }
+            Ok(Json(body).into_response())
         }
         Err(e) => {
+            if let Some(k) = &idem_key {
+                idempotency::release(&state.db, k).await;
+            }
             tracing::error!("Failed to confirm deposit {tx_id}: {e}");
             Err(ApiError::Internal(format!(
                 "Failed to confirm deposit: {}",
