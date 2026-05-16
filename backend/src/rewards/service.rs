@@ -2724,10 +2724,11 @@ pub async fn anonymize_affiliate_user(pool: &PgPool, user_id: Uuid) -> Result<()
 // ──────────────────────────────────────────────────────────────────────────
 // Durable S2S postback worker (drains affiliate_postback_outbox)
 // ──────────────────────────────────────────────────────────────────────────
-
-/// Background loop: every 30s pick up `queued` postbacks whose
-/// `next_attempt_at` has passed, fire HTTP GET, update status with exponential
-/// backoff. Caps at 6 attempts → `failed_giveup`.
+//
+// Background loop: every 30s pick up `queued` postbacks whose
+// `next_attempt_at` has passed, fire HTTP GET, update status with
+// exponential backoff. Caps at 6 attempts → `failed_giveup`.
+//
 // ──────────────────────────────────────────────────────────────────────────
 // Phase-3 fresh: affiliate invoice register (per payout batch)
 // ──────────────────────────────────────────────────────────────────────────
