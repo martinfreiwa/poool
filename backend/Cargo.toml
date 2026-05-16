@@ -109,6 +109,9 @@ ammonia = "4.1.2"
 maplit = "1.0"
 regex = "1.12.3"
 
+# Phase-3 GDPR Art.20 data export — STORED-only ZIP, no native deps
+zip = { version = "2.2", default-features = false }
+
 # ─── Dev profile: optimize ALL dependencies ────────────────────
 # Argon2 password hashing is UNUSABLY SLOW in debug mode (2+ minutes
 # per hash on ARM Mac). This setting compiles all dependencies with

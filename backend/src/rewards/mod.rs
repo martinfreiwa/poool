@@ -92,6 +92,11 @@ pub fn router() -> Router<AppState> {
             "/api/affiliate/commissions/export",
             get(api_affiliate_commissions_export),
         )
+        // Phase-3 fresh: GDPR Art.20 portable data export (ZIP, 1/24h)
+        .route(
+            "/api/affiliate/data-export",
+            get(api_affiliate_data_export),
+        )
         // GAP-10: Tax document upload (required for payout release)
         .route(
             "/api/affiliate/tax-document",

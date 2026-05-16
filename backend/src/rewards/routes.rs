@@ -2041,6 +2041,337 @@ pub async fn api_affiliate_upload_material(
     .into_response())
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-3 fresh: GDPR Art. 20 affiliate-scoped data export
+// ──────────────────────────────────────────────────────────────────────────
+
+/// GET /api/affiliate/data-export
+///
+/// Returns a single ZIP attachment with the affiliate's own data, in a
+/// format that is portable to another service:
+///
+///   * profile.json              — affiliate record (no other-user fields)
+///   * commissions.csv           — full commission ledger
+///   * referrals.csv             — referral attribution rows
+///   * payouts.csv               — affiliate-initiated payout requests
+///   * policy_acceptances.csv    — what / when / which version / which IP
+///
+/// Rate-limited to one export per 24h per user (Art. 12(5)(a) — a controller
+/// may refuse "manifestly unfounded or excessive" requests). Implemented by
+/// checking the audit_log for an entry with action `affiliate_data_export`
+/// within the trailing 24h window.
+pub async fn api_affiliate_data_export(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+
+    if !is_active_affiliate(&state, user_id).await? {
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can export their data".into(),
+        ));
+    }
+
+    // Rate limit: 1 / 24h per user. Audit log is the source of truth — a
+    // dedicated rate-limit table would double the writes for no benefit.
+    let recent_exports: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*)::bigint
+             FROM audit_logs
+            WHERE actor_user_id = $1
+              AND action = 'affiliate_data_export'
+              AND created_at > NOW() - INTERVAL '24 hours'"#,
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    if recent_exports > 0 {
+        return Ok((
+            axum::http::StatusCode::TOO_MANY_REQUESTS,
+            [(
+                "Retry-After",
+                "86400", // 24h in seconds — RFC 7231
+            )],
+            Json(serde_json::json!({
+                "error": "rate_limited",
+                "message": "Only one data export per 24 hours is permitted (GDPR Art. 12(5)(a))."
+            })),
+        )
+            .into_response());
+    }
+
+    // ── Fetch the 5 datasets ──────────────────────────────────────────────
+    // Each query is scoped to user_id so the export NEVER includes data
+    // about other users. JOINs only pull denormalised, affiliate-owned
+    // columns (no other-user PII leaks).
+    let profile = sqlx::query(
+        r#"SELECT user_id::text, referral_code, status, accepted_policy_version,
+                  tax_id_last4, paypal_email, display_name, created_at::text, updated_at::text
+             FROM affiliates WHERE user_id = $1"#,
+    )
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let profile_json = if let Some(row) = profile {
+        serde_json::json!({
+            "user_id": row.try_get::<String, _>("user_id").unwrap_or_default(),
+            "referral_code": row.try_get::<Option<String>, _>("referral_code").unwrap_or_default(),
+            "status": row.try_get::<Option<String>, _>("status").unwrap_or_default(),
+            "accepted_policy_version": row.try_get::<Option<String>, _>("accepted_policy_version").unwrap_or_default(),
+            "tax_id_last4_masked": row.try_get::<Option<String>, _>("tax_id_last4").unwrap_or_default(),
+            "paypal_email": row.try_get::<Option<String>, _>("paypal_email").unwrap_or_default(),
+            "display_name": row.try_get::<Option<String>, _>("display_name").unwrap_or_default(),
+            "created_at": row.try_get::<Option<String>, _>("created_at").unwrap_or_default(),
+            "updated_at": row.try_get::<Option<String>, _>("updated_at").unwrap_or_default(),
+        })
+    } else {
+        serde_json::json!({"error": "affiliate row not found"})
+    };
+
+    let commissions_csv = build_commissions_csv_for_user(&state.db, user_id).await?;
+    let referrals_csv = build_referrals_csv_for_user(&state.db, user_id).await?;
+    let payouts_csv = build_payouts_csv_for_user(&state.db, user_id).await?;
+    let policy_csv = build_policy_acceptances_csv_for_user(&state.db, user_id).await?;
+
+    // ── Build ZIP (STORED, no compression — payload is small + already CSV/JSON) ──
+    let mut buf: Vec<u8> = Vec::new();
+    {
+        let cursor = std::io::Cursor::new(&mut buf);
+        let mut zip = zip::ZipWriter::new(cursor);
+        let opts: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Stored);
+        use std::io::Write as _;
+        let mut add = |name: &str, content: &[u8]| -> Result<(), crate::error::AppError> {
+            zip.start_file(name, opts)
+                .map_err(|e| crate::error::AppError::Internal(format!("zip start: {e}")))?;
+            zip.write_all(content)
+                .map_err(|e| crate::error::AppError::Internal(format!("zip write: {e}")))?;
+            Ok(())
+        };
+        add(
+            "profile.json",
+            serde_json::to_vec_pretty(&profile_json)
+                .map_err(|e| crate::error::AppError::Internal(e.to_string()))?
+                .as_slice(),
+        )?;
+        add("commissions.csv", commissions_csv.as_bytes())?;
+        add("referrals.csv", referrals_csv.as_bytes())?;
+        add("payouts.csv", payouts_csv.as_bytes())?;
+        add("policy_acceptances.csv", policy_csv.as_bytes())?;
+        add(
+            "README.txt",
+            data_export_readme(user_id).as_bytes(),
+        )?;
+        zip.finish()
+            .map_err(|e| crate::error::AppError::Internal(format!("zip finish: {e}")))?;
+    }
+
+    // ── Audit AFTER the export is built — failures before this won't count
+    // against the 1/24h budget, by design.
+    let _ = crate::common::audit::log(
+        &state.db,
+        Some(user_id),
+        "affiliate_data_export",
+        "affiliate",
+        Some(user_id),
+        None,
+        None,
+    )
+    .await;
+
+    let fname = format!(
+        "poool-affiliate-data-{}.zip",
+        chrono::Utc::now().format("%Y%m%d")
+    );
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::CONTENT_TYPE,
+        axum::http::HeaderValue::from_static("application/zip"),
+    );
+    headers.insert(
+        axum::http::header::CONTENT_DISPOSITION,
+        axum::http::HeaderValue::from_str(&format!("attachment; filename=\"{}\"", fname))
+            .map_err(|e| crate::error::AppError::Internal(format!("bad filename header: {e}")))?,
+    );
+    Ok((axum::http::StatusCode::OK, headers, buf).into_response())
+}
+
+fn data_export_readme(user_id: uuid::Uuid) -> String {
+    format!(
+        "POOOL affiliate data export\n\
+         ---------------------------\n\
+         User ID:        {}\n\
+         Generated at:   {}\n\
+         GDPR basis:     Art. 20 right to data portability\n\n\
+         Files:\n\
+           profile.json              Your affiliate profile (own fields only)\n\
+           commissions.csv           Every commission ever attributed to you\n\
+           referrals.csv             Every referral row attributed to your code\n\
+           payouts.csv               Every payout request you submitted\n\
+           policy_acceptances.csv    Every policy version you accepted (when, from which IP)\n\n\
+         Field meanings, units, and column types are stable across exports.\n\
+         All amounts are integer minor units (cents). Timestamps are UTC.\n",
+        user_id,
+        chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+    )
+}
+
+async fn build_commissions_csv_for_user(
+    pool: &sqlx::PgPool,
+    user_id: uuid::Uuid,
+) -> Result<String, crate::error::AppError> {
+    let rows = sqlx::query(
+        r#"SELECT id::text, source_order_id::text, provisional_amount_cents,
+                  status, tier_at_execution, created_at::text, updated_at::text
+             FROM affiliate_commissions
+            WHERE affiliate_id = $1
+         ORDER BY created_at ASC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let mut out = String::from(
+        "id,source_order_id,amount_cents,status,tier_at_execution,created_at,updated_at\n",
+    );
+    for r in &rows {
+        let id: String = r.try_get("id").unwrap_or_default();
+        let order: String = r.try_get("source_order_id").unwrap_or_default();
+        let amt: i64 = r.try_get("provisional_amount_cents").unwrap_or(0);
+        let status: Option<String> = r.try_get("status").ok();
+        let tier: String = r.try_get("tier_at_execution").unwrap_or_default();
+        let created: String = r.try_get("created_at").unwrap_or_default();
+        let updated: String = r.try_get("updated_at").unwrap_or_default();
+        out.push_str(&format!(
+            "{},{},{},{},{},{},{}\n",
+            csv_escape(&id),
+            csv_escape(&order),
+            amt,
+            csv_escape(status.unwrap_or_default()),
+            csv_escape(&tier),
+            csv_escape(&created),
+            csv_escape(&updated)
+        ));
+    }
+    Ok(out)
+}
+
+async fn build_referrals_csv_for_user(
+    pool: &sqlx::PgPool,
+    user_id: uuid::Uuid,
+) -> Result<String, crate::error::AppError> {
+    // affiliate_referrals.affiliate_id FKs to affiliates(user_id) so the
+    // user_id arg works directly here.
+    let rows = sqlx::query(
+        r#"SELECT id::text, referred_user_id::text, sub_id,
+                  qualified_at::text, disqualifying_reason,
+                  created_at::text
+             FROM affiliate_referrals
+            WHERE affiliate_id = $1
+         ORDER BY created_at ASC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let mut out = String::from(
+        "id,referred_user_id,sub_id,qualified_at,disqualifying_reason,created_at\n",
+    );
+    for r in &rows {
+        let id: String = r.try_get("id").unwrap_or_default();
+        let ref_user: String = r.try_get("referred_user_id").unwrap_or_default();
+        let sub_id: Option<String> = r.try_get("sub_id").ok();
+        let qual: Option<String> = r.try_get("qualified_at").ok();
+        let dq: Option<String> = r.try_get("disqualifying_reason").ok();
+        let created: String = r.try_get("created_at").unwrap_or_default();
+        out.push_str(&format!(
+            "{},{},{},{},{},{}\n",
+            csv_escape(&id),
+            csv_escape(&ref_user),
+            csv_escape(sub_id.unwrap_or_default()),
+            csv_escape(qual.unwrap_or_default()),
+            csv_escape(dq.unwrap_or_default()),
+            csv_escape(&created)
+        ));
+    }
+    Ok(out)
+}
+
+async fn build_payouts_csv_for_user(
+    pool: &sqlx::PgPool,
+    user_id: uuid::Uuid,
+) -> Result<String, crate::error::AppError> {
+    let rows = sqlx::query(
+        r#"SELECT id::text, amount_cents, status,
+                  created_at::text
+             FROM affiliate_payout_requests
+            WHERE affiliate_id = $1
+         ORDER BY created_at ASC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let mut out = String::from("id,amount_cents,status,created_at\n");
+    for r in &rows {
+        let id: String = r.try_get("id").unwrap_or_default();
+        let amt: i64 = r.try_get("amount_cents").unwrap_or(0);
+        let status: Option<String> = r.try_get("status").ok();
+        let created: String = r.try_get("created_at").unwrap_or_default();
+        out.push_str(&format!(
+            "{},{},{},{}\n",
+            csv_escape(&id),
+            amt,
+            csv_escape(status.unwrap_or_default()),
+            csv_escape(&created)
+        ));
+    }
+    Ok(out)
+}
+
+async fn build_policy_acceptances_csv_for_user(
+    pool: &sqlx::PgPool,
+    user_id: uuid::Uuid,
+) -> Result<String, crate::error::AppError> {
+    let rows = sqlx::query(
+        r#"SELECT id::text, policy_name, policy_version, ip_address,
+                  accepted_at::text
+             FROM affiliate_policy_acceptances
+            WHERE affiliate_id = $1
+         ORDER BY accepted_at ASC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let mut out = String::from("id,policy_name,policy_version,ip_address,accepted_at\n");
+    for r in &rows {
+        let id: String = r.try_get("id").unwrap_or_default();
+        let name: String = r.try_get("policy_name").unwrap_or_default();
+        let ver: String = r.try_get("policy_version").unwrap_or_default();
+        let ip: Option<String> = r.try_get("ip_address").ok();
+        let accepted: String = r.try_get("accepted_at").unwrap_or_default();
+        out.push_str(&format!(
+            "{},{},{},{},{}\n",
+            csv_escape(&id),
+            csv_escape(&name),
+            csv_escape(&ver),
+            csv_escape(ip.unwrap_or_default()),
+            csv_escape(&accepted)
+        ));
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod affiliate_material_upload_tests {
     use super::validate_affiliate_material_upload;
@@ -2082,5 +2413,21 @@ mod affiliate_material_upload_tests {
                 .unwrap_err()
                 .to_string();
         assert!(err.contains("Unsupported file type"));
+    }
+}
+
+#[cfg(test)]
+mod data_export_tests {
+    use super::data_export_readme;
+    use uuid::Uuid;
+
+    #[test]
+    fn readme_includes_user_id_and_gdpr_basis() {
+        let uid = Uuid::parse_str("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee").unwrap();
+        let s = data_export_readme(uid);
+        assert!(s.contains("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+        assert!(s.contains("Art. 20"));
+        assert!(s.contains("commissions.csv"));
+        assert!(s.contains("integer minor units"));
     }
 }
