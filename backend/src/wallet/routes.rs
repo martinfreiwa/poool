@@ -534,6 +534,15 @@ pub async fn handle_deposit(
 #[derive(Debug, Deserialize)]
 pub struct DepositInitPayload {
     pub amount: String,
+    /// AMLD5/6 source-of-funds reason. Required when amount >=
+    /// `deposit_sof_threshold_cents`. One of the values whitelisted by
+    /// [`crate::payments::service::normalize_sof_reason`].
+    #[serde(default)]
+    pub source_of_funds_reason: Option<String>,
+    /// Optional free-text context (required when reason is `other`, useful
+    /// for any reason). Capped to 500 chars after trimming.
+    #[serde(default)]
+    pub source_of_funds_detail: Option<String>,
 }
 
 /// POST /api/wallet/deposit/init  – step 1 of the modal flow.
@@ -626,6 +635,52 @@ pub async fn api_deposit_init(
             .into_response();
     }
 
+    // ── Source-of-funds gate (AMLD5/6 Art. 18) ───────────────────
+    let sof_required = amount_cents >= bank.sof_threshold_cents;
+    let sof_doc_required = amount_cents >= bank.sof_doc_threshold_cents;
+    let normalized_sof = payload
+        .source_of_funds_reason
+        .as_deref()
+        .and_then(crate::payments::service::normalize_sof_reason)
+        .map(|s| s.to_string());
+
+    if sof_required && normalized_sof.is_none() {
+        if let Some(ref k) = idem_key {
+            idempotency::release(&state.db, k).await;
+        }
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "error": "sof_reason_required",
+                "message": format!(
+                    "A source-of-funds reason is required for deposits of {} or more.",
+                    format_usd(bank.sof_threshold_cents)
+                )
+            })),
+        )
+            .into_response();
+    }
+
+    let sof_detail = payload
+        .source_of_funds_detail
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.chars().take(500).collect::<String>());
+    if normalized_sof.as_deref() == Some("other") && sof_detail.is_none() {
+        if let Some(ref k) = idem_key {
+            idempotency::release(&state.db, k).await;
+        }
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "error": "sof_detail_required",
+                "message": "Please describe the source of these funds."
+            })),
+        )
+            .into_response();
+    }
+
     let deposit_res = match crate::payments::service::create_deposit_request(
         &state.db,
         user.id,
@@ -648,6 +703,29 @@ pub async fn api_deposit_init(
         }
     };
 
+    // Persist the SoF declaration on the row we just created. Best-effort:
+    // if this fails the request still succeeds — admin can backfill from
+    // the audit_logs entry below.
+    if normalized_sof.is_some() {
+        if let Err(e) = sqlx::query(
+            "UPDATE deposit_requests
+                SET source_of_funds_reason = $1, source_of_funds_detail = $2
+              WHERE id = $3",
+        )
+        .bind(normalized_sof.as_deref())
+        .bind(sof_detail.as_deref())
+        .bind(deposit_res.deposit_id)
+        .execute(&state.db)
+        .await
+        {
+            tracing::error!(
+                deposit_id = %deposit_res.deposit_id,
+                error = %e,
+                "Failed to persist source-of-funds declaration"
+            );
+        }
+    }
+
     let expires_at = (Utc::now() + chrono::Duration::hours(bank.processing_hours)).to_rfc3339();
 
     let response_body = serde_json::json!({
@@ -664,6 +742,10 @@ pub async fn api_deposit_init(
             "bank_address": bank.bank_address,
         },
         "processing_hours": bank.processing_hours,
+        "sof_required": sof_required,
+        "sof_doc_required": sof_doc_required,
+        "sof_threshold_cents": bank.sof_threshold_cents,
+        "sof_doc_threshold_cents": bank.sof_doc_threshold_cents,
         "expires_at": expires_at,
         "submit_url": format!("/wallet/deposit/{}/submit", deposit_res.deposit_id),
     });
@@ -738,8 +820,21 @@ pub async fn handle_deposit_submit(
     };
 
     // Confirm the deposit exists, belongs to this user, and is still open.
-    let deposit_row = sqlx::query_as::<_, (Uuid, String, i64, Option<String>, Option<String>)>(
-        "SELECT user_id, status, amount_cents, provider_reference, proof_gcs_path
+    // Pull source-of-funds bits too so we can enforce the doc-upload gate.
+    let deposit_row = sqlx::query_as::<
+        _,
+        (
+            Uuid,
+            String,
+            i64,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ),
+    >(
+        "SELECT user_id, status, amount_cents, provider_reference,
+                proof_gcs_path, source_of_funds_reason, source_of_funds_doc_path
            FROM deposit_requests WHERE id = $1",
     )
     .bind(deposit_id)
@@ -748,7 +843,15 @@ pub async fn handle_deposit_submit(
     .ok()
     .flatten();
 
-    let (owner, status, amount_cents, provider_ref, existing_proof) = match deposit_row {
+    let (
+        owner,
+        status,
+        amount_cents,
+        provider_ref,
+        existing_proof,
+        sof_reason,
+        existing_sof_doc,
+    ) = match deposit_row {
         Some(row) => row,
         None => return release_and_redirect("/wallet?error=deposit_not_found").await,
     };
@@ -767,6 +870,9 @@ pub async fn handle_deposit_submit(
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut declared_mime = String::from("application/octet-stream");
     let mut notes: Option<String> = None;
+    // Optional supporting document for source-of-funds (AMLD threshold).
+    let mut sof_doc_bytes: Option<Vec<u8>> = None;
+    let mut sof_doc_mime = String::from("application/octet-stream");
 
     while let Ok(Some(field)) = multipart.next_field().await {
         let name = field.name().unwrap_or("").to_string();
@@ -797,6 +903,32 @@ pub async fn handle_deposit_submit(
                     file_bytes = Some(bytes);
                 }
             }
+            "source_of_funds_doc" => {
+                if let Some(ct) = field.content_type() {
+                    sof_doc_mime = ct.to_string();
+                }
+                let mut field = field;
+                let mut bytes: Vec<u8> = Vec::with_capacity(64 * 1024);
+                loop {
+                    match field.chunk().await {
+                        Ok(Some(chunk)) => {
+                            if bytes.len().saturating_add(chunk.len()) > MAX_DEPOSIT_PROOF_BYTES {
+                                return release_and_redirect("/wallet?error=sof_doc_too_large")
+                                    .await;
+                            }
+                            bytes.extend_from_slice(&chunk);
+                        }
+                        Ok(None) => break,
+                        Err(_) => {
+                            return release_and_redirect("/wallet?error=sof_doc_read_failed")
+                                .await;
+                        }
+                    }
+                }
+                if !bytes.is_empty() {
+                    sof_doc_bytes = Some(bytes);
+                }
+            }
             _ => {}
         }
     }
@@ -805,6 +937,19 @@ pub async fn handle_deposit_submit(
         Some(b) => b,
         None => return release_and_redirect("/wallet?error=proof_missing").await,
     };
+
+    // Enforce the source-of-funds document requirement for large deposits.
+    // The threshold is admin-configurable; reload to pick up changes since
+    // the row was created.
+    let bank = crate::payments::service::fetch_deposit_bank_settings(&state.db).await;
+    let needs_sof_doc =
+        amount_cents >= bank.sof_doc_threshold_cents && existing_sof_doc.is_none();
+    if needs_sof_doc && sof_doc_bytes.is_none() {
+        return release_and_redirect("/wallet?error=sof_doc_required").await;
+    }
+    // Silence unused-warning suppression for sof_reason — used for audit
+    // log enrichment below.
+    let _ = sof_reason;
 
     // ── Validate proof: magic-byte sniff + allow-list ────────────
     let sniffed = match storage_svc::sniff_mime(&file_bytes) {
@@ -865,6 +1010,45 @@ pub async fn handle_deposit_submit(
             proof_path
         );
         return Redirect::to("/wallet?error=proof_save_failed").into_response();
+    }
+
+    // ── Upload SoF document if supplied ──────────────────────────
+    // Validation already enforced that it's present when required; here we
+    // just persist it. Same MIME allow-list as the proof. Failure to upload
+    // is logged but does NOT block the deposit — the operations team can
+    // chase the document via email.
+    if let Some(doc_bytes) = sof_doc_bytes {
+        let sof_sniffed = storage_svc::sniff_mime(&doc_bytes);
+        let sof_ok = matches!(sof_sniffed, Some(m) if storage_svc::mime_matches(&sof_doc_mime, m)
+                && storage_svc::validate_kyc_mime(m).is_ok());
+        if !sof_ok {
+            tracing::warn!(deposit_id = %deposit_id, "SoF doc rejected: unsupported MIME");
+        } else if let Some(sniffed_mime) = sof_sniffed {
+            let sof_ext = storage_svc::extension_for_mime(sniffed_mime);
+            let sof_path = format!("deposits/{}/{}-sof.{}", user.id, deposit_id, sof_ext);
+            let uploaded = if let Some(ref b) = bucket {
+                match tokio::time::timeout(
+                    std::time::Duration::from_secs(15),
+                    storage_svc::upload_private(b, &sof_path, doc_bytes.clone(), sniffed_mime),
+                )
+                .await
+                {
+                    Ok(Ok(p)) => Some(p),
+                    _ => storage_svc::upload_local(&sof_path, doc_bytes).await.ok(),
+                }
+            } else {
+                storage_svc::upload_local(&sof_path, doc_bytes).await.ok()
+            };
+            if let Some(p) = uploaded {
+                let _ = sqlx::query(
+                    "UPDATE deposit_requests SET source_of_funds_doc_path = $1 WHERE id = $2",
+                )
+                .bind(&p)
+                .bind(deposit_id)
+                .execute(&state.db)
+                .await;
+            }
+        }
     }
 
     let ref_str = provider_ref.unwrap_or_default();

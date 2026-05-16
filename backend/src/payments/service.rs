@@ -370,6 +370,10 @@ pub struct DepositBankSettings {
     pub processing_hours: i64,
     pub min_amount_cents: i64,
     pub max_amount_cents: i64,
+    /// Amount above which a source-of-funds reason is required (AMLD5/6).
+    pub sof_threshold_cents: i64,
+    /// Amount above which a supporting document is also required.
+    pub sof_doc_threshold_cents: i64,
 }
 
 async fn setting_str(pool: &PgPool, key: &str, default: &str) -> String {
@@ -405,6 +409,26 @@ pub async fn fetch_deposit_bank_settings(pool: &PgPool) -> DepositBankSettings {
         processing_hours: setting_i64(pool, "deposit_processing_hours", 24).await,
         min_amount_cents: setting_i64(pool, "deposit_min_amount_cents", 5_000).await,
         max_amount_cents: setting_i64(pool, "deposit_max_amount_cents", 10_000_000).await,
+        sof_threshold_cents: setting_i64(pool, "deposit_sof_threshold_cents", 300_000).await,
+        sof_doc_threshold_cents: setting_i64(pool, "deposit_sof_doc_threshold_cents", 1_000_000)
+            .await,
+    }
+}
+
+/// Whitelist of allowed source-of-funds reasons (mirrors the CHECK
+/// constraint in migration 181). Returns `Some(canonical)` if `value` is
+/// recognised, `None` otherwise.
+pub fn normalize_sof_reason(value: &str) -> Option<&'static str> {
+    match value.trim().to_lowercase().as_str() {
+        "salary" => Some("salary"),
+        "inheritance" => Some("inheritance"),
+        "business_income" | "business income" => Some("business_income"),
+        "investment" | "investments" => Some("investment"),
+        "crypto_sale" | "crypto" => Some("crypto_sale"),
+        "gift" => Some("gift"),
+        "savings" => Some("savings"),
+        "other" => Some("other"),
+        _ => None,
     }
 }
 

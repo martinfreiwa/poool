@@ -1762,6 +1762,53 @@ body.kyc-hidden .wallet-main {
   font-weight: 500;
 }
 
+.wallet-deposit-sof {
+  background: #F8FAFF;
+  border: 1px solid #D7E3FF;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 16px 0;
+}
+
+.wallet-deposit-sof[hidden] {
+  display: none;
+}
+
+.wallet-deposit-sof__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.wallet-deposit-sof__header strong {
+  font-size: 13px;
+  color: #101828;
+}
+
+.wallet-deposit-sof__header span {
+  font-size: 11px;
+  color: #475467;
+}
+
+.wallet-deposit-sof .ds-form-group {
+  margin-bottom: 12px;
+}
+
+.wallet-deposit-sof .ds-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.wallet-deposit-sof-doc {
+  border-top: 1px solid #F2F4F7;
+  padding-top: 18px;
+  margin-top: 18px;
+}
+
+.wallet-deposit-sof-doc[hidden] {
+  display: none;
+}
+
 /* ─── Withdraw Modal ─────────────────────────────────────────── */
 .wallet-withdraw-modal {
   max-width: 480px;
