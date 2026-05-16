@@ -4,7 +4,12 @@
   <meta charset="utf-8">
   <title>POOOL – Fractional Real Estate & Commodity Investment | Start from $15</title>
   <meta name="description" content="Invest in fractional real world assets. Premium Bali villas and global commodities starting from $15 per share. Earn monthly rental yields. 850+ investors trust POOOL.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0000FF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0b2e" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-title" content="POOOL">
 
   <!-- Open Graph -->
   <meta property="og:title" content="POOOL – Own Premium Real Estate from $15">
@@ -67,9 +72,42 @@
           </div>
           <a href="https://platform.poool.app/auth/login" class="btn-signin">Sign in</a>
         </div>
+
+        <!-- Mobile hamburger (≤767px) -->
+        <button class="lp-burger" id="lp-burger-btn" aria-label="Open menu" aria-expanded="false" aria-controls="lp-mobile-drawer" type="button">
+          <span class="lp-burger__icon"><span></span><span></span><span></span></span>
+        </button>
       </div>
     </div>
   </header>
+
+  <!-- Mobile drawer -->
+  <div class="lp-mobile-drawer" id="lp-mobile-drawer" role="dialog" aria-modal="true" aria-label="Mobile menu" hidden>
+    <div class="lp-mobile-drawer__panel">
+      <div class="lp-mobile-drawer__header">
+        <a href="/" class="header-logo">
+          <img src="/static/images/icons/logo-pool.svg" alt="POOOL" width="100" height="32">
+        </a>
+        <button class="lp-mobile-drawer__close" id="lp-drawer-close" aria-label="Close menu" type="button">&times;</button>
+      </div>
+      <a href="#why-us" class="lp-mobile-drawer__link" data-drawer-link>Why us</a>
+      <a href="#how" class="lp-mobile-drawer__link" data-drawer-link>How it works</a>
+      <a href="#marketplace" class="lp-mobile-drawer__link" data-drawer-link>Market</a>
+      <a href="https://platform.poool.app/blog" class="lp-mobile-drawer__link">Blog</a>
+      <a href="#faq" class="lp-mobile-drawer__link" data-drawer-link>FAQ</a>
+      <hr class="lp-mobile-drawer__divider">
+      <div class="lp-mobile-drawer__lang">
+        Language:
+        <a href="/id/" hreflang="id">ID</a>
+        <span aria-hidden="true">|</span>
+        <a href="/en/" hreflang="en" aria-current="page">EN</a>
+      </div>
+      <div class="lp-mobile-drawer__actions">
+        <a href="https://platform.poool.app/auth/login" class="btn-signin" style="background:#03FF88;color:#001D3D;justify-content:center;">Sign in</a>
+        <a href="https://platform.poool.app/auth/signup" class="btn-primary" style="background:#0000FF;color:#98FB96;border-color:#0000FF;justify-content:center;">Sign up</a>
+      </div>
+    </div>
+  </div>
 
   <style>
     /* ── Announcement bar — sticky, always on top, blue ── */
@@ -1417,6 +1455,34 @@
     }
     if (!prefersReducedMotion) animateCounters();
 
+    /* ── Mobile drawer toggle ── */
+    (function(){
+      var burger = document.getElementById('lp-burger-btn');
+      var drawer = document.getElementById('lp-mobile-drawer');
+      var closeBtn = document.getElementById('lp-drawer-close');
+      if (!burger || !drawer) return;
+      function open(){
+        drawer.hidden = false;
+        setTimeout(function(){ drawer.classList.add('is-open'); }, 10);
+        burger.setAttribute('aria-expanded','true');
+        document.body.classList.add('lp-drawer-open');
+      }
+      function close(){
+        drawer.classList.remove('is-open');
+        burger.setAttribute('aria-expanded','false');
+        document.body.classList.remove('lp-drawer-open');
+        setTimeout(function(){ drawer.hidden = true; }, 250);
+      }
+      burger.addEventListener('click', function(){
+        if (burger.getAttribute('aria-expanded') === 'true') close(); else open();
+      });
+      closeBtn && closeBtn.addEventListener('click', close);
+      drawer.addEventListener('click', function(e){ if (e.target === drawer) close(); });
+      drawer.querySelectorAll('[data-drawer-link]').forEach(function(a){
+        a.addEventListener('click', close);
+      });
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && burger.getAttribute('aria-expanded') === 'true') close(); });
+    })();
   </script>
 
 </body>

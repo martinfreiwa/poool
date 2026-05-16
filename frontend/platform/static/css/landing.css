@@ -530,3 +530,212 @@ body { font-family: var(--font); background: var(--bg); color: var(--body); line
   .btn-glow { animation: none !important; box-shadow: none !important; }
   html { scroll-behavior: auto; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATIONS (shared by landing.html + landing-v2.html)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Touch + tap polish — apply globally on landing pages */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+.btn-primary, .btn-secondary, .nav-link, .lp-burger, .lp-mobile-drawer__link,
+.fan-btn, .pill-search-btn, .lang-btn, .property-card, .property-card-link,
+.faq-item summary, .header-action-link, .btn-signin {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0, 0, 255, 0.08);
+}
+
+/* Avoid phantom hover state on touch devices */
+@media (hover: none) {
+  .property-card:hover, .property-card.loaded:hover,
+  .why-card:hover, .feature-accordion:hover,
+  .testi-card:hover, .faq-item:hover,
+  .fan-card:hover, .fan-center:hover,
+  .header-search-pill:hover, .pill-search-btn:hover,
+  .btn-primary:hover, .btn-secondary:hover, .btn-signin:hover,
+  .why-us-cta-btn:hover, .testi-v2-cta-btn:hover,
+  .footer-neo-nav a:hover, .footer-brand-nav a:hover,
+  .nav-link:hover { transform: none; box-shadow: none; }
+}
+
+/* ─── Mobile hamburger menu (used by landing.html and landing-v2.html) ─── */
+.lp-burger {
+  display: none;
+  width: 48px; height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  cursor: pointer;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  margin-left: auto;
+}
+.lp-burger__icon { width: 20px; height: 14px; position: relative; }
+.lp-burger__icon span {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: var(--black); border-radius: 2px;
+  transition: transform 0.2s var(--ease), opacity 0.2s var(--ease), top 0.2s var(--ease);
+}
+.lp-burger__icon span:nth-child(1) { top: 0; }
+.lp-burger__icon span:nth-child(2) { top: 6px; }
+.lp-burger__icon span:nth-child(3) { top: 12px; }
+.lp-burger[aria-expanded="true"] .lp-burger__icon span:nth-child(1) { top: 6px; transform: rotate(45deg); }
+.lp-burger[aria-expanded="true"] .lp-burger__icon span:nth-child(2) { opacity: 0; }
+.lp-burger[aria-expanded="true"] .lp-burger__icon span:nth-child(3) { top: 6px; transform: rotate(-45deg); }
+
+.lp-mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease);
+  display: flex;
+  justify-content: flex-end;
+}
+.lp-mobile-drawer.is-open { opacity: 1; pointer-events: auto; }
+.lp-mobile-drawer__panel {
+  position: relative;
+  width: min(85vw, 320px);
+  background: var(--bg);
+  height: 100%;
+  padding: max(20px, env(safe-area-inset-top)) 24px max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateX(100%);
+  transition: transform 0.25s var(--ease);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+}
+.lp-mobile-drawer.is-open .lp-mobile-drawer__panel { transform: translateX(0); }
+.lp-mobile-drawer__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.lp-mobile-drawer__close {
+  width: 48px; height: 48px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; line-height: 1; color: var(--black);
+  padding: 0;
+}
+.lp-mobile-drawer__link {
+  display: flex; align-items: center;
+  min-height: 48px;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--black);
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background 0.15s var(--ease);
+}
+.lp-mobile-drawer__link:hover,
+.lp-mobile-drawer__link:focus-visible { background: var(--bg-muted); }
+.lp-mobile-drawer__divider { border: none; border-top: 1px solid var(--border); margin: 12px 0 8px; }
+.lp-mobile-drawer__actions { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 16px; }
+.lp-mobile-drawer__actions .btn-primary,
+.lp-mobile-drawer__actions .btn-signin {
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+}
+.lp-mobile-drawer__lang { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 14px; color: var(--secondary); }
+.lp-mobile-drawer__lang a { color: var(--black); font-weight: 600; text-decoration: none; padding: 4px 8px; border-radius: 6px; }
+.lp-mobile-drawer__lang a[aria-current="page"] { color: var(--blue); }
+
+/* Lock body scroll when drawer open */
+body.lp-drawer-open { overflow: hidden; }
+
+@media (max-width: 767px) {
+  .lp-burger { display: inline-flex; }
+  /* Hide the legacy search pill — login/signup now live in the drawer */
+  .lp-header .header-search-pill,
+  .lp-header #nav-search-pill { display: none !important; }
+}
+
+/* ─── Phone-only overrides (≤640px) ─── */
+@media (max-width: 640px) {
+  /* Hero title: prevent overflow at narrow widths */
+  .hero-title-massive { font-size: clamp(32px, 11vw, 44px); letter-spacing: -0.03em; }
+  .hero-flags img { height: 28px; width: 28px; margin-right: -10px; border-width: 2px; }
+  .hero-sub-centered, .hero-sub { font-size: 16px; }
+  .hero-centered { padding: 64px 0 72px; }
+
+  /* Reduce huge vertical paddings */
+  .how-section-new, .testi-section, .why-us-section, .faq-wrap { padding-top: 64px; padding-bottom: 64px; }
+  .marketplace-section { padding-top: 56px; padding-bottom: 48px; }
+  .cta-section { padding: 56px 0; }
+  .cta-box { padding: 48px 24px; border-radius: 20px; }
+  .cta-box h2 { font-size: 30px; }
+  .testi-title, .why-us-title, .how-title-new { font-size: 32px !important; }
+  .step-title { font-size: 24px !important; }
+  .step-desc, .hero-sub, .hero-sub-centered { font-size: 16px !important; }
+
+  /* Section header on featured properties */
+  .section-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .marketplace-section .section-title { font-size: 24px !important; }
+
+  /* Footer */
+  .footer-neo { padding: 48px 0; }
+  .footer-neo-heading { font-size: 22px; }
+  .footer-neo-nav { gap: 14px 16px; }
+  .footer-neo-nav a { min-height: 44px; display: inline-flex; align-items: center; }
+
+  /* FAQ summary tap-target */
+  .faq-item summary { min-height: 56px; padding: 18px 20px; font-size: 16px; }
+  .faq-answer { padding: 0 20px 20px; }
+}
+
+/* ─── Fan-card stacking on mobile/tablet (≤1023px) ─── */
+@media (max-width: 1023px) {
+  .why-us-fan { width: 100%; }
+  .fan-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    height: auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 0 auto 24px;
+    place-items: stretch;
+  }
+  .fan-card {
+    position: relative !important;
+    transform: none !important;
+    opacity: 1 !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  .fan-disclaimer { max-width: 360px; margin: 0 auto; text-align: center; }
+}
+
+/* ─── Tablet adjustments (641-1023px) ─── */
+@media (min-width: 641px) and (max-width: 1023px) {
+  .hero-centered { padding: 80px 0 96px; }
+  .cta-box { padding: 64px 32px; }
+}
+
+/* ─── Larger touch targets for nav links inside drawer ─── */
+@media (max-width: 767px) {
+  .nav-link { min-height: 44px; display: inline-flex; align-items: center; }
+  .footer-neo-nav a, .footer-brand-nav a { min-height: 44px; display: inline-flex; align-items: center; }
+}
