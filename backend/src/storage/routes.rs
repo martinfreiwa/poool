@@ -77,6 +77,12 @@ async fn check_storage_rate_limit(
 ) -> Result<(), axum::response::Response> {
     let key = format!("storage:{}:{}", endpoint_class, user_id);
     if let Err(retry_after) = state.storage_rate_limiter.check(&key).await {
+        // Phase 5 observability: every rate-limit reject becomes a
+        // `storage_uploads_total{outcome="rate_limited"}` increment so
+        // the SLO failure-rate denominator includes 429s.
+        crate::metrics::STORAGE_UPLOADS_TOTAL
+            .with_label_values(&[endpoint_class, "rate_limited"])
+            .inc();
         return Err(crate::error::AppError::RateLimited(retry_after).into_response());
     }
     Ok(())
@@ -88,12 +94,31 @@ async fn check_storage_rate_limit(
 /// rather than `warn!` because every GCS failure now either falls back
 /// to local-FS (dev) or surfaces as a 5xx (production) — both warrant
 /// on-call attention.
+///
+/// Phase 5 observability: also bumps `storage_gcs_errors_total` so the
+/// Prometheus alert "GCS error rate high" fires from this single
+/// choke point — no per-call-site instrumentation needed.
 fn report_gcs_failure(context: &str, error_msg: &str) {
     tracing::error!(context = %context, error = %error_msg, "GCS upload failed");
     sentry::capture_message(
         &format!("GCS upload failed [{}]: {}", context, error_msg),
         sentry::Level::Error,
     );
+
+    // Op = first dot-segment of the context (`kyc.upload` → "upload",
+    // `orphan.cleanup` → "cleanup"). Closed set keeps Prometheus
+    // cardinality bounded.
+    let op = context.split('.').nth(1).unwrap_or("upload");
+    let kind = if error_msg.eq_ignore_ascii_case("timeout") {
+        "timeout"
+    } else if error_msg.to_lowercase().contains("auth") {
+        "auth"
+    } else if error_msg.contains("404") || error_msg.to_lowercase().contains("not found") {
+        "not_found"
+    } else {
+        "other"
+    };
+    crate::metrics::record_storage_gcs_error(op, kind);
 }
 
 // ─── Avatar ────────────────────────────────────────────────────
@@ -524,6 +549,12 @@ pub async fn upload_kyc_document(
             "image/svg+xml (rejected)",
             user.id,
         );
+        crate::metrics::record_storage_upload(
+            "kyc_document",
+            "svg_rejected",
+            0,
+            started_at.elapsed().as_secs_f64(),
+        );
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "SVG uploads are not supported"})),
@@ -534,6 +565,12 @@ pub async fn upload_kyc_document(
     let sniffed = match sniff_mime(&file_bytes) {
         Some(m) => m,
         None => {
+            crate::metrics::record_storage_upload(
+                "kyc_document",
+                "mime_mismatch",
+                0,
+                started_at.elapsed().as_secs_f64(),
+            );
             return (
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "Unsupported or unrecognized file format"})),
@@ -543,6 +580,12 @@ pub async fn upload_kyc_document(
     };
     if !mime_matches(&mime_type, sniffed) {
         report_mime_mismatch("kyc.upload", &mime_type, sniffed, user.id);
+        crate::metrics::record_storage_upload(
+            "kyc_document",
+            "mime_mismatch",
+            0,
+            started_at.elapsed().as_secs_f64(),
+        );
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "File content does not match declared type"})),
@@ -574,6 +617,12 @@ pub async fn upload_kyc_document(
     )
     .await
     {
+        crate::metrics::record_storage_upload(
+            "kyc_document",
+            "quota_exceeded",
+            0,
+            started_at.elapsed().as_secs_f64(),
+        );
         return e.into_response();
     }
 
@@ -1026,6 +1075,12 @@ pub async fn upload_asset_document(
             "image/svg+xml (rejected)",
             user.id,
         );
+        crate::metrics::record_storage_upload(
+            "asset_document",
+            "svg_rejected",
+            0,
+            started_at.elapsed().as_secs_f64(),
+        );
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "SVG uploads are not supported"})),
@@ -1036,6 +1091,12 @@ pub async fn upload_asset_document(
     let sniffed = match sniff_mime(&file_bytes) {
         Some(m) => m,
         None => {
+            crate::metrics::record_storage_upload(
+                "asset_document",
+                "mime_mismatch",
+                0,
+                started_at.elapsed().as_secs_f64(),
+            );
             return (
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": "Unsupported or unrecognized file format"})),
@@ -1045,6 +1106,12 @@ pub async fn upload_asset_document(
     };
     if !mime_matches(&mime_type, sniffed) {
         report_mime_mismatch("asset_document.upload", &mime_type, sniffed, user.id);
+        crate::metrics::record_storage_upload(
+            "asset_document",
+            "mime_mismatch",
+            0,
+            started_at.elapsed().as_secs_f64(),
+        );
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "File content does not match declared type"})),

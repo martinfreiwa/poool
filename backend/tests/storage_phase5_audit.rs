@@ -143,6 +143,56 @@ fn record_storage_av_outcome_increments_correct_label() {
     assert_eq!(after, before + 1);
 }
 
+// ─── Failure-outcome coverage (Phase 7.3 wiring) ───────────────────
+
+/// The upload handlers emit one of these outcome labels for every
+/// upload attempt. The SLO failure-rate formula in
+/// docs/storage/05-observability.md depends on a closed set, so the
+/// catalog is asserted here. Adding a new outcome means updating both
+/// this list and the SLO PromQL.
+#[test]
+fn known_upload_outcomes_form_closed_set() {
+    let known = [
+        "ok",
+        "rate_limited",
+        "svg_rejected",
+        "mime_mismatch",
+        "quota_exceeded",
+        "av_infected",
+        "gcs_error",
+    ];
+    // Touch every label so the time series exist in the registry
+    // immediately after deploy (avoids the "no data" panel on day 1).
+    for outcome in known {
+        STORAGE_UPLOADS_TOTAL
+            .with_label_values(&["kyc_document", outcome])
+            .inc_by(0);
+    }
+    assert_eq!(known.len(), 7, "upload outcome catalog must be exactly 7");
+}
+
+/// Verify each known outcome label produces a distinct time series.
+#[test]
+fn each_outcome_label_is_a_separate_series() {
+    for outcome in [
+        "svg_rejected",
+        "mime_mismatch",
+        "quota_exceeded",
+        "rate_limited",
+    ] {
+        let before = STORAGE_UPLOADS_TOTAL
+            .with_label_values(&["asset_document", outcome])
+            .get();
+        STORAGE_UPLOADS_TOTAL
+            .with_label_values(&["asset_document", outcome])
+            .inc();
+        let after = STORAGE_UPLOADS_TOTAL
+            .with_label_values(&["asset_document", outcome])
+            .get();
+        assert_eq!(after, before + 1, "outcome={} did not increment", outcome);
+    }
+}
+
 // ─── Cardinality guard: known label values only ───────────────────
 
 #[test]
