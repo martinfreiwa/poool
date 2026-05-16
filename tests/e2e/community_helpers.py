@@ -70,6 +70,29 @@ def mint_user(prefix="e2e-ui", display_name="UI Tester"):
             "display_name": display_name}
 
 
+def mint_admin(prefix="e2e-ui-admin", display_name="UI Admin"):
+    """Like mint_user, but also grants the admin + super_admin roles so the
+    returned user can reach `/admin/*` routes. Same dict shape as mint_user."""
+    user = mint_user(prefix=prefix, display_name=display_name)
+    conn = core_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO user_roles (user_id, role_id, is_active)
+            SELECT %s, id, TRUE
+            FROM roles
+            WHERE name IN ('admin', 'super_admin')
+            ON CONFLICT (user_id, role_id) DO UPDATE SET is_active = TRUE
+            """,
+            (user["user_id"],),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return user
+
+
 def attach_session(context, session_token):
     """Add the poool_session cookie to a Playwright context."""
     context.add_cookies([
@@ -157,6 +180,7 @@ def cleanup_user(user_id):
         cur = conn.cursor()
         for sql in [
             "DELETE FROM notifications WHERE user_id = %s OR actor_id = %s",
+            "DELETE FROM user_roles WHERE user_id = %s",
             "DELETE FROM user_sessions WHERE user_id = %s",
             "DELETE FROM user_profiles WHERE user_id = %s",
             "DELETE FROM users WHERE id = %s",
