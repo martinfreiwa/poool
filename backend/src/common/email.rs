@@ -333,6 +333,28 @@ pub async fn send_transactional_outbox_item(pool: &PgPool, outbox_id: Uuid) {
 
     let (id, user_id, event_type, recipient_email, subject, html_body, attempts) = row;
 
+    // System-wide workflow toggle. Mandatory events bypass this check
+    // automatically (see `is_mandatory_event`). Defense-in-depth: the
+    // trigger entry-point also checks before enqueue, but a toggle that
+    // flipped between enqueue and claim must still be honoured.
+    if !workflow_is_enabled(pool, &event_type).await {
+        tracing::info!(
+            outbox_id = %id,
+            event_type = %event_type,
+            "Workflow disabled in email_workflow_settings — skipping send."
+        );
+        let _ = sqlx::query(
+            "UPDATE transactional_email_outbox
+               SET status='skipped', sent_at=NOW(),
+                   last_error='workflow disabled', updated_at=NOW()
+             WHERE id=$1",
+        )
+        .bind(id)
+        .execute(pool)
+        .await;
+        return;
+    }
+
     // Pre-send suppression check. Once an address hard-bounces or files
     // a spam complaint, Resend will progressively throttle our sender
     // domain — keep sending and the throttle escalates to a hard block
@@ -456,6 +478,80 @@ pub async fn send_transactional_outbox_item(pool: &PgPool, outbox_id: Uuid) {
 // extra one.
 // ───────────────────────────────────────────────────────────────────────────
 
+/// Returns true when an event is legally / operationally non-disable-able.
+///
+/// Mirrors the `mandatory: true` entries in `admin::emails::EVENT_REGISTRY`.
+/// Both lists must stay in sync — a regression test in
+/// `admin::emails::tests::mandatory_security_events_cannot_be_disabled`
+/// verifies the registry side; here we keep the live send-path check.
+///
+/// The split exists to avoid a circular import between the admin module
+/// (which holds the rich registry the UI consumes) and the send-path
+/// modules (which need a cheap function, not a registry walk).
+pub fn is_mandatory_event(event_type: &str) -> bool {
+    matches!(
+        event_type,
+        "verify_email"
+            | "password_reset"
+            | "2fa_setup"
+            | "new_login"
+            | "email_changed"
+            | "password_changed"
+            | "2fa_disabled"
+            | "payment_method_added"
+            | "payment_method_removed"
+            | "kyc_approved"
+            | "kyc_rejected"
+            | "kyc_submitted"
+            | "deposit_confirmed"
+            | "withdraw_approved"
+            | "withdraw_rejected"
+            | "withdraw_requested"
+            | "withdrawal_processed"
+            | "large_deposit_received"
+            | "compliance_alert_user"
+            | "order_confirmation"
+            | "invoice_available"
+            | "investment_confirmed"
+            | "asset_matured"
+            | "operations_rejected"
+            | "developer_project_revision_required"
+            | "tax_document_available"
+            | "terms_updated"
+            | "affiliate_suspended"
+            | "affiliate_payout_released"
+            | "support_ticket_reply"
+            | "admin_invitation"
+    )
+}
+
+/// Returns true when the workflow for `event_type` is enabled for sending.
+///
+/// Resolution order:
+///   1. Mandatory events (security, legal, payment) → always `true`,
+///      regardless of any DB row. Prevents an admin from silencing a
+///      password-reset by mistake.
+///   2. Explicit row in `email_workflow_settings` → return its `enabled`.
+///   3. No row → default `true` (workflows ship enabled out of the box).
+///
+/// Called once inside `trigger_transactional_email` (before outbox write)
+/// and again inside `send_transactional_outbox_item` (defense in depth in
+/// case the toggle changed between enqueue and send).
+pub async fn workflow_is_enabled(pool: &PgPool, event_type: &str) -> bool {
+    if is_mandatory_event(event_type) {
+        return true;
+    }
+    sqlx::query_scalar::<_, bool>(
+        "SELECT enabled FROM email_workflow_settings WHERE event_type = $1",
+    )
+    .bind(event_type)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(true)
+}
+
 /// Returns true when an active suppression exists for the address. Used
 /// by the outbox worker to skip known-bad recipients before incurring
 /// another Resend API call (and another bounce that would hurt our
@@ -480,8 +576,7 @@ pub async fn email_is_suppressed(pool: &PgPool, address: &str) -> bool {
 /// Categories of bounce that should add the recipient to the
 /// suppression list. Soft bounces (rate limits, transient DNS) are
 /// excluded — we just retry those via the outbox backoff.
-pub const HARD_SUPPRESSION_REASONS: &[&str] =
-    &["hard_bounce", "spam_complaint"];
+pub const HARD_SUPPRESSION_REASONS: &[&str] = &["hard_bounce", "spam_complaint"];
 
 /// Returns true when the event-type is opt-out-able by the recipient.
 pub fn is_optional_email_event(event_type: &str) -> bool {
@@ -919,5 +1014,87 @@ mod tests {
         let tmpl = "{% if first_name %}Hi {{first_name}}{% else %}Hi there{% endif %}!";
         assert_eq!(render_template(tmpl, &ctx_named), "Hi Sam!");
         assert_eq!(render_template(tmpl, &ctx_anon), "Hi there!");
+    }
+
+    // ── workflow toggle / mandatory-event semantics ───────────────────
+
+    #[test]
+    fn mandatory_event_list_covers_security_critical_events() {
+        // Defensive — same list as the admin-side test, kept here so a
+        // dev who edits common/email.rs without touching admin/emails.rs
+        // still gets a failure.
+        for event in [
+            "verify_email",
+            "password_reset",
+            "2fa_setup",
+            "new_login",
+            "email_changed",
+            "password_changed",
+            "2fa_disabled",
+            "payment_method_added",
+            "payment_method_removed",
+            "kyc_approved",
+            "kyc_rejected",
+            "kyc_submitted",
+            "deposit_confirmed",
+            "withdraw_approved",
+            "withdraw_rejected",
+            "withdraw_requested",
+            "withdrawal_processed",
+            "large_deposit_received",
+            "compliance_alert_user",
+            "order_confirmation",
+            "invoice_available",
+            "investment_confirmed",
+            "asset_matured",
+            "operations_rejected",
+            "developer_project_revision_required",
+            "tax_document_available",
+            "terms_updated",
+            "affiliate_suspended",
+            "affiliate_payout_released",
+            "support_ticket_reply",
+            "admin_invitation",
+        ] {
+            assert!(
+                is_mandatory_event(event),
+                "event '{event}' must be mandatory — removing it from \
+                 is_mandatory_event would let admins disable a security/\
+                 legal/payment email via the workflows toggle"
+            );
+        }
+    }
+
+    #[test]
+    fn welcome_is_not_mandatory() {
+        // Welcome is nice but not legally required — admins should be
+        // able to disable it if they prefer a separate onboarding system.
+        assert!(!is_mandatory_event("welcome"));
+    }
+
+    #[test]
+    fn optional_marketing_events_are_not_mandatory() {
+        for event in [
+            "marketing_campaign",
+            "asset_funded",
+            "dividend_announced",
+            "monthly_statement",
+            "weekly_digest",
+            "abandoned_cart",
+            "win_back",
+            "milestone_first_investment",
+            "milestone_anniversary",
+            "trade_executed",
+            "order_filled",
+            "affiliate_application_received",
+            "affiliate_approved",
+            "affiliate_rejected",
+            "referral_signed_up",
+        ] {
+            assert!(
+                !is_mandatory_event(event),
+                "event '{event}' should be optional (admin-disable-able)"
+            );
+        }
     }
 }

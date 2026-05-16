@@ -303,18 +303,33 @@ pub(crate) fn build_email_html(event_type: &str, metadata: &serde_json::Value) -
             let accept_url = metadata.get("accept_url").and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| format!("https://platform.poool.app/affiliate/team/accept?token={}", token));
+            // Phase-4: per-team branding overrides. Falls back to POOOL
+            // wordmark + Electric Blue when team hasn't customised.
+            let accent = metadata.get("accent_color").and_then(|v| v.as_str())
+                .filter(|s| s.starts_with('#') && s.len() == 7)
+                .unwrap_or("#0000FF");
+            let logo_url = metadata.get("logo_url").and_then(|v| v.as_str()).unwrap_or("");
+            let logo_block = if logo_url.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<div style="margin-bottom:24px;text-align:center;"><img src="{}" alt="{}" style="max-height:48px;max-width:180px;width:auto;height:auto;"/></div>"#,
+                    html_escape_email(logo_url), html_escape_email(team_name))
+            };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  {logo}
   <h2 style="color:#01011C;">You've been invited to {team}</h2>
   <p>{inviter} has invited you to join <strong>{team}</strong> as a team-affiliate. Commissions from referrals via your business link will route to the team owner, while your personal affiliate link (if any) remains entirely yours.</p>
-  <p><a href="{accept}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
+  <p><a href="{accept}" style="display:inline-block;padding:12px 24px;background:{accent};color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
   <p style="color:#717680;font-size:13px;">Or paste this token in your affiliate dashboard:</p>
   <code style="display:inline-block;background:#F4F4F5;border:1px solid #E9EAEB;padding:8px 12px;border-radius:6px;font-family:monospace;word-break:break-all;">{token}</code>
   <p style="color:#717680;font-size:13px;margin-top:24px;">This invitation expires in 14 days. If you didn't expect this email, you can safely ignore it.</p>
 </div>"#,
+                logo = logo_block,
                 team = html_escape_email(team_name),
                 inviter = html_escape_email(inviter),
                 accept = html_escape_email(&accept_url),
+                accent = html_escape_email(accent),
                 token = html_escape_email(token))
         }
 
@@ -812,6 +827,262 @@ pub(crate) fn build_email_html(event_type: &str, metadata: &serde_json::Value) -
                 material = html_escape_email(material))
         }
 
+        // ── Account security (audit logs already fire these; wire when send sites exist) ──
+        "email_changed" => {
+            let old_email = metadata.get("old_email").and_then(|v| v.as_str()).unwrap_or("your previous address");
+            let new_email = metadata.get("new_email").and_then(|v| v.as_str()).unwrap_or("a new address");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your POOOL email was changed</h2>
+  <p>The email address on your account was changed from <strong>{old}</strong> to <strong>{new}</strong>.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Didn't change this?</strong> Sign in and reset your password immediately, then contact <a href="mailto:security@poool.app" style="color:#B42318;text-decoration:underline;">security@poool.app</a>.</p>
+</div>"#, old = html_escape_email(old_email), new = html_escape_email(new_email))
+        }
+
+        "password_changed" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your POOOL password was changed</h2>
+  <p>Your account password was just updated. If this was you, no further action is needed.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Wasn't you?</strong> Reset your password immediately and revoke all sessions in <a href="https://platform.poool.app/settings/security" style="color:#B42318;text-decoration:underline;">Settings → Security</a>, then contact <a href="mailto:security@poool.app" style="color:#B42318;text-decoration:underline;">security@poool.app</a>.</p>
+</div>"#.to_string(),
+
+        "2fa_disabled" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Two-factor authentication was disabled</h2>
+  <p>2FA is no longer required to sign in or perform sensitive actions. We strongly recommend re-enabling it — accounts without 2FA have significantly higher takeover risk.</p>
+  <p><a href="https://platform.poool.app/settings/security" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Re-enable 2FA</a></p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Didn't disable 2FA?</strong> Contact <a href="mailto:security@poool.app" style="color:#B42318;text-decoration:underline;">security@poool.app</a> immediately.</p>
+</div>"#.to_string(),
+
+        "payment_method_added" => {
+            let method_type = metadata.get("method_type").and_then(|v| v.as_str()).unwrap_or("payment method");
+            let last4 = metadata.get("last4").and_then(|v| v.as_str()).unwrap_or("");
+            let suffix = if last4.is_empty() { String::new() } else { format!(" ending in {}", html_escape_email(last4)) };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">A new payment method was added</h2>
+  <p>A new {method}{suffix} was added to your POOOL account.</p>
+  <p style="color:#717680;font-size:13px;">If you didn't do this, sign in to <a href="https://platform.poool.app/settings/payment-methods" style="color:#0000FF;">Settings → Payment Methods</a> to review and remove it, then contact <a href="mailto:security@poool.app" style="color:#0000FF;">security@poool.app</a>.</p>
+</div>"#, method = html_escape_email(method_type), suffix = suffix)
+        }
+
+        "payment_method_removed" => {
+            let method_type = metadata.get("method_type").and_then(|v| v.as_str()).unwrap_or("payment method");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">A payment method was removed</h2>
+  <p>A {method} was removed from your account. Existing deposits and withdrawals are unaffected.</p>
+  <p style="color:#717680;font-size:13px;">Didn't do this? <a href="mailto:security@poool.app" style="color:#0000FF;">Contact security</a>.</p>
+</div>"#, method = html_escape_email(method_type))
+        }
+
+        // ── Compliance / wallet ───────────────────────────────────────
+        "large_deposit_received" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let amount_line = if amount.is_empty() { String::new() } else { format!("<p style=\"background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;color:#344054;\">Amount: <strong>{}</strong></p>", html_escape_email(amount)) };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Source-of-funds documentation requested</h2>
+  <p>Thanks for your deposit. Because of its size, our compliance policy requires us to confirm the source of funds before the deposit can be credited.</p>
+  {amount_line}
+  <p>Please upload a recent bank statement, salary slip, or other documentation showing the funds' origin.</p>
+  <p><a href="https://platform.poool.app/wallet/source-of-funds" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Upload Documentation</a></p>
+</div>"#, amount_line = amount_line)
+        }
+
+        "compliance_alert_user" => {
+            let summary = metadata.get("summary").and_then(|v| v.as_str())
+                .unwrap_or("Our compliance team flagged recent activity for review.");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Action required on your account</h2>
+  <p>{summary}</p>
+  <p>Please sign in and follow the on-screen instructions to resolve this.</p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+</div>"#, summary = html_escape_email(summary))
+        }
+
+        // ── Marketplace (secondary) ───────────────────────────────────
+        "trade_executed" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
+            let side = metadata.get("side").and_then(|v| v.as_str()).unwrap_or("trade");
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let amount_line = if amount.is_empty() { String::new() } else { format!("<p>Amount: <strong>{}</strong></p>", html_escape_email(amount)) };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Trade executed ✓</h2>
+  <p>Your {side} of <strong>{asset}</strong> has been executed on the POOOL marketplace.</p>
+  {amount_line}
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
+</div>"#, side = html_escape_email(side), asset = html_escape_email(asset), amount_line = amount_line)
+        }
+
+        "order_filled" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your limit order has been filled</h2>
+  <p>Your limit order on <strong>{asset}</strong> matched at your target price.</p>
+  <p><a href="https://platform.poool.app/marketplace/orders" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Orders</a></p>
+</div>"#, asset = html_escape_email(asset))
+        }
+
+        "order_cancelled" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
+            let reason = metadata.get("reason").and_then(|v| v.as_str()).unwrap_or("");
+            let reason_line = if reason.is_empty() { String::new() } else { format!("<p style=\"color:#414651;\">Reason: <em>{}</em></p>", html_escape_email(reason)) };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your order has been cancelled</h2>
+  <p>Your order on <strong>{asset}</strong> has been cancelled. Any escrowed funds have been returned to your wallet.</p>
+  {reason_line}
+</div>"#, asset = html_escape_email(asset), reason_line = reason_line)
+        }
+
+        "listing_expired" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your listing has expired</h2>
+  <p>Your secondary-market listing for <strong>{asset}</strong> has expired without filling. You can relist anytime.</p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Relist</a></p>
+</div>"#, asset = html_escape_email(asset))
+        }
+
+        // ── Investment lifecycle ──────────────────────────────────────
+        "investment_confirmed" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("your asset");
+            let tokens = metadata.get("token_count").and_then(|v| v.as_u64()).unwrap_or(0);
+            let token_line = if tokens == 0 { String::new() } else { format!("<p>You now own <strong>{}</strong> fractional tokens of this asset.</p>", tokens) };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your investment in {asset} is live</h2>
+  <p>Settlement is complete and your fractional tokens have been minted on-chain.</p>
+  {token_line}
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Position</a></p>
+</div>"#, asset = html_escape_email(asset), token_line = token_line)
+        }
+
+        "asset_matured" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">{asset} has matured</h2>
+  <p>The investment period has ended. Principal plus realised yield is being processed for return to your POOOL wallet.</p>
+</div>"#, asset = html_escape_email(asset))
+        }
+
+        "dividend_announced" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
+            let pay_date = metadata.get("pay_date").and_then(|v| v.as_str()).unwrap_or("the upcoming distribution date");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">A dividend has been announced</h2>
+  <p>A new distribution has been declared for <strong>{asset}</strong>. Funds will be credited to your wallet on {date}.</p>
+</div>"#, asset = html_escape_email(asset), date = html_escape_email(pay_date))
+        }
+
+        // ── Tax & legal ───────────────────────────────────────────────
+        "tax_document_available" => {
+            let year = metadata.get("tax_year").and_then(|v| v.as_str()).unwrap_or("this year");
+            let download = metadata.get("download_url").and_then(|v| v.as_str()).unwrap_or("https://platform.poool.app/tax-documents");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your {year} tax document is ready</h2>
+  <p>Your annual tax summary for {year} is now available — dividends, realised gains, fees, and withholding tax for your filing.</p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Download Tax Document (PDF)</a></p>
+</div>"#, year = html_escape_email(year), url = html_escape_email(download))
+        }
+
+        "terms_updated" => {
+            let effective = metadata.get("effective_date").and_then(|v| v.as_str()).unwrap_or("the next billing cycle");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">POOOL Terms of Service updated</h2>
+  <p>We've updated our Terms of Service. Changes take effect on <strong>{date}</strong>. Continued use after that date constitutes acceptance.</p>
+  <p><a href="https://platform.poool.app/legal/terms" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Review new Terms</a></p>
+</div>"#, date = html_escape_email(effective))
+        }
+
+        // ── Marketing drips (scheduler stubs in this file) ────────────
+        "onboarding_drip_24h" => {
+            let first = metadata.get("first_name").and_then(|v| v.as_str()).unwrap_or("there");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Hi {first} — let's get your account live</h2>
+  <p>Welcome to POOOL. To start investing, we just need a quick identity verification. Takes about 2 minutes; most users are approved within hours.</p>
+  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Identity (2 min)</a></p>
+</div>"#, first = html_escape_email(first))
+        }
+
+        "onboarding_drip_72h" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Need help getting started?</h2>
+  <p>We noticed you haven't finished your POOOL onboarding yet. Two steps to your first investment: verify identity, fund wallet (SEPA / wire). Reply to this email if anything blocks you — a real person will help.</p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+</div>"#.to_string(),
+
+        "abandoned_cart" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("the asset you were viewing");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Still thinking about it?</h2>
+  <p>You left without completing your investment in <strong>{asset}</strong>. The offering is still open.</p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Return to Marketplace</a></p>
+</div>"#, asset = html_escape_email(asset))
+        }
+
+        "win_back" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">We miss you 👋</h2>
+  <p>It's been a while since your last POOOL visit. New assets, secondary market trading, improved Plus+ rates — see what's new.</p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+</div>"#.to_string(),
+
+        "milestone_first_investment" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("your first POOOL asset");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Welcome to investing with POOOL 🎉</h2>
+  <p>Congratulations on your first investment in <strong>{asset}</strong>. Your fractional ownership is now live on-chain.</p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Portfolio</a></p>
+</div>"#, asset = html_escape_email(asset))
+        }
+
+        "milestone_anniversary" => {
+            let years = metadata.get("years").and_then(|v| v.as_u64()).unwrap_or(1);
+            let plural = if years == 1 { "year" } else { "years" };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Happy POOOL anniversary 🎂</h2>
+  <p>It's been <strong>{years} {plural}</strong> since you joined POOOL. Thanks for trusting us with your portfolio.</p>
+</div>"#, years = years, plural = plural)
+        }
+
+        "weekly_digest" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your POOOL weekly</h2>
+  <p>A quick summary of what happened across your POOOL holdings this week — performance, dividends, new offerings.</p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+</div>"#.to_string(),
+
+        "monthly_affiliate_summary" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your monthly affiliate summary</h2>
+  <p>This month's POOOL Partner Syndicate performance — clicks, signups, qualified investments, commissions earned and pending.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+</div>"#.to_string(),
+
+        "referral_signed_up" => {
+            let referred = metadata.get("referred_name").and_then(|v| v.as_str()).unwrap_or("someone you referred");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">{referred} just joined POOOL</h2>
+  <p>Through your referral link, {referred} created a POOOL account. You'll earn a commission once they complete a qualified investment.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Referrals</a></p>
+</div>"#, referred = html_escape_email(referred))
+        }
+
         _ => format!(
             r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;"><p>You have a new notification from POOOL.</p></div>"#
         ),
@@ -894,6 +1165,47 @@ pub fn subject_for_event(event_type: &str) -> &'static str {
         "admin_payout_request" => "Affiliate Commission Payout Request",
         "admin_new_marketing_material" => "New Affiliate Marketing Material Pending Review",
 
+        // Account security — not yet wired to send sites but the audit
+        // logs already fire these event types, so emails are a one-line
+        // hook-up away.
+        "email_changed" => "Your POOOL email address was changed",
+        "password_changed" => "Your POOOL password was changed",
+        "2fa_disabled" => "Two-factor authentication was disabled on your account",
+        "payment_method_added" => "A new payment method was added to your account",
+        "payment_method_removed" => "A payment method was removed from your account",
+
+        // Compliance / wallet alerts
+        "large_deposit_received" => {
+            "Large deposit received — source-of-funds documentation requested"
+        }
+        "compliance_alert_user" => "Action required on your POOOL account",
+
+        // Marketplace (secondary market)
+        "trade_executed" => "Your trade has been executed",
+        "order_filled" => "Your limit order has been filled",
+        "order_cancelled" => "Your order has been cancelled",
+        "listing_expired" => "Your asset listing has expired",
+
+        // Investment lifecycle
+        "investment_confirmed" => "Your investment has been confirmed",
+        "asset_matured" => "An asset in your portfolio has matured",
+        "dividend_announced" => "A dividend has been announced for one of your assets",
+
+        // Tax & legal
+        "tax_document_available" => "Your annual tax document is available",
+        "terms_updated" => "POOOL Terms of Service updated",
+
+        // Marketing drips (Phase-1 stubs in email.rs scheduler)
+        "onboarding_drip_24h" => "Complete your POOOL onboarding in 2 minutes",
+        "onboarding_drip_72h" => "Need help getting started with POOOL?",
+        "abandoned_cart" => "Your investment is still waiting",
+        "win_back" => "We miss you — what's new at POOOL",
+        "milestone_first_investment" => "Congrats on your first POOOL investment!",
+        "milestone_anniversary" => "Happy POOOL anniversary",
+        "weekly_digest" => "Your weekly POOOL summary",
+        "monthly_affiliate_summary" => "Your monthly affiliate performance",
+        "referral_signed_up" => "Your referral just joined POOOL",
+
         _ => "You Have a New Notification",
     }
 }
@@ -908,6 +1220,19 @@ pub async fn trigger_transactional_email(
     event_type: &str,
     metadata: serde_json::Value,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // System-wide workflow toggle. Mandatory events bypass this. A
+    // disabled non-mandatory event is silently dropped at the source —
+    // no outbox row, no log entry. Defense-in-depth re-check fires at
+    // the outbox worker (so toggling mid-flight is honoured too).
+    if !crate::common::email::workflow_is_enabled(pool, event_type).await {
+        tracing::info!(
+            event_type = %event_type,
+            user_id = %user_id,
+            "Workflow disabled — skipping enqueue."
+        );
+        return Ok(());
+    }
+
     let subject = subject_for_event(event_type);
 
     let user_email = match sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = $1")

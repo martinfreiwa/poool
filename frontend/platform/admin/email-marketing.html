@@ -230,22 +230,30 @@
                     <option :value="cat" x-text="cat"></option>
                   </template>
                 </select>
+                <select x-model="workflowStatusFilter" class="admin-select" style="width:170px;">
+                  <option value="all">All workflows</option>
+                  <option value="enabled">Enabled only</option>
+                  <option value="disabled">Disabled only</option>
+                  <option value="optional">Optional only</option>
+                  <option value="mandatory">Mandatory only</option>
+                </select>
                 <input type="text" x-model.debounce.300ms="workflowSearch" class="admin-input" placeholder="Search workflows…" style="width:220px;" />
               </div>
             </div>
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th style="width:120px;">Category</th>
+                  <th style="width:110px;">Category</th>
                   <th>Event</th>
-                  <th>Subject</th>
-                  <th style="width:90px;">Opt-out</th>
+                  <th style="width:240px;">Subject</th>
+                  <th style="width:80px;">Type</th>
+                  <th style="width:96px;">Enabled</th>
                   <th style="width:160px;">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <template x-for="w in filteredWorkflows" :key="w.event_type">
-                  <tr>
+                  <tr :style="!w.enabled ? 'opacity:0.55;' : ''">
                     <td>
                       <span class="admin-badge admin-badge--neutral" x-text="w.category"></span>
                     </td>
@@ -255,8 +263,17 @@
                     </td>
                     <td x-text="w.subject" style="font-size:13px;"></td>
                     <td>
-                      <span :class="w.optional ? 'admin-badge admin-badge--warning' : 'admin-badge admin-badge--success'"
-                            x-text="w.optional ? 'Optional' : 'Mandatory'"></span>
+                      <span :class="w.mandatory ? 'admin-badge admin-badge--success' : 'admin-badge admin-badge--warning'"
+                            :title="w.mandatory ? 'Required by security/legal — cannot be disabled.' : 'Optional — admins can toggle off below.'"
+                            x-text="w.mandatory ? 'Mandatory' : 'Optional'"></span>
+                    </td>
+                    <td>
+                      <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"
+                             :style="w.mandatory ? 'cursor:not-allowed;opacity:0.5;' : ''"
+                             :title="w.mandatory ? 'Mandatory event — toggle locked.' : (w.enabled ? 'Click to disable this workflow.' : 'Click to enable this workflow.')">
+                        <input type="checkbox" :checked="w.enabled" :disabled="w.mandatory" @change="toggleWorkflow(w, $event.target.checked)" style="width:34px;height:18px;cursor:inherit;" />
+                        <span style="font-size:11px;color:var(--admin-text-muted);" x-text="w.enabled ? 'On' : 'Off'"></span>
+                      </label>
                     </td>
                     <td>
                       <div style="display:flex;gap:6px;">
@@ -267,7 +284,7 @@
                   </tr>
                 </template>
                 <tr x-show="filteredWorkflows.length === 0">
-                  <td colspan="5" style="text-align:center;padding:24px;color:var(--admin-text-muted);">
+                  <td colspan="6" style="text-align:center;padding:24px;color:var(--admin-text-muted);">
                     No workflows match the current filter.
                   </td>
                 </tr>

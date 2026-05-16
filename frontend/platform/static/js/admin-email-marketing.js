@@ -54,6 +54,7 @@ document.addEventListener("alpine:init", () => {
     workflows: [],
     workflowSearch: "",
     workflowCategoryFilter: "all",
+    workflowStatusFilter: "all", // all | enabled | disabled | optional | mandatory
 
     // Preview modal
     preview: {
@@ -109,6 +110,17 @@ document.addEventListener("alpine:init", () => {
       if (this.workflowCategoryFilter && this.workflowCategoryFilter !== "all") {
         list = list.filter((w) => w.category === this.workflowCategoryFilter);
       }
+      // Status filter: enabled vs disabled (admin toggle) and optional vs
+      // mandatory (system classification). Mandatory is always enabled.
+      if (this.workflowStatusFilter === "enabled") {
+        list = list.filter((w) => w.enabled);
+      } else if (this.workflowStatusFilter === "disabled") {
+        list = list.filter((w) => !w.enabled);
+      } else if (this.workflowStatusFilter === "optional") {
+        list = list.filter((w) => !w.mandatory);
+      } else if (this.workflowStatusFilter === "mandatory") {
+        list = list.filter((w) => w.mandatory);
+      }
       if (this.workflowSearch) {
         const s = this.workflowSearch.toLowerCase();
         list = list.filter(
@@ -119,6 +131,34 @@ document.addEventListener("alpine:init", () => {
         );
       }
       return list;
+    },
+
+    async toggleWorkflow(workflow, enabled) {
+      if (workflow.mandatory) return; // UI prevents this but defense-in-depth.
+      try {
+        const r = await fetch(
+          `/api/admin/emails/workflow-settings/${encodeURIComponent(workflow.event_type)}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled }),
+          },
+        );
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err.error || `Toggle failed (${r.status})`);
+        }
+        // Optimistically update the local row so the row reflects state
+        // without a full reload.
+        workflow.enabled = enabled;
+        this.showToast(
+          `${workflow.event_type} ${enabled ? "enabled" : "disabled"}`,
+        );
+      } catch (err) {
+        // Re-fetch to roll back the visual state.
+        await this.loadWorkflows();
+        this.showToast(err.message, "error");
+      }
     },
 
     async openWorkflowPreview(workflow) {

@@ -6,318 +6,560 @@ use axum::{
 };
 use sqlx::Row;
 
+/// Descriptor for a single transactional email workflow. Static — every
+/// field is a `&'static str` so the registry can live in BSS.
+#[derive(Debug, Clone, Copy)]
+pub struct EventDescriptor {
+    /// Stable code passed into `build_email_html` / `trigger_transactional_email`.
+    pub event_type: &'static str,
+    /// Display category used for the admin Workflows tab dropdown.
+    pub category: &'static str,
+    /// One-line human description shown next to the event row.
+    pub summary: &'static str,
+    /// Default sample metadata JSON for the preview endpoint.
+    pub sample_metadata_json: &'static str,
+    /// When `true`, the admin toggle in the Workflows tab cannot disable
+    /// this event — security, legal, payment-completion and KYC mail must
+    /// always send regardless of system-wide settings.
+    pub mandatory: bool,
+}
+
 /// Static catalog of every transactional event the platform emits.
 ///
 /// Powers the Workflows tab in the admin email-marketing page so an admin
 /// can see at a glance which events have wired bodies, what category they
-/// belong to, what sample metadata they accept, and whether they're
-/// optional (opt-out-able by the recipient) or mandatory.
-///
-/// Tuple shape: (event_type, category, summary, sample_metadata_json).
-/// `sample_metadata_json` is consumed by the preview endpoint as the
-/// default render context when no overrides are supplied. Keep the JSON
-/// shape in sync with what `build_email_html` reads.
-pub const EVENT_REGISTRY: &[(&str, &str, &str, &str)] = &[
+/// belong to, what sample metadata they accept, whether the recipient
+/// can opt out (via `is_optional_email_event` — different concern from
+/// `mandatory` here, which is system-wide), and whether the admin can
+/// disable the workflow entirely.
+pub const EVENT_REGISTRY: &[EventDescriptor] = &[
     // ── Auth / security (handled by dedicated auth/service.rs paths) ──
-    (
-        "welcome",
-        "Auth",
-        "Sent after a new user verifies their email.",
-        r#"{"first_name":"Maria"}"#,
-    ),
-    (
-        "verify_email",
-        "Auth",
-        "One-time verification link for a new sign-up.",
-        r#"{"verify_url":"https://platform.poool.app/verify?t=..."}"#,
-    ),
-    (
-        "password_reset",
-        "Auth",
-        "Password reset code (separate outbox for retry).",
-        r#"{"reset_url":"https://platform.poool.app/reset?t=..."}"#,
-    ),
-    (
-        "2fa_setup",
-        "Auth",
-        "Confirmation that the user enrolled in 2FA.",
-        r#"{}"#,
-    ),
-    (
-        "new_login",
-        "Auth",
-        "Notice for a sign-in from a new device/location.",
-        r#"{"location":"Munich, DE","ip":"203.0.113.42"}"#,
-    ),
-    // ── KYC ──────────────────────────────────────────────────────────
-    (
-        "kyc_submitted",
-        "KYC",
-        "Receipt confirmation after documents are uploaded.",
-        r#"{}"#,
-    ),
-    (
-        "kyc_approved",
-        "KYC",
-        "Identity verified — user can now invest.",
-        r#"{}"#,
-    ),
-    (
-        "kyc_rejected",
-        "KYC",
-        "Resubmission required (carries reason from compliance).",
-        r#"{"rejection_reason":"ID photo too dark — please retake in daylight."}"#,
-    ),
-    // ── Wallet ───────────────────────────────────────────────────────
-    (
-        "deposit_submitted",
-        "Wallet",
-        "Proof of wire uploaded, awaiting verification.",
-        r#"{"amount_display":"€2,500.00","reference":"POOOL-7F3A2B","processing_hours":24}"#,
-    ),
-    (
-        "deposit_confirmed",
-        "Wallet",
-        "Wire confirmed and wallet credited.",
-        r#"{"amount_display":"€2,500.00"}"#,
-    ),
-    (
-        "withdraw_requested",
-        "Wallet",
-        "Withdrawal pending admin review.",
-        r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
-    ),
-    (
-        "withdraw_approved",
-        "Wallet",
-        "Withdrawal approved and SEPA dispatched.",
-        r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
-    ),
-    (
-        "withdraw_rejected",
-        "Wallet",
-        "Withdrawal rejected (funds returned to wallet).",
-        r#"{"amount_display":"€500.00","admin_notes":"Beneficiary name mismatch."}"#,
-    ),
-    (
-        "withdrawal_processed",
-        "Wallet",
-        "Bank settled — final confirmation.",
-        r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
-    ),
-    // ── Returns / orders / invoices ─────────────────────────────────
-    (
-        "dividend_payout",
-        "Returns",
-        "Dividend credited to wallet.",
-        r#"{"asset_name":"Villa Bali #12","amount_display":"€42.50"}"#,
-    ),
-    (
-        "monthly_statement",
-        "Returns",
-        "Monthly performance/tax summary ready.",
-        r#"{"month":"April 2026","download_url":"https://platform.poool.app/statements/2026-04"}"#,
-    ),
-    (
-        "order_confirmation",
-        "Orders",
-        "Investment order confirmed.",
-        r#"{"asset_name":"Penthouse Marbella","amount_display":"€1,000.00","order_id":"ord-7F3A2B"}"#,
-    ),
-    (
-        "invoice_available",
-        "Orders",
-        "PDF invoice ready for download.",
-        r#"{"invoice_number":"INV-2026-042","download_url":"https://platform.poool.app/invoices/INV-2026-042"}"#,
-    ),
-    (
-        "asset_funded",
-        "Assets",
-        "An asset the user follows hit 100% funding.",
-        r#"{"asset_name":"Penthouse Marbella","asset_url":"https://platform.poool.app/assets/penthouse-marbella"}"#,
-    ),
-    // ── Affiliate Partner Syndicate ─────────────────────────────────
-    (
-        "affiliate_application_received",
-        "Affiliate",
-        "Application acknowledged, review pending.",
-        r#"{}"#,
-    ),
-    (
-        "affiliate_approved",
-        "Affiliate",
-        "Application approved — link is live.",
-        r#"{"tier":"Access","commission_rate_bps":50}"#,
-    ),
-    (
-        "affiliate_rejected",
-        "Affiliate",
-        "Application rejected with reason.",
-        r#"{"reason":"Audience does not align with POOOL investor profile."}"#,
-    ),
-    (
-        "affiliate_suspended",
-        "Affiliate",
-        "Account on hold pending compliance review.",
-        r#"{"reason":"Unusual referral concentration"}"#,
-    ),
-    (
-        "affiliate_payout_released",
-        "Affiliate",
-        "Commission payout dispatched.",
-        r#"{"amount_cents":12345,"currency":"EUR","bank_last4":"4567"}"#,
-    ),
-    (
-        "affiliate_commission_earned",
-        "Affiliate",
-        "New commission tracked from referred investment.",
-        r#"{"amount_cents":5000,"currency":"EUR","referred_name":"Anna L.","holdback_days":30}"#,
-    ),
-    // ── Developer-Team Affiliate ────────────────────────────────────
-    (
-        "team_invitation_received",
-        "Team",
-        "Invited to join a developer's affiliate team.",
-        r#"{"team_name":"Acme Capital","inviter_name":"Maria","token":"abc123"}"#,
-    ),
-    (
-        "team_member_approved",
-        "Team",
-        "Self-request to join a team was approved.",
-        r#"{"team_name":"Acme Capital"}"#,
-    ),
-    (
-        "team_member_removed",
-        "Team",
-        "Membership ended.",
-        r#"{"team_name":"Acme Capital"}"#,
-    ),
-    (
-        "team_self_request_received",
-        "Team",
-        "Inviter notified of a new join request.",
-        r#"{"team_name":"Acme Capital","requester_email":"new@partner.test"}"#,
-    ),
-    (
-        "team_invitation_accepted",
-        "Team",
-        "Inviter notified that their invitation was accepted.",
-        r#"{"team_name":"Acme Capital","member_name":"Maria"}"#,
-    ),
-    // ── Support ─────────────────────────────────────────────────────
-    (
-        "support_ticket_reply",
-        "Support",
-        "Customer-facing: new reply on a ticket.",
-        r#"{"ticket_subject":"KYC review status","reply_preview":"Hi — your documents are under review. We expect a decision within 24h.","ticket_id":"tk-123"}"#,
-    ),
-    (
-        "support_ticket_new",
-        "Support",
-        "Admin-facing: new ticket submitted.",
-        r#"{"ticket_subject":"Cannot deposit","user_email":"user@example.test","priority":"high"}"#,
-    ),
-    (
-        "support_ticket_resolved",
-        "Support",
-        "Customer-facing: ticket marked resolved.",
-        r#"{"ticket_subject":"KYC review status"}"#,
-    ),
-    // ── Villa-Returns operations ────────────────────────────────────
-    (
-        "operations_rejected",
-        "Operations",
-        "Monthly operations submission rejected.",
-        r#"{"asset_name":"Villa Bali #12","rejection_reason":"Missing occupancy data for week 32"}"#,
-    ),
-    (
-        "operations_approved",
-        "Operations",
-        "Operations approved, awaiting publish.",
-        r#"{"asset_name":"Villa Bali #12"}"#,
-    ),
-    (
-        "operations_published",
-        "Operations",
-        "Operations live on the asset page.",
-        r#"{"asset_name":"Villa Bali #12"}"#,
-    ),
-    // ── Admin-triggered marketing ───────────────────────────────────
-    (
-        "marketing_campaign",
-        "Marketing",
-        "Custom template sent to a user segment.",
-        r#"{"first_name":"Maria","email":"maria@example.test"}"#,
-    ),
-    // ── Affiliate lifecycle (direct-send paths bypassing trigger_transactional_email) ──
-    (
-        "affiliate_commission_qualified",
-        "Affiliate",
-        "Holdback period ended — commission is now payable.",
-        r#"{}"#,
-    ),
-    (
-        "affiliate_application_info_requested",
-        "Affiliate",
-        "Compliance needs more information before approving the application.",
-        r#"{"message":"Please share the URL of your primary investment-content channel."}"#,
-    ),
-    (
-        "affiliate_tier_promoted",
-        "Affiliate",
-        "Affiliate volume crossed a tier threshold — rate goes up.",
-        r#"{"new_tier":"Pro","new_rate_bps":300,"volume_12m_cents":1500000}"#,
-    ),
-    (
-        "affiliate_tier_demoted",
-        "Affiliate",
-        "Affiliate volume dropped — tier rebalanced down.",
-        r#"{"previous_tier":"Pro","new_tier":"Plus","new_rate_bps":200,"volume_12m_cents":800000}"#,
-    ),
-    (
-        "affiliate_material_approved",
-        "Affiliate",
-        "Custom marketing material approved by compliance.",
-        r#"{"material_name":"Q2 Bali Villas banner"}"#,
-    ),
-    (
-        "affiliate_material_rejected",
-        "Affiliate",
-        "Custom marketing material rejected — needs revision.",
-        r#"{"material_name":"Q2 Bali Villas banner","reason":"Includes unapproved past-performance figures."}"#,
-    ),
-    // ── Developer-facing ───────────────────────────────────────────
-    (
-        "developer_project_revision_required",
-        "Developer",
-        "Compliance flagged the submitted project for revisions before publish.",
-        r#"{"project_name":"Penthouse Marbella","revision_notes":"Provide notarised land title before resubmit."}"#,
-    ),
-    // ── Internal (recipient is admin@poool.app, not a customer) ───
-    (
-        "admin_invitation",
-        "Internal",
-        "New admin invited to the platform — internal sign-up email.",
-        r#"{"invite_url":"https://platform.poool.app/admin/accept-invite?token=...","role":"compliance","inviter_email":"founder@poool.app"}"#,
-    ),
-    (
-        "admin_new_affiliate_application",
-        "Internal",
-        "Routed to ops: a new Partner Syndicate application is waiting.",
-        r#"{"applicant_email":"new@partner.test","user_id":"00000000-0000-0000-0000-000000000000"}"#,
-    ),
-    (
-        "admin_payout_request",
-        "Internal",
-        "Affiliate manually requested a payout — ops review needed.",
-        r#"{"affiliate_email":"earner@partner.test","referral_code":"ACME-2026","amount_display":"€420.00"}"#,
-    ),
-    (
-        "admin_new_marketing_material",
-        "Internal",
-        "Affiliate uploaded a custom marketing asset — compliance review needed.",
-        r#"{"affiliate_email":"earner@partner.test","material_name":"Q2 Bali Villas banner"}"#,
-    ),
+    // ── Auth / security ───────────────────────────────────────────
+    EventDescriptor {
+        event_type: "welcome",
+        category: "Auth",
+        summary: "Sent after a new user verifies their email.",
+        sample_metadata_json: r#"{"first_name":"Maria"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "verify_email",
+        category: "Auth",
+        summary: "One-time verification link for a new sign-up.",
+        sample_metadata_json: r#"{"verify_url":"https://platform.poool.app/verify?t=..."}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "password_reset",
+        category: "Auth",
+        summary: "Password reset code (separate outbox for retry).",
+        sample_metadata_json: r#"{"reset_url":"https://platform.poool.app/reset?t=..."}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "2fa_setup",
+        category: "Auth",
+        summary: "Confirmation that the user enrolled in 2FA.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "new_login",
+        category: "Auth",
+        summary: "Notice for a sign-in from a new device/location.",
+        sample_metadata_json: r#"{"location":"Munich, DE","ip":"203.0.113.42"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "email_changed",
+        category: "Auth",
+        summary: "User changed the email address on their account.",
+        sample_metadata_json: r#"{"old_email":"old@x.test","new_email":"new@x.test"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "password_changed",
+        category: "Auth",
+        summary: "User changed their password.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "2fa_disabled",
+        category: "Auth",
+        summary: "User disabled two-factor authentication.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "payment_method_added",
+        category: "Auth",
+        summary: "New bank account / card added.",
+        sample_metadata_json: r#"{"method_type":"SEPA bank account","last4":"4567"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "payment_method_removed",
+        category: "Auth",
+        summary: "Existing payment method removed.",
+        sample_metadata_json: r#"{"method_type":"SEPA bank account"}"#,
+        mandatory: true,
+    },
+    // ── KYC ───────────────────────────────────────────────────────
+    EventDescriptor {
+        event_type: "kyc_submitted",
+        category: "KYC",
+        summary: "Receipt confirmation after documents are uploaded.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "kyc_approved",
+        category: "KYC",
+        summary: "Identity verified — user can now invest.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "kyc_rejected",
+        category: "KYC",
+        summary: "Resubmission required (carries reason from compliance).",
+        sample_metadata_json: r#"{"rejection_reason":"ID photo too dark — please retake in daylight."}"#,
+        mandatory: true,
+    },
+    // ── Wallet ────────────────────────────────────────────────────
+    EventDescriptor {
+        event_type: "deposit_submitted",
+        category: "Wallet",
+        summary: "Proof of wire uploaded, awaiting verification.",
+        sample_metadata_json: r#"{"amount_display":"€2,500.00","reference":"POOOL-7F3A2B","processing_hours":24}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "deposit_confirmed",
+        category: "Wallet",
+        summary: "Wire confirmed and wallet credited.",
+        sample_metadata_json: r#"{"amount_display":"€2,500.00"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "withdraw_requested",
+        category: "Wallet",
+        summary: "Withdrawal pending admin review.",
+        sample_metadata_json: r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "withdraw_approved",
+        category: "Wallet",
+        summary: "Withdrawal approved and SEPA dispatched.",
+        sample_metadata_json: r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "withdraw_rejected",
+        category: "Wallet",
+        summary: "Withdrawal rejected (funds returned to wallet).",
+        sample_metadata_json: r#"{"amount_display":"€500.00","admin_notes":"Beneficiary name mismatch."}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "withdrawal_processed",
+        category: "Wallet",
+        summary: "Bank settled — final confirmation.",
+        sample_metadata_json: r#"{"amount_display":"€500.00","destination":"DE89 …4567"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "large_deposit_received",
+        category: "Wallet",
+        summary: "Compliance source-of-funds documentation request.",
+        sample_metadata_json: r#"{"amount_display":"€50,000.00"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "compliance_alert_user",
+        category: "Wallet",
+        summary: "Transaction-monitoring rule fired against this user.",
+        sample_metadata_json: r#"{"summary":"Recent activity flagged for review by our compliance team."}"#,
+        mandatory: true,
+    },
+    // ── Returns / orders / invoices ──────────────────────────────
+    EventDescriptor {
+        event_type: "dividend_payout",
+        category: "Returns",
+        summary: "Dividend credited to wallet.",
+        sample_metadata_json: r#"{"asset_name":"Villa Bali #12","amount_display":"€42.50"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "dividend_announced",
+        category: "Returns",
+        summary: "Distribution declared — pay date in the future.",
+        sample_metadata_json: r#"{"asset_name":"Villa Bali #12","pay_date":"2026-06-15"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "monthly_statement",
+        category: "Returns",
+        summary: "Monthly performance/tax summary ready.",
+        sample_metadata_json: r#"{"month":"April 2026","download_url":"https://platform.poool.app/statements/2026-04"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "order_confirmation",
+        category: "Orders",
+        summary: "Investment order confirmed.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella","amount_display":"€1,000.00","order_id":"ord-7F3A2B"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "invoice_available",
+        category: "Orders",
+        summary: "PDF invoice ready for download.",
+        sample_metadata_json: r#"{"invoice_number":"INV-2026-042","download_url":"https://platform.poool.app/invoices/INV-2026-042"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "investment_confirmed",
+        category: "Orders",
+        summary: "Fractional tokens minted on-chain — position live.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella","token_count":12}"#,
+        mandatory: true,
+    },
+    // ── Assets ────────────────────────────────────────────────────
+    EventDescriptor {
+        event_type: "asset_funded",
+        category: "Assets",
+        summary: "Followed asset hit 100% funding.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella","asset_url":"https://platform.poool.app/assets/penthouse-marbella"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "asset_matured",
+        category: "Assets",
+        summary: "Investment period ended — principal + yield returning.",
+        sample_metadata_json: r#"{"asset_name":"Villa Bali #12"}"#,
+        mandatory: true,
+    },
+    // ── Marketplace (secondary market) ───────────────────────────
+    EventDescriptor {
+        event_type: "trade_executed",
+        category: "Marketplace",
+        summary: "Secondary-market trade filled.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella","side":"buy","amount_display":"€250.00"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "order_filled",
+        category: "Marketplace",
+        summary: "Limit order matched at target price.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "order_cancelled",
+        category: "Marketplace",
+        summary: "Order cancelled (admin, expiry, or user-requested).",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella","reason":"Insufficient escrow balance."}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "listing_expired",
+        category: "Marketplace",
+        summary: "Resale listing expired without filling.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella"}"#,
+        mandatory: false,
+    },
+    // ── Affiliate Partner Syndicate ──────────────────────────────
+    EventDescriptor {
+        event_type: "affiliate_application_received",
+        category: "Affiliate",
+        summary: "Application acknowledged, review pending.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_approved",
+        category: "Affiliate",
+        summary: "Application approved — link is live.",
+        sample_metadata_json: r#"{"tier":"Access","commission_rate_bps":50}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_rejected",
+        category: "Affiliate",
+        summary: "Application rejected with reason.",
+        sample_metadata_json: r#"{"reason":"Audience does not align with POOOL investor profile."}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_suspended",
+        category: "Affiliate",
+        summary: "Account on hold pending compliance review.",
+        sample_metadata_json: r#"{"reason":"Unusual referral concentration"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "affiliate_payout_released",
+        category: "Affiliate",
+        summary: "Commission payout dispatched.",
+        sample_metadata_json: r#"{"amount_cents":12345,"currency":"EUR","bank_last4":"4567"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "affiliate_commission_earned",
+        category: "Affiliate",
+        summary: "New commission tracked from referred investment.",
+        sample_metadata_json: r#"{"amount_cents":5000,"currency":"EUR","referred_name":"Anna L.","holdback_days":30}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_commission_qualified",
+        category: "Affiliate",
+        summary: "Holdback period ended — commission is now payable.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_application_info_requested",
+        category: "Affiliate",
+        summary: "Compliance needs more information before approving.",
+        sample_metadata_json: r#"{"message":"Please share the URL of your primary investment-content channel."}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_tier_promoted",
+        category: "Affiliate",
+        summary: "Volume crossed a tier threshold — rate goes up.",
+        sample_metadata_json: r#"{"new_tier":"Pro","new_rate_bps":300,"volume_12m_cents":1500000}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_tier_demoted",
+        category: "Affiliate",
+        summary: "Volume dropped — tier rebalanced down.",
+        sample_metadata_json: r#"{"previous_tier":"Pro","new_tier":"Plus","new_rate_bps":200,"volume_12m_cents":800000}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_material_approved",
+        category: "Affiliate",
+        summary: "Custom marketing material approved by compliance.",
+        sample_metadata_json: r#"{"material_name":"Q2 Bali Villas banner"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "affiliate_material_rejected",
+        category: "Affiliate",
+        summary: "Custom marketing material rejected — needs revision.",
+        sample_metadata_json: r#"{"material_name":"Q2 Bali Villas banner","reason":"Includes unapproved past-performance figures."}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "referral_signed_up",
+        category: "Affiliate",
+        summary: "Referral signed up (pre-investment).",
+        sample_metadata_json: r#"{"referred_name":"Anna"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "monthly_affiliate_summary",
+        category: "Affiliate",
+        summary: "Monthly performance digest for affiliates.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: false,
+    },
+    // ── Developer-Team Affiliate ─────────────────────────────────
+    EventDescriptor {
+        event_type: "team_invitation_received",
+        category: "Team",
+        summary: "Invited to join a developer's affiliate team.",
+        sample_metadata_json: r#"{"team_name":"Acme Capital","inviter_name":"Maria","token":"abc123"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "team_member_approved",
+        category: "Team",
+        summary: "Self-request to join a team was approved.",
+        sample_metadata_json: r#"{"team_name":"Acme Capital"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "team_member_removed",
+        category: "Team",
+        summary: "Membership ended.",
+        sample_metadata_json: r#"{"team_name":"Acme Capital"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "team_self_request_received",
+        category: "Team",
+        summary: "Inviter notified of a new join request.",
+        sample_metadata_json: r#"{"team_name":"Acme Capital","requester_email":"new@partner.test"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "team_invitation_accepted",
+        category: "Team",
+        summary: "Inviter notified that their invitation was accepted.",
+        sample_metadata_json: r#"{"team_name":"Acme Capital","member_name":"Maria"}"#,
+        mandatory: false,
+    },
+    // ── Support ──────────────────────────────────────────────────
+    EventDescriptor {
+        event_type: "support_ticket_reply",
+        category: "Support",
+        summary: "Customer-facing: new reply on a ticket.",
+        sample_metadata_json: r#"{"ticket_subject":"KYC review status","reply_preview":"Hi — your documents are under review. We expect a decision within 24h.","ticket_id":"tk-123"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "support_ticket_new",
+        category: "Support",
+        summary: "Admin-facing: new ticket submitted.",
+        sample_metadata_json: r#"{"ticket_subject":"Cannot deposit","user_email":"user@example.test","priority":"high"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "support_ticket_resolved",
+        category: "Support",
+        summary: "Customer-facing: ticket marked resolved.",
+        sample_metadata_json: r#"{"ticket_subject":"KYC review status"}"#,
+        mandatory: false,
+    },
+    // ── Villa-Returns operations ─────────────────────────────────
+    EventDescriptor {
+        event_type: "operations_rejected",
+        category: "Operations",
+        summary: "Monthly operations submission rejected.",
+        sample_metadata_json: r#"{"asset_name":"Villa Bali #12","rejection_reason":"Missing occupancy data for week 32"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "operations_approved",
+        category: "Operations",
+        summary: "Operations approved, awaiting publish.",
+        sample_metadata_json: r#"{"asset_name":"Villa Bali #12"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "operations_published",
+        category: "Operations",
+        summary: "Operations live on the asset page.",
+        sample_metadata_json: r#"{"asset_name":"Villa Bali #12"}"#,
+        mandatory: false,
+    },
+    // ── Developer-facing ─────────────────────────────────────────
+    EventDescriptor {
+        event_type: "developer_project_revision_required",
+        category: "Developer",
+        summary: "Compliance flagged the submitted project for revisions.",
+        sample_metadata_json: r#"{"project_name":"Penthouse Marbella","revision_notes":"Provide notarised land title before resubmit."}"#,
+        mandatory: true,
+    },
+    // ── Tax & legal ──────────────────────────────────────────────
+    EventDescriptor {
+        event_type: "tax_document_available",
+        category: "Legal",
+        summary: "Annual tax summary PDF generated.",
+        sample_metadata_json: r#"{"tax_year":"2026","download_url":"https://platform.poool.app/tax-documents/2026"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "terms_updated",
+        category: "Legal",
+        summary: "Terms of Service updated — notify all users.",
+        sample_metadata_json: r#"{"effective_date":"2026-07-01"}"#,
+        mandatory: true,
+    },
+    // ── Admin-triggered marketing ────────────────────────────────
+    EventDescriptor {
+        event_type: "marketing_campaign",
+        category: "Marketing",
+        summary: "Custom template sent to a user segment.",
+        sample_metadata_json: r#"{"first_name":"Maria","email":"maria@example.test"}"#,
+        mandatory: false,
+    },
+    // ── Drip / lifecycle (scheduler stubs in email.rs — wire when ready) ──
+    EventDescriptor {
+        event_type: "onboarding_drip_24h",
+        category: "Drip",
+        summary: "24h after signup, KYC not yet completed.",
+        sample_metadata_json: r#"{"first_name":"Maria"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "onboarding_drip_72h",
+        category: "Drip",
+        summary: "72h after signup, onboarding still incomplete.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "abandoned_cart",
+        category: "Drip",
+        summary: "User started an investment flow but never completed.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "win_back",
+        category: "Drip",
+        summary: "User has not signed in for 60+ days.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "milestone_first_investment",
+        category: "Drip",
+        summary: "Celebrates the user's first completed investment.",
+        sample_metadata_json: r#"{"asset_name":"Penthouse Marbella"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "milestone_anniversary",
+        category: "Drip",
+        summary: "Account anniversary celebration.",
+        sample_metadata_json: r#"{"years":1}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "weekly_digest",
+        category: "Drip",
+        summary: "Weekly portfolio summary roll-up.",
+        sample_metadata_json: r#"{}"#,
+        mandatory: false,
+    },
+    // ── Internal (recipient is admin@poool.app, not a customer) ──
+    EventDescriptor {
+        event_type: "admin_invitation",
+        category: "Internal",
+        summary: "New admin invited to the platform.",
+        sample_metadata_json: r#"{"invite_url":"https://platform.poool.app/admin/accept-invite?token=...","role":"compliance","inviter_email":"founder@poool.app"}"#,
+        mandatory: true,
+    },
+    EventDescriptor {
+        event_type: "admin_new_affiliate_application",
+        category: "Internal",
+        summary: "Routed to ops: a new Partner Syndicate application is waiting.",
+        sample_metadata_json: r#"{"applicant_email":"new@partner.test","user_id":"00000000-0000-0000-0000-000000000000"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "admin_payout_request",
+        category: "Internal",
+        summary: "Affiliate manually requested a payout — ops review needed.",
+        sample_metadata_json: r#"{"affiliate_email":"earner@partner.test","referral_code":"ACME-2026","amount_display":"€420.00"}"#,
+        mandatory: false,
+    },
+    EventDescriptor {
+        event_type: "admin_new_marketing_material",
+        category: "Internal",
+        summary: "Affiliate uploaded a custom marketing asset — compliance review needed.",
+        sample_metadata_json: r#"{"affiliate_email":"earner@partner.test","material_name":"Q2 Bali Villas banner"}"#,
+        mandatory: false,
+    },
 ];
 
 //
@@ -1031,6 +1273,78 @@ pub async fn api_admin_emails_audience_count(
     Ok(Json(serde_json::json!({ "segment": segment, "count": count })).into_response())
 }
 
+/// PUT /api/admin/emails/workflow-settings/:event_type — toggle a workflow.
+///
+/// Body: `{ "enabled": bool, "note": Option<String> }`.
+/// Mandatory events (security / legal / payment) reject the toggle with
+/// 400 so an admin cannot accidentally silence a password-reset.
+pub async fn api_admin_emails_workflow_toggle(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(event_type): Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "emails.edit").await?;
+
+    // Reject unknown event_types so typos don't silently insert dead rows.
+    if !EVENT_REGISTRY.iter().any(|e| e.event_type == event_type) {
+        return Err(ApiError::NotFound(format!(
+            "Unknown workflow event_type: {event_type}"
+        )));
+    }
+
+    // Mandatory events cannot be disabled at all.
+    if crate::common::email::is_mandatory_event(&event_type) {
+        return Err(ApiError::BadRequest(format!(
+            "Workflow '{event_type}' is mandatory (security / legal / payment) \
+             and cannot be disabled."
+        )));
+    }
+
+    let enabled = body.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+    let note = body
+        .get("note")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    sqlx::query(
+        "INSERT INTO email_workflow_settings (event_type, enabled, note, updated_by_admin)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (event_type) DO UPDATE
+            SET enabled = EXCLUDED.enabled,
+                note = EXCLUDED.note,
+                updated_by_admin = EXCLUDED.updated_by_admin",
+    )
+    .bind(&event_type)
+    .bind(enabled)
+    .bind(note.as_deref())
+    .bind(admin.user.id)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    let _ = sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)
+         VALUES ($1, $2, 'email_workflow', NULL, $3)",
+    )
+    .bind(admin.user.id)
+    .bind(if enabled {
+        "email_workflow_enabled"
+    } else {
+        "email_workflow_disabled"
+    })
+    .bind(serde_json::json!({ "event_type": event_type, "note": note }))
+    .execute(&state.db)
+    .await;
+
+    Ok(Json(serde_json::json!({
+        "status": "updated",
+        "event_type": event_type,
+        "enabled": enabled,
+    }))
+    .into_response())
+}
+
 /// GET /api/admin/emails/workflows — list every transactional event the
 /// platform emits, with its category, summary, default subject, optional
 /// vs mandatory classification, and the sample metadata used by the
@@ -1041,17 +1355,41 @@ pub async fn api_admin_emails_workflows(
 ) -> Result<axum::response::Response, ApiError> {
     admin.require_permission(&state.db, "emails.view").await?;
 
+    // Bulk-load enabled state for all events in one query so the loop
+    // below doesn't N+1 the DB.
+    let settings_rows = sqlx::query(
+        "SELECT event_type, enabled FROM email_workflow_settings",
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    let settings: std::collections::HashMap<String, bool> = settings_rows
+        .iter()
+        .map(|r| {
+            (
+                r.get::<String, _>("event_type"),
+                r.get::<bool, _>("enabled"),
+            )
+        })
+        .collect();
+
     let workflows: Vec<serde_json::Value> = EVENT_REGISTRY
         .iter()
-        .map(|(event, category, summary, sample_json)| {
+        .map(|e| {
             let sample: serde_json::Value =
-                serde_json::from_str(sample_json).unwrap_or(serde_json::Value::Null);
+                serde_json::from_str(e.sample_metadata_json).unwrap_or(serde_json::Value::Null);
+            // Mandatory → always enabled. Otherwise look up DB row;
+            // missing row defaults to enabled.
+            let enabled = e.mandatory
+                || settings.get(e.event_type).copied().unwrap_or(true);
             serde_json::json!({
-                "event_type": event,
-                "category": category,
-                "summary": summary,
-                "subject": crate::email::subject_for_event(event),
-                "optional": crate::common::email::is_optional_email_event(event),
+                "event_type": e.event_type,
+                "category": e.category,
+                "summary": e.summary,
+                "subject": crate::email::subject_for_event(e.event_type),
+                "optional": crate::common::email::is_optional_email_event(e.event_type),
+                "mandatory": e.mandatory,
+                "enabled": enabled,
                 "sample_metadata": sample,
             })
         })
@@ -1133,9 +1471,9 @@ async fn render_preview_payload(
     body: &PreviewRequest,
 ) -> Result<(String, String), ApiError> {
     if let Some(event_type) = body.event_type.as_deref() {
-        let registry_entry = EVENT_REGISTRY.iter().find(|(e, _, _, _)| *e == event_type);
+        let registry_entry = EVENT_REGISTRY.iter().find(|e| e.event_type == event_type);
         let default_sample: serde_json::Value = registry_entry
-            .and_then(|(_, _, _, json)| serde_json::from_str(json).ok())
+            .and_then(|e| serde_json::from_str(e.sample_metadata_json).ok())
             .unwrap_or(serde_json::Value::Null);
         let metadata = body.sample_data.clone().unwrap_or(default_sample);
         let html = crate::email::build_email_html(event_type, &metadata);
@@ -1260,40 +1598,47 @@ mod tests {
     #[test]
     fn event_registry_entries_are_unique() {
         let mut seen = std::collections::HashSet::new();
-        for (event, _, _, _) in EVENT_REGISTRY {
+        for e in EVENT_REGISTRY {
             assert!(
-                seen.insert(*event),
-                "duplicate event_type in EVENT_REGISTRY: {event}"
+                seen.insert(e.event_type),
+                "duplicate event_type in EVENT_REGISTRY: {}",
+                e.event_type
             );
         }
     }
 
     #[test]
     fn event_registry_sample_metadata_is_valid_json() {
-        for (event, _, _, sample) in EVENT_REGISTRY {
-            let parsed: serde_json::Value = serde_json::from_str(sample)
-                .unwrap_or_else(|e| panic!("event '{event}' has invalid sample JSON: {e}"));
+        for e in EVENT_REGISTRY {
+            let parsed: serde_json::Value = serde_json::from_str(e.sample_metadata_json)
+                .unwrap_or_else(|err| {
+                    panic!("event '{}' has invalid sample JSON: {err}", e.event_type)
+                });
             assert!(
                 parsed.is_object() || parsed.is_null(),
-                "event '{event}' sample must be a JSON object or null"
+                "event '{}' sample must be a JSON object or null",
+                e.event_type
             );
         }
     }
 
     #[test]
-    fn event_registry_covers_all_subjects_in_email_rs() {
+    fn event_registry_covers_all_build_email_html_branches() {
         // Every event we render a body for via build_email_html should be
-        // in the workflows registry so the admin UI can list it. A
-        // missing entry means the workflows tab silently omits a real
-        // production email.
+        // in the workflows registry so the admin UI can list it.
         let registry_events: std::collections::HashSet<&str> =
-            EVENT_REGISTRY.iter().map(|(e, _, _, _)| *e).collect();
+            EVENT_REGISTRY.iter().map(|e| e.event_type).collect();
         for event in [
             "welcome",
             "verify_email",
             "password_reset",
             "2fa_setup",
             "new_login",
+            "email_changed",
+            "password_changed",
+            "2fa_disabled",
+            "payment_method_added",
+            "payment_method_removed",
             "kyc_approved",
             "kyc_rejected",
             "kyc_submitted",
@@ -1303,11 +1648,20 @@ mod tests {
             "withdraw_approved",
             "withdraw_rejected",
             "withdrawal_processed",
+            "large_deposit_received",
+            "compliance_alert_user",
             "dividend_payout",
+            "dividend_announced",
             "monthly_statement",
             "order_confirmation",
             "invoice_available",
+            "investment_confirmed",
             "asset_funded",
+            "asset_matured",
+            "trade_executed",
+            "order_filled",
+            "order_cancelled",
+            "listing_expired",
             "operations_rejected",
             "operations_approved",
             "operations_published",
@@ -1331,7 +1685,18 @@ mod tests {
             "affiliate_tier_demoted",
             "affiliate_material_approved",
             "affiliate_material_rejected",
+            "referral_signed_up",
+            "monthly_affiliate_summary",
             "developer_project_revision_required",
+            "tax_document_available",
+            "terms_updated",
+            "onboarding_drip_24h",
+            "onboarding_drip_72h",
+            "abandoned_cart",
+            "win_back",
+            "milestone_first_investment",
+            "milestone_anniversary",
+            "weekly_digest",
             "admin_invitation",
             "admin_new_affiliate_application",
             "admin_payout_request",
@@ -1340,8 +1705,7 @@ mod tests {
             assert!(
                 registry_events.contains(event),
                 "event '{event}' has a build_email_html body but is missing \
-                 from EVENT_REGISTRY — admins won't see it in the workflows \
-                 tab"
+                 from EVENT_REGISTRY — admins won't see it in the workflows tab"
             );
         }
     }
@@ -1355,23 +1719,82 @@ mod tests {
             "Returns",
             "Orders",
             "Assets",
+            "Marketplace",
             "Affiliate",
             "Team",
             "Support",
             "Operations",
-            "Marketing",
             "Developer",
+            "Legal",
+            "Marketing",
+            "Drip",
             "Internal",
         ]
         .iter()
         .copied()
         .collect();
-        for (event, category, _, _) in EVENT_REGISTRY {
+        for e in EVENT_REGISTRY {
             assert!(
-                known.contains(*category),
-                "event '{event}' has unknown category '{category}' — update \
-                 the known-set or fix the registry"
+                known.contains(e.category),
+                "event '{}' has unknown category '{}' — update the known-set \
+                 or fix the registry",
+                e.event_type,
+                e.category
             );
+        }
+    }
+
+    #[test]
+    fn mandatory_security_events_cannot_be_disabled() {
+        // Sanity: every event that the law / security policy says we must
+        // always send must carry mandatory=true. If you flip one of these
+        // to false, the workflows-tab toggle UI will let an admin silence
+        // a password-reset or KYC email, which is an incident.
+        let always_mandatory: std::collections::HashSet<&str> = [
+            "verify_email",
+            "password_reset",
+            "2fa_setup",
+            "new_login",
+            "email_changed",
+            "password_changed",
+            "2fa_disabled",
+            "payment_method_added",
+            "payment_method_removed",
+            "kyc_approved",
+            "kyc_rejected",
+            "kyc_submitted",
+            "deposit_confirmed",
+            "withdraw_approved",
+            "withdraw_rejected",
+            "withdrawal_processed",
+            "withdraw_requested",
+            "large_deposit_received",
+            "compliance_alert_user",
+            "order_confirmation",
+            "invoice_available",
+            "investment_confirmed",
+            "asset_matured",
+            "operations_rejected",
+            "developer_project_revision_required",
+            "tax_document_available",
+            "terms_updated",
+            "affiliate_suspended",
+            "affiliate_payout_released",
+            "support_ticket_reply",
+            "admin_invitation",
+        ]
+        .iter()
+        .copied()
+        .collect();
+        for e in EVENT_REGISTRY {
+            if always_mandatory.contains(e.event_type) {
+                assert!(
+                    e.mandatory,
+                    "event '{}' must be mandatory (security/legal/payment) but \
+                     is flagged optional — admins could disable a critical email",
+                    e.event_type
+                );
+            }
         }
     }
 }

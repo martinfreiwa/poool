@@ -459,6 +459,7 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/deposits/reconciliation",
             get(api_admin_deposits_reconciliation),
         )
+        .route("/api/admin/deposits/bulk", post(api_admin_deposits_bulk))
         // Withdrawals
         .route("/api/admin/withdrawals", get(api_admin_withdrawals))
         .route(
@@ -468,6 +469,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/withdrawals/:req_id/reject",
             post(api_admin_withdrawal_reject),
+        )
+        .route(
+            "/api/admin/withdrawals/bulk",
+            post(api_admin_withdrawals_bulk),
         )
         // Compliance alerts + on-demand sanctions re-screening
         .route(
@@ -658,6 +663,11 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/rewards/affiliates/:id/clawback",
             post(api_admin_affiliate_clawback),
         )
+        // Phase-3 P1: SEPA pain.001.001.03 batch export
+        .route(
+            "/api/admin/rewards/affiliates/batches/:batch_id/sepa.xml",
+            get(api_admin_affiliate_sepa_export),
+        )
         // GAP-11: Materials review board
         .route(
             "/api/admin/rewards/affiliates/materials",
@@ -798,6 +808,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/emails/workflows",
             get(api_admin_emails_workflows),
+        )
+        .route(
+            "/api/admin/emails/workflow-settings/:event_type",
+            put(api_admin_emails_workflow_toggle),
         )
         .route(
             "/api/admin/emails/suppressions",
