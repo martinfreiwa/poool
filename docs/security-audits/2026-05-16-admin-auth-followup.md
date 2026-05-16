@@ -2,7 +2,7 @@
 
 Date: 2026-05-16
 
-Status: **6 of 10 fixed (2026-05-17); 4 deferred** pending larger-
+Status: **7 of 10 fixed (2026-05-17); 3 deferred** pending larger-
 refactor scope. None of the items below are exploited in the wild —
 they're latent risks discovered by mirroring the 2026-05 wallet audit
 pattern onto the next-most-sensitive surfaces.
@@ -17,7 +17,7 @@ pattern onto the next-most-sensitive surfaces.
 | 6 | M | deferred | login audit refactor |
 | 7 | M | ✅ fixed 2026-05-17 | `875c7ac` (fail-closed) |
 | 8 | M | deferred | needs new `pii.view_sensitive` permission |
-| 9 | M | deferred | dual rate-limit atomicity refactor |
+| 9 | M | ✅ fixed 2026-05-17 | `9cfb8fd` (atomic dual-key) |
 | 10 | L | ✅ fixed 2026-05-17 | `9d824fd` (log redaction) |
 
 ## Scope
