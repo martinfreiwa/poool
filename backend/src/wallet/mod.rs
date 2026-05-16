@@ -27,6 +27,7 @@ pub fn router() -> Router<AppState> {
             "/api/wallet/withdrawals/:id/cancel",
             post(api_cancel_withdrawal),
         )
+        .route("/api/wallet/unfreeze-request", post(api_request_unfreeze))
         // JSON API
         .route("/api/wallet/balance", get(api_wallet_balance))
         .route("/api/wallet/transactions", get(api_wallet_transactions))

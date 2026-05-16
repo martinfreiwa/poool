@@ -1086,6 +1086,129 @@ pub async fn handle_deposit_submit(
     Redirect::to(&success_url).into_response()
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UnfreezeRequestPayload {
+    /// Optional user-supplied context (capped at 500 chars after trim).
+    #[serde(default)]
+    pub note: Option<String>,
+}
+
+/// POST /api/wallet/unfreeze-request
+///
+/// User-facing self-service (P1-8): file a review request when the
+/// account has been auto-frozen by the withdrawal-velocity guard. Opens
+/// a high-severity row in `compliance_alerts` for the compliance team
+/// and stamps `users.unfreeze_requested_at` so the same user can't
+/// spam the queue (rate-limited to one open request per 24h).
+pub async fn api_request_unfreeze(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<UnfreezeRequestPayload>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Unauthorized"})),
+            )
+                .into_response();
+        }
+    };
+
+    let row: Option<(
+        String,
+        Option<DateTime<Utc>>,
+        Option<DateTime<Utc>>,
+        Option<String>,
+    )> = sqlx::query_as(
+        "SELECT status, frozen_at, unfreeze_requested_at, frozen_reason
+               FROM users WHERE id = $1",
+    )
+    .bind(user.id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    let (status, frozen_at, unfreeze_requested_at, frozen_reason) = match row {
+        Some(r) => r,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"error": "user_not_found"})),
+            )
+                .into_response();
+        }
+    };
+
+    if status != "frozen" {
+        return (
+            StatusCode::CONFLICT,
+            Json(serde_json::json!({
+                "error": "not_frozen",
+                "message": "Your account is not currently frozen.",
+            })),
+        )
+            .into_response();
+    }
+
+    // Rate-limit: one open request per 24h.
+    if let Some(prev) = unfreeze_requested_at {
+        if (Utc::now() - prev).num_hours() < 24 {
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(serde_json::json!({
+                    "error": "already_requested",
+                    "message": "Review already requested. Compliance will respond within 1 business day.",
+                })),
+            )
+                .into_response();
+        }
+    }
+
+    let note = payload
+        .note
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.chars().take(500).collect::<String>());
+
+    let frozen_for_hours = frozen_at.map(|f| (Utc::now() - f).num_hours()).unwrap_or(0);
+
+    let summary = format!(
+        "User requested unfreeze review (frozen {}h ago, reason: {})",
+        frozen_for_hours,
+        frozen_reason.unwrap_or_else(|| "unknown".to_string())
+    );
+    let details = serde_json::json!({
+        "frozen_at": frozen_at,
+        "frozen_for_hours": frozen_for_hours,
+        "user_note": note,
+    });
+
+    let _ = sqlx::query(
+        r#"INSERT INTO compliance_alerts (user_id, kind, severity, summary, details)
+           VALUES ($1, 'manual_review', 'high', $2, $3)"#,
+    )
+    .bind(user.id)
+    .bind(&summary)
+    .bind(&details)
+    .execute(&state.db)
+    .await;
+
+    let _ = sqlx::query("UPDATE users SET unfreeze_requested_at = NOW() WHERE id = $1")
+        .bind(user.id)
+        .execute(&state.db)
+        .await;
+
+    Json(serde_json::json!({
+        "status": "requested",
+        "message": "Compliance review filed. We'll reply within 1 business day.",
+    }))
+    .into_response()
+}
+
 /// POST /api/wallet/withdrawals/:id/cancel
 ///
 /// User-initiated cancellation of a pending withdrawal (P1-4). Allowed
@@ -2338,7 +2461,11 @@ async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDe
     // is still in flight. Status comes from withdrawal_requests, not the
     // ledger tx (which can lag during state transitions).
     let cancellable_withdrawal_id = if matches!(tx_type, TransactionType::Withdrawal) {
-        match row.external_ref_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        match row
+            .external_ref_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok())
+        {
             Some(req_id) => {
                 let cur: Option<String> = sqlx::query_scalar(
                     "SELECT status FROM withdrawal_requests WHERE id = $1 AND user_id = $2",
@@ -2420,7 +2547,8 @@ async fn build_deposit_timeline(pool: &sqlx::PgPool, row: &TxRow) -> Vec<Timelin
 
     let terminal_bad = matches!(status.as_str(), "failed" | "cancelled" | "expired");
 
-    let fmt_short = |dt: chrono::DateTime<chrono::Utc>| dt.format("%d %b %Y · %H:%M UTC").to_string();
+    let fmt_short =
+        |dt: chrono::DateTime<chrono::Utc>| dt.format("%d %b %Y · %H:%M UTC").to_string();
 
     // Step 1 — request created
     let step1 = TimelineStep {

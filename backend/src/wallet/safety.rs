@@ -193,10 +193,16 @@ async fn withdrawals_in_window(pool: &PgPool, user_id: Uuid, window_hours: i64) 
 }
 
 async fn freeze_user(pool: &PgPool, user_id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query("UPDATE users SET status = 'frozen' WHERE id = $1 AND status = 'active'")
-        .bind(user_id)
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        "UPDATE users
+            SET status = 'frozen',
+                frozen_at = COALESCE(frozen_at, NOW()),
+                frozen_reason = COALESCE(frozen_reason, 'withdrawal_velocity')
+          WHERE id = $1 AND status = 'active'",
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
