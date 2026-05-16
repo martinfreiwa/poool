@@ -51,7 +51,12 @@ def lone_user():
 # ─── Helpers ───────────────────────────────────────────────────────────
 
 def _open_circle_tab(playwright_session, user):
-    """Open /community?tab=circle as the given user. Returns (ctx, page, errors)."""
+    """Open /community?tab=circle as the given user. Returns (ctx, page, errors).
+
+    Waits for both the tab panel mount AND network idle so subsequent
+    page.evaluate() calls don't trip the "Execution context was
+    destroyed, most likely because of a navigation" race that bit CI.
+    """
     ctx, page, errors = make_context(playwright_session, user)
     page.goto(
         f"{BASE_URL}/community?tab=circle",
@@ -60,6 +65,11 @@ def _open_circle_tab(playwright_session, user):
     )
     # Wait for the tab panel container to mount.
     expect(page.locator("#community-circle-tab")).to_be_visible(timeout=10000)
+    # And for the HTMX swap + initial circle-discover XHRs to settle.
+    try:
+        page.wait_for_load_state("networkidle", timeout=10000)
+    except Exception:
+        pass  # Best-effort — some pages keep a poll alive forever.
     return ctx, page, errors
 
 
