@@ -374,6 +374,10 @@ pub struct DepositBankSettings {
     pub sof_threshold_cents: i64,
     /// Amount above which a supporting document is also required.
     pub sof_doc_threshold_cents: i64,
+    /// Flat fee in cents charged on every withdrawal (P1-5).
+    pub withdrawal_fee_cents: i64,
+    /// Minimum withdrawal amount in cents.
+    pub min_withdrawal_cents: i64,
 }
 
 async fn setting_str(pool: &PgPool, key: &str, default: &str) -> String {
@@ -412,6 +416,8 @@ pub async fn fetch_deposit_bank_settings(pool: &PgPool) -> DepositBankSettings {
         sof_threshold_cents: setting_i64(pool, "deposit_sof_threshold_cents", 300_000).await,
         sof_doc_threshold_cents: setting_i64(pool, "deposit_sof_doc_threshold_cents", 1_000_000)
             .await,
+        withdrawal_fee_cents: setting_i64(pool, "withdrawal_fee_cents", 500).await,
+        min_withdrawal_cents: setting_i64(pool, "min_withdrawal_cents", 1_000).await,
     }
 }
 

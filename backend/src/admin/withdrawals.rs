@@ -176,14 +176,13 @@ fn spawn_withdraw_email(
     reason: Option<String>,
 ) {
     tokio::spawn(async move {
-        let pm_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT payment_method_id FROM withdrawal_requests WHERE id = $1",
-        )
-        .bind(req_id)
-        .fetch_optional(&db)
-        .await
-        .ok()
-        .flatten();
+        let pm_id: Option<Uuid> =
+            sqlx::query_scalar("SELECT payment_method_id FROM withdrawal_requests WHERE id = $1")
+                .bind(req_id)
+                .fetch_optional(&db)
+                .await
+                .ok()
+                .flatten();
 
         let destination = if let Some(pmid) = pm_id {
             sqlx::query_scalar::<_, Option<String>>(
@@ -239,16 +238,19 @@ pub async fn api_admin_withdrawal_reject(
         .await
         .map_err(|e| AppError::Internal(format!("TX begin failed: {}", e)))?;
 
-    // Fetch status, amount, currency, and user_id atomically with row lock
-    let req: Option<(String, i64, String, Uuid)> = sqlx::query_as(
-        "SELECT status, amount_cents, currency, user_id FROM withdrawal_requests WHERE id = $1 FOR UPDATE",
+    // Fetch status, amount, currency, fee, and user_id atomically with
+    // row lock. fee_cents must be refunded too — we deducted amount+fee
+    // on submission.
+    let req: Option<(String, i64, i64, String, Uuid)> = sqlx::query_as(
+        "SELECT status, amount_cents, fee_cents, currency, user_id
+           FROM withdrawal_requests WHERE id = $1 FOR UPDATE",
     )
     .bind(req_id)
     .fetch_optional(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Withdrawal fetch failed: {}", e)))?;
 
-    let (status, amount_cents, currency, user_id) = match req {
+    let (status, amount_cents, fee_cents, currency, user_id) = match req {
         Some(r) => r,
         None => return Err(AppError::NotFound("Withdrawal request not found".into())),
     };
@@ -270,9 +272,9 @@ pub async fn api_admin_withdrawal_reject(
     .await
     .map_err(|e| AppError::Internal(format!("Withdrawal rejection failed: {}", e)))?;
 
-    // Refund the wallet specifically matching the currency
+    // Refund amount AND fee — both were debited at submission time.
     sqlx::query("UPDATE wallets SET balance_cents = balance_cents + $1 WHERE user_id = $2 AND wallet_type = 'cash' AND currency = $3")
-        .bind(amount_cents)
+        .bind(amount_cents.saturating_add(fee_cents))
         .bind(user_id)
         .bind(currency)
         .execute(&mut *tx)

@@ -1144,6 +1144,14 @@ pub async fn handle_withdraw(
             return release_and_redirect("/wallet?error=kyc_required").await;
         }
 
+        // ─── P1-5: Apply withdrawal fee ──────────────────────────────
+        // Fee is stored on the row so a tariff change between submission
+        // and approval doesn't retroactively reprice the request.
+        let wallet_settings =
+            crate::payments::service::fetch_deposit_bank_settings(&state.db).await;
+        let fee_cents = wallet_settings.withdrawal_fee_cents.max(0);
+        let total_debit = amount_cents.saturating_add(fee_cents);
+
         // ─── 18.6–18.9: Withdrawal safety controls ──────────────────
         // Daily cap, velocity freeze, new-account cooldown, and step-up
         // 2FA all run here BEFORE we touch the wallet so a blocked
@@ -1204,15 +1212,16 @@ pub async fn handle_withdraw(
         };
 
         let available = current_balance - held_balance;
-        if available < amount_cents {
+        if available < total_debit {
             let _ = tx.rollback().await;
             tracing::warn!(
-                "Insufficient available funds: user {} balance={} held={} available={} requested={}",
+                "Insufficient available funds: user {} balance={} held={} available={} requested={} fee={}",
                 user.id,
                 current_balance,
                 held_balance,
                 available,
-                amount_cents
+                amount_cents,
+                fee_cents,
             );
             crate::metrics::record_withdrawal(
                 crate::metrics::withdraw_outcome::BLOCKED_FUNDS,
@@ -1227,10 +1236,11 @@ pub async fn handle_withdraw(
             None
         };
 
-        // Deduct balance to freeze funds
+        // Deduct balance to freeze funds — amount + fee both come out so
+        // the user can't keep the fee in float.
         if let Err(e) =
             sqlx::query("UPDATE wallets SET balance_cents = balance_cents - $1 WHERE id = $2")
-                .bind(amount_cents)
+                .bind(total_debit)
                 .bind(wallet_id)
                 .execute(&mut *tx)
                 .await
@@ -1240,17 +1250,20 @@ pub async fn handle_withdraw(
             return release_and_redirect("/wallet?error=withdraw_failed").await;
         }
 
-        // Create withdrawal request inside the transaction
+        // Create withdrawal request inside the transaction. fee_cents is
+        // frozen on the row so a later tariff change doesn't reprice it.
         let req_id: Result<Uuid, sqlx::Error> = sqlx::query_scalar(
             r#"
-            INSERT INTO withdrawal_requests (user_id, amount_cents, currency, payment_method_id, status)
-            VALUES ($1, $2, 'USD', $3, 'pending')
+            INSERT INTO withdrawal_requests
+                (user_id, amount_cents, currency, payment_method_id, status, fee_cents)
+            VALUES ($1, $2, 'USD', $3, 'pending', $4)
             RETURNING id
-            "#
+            "#,
         )
         .bind(user.id)
         .bind(amount_cents)
         .bind(pm_uuid)
+        .bind(fee_cents)
         .fetch_one(&mut *tx)
         .await;
 

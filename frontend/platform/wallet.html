@@ -885,7 +885,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             <div class="wallet-deposit-amount-input">
               <span class="wallet-deposit-amount-input__prefix">$</span>
               <input type="text" inputmode="decimal" id="withdraw-amount-input" name="amount" required class="ds-input"
-                placeholder="0.00" autocomplete="off" oninput="formatAmountInput(this)" />
+                placeholder="0.00" autocomplete="off"
+                oninput="formatAmountInput(this); refreshWithdrawFeeDisplay();" />
             </div>
             <p class="ds-form-hint" id="withdraw-balance-hint">
               Available: <strong>{{ cash_balance }}</strong>
@@ -899,7 +900,11 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             </div>
             <div class="wallet-withdraw-info__row">
               <span class="wallet-withdraw-info__label">Withdrawal fee</span>
-              <span class="wallet-withdraw-info__value">Network fee may apply</span>
+              <span class="wallet-withdraw-info__value" id="withdraw-fee-display">Loading…</span>
+            </div>
+            <div class="wallet-withdraw-info__row">
+              <span class="wallet-withdraw-info__label">Total debit from wallet</span>
+              <span class="wallet-withdraw-info__value" id="withdraw-total-display">—</span>
             </div>
             <div class="wallet-withdraw-info__row">
               <span class="wallet-withdraw-info__label">Admin review</span>
@@ -1610,7 +1615,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
   <!-- Wallet Actions & Initialization -->
   <script>
-    function openWithdrawModal() {
+    async function openWithdrawModal() {
       var m = document.getElementById("withdraw-modal");
       if (!m) return;
       m.classList.add('active');
@@ -1626,7 +1631,29 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       if (formErr) formErr.textContent = "";
       var submitBtn = document.getElementById("withdraw-submit-btn");
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Confirm withdrawal"; }
+      // Fee transparency (P1-5): fetch the live fee + min from settings
+      // and refresh the "you will receive" line on every input change.
+      var s = await loadDepositSettings();
+      window.__withdrawFeeCents = (s && s.withdrawal_fee_cents) || 0;
+      window.__withdrawMinCents = (s && s.min_withdrawal_cents) || 0;
+      refreshWithdrawFeeDisplay();
       updateWithdrawBtn();
+    }
+
+    function refreshWithdrawFeeDisplay() {
+      var feeEl = document.getElementById("withdraw-fee-display");
+      var totalEl = document.getElementById("withdraw-total-display");
+      var input = document.getElementById("withdraw-amount-input");
+      var fee = window.__withdrawFeeCents || 0;
+      if (feeEl) feeEl.textContent = fee > 0 ? formatCentsUsd(fee) : "Free";
+      var cents = parseAmountCents(input ? input.value : "");
+      if (totalEl) {
+        if (cents <= 0) {
+          totalEl.textContent = "—";
+        } else {
+          totalEl.textContent = formatCentsUsd(cents + fee);
+        }
+      }
     }
     function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
     function updateWithdrawBtn() {
