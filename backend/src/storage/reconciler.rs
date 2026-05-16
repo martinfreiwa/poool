@@ -173,9 +173,7 @@ pub async fn finalize_run(
 /// `None` for non-`gs://` URIs (e.g. legacy public URLs).
 pub fn parse_gs_uri(uri: &str) -> Option<(String, String)> {
     let rest = uri.strip_prefix("gs://")?;
-    let mut parts = rest.splitn(2, '/');
-    let bucket = parts.next()?;
-    let object = parts.next()?;
+    let (bucket, object) = rest.split_once('/')?;
     if bucket.is_empty() || object.is_empty() {
         return None;
     }
@@ -194,11 +192,10 @@ pub fn extract_bucket_and_path(
         return Some(parsed);
     }
     if let Some(rest) = stored_url.strip_prefix("/api/proxy/gcs/") {
-        let mut it = rest.splitn(2, '/');
-        let bucket = it.next()?;
-        let path = it.next()?;
-        if !bucket.is_empty() && !path.is_empty() {
-            return Some((bucket.to_string(), path.to_string()));
+        if let Some((bucket, path)) = rest.split_once('/') {
+            if !bucket.is_empty() && !path.is_empty() {
+                return Some((bucket.to_string(), path.to_string()));
+            }
         }
     }
     // Last resort: assume the stored value IS the object path, under the
