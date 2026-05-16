@@ -665,11 +665,6 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/rewards/affiliates/:id/clawback",
             post(api_admin_affiliate_clawback),
         )
-        // Phase-3 P1: SEPA pain.001.001.03 batch export
-        .route(
-            "/api/admin/rewards/affiliates/batches/:batch_id/sepa.xml",
-            get(api_admin_affiliate_sepa_export),
-        )
         // GAP-11: Materials review board
         .route(
             "/api/admin/rewards/affiliates/materials",
@@ -889,6 +884,18 @@ pub fn router() -> axum::Router<AppState> {
         )
         // Storage Analytics
         .route("/api/admin/storage", get(api_admin_storage))
+        .route(
+            "/api/admin/storage/reconcile",
+            post(api_admin_storage_reconcile),
+        )
+        .route(
+            "/api/admin/storage/retention/run",
+            post(api_admin_storage_retention_run),
+        )
+        .route(
+            "/api/admin/storage/retention/arm/:user_id",
+            post(api_admin_storage_retention_arm),
+        )
         // ── Admin Marketplace APIs ───────────────────────────────
         .route(
             "/api/admin/primary-escrow",

@@ -1,5 +1,6 @@
 pub mod attribution;
 pub mod models;
+pub mod payout_connectors;
 pub mod routes;
 pub mod service;
 pub mod team_links;

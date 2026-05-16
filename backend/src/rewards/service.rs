@@ -2495,9 +2495,334 @@ fn push_fraud_node(
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Bank-IBAN encryption (mirrors tax-id pattern, separate key for blast-radius)
+// ──────────────────────────────────────────────────────────────────────────
+
+/// Current bank-IBAN encryption-key version. Bump on rotation.
+pub const BANK_IBAN_KEY_VERSION: i16 = 1;
+
+const BANK_IBAN_SECRET_PREFIX: &str = "biban:v1";
+
+fn bank_iban_encryption_key() -> Result<[u8; 32], AppError> {
+    // Reuse TAX_ID key by default (single secret env), but allow override via
+    // BANK_IBAN_ENCRYPTION_KEY when ops want blast-radius separation.
+    let raw = std::env::var("BANK_IBAN_ENCRYPTION_KEY")
+        .or_else(|_| std::env::var("TAX_ID_ENCRYPTION_KEY"))
+        .map_err(|_| {
+            AppError::Internal(
+                "BANK_IBAN_ENCRYPTION_KEY (or TAX_ID_ENCRYPTION_KEY) not set.".to_string(),
+            )
+        })?;
+    let trimmed = raw.trim();
+    let bytes = if trimmed.len() == 64 && trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        (0..64)
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&trimmed[i..i + 2], 16))
+            .collect::<Result<Vec<u8>, _>>()
+            .map_err(|_| {
+                AppError::Internal("BANK_IBAN_ENCRYPTION_KEY not valid hex.".to_string())
+            })?
+    } else {
+        base64::engine::general_purpose::STANDARD
+            .decode(trimmed)
+            .or_else(|_| base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(trimmed))
+            .unwrap_or_else(|_| trimmed.as_bytes().to_vec())
+    };
+    bytes.try_into().map_err(|_| {
+        AppError::Internal("BANK_IBAN_ENCRYPTION_KEY must decode to 32 bytes.".to_string())
+    })
+}
+
+/// AES-256-GCM encrypt an IBAN. Output is `biban:v1:<nonce_b64>:<ct_b64>` text
+/// suitable for the `developer_teams.bank_iban_encrypted TEXT` column.
+pub fn encrypt_bank_iban(plain: &str) -> Result<String, AppError> {
+    let key = bank_iban_encryption_key()?;
+    let cipher = Aes256Gcm::new_from_slice(&key)
+        .map_err(|_| AppError::Internal("Failed to init IBAN cipher.".to_string()))?;
+    let mut nonce_bytes = [0u8; 12];
+    rand::rngs::OsRng.fill_bytes(&mut nonce_bytes);
+    let ct = cipher
+        .encrypt(Nonce::from_slice(&nonce_bytes), plain.as_bytes())
+        .map_err(|_| AppError::Internal("Failed to encrypt IBAN.".to_string()))?;
+    Ok(format!(
+        "{}:{}:{}",
+        BANK_IBAN_SECRET_PREFIX,
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(nonce_bytes),
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(ct)
+    ))
+}
+
+/// Last 4 alphanumeric chars of an IBAN — for display + the
+/// `bank_iban_last4 VARCHAR(4)` column.
+pub fn bank_iban_last4(plain: &str) -> String {
+    let compact: String = plain
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect();
+    if compact.len() <= 4 {
+        compact
+    } else {
+        compact[compact.len() - 4..].to_string()
+    }
+}
+
+/// ISO 13616 MOD-97 IBAN checksum. Returns BadRequest on failure.
+pub fn validate_iban_mod97(compact: &str) -> Result<(), AppError> {
+    if compact.len() < 4 || compact.len() > 34 {
+        return Err(AppError::BadRequest(
+            "IBAN must be between 4 and 34 characters.".into(),
+        ));
+    }
+    // Move first 4 chars to the end, then map letters → digits (A=10..Z=35).
+    let rotated = format!("{}{}", &compact[4..], &compact[..4]);
+    let mut numeric = String::with_capacity(rotated.len() * 2);
+    for c in rotated.chars() {
+        if c.is_ascii_digit() {
+            numeric.push(c);
+        } else if c.is_ascii_uppercase() {
+            numeric.push_str(&((c as u32 - 'A' as u32 + 10).to_string()));
+        } else {
+            return Err(AppError::BadRequest(
+                "IBAN must contain only digits and uppercase letters.".into(),
+            ));
+        }
+    }
+    // Streamed mod-97 to avoid big-int allocation.
+    let mut rem: u32 = 0;
+    for ch in numeric.chars() {
+        rem = (rem * 10 + (ch as u32 - '0' as u32)) % 97;
+    }
+    if rem != 1 {
+        return Err(AppError::BadRequest(
+            "IBAN checksum is invalid (MOD-97 != 1).".into(),
+        ));
+    }
+    Ok(())
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Affiliate commission auto-clawback (refund-driven reversal)
+// ──────────────────────────────────────────────────────────────────────────
+
+/// Reverse any payable/provisional affiliate commission rows tied to a
+/// now-refunded investment. Safe to call multiple times — already-clawed-back
+/// rows are not touched. `reason` is appended to the audit log only.
+pub async fn auto_clawback_for_refunded_investment(
+    pool: &PgPool,
+    investment_id: Uuid,
+    actor_user_id: Uuid,
+    reason: &str,
+) -> Result<u64, AppError> {
+    // Move every commission tied to this investment that isn't already
+    // clawed_back/paid into the clawback flow. We DON'T pull money out of
+    // `paid` rows here — those need ops review; we just flag for follow-up.
+    let res = sqlx::query!(
+        r#"UPDATE affiliate_commissions
+              SET status = CASE
+                              WHEN status = 'paid' THEN 'clawback_pending'
+                              ELSE 'clawed_back'
+                          END,
+                  updated_at = NOW()
+            WHERE source_order_id = $1
+              AND status NOT IN ('clawed_back', 'clawback_pending')"#,
+        investment_id
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("auto-clawback update failed: {e}")))?;
+
+    let rows = res.rows_affected();
+    if rows > 0 {
+        // Best-effort audit; failure is non-fatal to the clawback itself.
+        let _ = crate::common::audit::log(
+            pool,
+            Some(actor_user_id),
+            &format!(
+                "affiliate_commission_auto_clawback:investment={}:rows={}:reason={}",
+                investment_id, rows, reason
+            ),
+            "affiliate_commission",
+            None,
+            None,
+            None,
+        )
+        .await;
+    }
+    Ok(rows)
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// GDPR Art. 17 affiliate-PII scrub (called from settings::delete_account)
+// ──────────────────────────────────────────────────────────────────────────
+
+/// Blank the PII columns on the affiliate profile + any developer_teams the
+/// user is the contact on. Historical commission rows STAY (tax retention).
+pub async fn anonymize_affiliate_user(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("anonymize tx begin failed: {e}")))?;
+
+    // Affiliate profile: scrub tax + payout PII; KEEP commission history.
+    let _ = sqlx::query(
+        r#"UPDATE affiliates
+              SET tax_id_encrypted = NULL,
+                  tax_id_last4 = NULL,
+                  paypal_email = NULL,
+                  display_name = NULL,
+                  updated_at = NOW()
+            WHERE user_id = $1"#,
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await;
+
+    // Developer-team bank details: scrub if this user is the bank contact.
+    let _ = sqlx::query(
+        r#"UPDATE developer_teams
+              SET bank_iban_encrypted = NULL,
+                  bank_iban_last4 = NULL,
+                  bank_iban = NULL,
+                  bank_bic = NULL,
+                  updated_at = NOW()
+            WHERE owner_user_id = $1"#,
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("anonymize tx commit failed: {e}")))?;
+    Ok(())
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Durable S2S postback worker (drains affiliate_postback_outbox)
+// ──────────────────────────────────────────────────────────────────────────
+
+/// Background loop: every 30s pick up `queued` postbacks whose
+/// `next_attempt_at` has passed, fire HTTP GET, update status with exponential
+/// backoff. Caps at 6 attempts → `failed_giveup`.
+pub async fn run_affiliate_postback_worker(pool: PgPool) {
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!(error = %e, "postback worker: cannot init HTTP client; exiting");
+            return;
+        }
+    };
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+    loop {
+        interval.tick().await;
+        let due = sqlx::query!(
+            r#"SELECT id, url, attempts
+                 FROM affiliate_postback_outbox
+                WHERE status = 'queued'
+                  AND next_attempt_at <= NOW()
+                ORDER BY next_attempt_at ASC
+                LIMIT 25"#
+        )
+        .fetch_all(&pool)
+        .await;
+        let rows = match due {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::warn!(error = %e, "postback worker: queue scan failed");
+                continue;
+            }
+        };
+        for row in rows {
+            let attempt_no = row.attempts + 1;
+            let resp = client.get(&row.url).send().await;
+            match resp {
+                Ok(r) if r.status().is_success() => {
+                    let _ = sqlx::query!(
+                        r#"UPDATE affiliate_postback_outbox
+                              SET status = 'sent',
+                                  attempts = $2,
+                                  sent_at = NOW(),
+                                  last_response_status = $3,
+                                  updated_at = NOW()
+                            WHERE id = $1"#,
+                        row.id,
+                        attempt_no,
+                        r.status().as_u16() as i32
+                    )
+                    .execute(&pool)
+                    .await;
+                }
+                Ok(r) => {
+                    let backoff = std::cmp::min(3600i64, 30i64 * (1i64 << attempt_no.min(8)));
+                    let give_up = attempt_no >= 6;
+                    let status = if give_up { "failed_giveup" } else { "queued" };
+                    let _ = sqlx::query!(
+                        r#"UPDATE affiliate_postback_outbox
+                              SET status = $2,
+                                  attempts = $3,
+                                  next_attempt_at = NOW() + ($4 || ' seconds')::INTERVAL,
+                                  last_response_status = $5,
+                                  last_error = $6,
+                                  updated_at = NOW()
+                            WHERE id = $1"#,
+                        row.id,
+                        status,
+                        attempt_no,
+                        backoff.to_string(),
+                        r.status().as_u16() as i32,
+                        format!("HTTP {}", r.status().as_u16())
+                    )
+                    .execute(&pool)
+                    .await;
+                }
+                Err(e) => {
+                    let backoff = std::cmp::min(3600i64, 30i64 * (1i64 << attempt_no.min(8)));
+                    let give_up = attempt_no >= 6;
+                    let status = if give_up { "failed_giveup" } else { "queued" };
+                    let _ = sqlx::query!(
+                        r#"UPDATE affiliate_postback_outbox
+                              SET status = $2,
+                                  attempts = $3,
+                                  next_attempt_at = NOW() + ($4 || ' seconds')::INTERVAL,
+                                  last_error = $5,
+                                  updated_at = NOW()
+                            WHERE id = $1"#,
+                        row.id,
+                        status,
+                        attempt_no,
+                        backoff.to_string(),
+                        e.to_string()
+                    )
+                    .execute(&pool)
+                    .await;
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn iban_mod97_accepts_known_good_and_rejects_typos() {
+        // DE89 3704 0044 0532 0130 00 — canonical IBAN example
+        assert!(validate_iban_mod97("DE89370400440532013000").is_ok());
+        // single-digit typo (last 00 → 01) breaks checksum
+        assert!(validate_iban_mod97("DE89370400440532013001").is_err());
+    }
+
+    #[test]
+    fn bank_iban_last4_strips_whitespace_and_handles_short() {
+        assert_eq!(bank_iban_last4("DE89 3704 0044 0532 0130 00"), "3000");
+        assert_eq!(bank_iban_last4("AB"), "AB");
+        assert_eq!(bank_iban_last4(""), "");
+    }
 
     #[test]
     fn postback_url_builder_encodes_values_and_redacts_query() {
