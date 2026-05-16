@@ -61,6 +61,8 @@ pub mod common;
 #[allow(missing_docs)]
 pub mod community;
 #[allow(missing_docs)]
+pub mod compliance;
+#[allow(missing_docs)]
 pub mod config;
 #[allow(missing_docs)]
 pub mod db;
@@ -457,6 +459,12 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Wallet reconciliation worker — expires stale deposit requests, flags
     // pending deposits/withdrawals that exceed their processing SLA.
     tokio::spawn(wallet::reconciliation::run_reconciliation_worker(
+        pool.clone(),
+    ));
+
+    // Sanctions / PEP re-screening — picks approved users whose last
+    // screening is older than the admin-configured interval (default 30d).
+    tokio::spawn(compliance::rescreening::run_rescreening_worker(
         pool.clone(),
     ));
 
