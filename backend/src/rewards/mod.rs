@@ -97,6 +97,19 @@ pub fn router() -> Router<AppState> {
         // Phase-3 fresh: affiliate invoice register
         .route("/api/affiliate/invoices", get(api_affiliate_invoices_list))
         .route("/affiliate/invoices/:id", get(page_affiliate_invoice))
+        // Phase-4: per-event affiliate webhooks (HMAC-signed POST)
+        .route(
+            "/api/affiliate/webhooks",
+            get(api_affiliate_webhook_list).post(api_affiliate_webhook_create),
+        )
+        .route(
+            "/api/affiliate/webhooks/:id",
+            axum::routing::delete(api_affiliate_webhook_delete),
+        )
+        .route(
+            "/api/affiliate/webhooks/:id/test",
+            axum::routing::post(api_affiliate_webhook_test_fire),
+        )
         // GAP-10: Tax document upload (required for payout release)
         .route(
             "/api/affiliate/tax-document",

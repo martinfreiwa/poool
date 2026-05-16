@@ -2597,6 +2597,164 @@ pub async fn page_affiliate_invoice(
     .await
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-4: per-affiliate event webhooks (CRUD + test-fire)
+// ──────────────────────────────────────────────────────────────────────────
+
+#[derive(serde::Deserialize)]
+pub struct CreateWebhookPayload {
+    pub url: String,
+    pub event_types: String,
+    pub description: Option<String>,
+}
+
+/// GET /api/affiliate/webhooks
+pub async fn api_affiliate_webhook_list(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let rows = service::list_webhook_subscriptions(&state.db, user_id).await?;
+    Ok(Json(serde_json::json!({ "items": rows })).into_response())
+}
+
+/// POST /api/affiliate/webhooks
+/// Returns the plain HMAC secret ONCE. Caller must persist it client-side.
+pub async fn api_affiliate_webhook_create(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateWebhookPayload>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    if !is_active_affiliate(&state, user_id).await? {
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can create webhooks".into(),
+        ));
+    }
+    let (id, secret) = service::create_webhook_subscription(
+        &state.db,
+        user_id,
+        payload.url.trim(),
+        payload.event_types.trim(),
+        payload.description.as_deref(),
+    )
+    .await?;
+    Ok(Json(serde_json::json!({
+        "id": id,
+        "signing_secret": secret,
+        "secret_note": "Store this secret now — it cannot be retrieved later."
+    }))
+    .into_response())
+}
+
+/// DELETE /api/affiliate/webhooks/:id
+pub async fn api_affiliate_webhook_delete(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let deleted = service::delete_webhook_subscription(&state.db, user_id, id).await?;
+    if deleted {
+        Ok(Json(serde_json::json!({"ok": true})).into_response())
+    } else {
+        Err(crate::error::AppError::NotFound(
+            "Webhook subscription not found".into(),
+        ))
+    }
+}
+
+/// POST /api/affiliate/webhooks/:id/test
+/// Enqueues a synthetic `webhook.test` event to the subscription's URL.
+/// Rate-limited to 5 per hour per user via audit_logs.
+pub async fn api_affiliate_webhook_test_fire(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+
+    // Rate limit: 5 / hour per user.
+    let recent: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*)::bigint FROM audit_logs
+            WHERE actor_user_id = $1
+              AND action = 'affiliate_webhook_test_fire'
+              AND created_at > NOW() - INTERVAL '1 hour'"#,
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+    if recent >= 5 {
+        return Ok((
+            axum::http::StatusCode::TOO_MANY_REQUESTS,
+            Json(serde_json::json!({
+                "error": "rate_limited",
+                "message": "Max 5 test fires per hour."
+            })),
+        )
+            .into_response());
+    }
+
+    // Validate ownership + active.
+    let sub = sqlx::query(
+        r#"SELECT url FROM affiliate_webhook_subscriptions
+            WHERE id = $1 AND user_id = $2 AND is_active = TRUE"#,
+    )
+    .bind(id)
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+    let url: String = match sub {
+        Some(r) => r.try_get("url").map_err(crate::error::AppError::Database)?,
+        None => {
+            return Err(crate::error::AppError::NotFound(
+                "Webhook subscription not found or inactive".into(),
+            ))
+        }
+    };
+
+    // Enqueue one outbox row with event='webhook.test'. Worker picks it up
+    // within 30s and POSTs with HMAC signature.
+    sqlx::query(
+        r#"INSERT INTO affiliate_postback_outbox
+              (affiliate_id, event, subid, payout_cents, url, subscription_id, status, next_attempt_at)
+           VALUES ($1, 'webhook.test', NULL, 0, $2, $3, 'queued', NOW())"#,
+    )
+    .bind(user_id)
+    .bind(&url)
+    .bind(id)
+    .execute(&state.db)
+    .await
+    .map_err(crate::error::AppError::Database)?;
+
+    let _ = crate::common::audit::log(
+        &state.db,
+        Some(user_id),
+        "affiliate_webhook_test_fire",
+        "affiliate_webhook",
+        Some(id),
+        None,
+        None,
+    )
+    .await;
+
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "message": "Test webhook enqueued. Delivery may take up to 30 seconds."
+    }))
+    .into_response())
+}
+
 #[cfg(test)]
 mod data_export_tests {
     use super::data_export_readme;

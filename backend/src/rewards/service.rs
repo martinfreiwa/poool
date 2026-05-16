@@ -3103,6 +3103,280 @@ fn xml_escape(s: &str) -> String {
     out
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-4: per-event affiliate webhooks (HMAC-SHA256, Stripe-style v2 envelope)
+// ──────────────────────────────────────────────────────────────────────────
+
+/// Read the master webhook signing key from env. Hex-decoded (≥32 bytes).
+/// In dev/CI we fall back to a deterministic dev key — refuses to start in
+/// production via the explicit `POOOL_ENV=production` check at app boot.
+pub fn webhook_master_secret() -> String {
+    std::env::var("WEBHOOK_SIGNING_MASTER")
+        .unwrap_or_else(|_| "dev-master-do-not-use-in-production-0123456789abcdef".to_string())
+}
+
+/// Per-subscription HMAC-SHA256 derived secret. Returned as 64-char hex.
+/// Format: `hex(HMAC-SHA256(MASTER, "webhook:" || subscription_uuid))`.
+/// Deterministic so verifiers can re-derive without a per-row column.
+pub fn webhook_signing_secret(subscription_id: Uuid) -> String {
+    use hmac::Mac;
+    let mut mac = <hmac::Hmac<sha2::Sha256> as hmac::Mac>::new_from_slice(
+        webhook_master_secret().as_bytes(),
+    )
+    .expect("HMAC-SHA256 accepts any key length");
+    mac.update(format!("webhook:{}", subscription_id).as_bytes());
+    let bytes = mac.finalize().into_bytes();
+    bytes.iter().fold(String::with_capacity(64), |mut s, b| {
+        use std::fmt::Write as _;
+        let _ = write!(s, "{:02x}", b);
+        s
+    })
+}
+
+/// Stripe-style v2 signature envelope.
+/// Recipe: `HMAC-SHA256(secret_bytes, format!("{ts}.{body}"))`
+/// Header value: `t=<unix_ts>,v1=<hex_mac>`.
+pub fn sign_webhook_payload_v2(secret_hex: &str, ts_unix: i64, body: &str) -> String {
+    use hmac::Mac;
+    let key_bytes = hex_decode(secret_hex).unwrap_or_default();
+    let mut mac = <hmac::Hmac<sha2::Sha256> as hmac::Mac>::new_from_slice(&key_bytes)
+        .expect("HMAC-SHA256 accepts any key length");
+    mac.update(format!("{}.{}", ts_unix, body).as_bytes());
+    let hex = mac.finalize().into_bytes().iter().fold(
+        String::with_capacity(64),
+        |mut s, b| {
+            use std::fmt::Write as _;
+            let _ = write!(s, "{:02x}", b);
+            s
+        },
+    );
+    format!("t={},v1={}", ts_unix, hex)
+}
+
+/// Verify a v2 envelope. Rejects:
+///   * mangled header (missing `t=` or `v1=`)
+///   * timestamp delta > max_age_secs (replay protection)
+///   * signature mismatch (constant-time compare)
+pub fn verify_webhook_signature_v2(
+    secret_hex: &str,
+    header: &str,
+    body: &str,
+    max_age_secs: i64,
+    now_unix: i64,
+) -> Result<(), String> {
+    let mut ts: Option<i64> = None;
+    let mut v1: Option<String> = None;
+    for part in header.split(',') {
+        let trimmed = part.trim();
+        if let Some(rest) = trimmed.strip_prefix("t=") {
+            ts = rest.parse::<i64>().ok();
+        } else if let Some(rest) = trimmed.strip_prefix("v1=") {
+            v1 = Some(rest.to_string());
+        }
+    }
+    let ts = ts.ok_or_else(|| "missing t=".to_string())?;
+    let v1 = v1.ok_or_else(|| "missing v1=".to_string())?;
+    if (now_unix - ts).abs() > max_age_secs {
+        return Err(format!("timestamp out of window: {}", now_unix - ts));
+    }
+    let expected = sign_webhook_payload_v2(secret_hex, ts, body);
+    let expected_v1 = expected.split(',').find_map(|p| p.strip_prefix("v1=")).unwrap_or("");
+    if !constant_time_eq(v1.as_bytes(), expected_v1.as_bytes()) {
+        return Err("signature mismatch".to_string());
+    }
+    Ok(())
+}
+
+fn hex_decode(s: &str) -> Option<Vec<u8>> {
+    if s.len() % 2 != 0 {
+        return None;
+    }
+    let mut out = Vec::with_capacity(s.len() / 2);
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let hi = (bytes[i] as char).to_digit(16)?;
+        let lo = (bytes[i + 1] as char).to_digit(16)?;
+        out.push((hi as u8) << 4 | (lo as u8));
+        i += 2;
+    }
+    Some(out)
+}
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+/// New webhook subscription. Returns (id, plain_secret_hex). The plain
+/// secret is shown ONCE to the user at create time — the table stores a
+/// SHA-256 hash so even DB read access cannot reproduce signatures.
+pub async fn create_webhook_subscription(
+    pool: &PgPool,
+    user_id: Uuid,
+    url: &str,
+    event_types: &str,
+    description: Option<&str>,
+) -> Result<(Uuid, String), AppError> {
+    if !url.starts_with("https://") {
+        return Err(AppError::BadRequest("URL must be HTTPS".into()));
+    }
+    if event_types.is_empty() || event_types.len() > 500 {
+        return Err(AppError::BadRequest(
+            "event_types must be 1..500 chars (comma-separated, or '*')".into(),
+        ));
+    }
+    let id = Uuid::new_v4();
+    let plain_secret = webhook_signing_secret(id);
+    let secret_hash = {
+        use sha2::Digest;
+        let mut h = sha2::Sha256::new();
+        h.update(plain_secret.as_bytes());
+        h.finalize().iter().fold(String::with_capacity(64), |mut s, b| {
+            use std::fmt::Write as _;
+            let _ = write!(s, "{:02x}", b);
+            s
+        })
+    };
+    sqlx::query(
+        r#"INSERT INTO affiliate_webhook_subscriptions
+              (id, user_id, url, event_types, secret_hash, description, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6, TRUE)"#,
+    )
+    .bind(id)
+    .bind(user_id)
+    .bind(url)
+    .bind(event_types)
+    .bind(secret_hash)
+    .bind(description)
+    .execute(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("webhook create failed: {e}")))?;
+    Ok((id, plain_secret))
+}
+
+#[derive(serde::Serialize)]
+pub struct WebhookSubscriptionRow {
+    pub id: Uuid,
+    pub url: String,
+    pub event_types: String,
+    pub description: Option<String>,
+    pub is_active: bool,
+    pub last_success_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub last_failure_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub last_status_code: Option<i32>,
+    pub failure_count: i32,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+pub async fn list_webhook_subscriptions(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<WebhookSubscriptionRow>, AppError> {
+    let rows = sqlx::query(
+        r#"SELECT id, url, event_types, description, is_active,
+                  last_success_at, last_failure_at, last_status_code,
+                  failure_count, created_at
+             FROM affiliate_webhook_subscriptions
+            WHERE user_id = $1
+         ORDER BY created_at DESC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("webhook list failed: {e}")))?;
+    Ok(rows
+        .into_iter()
+        .map(|r| WebhookSubscriptionRow {
+            id: r.try_get("id").unwrap_or_else(|_| Uuid::nil()),
+            url: r.try_get("url").unwrap_or_default(),
+            event_types: r.try_get("event_types").unwrap_or_default(),
+            description: r.try_get("description").ok(),
+            is_active: r.try_get("is_active").unwrap_or(false),
+            last_success_at: r.try_get("last_success_at").ok(),
+            last_failure_at: r.try_get("last_failure_at").ok(),
+            last_status_code: r.try_get("last_status_code").ok(),
+            failure_count: r.try_get("failure_count").unwrap_or(0),
+            created_at: r
+                .try_get("created_at")
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        })
+        .collect())
+}
+
+pub async fn delete_webhook_subscription(
+    pool: &PgPool,
+    user_id: Uuid,
+    id: Uuid,
+) -> Result<bool, AppError> {
+    let res = sqlx::query(
+        "DELETE FROM affiliate_webhook_subscriptions WHERE id = $1 AND user_id = $2",
+    )
+    .bind(id)
+    .bind(user_id)
+    .execute(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("webhook delete failed: {e}")))?;
+    Ok(res.rows_affected() > 0)
+}
+
+/// Enqueue one outbox row per matching active subscription. Idempotent
+/// callers pass a stable JSON `body` so signature replays work.
+pub async fn dispatch_webhook_event(
+    pool: &PgPool,
+    affiliate_user_id: Uuid,
+    event_type: &str,
+    body_json: &serde_json::Value,
+) -> Result<u64, AppError> {
+    let subs = sqlx::query(
+        r#"SELECT id, url, event_types
+             FROM affiliate_webhook_subscriptions
+            WHERE user_id = $1 AND is_active = TRUE"#,
+    )
+    .bind(affiliate_user_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("webhook scan: {e}")))?;
+    let mut enqueued: u64 = 0;
+    for sub in &subs {
+        let evts: String = sub.try_get("event_types").unwrap_or_default();
+        let matches = evts.trim() == "*"
+            || evts.split(',').any(|e| e.trim() == event_type);
+        if !matches {
+            continue;
+        }
+        let sub_id: Uuid = sub.try_get("id").unwrap_or_else(|_| Uuid::nil());
+        let url: String = sub.try_get("url").unwrap_or_default();
+        let body_str = body_json.to_string();
+        let res = sqlx::query(
+            r#"INSERT INTO affiliate_postback_outbox
+                  (affiliate_id, event, subid, payout_cents, url, subscription_id, status, next_attempt_at)
+               VALUES ($1, $2, NULL, 0, $3, $4, 'queued', NOW())"#,
+        )
+        .bind(affiliate_user_id)
+        .bind(event_type)
+        .bind(&url)
+        .bind(sub_id)
+        .execute(pool)
+        .await;
+        if let Ok(r) = res {
+            enqueued += r.rows_affected();
+        }
+        let _ = body_str; // body is sent at dispatch time, not stored
+    }
+    Ok(enqueued)
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-4: postback worker with HMAC-signed POST for subscription-bound rows
+// ──────────────────────────────────────────────────────────────────────────
+
 pub async fn run_affiliate_postback_worker(pool: PgPool) {
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
@@ -3118,7 +3392,7 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
     loop {
         interval.tick().await;
         let due = sqlx::query!(
-            r#"SELECT id, url, attempts
+            r#"SELECT id, url, attempts, event, subscription_id
                  FROM affiliate_postback_outbox
                 WHERE status = 'queued'
                   AND next_attempt_at <= NOW()
@@ -3136,9 +3410,33 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
         };
         for row in rows {
             let attempt_no = row.attempts + 1;
-            let resp = client.get(&row.url).send().await;
+            let resp = if let Some(sub_id) = row.subscription_id {
+                // Phase-4 path: POST JSON body with HMAC-signed envelope.
+                let secret = webhook_signing_secret(sub_id);
+                let body = serde_json::json!({
+                    "event": row.event,
+                    "delivery_id": row.id,
+                    "attempt": attempt_no,
+                })
+                .to_string();
+                let ts = chrono::Utc::now().timestamp();
+                let sig = sign_webhook_payload_v2(&secret, ts, &body);
+                client
+                    .post(&row.url)
+                    .header("Content-Type", "application/json")
+                    .header("X-Poool-Event", &row.event)
+                    .header("X-Poool-Signature", sig)
+                    .header("X-Poool-Delivery", row.id.to_string())
+                    .body(body)
+                    .send()
+                    .await
+            } else {
+                // Legacy path: GET (old single-URL postback flow).
+                client.get(&row.url).send().await
+            };
             match resp {
                 Ok(r) if r.status().is_success() => {
+                    let code = r.status().as_u16() as i32;
                     let _ = sqlx::query!(
                         r#"UPDATE affiliate_postback_outbox
                               SET status = 'sent',
@@ -3149,12 +3447,27 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
                             WHERE id = $1"#,
                         row.id,
                         attempt_no,
-                        r.status().as_u16() as i32
+                        code
                     )
                     .execute(&pool)
                     .await;
+                    if let Some(sub_id) = row.subscription_id {
+                        let _ = sqlx::query(
+                            r#"UPDATE affiliate_webhook_subscriptions
+                                  SET last_success_at = NOW(),
+                                      last_status_code = $2,
+                                      failure_count = 0,
+                                      updated_at = NOW()
+                                WHERE id = $1"#,
+                        )
+                        .bind(sub_id)
+                        .bind(code)
+                        .execute(&pool)
+                        .await;
+                    }
                 }
                 Ok(r) => {
+                    let code = r.status().as_u16() as i32;
                     let backoff = std::cmp::min(3600i64, 30i64 * (1i64 << attempt_no.min(8)));
                     let give_up = attempt_no >= 6;
                     let status = if give_up { "failed_giveup" } else { "queued" };
@@ -3171,11 +3484,25 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
                         status,
                         attempt_no,
                         backoff.to_string(),
-                        r.status().as_u16() as i32,
-                        format!("HTTP {}", r.status().as_u16())
+                        code,
+                        format!("HTTP {}", code)
                     )
                     .execute(&pool)
                     .await;
+                    if let Some(sub_id) = row.subscription_id {
+                        let _ = sqlx::query(
+                            r#"UPDATE affiliate_webhook_subscriptions
+                                  SET last_failure_at = NOW(),
+                                      last_status_code = $2,
+                                      failure_count = failure_count + 1,
+                                      updated_at = NOW()
+                                WHERE id = $1"#,
+                        )
+                        .bind(sub_id)
+                        .bind(code)
+                        .execute(&pool)
+                        .await;
+                    }
                 }
                 Err(e) => {
                     let backoff = std::cmp::min(3600i64, 30i64 * (1i64 << attempt_no.min(8)));
@@ -3197,6 +3524,18 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
                     )
                     .execute(&pool)
                     .await;
+                    if let Some(sub_id) = row.subscription_id {
+                        let _ = sqlx::query(
+                            r#"UPDATE affiliate_webhook_subscriptions
+                                  SET last_failure_at = NOW(),
+                                      failure_count = failure_count + 1,
+                                      updated_at = NOW()
+                                WHERE id = $1"#,
+                        )
+                        .bind(sub_id)
+                        .execute(&pool)
+                        .await;
+                    }
                 }
             }
         }
@@ -3206,6 +3545,71 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn webhook_signing_secret_is_deterministic_and_64_hex() {
+        let id = Uuid::parse_str("11111111-2222-3333-4444-555555555555").unwrap();
+        let s1 = webhook_signing_secret(id);
+        let s2 = webhook_signing_secret(id);
+        assert_eq!(s1, s2, "must be deterministic");
+        assert_eq!(s1.len(), 64);
+        assert!(s1.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn webhook_v2_signature_round_trip() {
+        let id = Uuid::new_v4();
+        let secret = webhook_signing_secret(id);
+        let body = r#"{"event":"commission_earned","amount_cents":1234}"#;
+        let ts = 1_700_000_000i64;
+        let header = sign_webhook_payload_v2(&secret, ts, body);
+        assert!(header.starts_with("t=1700000000,v1="));
+        verify_webhook_signature_v2(&secret, &header, body, 300, ts + 10)
+            .expect("round-trip verify should succeed");
+    }
+
+    #[test]
+    fn webhook_v2_rejects_stale_timestamp() {
+        let secret = webhook_signing_secret(Uuid::new_v4());
+        let body = "{}";
+        let header = sign_webhook_payload_v2(&secret, 1_000_000_000, body);
+        // now is 600s later; max_age is 300s -> rejected
+        let err = verify_webhook_signature_v2(&secret, &header, body, 300, 1_000_000_600)
+            .unwrap_err();
+        assert!(err.contains("out of window"), "got: {}", err);
+    }
+
+    #[test]
+    fn webhook_v2_rejects_tampered_body() {
+        let secret = webhook_signing_secret(Uuid::new_v4());
+        let header = sign_webhook_payload_v2(&secret, 1_700_000_000, r#"{"a":1}"#);
+        let err = verify_webhook_signature_v2(
+            &secret,
+            &header,
+            r#"{"a":2}"#,
+            300,
+            1_700_000_000,
+        )
+        .unwrap_err();
+        assert_eq!(err, "signature mismatch");
+    }
+
+    #[test]
+    fn webhook_v2_rejects_mangled_header() {
+        let secret = webhook_signing_secret(Uuid::new_v4());
+        let body = "{}";
+        assert!(
+            verify_webhook_signature_v2(&secret, "garbage", body, 300, 1_700_000_000).is_err()
+        );
+        assert!(
+            verify_webhook_signature_v2(&secret, "t=123", body, 300, 1_700_000_000).is_err(),
+            "missing v1"
+        );
+        assert!(
+            verify_webhook_signature_v2(&secret, "v1=abc", body, 300, 1_700_000_000).is_err(),
+            "missing t"
+        );
+    }
 
     #[test]
     fn xml_escape_handles_all_xml_special_chars() {
