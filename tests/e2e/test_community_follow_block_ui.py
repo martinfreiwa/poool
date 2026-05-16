@@ -124,10 +124,15 @@ def test_unfollow_after_follow(playwright_session, viewer_and_target):
             timeout=10000,
         ):
             btn.click()
-        # JS finishes by setting innerText to "Unfollow" after a successful follow.
+        # JS finishes by setting innerText to "Unfollow" AND re-enabling the
+        # button after a successful follow. The disabled→enabled flip happens
+        # in `finally{}` AFTER the text flip, so we must wait for !disabled
+        # before clicking again — otherwise Chromium silently drops the
+        # second click (disabled buttons don't fire click events) and the
+        # subsequent DELETE never happens. CI runners surface this race.
         page.wait_for_function(
-            "() => document.getElementById('community-profile-follow-btn')"
-            ".textContent.toLowerCase().includes('unfollow')",
+            "() => { const b = document.getElementById('community-profile-follow-btn');"
+            "  return b && !b.disabled && b.textContent.toLowerCase().includes('unfollow'); }",
             timeout=10000,
         )
 
