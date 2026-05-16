@@ -2,10 +2,23 @@
 
 Date: 2026-05-16
 
-Status: **findings recorded; fixes deferred** pending unblocking of in-flight
-WIP that overlaps the same files. None of the items below are exploited
-in the wild — they're latent risks discovered by mirroring the 2026-05
-wallet audit pattern onto the next-most-sensitive surfaces.
+Status: **5 of 10 fixed (2026-05-17); 5 deferred** pending larger-
+refactor scope. None of the items below are exploited in the wild —
+they're latent risks discovered by mirroring the 2026-05 wallet audit
+pattern onto the next-most-sensitive surfaces.
+
+| # | Sev | Status | Commit |
+|---|-----|--------|--------|
+| 1 | H | ✅ fixed 2026-05-17 | `9539e31` (idempotency + outbox) |
+| 2 | H | deferred | needs idempotency on treasury endpoint |
+| 3 | H | ✅ fixed 2026-05-17 | `07af8ab` (role guard) |
+| 4 | H | deferred | landing with the user's step_up enum WIP |
+| 5 | M | ✅ fixed 2026-05-17 | `9539e31` (sync outbox) |
+| 6 | M | deferred | login audit refactor |
+| 7 | M | ✅ fixed 2026-05-17 | `875c7ac` (fail-closed) |
+| 8 | M | deferred | needs new `pii.view_sensitive` permission |
+| 9 | M | deferred | dual rate-limit atomicity refactor |
+| 10 | L | ✅ fixed 2026-05-17 | `9d824fd` (log redaction) |
 
 ## Scope
 
