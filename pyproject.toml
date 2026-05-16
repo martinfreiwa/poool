@@ -28,6 +28,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
+# Make tests/e2e importable so test files can `from community_helpers import ...`
+pythonpath = ["tests/e2e"]
+
 # Base URL for playwright (used by pytest-base-url plugin)
 base_url = "http://localhost:8888"
 

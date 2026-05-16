@@ -559,16 +559,20 @@ window.initCommunityFeed = function() {
             btnElement.disabled = true;
             btnElement.innerText = "Updating...";
 
+            // Optional optimistic-counter element — only exists on the
+            // legacy profile-modal layout. On the standalone
+            // /community/u/:id page it's absent, so guard with null check.
+            const followersEl = document.getElementById('profile-modal-followers');
             if (currentlyFollowing) {
                 const res = await fetch(`/api/community/follow/${userId}`, { method: 'DELETE', credentials: 'same-origin', headers: csrfHeaders() });
                 if (!res.ok) throw new Error("Failed to unfollow");
-                
+
                 btnElement.innerText = "Follow User";
                 btnElement.className = "ds-btn ds-btn--primary";
-                
-                // Optimistically update followers count 
-                const followersEl = document.getElementById('profile-modal-followers');
-                followersEl.innerText = Math.max(0, parseInt(followersEl.innerText) - 1);
+
+                if (followersEl) {
+                    followersEl.innerText = Math.max(0, parseInt(followersEl.innerText) - 1);
+                }
             } else {
                 const res = await fetch(`/api/community/follow/${userId}`, { method: 'POST', credentials: 'same-origin', headers: csrfHeaders() });
                 if (!res.ok) {
@@ -577,10 +581,10 @@ window.initCommunityFeed = function() {
                 }
                 btnElement.innerText = "Unfollow";
                 btnElement.className = "ds-btn ds-btn--secondary";
-                
-                // Optimistically update followers count
-                const followersEl = document.getElementById('profile-modal-followers');
-                followersEl.innerText = parseInt(followersEl.innerText) + 1;
+
+                if (followersEl) {
+                    followersEl.innerText = parseInt(followersEl.innerText) + 1;
+                }
             }
             // Bind the new toggle state
             btnElement.onclick = () => toggleFollow(userId, !currentlyFollowing, btnElement);
@@ -1436,16 +1440,23 @@ window.initCommunityFeed = function() {
 
     window.loadTrendingAssets = async function() {
         const container = document.getElementById('trending-assets-container');
+        const widget = document.getElementById('trending-assets-widget');
         if (!container) return;
-        
+
         try {
             const res = await fetch('/api/community/trending-assets', { credentials: 'same-origin' });
-            if (!res.ok) return;
+            if (!res.ok) {
+                if (widget) widget.hidden = true;
+                return;
+            }
 
             const assets = await res.json();
-            
+
             if (assets.length === 0) {
-                container.innerHTML = '<div class="community-state-inline">No trending assets yet</div>';
+                // Hide widget entirely rather than rendering yet-another
+                // "no data" tile next to its sibling empty states. Getting
+                // Started card already covers first-visit onboarding.
+                if (widget) widget.hidden = true;
                 return;
             }
 
@@ -1725,16 +1736,10 @@ window.initCommunityFeed = function() {
     });
 
     async function updateMyProfileCard(profile, retryCount = 0) {
-        // Elements from community.html
         const nameEl = document.getElementById('my-profile-name');
         const bioEl = document.getElementById('my-profile-bio');
-        const postEl = document.getElementById('my-profile-posts');
-        const folEl = document.getElementById('my-profile-followers');
-        const fngEl = document.getElementById('my-profile-following');
-        const avatarEl = document.getElementById('my-profile-avatar-circle');
 
         if (!window.__POOOL_USER && retryCount < 10) {
-            // Give user-data.js a moment to finish its /api/me fetch
             setTimeout(() => updateMyProfileCard(profile, retryCount + 1), 200);
             return;
         }
@@ -1742,48 +1747,38 @@ window.initCommunityFeed = function() {
         if (nameEl && window.__POOOL_USER) {
             nameEl.textContent = window.__POOOL_USER.name || "User";
         }
-        if (avatarEl && window.__POOOL_USER) {
-            avatarEl.textContent = (window.__POOOL_USER.name || "U")[0].toUpperCase();
-        }
         if (bioEl) {
             bioEl.textContent = profile.bio || "No bio yet • Start your journey 🌱";
         }
-        if (postEl) postEl.textContent = profile.post_count || 0;
-        if (folEl) folEl.textContent = profile.follower_count || 0;
-        if (fngEl) fngEl.textContent = profile.following_count || 0;
 
-        // Also populate inline composer UI elements
-        const fbName = document.getElementById('fb-compose-name');
-        const fbAvatar = document.getElementById('fb-compose-avatar');
+        // First-visit nudge: 3-step Getting Started card. Each step is
+        // ticked off independently based on real profile signals; once
+        // all three are complete, the card hides itself entirely.
+        const gsEl = document.getElementById('community-getting-started');
+        if (gsEl) {
+          const steps = {
+            bio:    Boolean((profile.bio && profile.bio.trim()) || profile.flair),
+            follow: Number(profile.following_count) >= 5,
+            post:   Number(profile.post_count) >= 1,
+          };
+          let done = 0;
+          gsEl.querySelectorAll('.community-getting-started__item').forEach((li) => {
+            const stepKey = li.dataset.step;
+            const isDone = !!steps[stepKey];
+            li.classList.toggle('community-getting-started__item--done', isDone);
+            const stepBadge = li.querySelector('.community-getting-started__step');
+            if (stepBadge) stepBadge.textContent = isDone ? '✓' : ({ bio: '1', follow: '2', post: '3' })[stepKey];
+            if (isDone) done++;
+          });
+          const progressEl = document.getElementById('community-getting-started-progress');
+          if (progressEl) progressEl.textContent = `${done} of 3`;
+          gsEl.hidden = done >= 3;
+        }
+
         const contentInput = document.getElementById('post-content-input');
-
-        if (fbName && window.__POOOL_USER) {
-            const fullName = window.__POOOL_USER.name || "User";
-            fbName.textContent = fullName;
-            if (contentInput) {
-                const firstName = fullName.split(' ')[0];
-                contentInput.placeholder = `What's on your mind, ${firstName}?`;
-            }
-        }
-        if (fbAvatar && window.__POOOL_USER) {
-            fbAvatar.textContent = (window.__POOOL_USER.name || "U")[0].toUpperCase();
-        }
-        const badgesEl = document.getElementById('my-profile-badges');
-        if (badgesEl) {
-            badgesEl.innerHTML = '';
-            if (profile.badges && profile.badges.length > 0) {
-                profile.badges.forEach(b => {
-                    const span = document.createElement('span');
-                    span.className = 'profile-badge profile-badge--gold';
-                    let label = b.name || b.badge_type || '';
-                    // Try to map some to standard ones
-                    if (label.toLowerCase().includes('verified')) span.className = 'profile-badge profile-badge--verified';
-                    if (label.toLowerCase().includes('investor')) span.className = 'profile-badge profile-badge--investor';
-                    span.textContent = label;
-                    if (b.description) span.title = b.description;
-                    badgesEl.appendChild(span);
-                });
-            }
+        if (contentInput && window.__POOOL_USER) {
+            const firstName = (window.__POOOL_USER.name || "User").split(' ')[0];
+            contentInput.placeholder = `What's on your mind, ${firstName}?`;
         }
     }
 
@@ -2105,15 +2100,6 @@ window.initCommunityFeed = function() {
         }
     };
 
-    // Phase 2 task 15: trigger the saved-posts HTMX swap. The container in
-    // community.html listens for the `load-saved-posts` body event and fetches
-    // /community/partials/feed/list?source=bookmarks, which returns the same
-    // server-rendered card as the main feed (reactions, comments, bookmark
-    // toggle, report, owner kebab — all wired).
-    window.loadSavedPosts = function () {
-        document.body.dispatchEvent(new Event('load-saved-posts'));
-    };
-
     // ═══════════════════════════════════════════════════════════════
     // UX.11: POLL FUNCTIONS
     // ═══════════════════════════════════════════════════════════════
@@ -2129,6 +2115,11 @@ window.initCommunityFeed = function() {
             // No poll for this post — that's fine
         }
     }
+    // Expose for the inline <script> in partials/community_post_card.html.
+    // Without this, the function lived only inside the IIFE and the partial's
+    // `typeof loadPollForPost === 'function'` check silently failed, so polls
+    // never rendered after a page reload.
+    window.loadPollForPost = loadPollForPost;
 
     function renderPoll(postId, poll, container) {
         container.innerHTML = '';
@@ -2255,15 +2246,19 @@ window.initCommunityFeed = function() {
 
     async function loadTrendingHashtags() {
         const container = document.getElementById('trending-hashtags-container');
+        const widget = document.getElementById('trending-hashtags-widget');
         if (!container) return;
 
         try {
             const res = await fetch('/api/community/hashtags/trending', { credentials: 'same-origin' });
-            if (!res.ok) return;
+            if (!res.ok) {
+                if (widget) widget.hidden = true;
+                return;
+            }
             const hashtags = await res.json();
 
             if (!hashtags || hashtags.length === 0) {
-                container.innerHTML = '<div style="font-size: 13px; color: #98A2B3; text-align: center; padding: 12px;">No trending hashtags yet.</div>';
+                if (widget) widget.hidden = true;
                 return;
             }
 

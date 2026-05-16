@@ -109,10 +109,18 @@ pub async fn serve_protected_with_context<T: serde::Serialize>(
         Ok(template) => match template.render(map) {
             Ok(content) => Html(content).into_response(),
             Err(e) => {
-                error!("Template rendering error for {}: {}", file, e);
+                // Walk the error source chain — MiniJinja's Display omits the
+                // root cause when the failure was inside an include.
+                let mut chain = format!("{:#}", e);
+                let mut cur: Option<&dyn std::error::Error> = std::error::Error::source(&e);
+                while let Some(src) = cur {
+                    chain.push_str(&format!("\n caused by: {}", src));
+                    cur = std::error::Error::source(src);
+                }
+                error!("Template rendering error for {}: {}", file, chain);
                 (
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
+                    Html(format!("<h1>Internal Server Error: {}</h1>", chain)),
                 )
                     .into_response()
             }

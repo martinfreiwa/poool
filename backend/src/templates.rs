@@ -64,6 +64,26 @@ pub fn create_engine() -> Templates {
         },
     );
 
+    // Custom filter: percent-encode a string for safe inclusion in a URL
+    // query parameter. The post-card partial uses it for Twitter/X share
+    // intent links; without it MiniJinja errored with "unknown filter:
+    // urlencode" and the whole feed list render aborted.
+    env.add_filter("urlencode", |value: String| -> String {
+        // Encode everything except RFC-3986 unreserved chars so the result
+        // is safe inside both query strings and path segments.
+        const UNRESERVED: &[u8] =
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+        let mut out = String::with_capacity(value.len());
+        for &b in value.as_bytes() {
+            if UNRESERVED.contains(&b) {
+                out.push(b as char);
+            } else {
+                out.push_str(&format!("%{:02X}", b));
+            }
+        }
+        out
+    });
+
     // Auth templates are now loaded dynamically via path_loader from frontend/platform
     // This ensures consistency with the design system and shared head.html.
     tracing::info!(

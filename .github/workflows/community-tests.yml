@@ -1,0 +1,169 @@
+# ═══════════════════════════════════════════════════════════════
+# POOOL — GitHub Actions CI: Community DM Tests
+# ═══════════════════════════════════════════════════════════════
+# Dedicated workflow for the Direct Messages feature:
+#   * Bash e2e (scripts/test_dm_e2e.sh) — 21 API-level assertions
+#   * Playwright UI (tests/e2e/test_community_*.py) — 39 UI flows
+#     (DM, circle discover/settings, profile tabs, feed, polls, mobile,
+#      notifications, follow/block)
+#
+# Triggered only when DM-related files change (cheap PR gate) plus
+# manual dispatch. Both test suites run in parallel against one shared
+# backend instance.
+
+name: Community Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/src/community/**'
+      - 'frontend/platform/static/js/community-*.js'
+      - 'frontend/platform/community*.html'
+      - 'frontend/platform/partials/community_*.html'
+      - 'database/community/**'
+      - 'scripts/test_*_e2e.sh'
+      - 'scripts/test_community_all.sh'
+      - 'scripts/lib/community_test_helpers.sh'
+      - 'tests/e2e/test_community*.py'
+      - '.github/workflows/community-dm-tests.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: community-dm-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASE_URL: http://localhost:8888
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_test
+  COMMUNITY_DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_community_test
+  POOOL_ENV: development
+  RUST_LOG: warn
+
+jobs:
+  dm-tests:
+    name: "💬 DM end-to-end"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: poool_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🗄️ Create community DB
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c \
+            "CREATE DATABASE poool_community_test"
+
+      - name: 🦀 Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with: { toolchain: stable }
+
+      - name: 📦 Cache Rust deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            backend/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: 🔨 Build backend
+        working-directory: backend
+        run: cargo build --release
+        env:
+          SQLX_OFFLINE: "true"
+
+      # bundle.css is gitignored (built artifact). The mobile-overflow
+      # regression test depends on the `html, body { overflow-x: hidden }`
+      # rule that lives in mobile-burger-menu.css — rebuild the bundle so
+      # the rule actually reaches the browser during tests.
+      - name: 🎨 Build CSS bundle
+        run: bash frontend/platform/static/css/build-bundle.sh
+
+      - name: 🗄️ Apply migrations
+        run: |
+          for f in database/*.sql; do
+            PGPASSWORD=postgres psql -h localhost -U postgres -d poool_test -f "$f" 2>&1 \
+              | grep -vE "(already exists|relation)" | head -3 || true
+          done
+          for f in database/community/*.sql; do
+            PGPASSWORD=postgres psql -h localhost -U postgres -d poool_community_test -f "$f" 2>&1 \
+              | grep -vE "(already exists|relation)" | head -3 || true
+          done
+
+      - name: 🚀 Start backend
+        working-directory: backend
+        run: |
+          ./target/release/poool-backend &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8888/health && break || sleep 1
+          done
+        env:
+          SERVER_PORT: "8888"
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_test
+          COMMUNITY_DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_community_test
+
+      # ── Suite 1: All community bash e2e suites (master runner) ─
+      - name: 🐚 Run all community bash e2e (68 assertions)
+        run: ./scripts/test_community_all.sh
+        env:
+          BASE_URL: http://localhost:8888
+          # Override the scripts' default DB URLs for CI.
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_test
+          COMMUNITY_DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_community_test
+
+      # ── Suite 2: Playwright UI ────────────────────────────────
+      - name: 🐍 Python + Playwright
+        uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: 📦 Install test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/e2e/requirements.txt
+          playwright install --with-deps chromium
+
+      - name: 🎭 Run Playwright community UI suite
+        # Covers every test file matching test_community_*.py — DM flow plus
+        # the 8-wave UI build (circle discover/settings, profile tabs, feed,
+        # polls, mobile, notifications, follow/block). Currently 39 tests.
+        run: |
+          pytest tests/e2e/test_community_*.py \
+            -v --tb=short --timeout=60 \
+            -p no:cacheprovider -o "addopts=" \
+            --html=tests/e2e/reports/community_ui.html --self-contained-html
+
+      - name: 📊 Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: community-ui-report
+          path: tests/e2e/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: 📸 Upload screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: community-ui-screenshots
+          path: tests/e2e/screenshots/
+          retention-days: 14
+          if-no-files-found: ignore

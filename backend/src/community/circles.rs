@@ -12,6 +12,10 @@ pub struct Circle {
     pub description: Option<String>,
     pub owner_id: Uuid,
     pub avatar_emoji: Option<String>,
+    // Slug is required by the multi-circle URLs (`/community/circle/:slug/…`)
+    // and by the settings-page hydration (`hydrateForm()` reads `c.slug`).
+    // The DB column is NOT NULL — every row has one.
+    pub slug: String,
     pub member_count: i32,
     pub total_xp: i64,
     pub level: i32,
@@ -366,17 +370,35 @@ pub async fn get_circle_members(
 // ─── Join / Leave ───────────────────────────────────────────────────
 
 /// Join a public circle (or accept an invite for private).
+/// As of 2026-05-16 the single-circle restriction is gone — users may
+/// belong to as many circles as they like. UNIQUE(circle_id, user_id)
+/// in the DB still prevents joining the SAME circle twice.
 pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Result<(), AppError> {
-    // Check if already in a circle
-    let existing_circle: Option<Uuid> =
-        sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1")
-            .bind(user_id)
-            .fetch_optional(pool)
-            .await?;
+    // Idempotency: if user is already a member of THIS circle, no-op.
+    let already: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE circle_id = $1 AND user_id = $2)",
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+    if already {
+        return Ok(());
+    }
 
-    if existing_circle.is_some() {
-        return Err(AppError::BadRequest(
-            "You are already in a circle. Leave first.".into(),
+    // Ban check: don't let a banned user re-join.
+    let banned: bool = sqlx::query_scalar(
+        r#"SELECT EXISTS(SELECT 1 FROM circle_bans
+             WHERE circle_id = $1 AND banned_user_id = $2
+               AND (expires_at IS NULL OR expires_at > NOW()))"#,
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+    if banned {
+        return Err(AppError::Forbidden(
+            "You are banned from this circle.".into(),
         ));
     }
 
@@ -413,11 +435,16 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
     .execute(&mut *tx)
     .await?;
 
-    sqlx::query("UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2")
-        .bind(circle_id)
-        .bind(user_id)
-        .execute(&mut *tx)
-        .await?;
+    // `community_profiles.circle_id` = the user's PRIMARY circle (UI default).
+    // Only set on FIRST circle join — subsequent multi-joins do not steal
+    // primary status. User can change primary explicitly via settings page.
+    sqlx::query(
+        "UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2 AND circle_id IS NULL",
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
 
@@ -451,16 +478,25 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
 }
 
 /// Leave a circle. Owner cannot leave (must transfer or delete).
-pub async fn leave_circle(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
-    let membership: Option<(Uuid, String)> =
-        sqlx::query_as("SELECT circle_id, role FROM circle_members WHERE user_id = $1")
+/// Multi-join era: caller MUST specify `target_circle_id` — the days of
+/// "user is in exactly one circle" are over.
+pub async fn leave_circle(
+    pool: &PgPool,
+    user_id: Uuid,
+    target_circle_id: Uuid,
+) -> Result<(), AppError> {
+    // Multi-join era: caller MUST specify which circle to leave. Look up
+    // the user's role IN THIS SPECIFIC circle to enforce owner-cannot-leave.
+    let role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
             .bind(user_id)
+            .bind(target_circle_id)
             .fetch_optional(pool)
             .await?;
 
-    let (circle_id, role) = match membership {
-        Some(m) => m,
-        None => return Err(AppError::BadRequest("You are not in a circle.".into())),
+    let role = match role {
+        Some(r) => r,
+        None => return Err(AppError::BadRequest("You are not in this circle.".into())),
     };
 
     if role == "owner" {
@@ -473,19 +509,26 @@ pub async fn leave_circle(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> 
 
     sqlx::query("DELETE FROM circle_members WHERE user_id = $1 AND circle_id = $2")
         .bind(user_id)
-        .bind(circle_id)
+        .bind(target_circle_id)
         .execute(&mut *tx)
         .await?;
 
     sqlx::query("UPDATE circles SET member_count = GREATEST(0, member_count - 1), updated_at = NOW() WHERE id = $1")
-        .bind(circle_id)
+        .bind(target_circle_id)
         .execute(&mut *tx)
         .await?;
 
-    sqlx::query("UPDATE community_profiles SET circle_id = NULL WHERE user_id = $1")
-        .bind(user_id)
-        .execute(&mut *tx)
-        .await?;
+    // If the user's primary (community_profiles.circle_id) was the one they
+    // just left, demote primary status. Their next remaining circle (if any)
+    // can become primary on next join or via explicit settings choice.
+    sqlx::query(
+        "UPDATE community_profiles SET circle_id = NULL
+         WHERE user_id = $1 AND circle_id = $2",
+    )
+    .bind(user_id)
+    .bind(target_circle_id)
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
 
@@ -518,15 +561,18 @@ pub async fn send_invite(
         }
     }
 
-    // Check invitee not already in a circle
-    let existing: Option<Uuid> =
-        sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1")
-            .bind(invitee_id)
-            .fetch_optional(pool)
-            .await?;
-
-    if existing.is_some() {
-        return Err(AppError::BadRequest("User is already in a circle.".into()));
+    // Check invitee not already in THIS circle (multi-circle era).
+    let already_in_this: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE user_id = $1 AND circle_id = $2)",
+    )
+    .bind(invitee_id)
+    .bind(circle_id)
+    .fetch_one(pool)
+    .await?;
+    if already_in_this {
+        return Err(AppError::BadRequest(
+            "User is already in this circle.".into(),
+        ));
     }
 
     let invite = sqlx::query_as::<_, CircleInvite>(
@@ -891,16 +937,17 @@ pub async fn request_to_join(
     user_id: Uuid,
     circle_id: Uuid,
 ) -> Result<CircleJoinRequest, AppError> {
-    // Check user isn't already in a circle
-    let already_member: Option<Uuid> =
-        sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1")
-            .bind(user_id)
-            .fetch_optional(pool)
-            .await?;
-
-    if already_member.is_some() {
+    // Multi-circle era: check user isn't already in THIS specific circle.
+    let already_in_this: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE user_id = $1 AND circle_id = $2)",
+    )
+    .bind(user_id)
+    .bind(circle_id)
+    .fetch_one(pool)
+    .await?;
+    if already_in_this {
         return Err(AppError::BadRequest(
-            "You are already in a circle. Leave first.".into(),
+            "You are already in this circle.".into(),
         ));
     }
 
@@ -1494,4 +1541,465 @@ pub async fn update_token_gate(
     .await?;
 
     Ok(circle)
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Multi-circle discovery, search, slug-lookup, bans (2026-05-16 rework).
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Slim Circle row for discover / search list cards. Smaller payload than
+/// the full Circle struct — no XP totals, no level metadata.
+#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+pub struct CircleCardRow {
+    pub id: Uuid,
+    pub slug: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub avatar_emoji: Option<String>,
+    pub banner_url: Option<String>,
+    pub member_count: i32,
+    pub max_members: i32,
+    pub is_public: bool,
+    pub is_featured: bool,
+    pub recent_post_count: i32,
+}
+
+/// Discover endpoint payload: 3 curated lists.
+#[derive(Debug, serde::Serialize)]
+pub struct DiscoverPayload {
+    pub featured: Vec<CircleCardRow>,
+    pub trending: Vec<CircleCardRow>,
+    pub new: Vec<CircleCardRow>,
+}
+
+/// `GET /api/community/circles/discover` data: 3 sections × up to 10 each.
+/// - `featured` = `is_featured = TRUE`, sorted by `featured_at DESC`.
+/// - `trending` = sorted by `recent_post_count DESC` (refreshed by background
+///   job; fallback to member_count DESC on cold start).
+/// - `new`      = sorted by `created_at DESC`, last 30 days only.
+pub async fn discover_circles(pool: &PgPool) -> Result<DiscoverPayload, AppError> {
+    const COLS: &str = "id, slug, name, description, avatar_emoji, banner_url, \
+                        member_count, max_members, is_public, is_featured, recent_post_count";
+
+    let featured: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE is_featured = TRUE AND is_public = TRUE
+         ORDER BY featured_at DESC NULLS LAST, member_count DESC
+         LIMIT 10",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let trending: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE is_public = TRUE AND is_featured = FALSE
+         ORDER BY recent_post_count DESC, member_count DESC, created_at DESC
+         LIMIT 10",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let new_list: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE is_public = TRUE AND is_featured = FALSE
+           AND created_at >= NOW() - INTERVAL '30 days'
+         ORDER BY created_at DESC
+         LIMIT 10",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    Ok(DiscoverPayload {
+        featured,
+        trending,
+        new: new_list,
+    })
+}
+
+/// `GET /api/community/circles/search?q=…&page=…` — paginated search over
+/// public circles by name + description. Uses pg_trgm indexes added in
+/// migration 045 for fast ILIKE lookups.
+pub async fn search_circles(
+    pool: &PgPool,
+    query: &str,
+    page: i64,
+    per_page: i64,
+) -> Result<(Vec<CircleCardRow>, i64), AppError> {
+    let q = query.trim();
+    if q.is_empty() {
+        return Ok((Vec::new(), 0));
+    }
+    let offset = (page.max(1) - 1) * per_page;
+    let needle = format!("%{}%", q.to_lowercase());
+
+    let rows: Vec<CircleCardRow> = sqlx::query_as(
+        r#"SELECT id, slug, name, description, avatar_emoji, banner_url,
+                  member_count, max_members, is_public, is_featured, recent_post_count
+           FROM circles
+           WHERE is_public = TRUE
+             AND (LOWER(name) LIKE $1 OR LOWER(COALESCE(description, '')) LIKE $1)
+           ORDER BY
+               -- exact-prefix match first, then by member count
+               CASE WHEN LOWER(name) LIKE LOWER($2) || '%' THEN 0 ELSE 1 END,
+               member_count DESC, created_at DESC
+           LIMIT $3 OFFSET $4"#,
+    )
+    .bind(&needle)
+    .bind(q)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(pool)
+    .await?;
+
+    let total: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*)::BIGINT FROM circles
+           WHERE is_public = TRUE
+             AND (LOWER(name) LIKE $1 OR LOWER(COALESCE(description, '')) LIKE $1)"#,
+    )
+    .bind(&needle)
+    .fetch_one(pool)
+    .await?;
+
+    Ok((rows, total))
+}
+
+/// `GET /api/community/circles/by-slug/:slug` — resolve slug to full Circle
+/// row + viewer's role (None if not a member).
+pub async fn get_circle_by_slug(
+    pool: &PgPool,
+    slug: &str,
+    viewer_id: Option<Uuid>,
+) -> Result<(Circle, Option<String>), AppError> {
+    let circle: Circle = sqlx::query_as("SELECT * FROM circles WHERE LOWER(slug) = LOWER($1)")
+        .bind(slug)
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+
+    let role: Option<String> = if let Some(uid) = viewer_id {
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle.id)
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+    } else {
+        None
+    };
+
+    Ok((circle, role))
+}
+
+/// `GET /api/community/me/circles` — every circle the viewer is a member of,
+/// with role. Drives the "My Circles" sidebar list on the new UI.
+pub async fn list_my_circles(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<(CircleCardRow, String)>, AppError> {
+    let rows = sqlx::query(
+        r#"SELECT c.id, c.slug, c.name, c.description, c.avatar_emoji, c.banner_url,
+                  c.member_count, c.max_members, c.is_public, c.is_featured,
+                  c.recent_post_count, cm.role
+           FROM circles c
+           JOIN circle_members cm ON cm.circle_id = c.id
+           WHERE cm.user_id = $1
+           ORDER BY cm.joined_at DESC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    use sqlx::Row;
+    let mut out = Vec::with_capacity(rows.len());
+    for r in rows {
+        let card = CircleCardRow {
+            id: r.try_get("id")?,
+            slug: r.try_get("slug")?,
+            name: r.try_get("name")?,
+            description: r.try_get("description").ok(),
+            avatar_emoji: r.try_get("avatar_emoji").ok(),
+            banner_url: r.try_get("banner_url").ok(),
+            member_count: r.try_get("member_count")?,
+            max_members: r.try_get("max_members")?,
+            is_public: r.try_get("is_public")?,
+            is_featured: r.try_get("is_featured")?,
+            recent_post_count: r.try_get("recent_post_count")?,
+        };
+        let role: String = r.try_get("role")?;
+        out.push((card, role));
+    }
+    Ok(out)
+}
+
+/// Promote member to moderator (or demote). Only owner can grant/revoke
+/// the moderator role. Existing `update_circle_member_role` handles
+/// 'admin' ↔ 'member' transitions; this helper is for the new role.
+pub async fn set_member_moderator(
+    pool: &PgPool,
+    actor_id: Uuid,
+    circle_id: Uuid,
+    target_user_id: Uuid,
+    moderator: bool,
+) -> Result<(), AppError> {
+    // Only the OWNER can mint or revoke moderators (admins cannot).
+    let actor_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(actor_id)
+            .fetch_optional(pool)
+            .await?;
+    if actor_role.as_deref() != Some("owner") {
+        return Err(AppError::Forbidden(
+            "Only the circle owner can set moderators.".into(),
+        ));
+    }
+
+    let target_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(target_user_id)
+            .fetch_optional(pool)
+            .await?;
+    let current = target_role.ok_or_else(|| {
+        AppError::BadRequest("Target user is not a member of this circle.".into())
+    })?;
+    if current == "owner" {
+        return Err(AppError::BadRequest(
+            "Cannot change the owner's role.".into(),
+        ));
+    }
+
+    let new_role = if moderator { "moderator" } else { "member" };
+    sqlx::query("UPDATE circle_members SET role = $1 WHERE circle_id = $2 AND user_id = $3")
+        .bind(new_role)
+        .bind(circle_id)
+        .bind(target_user_id)
+        .execute(pool)
+        .await?;
+    // Audit trail — fire-and-forget, never blocks the response.
+    crate::community::audit::log(
+        pool,
+        actor_id,
+        if moderator {
+            "circle.promote_moderator"
+        } else {
+            "circle.demote_moderator"
+        },
+        "circle",
+        Some(circle_id),
+        Some(target_user_id),
+        Some(serde_json::json!({
+            "new_role": new_role,
+            "previous_role": current,
+        })),
+    )
+    .await;
+    Ok(())
+}
+
+/// Ban a member: insert into `circle_bans` + remove from `circle_members`.
+/// Allowed for: owner, admin, moderator. Targets at moderator+ rank
+/// cannot be banned by a peer (moderator can't ban another moderator).
+pub async fn ban_member(
+    pool: &PgPool,
+    actor_id: Uuid,
+    circle_id: Uuid,
+    target_user_id: Uuid,
+    reason: Option<String>,
+) -> Result<(), AppError> {
+    let actor_role: String =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(actor_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::Forbidden("You are not a member of this circle.".into()))?;
+
+    if !matches!(actor_role.as_str(), "owner" | "admin" | "moderator") {
+        return Err(AppError::Forbidden(
+            "Only owners, admins or moderators can ban.".into(),
+        ));
+    }
+
+    let target_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(target_user_id)
+            .fetch_optional(pool)
+            .await?;
+    if let Some(t) = target_role.as_deref() {
+        if t == "owner" {
+            return Err(AppError::BadRequest("Cannot ban the circle owner.".into()));
+        }
+        // Mods can't ban mods (or admins). Owner/admin can ban anyone below.
+        let actor_rank = role_rank(&actor_role);
+        let target_rank = role_rank(t);
+        if target_rank >= actor_rank {
+            return Err(AppError::Forbidden(
+                "Cannot ban a member with equal or higher rank.".into(),
+            ));
+        }
+    }
+
+    // Clone for the audit-log call after the transaction commits — the
+    // .bind() below moves the original into the prepared statement.
+    let reason_for_audit = reason.clone();
+
+    let mut tx = pool.begin().await?;
+    sqlx::query(
+        r#"INSERT INTO circle_bans (circle_id, banned_user_id, banned_by, reason)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (circle_id, banned_user_id) DO UPDATE
+              SET banned_by = EXCLUDED.banned_by,
+                  reason    = EXCLUDED.reason,
+                  banned_at = NOW(),
+                  expires_at = NULL"#,
+    )
+    .bind(circle_id)
+    .bind(target_user_id)
+    .bind(actor_id)
+    .bind(reason)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query("DELETE FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+        .bind(circle_id)
+        .bind(target_user_id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE circles SET member_count = GREATEST(0, member_count - 1) WHERE id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "UPDATE community_profiles SET circle_id = NULL WHERE user_id = $1 AND circle_id = $2",
+    )
+    .bind(target_user_id)
+    .bind(circle_id)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    // Audit trail for ban — includes the actor's role + the target's
+    // prior role so compliance can reconstruct authority chains.
+    crate::community::audit::log(
+        pool,
+        actor_id,
+        "circle.ban_member",
+        "circle",
+        Some(circle_id),
+        Some(target_user_id),
+        Some(serde_json::json!({
+            "actor_role": actor_role,
+            "target_role_before": target_role,
+            "reason": reason_for_audit,
+        })),
+    )
+    .await;
+    Ok(())
+}
+
+/// Unban a user. Owner-only.
+pub async fn unban_member(
+    pool: &PgPool,
+    actor_id: Uuid,
+    circle_id: Uuid,
+    target_user_id: Uuid,
+) -> Result<(), AppError> {
+    let actor_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(actor_id)
+            .fetch_optional(pool)
+            .await?;
+    if !matches!(actor_role.as_deref(), Some("owner") | Some("admin")) {
+        return Err(AppError::Forbidden("Only owner/admin can unban.".into()));
+    }
+    sqlx::query("DELETE FROM circle_bans WHERE circle_id = $1 AND banned_user_id = $2")
+        .bind(circle_id)
+        .bind(target_user_id)
+        .execute(pool)
+        .await?;
+    crate::community::audit::log(
+        pool,
+        actor_id,
+        "circle.unban_member",
+        "circle",
+        Some(circle_id),
+        Some(target_user_id),
+        None,
+    )
+    .await;
+    Ok(())
+}
+
+fn role_rank(role: &str) -> i32 {
+    match role {
+        "owner" => 4,
+        "admin" => 3,
+        "moderator" => 2,
+        "member" => 1,
+        _ => 0,
+    }
+}
+
+#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+pub struct CircleBanRow {
+    pub banned_user_id: Uuid,
+    pub banned_by: Uuid,
+    pub reason: Option<String>,
+    pub banned_at: chrono::DateTime<chrono::Utc>,
+    pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// List active bans on a circle. Owner/admin/moderator only.
+/// Filters out expired bans (`expires_at < NOW()`) so the UI only shows
+/// currently-enforced bans. Permanent bans (`expires_at IS NULL`) always
+/// show.
+pub async fn list_circle_bans(
+    pool: &PgPool,
+    viewer_id: Uuid,
+    circle_id: Uuid,
+) -> Result<Vec<CircleBanRow>, AppError> {
+    let role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(viewer_id)
+            .fetch_optional(pool)
+            .await?;
+    if !matches!(
+        role.as_deref(),
+        Some("owner") | Some("admin") | Some("moderator")
+    ) {
+        return Err(AppError::Forbidden(
+            "Only owner/admin/moderator can view ban list.".into(),
+        ));
+    }
+
+    let rows = sqlx::query_as::<_, CircleBanRow>(
+        r#"SELECT banned_user_id, banned_by, reason, banned_at, expires_at
+           FROM circle_bans
+           WHERE circle_id = $1
+             AND (expires_at IS NULL OR expires_at > NOW())
+           ORDER BY banned_at DESC"#,
+    )
+    .bind(circle_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Set or clear the cover-photo URL on the user's community profile.
+/// Pass `Some(url)` to set, `None` to clear. Idempotent — running twice
+/// with the same value is a no-op.
+pub async fn set_profile_banner(
+    pool: &PgPool,
+    user_id: Uuid,
+    banner_url: Option<&str>,
+) -> Result<(), AppError> {
+    sqlx::query("UPDATE community_profiles SET banner_url = $1 WHERE user_id = $2")
+        .bind(banner_url)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+    Ok(())
 }

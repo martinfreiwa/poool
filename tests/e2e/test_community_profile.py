@@ -14,11 +14,11 @@ def test_my_profile_page_loads_with_required_chrome(authenticated_user_page):
     page.goto(f"{BASE_URL}/community/u/{user_id}")
     page.wait_for_load_state("networkidle")
 
-    # Hero card
-    expect(page.locator(".community-profile-hero").first).to_be_visible(timeout=10000)
-    # Stat strip — six cells
-    expect(page.locator(".community-profile-stat").nth(0)).to_be_visible(timeout=5000)
-    expect(page.locator(".community-profile-stat").nth(5)).to_be_visible(timeout=5000)
+    # Hero card — the 2026-05-16 rework renamed `.community-profile-hero`
+    # to `.cp-hero` and replaced the six-cell stat strip with an inline
+    # `.cp-hero__meta` follower/following/posts line.
+    expect(page.locator(".cp-hero").first).to_be_visible(timeout=10000)
+    expect(page.locator(".cp-hero__meta")).to_be_visible(timeout=5000)
     # Tab nav contains the Posts tab
     expect(page.locator('.community-profile-tab[data-tab="posts"]').first).to_be_visible(timeout=5000)
 

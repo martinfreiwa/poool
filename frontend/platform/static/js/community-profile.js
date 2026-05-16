@@ -9,8 +9,13 @@
 (function () {
   "use strict";
 
-  const PROFILE_ID = window.PROFILE_USER_ID;
-  const IS_OWN = window.PROFILE_IS_OWN === true;
+  // The inline <script> that sets window.PROFILE_USER_ID lives in the
+  // <body> of community-profile.html, but this file is loaded in <head>
+  // via `extra_js`. Reading at IIFE time captured `undefined` and broke
+  // every tab API call (/api/community/profile/undefined/…). Use `let`
+  // and rebind in init() once the body script has executed.
+  let PROFILE_ID = window.PROFILE_USER_ID;
+  let IS_OWN = window.PROFILE_IS_OWN === true;
 
   function csrfHeaders(extra) {
     const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
@@ -37,33 +42,44 @@
 
   function emptyState(panel, title, desc) {
     panel.innerHTML = "";
+    // Branded empty state using the .community-empty-state utility — gets
+    // the POOOL logo watermark via ::before. Replaces the old emoji-icon
+    // pattern that looked broken on small panels like the Media tab.
     const wrap = document.createElement("div");
-    wrap.className = "community-state community-state--empty";
-    const icon = document.createElement("div");
-    icon.className = "community-state__icon";
-    icon.setAttribute("aria-hidden", "true");
-    icon.textContent = "🌿";
+    wrap.className = "ds-card community-empty-state cp-error";
     const h = document.createElement("h3");
-    h.className = "community-state__title";
+    h.className = "cp-empty__title";
     h.textContent = title;
     const p = document.createElement("p");
-    p.className = "community-state__desc";
+    p.className = "cp-empty__desc";
     p.textContent = desc;
-    wrap.append(icon, h, p);
+    wrap.append(h, p);
     panel.appendChild(wrap);
   }
 
-  function errorState(panel, message) {
+  function errorState(panel, message, retryFn) {
     panel.innerHTML = "";
     const wrap = document.createElement("div");
-    wrap.className = "community-state community-state--error";
-    const icon = document.createElement("div");
-    icon.className = "community-state__icon";
-    icon.textContent = "!";
+    wrap.className = "ds-card community-empty-state cp-error";
+    const title = document.createElement("h3");
+    title.className = "cp-empty__title";
+    title.textContent = "Couldn't load";
     const p = document.createElement("p");
-    p.className = "community-state__desc";
-    p.textContent = message;
-    wrap.append(icon, p);
+    p.className = "cp-empty__desc";
+    p.textContent = (message || "Something went wrong.") +
+      " Check your connection and try again.";
+    wrap.append(title, p);
+    if (typeof retryFn === "function") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ds-btn ds-btn--primary";
+      btn.textContent = "Try again";
+      btn.onclick = () => {
+        // Reset so paginatedLoad re-fetches page 1.
+        retryFn();
+      };
+      wrap.appendChild(btn);
+    }
     panel.appendChild(wrap);
   }
 
@@ -409,7 +425,12 @@
       }
     } catch (err) {
       console.error(err);
-      errorState(panel, errorText);
+      errorState(panel, errorText, () => {
+        // Retry from page 1.
+        pageState.set(key, 1);
+        loaded.delete(key);
+        paginatedLoad(panel, key, fetcher, rowFactory, emptyText, errorText);
+      });
     }
   }
 
@@ -427,6 +448,11 @@
 
   // ─── Bootstrap ──────────────────────────────────────────────────
   function init() {
+    // Re-bind globals: the body inline <script> has executed by now,
+    // so window.PROFILE_USER_ID is populated.
+    PROFILE_ID = window.PROFILE_USER_ID;
+    IS_OWN = window.PROFILE_IS_OWN === true;
+
     document.querySelectorAll(".community-profile-tab").forEach((tab) => {
       tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
     });
@@ -483,4 +509,65 @@
   } else {
     init();
   }
+
+  // ─── Cover-photo (Facebook-style banner) upload ──────────────────
+  // Two-step: POST the image to /api/upload/post-image (same generic
+  // image-store endpoint everything else uses) → take the returned URL
+  // → PUT it to /api/community/profile/banner so it persists on the
+  // community_profiles row.
+  window.cpUploadBanner = function () {
+    const input = document.getElementById("cp-banner-file-input");
+    if (!input) return;
+    input.value = "";
+    input.onchange = async function (e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Cover photo must be smaller than 5 MB.");
+        return;
+      }
+      const banner = document.querySelector(".cp-hero__banner");
+      const oldBg = banner ? banner.style.backgroundImage : "";
+      if (banner) banner.style.opacity = "0.55";
+      try {
+        // 1. Upload
+        const fd = new FormData();
+        fd.append("file", file);
+        const upRes = await fetch("/api/upload/post-image", {
+          method: "POST", credentials: "same-origin", body: fd,
+        });
+        const upData = await upRes.json().catch(() => ({}));
+        if (!upRes.ok) throw new Error(upData.error || ("Upload failed (" + upRes.status + ")"));
+        const url = upData.image_url;
+        if (!url) throw new Error("Upload returned no URL");
+        // 2. Persist
+        const saveRes = await fetch("/api/community/profile/banner", {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": (window.getCsrfToken && window.getCsrfToken()) || "",
+          },
+          body: JSON.stringify({ banner_url: url }),
+        });
+        if (!saveRes.ok) {
+          const s = await saveRes.json().catch(() => ({}));
+          throw new Error(s.error || ("Save failed (" + saveRes.status + ")"));
+        }
+        // 3. Reflect locally (skip full reload).
+        if (banner) {
+          banner.style.backgroundImage = "url('" + url + "')";
+          banner.style.opacity = "1";
+        }
+      } catch (err) {
+        console.error("[cp-banner]", err);
+        if (banner) {
+          banner.style.opacity = "1";
+          banner.style.backgroundImage = oldBg;
+        }
+        alert(err.message || "Cover upload failed.");
+      }
+    };
+    input.click();
+  };
 })();

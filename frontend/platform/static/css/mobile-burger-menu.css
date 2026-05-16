@@ -26,6 +26,16 @@
   visibility: visible;
 }
 
+/* Off-canvas drawers (and their `right: -282px` parking position) used to
+   inflate `documentElement.scrollWidth` past the viewport on mobile, which
+   caused real horizontal jiggle when users panned. Clip horizontally on
+   the body/html so the parked menu never contributes to scroll area. */
+@media (max-width: 1023px) {
+  html, body {
+    overflow-x: hidden;
+  }
+}
+
 /* Burger Menu Container */
 .mobile-burger-menu {
   box-sizing: border-box;
