@@ -1079,9 +1079,13 @@ pub async fn api_admin_user_update_roles(
         return Err(ApiError::Internal("Failed to update roles".to_string()));
     }
 
-    // 2. Insert new roles
+    // 2. Insert new roles. Track which ones actually resolved to a
+    // `roles.id` — if the static-list check above passed but the DB row
+    // is missing (renamed/deleted role mid-migration), we'd silently
+    // demote the user to zero roles after the DELETE above. Audit H#3
+    // requires we fail loudly instead.
+    let mut missing: Vec<String> = Vec::new();
     for role_name in &payload.roles {
-        // Find role ID by name
         let role_id: Option<sqlx::types::Uuid> =
             sqlx::query_scalar("SELECT id FROM roles WHERE name = $1")
                 .bind(role_name)
@@ -1089,19 +1093,30 @@ pub async fn api_admin_user_update_roles(
                 .await
                 .unwrap_or(None);
 
-        if let Some(rid) = role_id {
-            let insert_res =
-                sqlx::query("INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)")
-                    .bind(uid)
-                    .bind(rid)
-                    .execute(&mut *tx)
-                    .await;
-
-            if let Err(e) = insert_res {
-                tracing::error!("Failed to insert role {role_name} for user {uid}: {e}");
-                return Err(ApiError::Internal("Failed to update roles".to_string()));
+        match role_id {
+            Some(rid) => {
+                let insert_res =
+                    sqlx::query("INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)")
+                        .bind(uid)
+                        .bind(rid)
+                        .execute(&mut *tx)
+                        .await;
+                if let Err(e) = insert_res {
+                    tracing::error!("Failed to insert role {role_name} for user {uid}: {e}");
+                    return Err(ApiError::Internal("Failed to update roles".to_string()));
+                }
             }
+            None => missing.push(role_name.clone()),
         }
+    }
+
+    if !missing.is_empty() {
+        // Transaction will roll back on Err — the DELETE above is undone.
+        return Err(ApiError::BadRequest(format!(
+            "Role(s) not found in roles table: {}. \
+             Aborting to avoid silently demoting user to zero roles.",
+            missing.join(", ")
+        )));
     }
 
     // 3. Log audit
