@@ -233,6 +233,41 @@ pub fn render() -> Result<String, prometheus::Error> {
     String::from_utf8(buffer).map_err(|e| prometheus::Error::Msg(e.to_string()))
 }
 
+/// Axum middleware that records request count + latency by matched
+/// route. Uses `MatchedPath` (the route template like
+/// `/api/wallet/transactions/:id`) instead of the raw URI to keep
+/// Prometheus cardinality bounded.
+pub async fn http_metrics_middleware(
+    request: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let path = request
+        .extensions()
+        .get::<axum::extract::MatchedPath>()
+        .map(|m| m.as_str().to_string())
+        .unwrap_or_else(|| "unmatched".to_string());
+    let method = request.method().as_str().to_string();
+    let start = std::time::Instant::now();
+
+    let response = next.run(request).await;
+
+    let status = response.status().as_u16();
+    let status_class = match status {
+        100..=199 => "1xx",
+        200..=299 => "2xx",
+        300..=399 => "3xx",
+        400..=499 => "4xx",
+        _ => "5xx",
+    };
+    HTTP_REQUESTS_TOTAL
+        .with_label_values(&[&path, &method, status_class])
+        .inc();
+    HTTP_DURATION_SECONDS
+        .with_label_values(&[&path, &method])
+        .observe(start.elapsed().as_secs_f64());
+    response
+}
+
 /// Spawn a 60-second loop that periodically refreshes gauges that
 /// otherwise wouldn't update outside of mutation paths (compliance
 /// alerts, withdraw queue depth, etc.).

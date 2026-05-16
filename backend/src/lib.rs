@@ -803,6 +803,33 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                     );
                 }
             }
+
+            // Same tick: prune snapshots older than the 13-month retention
+            // horizon promised in migration 177. Cheap (set-based DELETE on
+            // indexed `snapshot_date`) — run inline rather than spawning
+            // a separate task. Errors logged + Sentry-captured but never
+            // abort the loop so a transient DB hiccup doesn't kill the
+            // snapshot worker permanently.
+            const SNAPSHOT_RETENTION_DAYS: i64 = 395; // ~13 months
+            match crate::leaderboard::service::prune_old_snapshots(
+                &snapshot_pool,
+                SNAPSHOT_RETENTION_DAYS,
+            )
+            .await
+            {
+                Ok(deleted) => {
+                    if deleted > 0 {
+                        tracing::info!(deleted = deleted, "leaderboard snapshots pruned");
+                    }
+                }
+                Err(e) => {
+                    tracing::error!(error = %e, "Error pruning leaderboard snapshots");
+                    sentry::capture_message(
+                        &format!("Leaderboard snapshot prune failed: {}", e),
+                        sentry::Level::Error,
+                    );
+                }
+            }
             interval.tick().await;
         }
     });
@@ -1651,6 +1678,11 @@ pub fn build_platform_router(state: AppState) -> Router {
                 .fallback(ServeFile::new("../frontend/platform/404.html")),
         )
         .with_state(state.clone())
+        // P0-5 metrics middleware — records http_requests_total and
+        // http_request_duration_seconds for every matched route. Uses
+        // MatchedPath so :id wildcards don't blow up Prometheus
+        // cardinality.
+        .layer(axum::middleware::from_fn(metrics::http_metrics_middleware))
         .layer(axum::extract::DefaultBodyLimit::max(25 * 1024 * 1024)) // 25 MB for file uploads
         .layer(tower_http::compression::CompressionLayer::new())
         .layer({
