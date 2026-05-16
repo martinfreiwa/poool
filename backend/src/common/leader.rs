@@ -53,6 +53,7 @@ pub enum LockKey {
     AffiliateRollup = 3007,
     AffiliateClickPartitionMaint = 3008,
     AffiliateClickPartitionRetention = 3009,
+    AffiliateLeaderboardRefresh = 3010,
 }
 
 impl LockKey {
@@ -84,6 +85,7 @@ impl LockKey {
             LockKey::AffiliateRollup => "affiliate_rollup",
             LockKey::AffiliateClickPartitionMaint => "affiliate_click_partition_maint",
             LockKey::AffiliateClickPartitionRetention => "affiliate_click_partition_retention",
+            LockKey::AffiliateLeaderboardRefresh => "affiliate_leaderboard_refresh",
         }
     }
 }

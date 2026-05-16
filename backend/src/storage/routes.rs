@@ -27,6 +27,75 @@ const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024; // 5 MB
 const MAX_KYC_BYTES: usize = 10 * 1024 * 1024; // 10 MB
 const MAX_DEVELOPER_LOGO_BYTES: usize = 2 * 1024 * 1024; // 2 MB
 
+/// Log + Sentry-capture a MIME-mismatch attempt (claimed type ≠ magic-
+/// byte-sniffed type). Either malicious upload-content-spoofing or a
+/// buggy client. Caller still returns 400 BAD_REQUEST; this helper just
+/// makes the rejection visible to ops + security review.
+fn report_mime_mismatch(context: &str, claimed: &str, sniffed: &str, user_id: uuid::Uuid) {
+    tracing::warn!(
+        context = %context,
+        claimed_mime = %claimed,
+        sniffed_mime = %sniffed,
+        user_id = %user_id,
+        "Upload rejected: MIME-claim does not match magic-byte sniff"
+    );
+    sentry::capture_message(
+        &format!(
+            "MIME mismatch [{}]: user {} claimed {} but bytes are {}",
+            context, user_id, claimed, sniffed,
+        ),
+        sentry::Level::Warning,
+    );
+}
+
+/// Reject SVG uploads pre-emptively. SVG is XML and can carry inline
+/// `<script>` tags — stored-XSS surface if served back to other users.
+/// Until a proper SVG sanitiser ships (DOMPurify-equiv), every caller
+/// that funnels image data through this helper has SVG explicitly
+/// blocklisted. Detection is done by sniffing the raw bytes (lightweight
+/// XML-prologue + `<svg` check) so a renamed `.png` SVG cannot slip
+/// through the file-extension or MIME-header path.
+pub fn is_svg_payload(bytes: &[u8]) -> bool {
+    // Only inspect the first 1 KiB — SVG declares itself near the top.
+    let head_len = bytes.len().min(1024);
+    let head = &bytes[..head_len];
+    // Lowercase comparison without allocating the full slice.
+    let lower: Vec<u8> = head.iter().map(|b| b.to_ascii_lowercase()).collect();
+    let lower_str = std::str::from_utf8(&lower).unwrap_or("");
+    // Heuristic: any XML/HTML prelude containing `<svg` element.
+    lower_str.contains("<svg")
+}
+
+/// Enforce the storage rate-limit for `user_id` on the given endpoint
+/// class. Caller propagates the returned response on overflow (`429
+/// Too Many Requests` + `Retry-After`). Key is per (user, endpoint) so
+/// e.g. avatar-spam doesn't starve KYC uploads.
+async fn check_storage_rate_limit(
+    state: &AppState,
+    user_id: uuid::Uuid,
+    endpoint_class: &str,
+) -> Result<(), axum::response::Response> {
+    let key = format!("storage:{}:{}", endpoint_class, user_id);
+    if let Err(retry_after) = state.storage_rate_limiter.check(&key).await {
+        return Err(crate::error::AppError::RateLimited(retry_after).into_response());
+    }
+    Ok(())
+}
+
+/// Log + Sentry-capture a GCS-upload failure. Centralises the "what
+/// kind of upload broke" string so an ops dashboard query for
+/// `message:GCS upload` finds every degraded path. Use `tracing::error!`
+/// rather than `warn!` because every GCS failure now either falls back
+/// to local-FS (dev) or surfaces as a 5xx (production) — both warrant
+/// on-call attention.
+fn report_gcs_failure(context: &str, error_msg: &str) {
+    tracing::error!(context = %context, error = %error_msg, "GCS upload failed");
+    sentry::capture_message(
+        &format!("GCS upload failed [{}]: {}", context, error_msg),
+        sentry::Level::Error,
+    );
+}
+
 // ─── Avatar ────────────────────────────────────────────────────
 
 /// POST /api/upload/avatar
@@ -51,6 +120,10 @@ pub async fn upload_avatar(
                 .into_response();
         }
     };
+
+    if let Err(resp) = check_storage_rate_limit(&state, user.id, "avatar").await {
+        return resp;
+    }
 
     let bucket = state.config.gcs_bucket.clone();
 
@@ -81,8 +154,8 @@ pub async fn upload_avatar(
         match tokio::time::timeout(std::time::Duration::from_secs(15), gcs_fut).await {
             Ok(Ok(url)) => url,
             Ok(Err(e)) => {
-                tracing::warn!("GCS avatar upload failed, falling back to local: {}", e);
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("avatar.upload", &e.to_string());
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e2) => {
                         tracing::error!("Local avatar fallback failed: {}", e2);
@@ -91,15 +164,15 @@ pub async fn upload_avatar(
                 }
             }
             Err(_) => {
-                tracing::warn!("GCS avatar upload timed out, falling back to local storage");
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("avatar.upload", "timeout");
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e2) => return e2.into_response(),
                 }
             }
         }
     } else {
-        match service::upload_local(&object_path, file_bytes).await {
+        match service::upload_local(&object_path, file_bytes.clone()).await {
             Ok(url) => url,
             Err(e) => {
                 tracing::error!("Local avatar save failed: {}", e);
@@ -159,6 +232,10 @@ pub async fn upload_developer_logo(
         }
     };
 
+    if let Err(resp) = check_storage_rate_limit(&state, user.id, "developer_logo").await {
+        return resp;
+    }
+
     let bucket = state.config.gcs_bucket.clone();
 
     let (file_bytes, mime_type) =
@@ -185,19 +262,19 @@ pub async fn upload_developer_logo(
         match tokio::time::timeout(std::time::Duration::from_secs(15), gcs_fut).await {
             Ok(Ok(url)) => url,
             Ok(Err(e)) => {
-                tracing::warn!("GCS logo upload failed, falling back to local: {}", e);
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("developer_logo.upload", &e.to_string());
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e2) => return e2.into_response(),
                 }
             }
-            Err(_) => match service::upload_local(&object_path, file_bytes).await {
+            Err(_) => match service::upload_local(&object_path, file_bytes.clone()).await {
                 Ok(url) => url,
                 Err(e2) => return e2.into_response(),
             },
         }
     } else {
-        match service::upload_local(&object_path, file_bytes).await {
+        match service::upload_local(&object_path, file_bytes.clone()).await {
             Ok(url) => url,
             Err(e) => {
                 tracing::error!("Local logo save failed: {}", e);
@@ -254,6 +331,10 @@ pub async fn upload_post_image(
         }
     };
 
+    if let Err(resp) = check_storage_rate_limit(&state, user.id, "post_image").await {
+        return resp;
+    }
+
     let bucket = state.config.gcs_bucket.clone();
 
     // Read multipart field
@@ -285,8 +366,8 @@ pub async fn upload_post_image(
         {
             Ok(Ok(url)) => url,
             Ok(Err(e)) => {
-                tracing::warn!("Post image upload failed: {}; falling back to local.", e);
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("post_image.upload", &e.to_string());
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e) => {
                         tracing::error!("Local post image save failed: {}", e);
@@ -295,8 +376,8 @@ pub async fn upload_post_image(
                 }
             }
             Err(_) => {
-                tracing::warn!("GCS asset image upload timed out. Falling back to local.");
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("asset_image.upload", "timeout");
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e) => {
                         tracing::error!("Local post image save failed: {}", e);
@@ -306,7 +387,7 @@ pub async fn upload_post_image(
             }
         }
     } else {
-        match service::upload_local(&object_path, file_bytes).await {
+        match service::upload_local(&object_path, file_bytes.clone()).await {
             Ok(url) => url,
             Err(e) => {
                 tracing::error!("Local post image save failed: {}", e);
@@ -343,6 +424,7 @@ pub async fn upload_post_image(
 pub async fn upload_kyc_document(
     jar: CookieJar,
     State(state): State<AppState>,
+    req_headers: axum::http::HeaderMap,
     mut multipart: Multipart,
 ) -> axum::response::Response {
     // Auth
@@ -360,8 +442,8 @@ pub async fn upload_kyc_document(
     let bucket = state.config.gcs_bucket.clone();
 
     if let Err(retry_after) = state
-        .auth_rate_limiter
-        .check(&format!("kyc:upload:{}", user.id))
+        .storage_rate_limiter
+        .check(&format!("storage:kyc:{}", user.id))
         .await
     {
         return crate::error::AppError::RateLimited(retry_after).into_response();
@@ -429,6 +511,16 @@ pub async fn upload_kyc_document(
         }
     };
 
+    // Defense-in-depth: reject SVG outright. SVG = XML + inline scripts =
+    // stored-XSS surface. No KYC document is legitimately an SVG.
+    if is_svg_payload(&file_bytes) {
+        report_mime_mismatch("kyc.upload", &mime_type, "image/svg+xml (rejected)", user.id);
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "SVG uploads are not supported"})),
+        )
+            .into_response();
+    }
     // Magic-byte sniff: trust file contents, not the client-declared MIME.
     let sniffed = match sniff_mime(&file_bytes) {
         Some(m) => m,
@@ -441,6 +533,7 @@ pub async fn upload_kyc_document(
         }
     };
     if !mime_matches(&mime_type, sniffed) {
+        report_mime_mismatch("kyc.upload", &mime_type, sniffed, user.id);
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "File content does not match declared type"})),
@@ -460,6 +553,21 @@ pub async fn upload_kyc_document(
         Err(e) => return e.into_response(),
     };
 
+    // Per-user quota gate (Phase 2.6). Reject BEFORE GCS write so an
+    // over-quota user does not pay bandwidth + GCS object-create cost
+    // just to be told "no". The quota counter gets incremented AFTER the
+    // DB-INSERT succeeds, inside the same transaction.
+    if let Err(e) = service::check_quota_or_reject(
+        &state.db,
+        user.id,
+        service::QuotaClass::KycDocument,
+        file_bytes.len() as i64,
+    )
+    .await
+    {
+        return e.into_response();
+    }
+
     let ext = service::extension_for_mime(&mime_type);
     let file_id = Uuid::new_v4();
     let object_path = format!("kyc/{}/{}.{}", user.id, file_id, ext);
@@ -474,22 +582,22 @@ pub async fn upload_kyc_document(
         {
             Ok(Ok(p)) => p,
             Ok(Err(e)) => {
-                tracing::warn!("GCS KYC upload failed, falling back to local: {}", e);
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("kyc.upload", &e.to_string());
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e2) => return e2.into_response(),
                 }
             }
             Err(_) => {
-                tracing::warn!("GCS KYC upload timed out, falling back to local");
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("kyc.upload", "timeout");
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e2) => return e2.into_response(),
                 }
             }
         }
     } else {
-        match service::upload_local(&object_path, file_bytes).await {
+        match service::upload_local(&object_path, file_bytes.clone()).await {
             Ok(url) => url,
             Err(e) => return e.into_response(),
         }
@@ -502,7 +610,7 @@ pub async fn upload_kyc_document(
         tokio::spawn(async move {
             if let Some(b) = bucket_name {
                 if let Err(e) = service::delete_object(&b, &path).await {
-                    tracing::warn!("GCS cleanup after DB failure failed for {}: {}", path, e);
+                    report_gcs_failure("orphan.cleanup", &e.to_string());
                 } else {
                     tracing::info!("GCS cleanup after DB failure succeeded for {}", path);
                 }
@@ -525,18 +633,41 @@ pub async fn upload_kyc_document(
         }
     };
 
+    // Integrity + audit-trail metadata.
+    //   - content_sha256: hex SHA-256 of the bytes, enables tamper-detection
+    //     on re-download and dedup queries via `idx_kyc_documents_sha256`.
+    //   - uploaded_ip: from X-Forwarded-For (first hop) since Cloud Run
+    //     terminates TLS upstream and we never see the real socket peer.
+    //   - uploaded_user_agent: free-form, capped by Postgres TEXT.
+    let content_sha256 = service::sha256_hex(&file_bytes);
+    let content_size = file_bytes.len() as i64;
+    let uploaded_ip: Option<String> = req_headers
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim().to_string());
+    let uploaded_ua: Option<String> = req_headers
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string());
+
     // Persist to kyc_documents table
     let doc_id: uuid::Uuid = match sqlx::query_scalar(
         r#"
         INSERT INTO kyc_documents
-            (user_id, document_type, gcs_path, status)
-        VALUES ($1, $2, $3, 'pending')
+            (user_id, document_type, gcs_path, status,
+             content_sha256, content_size_bytes, uploaded_ip, uploaded_user_agent)
+        VALUES ($1, $2, $3, 'pending', $4, $5, $6::inet, $7)
         RETURNING id
         "#,
     )
     .bind(user.id)
     .bind(&document_type)
     .bind(&gcs_path)
+    .bind(&content_sha256)
+    .bind(content_size)
+    .bind(uploaded_ip.as_deref())
+    .bind(uploaded_ua.as_deref())
     .fetch_one(&mut *tx)
     .await
     {
@@ -555,17 +686,22 @@ pub async fn upload_kyc_document(
         }
     };
 
-    // Audit log
+    // Audit log — now records hash + size so a future investigator can
+    // pin the exact bytes uploaded at this timestamp.
     if let Err(e) = sqlx::query(
-        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
-           VALUES ($1, 'kyc_document.uploaded', 'kyc_documents', $2, $3)"#,
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state, ip_address, user_agent)
+           VALUES ($1, 'kyc_document.uploaded', 'kyc_documents', $2, $3, $4::inet, $5)"#,
     )
     .bind(user.id)
     .bind(doc_id)
     .bind(serde_json::json!({
         "document_type": &document_type,
         "gcs_path": &gcs_path,
+        "content_sha256": &content_sha256,
+        "content_size_bytes": content_size,
     }))
+    .bind(uploaded_ip.as_deref())
+    .bind(uploaded_ua.as_deref())
     .execute(&mut *tx)
     .await
     {
@@ -587,6 +723,28 @@ pub async fn upload_kyc_document(
             cleanup(object_path.clone(), bucket.clone());
         }
         return crate::error::AppError::Database(e).into_response();
+    }
+
+    // Post-commit: bump per-user quota counter. A separate connection
+    // (outside the upload tx) is OK here because the row is now
+    // committed; the quota row may drift by at most one upload if the
+    // counter update fails, which the weekly reconciliation job (Phase
+    // 3) is designed to detect and self-heal. Errors are logged but do
+    // NOT roll back the upload — the user's file is safely stored.
+    if let Err(e) = service::increment_quota(
+        &state.db,
+        user.id,
+        service::QuotaClass::KycDocument,
+        content_size,
+    )
+    .await
+    {
+        tracing::warn!(
+            error = %e,
+            user_id = %user.id,
+            doc_id = %doc_id,
+            "Quota counter increment failed after KYC upload — reconciliation will fix",
+        );
     }
 
     tracing::info!(
@@ -738,6 +896,10 @@ pub async fn upload_asset_document(
             .into_response();
     }
 
+    if let Err(resp) = check_storage_rate_limit(&state, user.id, "asset_document").await {
+        return resp;
+    }
+
     let bucket = state.config.gcs_bucket.clone();
 
     // Read multipart fields
@@ -826,6 +988,14 @@ pub async fn upload_asset_document(
             .into_response();
     }
 
+    if is_svg_payload(&file_bytes) {
+        report_mime_mismatch("asset_document.upload", &mime_type, "image/svg+xml (rejected)", user.id);
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "SVG uploads are not supported"})),
+        )
+            .into_response();
+    }
     // Magic-byte sniff: don't trust client-declared Content-Type.
     let sniffed = match sniff_mime(&file_bytes) {
         Some(m) => m,
@@ -838,6 +1008,7 @@ pub async fn upload_asset_document(
         }
     };
     if !mime_matches(&mime_type, sniffed) {
+        report_mime_mismatch("asset_document.upload", &mime_type, sniffed, user.id);
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "File content does not match declared type"})),
@@ -863,8 +1034,8 @@ pub async fn upload_asset_document(
         match tokio::time::timeout(std::time::Duration::from_secs(15), gcs_fut).await {
             Ok(Ok(url)) => url,
             Ok(Err(e)) => {
-                tracing::warn!("GCS document upload failed, falling back to local: {}", e);
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("asset_document.upload", &e.to_string());
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e2) => {
                         tracing::error!("Local fallback also failed: {}", e2);
@@ -873,8 +1044,8 @@ pub async fn upload_asset_document(
                 }
             }
             Err(_) => {
-                tracing::warn!("GCS document upload timed out, falling back to local storage");
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("asset_document.upload", "timeout");
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e2) => {
                         tracing::error!("Local fallback failed: {}", e2);
@@ -884,7 +1055,7 @@ pub async fn upload_asset_document(
             }
         }
     } else {
-        match service::upload_local(&object_path, file_bytes).await {
+        match service::upload_local(&object_path, file_bytes.clone()).await {
             Ok(url) => url,
             Err(e) => {
                 tracing::error!("Local file save failed: {}", e);
@@ -968,6 +1139,10 @@ pub async fn upload_asset_image(
             .into_response();
     }
 
+    if let Err(resp) = check_storage_rate_limit(&state, user.id, "asset_image").await {
+        return resp;
+    }
+
     let bucket = state.config.gcs_bucket.clone();
 
     let mut file_bytes: Option<Vec<u8>> = None;
@@ -1032,6 +1207,14 @@ pub async fn upload_asset_image(
         }
     };
 
+    if is_svg_payload(&file_bytes) {
+        report_mime_mismatch("asset_image.upload", &mime_type, "image/svg+xml (rejected)", user.id);
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "SVG uploads are not supported"})),
+        )
+            .into_response();
+    }
     // Magic-byte sniff: don't trust client-declared Content-Type.
     let sniffed = match sniff_mime(&file_bytes) {
         Some(m) => m,
@@ -1044,6 +1227,7 @@ pub async fn upload_asset_image(
         }
     };
     if !mime_matches(&mime_type, sniffed) {
+        report_mime_mismatch("asset_image.upload", &mime_type, sniffed, user.id);
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "File content does not match declared type"})),
@@ -1070,8 +1254,8 @@ pub async fn upload_asset_image(
         {
             Ok(Ok(url)) => url,
             Ok(Err(e)) => {
-                tracing::warn!("Asset image upload failed: {}; falling back to local.", e);
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("asset_image.upload.alt_path", &e.to_string());
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e) => {
                         tracing::error!("Local image save failed: {}", e);
@@ -1080,8 +1264,8 @@ pub async fn upload_asset_image(
                 }
             }
             Err(_) => {
-                tracing::warn!("GCS asset image upload timed out. Falling back to local storage.");
-                match service::upload_local(&object_path, file_bytes).await {
+                report_gcs_failure("asset_image.upload.alt_path", "timeout");
+                match service::upload_local(&object_path, file_bytes.clone()).await {
                     Ok(url) => url,
                     Err(e) => {
                         tracing::error!("Local image save failed: {}", e);
@@ -1091,7 +1275,7 @@ pub async fn upload_asset_image(
             }
         }
     } else {
-        match service::upload_local(&object_path, file_bytes).await {
+        match service::upload_local(&object_path, file_bytes.clone()).await {
             Ok(url) => url,
             Err(e) => {
                 tracing::error!("Local image save failed: {}", e);

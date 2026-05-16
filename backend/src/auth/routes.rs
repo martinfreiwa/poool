@@ -53,6 +53,21 @@ pub struct AppState {
     pub redis: Option<deadpool_redis::Pool>,
     /// Rate limiter for auth endpoints (login, signup, password reset).
     pub auth_rate_limiter: super::rate_limit::RateLimiter,
+    /// Rate limiter for leaderboard read/write endpoints. Higher cap than
+    /// the auth limiter (browsing the leaderboard is benign) but still
+    /// enough to block scrapers and to soft-throttle PUT preferences spam.
+    pub leaderboard_rate_limiter: super::rate_limit::RateLimiter,
+    /// Rate limiter for community mutating endpoints (circle join/leave/
+    /// invite/promote/ban). Per-user, separate bucket so circle ops do not
+    /// starve auth or leaderboard. Default 30/min in production; tests use
+    /// `RateLimiter::disabled()`.
+    pub community_rate_limiter: super::rate_limit::RateLimiter,
+    /// Rate limiter for storage upload endpoints (avatar, KYC, asset-doc,
+    /// asset-image, post-image, developer-logo). Every upload writes to
+    /// GCS (cost) + DB, so the cap is tighter than browsing limiters:
+    /// 10 per minute per (user, endpoint-class). A legitimate single
+    /// upload sails through; bursts of automated abuse get throttled.
+    pub storage_rate_limiter: super::rate_limit::RateLimiter,
     /// In-process cache of the most recent `leaderboard_scores.computed_at`.
     /// Written by `refresh_all_scores`; read by the leaderboard handler so
     /// the public list view does not have to run a `SELECT MAX(computed_at)`
@@ -2102,6 +2117,9 @@ mod google_oauth_tests {
             },
             redis: None,
             auth_rate_limiter: RateLimiter::new(10, Duration::from_secs(60)),
+            leaderboard_rate_limiter: RateLimiter::new(60, Duration::from_secs(60)),
+            community_rate_limiter: RateLimiter::new(30, Duration::from_secs(60)),
+            storage_rate_limiter: RateLimiter::new(10, Duration::from_secs(60)),
             leaderboard_last_refresh: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
         }
     }

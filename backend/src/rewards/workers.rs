@@ -16,6 +16,7 @@ use tokio::time::{Duration, MissedTickBehavior};
 const ROLLUP_INTERVAL_SECS: u64 = 15 * 60;
 const PARTITION_MAINT_INTERVAL_SECS: u64 = 24 * 60 * 60;
 const PARTITION_RETENTION_INTERVAL_SECS: u64 = 24 * 60 * 60;
+const LEADERBOARD_REFRESH_INTERVAL_SECS: u64 = 15 * 60;
 
 /// Drop click partitions older than this many months. 24 months keeps a
 /// 2-year audit window which covers most fraud-investigation and Tax-year
@@ -125,9 +126,12 @@ pub async fn recompute_rollups_for_recent_days(
                       AND COALESCE(ar.qualified_at, ar.updated_at) < ld.d + INTERVAL '1 day'
                 ), 0)::int AS qualified_count,
                 COALESCE((
-                    SELECT SUM(i.purchase_value_cents)::bigint
+                    -- Bug 1+2 fix: use the new self-contained
+                    -- ac.gross_amount_cents column instead of joining to
+                    -- investments via source_order_id (which contained
+                    -- orders.id in production, not investments.id).
+                    SELECT SUM(ac.gross_amount_cents)::bigint
                     FROM affiliate_commissions ac
-                    JOIN investments i ON i.id = ac.source_order_id
                     WHERE ac.link_id = ld.link_id
                       AND ac.created_at >= ld.d
                       AND ac.created_at < ld.d + INTERVAL '1 day'
@@ -210,6 +214,41 @@ async fn ensure_partitions(pool: &PgPool, months_ahead: i32) -> Result<(), sqlx:
         tracing::info!("📦 referral_clicks: {} new monthly partition(s) created", n);
     }
     Ok(())
+}
+
+/// Phase-6: refreshes the `affiliate_leaderboard_public` materialised
+/// view every 15 minutes so the public leaderboard page stays current
+/// without an operator hand-running `REFRESH MATERIALIZED VIEW`.
+///
+/// `CONCURRENTLY` keeps the page readable during the refresh. Postgres
+/// requires a unique index on the matview for this — we created one in
+/// mig 192 (`idx_affiliate_leaderboard_public_user`).
+pub async fn run_affiliate_leaderboard_refresh_worker(pool: PgPool) {
+    // 60s boot offset so the worker doesn't crowd the first-tick storm.
+    tokio::time::sleep(Duration::from_secs(60)).await;
+    let mut interval =
+        tokio::time::interval(Duration::from_secs(LEADERBOARD_REFRESH_INTERVAL_SECS));
+    interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
+    tracing::info!(
+        "🏆 affiliate-leaderboard matview refresh armed (interval = {}s)",
+        LEADERBOARD_REFRESH_INTERVAL_SECS
+    );
+
+    loop {
+        interval.tick().await;
+        let started = std::time::Instant::now();
+        match sqlx::query("REFRESH MATERIALIZED VIEW CONCURRENTLY affiliate_leaderboard_public")
+            .execute(&pool)
+            .await
+        {
+            Ok(_) => tracing::info!(
+                "🏆 affiliate-leaderboard refresh OK in {}ms",
+                started.elapsed().as_millis()
+            ),
+            Err(e) => tracing::error!("🏆 affiliate-leaderboard refresh failed: {}", e),
+        }
+    }
 }
 
 /// Retention worker — drops `referral_clicks_YYYY_MM` partitions older than
