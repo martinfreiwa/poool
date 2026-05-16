@@ -1436,6 +1436,103 @@ pub async fn page_wallet(
 
 // ─── JSON API Endpoints ──────────────────────────────────────────
 
+#[derive(Debug, Deserialize)]
+pub struct StepUpVerifyPayload {
+    /// 6-digit TOTP code from the user's authenticator app.
+    pub code: String,
+    /// Which financial action the session should unlock. Only "withdrawal"
+    /// is wired to the wallet UI today; the enum leaves room for trade /
+    /// payment-method / password-change without an API rev.
+    #[serde(default = "default_step_up_action")]
+    pub action: String,
+}
+
+fn default_step_up_action() -> String {
+    "withdrawal".to_string()
+}
+
+/// POST /api/wallet/step-up/verify
+///
+/// Verifies a TOTP code and opens a 15-minute "trading session" in Redis
+/// (`auth::step_up::create_trading_session`). After success, subsequent
+/// withdraw submissions of the same user pass `check_withdrawal_safety`
+/// without re-prompting.
+///
+/// Returns 200 `{status: "verified"}` on success; 401 on bad code; 400
+/// when TOTP is not enrolled. Failures never leak the secret.
+pub async fn api_step_up_verify(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<StepUpVerifyPayload>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Unauthorized"})),
+            )
+                .into_response();
+        }
+    };
+
+    let action = match payload.action.as_str() {
+        "withdrawal" => crate::auth::step_up::FinancialAction::Withdrawal,
+        "trade" => crate::auth::step_up::FinancialAction::Trade,
+        "payment_method" => crate::auth::step_up::FinancialAction::PaymentMethodAdd,
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Unsupported action"})),
+            )
+                .into_response();
+        }
+    };
+
+    let code = payload.code.trim();
+    if code.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Authentication code required"})),
+        )
+            .into_response();
+    }
+
+    match crate::auth::step_up::verify_and_create_trading_session(
+        &state.db,
+        state.redis.as_ref(),
+        user.id,
+        code,
+        action,
+    )
+    .await
+    {
+        Ok(()) => Json(serde_json::json!({
+            "status": "verified",
+            "valid_for_seconds": 900,
+        }))
+        .into_response(),
+        Err(crate::error::AppError::Unauthorized(msg)) => (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "invalid_code", "message": msg})),
+        )
+            .into_response(),
+        Err(crate::error::AppError::BadRequest(msg)) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "totp_not_enrolled", "message": msg})),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("step_up_verify failed for user {}: {}", user.id, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "verification_failed"})),
+            )
+                .into_response()
+        }
+    }
+}
+
 /// GET /api/wallet/deposit-settings – bank-wire details + limits used by the deposit modal.
 ///
 /// Sourced from `platform_settings` so admin can change without redeploy.

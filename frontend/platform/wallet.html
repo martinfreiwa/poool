@@ -872,7 +872,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <span class="wallet-withdraw-balance__value">{{ cash_balance }}</span>
         </div>
 
-        <form action="/wallet/withdraw" method="POST" onsubmit="return onWithdrawSubmit(this)">
+        <form id="withdraw-form" action="/wallet/withdraw" method="POST" onsubmit="return onWithdrawSubmit(this, event)">
           <div class="ds-form-group">
             <label class="ds-form-label ds-form-label--required" for="withdraw-payment-select">Destination</label>
             <select id="withdraw-payment-select" name="payment_method_id" class="ds-select" onchange="updateWithdrawBtn()">
@@ -908,9 +908,35 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             </div>
           </div>
 
+          <!-- Step-up 2FA prompt — revealed when the server signals
+               withdraw_2fa_required. The user enters their TOTP code; we
+               POST it to /api/wallet/step-up/verify which opens a 15-min
+               trading session, then auto-retry the withdraw. -->
+          <div class="wallet-withdraw-2fa" id="withdraw-2fa-block" hidden>
+            <div class="wallet-withdraw-2fa__header">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 9V6.5a5 5 0 0 1 10 0V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <rect x="3.5" y="9" width="13" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M10 12.25v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <strong>Authentication required</strong>
+                <span>Withdrawals of $500 or more need a one-time code from your authenticator app.</span>
+              </div>
+            </div>
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required" for="withdraw-2fa-code">6-digit code</label>
+              <input type="text" id="withdraw-2fa-code" inputmode="numeric" autocomplete="one-time-code"
+                pattern="[0-9]*" maxlength="6" placeholder="123 456" class="ds-input wallet-withdraw-2fa__input" />
+            </div>
+            <p class="ds-modal__error" id="withdraw-2fa-error" role="alert"></p>
+          </div>
+
+          <p class="ds-modal__error" id="withdraw-form-error" role="alert"></p>
+
           <div class="ds-modal__footer-actions">
             <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal()">Cancel</button>
-            <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary">Confirm withdrawal</button>
+            <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--secondary">Confirm withdrawal</button>
           </div>
         </form>
         {% else %}
@@ -1585,7 +1611,24 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
   <!-- Wallet Actions & Initialization -->
   <script>
-    function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; updateWithdrawBtn(); } }
+    function openWithdrawModal() {
+      var m = document.getElementById("withdraw-modal");
+      if (!m) return;
+      m.classList.add('active');
+      document.body.style.overflow = "hidden";
+      // Reset any previous 2FA / error state so a fresh open looks clean.
+      var twoFa = document.getElementById("withdraw-2fa-block");
+      if (twoFa) twoFa.hidden = true;
+      var twoFaCode = document.getElementById("withdraw-2fa-code");
+      if (twoFaCode) twoFaCode.value = "";
+      var twoFaErr = document.getElementById("withdraw-2fa-error");
+      if (twoFaErr) twoFaErr.textContent = "";
+      var formErr = document.getElementById("withdraw-form-error");
+      if (formErr) formErr.textContent = "";
+      var submitBtn = document.getElementById("withdraw-submit-btn");
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Confirm withdrawal"; }
+      updateWithdrawBtn();
+    }
     function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
     function updateWithdrawBtn() {
       var sel = document.getElementById("withdraw-payment-select");
@@ -2059,21 +2102,128 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       return true;
     }
 
-    function onWithdrawSubmit(form) {
+    // Submit the withdraw form via fetch so we can intercept a
+    // `withdraw_2fa_required` response and prompt for a TOTP code inline
+    // instead of navigating away. Falls back to native form POST if fetch
+    // is unavailable (very old WebViews).
+    async function onWithdrawSubmit(form, event) {
+      if (event) event.preventDefault();
       var amtInput = document.getElementById("withdraw-amount-input");
       var rawVal = amtInput ? amtInput.value.replace(/,/g, "") : "";
       var amt = parseFloat(rawVal);
       var cashCents = {{ cash_cents }};
+      var hint = document.getElementById("withdraw-balance-hint");
+      if (hint) hint.style.color = "";
+      if (amtInput) amtInput.classList.remove("ds-input--error");
       if (!isNaN(amt) && amt * 100 > cashCents) {
-        var hint = document.getElementById("withdraw-balance-hint");
         if (hint) hint.style.color = "#F04438";
         if (amtInput) amtInput.classList.add("ds-input--error");
         return false;
       }
+      // If the 2FA prompt is visible the user has already attempted once
+      // and is now entering the code — verify it then retry the withdraw.
+      var twoFactorBlock = document.getElementById("withdraw-2fa-block");
+      if (twoFactorBlock && !twoFactorBlock.hidden) {
+        await withdrawVerify2fa();
+      } else {
+        await submitWithdrawForm();
+      }
+      return false;
+    }
+
+    async function submitWithdrawForm() {
+      var form = document.getElementById("withdraw-form");
+      if (!form) return;
       var btn = form.querySelector("button[type=submit]");
+      var origLabel = btn.textContent;
       btn.disabled = true;
-      btn.textContent = "Processing...";
-      return true;
+      btn.textContent = "Processing…";
+      var errEl = document.getElementById("withdraw-form-error");
+      if (errEl) errEl.textContent = "";
+
+      try {
+        var resp = await fetch(form.action, {
+          method: "POST",
+          credentials: "same-origin",
+          body: new URLSearchParams(new FormData(form)).toString(),
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          redirect: "follow",
+        });
+        // handle_withdraw always 303-redirects; the final URL tells us what
+        // happened. We inspect resp.url since fetch follows the redirect.
+        var url = resp.url || "";
+        if (url.indexOf("withdraw_requested=true") !== -1) {
+          window.location.href = url;
+          return;
+        }
+        if (url.indexOf("error=withdraw_2fa_required") !== -1) {
+          revealWithdraw2faBlock();
+          btn.disabled = false;
+          btn.textContent = origLabel;
+          return;
+        }
+        if (url.indexOf("error=") !== -1) {
+          // Surface whatever error came back; navigating preserves the
+          // existing wallet.js toast handler so the user sees a message.
+          window.location.href = url;
+          return;
+        }
+        // Unknown response — fall back to the navigated page.
+        window.location.href = url || "/wallet";
+      } catch (e) {
+        if (errEl) errEl.textContent = "Network error. Please try again.";
+        btn.disabled = false;
+        btn.textContent = origLabel;
+      }
+    }
+
+    function revealWithdraw2faBlock() {
+      var block = document.getElementById("withdraw-2fa-block");
+      if (!block) return;
+      block.hidden = false;
+      var input = document.getElementById("withdraw-2fa-code");
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+      var err = document.getElementById("withdraw-2fa-error");
+      if (err) err.textContent = "";
+    }
+
+    async function withdrawVerify2fa() {
+      var codeInput = document.getElementById("withdraw-2fa-code");
+      var err = document.getElementById("withdraw-2fa-error");
+      var code = (codeInput ? codeInput.value : "").trim().replace(/\s+/g, "");
+      if (err) err.textContent = "";
+      if (!/^\d{6}$/.test(code)) {
+        if (err) err.textContent = "Enter the 6-digit code from your authenticator app.";
+        return;
+      }
+      var btn = document.getElementById("withdraw-submit-btn");
+      btn.disabled = true;
+      var origLabel = btn.textContent;
+      btn.textContent = "Verifying…";
+      try {
+        var resp = await fetch("/api/wallet/step-up/verify", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ code: code, action: "withdrawal" }),
+        });
+        var data = await resp.json().catch(function () { return {}; });
+        if (!resp.ok) {
+          if (err) err.textContent = data.message || "Invalid code. Try again.";
+          btn.disabled = false;
+          btn.textContent = origLabel;
+          return;
+        }
+        // Session opened — retry the withdraw immediately.
+        await submitWithdrawForm();
+      } catch (e) {
+        if (err) err.textContent = "Network error. Please try again.";
+        btn.disabled = false;
+        btn.textContent = origLabel;
+      }
     }
     function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
     function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }

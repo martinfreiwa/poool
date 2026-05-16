@@ -1901,6 +1901,53 @@ body.kyc-hidden .wallet-main {
   line-height: 1.5;
 }
 
+.wallet-withdraw-2fa {
+  margin: 18px 0 6px;
+  padding: 14px 16px;
+  background: #FFFBEB;
+  border: 1px solid #FED7AA;
+  border-radius: 10px;
+}
+
+.wallet-withdraw-2fa[hidden] {
+  display: none;
+}
+
+.wallet-withdraw-2fa__header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #92400E;
+  align-items: flex-start;
+}
+
+.wallet-withdraw-2fa__header svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #B45309;
+}
+
+.wallet-withdraw-2fa__header strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: #78350F;
+}
+
+.wallet-withdraw-2fa__header span {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #92400E;
+}
+
+.wallet-withdraw-2fa__input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-weight: 600;
+}
+
 .wallet-bank-form__actions .ds-btn {
   min-width: 140px;
 }
