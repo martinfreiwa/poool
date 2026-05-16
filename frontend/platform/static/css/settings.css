@@ -10,6 +10,7 @@
     margin-left: var(--sidebar-width, 256px);
     width: calc(100% - var(--sidebar-width, 256px));
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 0;
     gap: 0;
     background: var(--content-bg);

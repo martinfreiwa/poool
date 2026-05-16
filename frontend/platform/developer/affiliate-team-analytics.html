@@ -1,0 +1,330 @@
+{% with title="Affiliate Team Analytics – POOOL", no_index=True,
+extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-analytics'] %}{% include
+"components/head.html" %}{% endwith %}
+
+<body id="developer-affiliate-team-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="developer-dashboard-page">
+    <div class="developer-dashboard-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
+      <div class="ds-main__content" id="dat-analytics-root">
+        {% include 'developer/_affiliate_team_shell.html' %}
+
+        <!-- ── Filter toolbar (compact, auto-apply on change) ───────── -->
+        <section class="ds-card dat-content-card dat-toolbar-card">
+          <div class="dat-toolbar">
+            <div class="dat-toolbar__presets" role="group" aria-label="Quick date range">
+              <button type="button" class="dat-preset" data-preset="7d">7d</button>
+              <button type="button" class="dat-preset" data-preset="30d">30d</button>
+              <button type="button" class="dat-preset dat-preset--active" data-preset="this-month">This month</button>
+              <button type="button" class="dat-preset" data-preset="last-month">Last month</button>
+              <button type="button" class="dat-preset" data-preset="ytd">YTD</button>
+              <button type="button" class="dat-preset" data-preset="all">All time</button>
+              <button type="button" class="dat-preset dat-preset--custom" data-preset="custom" hidden>Custom</button>
+            </div>
+            <div class="dat-toolbar__range">
+              <input type="date" id="dat-an-from" class="dat-date-input" aria-label="From date" placeholder="From"/>
+              <span class="dat-range-sep" aria-hidden="true">→</span>
+              <input type="date" id="dat-an-to" class="dat-date-input" aria-label="To date" placeholder="To"/>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── "Last refreshed" indicator ──────────────────────────── -->
+        <div class="dat-meta-row">
+          <span class="dat-last-updated" id="dat-last-updated" aria-live="polite">Loading…</span>
+        </div>
+
+        <!-- ── Hero KPI row — 3 primary actionable metrics (clickable) ── -->
+        <section class="dat-hero-grid" aria-label="Primary metrics">
+          <a class="dat-hero-kpi__link" href="/developer/affiliate-team/products" aria-label="Revenue — view assets sold">
+            <article class="dat-hero-kpi" data-tone="neutral">
+              <header class="dat-hero-kpi__head">
+                <span class="dat-hero-kpi__label">
+                  <svg class="dat-hero-kpi__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  Revenue
+                  <svg class="dat-hero-kpi__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+                <span class="dat-delta" id="dat-d-revenue" aria-hidden="true"></span>
+              </header>
+              <strong class="dat-hero-kpi__value" id="dat-k-revenue" aria-live="polite">
+                <span class="dat-skeleton dat-skeleton--lg"></span>
+              </strong>
+              <span class="dat-hero-kpi__sub" id="dat-k-revenue-sub">&nbsp;</span>
+            </article>
+          </a>
+          <a class="dat-hero-kpi__link" href="/developer/affiliate-team/members" aria-label="Commission — view members">
+            <article class="dat-hero-kpi" data-tone="success">
+              <header class="dat-hero-kpi__head">
+                <span class="dat-hero-kpi__label">
+                  <svg class="dat-hero-kpi__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                  Commission
+                  <svg class="dat-hero-kpi__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+                <span class="dat-delta" id="dat-d-commission" aria-hidden="true"></span>
+              </header>
+              <strong class="dat-hero-kpi__value" id="dat-k-commission" aria-live="polite">
+                <span class="dat-skeleton dat-skeleton--lg"></span>
+              </strong>
+              <span class="dat-hero-kpi__sub" id="dat-k-commission-sub">&nbsp;</span>
+            </article>
+          </a>
+          <a class="dat-hero-kpi__link" href="/affiliate/dashboard" aria-label="Next payout — request payout">
+            <article class="dat-hero-kpi dat-hero-kpi--accent" data-tone="accent" id="dat-tile-next-payout">
+              <header class="dat-hero-kpi__head">
+                <span class="dat-hero-kpi__label">
+                  <svg class="dat-hero-kpi__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Next payout
+                  <svg class="dat-hero-kpi__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+              </header>
+              <strong class="dat-hero-kpi__value" id="dat-k-next-amount" aria-live="polite">
+                <span class="dat-skeleton dat-skeleton--lg"></span>
+              </strong>
+              <span class="dat-hero-kpi__sub" id="dat-k-next-date">—</span>
+              <span class="dat-hero-kpi__cta" id="dat-next-payout-cta" hidden>Request payout →</span>
+            </article>
+          </a>
+        </section>
+
+        <!-- ── Secondary metrics row — funnel + status ─────────────── -->
+        <section class="dat-kpi-grid" aria-label="Secondary metrics">
+          <article class="dat-kpi" data-tone="info">
+            <header class="dat-kpi__head">
+              <span class="dat-kpi__label">
+                <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                Conversion
+              </span>
+            </header>
+            <strong class="dat-kpi__value" id="dat-k-conv" aria-live="polite">
+              <span class="dat-skeleton"></span>
+            </strong>
+            <span class="dat-kpi__sub" id="dat-k-conv-sub">&nbsp;</span>
+          </article>
+          <article class="dat-kpi" data-tone="neutral">
+            <header class="dat-kpi__head">
+              <span class="dat-kpi__label">
+                <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Qualified
+              </span>
+            </header>
+            <strong class="dat-kpi__value" id="dat-k-qualified" aria-live="polite">
+              <span class="dat-skeleton"></span>
+            </strong>
+            <span class="dat-kpi__sub" id="dat-k-qualified-sub">&nbsp;</span>
+          </article>
+          <article class="dat-kpi" data-tone="warning">
+            <header class="dat-kpi__head">
+              <span class="dat-kpi__label">
+                <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Pending
+              </span>
+            </header>
+            <strong class="dat-kpi__value" id="dat-k-pending" aria-live="polite">
+              <span class="dat-skeleton"></span>
+            </strong>
+            <span class="dat-kpi__sub">In holdback</span>
+          </article>
+          <article class="dat-kpi" data-tone="info" id="dat-tile-payable">
+            <header class="dat-kpi__head">
+              <span class="dat-kpi__label">
+                <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                Payable
+              </span>
+            </header>
+            <strong class="dat-kpi__value" id="dat-k-payable" aria-live="polite">
+              <span class="dat-skeleton"></span>
+            </strong>
+            <span class="dat-kpi__sub">Ready to claim</span>
+          </article>
+          <article class="dat-kpi" data-tone="success">
+            <header class="dat-kpi__head">
+              <span class="dat-kpi__label">
+                <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                Paid out
+              </span>
+            </header>
+            <strong class="dat-kpi__value" id="dat-k-paid" aria-live="polite">
+              <span class="dat-skeleton"></span>
+            </strong>
+            <span class="dat-kpi__sub">Lifetime</span>
+          </article>
+          <article class="dat-kpi" data-tone="info">
+            <header class="dat-kpi__head">
+              <span class="dat-kpi__label">
+                <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                Members
+              </span>
+            </header>
+            <strong class="dat-kpi__value" id="dat-k-members" aria-live="polite">
+              <span class="dat-skeleton"></span>
+            </strong>
+            <span class="dat-kpi__sub" id="dat-k-members-sub">&nbsp;</span>
+          </article>
+        </section>
+
+        <!-- ── Charts: hero trend (full row) + 3-col satellite row ──── -->
+        <section class="ds-card dat-chart-card dat-chart-card--hero" id="dat-trend-card">
+          <span class="dat-chart-hover-hint" id="dat-trend-hint" aria-hidden="true">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+            Hover for daily values
+          </span>
+          <header class="dat-chart-header">
+            <div>
+              <h3 class="dat-chart-title">Commission &amp; revenue trend</h3>
+              <p class="dat-chart-subtitle" id="dat-chart-trend-sub">Daily totals in selected period</p>
+            </div>
+            <div class="dat-chart-header__controls">
+              <div class="dat-res-toggle" role="group" aria-label="Time resolution">
+                <button type="button" class="dat-res-btn dat-res-btn--active" data-res="day">Day</button>
+                <button type="button" class="dat-res-btn" data-res="week">Week</button>
+                <button type="button" class="dat-res-btn" data-res="month">Month</button>
+              </div>
+              <div class="dat-chart-legend">
+                <span class="dat-legend-item"><i class="dat-legend-dot dat-legend-dot--commission"></i>Commission</span>
+                <span class="dat-legend-item"><i class="dat-legend-dot dat-legend-dot--revenue"></i>Revenue</span>
+              </div>
+            </div>
+          </header>
+          <div class="dat-chart-body dat-chart-body--hero" id="dat-chart-trend">
+            <div class="dat-chart-empty">Loading…</div>
+          </div>
+        </section>
+
+        <div class="dat-charts-row">
+          <section class="ds-card dat-chart-card">
+            <header class="dat-chart-header">
+              <div>
+                <h3 class="dat-chart-title">Conversion funnel</h3>
+                <p class="dat-chart-subtitle">Clicks → Signups → Qualified</p>
+              </div>
+            </header>
+            <div class="dat-chart-body" id="dat-chart-funnel">
+              <div class="dat-chart-empty">Loading…</div>
+            </div>
+          </section>
+
+          <section class="ds-card dat-chart-card">
+            <header class="dat-chart-header">
+              <div>
+                <h3 class="dat-chart-title">Top members by commission</h3>
+                <p class="dat-chart-subtitle">Top 10 in selected period</p>
+              </div>
+            </header>
+            <div class="dat-chart-body" id="dat-chart-members">
+              <div class="dat-chart-empty">Loading…</div>
+            </div>
+          </section>
+
+          <section class="ds-card dat-chart-card">
+            <header class="dat-chart-header">
+              <div>
+                <h3 class="dat-chart-title">Top assets sold</h3>
+                <p class="dat-chart-subtitle">Top 10 by revenue in selected period</p>
+              </div>
+            </header>
+            <div class="dat-chart-body" id="dat-chart-assets">
+              <div class="dat-chart-empty">Loading…</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ── Insight cards (top performers / deficits) ───────────── -->
+        <div class="dat-insights-grid">
+          <section class="ds-card dat-content-card">
+            <header class="dat-section__intro">
+              <h3 class="dat-section__title">Top performers</h3>
+              <p class="dat-section__hint">Highest commission earners in selected period.</p>
+            </header>
+            <ol class="dat-rank-list" id="dat-rank-top">
+              <li class="dat-empty">Loading…</li>
+            </ol>
+          </section>
+
+          <section class="ds-card dat-content-card">
+            <header class="dat-section__intro">
+              <h3 class="dat-section__title">Members at risk</h3>
+              <p class="dat-section__hint">Active members with zero commission in selected period.</p>
+            </header>
+            <ol class="dat-rank-list" id="dat-rank-deficit">
+              <li class="dat-empty">Loading…</li>
+            </ol>
+          </section>
+        </div>
+
+        <!-- ── Phase-5: Cohort retention heatmap ───────────────────── -->
+        <section class="ds-card dat-content-card" aria-labelledby="dat-cohort-title">
+          <header class="dat-section__intro dat-section__intro--with-actions">
+            <div class="dat-section__intro-text">
+              <h3 class="dat-section__title" id="dat-cohort-title">Cohort retention</h3>
+              <p class="dat-section__hint">Each row = customers acquired in that month. Cells show how many of that cohort had a paid commission in the months after acquisition. Darker = stronger retention.</p>
+            </div>
+          </header>
+          <div class="dat-cohort-wrap" id="dat-cohort-wrap">
+            <p class="dat-empty">Loading cohort retention…</p>
+          </div>
+        </section>
+
+        <!-- ── Full breakdown table ─────────────────────────────────── -->
+        <section class="ds-card dat-content-card">
+          <header class="dat-section__intro">
+            <h3 class="dat-section__title">By member</h3>
+            <p class="dat-section__hint">Activity for every team member in the selected period — including members who haven't converted yet.</p>
+          </header>
+          <div class="dat-table-wrap">
+            <table class="dat-table dat-table--hoverable" id="dat-bymember-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Email</th>
+                  <th class="dat-table__num">Clicks</th>
+                  <th class="dat-table__num">Signups</th>
+                  <th class="dat-table__num">Qualified</th>
+                  <th class="dat-table__num">Revenue</th>
+                  <th class="dat-table__num dat-table__sorted" aria-sort="descending">Commission <span class="dat-sort-icon" aria-hidden="true">↓</span></th>
+                </tr>
+              </thead>
+              <tbody id="dat-bymember-tbody">
+                <tr><td colspan="7" class="dat-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="ds-card dat-content-card">
+          <header class="dat-section__intro">
+            <h3 class="dat-section__title">Assets sold</h3>
+            <p class="dat-section__hint">Properties your team's business links converted in the selected period, ranked by revenue.</p>
+          </header>
+          <div class="dat-table-wrap">
+            <table class="dat-table dat-table--hoverable" id="dat-byasset-table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th class="dat-table__num">Units</th>
+                  <th class="dat-table__num dat-table__sorted" aria-sort="descending">Revenue <span class="dat-sort-icon" aria-hidden="true">↓</span></th>
+                  <th class="dat-table__num">Commission</th>
+                </tr>
+              </thead>
+              <tbody id="dat-byasset-tbody">
+                <tr><td colspan="4" class="dat-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      {% include 'developer/_affiliate_team_invite_modal.html' %}
+    </main>
+  </div>
+</body>

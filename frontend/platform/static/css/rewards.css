@@ -4,6 +4,7 @@
 .tier-main {
   width: calc(100% - 256px);
   min-height: 100vh;
+  min-height: 100dvh;
   margin-left: 256px;
   padding: 48px 24px 64px 24px;
   background: var(--content-bg);
@@ -37,6 +38,7 @@
   display: flex;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background: #f5f5f5;
 }
 
@@ -90,6 +92,7 @@
 .rewards-main {
   width: calc(100% - 256px);
   min-height: 100vh;
+  min-height: 100dvh;
   margin-left: 256px;
   padding: 0;
   background: var(--content-bg);
@@ -2677,6 +2680,7 @@ body#rewards-body .rewards-page {
 body#rewards-body .rewards-main {
   width: calc(100% - var(--sidebar-width, 256px));
   min-height: 100vh;
+  min-height: 100dvh;
   margin-left: var(--sidebar-width, 256px);
   padding: 0 !important;
   background: var(--content-bg, #FAFAFA);

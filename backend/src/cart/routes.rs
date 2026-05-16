@@ -101,10 +101,7 @@ fn format_cart_usd(cents: i64) -> String {
     format!("USD {}.{:02}", result, remainder)
 }
 
-fn format_idr(cents: i64) -> String {
-    // Must match the rate in payments/service.rs::execute_checkout (15,500)
-    // TODO: Centralize FX rate into a shared config / live API call
-    let idr_conversion_rate: i64 = crate::config::DEFAULT_USD_TO_IDR_RATE_I64;
+fn format_idr(cents: i64, idr_conversion_rate: i64) -> String {
     // Integer math: cents → dollars → IDR (no float rounding)
     let idr_val = (cents / 100) * idr_conversion_rate;
     let is_negative = idr_val < 0;
@@ -506,11 +503,13 @@ pub async fn api_cart(jar: CookieJar, State(state): State<AppState>) -> axum::re
                 })
                 .collect();
 
+            let usd_to_idr_rate = crate::payments::service::get_usd_to_idr_rate_i64().await;
+
             Json(serde_json::json!({
                 "items": views,
                 "count": views.len(),
                 "total_cents": views.iter().map(|i| i.total_cents).sum::<i64>(),
-                "usd_to_idr_rate": crate::config::DEFAULT_USD_TO_IDR_RATE_I64
+                "usd_to_idr_rate": usd_to_idr_rate
             }))
             .into_response()
         }
@@ -646,6 +645,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let platform_fee_pct: f64 = fee_bps as f64 / 100.0;
 
     // Build populated cart HTML
+    let idr_conversion_rate = crate::payments::service::get_usd_to_idr_rate_i64().await;
     let mut cart_items_html = String::new();
     let mut mobile_items_html = String::new();
     let mut summary_items_html = String::new();
@@ -690,7 +690,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             title.clone()
         };
         let item_usd = format_cart_usd(item_total);
-        let item_idr = format_idr(item_total);
+        let item_idr = format_idr(item_total, idr_conversion_rate);
         let token_price_usd = token_price_cents / 100;
         let safe_title = html_e(&truncated_title);
         summary_items_html.push_str(&format!(
@@ -1055,9 +1055,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
 
     let total_display = format_cart_usd(grand_total_cents);
     let fee_display = format_cart_usd(fee_cents);
-    let fee_idr_display = format_idr(fee_cents);
+    let fee_idr_display = format_idr(fee_cents, idr_conversion_rate);
 
-    let idr_display = format_idr(grand_total_cents);
+    let idr_display = format_idr(grand_total_cents, idr_conversion_rate);
 
     // Compute dynamic rewards banner text
     // Pre-calculate KYC status on backend to avoid frontend flicker
@@ -1077,7 +1077,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     };
 
     let _item_count = rows.len();
-    let subtotal_idr = format_idr(total_cents);
+    let subtotal_idr = format_idr(total_cents, idr_conversion_rate);
 
     // KFS Logic for Primary Offerings
     let mut kfs_checkbox_html = String::new();
@@ -1157,7 +1157,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let summary_html = format!(
         r##"<div id="cart-page-summary" class="cart-page-summary">
             <!-- Proceed to Payment Summary Box -->
-            <div class="cart-summary-container" id="payment-summary-box" data-fee-pct="{fee_pct_raw}" style="{payment_vis}">
+            <div class="cart-summary-container" id="payment-summary-box" data-fee-pct="{fee_pct_raw}" data-usd-to-idr-rate="{idr_rate}" style="{payment_vis}">
                 <!-- Header: title + timer -->
                 <div class="cart-summary-top-row">
                     <h3 class="cart-summary-heading" style="margin:0;">Order Summary</h3>
@@ -1361,6 +1361,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             format!("{:.1}", platform_fee_pct)
         },
         fee_pct_raw = platform_fee_pct,
+        idr_rate = idr_conversion_rate,
         kfs_checkbox = kfs_checkbox_html,
     );
 

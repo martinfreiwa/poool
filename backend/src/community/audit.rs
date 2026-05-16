@@ -1,7 +1,7 @@
 /// Community Audit Log — immutable logging for all admin actions in the community system.
 ///
 /// Usage:
-/// ```ignore
+/// ```text
 /// community_audit::log(&c_pool, admin_id, "post.hide", "post", Some(post_id), Some(target_user_id), details).await;
 /// ```
 use sqlx::PgPool;

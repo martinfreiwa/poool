@@ -86,6 +86,9 @@ fn make_state(pool: PgPool) -> AppState {
         config,
         redis: None,
         auth_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
+        leaderboard_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
+        community_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
+        storage_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
         leaderboard_last_refresh: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
     }
 }
@@ -144,7 +147,7 @@ async fn seed_leaderboard_row(pool: &PgPool, user_id: Uuid, total_cents: i64, ra
     sqlx::query(
         r#"INSERT INTO leaderboard_scores (
                 user_id, total_invested_cents, asset_count, portfolio_roi_bps,
-                affiliate_count, referral_revenue_cents, highest_investment_cents,
+                affiliate_count, referral_network_value_cents, highest_investment_cents,
                 computed_at, rank_invested
             ) VALUES ($1, $2, 1, 0, 0, 0, $2, NOW(), $3)
             ON CONFLICT (user_id) DO UPDATE SET
@@ -505,5 +508,223 @@ async fn community_leaderboard_anonymizes_hidden_users() {
         visible_row.get("anonymized").and_then(|v| v.as_bool()),
         Some(false),
         "non-opted-out user must NOT be anonymized"
+    );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Production-readiness regression tests (Points 6, 7, 9)
+// ──────────────────────────────────────────────────────────────────────
+
+/// 8. GET /api/leaderboard sets `Cache-Control: private, max-age=30` and an
+///    `ETag` derived from the cached `last_updated` + query params, so
+///    browsers can short-circuit subsequent requests inside that window.
+#[ignore]
+#[tokio::test]
+async fn rankings_emit_cache_control_and_etag() {
+    let pool = pool().await;
+    let user = insert_user(&pool, "active").await;
+    let session = mint_session(&pool, user).await;
+    seed_leaderboard_row(&pool, user, 1_000_000, 1).await;
+
+    let app = build_platform_router(make_state(pool.clone()));
+    let req = get_with_session("/api/leaderboard?metric=invested&page=1", Some(&session));
+    let resp = app.oneshot(req).await.expect("oneshot");
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let _ = body_string(resp).await;
+
+    cleanup_user(&pool, user).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        headers.get("cache-control").and_then(|v| v.to_str().ok()),
+        Some("private, max-age=30"),
+        "expected `private, max-age=30` Cache-Control",
+    );
+    let etag = headers
+        .get("etag")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        etag.starts_with("\"lb-") && etag.ends_with('"'),
+        "expected ETag like `\"lb-<hex>\"`; got {:?}",
+        etag,
+    );
+}
+
+/// 9. Round-trip the ETag: the second request with `If-None-Match` set to
+///    the first response's ETag must come back 304 Not Modified (no body),
+///    still carrying the Cache-Control header so the browser keeps the
+///    cached copy fresh.
+#[ignore]
+#[tokio::test]
+async fn rankings_etag_round_trip_returns_304() {
+    let pool = pool().await;
+    let user = insert_user(&pool, "active").await;
+    let session = mint_session(&pool, user).await;
+    seed_leaderboard_row(&pool, user, 1_000_000, 1).await;
+
+    let state = make_state(pool.clone());
+
+    let first = build_platform_router(state.clone())
+        .oneshot(get_with_session(
+            "/api/leaderboard?metric=invested&page=1",
+            Some(&session),
+        ))
+        .await
+        .expect("first");
+    let etag = first
+        .headers()
+        .get("etag")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+    let _ = body_string(first).await;
+    assert!(!etag.is_empty(), "first response must include an ETag");
+
+    let mut second_req =
+        get_with_session("/api/leaderboard?metric=invested&page=1", Some(&session));
+    second_req
+        .headers_mut()
+        .insert("if-none-match", etag.parse().unwrap());
+
+    let second = build_platform_router(state)
+        .oneshot(second_req)
+        .await
+        .expect("second");
+    let second_status = second.status();
+    let second_headers = second.headers().clone();
+    let second_body = body_string(second).await;
+
+    cleanup_user(&pool, user).await;
+
+    assert_eq!(
+        second_status,
+        StatusCode::NOT_MODIFIED,
+        "ETag round-trip must short-circuit to 304",
+    );
+    assert!(
+        second_body.is_empty(),
+        "304 response must have an empty body; got {:?}",
+        second_body,
+    );
+    assert_eq!(
+        second_headers
+            .get("cache-control")
+            .and_then(|v| v.to_str().ok()),
+        Some("private, max-age=30"),
+        "304 response must still carry the Cache-Control header",
+    );
+}
+
+/// 10. PUT /api/leaderboard/preferences writes an `audit_logs` row so the
+///     visibility change leaves an immutable trail.
+#[ignore]
+#[tokio::test]
+async fn prefs_put_writes_audit_log_row() {
+    let pool = pool().await;
+    let user = insert_user(&pool, "active").await;
+    let session = mint_session(&pool, user).await;
+
+    let baseline_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::BIGINT FROM audit_logs WHERE actor_user_id = $1
+         AND action LIKE 'leaderboard.prefs.update%'",
+    )
+    .bind(user)
+    .fetch_one(&pool)
+    .await
+    .expect("baseline count");
+
+    let app = build_platform_router(make_state(pool.clone()));
+    let req = mutating_with_session(
+        Method::PUT,
+        "/api/leaderboard/preferences",
+        &session,
+        serde_json::json!({ "visible": true, "show_avatar": true, "display_name": "Audit Test" }),
+    );
+    let resp = app.oneshot(req).await.expect("oneshot");
+    let status = resp.status();
+    let _ = body_string(resp).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let post_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::BIGINT FROM audit_logs WHERE actor_user_id = $1
+         AND action LIKE 'leaderboard.prefs.update%'",
+    )
+    .bind(user)
+    .fetch_one(&pool)
+    .await
+    .expect("post count");
+
+    let last_action: Option<String> = sqlx::query_scalar(
+        "SELECT action FROM audit_logs WHERE actor_user_id = $1
+         AND action LIKE 'leaderboard.prefs.update%'
+         ORDER BY created_at DESC LIMIT 1",
+    )
+    .bind(user)
+    .fetch_optional(&pool)
+    .await
+    .expect("last action");
+
+    let _ = sqlx::query("DELETE FROM audit_logs WHERE actor_user_id = $1")
+        .bind(user)
+        .execute(&pool)
+        .await;
+    cleanup_user(&pool, user).await;
+
+    assert_eq!(
+        post_count,
+        baseline_count + 1,
+        "PUT /preferences must insert exactly one audit_logs row",
+    );
+    let action = last_action.expect("audit row should exist");
+    assert!(
+        action.contains("visible=Some(true)") && action.contains("display_name_set=true"),
+        "audit action string should capture the changed fields; got {:?}",
+        action,
+    );
+}
+
+/// 11. The 61st request inside a minute from the same user must be
+///     rate-limited (429 Too Many Requests). We use the disabled limiter in
+///     the test rig by default — here we override with a real one so the
+///     production behaviour is exercised end-to-end.
+#[ignore]
+#[tokio::test]
+async fn rankings_rate_limited_after_burst() {
+    use std::time::Duration as StdDuration;
+    let pool = pool().await;
+    let user = insert_user(&pool, "active").await;
+    let session = mint_session(&pool, user).await;
+    seed_leaderboard_row(&pool, user, 1_000_000, 1).await;
+
+    // Override the limiter to 3 req / 60s so we don't actually need to fire
+    // 60 requests to hit the cap.
+    let mut state = make_state(pool.clone());
+    state.leaderboard_rate_limiter =
+        poool_backend::auth::rate_limit::RateLimiter::new(3, StdDuration::from_secs(60));
+
+    let app = build_platform_router(state);
+
+    let mut statuses = Vec::new();
+    for _ in 0..5 {
+        let req = get_with_session("/api/leaderboard?metric=invested&page=1", Some(&session));
+        let resp = app.clone().oneshot(req).await.expect("oneshot");
+        statuses.push(resp.status());
+        let _ = body_string(resp).await;
+    }
+
+    cleanup_user(&pool, user).await;
+
+    let oks = statuses.iter().filter(|s| s.is_success()).count();
+    let throttled = statuses
+        .iter()
+        .filter(|s| **s == StatusCode::TOO_MANY_REQUESTS)
+        .count();
+    assert_eq!(oks, 3, "first 3 requests inside the window should succeed");
+    assert_eq!(
+        throttled, 2,
+        "requests 4+ inside the window should be 429; got statuses {:?}",
+        statuses,
     );
 }

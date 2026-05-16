@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_postback_outbox\n                              SET status = 'sent',\n                                  attempts = $2,\n                                  sent_at = NOW(),\n                                  last_response_status = $3,\n                                  updated_at = NOW()\n                            WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "36024c50fda6cc3d08bce9e4c9cc93dacd20c9044e8f3782b7e4a9dcdfe4c1ee"
+}

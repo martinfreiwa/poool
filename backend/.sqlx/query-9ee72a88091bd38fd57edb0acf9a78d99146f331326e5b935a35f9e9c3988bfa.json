@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT current_team_tier, team_commission_rate_bps,\n                  team_volume_12m_cents, team_tier_updated_at\n           FROM developer_teams WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "current_team_tier",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "team_commission_rate_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "team_volume_12m_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "team_tier_updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9ee72a88091bd38fd57edb0acf9a78d99146f331326e5b935a35f9e9c3988bfa"
+}

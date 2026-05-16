@@ -59,6 +59,29 @@ fn validate_announcement_category(category: &str) -> Result<(), AppError> {
     }
 }
 
+/// Per-user rate-limit gate for community mutating endpoints
+/// (circle join/leave/invite/promote/ban). Returns BadRequest with a
+/// human-readable retry hint when exhausted.
+///
+/// Scoped by `bucket` so different operation classes share a quota with
+/// themselves but not with each other (e.g. heavy invite spam doesn't
+/// block a single join). Bucket keys are interned strings, never user
+/// input — `bucket` MUST be a static literal.
+async fn require_community_rate_limit(
+    state: &AppState,
+    user_id: Uuid,
+    bucket: &'static str,
+) -> Result<(), AppError> {
+    let key = format!("cm:{}:{}", bucket, user_id);
+    match state.community_rate_limiter.check(&key).await {
+        Ok(_) => Ok(()),
+        Err(retry_after_secs) => Err(AppError::BadRequest(format!(
+            "Too many community actions. Try again in {} seconds.",
+            retry_after_secs
+        ))),
+    }
+}
+
 fn require_csrf_header(headers: &HeaderMap, jar: &CookieJar) -> Result<(), AppError> {
     let cookie_token = jar
         .get("csrf_token")
@@ -1341,6 +1364,16 @@ async fn create_user_post(
         None,
     )
     .await;
+
+    // Getting-Started step 3: first post (once-only bonus on top of post_created).
+    let _ = crate::community::xp::award_xp_once(
+        &c_pool,
+        user.id,
+        "first_post",
+        Some("Posted your first insight"),
+    )
+    .await;
+    let _ = crate::community::xp::maybe_award_onboarding_complete(&c_pool, user.id).await;
 
     let author_name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user.id)
         .await
@@ -2811,6 +2844,33 @@ pub fn router() -> Router<AppState> {
             "/api/community/circles/:id/token-gate",
             post(update_circle_token_gate),
         )
+        // ── Multi-circle rework (2026-05-16) ────────────────────────────
+        .route(
+            "/api/community/circles/discover",
+            get(discover_circles_handler),
+        )
+        .route("/api/community/circles/search", get(search_circles_handler))
+        .route(
+            "/api/community/circles/by-slug/:slug",
+            get(get_circle_by_slug_handler),
+        )
+        .route("/api/community/me/circles", get(list_my_circles_handler))
+        .route(
+            "/api/community/profile/banner",
+            axum::routing::put(set_profile_banner_handler),
+        )
+        .route(
+            "/api/community/circles/:id/moderator/:user_id",
+            post(set_moderator_handler),
+        )
+        .route(
+            "/api/community/circles/:id/bans",
+            get(list_circle_bans_handler).post(ban_member_handler),
+        )
+        .route(
+            "/api/community/circles/:id/bans/:user_id",
+            axum::routing::delete(unban_member_handler),
+        )
         .route("/api/community/invites", get(get_my_invites))
         .route("/api/community/invites/:id/accept", post(accept_invite))
         .route("/api/community/invites/:id/decline", post(decline_invite))
@@ -3231,6 +3291,16 @@ async fn update_profile(
     let c_pool = get_community_pool(&state)?;
     // Community-side bio + flair + new privacy toggles. None for any field
     // = leave unchanged, so the FE can PUT a single key for instant save.
+    let bio_set = payload
+        .bio
+        .as_ref()
+        .map(|b| !b.trim().is_empty())
+        .unwrap_or(false);
+    let flair_set = payload
+        .flair
+        .as_ref()
+        .map(|f| !f.is_empty())
+        .unwrap_or(false);
     crate::community::service::update_user_profile(
         &c_pool,
         user.id,
@@ -3240,6 +3310,18 @@ async fn update_profile(
         payload.allow_dms_from_strangers,
     )
     .await?;
+
+    // Getting-Started step 1: bio + flair. Once-only XP grant.
+    if bio_set || flair_set {
+        let _ = crate::community::xp::award_xp_once(
+            &c_pool,
+            user.id,
+            "profile_completed",
+            Some("Added a bio"),
+        )
+        .await;
+        let _ = crate::community::xp::maybe_award_onboarding_complete(&c_pool, user.id).await;
+    }
 
     // Cross-DB: leaderboard visibility lives in the core
     // `leaderboard_preferences` table (per-user UNIQUE row).
@@ -3349,6 +3431,9 @@ async fn follow_user(
         None,
     )
     .await;
+
+    // Getting-Started step 2: follower may have just crossed 5-following.
+    let _ = crate::community::xp::maybe_award_onboarding_complete(&c_pool, user.id).await;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -5049,6 +5134,7 @@ async fn join_circle(
     let user = middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_community_rate_limit(&state, user.id, "join").await?;
 
     let c_pool = get_community_pool(&state)?;
 
@@ -5070,16 +5156,23 @@ async fn join_circle(
     Ok(Json(serde_json::json!({"success": true})))
 }
 
+#[derive(Deserialize)]
+struct LeaveCircleReq {
+    circle_id: Uuid,
+}
+
 async fn leave_circle(
     jar: CookieJar,
     State(state): State<AppState>,
+    Json(payload): Json<LeaveCircleReq>,
 ) -> Result<impl IntoResponse, AppError> {
     let user = middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_community_rate_limit(&state, user.id, "leave").await?;
 
     let c_pool = get_community_pool(&state)?;
-    crate::community::circles::leave_circle(&c_pool, user.id).await?;
+    crate::community::circles::leave_circle(&c_pool, user.id, payload.circle_id).await?;
     Ok(Json(serde_json::json!({"success": true})))
 }
 
@@ -5097,6 +5190,7 @@ async fn send_circle_invite(
     let user = middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_community_rate_limit(&state, user.id, "invite").await?;
 
     let c_pool = get_community_pool(&state)?;
 
@@ -8465,5 +8559,221 @@ async fn get_posts_by_hashtag(
     Ok(Json(serde_json::json!({
         "tag": clean_tag,
         "posts": feed,
+    })))
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Multi-circle handlers (2026-05-16 rework). Discover / search / by-slug /
+// my-circles / moderator-promote / ban / unban.
+// ═══════════════════════════════════════════════════════════════════════
+
+async fn discover_circles_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let _ = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let payload = crate::community::circles::discover_circles(&c_pool).await?;
+    Ok(Json(payload))
+}
+
+#[derive(Deserialize)]
+struct SearchCirclesQuery {
+    q: Option<String>,
+    page: Option<i64>,
+    per_page: Option<i64>,
+}
+
+async fn search_circles_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<SearchCirclesQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let _ = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let query = q.q.unwrap_or_default();
+    let page = q.page.unwrap_or(1).max(1);
+    let per_page = q.per_page.unwrap_or(10).clamp(1, 50);
+    let (rows, total) =
+        crate::community::circles::search_circles(&c_pool, &query, page, per_page).await?;
+    Ok(Json(serde_json::json!({
+        "results": rows,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "total_pages": ((total as f64) / (per_page as f64)).ceil() as i64,
+    })))
+}
+
+async fn get_circle_by_slug_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(slug): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    let viewer = middleware::get_current_user(&jar, &state.db)
+        .await
+        .map(|u| u.id);
+    let c_pool = get_community_pool(&state)?;
+    let (circle, role) =
+        crate::community::circles::get_circle_by_slug(&c_pool, &slug, viewer).await?;
+    Ok(Json(serde_json::json!({
+        "circle": circle,
+        "my_role": role,
+    })))
+}
+
+async fn list_my_circles_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let rows = crate::community::circles::list_my_circles(&c_pool, user.id).await?;
+    let payload: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|(c, role)| {
+            serde_json::json!({
+                "circle": c,
+                "role": role,
+            })
+        })
+        .collect();
+    Ok(Json(serde_json::json!({ "circles": payload })))
+}
+
+#[derive(Deserialize)]
+struct ModeratorReq {
+    moderator: bool,
+}
+
+async fn set_moderator_handler(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, user_id)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<ModeratorReq>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let actor = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_community_rate_limit(&state, actor.id, "moderator").await?;
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::set_member_moderator(
+        &c_pool,
+        actor.id,
+        circle_id,
+        user_id,
+        payload.moderator,
+    )
+    .await?;
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "role": if payload.moderator { "moderator" } else { "member" },
+    })))
+}
+
+#[derive(Deserialize)]
+struct BanReq {
+    user_id: Uuid,
+    reason: Option<String>,
+}
+
+async fn ban_member_handler(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<BanReq>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let actor = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_community_rate_limit(&state, actor.id, "ban").await?;
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::ban_member(
+        &c_pool,
+        actor.id,
+        circle_id,
+        payload.user_id,
+        payload.reason,
+    )
+    .await?;
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
+async fn unban_member_handler(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, user_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let actor = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::unban_member(&c_pool, actor.id, circle_id, user_id).await?;
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
+/// GET /api/community/circles/:id/bans — list active bans for the circle.
+/// Owner/admin/moderator only (mirrors the visibility on the settings page).
+async fn list_circle_bans_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let actor = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let bans = crate::community::circles::list_circle_bans(&c_pool, actor.id, circle_id).await?;
+    Ok(Json(serde_json::json!({ "bans": bans })))
+}
+
+#[derive(Deserialize)]
+struct ProfileBannerReq {
+    /// Set to `None`/`null` or omit to clear the banner.
+    banner_url: Option<String>,
+}
+
+/// PUT /api/community/profile/banner — save the Facebook-style cover-photo URL
+/// to the caller's community profile. The actual image upload happens via
+/// `/api/upload/post-image` (returns a URL); this endpoint just persists the
+/// reference. Pass `banner_url: null` (or an empty string) to clear.
+async fn set_profile_banner_handler(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Json(payload): Json<ProfileBannerReq>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    // Trim + length-cap (1024 chars matches DB CHECK constraint).
+    let cleaned: Option<String> = payload.banner_url.and_then(|s| {
+        let t = s.trim().to_string();
+        if t.is_empty() {
+            None
+        } else if t.len() > 1024 {
+            None
+        } else {
+            Some(t)
+        }
+    });
+    crate::community::circles::set_profile_banner(&c_pool, user.id, cleaned.as_deref()).await?;
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "banner_url": cleaned,
     })))
 }

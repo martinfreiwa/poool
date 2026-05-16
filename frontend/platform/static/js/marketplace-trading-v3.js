@@ -20,7 +20,48 @@
         return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function fmtInt(val) {
+        if (val == null || !isFinite(val)) return '—';
         return 'USD ' + val.toLocaleString('en-US');
+    }
+
+    function readNumber(source, keys) {
+        for (const key of keys) {
+            const value = source && source[key];
+            const number = Number(value);
+            if (Number.isFinite(number)) return number;
+        }
+        return null;
+    }
+
+    function readPercent(source, percentKeys, bpsKeys) {
+        const percent = readNumber(source, percentKeys);
+        if (percent != null) return percent;
+        const bps = readNumber(source, bpsKeys);
+        return bps != null ? bps / 100 : null;
+    }
+
+    function fmtPct(value, opts = {}) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return '—';
+        const formatted = number.toFixed(1).replace(/\.0$/, '');
+        return (opts.sign && number > 0 ? '+' : '') + formatted + '%';
+    }
+
+    function setPerformanceValue(element, value) {
+        if (!element) return;
+        const number = Number(value);
+        element.classList.remove('tv3-sp-value--green', 'tv3-sp-value--red');
+        if (!Number.isFinite(number)) {
+            element.textContent = '—';
+            return;
+        }
+        element.textContent = fmtPct(number, { sign: true });
+        element.classList.add(number >= 0 ? 'tv3-sp-value--green' : 'tv3-sp-value--red');
+    }
+
+    function getPlatformFeeRate() {
+        const feePct = Number(window.POOOL_FEE_PCT);
+        return Number.isFinite(feePct) && feePct >= 0 ? feePct / 100 : 0;
     }
 
     // ── Toast Notification ──
@@ -349,9 +390,9 @@
 
         // Financial hero stats
         document.getElementById('tv3-token-price').textContent = fmt(asset.tokenPrice);
-        document.getElementById('tv3-yield').textContent = '+' + asset.annualYield + '%';
+        document.getElementById('tv3-yield').textContent = fmtPct(asset.annualYield, { sign: true });
         document.getElementById('tv3-prop-val').textContent = fmtInt(asset.propertyValue);
-        document.getElementById('tv3-net-ret').textContent = asset.netReturn + '%';
+        document.getElementById('tv3-net-ret').textContent = fmtPct(asset.netReturn);
         const available = asset.totalSupply - (asset.sellOrders.reduce((s, o) => s + o.tokens, 0) || 0);
         document.getElementById('tv3-available').innerHTML = available.toLocaleString() + ' <small>/ ' + asset.totalSupply.toLocaleString() + '</small>';
 
@@ -611,8 +652,8 @@
 
         // Property info
         document.getElementById('tv3-prop-value').textContent = fmtInt(asset.propertyValue);
-        document.getElementById('tv3-gross-yield').textContent = asset.annualYield + '%';
-        document.getElementById('tv3-net-return').textContent = asset.netReturn + '%';
+        document.getElementById('tv3-gross-yield').textContent = fmtPct(asset.annualYield);
+        document.getElementById('tv3-net-return').textContent = fmtPct(asset.netReturn);
         document.getElementById('tv3-price-sqm').textContent = fmtInt(asset.priceSqm);
         document.getElementById('tv3-prop-type').textContent = asset.type;
         document.getElementById('tv3-prop-land').textContent = asset.landSize;
@@ -622,18 +663,20 @@
         // Info badges
         document.getElementById('tv3-info-country').textContent = asset.country + ', ' + asset.city;
         document.getElementById('tv3-info-status').textContent = asset.rentStatus;
-        document.getElementById('tv3-info-yield').textContent = asset.annualYield + '% annual rental yield';
-        document.getElementById('tv3-info-growth').textContent = asset.annualYield + '% annual gross yield';
-        document.getElementById('tv3-info-net').textContent = 'With a net yield of ' + asset.netReturn + '% and price per m² of USD ' + asset.priceSqm.toLocaleString();
+        document.getElementById('tv3-info-yield').textContent = fmtPct(asset.annualYield) + ' annual rental yield';
+        document.getElementById('tv3-info-growth').textContent = fmtPct(asset.annualYield) + ' annual gross yield';
+        document.getElementById('tv3-info-net').textContent = asset.netReturn == null
+            ? 'Net yield unavailable. Price per m²: USD ' + asset.priceSqm.toLocaleString()
+            : 'With a net yield of ' + fmtPct(asset.netReturn) + ' and price per m² of USD ' + asset.priceSqm.toLocaleString();
 
         // Financials
         document.getElementById('tv3-fin-price').textContent = fmtInt(asset.propertyValue);
         document.getElementById('tv3-fin-fee').textContent = '+ ' + fmtInt(asset.platformFee);
         document.getElementById('tv3-fin-total').textContent = '= ' + fmtInt(asset.propertyValue + asset.platformFee);
-        document.getElementById('tv3-fin-gross').textContent = asset.annualYield + '%';
-        document.getElementById('tv3-fin-proj').textContent = asset.projectedReturn + '%';
-        document.getElementById('tv3-fin-net').textContent = asset.netReturn + '%';
-        document.getElementById('tv3-fin-note2').textContent = 'Based on ' + asset.annualYield + '% annual rental yield';
+        document.getElementById('tv3-fin-gross').textContent = fmtPct(asset.annualYield);
+        document.getElementById('tv3-fin-proj').textContent = fmtPct(asset.projectedReturn);
+        document.getElementById('tv3-fin-net').textContent = fmtPct(asset.netReturn);
+        document.getElementById('tv3-fin-note2').textContent = 'Based on ' + fmtPct(asset.annualYield) + ' annual rental yield';
 
         // Location
         const locSubtitle = document.getElementById('tv3-loc-subtitle');
@@ -966,7 +1009,7 @@
 
         const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
         const price = getActivePrice();
-        const feePct = (window.POOOL_FEE_PCT || 5) / 100;
+        const feePct = getPlatformFeeRate();
         const hasPrice = price != null && price > 0 && qty > 0;
 
         // VWAP-aware subtotal:
@@ -1253,6 +1296,8 @@
             const sellOrders = liveOrderbook ? liveOrderbook.sellOrders : fallbackSellOrders;
             const buyBids = liveOrderbook ? liveOrderbook.buyBids : fallbackBuyBids;
             const displayPriceCents = liveOrderbook?.lastPrice || rawAsset.price;
+            const annualYield = readPercent(rawAsset, ['roi', 'annualYield', 'annual_yield'], ['annual_yield_bps']);
+            const platformFeeRate = getPlatformFeeRate();
 
             // Map backend structure to UI standard
             asset = {
@@ -1264,9 +1309,17 @@
                 city: locationParts.city,
                 description: rawAsset.description || 'No description available for this property.',
                 tokenPrice: displayPriceCents / 100,
-                annualYield: rawAsset.roi,
-                projectedReturn: (rawAsset.roi * 1.5).toFixed(1),
-                netReturn: (rawAsset.roi * 0.75).toFixed(1),
+                annualYield,
+                projectedReturn: readPercent(
+                    rawAsset,
+                    ['projectedReturn', 'projected_return', 'projected_return_pct'],
+                    ['projected_return_bps']
+                ),
+                netReturn: readPercent(
+                    rawAsset,
+                    ['netReturn', 'net_return', 'netYield', 'net_yield'],
+                    ['net_return_bps', 'net_yield_bps']
+                ),
                 occupancy: rawAsset.occupancy || 100,
                 totalSupply: rawAsset.totalSupply,
                 propertyValue: rawAsset.propertyValue ? rawAsset.propertyValue / 100 : 0,
@@ -1274,10 +1327,15 @@
                 landSize: rawAsset.landSize || 'N/A',
                 bedrooms: rawAsset.bedrooms || 0,
                 rentStatus: rawAsset.rentStatus || 'N/A',
-                platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * ((window.POOOL_FEE_PCT || 5) / 100) : 0,
+                platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * platformFeeRate : 0,
                 images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/static/images/seed/villa1.webp'],
                 sellOrders,
                 buyBids,
+                performance: {
+                    threeMonth: readPercent(rawAsset, ['performance3m', 'performance_3m', 'performance_3m_pct', 'return3m', 'return_3m'], ['performance_3m_bps', 'return_3m_bps']),
+                    sixMonth: readPercent(rawAsset, ['performance6m', 'performance_6m', 'performance_6m_pct', 'return6m', 'return_6m'], ['performance_6m_bps', 'return_6m_bps']),
+                    twelveMonth: readPercent(rawAsset, ['performance12m', 'performance_12m', 'performance_12m_pct', 'return12m', 'return_12m'], ['performance_12m_bps', 'return_12m_bps'])
+                },
                 locationDesc: rawAsset.locationDesc || '',
                 fundingStatus: rawAsset.fundingStatus,
                 // Carry through the asset UUID — needed for WebSocket subscribe.
@@ -1365,28 +1423,20 @@
 
         // ── Performance Strip ──
         document.getElementById('tv3-ticker-price').textContent = fmt(asset.tokenPrice);
-        document.getElementById('tv3-ticker-yield').textContent = asset.annualYield + '%';
-
-        const current = asset.tokenPrice;
-        const price3m = current * 0.96;
-        const price6m = current * 0.92;
-        const price12m = current * 0.87;
-        const pct = (from) => ((current - from) / from * 100).toFixed(1);
-        const sign = (v) => parseFloat(v) >= 0 ? '+' + v + '%' : v + '%';
-        const color = (v, el) => { el.classList.toggle('tv3-sp-value--green', parseFloat(v) >= 0); el.classList.toggle('tv3-sp-value--red', parseFloat(v) < 0); };
+        document.getElementById('tv3-ticker-yield').textContent = fmtPct(asset.annualYield);
 
         const el3m = document.getElementById('tv3-ticker-3m');
         const el6m = document.getElementById('tv3-ticker-6m');
         const el12m = document.getElementById('tv3-ticker-12m');
-        el3m.textContent = sign(pct(price3m)); color(pct(price3m), el3m);
-        el6m.textContent = sign(pct(price6m)); color(pct(price6m), el6m);
-        el12m.textContent = sign(pct(price12m)); color(pct(price12m), el12m);
+        setPerformanceValue(el3m, asset.performance && asset.performance.threeMonth);
+        setPerformanceValue(el6m, asset.performance && asset.performance.sixMonth);
+        setPerformanceValue(el12m, asset.performance && asset.performance.twelveMonth);
 
         // ── Mobile footer ──
         const mobilePrice = document.getElementById('tv3-mobile-price');
         const mobileYield = document.getElementById('tv3-mobile-yield');
         if (mobilePrice) mobilePrice.textContent = fmt(asset.tokenPrice);
-        if (mobileYield) mobileYield.textContent = '+' + asset.annualYield + '% yield';
+        if (mobileYield) mobileYield.textContent = fmtPct(asset.annualYield, { sign: true }) + ' yield';
 
         // ── Trade Widget Events ──
         document.getElementById('tv3-qty').addEventListener('input', updateSummary);
@@ -1460,7 +1510,7 @@
             }
 
             const totalValue = priceDisplay * qty;
-            const feeRate = ((window.POOOL_FEE_PCT || 5) / 100);
+            const feeRate = getPlatformFeeRate();
             const feeValue = totalValue * feeRate;
             const grandTotal = currentSide === 'buy' ? totalValue + feeValue : totalValue - feeValue;
 
@@ -1622,7 +1672,7 @@
             const q = parseInt(sheetQty?.value) || 0;
             const p = parseFloat(sheetPrice?.value) || 0;
             const subtotal = q * p;
-            const fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
+            const fee = subtotal * getPlatformFeeRate();
             // Side-aware total: buyer locks subtotal+fee, seller nets subtotal−fee.
             const sheetSide = sheetBuy?.classList.contains('active') ? 'buy' : 'sell';
             const total = sheetSide === 'buy' ? subtotal + fee : subtotal - fee;
@@ -1660,7 +1710,7 @@
             }
 
             const totalValue = priceVal * qty;
-            const feeValue = totalValue * ((window.POOOL_FEE_PCT || 5) / 100);
+            const feeValue = totalValue * getPlatformFeeRate();
             const grandTotal = sheetSide === 'buy' ? totalValue + feeValue : totalValue - feeValue;
 
             const confirmed = await showOrderConfirmModal({

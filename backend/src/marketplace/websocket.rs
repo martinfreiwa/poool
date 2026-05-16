@@ -343,7 +343,7 @@ async fn send_to_local_and_pubsub(redis: &RedisPool, asset_id: Uuid, json: &str)
 /// this subscriber receives it and forwards to local broadcast channels.
 ///
 /// Spawned in `main.rs`:
-/// ```ignore
+/// ```text
 /// tokio::spawn(async move {
 ///     marketplace::websocket::run_pubsub_subscriber(&redis).await;
 /// });

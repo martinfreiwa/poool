@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT old_tier, new_tier, old_bps, new_bps, volume_cents, changed_at\n           FROM developer_team_tier_history\n           WHERE team_id = $1\n           ORDER BY changed_at DESC LIMIT 5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "old_tier",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "new_tier",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "old_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "new_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "volume_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "changed_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "eff83daad43e0116b2ee28842cd5ed24880425ee5b2eaa9857b2f51ca0a373e0"
+}

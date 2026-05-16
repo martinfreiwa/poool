@@ -101,7 +101,7 @@ body.tv3-body {
 }
 
 /* === Layout === */
-.tv3-wrapper { display: flex; min-height: 100vh; }
+.tv3-wrapper { display: flex; min-height: 100vh; min-height: 100dvh; }
 .tv3-sidebar { flex-shrink: 0; z-index: 100; }
 .tv3-main { flex: 1; min-width: 0; margin-left: 256px; background: var(--tv3-bg); overflow-y: visible; view-transition-name: main-content; }
 

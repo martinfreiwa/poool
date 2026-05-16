@@ -121,6 +121,10 @@
       font-size: 13px;
       font-weight: 500;
       padding: 9px 16px;
+      /* iOS safe-area: avoid notch/Dynamic Island clipping announcement */
+      padding-top: max(9px, env(safe-area-inset-top));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
       letter-spacing: 0.01em;
     }
     .lp-announce-bar strong { font-weight: 800; }
@@ -198,10 +202,32 @@
 
     /* ── Mobile ── */
     @media (max-width: 767px) {
-      .lp-announce-bar { font-size: 11px; padding: 8px 12px; }
+      .lp-announce-bar {
+        font-size: 11px;
+        padding: 8px 12px;
+        padding-top: max(8px, env(safe-area-inset-top));
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+      }
       .lp-header { top: 35px !important; }
       .lp-header .header-nav { display: none; }
       .lp-header .lang-switch { display: none; }
+      /* Tap target floor 48x48 (Material) for header sign-in pill */
+      .lp-header .btn-signin {
+        min-height: 44px;
+        padding: 12px 22px;
+        font-size: 14px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
+      /* Mobile drawer links: ensure 48px row height */
+      .lp-mobile-drawer__link {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
     }
   </style>
 
@@ -371,7 +397,7 @@
       100% { transform: scale(1); }
     }
   </style>
-  <section class="hero-section" id="hero" style="min-height: calc(100vh - 80px); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+  <section class="hero-section" id="hero" style="min-height: calc(100vh - 80px); min-height: calc(100dvh - 80px); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
     <div class="hero-grain" style="position: absolute; inset: 0; pointer-events: none; z-index: 1;"></div>
     <style>
       @media (prefers-reduced-motion: reduce) {
@@ -749,7 +775,7 @@
         </div>
 
         <!-- Two-column layout -->
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 48px 56px; position: relative; z-index: 1; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: clamp(28px, 5vw, 48px) clamp(20px, 5vw, 56px); position: relative; z-index: 1; flex-wrap: wrap;">
           
           <!-- Left: Copy + CTA -->
           <div style="flex: 1 1 65%; min-width: 320px; max-width: 700px; padding-right: 16px;">
@@ -794,6 +820,12 @@
               }
               .myCtaSwiper.anim-pending .swiper-slide:not(.swiper-slide-active) {
                 transform: translateX(-40px) translateZ(-80px) rotate(0deg) !important;
+              }
+              /* Mobile: hide decorative tilted Swiper deck.
+                 Its rotate+translateX causes horizontal overflow on phones,
+                 and the same cards are shown in the Featured Properties grid above. */
+              @media (max-width: 767px) {
+                .myCtaSwiper { display: none !important; }
               }
             </style>
 

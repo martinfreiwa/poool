@@ -39,6 +39,118 @@ body.kyc-hidden .wallet-main {
   position: relative;
 }
 
+.wallet-frozen-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  width: 100%;
+  padding: 20px;
+  background: #FFFFFF;
+  border: 1px solid #F2C94C;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.wallet-frozen-banner__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: #B54708;
+  background: #FFFAEB;
+  border: 1px solid #FEDF89;
+  border-radius: 50%;
+}
+
+.wallet-frozen-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wallet-frozen-banner__eyebrow {
+  margin: 0;
+  color: #B54708;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.wallet-frozen-banner__title {
+  margin: 0;
+  color: var(--page-title-color);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+}
+
+.wallet-frozen-banner__copy {
+  max-width: 860px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.wallet-frozen-banner__request {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+  margin-top: 4px;
+}
+
+.wallet-frozen-banner__label {
+  color: #414651;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.wallet-frozen-banner__textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.wallet-frozen-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wallet-frozen-banner__status {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.wallet-account-frozen .wallet-empty__step-link[aria-disabled="true"] {
+  color: #717680;
+  cursor: not-allowed;
+}
+
+.wallet-account-frozen button:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .wallet-frozen-banner {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .wallet-frozen-banner__actions {
+    align-items: stretch;
+  }
+
+  .wallet-frozen-banner__actions .ds-btn {
+    width: 100%;
+  }
+}
+
 /* Layer to ensure stacking of balances and content */
 #wallet-content-layer {
   display: flex;

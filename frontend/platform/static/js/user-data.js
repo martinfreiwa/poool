@@ -179,12 +179,24 @@ if (typeof window.getCsrfToken === "undefined") {
       }
 
       // Main sidebar + mobile avatars — always replace (placeholder is an inline SVG, not a URL)
-      document.querySelectorAll(".sidebar__account-avatar img, .mobile-burger-menu__avatar img, .admin-sidebar-avatar").forEach(function(img) {
+      document.querySelectorAll(".sidebar__account-avatar img, .mobile-burger-menu__avatar img, .admin-sidebar-avatar, #my-profile-avatar-img").forEach(function(img) {
         img.src = avatarSrc;
         img.alt = user.name;
       });
-      // All profile switcher avatars (investor, developer, any others)
-      replaceAvatars(".profile-switcher .profile-avatar img, #profile-switch-section .profile-avatar img, .profile-menu-item .profile-avatar img, .mobile-profile-menu-item .mobile-profile-avatar img");
+      // Profile switcher rows (Investor / Developer / Admin) — always replace.
+      // The static markup in sidebar.html uses a `data:image/svg+xml,...` blue-circle
+      // placeholder that does NOT match the isPlaceholder() keyword list, so
+      // replaceAvatars() would skip every row. Same user → same avatar across all
+      // rows; force the swap so initials/uploaded photo show in every row.
+      document.querySelectorAll(
+        ".profile-switcher .profile-avatar img, " +
+        "#profile-switch-section .profile-avatar img, " +
+        ".profile-menu-item .profile-avatar img, " +
+        ".mobile-profile-menu-item .mobile-profile-avatar img"
+      ).forEach(function (img) {
+        img.src = avatarSrc;
+        img.alt = user.name;
+      });
 
       // ── Update data attributes for profile switcher ─────────
       document

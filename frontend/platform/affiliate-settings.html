@@ -79,6 +79,132 @@
                     </div>
 
                 </form>
+
+                <!-- Phase-5: Payout method manager (Phase-4 backend) -->
+                <div style="margin-top:32px;padding-top:24px;border-top:1px solid #E5E7EB;">
+                    <h3 class="affiliate-settings-section-title" style="margin:0 0 8px;">Payout destinations</h3>
+                    <p class="affiliate-settings-help" style="margin:4px 0 16px;">
+                        Multiple destinations supported. Mark one as the <strong>default</strong> — that's where the next payout batch lands. SEPA IBANs are AES-256-GCM encrypted at rest.
+                    </p>
+
+                    <form id="aff-payout-method-form" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:16px;margin-bottom:16px;">
+                        <div style="display:grid;grid-template-columns:200px 1fr 200px;gap:12px;align-items:end;">
+                            <label>
+                                <span style="font-size:12px;color:#475467;font-weight:600;">Type</span>
+                                <select id="aff-payout-method-type" class="ds-input" required>
+                                    <option value="sepa_iban">SEPA bank transfer</option>
+                                    <option value="paypal_email">PayPal</option>
+                                    <option value="wise_email">Wise</option>
+                                    <option value="usdc_wallet">USDC (on-chain)</option>
+                                    <option value="stripe_connect">Stripe Connect</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span style="font-size:12px;color:#475467;font-weight:600;">Identifier *</span>
+                                <input type="text" id="aff-payout-method-identifier" required class="ds-input"
+                                       placeholder="DE89... / paypal@example.com / 0x..."/>
+                            </label>
+                            <label>
+                                <span style="font-size:12px;color:#475467;font-weight:600;">Label (optional)</span>
+                                <input type="text" id="aff-payout-method-label" class="ds-input"
+                                       maxlength="80" placeholder="e.g. Backup PayPal"/>
+                            </label>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+                            <input type="checkbox" id="aff-payout-method-default" style="width:16px;height:16px;"/>
+                            <label for="aff-payout-method-default" style="font-size:13px;color:#475467;">Set as default destination</label>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button type="submit" class="ds-btn ds-btn--primary ds-btn--sm">Add destination</button>
+                            <span id="aff-payout-method-error" style="color:#B42318;font-size:12px;align-self:center;"></span>
+                        </div>
+                    </form>
+
+                    <div style="overflow-x:auto;">
+                        <table class="ds-table" style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--admin-border);">
+                                    <th style="padding:10px;text-align:left;font-weight:500;color:var(--admin-text-muted);">Method</th>
+                                    <th style="padding:10px;text-align:left;font-weight:500;color:var(--admin-text-muted);">Identifier</th>
+                                    <th style="padding:10px;text-align:left;font-weight:500;color:var(--admin-text-muted);">Status</th>
+                                    <th style="padding:10px;text-align:right;font-weight:500;color:var(--admin-text-muted);"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="aff-payout-method-list">
+                                <tr><td colspan="4" style="padding:18px;text-align:center;color:#98A2B3;">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Phase-5: Webhook subscriptions manager (Phase-4 backend) -->
+                <div style="margin-top:32px;padding-top:24px;border-top:1px solid #E5E7EB;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <h3 class="affiliate-settings-section-title" style="margin:0;">Webhooks</h3>
+                        <button type="button" id="aff-webhook-new-btn" class="ds-btn ds-btn--secondary ds-btn--sm">+ New webhook</button>
+                    </div>
+                    <p class="affiliate-settings-help" style="margin:4px 0 16px;">
+                        Receive signed POST callbacks for events on your affiliate account.
+                        Each subscription gets its own HMAC-SHA256 secret — shown ONCE on creation.
+                        Verify the <code>X-Poool-Signature: sha256=…</code> header on every request.
+                    </p>
+
+                    <!-- Create form -->
+                    <form id="aff-webhook-form" hidden style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:16px;margin-bottom:12px;">
+                        <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+                            <label>
+                                <span style="font-size:12px;color:#475467;font-weight:600;">Endpoint URL (HTTPS) *</span>
+                                <input type="url" id="aff-webhook-url" required class="ds-input"
+                                       placeholder="https://your-app.example.com/poool-webhook"/>
+                            </label>
+                            <label>
+                                <span style="font-size:12px;color:#475467;font-weight:600;">Event types *</span>
+                                <input type="text" id="aff-webhook-events" required class="ds-input"
+                                       placeholder="commission_earned,payout_released  (or * for all)"
+                                       value="*"/>
+                            </label>
+                            <label>
+                                <span style="font-size:12px;color:#475467;font-weight:600;">Description (optional)</span>
+                                <input type="text" id="aff-webhook-desc" class="ds-input"
+                                       placeholder="e.g. CRM webhook" maxlength="160"/>
+                            </label>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button type="submit" class="ds-btn ds-btn--primary ds-btn--sm">Create subscription</button>
+                            <button type="button" id="aff-webhook-cancel" class="ds-btn ds-btn--secondary ds-btn--sm">Cancel</button>
+                            <span id="aff-webhook-error" style="color:#B42318;font-size:12px;align-self:center;"></span>
+                        </div>
+                    </form>
+
+                    <!-- Secret-shown-once panel -->
+                    <div id="aff-webhook-secret-panel" hidden style="background:#ECFDF5;border:1px solid #6EE7B7;border-radius:8px;padding:14px 16px;margin-bottom:12px;">
+                        <strong style="color:#065F46;">✓ Subscription created.</strong>
+                        <p style="margin:6px 0 8px;color:#065F46;font-size:13px;">
+                            Copy this secret now — it will <strong>not</strong> be shown again. Use it on your server to verify the <code>X-Poool-Signature</code> header.
+                        </p>
+                        <code id="aff-webhook-secret-value" style="display:block;background:#fff;border:1px solid #6EE7B7;padding:8px 10px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;word-break:break-all;color:#065F46;"></code>
+                        <button type="button" id="aff-webhook-secret-copy" class="ds-btn ds-btn--secondary ds-btn--sm" style="margin-top:8px;">Copy</button>
+                        <button type="button" id="aff-webhook-secret-dismiss" class="ds-btn ds-btn--ghost ds-btn--sm" style="margin-top:8px;">I have saved it</button>
+                    </div>
+
+                    <!-- List -->
+                    <div style="overflow-x:auto;">
+                        <table class="ds-table" style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--admin-border);">
+                                    <th style="padding:10px;text-align:left;font-weight:500;color:var(--admin-text-muted);">URL</th>
+                                    <th style="padding:10px;text-align:left;font-weight:500;color:var(--admin-text-muted);">Events</th>
+                                    <th style="padding:10px;text-align:left;font-weight:500;color:var(--admin-text-muted);">Last delivery</th>
+                                    <th style="padding:10px;text-align:left;font-weight:500;color:var(--admin-text-muted);">Status</th>
+                                    <th style="padding:10px;text-align:right;font-weight:500;color:var(--admin-text-muted);"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="aff-webhook-list-body">
+                                <tr><td colspan="5" style="padding:18px;text-align:center;color:#98A2B3;">No webhooks configured.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- Status Sidebar Column -->
@@ -109,6 +235,24 @@
                             Tax year 1099s will be generated by Jan 31st.
                         </li>
                     </ul>
+
+                    <hr>
+
+                    <!-- Phase-3 P1: GDPR Art. 20 data export. Downloads a
+                         JSON dump of all affiliate-domain rows for the
+                         logged-in user. Encrypted PII never decrypted. -->
+                    <h4 style="margin-top:8px;">Your data</h4>
+                    <p class="affiliate-settings-help" style="margin:4px 0 12px;">
+                        Download a JSON copy of your affiliate profile, referrals, commissions, links, team memberships and payout history (GDPR Art. 20).
+                    </p>
+                    <a href="/api/affiliate/data-export" class="ds-btn ds-btn--secondary ds-btn--sm" download>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:6px;vertical-align:-2px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Download my data (JSON)
+                    </a>
                 </div>
             </div>
 

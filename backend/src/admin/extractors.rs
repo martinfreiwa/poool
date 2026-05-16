@@ -99,6 +99,33 @@ impl From<sqlx::Error> for ApiError {
     }
 }
 
+/// D1 fix: lossless `AppError → ApiError` mapping. Use via
+/// `.map_err(ApiError::from)` instead of hand-written
+/// `_ => ApiError::Internal("foo failed")` which discarded the underlying
+/// type + message. The variant is preserved so 4xx errors return as 4xx
+/// (not 500) and the actual message reaches the client / Sentry.
+impl From<crate::error::AppError> for ApiError {
+    fn from(err: crate::error::AppError) -> Self {
+        use crate::error::AppError;
+        match err {
+            AppError::NotFound(m) => ApiError::NotFound(m),
+            AppError::BadRequest(m) => ApiError::BadRequest(m),
+            AppError::Unauthorized(m) => ApiError::Unauthorized(m),
+            AppError::Forbidden(m) => ApiError::Forbidden(m),
+            AppError::Conflict(m) => ApiError::Conflict(m),
+            AppError::Database(e) => ApiError::Database(e),
+            AppError::RateLimited(secs) => ApiError::TooManyRequests(format!(
+                "Too many requests. Retry after {} seconds.",
+                secs
+            )),
+            AppError::Internal(m) => ApiError::Internal(m),
+            // Marketplace + payment-specific variants — surface as BadRequest
+            // with the same human-readable message the AppError emits via Display.
+            other => ApiError::BadRequest(format!("{}", other)),
+        }
+    }
+}
+
 impl ApiError {
     /// Parse a string as a UUID, returning `ApiError::BadRequest` on failure.
     ///
@@ -114,7 +141,7 @@ impl ApiError {
 /// An authenticated admin user, extracted from the session cookie.
 ///
 /// Use this as a handler parameter to enforce admin access:
-/// ```ignore
+/// ```text
 /// async fn my_handler(admin: AdminUser, State(s): State<AppState>) -> Result<Json<...>, ApiError> {
 ///     // admin.user gives you the verified admin User
 /// }

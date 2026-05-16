@@ -23,7 +23,10 @@
     width: 100%;
     background: #fafafa;
     min-height: 100vh;
+    min-height: 100dvh;
     box-sizing: border-box;
+    /* iOS safe-area for fixed checkout bar below */
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* Reset main container */
@@ -51,11 +54,11 @@
 
   /* Mobile Cart Content Container */
   .mobile-cart-content {
-    padding-top: 0;
-    /* No extra padding needed */
-    padding-bottom: 120px;
-    /* Fixed checkout section height */
+    padding-top: env(safe-area-inset-top);
+    /* Fixed checkout section height + iOS home indicator */
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   /* Cart Title Section */

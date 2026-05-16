@@ -30,7 +30,7 @@ use crate::error::AppError;
 /// each one in an ACID transaction.
 ///
 /// Spawned in `main.rs`:
-/// ```ignore
+/// ```text
 /// tokio::spawn(async move {
 ///     marketplace::settlement::run_settlement_worker(&redis, &db).await;
 /// });

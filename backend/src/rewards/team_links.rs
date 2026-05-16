@@ -403,8 +403,13 @@ pub async fn ensure_developer_has_affiliate_row(
         return Ok(());
     }
 
-    // Placeholder referral_code analog zum bestehenden onboarding-Flow
-    let placeholder_code = format!("PEND_{}", uuid::Uuid::new_v4().as_fields().0);
+    // F18 fix: previously used `as_fields().0` (32 bits = ~50% collision at
+    // 77k calls). Switch to a 60-bit slice of UUIDv4 (~10^9 calls before
+    // 1% collision). Cannot use the full 32-hex `simple()` form because
+    // `affiliates.referral_code` is VARCHAR(20) and `PEND_` + 32 = 37 chars.
+    // 15 hex chars (60 bits) + `PEND_` (5 chars) = 20 → fits exactly.
+    let full_hex = uuid::Uuid::new_v4().simple().to_string();
+    let placeholder_code = format!("PEND_{}", &full_hex[..15]);
     let _ = sqlx::query(
         r#"INSERT INTO affiliates (user_id, referral_code, status)
            VALUES ($1, $2, 'active')

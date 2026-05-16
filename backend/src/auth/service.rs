@@ -407,7 +407,7 @@ pub async fn rotate_session_token(pool: &PgPool, old_token: &str) -> Result<Stri
     let new_token = generate_session_token();
     let affected = sqlx::query(
         "UPDATE user_sessions
-            SET session_token = $1, is_2fa_verified = TRUE, updated_at = NOW()
+            SET session_token = $1, is_2fa_verified = TRUE
             WHERE session_token = $2",
     )
     .bind(&new_token)
@@ -477,6 +477,72 @@ pub async fn get_user_by_session(
     } else {
         tracing::warn!(
             "Session {}… not found, expired, unverified, or inactive in DB",
+            tok_preview
+        );
+        Ok(None)
+    }
+}
+
+/// Look up a user by session token for frozen-account self-service flows.
+///
+/// Standard protected routes intentionally use [`get_user_by_session`], which
+/// only returns active users. Frozen users still need one narrow authenticated
+/// path to request compliance review, so this variant permits `status='frozen'`
+/// while keeping email verification, expiry, and 2FA-session enforcement.
+pub async fn get_user_by_session_allowing_frozen(
+    pool: &PgPool,
+    session_token: &str,
+) -> Result<Option<User>, AppError> {
+    let row = sqlx::query!(
+        r#"
+        SELECT u.id, u.email, u.password_hash, u.email_verified, u.avatar_url, u.status, u.created_at, u.updated_at,
+               s.is_2fa_verified,
+               COALESCE(us.totp_enabled, FALSE) as totp_enabled
+        FROM users u
+        JOIN user_sessions s ON u.id = s.user_id
+        LEFT JOIN user_settings us ON u.id = us.user_id
+        WHERE s.session_token = $1
+          AND s.expires_at > NOW()
+          AND u.status IN ('active', 'frozen')
+          AND u.email_verified = TRUE
+        "#,
+        session_token
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    let tok_preview = &session_token[..8.min(session_token.len())];
+
+    if let Some(r) = row {
+        if r.totp_enabled.unwrap_or(false) && !r.is_2fa_verified {
+            tracing::warn!(
+                "Session {}… denied for frozen self-service: totp_enabled={} is_2fa_verified={}",
+                tok_preview,
+                r.totp_enabled.unwrap_or(false),
+                r.is_2fa_verified
+            );
+            return Ok(None);
+        }
+
+        tracing::info!(
+            "Session {}… valid for frozen self-service user {}",
+            tok_preview,
+            r.email
+        );
+
+        Ok(Some(User {
+            id: r.id,
+            email: r.email,
+            password_hash: r.password_hash,
+            email_verified: r.email_verified,
+            avatar_url: r.avatar_url,
+            status: r.status,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        }))
+    } else {
+        tracing::warn!(
+            "Session {}… not found, expired, unverified, inactive, or non-frozen for self-service",
             tok_preview
         );
         Ok(None)

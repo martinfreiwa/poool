@@ -132,8 +132,13 @@ pub async fn api_admin_kyc_documents(
     .await;
 
     for (id, path, doc_type) in docs {
+        // Force-download disposition so KYC PDFs / images cannot render
+        // inline in the admin browser — closes the PDF-JS / SVG-script
+        // XSS surface (Phase 2.1). Filename = `kyc_<doc-id>_<type>.bin`
+        // so admins still see meaningful download names.
+        let filename = format!("kyc_{}_{}.bin", id, doc_type);
         let signed_url = storage_service
-            .generate_signed_url(&path, 3600)
+            .generate_signed_url_with_disposition(&path, 3600, Some(&filename))
             .await
             .unwrap_or_default();
         result.push(serde_json::json!({

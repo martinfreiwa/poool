@@ -975,12 +975,31 @@ pub async fn api_admin_user_update_status(
     }
 
     let mut tx = state.db.begin().await.map_err(ApiError::from)?;
-    let result = sqlx::query(r#"UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2"#)
-        .bind(&payload.status)
-        .bind(uid)
-        .execute(&mut *tx)
-        .await
-        .map_err(ApiError::from)?;
+    let result = sqlx::query(
+        r#"
+        UPDATE users
+           SET status = $1,
+               updated_at = NOW(),
+               frozen_at = CASE
+                   WHEN $1 = 'frozen' THEN COALESCE(frozen_at, NOW())
+                   ELSE NULL
+               END,
+               frozen_reason = CASE
+                   WHEN $1 = 'frozen' THEN COALESCE(frozen_reason, 'admin_manual')
+                   ELSE NULL
+               END,
+               unfreeze_requested_at = CASE
+                   WHEN $1 = 'frozen' THEN unfreeze_requested_at
+                   ELSE NULL
+               END
+         WHERE id = $2
+        "#,
+    )
+    .bind(&payload.status)
+    .bind(uid)
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
 
     if result.rows_affected() != 1 {
         return Err(ApiError::NotFound("User not found".to_string()));

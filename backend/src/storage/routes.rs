@@ -514,7 +514,12 @@ pub async fn upload_kyc_document(
     // Defense-in-depth: reject SVG outright. SVG = XML + inline scripts =
     // stored-XSS surface. No KYC document is legitimately an SVG.
     if is_svg_payload(&file_bytes) {
-        report_mime_mismatch("kyc.upload", &mime_type, "image/svg+xml (rejected)", user.id);
+        report_mime_mismatch(
+            "kyc.upload",
+            &mime_type,
+            "image/svg+xml (rejected)",
+            user.id,
+        );
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "SVG uploads are not supported"})),
@@ -989,7 +994,12 @@ pub async fn upload_asset_document(
     }
 
     if is_svg_payload(&file_bytes) {
-        report_mime_mismatch("asset_document.upload", &mime_type, "image/svg+xml (rejected)", user.id);
+        report_mime_mismatch(
+            "asset_document.upload",
+            &mime_type,
+            "image/svg+xml (rejected)",
+            user.id,
+        );
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "SVG uploads are not supported"})),
@@ -1208,7 +1218,12 @@ pub async fn upload_asset_image(
     };
 
     if is_svg_payload(&file_bytes) {
-        report_mime_mismatch("asset_image.upload", &mime_type, "image/svg+xml (rejected)", user.id);
+        report_mime_mismatch(
+            "asset_image.upload",
+            &mime_type,
+            "image/svg+xml (rejected)",
+            user.id,
+        );
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "SVG uploads are not supported"})),

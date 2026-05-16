@@ -315,6 +315,12 @@ pub struct WalletPageContext {
     pub payment_method_options: String,
     /// Stripe publishable key for the frontend
     pub stripe_publishable_key: String,
+    /// Whether the account is frozen and limited to review self-service
+    pub account_frozen: bool,
+    /// Human-readable frozen reason shown in the wallet banner
+    pub frozen_reason_label: String,
+    /// Whether a review request is already inside the 24h duplicate window
+    pub unfreeze_requested: bool,
 }
 
 /// JSON API response for GET /api/wallet/balance

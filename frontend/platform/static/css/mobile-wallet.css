@@ -25,6 +25,7 @@
   .wallet-page {
     width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
     padding-left: 0 !important;
     /* Remove sidebar padding */

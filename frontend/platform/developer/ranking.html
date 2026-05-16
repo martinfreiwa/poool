@@ -1,19 +1,23 @@
-{% with title="Ranking | Developer", no_index=True, extra_css=['leaderboard', 'marketplace', 'developer-assets', 'developer-leaderboard-navbar', 'developer-ui', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'htmx-init', 'marketplace-search', 'poool-dropdown'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Ranking | Developer", no_index=True,
+extra_css=['leaderboard'], extra_js=['htmx-init', 'profile-dropdown',
+'marketplace-search', 'poool-dropdown'] %}{%
+include
+"components/head.html" %}{% endwith %}
 
-<body id="developer-ranking-body" class="fouc-guard">
+<body id="leaderboard-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
 
-  <div id="developer-ranking-page" class="marketplace-page">
-    <div id="developer-ranking-sidebar" class="marketplace-sidebar">
+  <div class="lb-page">
+    <div class="lb-sidebar">
       {% include 'components/sidebar.html' %}
     </div>
 
-    <main class="ds-main marketplace-main developer-lb-shell-main">
-      {% with dev_nav_title="Ranking", dev_nav_active="ranking" %}
-      {% include "components/developer-topbar.html" %}
-      {% endwith %}
+    <main class="ds-main lb-main">
+      <!-- Sticky Top Bar -->
+      {% with investor_topbar_title="Leaderboard", investor_topbar_variant="leaderboard" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
-      <div class="lb-container" style="padding-top:0">
+      <div class="lb-container">
+
 
         <!-- 1. LOADING STATE (Skeleton) -->
         <div id="lb-loading-layer" class="lb-loading-layer">
@@ -54,52 +58,38 @@
 
           <!-- My Rank summary card -->
           <div id="lb-my-rank-card" class="lb-summary-grid">
-            <div class="lb-pulse-card" style="grid-column: 1 / -1; padding: 24px;">
+            <div class="lb-pulse-card lb-standing-card" style="grid-column: 1 / -1; padding: 24px;">
               <p class="lb-pulse-eyebrow">Your Standing</p>
-              <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;">
-                <span id="lb-my-rank" class="lb-spotlight-title" style="font-size: 40px;">#—</span>
-                <span id="lb-my-metric-label" class="lb-last-updated">Start investing to get ranked.</span>
+              <div class="lb-standing-row">
+                <div class="lb-standing-text">
+                  <span id="lb-my-rank" class="lb-spotlight-title lb-standing-rank" aria-live="polite" aria-atomic="true">#—</span>
+                  <span id="lb-my-metric-label" class="lb-last-updated">Start investing to get ranked.</span>
+                </div>
+                <a href="/marketplace" class="ds-btn ds-btn--primary lb-standing-cta" aria-label="Go to marketplace to start investing">
+                  Explore Marketplace
+                </a>
               </div>
             </div>
           </div>
 
-          <!-- Filters / Controls Row -->
-          <div class="lb-summary-grid" style="margin-top: 16px;">
-            <div class="lb-pulse-card" style="padding: 20px; gap: 12px;">
-              <p class="lb-pulse-eyebrow">Find Investor</p>
-              <input
-                id="lb-search-input"
-                type="search"
-                class="ds-input lb-search-card-control"
-                placeholder="Search by display name..."
-                aria-label="Search leaderboard by display name"
-                autocomplete="off"
-                oninput="debounceSearch(event)"
-              />
-              <div id="lb-tier-filter" class="lb-topbar-tabs" role="tablist" aria-label="Filter by tier">
-                <button type="button" class="lb-topbar-tab active" data-tier-id="" onclick="switchTier('', this)">All Tiers</button>
-                <button type="button" class="lb-topbar-tab" data-tier-id="1" onclick="switchTier('1', this)">Intro</button>
-                <button type="button" class="lb-topbar-tab" data-tier-id="2" onclick="switchTier('2', this)">Plus</button>
-                <button type="button" class="lb-topbar-tab" data-tier-id="3" onclick="switchTier('3', this)">Pro</button>
-                <button type="button" class="lb-topbar-tab" data-tier-id="4" onclick="switchTier('4', this)">Elite</button>
-                <button type="button" class="lb-topbar-tab" data-tier-id="5" onclick="switchTier('5', this)">Premium</button>
-              </div>
-            </div>
-            <div class="lb-pulse-card" style="padding: 20px; gap: 12px;">
-              <p class="lb-pulse-eyebrow">Visibility</p>
-              <div class="lb-visibility-row">
-                <input type="checkbox" id="lb-visibility-toggle" onchange="toggleVisibility(this)" />
-                <label id="lb-visibility-label" for="lb-visibility-toggle" style="cursor: pointer;">Hidden from public rankings</label>
-              </div>
-              <span id="lb-preference-status" class="lb-last-updated" aria-live="polite"></span>
-              <span id="lb-last-updated" class="lb-last-updated"></span>
-            </div>
-          </div>
+          <!-- Filters card + Visibility card removed:
+               - Search + tier filter were of limited use on a small visible set.
+               - Visibility is now managed exclusively in Profile Settings
+                 (see /settings → Leaderboard section). Same DB row, single
+                 source of truth. -->
+          <span id="lb-last-updated" class="lb-helper-text" hidden></span>
 
-          <!-- Summary grid -->
+          <!-- Summary grid (fade target during refetch) -->
           <div id="lb-summary-grid" class="lb-summary-grid" style="margin-top: 16px;">
-            <div class="lb-bento-grid" id="lb-bento-grid" style="grid-column: 1 / -1;"></div>
-            <div class="lb-minor-grid" id="lb-minor-grid" style="grid-column: 1 / -1;"></div>
+            <!-- Top 3: Bento Cards -->
+            <div class="lb-bento-grid" id="lb-bento-grid" style="grid-column: 1 / -1;">
+              <!-- Dynamically populated by JS -->
+            </div>
+
+            <!-- Ranks 4–9: Compact Cards -->
+            <div class="lb-minor-grid" id="lb-minor-grid" style="grid-column: 1 / -1;">
+              <!-- Dynamically populated by JS -->
+            </div>
           </div>
 
           <!-- Rankings Ledger Table -->
@@ -108,8 +98,20 @@
               <h2 class="lb-ledger-title">Global Tier Listings</h2>
               <div class="lb-ledger-actions" style="display:flex;align-items:center;gap:12px;">
                 <span id="lb-total-participants" class="lb-ledger-title" style="opacity: 0.6;"></span>
-                <button id="lb-refresh-btn" type="button" class="ds-btn ds-btn--secondary ds-btn--sm" hidden
-                  onclick="adminRefreshLeaderboard(this)" aria-label="Refresh leaderboard scores (admin only)">
+                <!--
+                  Admin-only "Refresh now" button. Hidden by default; the
+                  client toggles `hidden` off once /api/me confirms the
+                  viewer holds an admin role. POSTs to /api/leaderboard/refresh
+                  with a CSRF token; status is rendered in #lb-refresh-status.
+                  Audit task A2.
+                -->
+                <button
+                  id="lb-refresh-btn"
+                  type="button"
+                  class="ds-btn ds-btn--secondary ds-btn--sm"
+                  hidden
+                  onclick="adminRefreshLeaderboard(this)"
+                  aria-label="Refresh leaderboard scores (admin only)">
                   Refresh now
                 </button>
                 <span id="lb-refresh-status" class="lb-last-updated" role="status" aria-live="polite"></span>
@@ -121,13 +123,13 @@
                   <tr>
                     <th>Rank</th>
                     <th>Entity</th>
-                    <th class="col-mix">Asset Mix</th>
                     <th class="text-right" id="lb-table-metric-header">Holdings</th>
-                    <th class="text-right col-yield">Yield (ROI)</th>
-                    <th class="text-right col-status">Status</th>
+                    <th class="text-right col-yield" title="Investment-weighted average target yield (annual)">Target Yield</th>
                   </tr>
                 </thead>
-                <tbody id="lb-rankings-body"></tbody>
+                <tbody id="lb-rankings-body">
+                  <!-- Filled by JS -->
+                </tbody>
               </table>
             </div>
             <div class="lb-ledger-footer">
@@ -140,17 +142,20 @@
                   <option value="100">100</option>
                 </select>
               </div>
-              <div class="lb-pagination" id="lb-pagination-controls"></div>
+              <div class="lb-pagination" id="lb-pagination-controls">
+                <!-- Dynamically populated by JS (Prev, 1, 2, 3..., Next) -->
+              </div>
             </div>
           </div>
 
-        </div><!-- /lb-content-layer -->
-      </div><!-- /lb-container -->
+        </div> <!-- end lb-content-layer -->
+      </div>
     </main>
   </div>
 
-  <script src="/static/js/leaderboard.js?v=8"></script>
+  <script src="/static/js/leaderboard.js?v=14"></script>
   <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
 </body>
 
 </html>

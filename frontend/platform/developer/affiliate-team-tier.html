@@ -1,0 +1,148 @@
+{% with title="Affiliate Team Tier – POOOL", no_index=True,
+extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-tier'] %}{% include
+"components/head.html" %}{% endwith %}
+
+<body id="developer-affiliate-team-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="developer-dashboard-page">
+    <div class="developer-dashboard-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
+      <div class="ds-main__content dat-tier-page">
+        {% include 'developer/_affiliate_team_shell.html' %}
+
+        <!-- ── CARD 1: Current Team Tier (hero) ───────────────────── -->
+        <section class="ds-card dat-content-card dat-tier-hero" aria-labelledby="dat-tier-hero-title">
+          <header class="dat-settings-card__header">
+            <div>
+              <h3 class="dat-section__title" id="dat-tier-hero-title">Team Tier</h3>
+              <p class="dat-section__hint">Drives the commission rate paid to you on every conversion via your team members' business affiliate links.</p>
+            </div>
+            <span class="dat-status dat-status--active" id="dat-tier-updated" title="Last evaluated">Updating…</span>
+          </header>
+
+          <div class="dat-tier-hero__grid">
+            <article class="dat-tier-hero__cur">
+              <span class="dat-tier-hero__label">Current tier</span>
+              <strong class="dat-tier-hero__tier" id="dat-tier-name" aria-live="polite">—</strong>
+              <span class="dat-tier-hero__rate"><strong id="dat-tier-rate">—</strong><span class="dat-tier-hero__rate-suffix" id="dat-tier-rate-suffix"></span></span>
+            </article>
+
+            <article class="dat-tier-hero__volume">
+              <span class="dat-tier-hero__label">12-month team volume</span>
+              <strong class="dat-tier-hero__num" id="dat-tier-volume" aria-live="polite">—</strong>
+              <span class="dat-tier-hero__hint" id="dat-tier-volume-hint">Qualified team-business conversions, rolling 12 months.</span>
+            </article>
+
+            <article class="dat-tier-hero__next">
+              <span class="dat-tier-hero__label">Next tier</span>
+              <strong class="dat-tier-hero__num" id="dat-tier-next" aria-live="polite">—</strong>
+              <span class="dat-tier-hero__hint" id="dat-tier-next-hint">—</span>
+            </article>
+          </div>
+
+          <div class="dat-tier-progress" aria-label="Progress to next tier">
+            <div class="dat-tier-progress__bar">
+              <div class="dat-tier-progress__fill" id="dat-tier-progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="dat-tier-progress__labels">
+              <span id="dat-tier-progress-from">—</span>
+              <span class="dat-tier-progress__pct" id="dat-tier-progress-pct">0%</span>
+              <span id="dat-tier-progress-to">—</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── CARD 2: Full ladder ─────────────────────────────────── -->
+        <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-ladder-title">
+          <header class="dat-settings-card__header">
+            <div>
+              <h3 class="dat-section__title" id="dat-ladder-title">Tier ladder</h3>
+              <p class="dat-section__hint">Each tier sets your commission rate on team-business links. Team-business volume aggregates conversions from every member's business link.</p>
+            </div>
+          </header>
+
+          <div class="dat-table-wrap">
+            <table class="dat-table dat-table--hoverable" aria-describedby="dat-ladder-title">
+              <caption class="sr-only">Tier ladder with commission rate, minimum 12-month volume threshold, and your current standing.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Tier</th>
+                  <th scope="col" class="dat-th--num">Commission rate</th>
+                  <th scope="col" class="dat-th--num">Min 12-month volume</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="dat-ladder-tbody">
+                <tr><td colspan="4" class="dat-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ── CARD 3: Personal vs Team comparison ─────────────────── -->
+        <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-compare-title">
+          <header class="dat-settings-card__header">
+            <div>
+              <h3 class="dat-section__title" id="dat-compare-title">Personal vs Team rate</h3>
+              <p class="dat-section__hint">Your personal affiliate tier (left) is independent from your team tier (right). Personal-link conversions pay the personal rate; team-business-link conversions pay the team rate.</p>
+            </div>
+          </header>
+
+          <div class="dat-compare-grid">
+            <article class="dat-compare-card dat-compare-card--personal">
+              <span class="dat-compare-card__label">Your personal tier</span>
+              <strong class="dat-compare-card__tier" id="dat-cmp-personal-tier">—</strong>
+              <span class="dat-compare-card__rate" id="dat-cmp-personal-rate">—</span>
+              <p class="dat-compare-card__msg">Applied when you convert someone via your <em>own personal</em> affiliate link.</p>
+            </article>
+            <article class="dat-compare-card dat-compare-card--team">
+              <span class="dat-compare-card__label">Your team tier</span>
+              <strong class="dat-compare-card__tier" id="dat-cmp-team-tier">—</strong>
+              <span class="dat-compare-card__rate" id="dat-cmp-team-rate">—</span>
+              <p class="dat-compare-card__msg">Applied when a team member converts someone via their <em>team-business</em> link. Goes to you as the developer.</p>
+            </article>
+          </div>
+        </section>
+
+        <!-- ── CARD 4: Promotion history ───────────────────────────── -->
+        <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-history-title">
+          <header class="dat-settings-card__header">
+            <div>
+              <h3 class="dat-section__title" id="dat-history-title">Tier-change history</h3>
+              <p class="dat-section__hint">Promotions and demotions over time. New rows appear after each tier evaluation.</p>
+            </div>
+          </header>
+
+          <div class="dat-table-wrap">
+            <table class="dat-table">
+              <caption class="sr-only">History of team tier changes — old tier, new tier, volume at change time, and date.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">From</th>
+                  <th scope="col">To</th>
+                  <th scope="col" class="dat-th--num">Volume at change</th>
+                  <th scope="col">When</th>
+                </tr>
+              </thead>
+              <tbody id="dat-history-tbody">
+                <tr><td colspan="4" class="dat-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      {% include 'developer/_affiliate_team_invite_modal.html' %}
+    </main>
+  </div>
+</body>

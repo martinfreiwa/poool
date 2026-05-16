@@ -379,6 +379,53 @@ pub async fn page_developer_affiliate_team_settings(
     .await
 }
 
+/// GET /developer/affiliate-team/analytics — Period summary + member breakdown.
+/// Kept as an alias of the base `/developer/affiliate-team` route so existing
+/// bookmarks survive after Analytics became the default landing.
+pub async fn page_developer_affiliate_team_analytics(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    // Serve the same canonical template as /developer/affiliate-team so the
+    // two routes never drift. Previously this had a separate (stale) copy
+    // that broke when the main template was reorganized.
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/affiliate-team.html")
+        .await
+}
+
+/// GET /developer/affiliate-team/members — Team members list (moved out of
+/// the base path now that Analytics is the default landing).
+pub async fn page_developer_affiliate_team_members(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(
+        jar,
+        &state,
+        "developer/affiliate-team-members.html",
+    )
+    .await
+}
+
+/// GET /developer/affiliate-team/tier — Team-tier dashboard (current tier,
+/// rate, ladder, progress toward next tier, comparison to personal tier).
+pub async fn page_developer_affiliate_team_tier(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/affiliate-team-tier.html")
+        .await
+}
+
 /// GET /developer/add-asset — Render the add-new-asset form.
 pub async fn page_developer_add_asset(
     jar: CookieJar,

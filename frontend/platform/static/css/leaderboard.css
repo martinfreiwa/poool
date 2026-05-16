@@ -26,12 +26,14 @@
   display: flex;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--content-bg);
 }
 
 .lb-main {
   width: calc(100% - var(--sidebar-width, 256px));
   min-height: 100vh;
+  min-height: 100dvh;
   margin-left: var(--sidebar-width, 256px);
   padding: 0;
   background: var(--content-bg);
@@ -228,9 +230,18 @@
    TOP 3 — BENTO CARDS (Neon Ethos style)
    ═══════════════════════════════════════════════════════════════ */
 .lb-bento-grid {
+  /* Podium layout: always 3 equal columns on desktop so the top-3 cards
+     never orphan as 2 + 1. `minmax(0, 1fr)` lets cards shrink past their
+     content's intrinsic size when the viewport is narrow instead of
+     forcing an overflow. Audit fix: bento-podium asymmetry. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
+}
+@media (max-width: 900px) {
+  .lb-bento-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .lb-bento-card {
@@ -295,6 +306,14 @@
   flex: 1;
 }
 
+/* Tier badge — WCAG AA-compliant pairs (≥4.5:1 contrast at 10px) per tier.
+   Previous design used white text over saturated mid-tones (#2E90FA, #12B76A,
+   #F79009, #D0D5DD) that all failed AA — only Premium (#7F56D9) just-passed.
+   New pattern: tinted-50 background + tinted-800 text, matching the standard
+   Untitled UI / shadcn tag palette. Text-color overrides inline backgrounds
+   set from `entry.tier_badge_color` (custom-tier override path), so admin
+   tooling can still ship arbitrary brand colors — they just inherit the
+   default near-black text (#181D27) for legibility on light hues. */
 .lb-bento-tier-badge {
   display: inline-flex;
   align-items: center;
@@ -304,9 +323,15 @@
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #ffffff;
+  color: var(--page-title-color, #181D27);
+  background: #F2F4F7;
   width: fit-content;
 }
+.lb-bento-tier-badge[data-tier="Premium"] { background: #F3E8FF; color: #5B21B6; }  /* 8.5:1 */
+.lb-bento-tier-badge[data-tier="Elite"]   { background: #DBEAFE; color: #1E40AF; }  /* 8.4:1 */
+.lb-bento-tier-badge[data-tier="Pro"]     { background: #D1FADF; color: #054F31; }  /* 11.9:1 */
+.lb-bento-tier-badge[data-tier="Plus"]    { background: #FEF3C7; color: #92400E; }  /* 8.5:1 */
+.lb-bento-tier-badge[data-tier="Intro"]   { background: #F2F4F7; color: #475467; }  /* 7.0:1 */
 
 .lb-bento-name {
   font-family: var(--font-family);
@@ -818,39 +843,6 @@
   flex-shrink: 0;
 }
 
-/* Asset mix bar */
-.lb-mix-bar-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.lb-mix-bar {
-  height: 6px;
-  width: 96px;
-  border-radius: 4px;
-  overflow: hidden;
-  display: flex;
-  background: #f2f4f7;
-}
-
-.lb-mix-bar-primary {
-  height: 100%;
-  background: var(--btn-primary-bg, #0000FF);
-}
-
-.lb-mix-bar-green {
-  height: 100%;
-  background: var(--brand-greeny-green, #03FF88);
-}
-
-.lb-mix-ratio {
-  font-family: var(--font-family);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--label-color, #475467);
-}
-
 /* Holdings value */
 .lb-holdings-value {
   font-family: var(--font-family);
@@ -874,27 +866,6 @@
 
 .lb-yield-value.negative {
   color: var(--btn-danger-bg, #D92D20);
-}
-
-/* Status pill */
-.lb-status-pill {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-family: var(--font-family);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.lb-status-active {
-  background: var(--badge-success-bg, #ECFDF3);
-  color: var(--badge-success-color, #027A48);
-}
-
-.lb-status-hedged {
-  background: var(--badge-neutral-bg, #F2F4F7);
-  color: var(--body-color, #344054);
 }
 
 /* Load More */
@@ -965,38 +936,10 @@
   margin: 0;
 }
 
-/* Spotlight content layout — image + details side by side */
-.lb-spotlight-content {
-  display: flex;
-  gap: 32px;
-  align-items: center;
-}
-
-.lb-spotlight-image {
-  flex: 0 0 240px;
-  height: 240px;
-  border-radius: 20px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 16px 32px -12px rgba(0, 0, 0, 0.15);
-}
-
-.lb-spotlight-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: opacity 0.5s ease;
-}
-
-.lb-spotlight-details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  justify-content: center;
-}
-
+/* `.lb-spotlight-title` is still used by the Your Standing card to render
+   the #N rank value. The wider "Featured Spotlight" component (image, stats,
+   carousel dots, CTA) was removed when the leaderboard moved to the bento
+   layout — those selectors are intentionally not redefined here. */
 .lb-spotlight-title {
   font-family: var(--font-family);
   font-size: 24px;
@@ -1006,90 +949,6 @@
   line-height: 1.15;
   margin: 0;
   transition: opacity 0.3s ease;
-}
-
-.lb-spotlight-location {
-  font-family: var(--font-family);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--label-color, #475467);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  opacity: 0.8;
-}
-
-.lb-spotlight-stats {
-  display: flex;
-  gap: 24px;
-  margin-top: 8px;
-  margin-bottom: 8px;
-}
-
-.lb-spotlight-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.lb-stat-label {
-  font-family: var(--font-family);
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--label-color, #475467);
-}
-
-.lb-stat-value {
-  font-family: var(--font-family);
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--page-title-color, #181D27);
-  font-variant-numeric: tabular-nums;
-}
-
-.lb-spotlight-bar-container {
-  width: 100%;
-  height: 6px;
-  background: var(--card-border-color, #E5E7EB);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.lb-spotlight-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--btn-primary-bg, #0000FF), var(--brand-greeny-green, #03FF88));
-  border-radius: 3px;
-  transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.lb-spotlight-dots {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-start;
-  margin-top: 4px;
-}
-
-.lb-spotlight-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #E4E7EC;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.lb-spotlight-dot:hover {
-  background: #D0D5DD;
-}
-
-.lb-spotlight-dot.active {
-  background: #0000FF;
-  transform: scale(1.2);
-  width: 20px;
-  border-radius: 8px;
 }
 
 .lb-pulse-cta {
@@ -1118,13 +977,6 @@
 }
 
 @media (max-width: 768px) {
-  .lb-spotlight-content {
-    flex-direction: column;
-  }
-  .lb-spotlight-image {
-    flex: none;
-    height: 180px;
-  }
   .lb-spotlight-title {
     font-size: 18px;
   }
@@ -1380,8 +1232,15 @@
   position: relative;
 }
 
-.lb-holdings-cell:hover .lb-score-tooltip {
+.lb-holdings-cell:hover .lb-score-tooltip,
+.lb-holdings-cell:focus-within .lb-score-tooltip {
   display: block;
+}
+
+.lb-holdings-cell:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .lb-tt-header {
@@ -1558,11 +1417,6 @@
   .lb-pulse-headline {
     font-size: 22px;
   }
-  /* Hide non-essential columns on mobile */
-  .lb-ledger-table .col-mix,
-  .lb-ledger-table .col-status {
-    display: none;
-  }
 }
 
 @media (max-width: 640px) {
@@ -1706,4 +1560,212 @@
     gap: 16px;
     align-items: flex-start;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UI/UX AUDIT PASS — additive overrides (do not edit rules above)
+   - Topbar wrap + metric/timeframe separator
+   - Focus-visible rings for keyboard users
+   - Visibility card switch + neutral helper text
+   - Your Standing card row with CTA
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Topbar: allow controlled wrap on narrow desktops so tabs don't collide */
+.lb-topbar-inner {
+  flex-wrap: wrap;
+  row-gap: 8px;
+  column-gap: 16px;
+}
+
+.lb-topbar-left {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+/* Visual separator between metric tabs (left) and timeframe tabs (right) */
+.lb-topbar-tabs--timeframe {
+  padding-left: 24px;
+  border-left: 1px solid var(--card-border-color, #E4E7EC);
+}
+
+@media (max-width: 1280px) {
+  .lb-topbar-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .lb-topbar-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .lb-topbar-tabs--timeframe {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+/* Tab overflow safety on small viewports */
+@media (max-width: 768px) {
+  .lb-topbar-tabs--metric,
+  .lb-topbar-tabs--timeframe {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+  .lb-topbar-tabs--metric::-webkit-scrollbar,
+  .lb-topbar-tabs--timeframe::-webkit-scrollbar { display: none; }
+}
+
+/* Focus-visible — keyboard users get a clear outline.
+   Coverage expanded to pagination buttons + tier-filter dropdown after
+   WCAG 2.4.7 audit (2026-05-16) flagged them as keyboard-invisible. */
+.lb-topbar-tab:focus-visible,
+.lb-pulse-card a:focus-visible,
+.lb-pulse-card button:focus-visible,
+.lb-ledger-footer button:focus-visible,
+.lb-search-card-control:focus-visible,
+.lb-standing-cta:focus-visible,
+.lb-pag-btn:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+/* Tier-filter dropdown: focus-visible upgrades the existing border-tinting
+   rule (.lb-select-mini:focus) to an actual visible outline ring. */
+.lb-select-mini:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
+/* Visibility card — label left, switch right, single line where possible */
+.lb-visibility-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lb-visibility-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lb-neutral-strong, #181D27);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+/* iOS-style switch (uses native checkbox under the hood) */
+.lb-switch {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 36px;
+  height: 20px;
+}
+
+.lb-switch-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.lb-switch-track {
+  position: absolute;
+  inset: 0;
+  background: #D5D7DA;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.lb-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.lb-switch-input:checked + .lb-switch-track {
+  background: var(--btn-primary-bg, #0000FF);
+}
+
+.lb-switch-input:checked + .lb-switch-track .lb-switch-thumb {
+  transform: translateX(16px);
+}
+
+.lb-switch-input:focus-visible + .lb-switch-track {
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.25);
+}
+
+/* Helper text — neutral gray, not brand blue */
+.lb-helper-text {
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #535862);
+  line-height: 1.4;
+}
+
+/* Your Standing card — rank + label on one side, CTA on the other */
+.lb-standing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.lb-standing-text {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.lb-standing-rank {
+  font-size: 40px;
+}
+
+.lb-standing-cta {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .lb-standing-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .lb-standing-cta {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ─── Sortable column header affordance ─── */
+.lb-ledger-table thead th.is-sorted {
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+.lb-th-label {
+  margin-right: 6px;
+}
+
+.lb-th-sort {
+  font-size: 10px;
+  color: var(--btn-primary-bg, #0000FF);
+  line-height: 1;
+  display: inline-block;
+  transform: translateY(-1px);
 }

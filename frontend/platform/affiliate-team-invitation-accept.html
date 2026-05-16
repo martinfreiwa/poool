@@ -1,0 +1,91 @@
+{% with title="Accept Team Invitation – POOOL", no_index=True,
+extra_css=['unified-styles', 'unified-cards', 'affiliate-team-invitation-accept'],
+extra_js=['affiliate-team-invitation-accept'] %}{% include "components/head.html" %}{% endwith %}
+
+<body class="app-body fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <main id="invite-accept-main" class="invite-accept-shell" role="main">
+    <a class="ds-skip-link" href="#invite-accept-card">Skip to invitation</a>
+
+    <section id="invite-accept-card" class="ds-card invite-accept-card" aria-labelledby="invite-accept-title">
+      <header class="invite-accept-header">
+        <img src="/static/img/poool-logo.svg" alt="POOOL" class="invite-accept-logo" width="120" height="32" onerror="this.style.display='none'"/>
+        <h1 id="invite-accept-title" class="invite-accept-title">Team Invitation</h1>
+      </header>
+
+      <!-- LOADING — preview fetch in flight. -->
+      <div id="invite-state-loading" class="invite-state" aria-live="polite">
+        <div class="invite-spinner" role="status" aria-label="Loading invitation"></div>
+        <p class="invite-muted">Looking up your invitation…</p>
+      </div>
+
+      <!-- ERROR — token missing / expired / not found / rate-limited. -->
+      <div id="invite-state-error" class="invite-state" hidden role="alert">
+        <div class="invite-state__icon invite-state__icon--error" aria-hidden="true">!</div>
+        <h2 class="invite-state__title">This invitation isn't available</h2>
+        <p id="invite-error-msg" class="invite-muted">The link may be expired, already used, or invalid.</p>
+        <p class="invite-muted">Ask the team owner to send a fresh invitation.</p>
+        <div class="invite-actions">
+          <a href="/marketplace" class="ds-btn ds-btn--secondary">Back to POOOL</a>
+        </div>
+      </div>
+
+      <!-- PREVIEW — token resolved, render team + inviter. -->
+      <div id="invite-state-preview" class="invite-state" hidden>
+        <div class="invite-state__icon invite-state__icon--ok" aria-hidden="true">✓</div>
+        <p class="invite-eyebrow"><span id="invite-inviter">The team owner</span> has invited you to join</p>
+        <h2 id="invite-team-name" class="invite-state__title">a POOOL Affiliate Team</h2>
+
+        <ul class="invite-bullets" aria-label="What this invitation includes">
+          <li>You'll receive a dedicated business affiliate link tied to this team.</li>
+          <li>Commissions from referrals via your business link route to the team owner.</li>
+          <li>Your personal affiliate link (if any) keeps working independently.</li>
+        </ul>
+
+        <p id="invite-expires" class="invite-muted invite-expires" hidden></p>
+
+        <!-- AUTH BRANCH A: logged-in user → direct accept button. -->
+        <div id="invite-auth-loggedin" class="invite-actions" hidden>
+          <button type="button" id="invite-accept-btn" class="ds-btn ds-btn--primary">
+            Accept invitation
+          </button>
+          <button type="button" id="invite-decline-btn" class="ds-btn ds-btn--secondary">
+            Decline
+          </button>
+        </div>
+
+        <!-- AUTH BRANCH B: anonymous → log-in / sign-up. After auth we
+             auto-resume the accept via sessionStorage. -->
+        <div id="invite-auth-anon" class="invite-actions" hidden>
+          <a id="invite-login-link" href="/auth/login" class="ds-btn ds-btn--primary">
+            Log in to accept
+          </a>
+          <a id="invite-signup-link" href="/auth/signup" class="ds-btn ds-btn--secondary">
+            Create an account
+          </a>
+        </div>
+
+        <p class="invite-muted invite-token-hint">
+          You can also paste this token in your affiliate dashboard if the
+          button above doesn't work:
+        </p>
+        <code id="invite-token-display" class="invite-token-code" aria-label="Invitation token"></code>
+      </div>
+
+      <!-- SUCCESS — accept call resolved 200. -->
+      <div id="invite-state-success" class="invite-state" hidden>
+        <div class="invite-state__icon invite-state__icon--ok" aria-hidden="true">✓</div>
+        <h2 class="invite-state__title">You're in</h2>
+        <p class="invite-muted">Your team-business affiliate link is being generated. The dashboard will reflect it within a moment.</p>
+        <div class="invite-actions">
+          <a href="/affiliate/dashboard" class="ds-btn ds-btn--primary">Open Affiliate Dashboard</a>
+        </div>
+      </div>
+    </section>
+
+    <p class="invite-footer">
+      Trouble? Contact <a href="mailto:support@poool.app">support@poool.app</a>.
+    </p>
+  </main>
+</body>

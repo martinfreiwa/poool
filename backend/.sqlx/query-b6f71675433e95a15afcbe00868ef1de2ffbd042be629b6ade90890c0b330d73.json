@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT MIN(ar.holdback_expires_at) AS next_at\n           FROM affiliate_commissions ac\n           JOIN affiliate_referrals ar ON ar.id = ac.referral_id\n           WHERE ac.payout_user_id = $1\n             AND ac.status IN ('provisionally_tracked', 'on_hold')\n             AND ar.status = 'under_holdback'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "next_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b6f71675433e95a15afcbe00868ef1de2ffbd042be629b6ade90890c0b330d73"
+}

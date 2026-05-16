@@ -513,6 +513,7 @@ pub async fn checkout_page(
         service::calculate_platform_fee_cents(cart_total_cents, platform_fee_pct).unwrap_or(0);
     let grand_total_cents = cart_total_cents + fee_cents;
     let fee_pct_display = platform_fee_pct.normalize().to_string();
+    let usd_to_idr_rate = service::get_usd_to_idr_rate_i64().await;
 
     let cart_json = serde_json::json!({
         "items": cart_items,
@@ -521,7 +522,7 @@ pub async fn checkout_page(
         "fee_cents": fee_cents,
         "fee_pct": fee_pct_display,
         "grand_total_cents": grand_total_cents,
-        "usd_to_idr_rate": crate::config::DEFAULT_USD_TO_IDR_RATE_I64
+        "usd_to_idr_rate": usd_to_idr_rate
     })
     .to_string();
 

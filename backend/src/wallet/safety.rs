@@ -126,7 +126,13 @@ pub async fn check_withdrawal_safety(
             window_hours = velocity_window_h,
             "Withdrawal blocked: velocity exceeded — auto-freezing user pending admin review"
         );
-        let _ = freeze_user(pool, user_id).await;
+        if let Err(e) = freeze_user(pool, user_id).await {
+            tracing::error!(
+                user_id = %user_id,
+                error = %e,
+                "Withdrawal velocity freeze failed"
+            );
+        }
         return Err(SafetyError::VelocityFrozen);
     }
 

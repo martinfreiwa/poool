@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(SUM(ac.provisional_amount_cents), 0)::BIGINT AS \"t!\"\n             FROM affiliate_commissions ac\n             JOIN affiliate_referrals ar ON ar.id = ac.referral_id\n            WHERE ar.attribution_user_id IN (\n                  SELECT user_id FROM developer_team_memberships\n                   WHERE team_id = $1 AND status = 'active'\n            )\n              AND ac.status IN ('paid', 'payable')\n              AND ac.created_at >= NOW() - INTERVAL '30 days'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "t!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a562ab5d89870679a160bd6ffd9d4f95837dec6f7b1d6c440ae813ebe1954704"
+}

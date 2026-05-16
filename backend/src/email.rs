@@ -19,10 +19,13 @@ pub(crate) fn build_email_html(event_type: &str, metadata: &serde_json::Value) -
     let inner = strip_legacy_wrapper(&inner_or_full);
     let is_optional = crate::common::email::is_optional_email_event(event_type);
     let preheader = preheader_for_event(event_type);
-    wrap_with_shell(&inner, ShellOpts {
-        is_optional,
-        preheader,
-    })
+    wrap_with_shell(
+        &inner,
+        ShellOpts {
+            is_optional,
+            preheader,
+        },
+    )
 }
 
 /// Short hidden preview text shown in the inbox before the body is opened.
@@ -252,6 +255,14 @@ account. These messages cannot be unsubscribed from — they are required to ope
         <!-- ─── Footer ─── -->
         <tr><td class="px" style="padding:24px 32px 32px;background:#FAFAFA;border-top:1px solid #E9EAEB;font-family:{brand_font};font-size:11px;line-height:1.55;color:#535862;">
           {unsubscribe_block}
+
+          <!-- "View in browser" — recipient escape-hatch if the inline
+               styles got mangled by a stricter mail client (older Yahoo
+               Mail / hardened Outlook setups). Points at the in-platform
+               notification inbox view of the same event. -->
+          <p style="margin:0 0 10px;font-family:{brand_font};">
+            Trouble reading this? <a href="https://platform.poool.app/notifications" style="color:#535862;text-decoration:underline;">View it in your POOOL inbox</a>.
+          </p>
 
           <!-- Legal block: physical address (CAN-SPAM §5(a)(5), DSGVO Art 13),
                Impressum link (TMG §5 — pflicht für jede gewerbliche E-Mail
@@ -2175,46 +2186,88 @@ mod tests {
     /// a subject that the audit hasn't seen.
     const ALL_EVENT_TYPES: &[&str] = &[
         // Auth / security
-        "welcome", "verify_email", "password_reset", "2fa_setup", "new_login",
-        "email_changed", "password_changed", "2fa_disabled",
-        "payment_method_added", "payment_method_removed",
+        "welcome",
+        "verify_email",
+        "password_reset",
+        "2fa_setup",
+        "new_login",
+        "email_changed",
+        "password_changed",
+        "2fa_disabled",
+        "payment_method_added",
+        "payment_method_removed",
         // KYC
-        "kyc_approved", "kyc_rejected", "kyc_submitted",
+        "kyc_approved",
+        "kyc_rejected",
+        "kyc_submitted",
         // Wallet
-        "deposit_submitted", "deposit_confirmed",
-        "withdraw_requested", "withdraw_approved", "withdraw_rejected",
+        "deposit_submitted",
+        "deposit_confirmed",
+        "withdraw_requested",
+        "withdraw_approved",
+        "withdraw_rejected",
         "withdrawal_processed",
-        "large_deposit_received", "compliance_alert_user",
+        "large_deposit_received",
+        "compliance_alert_user",
         // Returns / orders
-        "dividend_payout", "dividend_announced", "monthly_statement",
-        "order_confirmation", "invoice_available", "investment_confirmed",
+        "dividend_payout",
+        "dividend_announced",
+        "monthly_statement",
+        "order_confirmation",
+        "invoice_available",
+        "investment_confirmed",
         // Assets
-        "asset_funded", "asset_matured",
+        "asset_funded",
+        "asset_matured",
         // Marketplace
-        "trade_executed", "order_filled", "order_cancelled", "listing_expired",
+        "trade_executed",
+        "order_filled",
+        "order_cancelled",
+        "listing_expired",
         // Operations
-        "operations_rejected", "operations_approved", "operations_published",
+        "operations_rejected",
+        "operations_approved",
+        "operations_published",
         // Support
-        "support_ticket_reply", "support_ticket_new", "support_ticket_resolved",
+        "support_ticket_reply",
+        "support_ticket_new",
+        "support_ticket_resolved",
         // Team
-        "team_invitation_received", "team_member_approved", "team_member_removed",
-        "team_self_request_received", "team_invitation_accepted",
+        "team_invitation_received",
+        "team_member_approved",
+        "team_member_removed",
+        "team_self_request_received",
+        "team_invitation_accepted",
         // Affiliate
-        "affiliate_application_received", "affiliate_approved", "affiliate_rejected",
-        "affiliate_suspended", "affiliate_payout_released",
-        "affiliate_commission_earned", "affiliate_commission_qualified",
+        "affiliate_application_received",
+        "affiliate_approved",
+        "affiliate_rejected",
+        "affiliate_suspended",
+        "affiliate_payout_released",
+        "affiliate_commission_earned",
+        "affiliate_commission_qualified",
         "affiliate_application_info_requested",
-        "affiliate_tier_promoted", "affiliate_tier_demoted",
-        "affiliate_material_approved", "affiliate_material_rejected",
-        "referral_signed_up", "monthly_affiliate_summary",
+        "affiliate_tier_promoted",
+        "affiliate_tier_demoted",
+        "affiliate_material_approved",
+        "affiliate_material_rejected",
+        "referral_signed_up",
+        "monthly_affiliate_summary",
         // Developer / legal / drips / admin
         "developer_project_revision_required",
-        "tax_document_available", "terms_updated",
-        "onboarding_drip_24h", "onboarding_drip_72h",
-        "abandoned_cart", "win_back",
-        "milestone_first_investment", "milestone_anniversary", "weekly_digest",
-        "admin_invitation", "admin_new_affiliate_application",
-        "admin_payout_request", "admin_new_marketing_material",
+        "tax_document_available",
+        "terms_updated",
+        "onboarding_drip_24h",
+        "onboarding_drip_72h",
+        "abandoned_cart",
+        "win_back",
+        "milestone_first_investment",
+        "milestone_anniversary",
+        "weekly_digest",
+        "admin_invitation",
+        "admin_new_affiliate_application",
+        "admin_payout_request",
+        "admin_new_marketing_material",
     ];
 
     /// Mobile clients truncate at roughly 33-50 chars; desktop Gmail at
@@ -2250,10 +2303,7 @@ mod tests {
             let shouty_count = subject
                 .split_whitespace()
                 .filter(|w| {
-                    let trimmed: String = w
-                        .chars()
-                        .filter(|c| c.is_alphanumeric())
-                        .collect();
+                    let trimmed: String = w.chars().filter(|c| c.is_alphanumeric()).collect();
                     trimmed.len() >= 4
                         && trimmed.chars().all(|c| !c.is_lowercase())
                         && !allowed_acronyms
@@ -2355,14 +2405,146 @@ mod tests {
                  add a specific line in preheader_for_event so the inbox \
                  preview reads meaningfully"
             );
-            assert!(
-                !pre.is_empty(),
-                "event '{event}' preheader is empty"
-            );
+            assert!(!pre.is_empty(), "event '{event}' preheader is empty");
             assert!(
                 pre.chars().count() <= 120,
                 "event '{event}' preheader too long ({} chars > 120): {pre:?}",
                 pre.chars().count()
+            );
+        }
+    }
+
+    /// Gmail web silently clips an email body at ~102 KB and shows a
+    /// "[Message clipped] View entire message" link — anything past the
+    /// clip point (often the unsubscribe + legal footer) gets hidden,
+    /// which is both a deliverability hit and a CAN-SPAM/TMG issue.
+    /// 100 KB is the safe ceiling per Gmail / Litmus testing.
+    const GMAIL_CLIP_THRESHOLD_BYTES: usize = 100 * 1024;
+
+    #[test]
+    fn no_event_body_exceeds_gmail_clip_threshold() {
+        for event in ALL_EVENT_TYPES {
+            let html = build_email_html(event, &json!({}));
+            let bytes = html.len();
+            assert!(
+                bytes < GMAIL_CLIP_THRESHOLD_BYTES,
+                "event '{event}' body is {} bytes (≥ {} KB Gmail-clip threshold) — \
+                 shorten content or move details behind a CTA link",
+                bytes,
+                GMAIL_CLIP_THRESHOLD_BYTES / 1024
+            );
+        }
+    }
+
+    /// SpamAssassin / Gmail Bayesian classifiers treat certain phrases
+    /// in the BODY (not just the subject) as strong spam signals.
+    /// Catalogue here lives parallel to the subject-line banned-token
+    /// list and is enforced against every rendered event body.
+    #[test]
+    fn no_event_body_uses_banned_spam_phrases() {
+        // Phrases to forbid. Each is checked case-insensitively against
+        // the *plain-text* form so HTML noise (style attributes, tags)
+        // doesn't accidentally match.
+        let banned_phrases = [
+            "100% free",
+            "act now",
+            "click here", // bad anchor text — use descriptive labels
+            "guaranteed",
+            "make money",
+            "earn $",
+            "risk-free",
+            "limited time only",
+            "no obligation",
+            "viagra",
+            "weight loss",
+            "winner!",
+            "you have won",
+        ];
+        for event in ALL_EVENT_TYPES {
+            let html = build_email_html(event, &json!({}));
+            let plain = crate::common::email::html_to_plain_text(&html).to_lowercase();
+            for phrase in banned_phrases {
+                assert!(
+                    !plain.contains(phrase),
+                    "event '{event}' body contains banned spam phrase '{phrase}' — \
+                     rewrite the body copy"
+                );
+            }
+        }
+    }
+
+    /// Every customer-facing email body should link back to a POOOL
+    /// surface so the recipient has a clear next action. Bodies with
+    /// zero POOOL links read like generic notifications and are a
+    /// missed conversion + deliverability signal (engagement matters).
+    #[test]
+    fn every_customer_facing_body_links_back_to_poool() {
+        // Internal admin alerts are an exception — they go to
+        // admin@poool.app and the CTA is the admin portal which
+        // already lives at platform.poool.app, so they pass the same
+        // test. No event is exempt.
+        for event in ALL_EVENT_TYPES {
+            let html = build_email_html(event, &json!({}));
+            let has_poool_link = html.contains("platform.poool.app")
+                || html.contains("poool.app/")
+                || html.contains("mailto:")
+                    && (html.contains("@poool.app"));
+            assert!(
+                has_poool_link,
+                "event '{event}' body has no link back to POOOL — \
+                 every body should give the recipient a next step"
+            );
+        }
+    }
+
+    /// User-supplied metadata gets HTML-escaped in every body. If an
+    /// `<script>` tag survives the escape pass, that's a stored-XSS
+    /// risk for whoever opens the email in a web client. We have an
+    /// existing per-event escape test (`user_supplied_metadata_is_html_escaped_in_bodies`);
+    /// this is the every-event sweep.
+    #[test]
+    fn no_event_body_lets_script_tag_metadata_through() {
+        // Try injecting `<script>alert(1)</script>` into every common
+        // metadata field. If the rendered body contains the raw tag,
+        // the escape is broken for that event.
+        let attack = "<script>alert(1)</script>";
+        for event in ALL_EVENT_TYPES {
+            let sample = json!({
+                "first_name": attack,
+                "reason": attack,
+                "rejection_reason": attack,
+                "asset_name": attack,
+                "message": attack,
+                "material_name": attack,
+                "team_name": attack,
+                "inviter_name": attack,
+                "destination": attack,
+                "summary": attack,
+                "location": attack,
+                "device": attack,
+                "ip": attack,
+                "old_email": attack,
+                "new_email": attack,
+                "method_type": attack,
+                "side": attack,
+                "amount_display": attack,
+                "applicant_email": attack,
+                "affiliate_email": attack,
+                "referral_code": attack,
+                "referred_name": attack,
+                "ticket_subject": attack,
+                "user_email": attack,
+                "revision_notes": attack,
+                "month": attack,
+                "tax_year": attack,
+                "effective_date": attack,
+                "previous_tier": attack,
+                "new_tier": attack,
+            });
+            let html = build_email_html(event, &sample);
+            assert!(
+                !html.contains("<script>alert"),
+                "event '{event}' body contains unescaped <script> from metadata — XSS risk"
             );
         }
     }
@@ -2402,9 +2584,20 @@ mod tests {
         // of these belong in a POOOL subject; the test prevents future
         // drift.
         let banned = [
-            "free", "guaranteed", "risk-free", "click here", "act now",
-            "limited time", "winner", "congrats!!", "$$$", "100% free",
-            "viagra", "weight loss", "make money", "earn $",
+            "free",
+            "guaranteed",
+            "risk-free",
+            "click here",
+            "act now",
+            "limited time",
+            "winner",
+            "congrats!!",
+            "$$$",
+            "100% free",
+            "viagra",
+            "weight loss",
+            "make money",
+            "earn $",
         ];
         for event in ALL_EVENT_TYPES {
             let subject = subject_for_event(event).to_lowercase();

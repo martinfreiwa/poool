@@ -62,9 +62,11 @@ pub fn compare(kyc_first: &str, kyc_last: &str, holder: &str) -> MatchOutcome {
             // variant of any holder token. Handles "Müller" (strip→muller)
             // vs "Mueller" (expand→mueller) round-trips.
             !holder_tokens.iter().any(|holder_variants| {
-                kyc_variants
-                    .iter()
-                    .any(|kt| holder_variants.iter().any(|ht| kt.starts_with(ht) || ht.starts_with(kt)))
+                kyc_variants.iter().any(|kt| {
+                    holder_variants
+                        .iter()
+                        .any(|ht| kt.starts_with(ht) || ht.starts_with(kt))
+                })
             })
         })
         .map(|v| v[0].clone())

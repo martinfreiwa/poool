@@ -303,9 +303,20 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
       }
 
       function displayIdrRate() {
-        return cartData && Number(cartData.usd_to_idr_rate)
-          ? Number(cartData.usd_to_idr_rate)
-          : 15500;
+        var rate = cartData && Number(cartData.usd_to_idr_rate);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
+      }
+
+      function formatApproxIdr(usdAmount) {
+        var rate = displayIdrRate();
+        if (!rate) return "";
+        return '≈ Rp ' + (usdAmount * rate).toLocaleString('en-US', { maximumFractionDigits: 0 });
+      }
+
+      function formatIdrTransferAmount(usdAmount) {
+        var rate = displayIdrRate();
+        if (!rate) return "";
+        return 'IDR ' + (usdAmount * rate).toLocaleString('en-US', { maximumFractionDigits: 0 });
       }
 
       function requiredDisclosuresAccepted() {
@@ -458,8 +469,6 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           function (sum, i) { return sum + (i.token_price_cents * i.tokens_quantity); }, 0
         );
 
-        var idrRateGlobal = displayIdrRate();
-
         var html = "";
         cartData.items.forEach(function (item, idx) {
           var pricePerToken = Math.round(item.token_price_cents / 100);
@@ -514,11 +523,8 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           }
 
           // IDR equivalent (approx rate)
-          var idrRate = idrRateGlobal;
-          
           var totalCentsNum = item.tokens_quantity * item.token_price_cents;
-          var idrTotal = (totalCentsNum / 100) * idrRate;
-          var idrFormatted = 'IDR ' + idrTotal.toLocaleString('en-US', { maximumFractionDigits: 0 });
+          var idrFormatted = formatIdrTransferAmount(totalCentsNum / 100);
 
           // Stats row
           var statsHtml = '<div class="cart-item-card__stats">'
@@ -689,15 +695,13 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
       async function renderSummary() {
         if (!cartData || !cartData.items) return;
 
-        var idrRate = displayIdrRate();
-        
         var summaryItems = document.getElementById("summary-items");
         var html = "";
 
         cartData.items.forEach(function (item) {
           var itemTotal = item.total_cents || (item.token_price_cents * item.tokens_quantity);
           var price = formatCurrency(itemTotal);
-          var idrEquiv = '≈ Rp ' + ((itemTotal / 100) * idrRate).toLocaleString('en-US', { maximumFractionDigits: 0 });
+          var idrEquiv = formatApproxIdr(itemTotal / 100);
           html += '<div class="checkout-summary-card__row">'
             + '<div class="checkout-summary-card__item-info">'
             + '<span class="checkout-summary-card__label">' + esc(item.title || "Asset") + '</span>'
@@ -721,20 +725,21 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
         var grandTotalCents = cartData.grand_total_cents || cartTotalCents;
 
         var totalStr = formatCurrency(cartTotalCents);
-        var totalIdr = '≈ Rp ' + ((cartTotalCents / 100) * idrRate).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        var totalIdr = formatApproxIdr(cartTotalCents / 100);
         setEl("summary-subtotal", totalStr);
         setEl("summary-subtotal-idr", totalIdr);
 
         // Platform fee
         var feeStr = "USD " + (feeCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        var feeIdr = '= Rp ' + ((feeCents / 100) * idrRate).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        var feeIdrRaw = formatApproxIdr(feeCents / 100);
+        var feeIdr = feeIdrRaw ? feeIdrRaw.replace('≈', '=') : "";
         setEl("summary-fee", feeStr);
         var feeIdrEl = document.getElementById("summary-fee-idr");
         if (feeIdrEl) feeIdrEl.textContent = feeIdr;
 
         // Grand total
         var grandTotalStr = "USD " + (grandTotalCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        var grandTotalIdr = '≈ Rp ' + ((grandTotalCents / 100) * idrRate).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        var grandTotalIdr = formatApproxIdr(grandTotalCents / 100);
         setEl("summary-total", grandTotalStr);
         setEl("summary-total-idr", grandTotalIdr);
 

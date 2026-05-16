@@ -6,7 +6,7 @@ use axum::{
     Json,
 };
 use axum_extra::extract::cookie::CookieJar;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -61,6 +61,26 @@ fn format_usd(cents: i64) -> String {
     // Always return positive-looking float string,
     // negative logic is handled separately by the prefix in UI
     format!("USD {}.{:02}", result, remainder)
+}
+
+fn freeze_reason_label(reason: Option<&str>) -> String {
+    match reason.unwrap_or("manual_review") {
+        "withdrawal_velocity" => "Withdrawal velocity review".to_string(),
+        "admin_manual" => "Manual compliance review".to_string(),
+        "kyc_review" => "Identity review".to_string(),
+        other => other
+            .split('_')
+            .filter(|part| !part.is_empty())
+            .map(|part| {
+                let mut chars = part.chars();
+                match chars.next() {
+                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                    None => String::new(),
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" "),
+    }
 }
 
 /// Helper to ensure wallets exist for user (always sets currency = 'USD')
@@ -954,8 +974,9 @@ pub async fn handle_deposit_submit(
     // without its mandatory evidence.
     let mandatory_sof_sniff = if needs_sof_doc {
         match sof_doc_bytes.as_deref().and_then(storage_svc::sniff_mime) {
-            Some(m) if storage_svc::mime_matches(&sof_doc_mime, m)
-                && storage_svc::validate_kyc_mime(m).is_ok() =>
+            Some(m)
+                if storage_svc::mime_matches(&sof_doc_mime, m)
+                    && storage_svc::validate_kyc_mime(m).is_ok() =>
             {
                 Some(m)
             }
@@ -1229,14 +1250,13 @@ pub async fn api_request_unfreeze(
         None => {
             let _ = tx.rollback().await;
             // Disambiguate: not frozen, missing user, or rate-limited.
-            let row: Option<(String, Option<DateTime<Utc>>)> = sqlx::query_as(
-                "SELECT status, unfreeze_requested_at FROM users WHERE id = $1",
-            )
-            .bind(user.id)
-            .fetch_optional(&state.db)
-            .await
-            .ok()
-            .flatten();
+            let row: Option<(String, Option<DateTime<Utc>>)> =
+                sqlx::query_as("SELECT status, unfreeze_requested_at FROM users WHERE id = $1")
+                    .bind(user.id)
+                    .fetch_optional(&state.db)
+                    .await
+                    .ok()
+                    .flatten();
             return match row {
                 None => (
                     StatusCode::NOT_FOUND,
@@ -1742,16 +1762,52 @@ pub async fn page_wallet(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> axum::response::Response {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
+    let session_token = match jar.get(middleware::SESSION_COOKIE) {
+        Some(cookie) => cookie.value().to_string(),
         None => return Redirect::to("/auth/login").into_response(),
     };
+    let user =
+        match crate::auth::service::get_user_by_session_allowing_frozen(&state.db, &session_token)
+            .await
+        {
+            Ok(Some(u)) => u,
+            Ok(None) => return Redirect::to("/auth/login").into_response(),
+            Err(e) => {
+                tracing::error!("Failed to resolve wallet session: {}", e);
+                return Html("<h1>Internal Server Error</h1>".to_string()).into_response();
+            }
+        };
 
     let _ = ensure_wallets(&state.db, user.id).await;
 
     // ── Fetch all data in parallel-ish fashion ──
     let (cash_balance, rewards_balance, asset_balance) = fetch_balances(&state.db, user.id).await;
     let transactions = fetch_transactions(&state.db, user.id, 10).await;
+    let account_frozen = user.status == "frozen";
+    let (frozen_reason_label, unfreeze_requested) = if account_frozen {
+        let freeze_row: Option<(Option<String>, Option<DateTime<Utc>>)> =
+            sqlx::query_as("SELECT frozen_reason, unfreeze_requested_at FROM users WHERE id = $1")
+                .bind(user.id)
+                .fetch_optional(&state.db)
+                .await
+                .ok()
+                .flatten();
+
+        let reason_label = freeze_reason_label(
+            freeze_row
+                .as_ref()
+                .and_then(|(reason, _)| reason.as_deref()),
+        );
+        let requested_recently = freeze_row
+            .and_then(|(_, requested_at)| requested_at)
+            .map(|requested_at| {
+                Utc::now().signed_duration_since(requested_at) < Duration::hours(24)
+            })
+            .unwrap_or(false);
+        (reason_label, requested_recently)
+    } else {
+        (String::new(), false)
+    };
 
     // Payment methods (single query, no duplicates)
     let pms = payment_methods::service::list_user_payment_methods(&state.db, &user.id, None)
@@ -1789,6 +1845,9 @@ pub async fn page_wallet(
         has_banks,
         payment_method_options: options_html,
         stripe_publishable_key: stripe_pk,
+        account_frozen,
+        frozen_reason_label,
+        unfreeze_requested,
     };
 
     // ── Render with MiniJinja ──
@@ -1828,6 +1887,9 @@ pub async fn page_wallet(
         has_banks => ctx.has_banks,
         payment_method_options => ctx.payment_method_options,
         stripe_publishable_key => ctx.stripe_publishable_key,
+        account_frozen => ctx.account_frozen,
+        frozen_reason_label => ctx.frozen_reason_label,
+        unfreeze_requested => ctx.unfreeze_requested,
     }) {
         Ok(c) => c,
         Err(e) => {

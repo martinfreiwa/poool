@@ -51,14 +51,15 @@ pub struct Finding {
 /// Run the worker forever. Cadence is read live from `platform_settings`
 /// (`tx_monitoring_interval_minutes`) on each tick.
 pub async fn run_monitoring_worker(pool: PgPool) {
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(
-        WORKER_INTERVAL_MIN * 60,
-    ));
+    let mut interval =
+        tokio::time::interval(std::time::Duration::from_secs(WORKER_INTERVAL_MIN * 60));
     interval.tick().await;
     loop {
         interval.tick().await;
         match run_once(&pool).await {
-            Ok(n) if n > 0 => tracing::info!(findings = n, "Transaction monitoring run produced findings"),
+            Ok(n) if n > 0 => {
+                tracing::info!(findings = n, "Transaction monitoring run produced findings")
+            }
             Ok(_) => {}
             Err(e) => {
                 tracing::error!("Transaction monitoring worker error: {}", e);

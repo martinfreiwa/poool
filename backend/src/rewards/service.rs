@@ -1185,14 +1185,17 @@ pub async fn check_and_track_affiliate_commission(
     sqlx::query!(
         r#"INSERT INTO affiliate_commissions
               (referral_id, affiliate_id, link_id, attribution_user_id, payout_user_id,
-               source_order_id, provisional_amount_cents, status, tier_at_execution)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'provisionally_tracked', $8)"#,
+               source_order_id, gross_amount_cents, provisional_amount_cents, currency, status, tier_at_execution)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+                   COALESCE((SELECT currency FROM orders WHERE id = $6), 'USD'),
+                   'provisionally_tracked', $9)"#,
         referral.id,
         referral.payout_user_id,
         referral.link_id,
         referral.attribution_user_id,
         referral.payout_user_id,
         order_id,
+        order_total_cents,
         commission_cents,
         referral
             .current_tier

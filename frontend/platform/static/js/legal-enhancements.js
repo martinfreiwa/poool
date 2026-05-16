@@ -185,6 +185,18 @@
 
     function dismissBanner(preferences) {
       localStorage.setItem(consentKey, JSON.stringify({ ...preferences, ts: Date.now() }));
+      // Phase-2 P0: mirror to server-readable cookie so the backend can
+      // gate behavioural cookies (affiliate `?ref=` attribution lives in
+      // `marketing`). Format matches `cookie-consent.js` + the Rust
+      // parser `rewards::attribution::has_marketing_consent`.
+      var flags = ["essential"];
+      if (preferences && preferences.analytics) flags.push("analytics");
+      if (preferences && preferences.marketing) flags.push("marketing");
+      var maxAgeSecs = 60 * 60 * 24 * 180;
+      var secure = location.protocol === "https:" ? "; Secure" : "";
+      document.cookie =
+        "poool_consent=" + flags.join("+") + "; Path=/; Max-Age=" + maxAgeSecs +
+        "; SameSite=Lax" + secure;
       banner.style.transform = "translateY(calc(100% + 32px))";
       banner.style.opacity = "0";
       setTimeout(() => banner.remove(), 400);

@@ -1,0 +1,144 @@
+{% with title="Circle Settings",
+       meta_description="Manage your POOOL community circle: members, moderators, privacy, banner, and token gating.",
+       no_index=True,
+       extra_css=['ds-cards', 'community'],
+       extra_js=['htmx-init', 'profile-dropdown', 'community-sync', 'community-circle-settings'] %}
+  {% include "components/head.html" %}
+{% endwith %}
+
+<body class="lb-body fouc-guard">
+  <div class="lb-page">
+    {% include "components/sidebar.html" %}
+
+    <main class="lb-main">
+      {% with investor_topbar_variant='community',
+              investor_topbar_title='Circle Settings',
+              investor_topbar_subtitle='Manage members, moderators, privacy, and access' %}
+        {% include "components/investor-topbar.html" %}
+      {% endwith %}
+
+      <div class="lb-container">
+        <div class="ccs-page" id="ccs-root">
+
+          <!-- Back link -->
+          <a class="ccs-back" href="/community?tab=circle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Back to circles
+          </a>
+
+          <!-- Header card -->
+          <section class="ds-card ccs-header-card">
+            <div class="ccs-header__avatar" id="ccs-avatar" aria-hidden="true">🟢</div>
+            <div class="ccs-header__info">
+              <h1 class="ccs-header__name" id="ccs-name">—</h1>
+              <p class="ccs-header__meta">
+                <span id="ccs-meta-members">— members</span>
+                · <span id="ccs-meta-privacy">—</span>
+                · <span id="ccs-meta-role" class="ccs-header__role-badge">—</span>
+              </p>
+            </div>
+            <div class="ccs-header__actions">
+              <a class="ds-btn ds-btn--secondary ds-btn--sm" id="ccs-view-feed-link" href="#">View feed</a>
+            </div>
+          </section>
+
+          <!-- ── CARD 1: Basic Info ────────────────────────────── -->
+          <section class="ds-card ccs-card" aria-labelledby="ccs-basic-title">
+            <header class="ccs-card__head">
+              <h2 class="ccs-card__title" id="ccs-basic-title">Basic Info</h2>
+              <p class="ccs-card__hint">Visible to everyone browsing the circle.</p>
+            </header>
+            <div class="ccs-grid">
+              <label class="ccs-field">
+                <span class="ccs-field__label">Name</span>
+                <input type="text" id="ccs-input-name" class="ds-input" maxlength="100" />
+              </label>
+              <label class="ccs-field">
+                <span class="ccs-field__label">Emoji</span>
+                <input type="text" id="ccs-input-emoji" class="ds-input" maxlength="5" style="text-align:center;font-size:18px" />
+              </label>
+              <label class="ccs-field ccs-field--full">
+                <span class="ccs-field__label">Description</span>
+                <textarea id="ccs-input-desc" class="ds-input" maxlength="500" rows="3"></textarea>
+              </label>
+              <label class="ccs-field ccs-field--full">
+                <span class="ccs-field__label">Slug</span>
+                <input type="text" id="ccs-input-slug" class="ds-input" maxlength="60" pattern="[a-z0-9](?:[a-z0-9\-]{0,58}[a-z0-9])?" />
+                <small class="ccs-field__hint">Used in the URL: <code id="ccs-slug-preview">/community/circle/your-slug</code></small>
+              </label>
+            </div>
+          </section>
+
+          <!-- ── CARD 2: Privacy ──────────────────────────────── -->
+          <section class="ds-card ccs-card" aria-labelledby="ccs-privacy-title">
+            <header class="ccs-card__head">
+              <h2 class="ccs-card__title" id="ccs-privacy-title">Privacy</h2>
+              <p class="ccs-card__hint">Public circles appear in Discover and accept any member. Private circles require approval.</p>
+            </header>
+            <div class="ccs-toggle-row">
+              <div>
+                <strong class="ccs-toggle-row__title">Public</strong>
+                <p class="ccs-toggle-row__desc">Anyone can join without approval.</p>
+              </div>
+              <label class="ccs-switch">
+                <input type="checkbox" id="ccs-input-public" />
+                <span class="ccs-switch__track"><span class="ccs-switch__knob"></span></span>
+              </label>
+            </div>
+          </section>
+
+          <!-- ── CARD 3: Members ──────────────────────────────── -->
+          <section class="ds-card ccs-card" aria-labelledby="ccs-members-title">
+            <header class="ccs-card__head">
+              <h2 class="ccs-card__title" id="ccs-members-title">Members</h2>
+              <p class="ccs-card__hint">Promote, demote, kick, or ban members. Owner-only actions are dimmed if you're not the owner.</p>
+            </header>
+            <div id="ccs-members-list" class="ccs-members"></div>
+          </section>
+
+          <!-- ── CARD 4: Join Requests (private circles) ──────── -->
+          <section class="ds-card ccs-card" id="ccs-requests-card" hidden aria-labelledby="ccs-requests-title">
+            <header class="ccs-card__head">
+              <h2 class="ccs-card__title" id="ccs-requests-title">Join Requests</h2>
+              <p class="ccs-card__hint">Pending requests to join this private circle.</p>
+            </header>
+            <div id="ccs-requests-list" class="ccs-members"></div>
+          </section>
+
+          <!-- ── CARD 5: Bans ─────────────────────────────────── -->
+          <section class="ds-card ccs-card" id="ccs-bans-card" aria-labelledby="ccs-bans-title">
+            <header class="ccs-card__head">
+              <h2 class="ccs-card__title" id="ccs-bans-title">Banned Users</h2>
+              <p class="ccs-card__hint">Owner/admin can unban. Banned users cannot re-join the circle.</p>
+            </header>
+            <div id="ccs-bans-list" class="ccs-members"></div>
+          </section>
+
+          <!-- ── CARD 6: Danger Zone ──────────────────────────── -->
+          <section class="ds-card ccs-card ccs-card--danger" id="ccs-danger-card" hidden aria-labelledby="ccs-danger-title">
+            <header class="ccs-card__head">
+              <h2 class="ccs-card__title" id="ccs-danger-title">Danger Zone</h2>
+              <p class="ccs-card__hint">Owner-only. These actions cannot be undone.</p>
+            </header>
+            <div class="ccs-danger-actions">
+              <button type="button" class="ds-btn ds-btn--secondary" id="ccs-transfer-btn">Transfer ownership…</button>
+              <button type="button" class="ds-btn ds-btn--danger" id="ccs-delete-btn">Delete circle</button>
+            </div>
+          </section>
+
+          <!-- Sticky save footer -->
+          <footer class="ccs-footer" id="ccs-footer" data-state="pristine">
+            <span class="ccs-footer__status" id="ccs-status" role="status" aria-live="polite"></span>
+            <div class="ccs-footer__actions">
+              <button type="button" class="ds-btn ds-btn--ghost" id="ccs-discard-btn" disabled>Discard changes</button>
+              <button type="button" class="ds-btn ds-btn--primary" id="ccs-save-btn" disabled>Save changes</button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>

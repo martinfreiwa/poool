@@ -38,6 +38,10 @@ pub fn router() -> Router<AppState> {
             get(page_developer_affiliate_team),
         )
         .route(
+            "/developer/affiliate-team/members",
+            get(page_developer_affiliate_team_members),
+        )
+        .route(
             "/developer/affiliate-team/customers",
             get(page_developer_affiliate_team_customers),
         )
@@ -48,6 +52,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/developer/affiliate-team/settings",
             get(page_developer_affiliate_team_settings),
+        )
+        .route(
+            "/developer/affiliate-team/analytics",
+            get(page_developer_affiliate_team_analytics),
+        )
+        .route(
+            "/developer/affiliate-team/tier",
+            get(page_developer_affiliate_team_tier),
         )
         .route("/developer/add-asset", get(page_developer_add_asset))
         .route(

@@ -31,14 +31,19 @@
         // Developer team-affiliate sub-pages — match before generic /affiliate.
         // Parent expand + child active-state.
         activePage = "affiliate-team-parent";
-        if (path.includes("/developer/affiliate-team/customers")) {
+        if (path.includes("/developer/affiliate-team/members")) {
+          activeChild = "nav-child-affiliate-team-members";
+        } else if (path.includes("/developer/affiliate-team/customers")) {
           activeChild = "nav-child-affiliate-team-customers";
         } else if (path.includes("/developer/affiliate-team/products")) {
           activeChild = "nav-child-affiliate-team-products";
+        } else if (path.includes("/developer/affiliate-team/tier")) {
+          activeChild = "nav-child-affiliate-team-tier";
         } else if (path.includes("/developer/affiliate-team/settings")) {
           activeChild = "nav-child-affiliate-team-settings";
         } else {
-          activeChild = "nav-child-affiliate-team-members";
+          // Base /developer/affiliate-team and /analytics alias → Analytics.
+          activeChild = "nav-child-affiliate-team-analytics";
         }
       } else if (path.includes("/affiliate")) {
         activePage = "affiliate";
@@ -237,9 +242,11 @@
               </svg>
             </div>
             <div id="nav-children-affiliate-team-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
-              <a id="nav-child-affiliate-team-members" href="/developer/affiliate-team" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Members</span></a>
+              <a id="nav-child-affiliate-team-analytics" href="/developer/affiliate-team" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Analytics</span></a>
               <a id="nav-child-affiliate-team-customers" href="/developer/affiliate-team/customers" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Customers</span></a>
               <a id="nav-child-affiliate-team-products" href="/developer/affiliate-team/products" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Products</span></a>
+              <a id="nav-child-affiliate-team-members" href="/developer/affiliate-team/members" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Members</span></a>
+              <a id="nav-child-affiliate-team-tier" href="/developer/affiliate-team/tier" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Tier</span></a>
               <a id="nav-child-affiliate-team-settings" href="/developer/affiliate-team/settings" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Settings</span></a>
             </div>
           </div>
@@ -278,41 +285,12 @@
                 </div>
                 <span id="nav-text-support" class="sidebar__nav-text">Support</span>
               </div>
-              <div id="support-badge" class="support-badge">
-                <div id="support-status-dot" class="support-status-dot"></div>
-                <span id="support-badge-text" class="support-badge-text">Online</span>
-              </div>
             </a>
           </div>
         </nav>
       </div>
       <!-- Footer Section -->
       <div id="sidebar-footer" class="sidebar__footer">
-        <!-- Support Chat Card -->
-        <div id="nav-featured-card" class="sidebar__featured-card sidebar__featured-card--support">
-          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M14 14L6 6M6 14L14 6" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round">
-              </path>
-            </svg></button><!-- Badge and text -->
-          <div class="sidebar__featured-content">
-            <div class="sidebar__featured-badge sidebar__featured-badge--online">
-              <div class="support-status-dot"></div>
-              <span class="support-badge-text">Online</span>
-            </div>
-            <div class="sidebar__featured-text">
-              <h4 class="sidebar__featured-title">Have questions?</h4>
-              <p class="sidebar__featured-description">
-                Our support team is here to help.
-              </p>
-            </div>
-            <button class="sidebar__featured-button sidebar__featured-button--chat" type="button">
-              <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support" width="20"
-                height="20" />
-              <span>Chat to support</span>
-            </button>
-          </div>
-        </div>
         <!-- Account Card - Now fully clickable -->
         <div id="nav-account-card" class="sidebar__account-card"
           style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
@@ -594,10 +572,6 @@
                     width="20" height="20" />
                 </div>
                 <span id="nav-text-support" class="sidebar__nav-text">Support</span>
-              </div>
-              <div id="support-badge" class="support-badge">
-                <div id="support-status-dot" class="support-status-dot"></div>
-                <span id="support-badge-text" class="support-badge-text">Online</span>
               </div>
             </a>
           </div>

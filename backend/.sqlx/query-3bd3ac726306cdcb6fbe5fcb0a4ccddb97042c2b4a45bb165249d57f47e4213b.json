@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.team_id, m.user_id, t.developer_user_id\n              FROM developer_team_memberships m\n              JOIN developer_teams t ON t.id = m.team_id\n             WHERE m.id = $1 AND m.status = 'invited'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "team_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "developer_user_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3bd3ac726306cdcb6fbe5fcb0a4ccddb97042c2b4a45bb165249d57f47e4213b"
+}

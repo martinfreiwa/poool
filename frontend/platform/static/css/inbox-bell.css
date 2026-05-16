@@ -1,0 +1,193 @@
+/* Phase-3 P1: inbox bell + dropdown panel.
+ *
+ * Bell is positioned absolutely inside the topbar's right-edge so it can
+ * overlap a variant block (search input, deposit buttons) without breaking
+ * the existing flex layout.
+ */
+
+.inbox-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12px;
+}
+
+.inbox-bell__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #667085);
+  cursor: pointer;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+.inbox-bell__btn:hover {
+  background: var(--surface-muted, #F2F4F7);
+  color: var(--page-title-color, #181D27);
+}
+.inbox-bell__btn:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+.inbox-bell__btn[aria-expanded="true"] {
+  background: var(--surface-muted, #F2F4F7);
+  border-color: var(--border-color, #E4E7EC);
+  color: var(--page-title-color, #181D27);
+}
+
+/* Unread-count badge */
+.inbox-bell__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #D92D20;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* Dropdown panel */
+.inbox-bell__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.10);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.inbox-bell__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #E5E7EB);
+}
+.inbox-bell__panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+.inbox-bell__mark-all {
+  background: transparent;
+  border: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--btn-primary-bg, #0000FF);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.inbox-bell__mark-all:hover { background: #EFF3FF; }
+
+.inbox-bell__panel-body {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.inbox-bell__loading,
+.inbox-bell__empty {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #667085);
+}
+
+.inbox-bell__panel-footer {
+  display: block;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--btn-primary-bg, #0000FF);
+  text-decoration: none;
+  border-top: 1px solid var(--border-color, #E5E7EB);
+}
+.inbox-bell__panel-footer:hover { background: var(--surface-muted, #F9FAFB); }
+
+/* Individual notification row */
+.inbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #F2F4F7);
+  color: var(--body-color, #344054);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+.inbox-row:hover { background: var(--surface-muted, #F9FAFB); }
+.inbox-row:last-child { border-bottom: 0; }
+
+.inbox-row__main { flex: 1; min-width: 0; }
+.inbox-row__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--page-title-color, #181D27);
+  line-height: 1.4;
+}
+.inbox-row__body {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.inbox-row__time {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary, #98A2B3);
+  margin-top: 2px;
+}
+
+/* Unread variant: indigo bullet + slightly stronger title */
+.inbox-row--unread { background: #FAFCFF; }
+.inbox-row--unread .inbox-row__title { font-weight: 600; }
+.inbox-row--unread::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--btn-primary-bg, #0000FF);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+/* Mobile: panel goes full-width below the bell. */
+@media (max-width: 480px) {
+  .inbox-bell__panel {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 70vh;
+  }
+  .inbox-bell__panel-body { max-height: calc(70vh - 100px); }
+}

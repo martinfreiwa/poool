@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '30 days')::bigint\n                AS total_sent,\n            COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '30 days'\n                             AND status IN ('delivered', 'opened', 'clicked'))::bigint\n                AS total_delivered,\n            COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '30 days'\n                             AND status IN ('opened', 'clicked'))::bigint\n                AS total_opened,\n            COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '30 days'\n                             AND status = 'clicked')::bigint\n                AS total_clicked,\n            COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '30 days'\n                             AND status = 'bounced')::bigint\n                AS total_bounced,\n            COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '60 days'\n                             AND sent_at <  NOW() - INTERVAL '30 days')::bigint\n                AS prev_total_sent,\n            COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '60 days'\n                             AND sent_at <  NOW() - INTERVAL '30 days'\n                             AND status IN ('delivered', 'opened', 'clicked'))::bigint\n                AS prev_total_delivered\n        FROM email_logs\n        WHERE status != 'queued'\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total_sent",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "total_delivered",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "total_opened",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "total_clicked",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "total_bounced",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "prev_total_sent",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "prev_total_delivered",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "37c92f7c25a20683c86c53a007566eb13b44b49783336ba1d8887b59e5f53554"
+}

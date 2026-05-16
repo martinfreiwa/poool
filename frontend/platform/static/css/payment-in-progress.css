@@ -8,6 +8,7 @@
     display: flex;
     width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
     background: #f5f5f5;
     font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
 }
@@ -21,6 +22,7 @@
     position: relative;
     overflow: hidden;
     min-height: 100vh;
+    min-height: 100dvh;
     background: #fafafa;
     padding: 48px 24px 80px;
     display: flex;

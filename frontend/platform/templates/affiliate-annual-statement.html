@@ -1,0 +1,81 @@
+{% extends "templates/pdf-base.html" %}
+
+{% block summary_line %}
+<div class="pdf-summary-row">
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Tax year</span>
+    <strong class="pdf-summary-value">{{ year }}</strong>
+  </div>
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Total paid (EUR)</span>
+    <strong class="pdf-summary-value">€ {{ total_eur }}</strong>
+  </div>
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Payouts</span>
+    <strong class="pdf-summary-value">{{ line_count }}</strong>
+  </div>
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Currencies</span>
+    <strong class="pdf-summary-value">{{ currencies_label }}</strong>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section style="margin-bottom:24px;">
+  <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.04em;color:#475467;margin:0 0 8px;">Quarterly summary</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #E5E7EB;">
+    <thead>
+      <tr style="background:#F9FAFB;color:#475467;text-align:left;">
+        <th style="padding:10px 12px;font-weight:600;">Quarter</th>
+        {% for c in currencies_list %}
+        <th style="padding:10px 12px;font-weight:600;text-align:right;">{{ c }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for q in quarterly_rows %}
+      <tr style="border-top:1px solid #E5E7EB;">
+        <td style="padding:8px 12px;color:#101828;font-weight:500;">Q{{ q.quarter }}</td>
+        {% for c in currencies_list %}
+        <td style="padding:8px 12px;color:#101828;text-align:right;font-variant-numeric:tabular-nums;">
+          {{ q.amounts_by_currency[c] | default("—") }}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section style="margin-bottom:24px;">
+  <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.04em;color:#475467;margin:0 0 8px;">Line items</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #E5E7EB;">
+    <thead>
+      <tr style="background:#F9FAFB;color:#475467;text-align:left;">
+        <th style="padding:10px 12px;font-weight:600;">Paid date</th>
+        <th style="padding:10px 12px;font-weight:600;">Quarter</th>
+        <th style="padding:10px 12px;font-weight:600;">Batch</th>
+        <th style="padding:10px 12px;font-weight:600;text-align:right;">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ln in lines_display %}
+      <tr style="border-top:1px solid #E5E7EB;">
+        <td style="padding:8px 12px;color:#101828;">{{ ln.paid_date }}</td>
+        <td style="padding:8px 12px;color:#475467;">Q{{ ln.quarter }}</td>
+        <td style="padding:8px 12px;color:#475467;font-family:ui-monospace,monospace;font-size:11px;">{{ ln.batch_short }}</td>
+        <td style="padding:8px 12px;color:#101828;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;">{{ ln.currency }} {{ ln.amount }}</td>
+      </tr>
+      {% endfor %}
+      {% if not lines_display %}
+      <tr><td colspan="4" style="padding:16px;text-align:center;color:#98A2B3;">No paid commissions recorded for {{ year }}.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</section>
+
+<section style="margin-top:24px;padding:14px 16px;background:#FFFAEB;border:1px solid #F79009;border-radius:8px;color:#B54708;font-size:12px;line-height:1.5;">
+  <strong>Tax note:</strong> This statement is informational. It summarises commissions whose payment was recorded in {{ year }}. Consult your tax advisor for jurisdiction-specific reporting (e.g. US Form 1099-NEC self-reporting, EU §13b UStG reverse charge, German Kleinunternehmer §19 UStG).
+</section>
+{% endblock %}

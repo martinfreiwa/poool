@@ -21,6 +21,7 @@ pub fn router() -> Router<AppState> {
         // JSON API
         .route("/api/leaderboard", get(get_rankings))
         .route("/api/leaderboard/me", get(get_my_rank))
+        .route("/api/leaderboard/snapshots/me", get(get_my_snapshots))
         .route("/api/leaderboard/preferences", get(get_preferences))
         .route("/api/leaderboard/preferences", put(update_preferences))
         // Manual refresh is admin-only and side-effecting — POST so it can't

@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.id, m.team_id, m.user_id, t.display_name AS team_name,\n                  t.logo_url, t.accent_color,\n                  inviter.email::text AS inviter_email\n              FROM developer_team_memberships m\n              JOIN developer_teams t ON t.id = m.team_id\n              LEFT JOIN users inviter ON inviter.id = $2\n             WHERE m.id = $1 AND m.status = 'invited'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "team_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "team_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "logo_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "accent_color",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "inviter_email",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "2d6aa66662f6b71c3fac6a13d1dbaff78f6ca6102ffd5297662a673688cc5502"
+}

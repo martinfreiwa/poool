@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH team_members AS (\n            SELECT user_id FROM developer_team_memberships\n             WHERE team_id = $1 AND status = 'active'\n        ),\n        cohorts AS (\n            SELECT ar.referred_user_id,\n                   date_trunc('month', ar.created_at)::date AS cohort_month\n              FROM affiliate_referrals ar\n             WHERE ar.attribution_user_id IN (SELECT user_id FROM team_members)\n               AND ar.created_at >= NOW() - ($2 || ' months')::INTERVAL\n        ),\n        cohort_sizes AS (\n            SELECT cohort_month, COUNT(DISTINCT referred_user_id) AS cohort_size\n              FROM cohorts GROUP BY cohort_month\n        ),\n        commissions_per_cohort AS (\n            SELECT c.cohort_month,\n                   ((EXTRACT(YEAR FROM ac.updated_at) - EXTRACT(YEAR FROM c.cohort_month)) * 12\n                   + (EXTRACT(MONTH FROM ac.updated_at) - EXTRACT(MONTH FROM c.cohort_month)))::INT\n                       AS period_index_raw,\n                   ar.referred_user_id\n              FROM cohorts c\n              JOIN affiliate_referrals ar ON ar.referred_user_id = c.referred_user_id\n              JOIN affiliate_commissions ac ON ac.referral_id = ar.id\n             WHERE ac.status = 'paid'\n        )\n        SELECT to_char(s.cohort_month, 'YYYY-MM')           AS \"cohort_month!\",\n               COALESCE(cpc.period_index_raw, 0)            AS \"period_index!\",\n               s.cohort_size::BIGINT                        AS \"cohort_size!\",\n               COUNT(DISTINCT cpc.referred_user_id)::BIGINT AS \"active_users!\"\n          FROM cohort_sizes s\n          LEFT JOIN commissions_per_cohort cpc ON cpc.cohort_month = s.cohort_month\n         GROUP BY s.cohort_month, s.cohort_size, cpc.period_index_raw\n         ORDER BY s.cohort_month ASC, period_index_raw ASC NULLS FIRST\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cohort_month!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "period_index!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "cohort_size!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "active_users!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "09cd1df9d5c63f612ffe5eb059609aa5eb94b22cceeba544ad976da0fae4386a"
+}

@@ -35,7 +35,7 @@ use super::orderbook;
 /// 2. Enter matching loop: scan assets → try matches → queue for settlement.
 ///
 /// Spawned in `main.rs`:
-/// ```ignore
+/// ```text
 /// tokio::spawn(async move {
 ///     marketplace::matching::run_matching_engine(&redis, &db).await;
 /// });

@@ -107,7 +107,7 @@ pub async fn api_admin_affiliate_team_detail(
                   NULLIF(TRIM(BOTH ' ' FROM (
                       COALESCE(up.first_name, '') || ' ' || COALESCE(up.last_name, '')
                   )), '') AS full_name,
-                  al.code AS link_code, al.status AS link_status
+                  al.code AS "link_code?", al.status AS "link_status?"
            FROM developer_team_memberships m
            LEFT JOIN users u          ON u.id = m.user_id
            LEFT JOIN user_profiles up ON up.user_id = m.user_id
@@ -376,22 +376,59 @@ pub async fn api_admin_affiliate_team_member_move(
         return Err(ApiError::BadRequest("Target team must be active".into()));
     }
 
-    // 1) Remove from source — same path as developer remove, but actor=admin.
-    crate::rewards::team_members::remove_member(
-        &state.db,
-        membership_id,
-        admin.user.id,
-        &format!("moved_by_admin:{}", payload.reason),
-    )
-    .await
-    .map_err(|e| match e {
-        crate::error::AppError::NotFound(m) => ApiError::NotFound(m),
-        _ => ApiError::Internal("source remove failed".into()),
-    })?;
+    // F4 fix: reject moves on pending/invited memberships — admin shouldn't
+    // convert an unconsented invite into an active membership in a different
+    // team without the user's knowledge.
+    if src.status != "active" {
+        return Err(ApiError::BadRequest(format!(
+            "Cannot move a membership in status '{}'. Member must be active.",
+            src.status
+        )));
+    }
 
-    // 2) Insert new active membership in target team. The partial-unique
-    // constraint `one_active_membership_per_user` is now free because the
-    // old membership flipped to 'removed' above.
+    // F4 fix: wrap the whole flow (remove old, insert new, create link,
+    // audit) in ONE transaction. Previously each step was its own DB call;
+    // a failure between step 1 (remove) and step 2 (insert) left the user
+    // homeless. The transaction now rolls back the soft-delete if any
+    // downstream step fails, so the user is never "in limbo".
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+    // 1) Soft-remove source membership inline (status='removed').
+    sqlx::query!(
+        r#"UPDATE developer_team_memberships
+              SET status = 'removed',
+                  removed_at = NOW(),
+                  removed_by_user_id = $1,
+                  removed_reason = $2,
+                  updated_at = NOW()
+           WHERE id = $3 AND status = 'active'"#,
+        admin.user.id,
+        format!("moved_by_admin:{}", payload.reason),
+        membership_id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    // 2) Deactivate source business-link inline.
+    sqlx::query!(
+        r#"UPDATE affiliate_links
+              SET status = 'inactive',
+                  deactivated_at = NOW(),
+                  deactivated_reason = 'member_moved_by_admin',
+                  updated_at = NOW()
+           WHERE team_id = $1
+             AND attribution_user_id = $2
+             AND link_type = 'team_business'
+             AND status = 'active'"#,
+        src.src_team_id,
+        src.user_id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    // 3) Insert new active membership in target team.
     let new_id = sqlx::query!(
         r#"INSERT INTO developer_team_memberships
               (team_id, user_id, status, role, joined_at, invited_by_user_id, invited_at)
@@ -402,22 +439,13 @@ pub async fn api_admin_affiliate_team_member_move(
         src.role,
         admin.user.id
     )
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await
     .map_err(ApiError::Database)?
     .id;
 
-    // 3) New business-link in target team (idempotent).
-    let _ = crate::rewards::team_links::create_team_business_link(
-        &state.db,
-        payload.target_team_id,
-        src.user_id,
-        admin.user.id,
-    )
-    .await;
-
-    // 4) Audit
-    let _ = sqlx::query(
+    // 4) Audit inside the tx so it rolls back with everything else.
+    sqlx::query(
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)
          VALUES ($1, 'team_member_moved', 'developer_team_memberships', $2, $3)",
     )
@@ -429,8 +457,30 @@ pub async fn api_admin_affiliate_team_member_move(
         "to_team_id": payload.target_team_id,
         "reason": payload.reason,
     }))
-    .execute(&state.db)
-    .await;
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    // 5) Post-commit best-effort: create the new business-link. The
+    // partial-unique on `affiliate_links` makes this idempotent, and an
+    // admin repair tool can retry on failure.
+    if let Err(e) = crate::rewards::team_links::create_team_business_link(
+        &state.db,
+        payload.target_team_id,
+        src.user_id,
+        admin.user.id,
+    )
+    .await
+    {
+        tracing::error!(
+            target_team_id = ?payload.target_team_id,
+            user_id = ?src.user_id,
+            error = ?e,
+            "admin_member_move: post-commit business-link create FAILED; member is in target team without link. Run admin repair."
+        );
+    }
 
     Ok(Json(serde_json::json!({
         "status": "moved",

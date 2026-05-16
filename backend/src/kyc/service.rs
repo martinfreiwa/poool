@@ -16,7 +16,7 @@ use crate::error::AppError;
 /// 2. Otherwise → fall back to manual review.
 ///
 /// This is where Sumsub can be added in the future:
-/// ```ignore
+/// ```text
 /// if let Some(cfg) = SumsubConfig::from_env() {
 ///     return Arc::new(SumsubProvider::new(cfg));
 /// }

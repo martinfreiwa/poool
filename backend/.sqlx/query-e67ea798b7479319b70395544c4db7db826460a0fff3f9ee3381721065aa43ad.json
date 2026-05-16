@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.developer_user_id, t.display_name AS team_name,\n                  COALESCE(NULLIF(TRIM(u.email), ''), 'A new member') AS \"member_email!\"\n           FROM developer_teams t\n           CROSS JOIN users u\n           WHERE t.id = $1 AND u.id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "developer_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "team_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "member_email!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "e67ea798b7479319b70395544c4db7db826460a0fff3f9ee3381721065aa43ad"
+}

@@ -52,6 +52,9 @@ fn make_state(pool: PgPool) -> AppState {
         config,
         redis: None,
         auth_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
+        leaderboard_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
+        community_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
+        storage_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
         leaderboard_last_refresh: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
     }
 }

@@ -2,13 +2,14 @@
 ///
 /// Implements:
 /// - Financial action classification with amount thresholds
-/// - Trading session creation/validation via Redis (15-min TTL)
+/// - Trading session creation/validation via Redis plus DB fallback (15-min TTL)
 /// - Step-up verification for sensitive financial operations
 ///
 /// SECURITY INVARIANTS:
-/// - Sessions are stored in Redis, never in browser-accessible storage
+/// - Sessions are stored server-side, never in browser-accessible storage
 /// - TOTP secrets are never logged or included in error messages
 /// - Threshold amounts use i64 cents — never floats
+use chrono::{Duration, Utc};
 use uuid::Uuid;
 
 use crate::error::AppError;
@@ -41,6 +42,15 @@ pub enum FinancialAction {
     PaymentMethodAdd,
     /// Changing account password.
     PasswordChange,
+    /// Phase-3 P1: editing the affiliate / team-business IBAN. Always
+    /// requires 2FA because the IBAN dictates where every future payout
+    /// lands — account-takeover via session cookie would otherwise let an
+    /// attacker silently divert funds.
+    AffiliateBankEdit,
+    /// Phase-3 P1: requesting an affiliate payout. Always requires 2FA
+    /// so a stolen session cookie can't trigger withdrawals against the
+    /// authenticated affiliate's payable balance.
+    AffiliatePayoutRequest,
 }
 
 impl FinancialAction {
@@ -53,6 +63,8 @@ impl FinancialAction {
             FinancialAction::Trade => Some(TRADE_2FA_THRESHOLD_CENTS),
             FinancialAction::PaymentMethodAdd => None, // always requires 2FA
             FinancialAction::PasswordChange => None,   // always requires 2FA
+            FinancialAction::AffiliateBankEdit => None, // always
+            FinancialAction::AffiliatePayoutRequest => None, // always
         }
     }
 
@@ -63,6 +75,8 @@ impl FinancialAction {
             FinancialAction::Trade => "trade",
             FinancialAction::PaymentMethodAdd => "pm",
             FinancialAction::PasswordChange => "pwd",
+            FinancialAction::AffiliateBankEdit => "aff_bank",
+            FinancialAction::AffiliatePayoutRequest => "aff_payout",
         }
     }
 }
@@ -77,7 +91,7 @@ impl FinancialAction {
 /// Logic:
 /// 1. If user doesn't have TOTP enabled → skip (can't require what isn't set up)
 /// 2. If amount is below threshold → skip
-/// 3. If valid trading session exists in Redis → skip
+/// 3. If valid server-side step-up session exists → skip
 /// 4. Otherwise → TwoFactorRequired
 pub async fn require_step_up_2fa(
     db: &sqlx::PgPool,
@@ -115,8 +129,8 @@ pub async fn require_step_up_2fa(
         return Err(AppError::TwoFactorRequired);
     }
 
-    // 3. Check for existing trading session in Redis
-    if check_trading_session(redis, user_id, action).await {
+    // 3. Check for existing server-side step-up session
+    if check_trading_session(db, redis, user_id, action).await {
         return Ok(());
     }
 
@@ -167,24 +181,41 @@ pub async fn check_2fa_setup_required(db: &sqlx::PgPool, user_id: Uuid) -> Resul
 
 /// Create a trading session after successful TOTP verification.
 ///
-/// Stores a session key in Redis with a 15-minute TTL.
+/// Stores a session key server-side with a 15-minute TTL.
 /// The session is scoped to the user and action type.
 ///
-/// Returns `Ok(())` on success, or silently succeeds if Redis is unavailable
-/// (the next `require_step_up_2fa` call will re-prompt).
+/// Redis is the fast path, but the PostgreSQL row is the durable fallback for
+/// environments where Redis is unavailable or intentionally disabled.
 pub async fn create_trading_session(
+    db: &sqlx::PgPool,
     redis: Option<&deadpool_redis::Pool>,
     user_id: Uuid,
     action: FinancialAction,
 ) -> Result<(), AppError> {
-    let redis_pool = match redis {
-        Some(r) => r,
-        None => {
-            tracing::warn!(
-                "No Redis available — trading session not persisted (2FA will re-prompt)"
-            );
-            return Ok(());
-        }
+    let expires_at = Utc::now() + Duration::seconds(TRADING_SESSION_TTL_SECS as i64);
+
+    sqlx::query(
+        r#"
+        INSERT INTO step_up_sessions (user_id, action, expires_at)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, action)
+        DO UPDATE SET expires_at = EXCLUDED.expires_at, updated_at = NOW()
+        "#,
+    )
+    .bind(user_id)
+    .bind(action.session_key_suffix())
+    .bind(expires_at)
+    .execute(db)
+    .await?;
+
+    let Some(redis_pool) = redis else {
+        tracing::debug!(
+            user_id = %user_id,
+            action = ?action,
+            ttl_secs = TRADING_SESSION_TTL_SECS,
+            "Step-up session stored in PostgreSQL fallback; Redis unavailable"
+        );
+        return Ok(());
     };
 
     let key = format!(
@@ -227,44 +258,75 @@ pub async fn create_trading_session(
 /// Check if a valid trading session exists for the given user and action.
 ///
 /// Returns `true` if a session exists (user recently verified 2FA).
-/// Returns `false` if no session, Redis unavailable, or any error.
+/// Returns `false` if no session or any storage error occurs.
 async fn check_trading_session(
+    db: &sqlx::PgPool,
     redis: Option<&deadpool_redis::Pool>,
     user_id: Uuid,
     action: FinancialAction,
 ) -> bool {
-    let redis_pool = match redis {
-        Some(r) => r,
-        None => return false,
-    };
-
     let key = format!(
         "trading_session:{}:{}",
         user_id,
         action.session_key_suffix()
     );
-    if let Ok(mut conn) = redis_pool.get().await {
-        let exists: Result<i32, redis::RedisError> =
-            redis::cmd("EXISTS").arg(&key).query_async(&mut *conn).await;
-        match exists {
-            Ok(1) => {
-                tracing::debug!(
-                    "Valid trading session found for user {} action {:?}",
-                    user_id,
-                    action
-                );
-                true
+
+    if let Some(redis_pool) = redis {
+        if let Ok(mut conn) = redis_pool.get().await {
+            let exists: Result<i32, redis::RedisError> =
+                redis::cmd("EXISTS").arg(&key).query_async(&mut *conn).await;
+            match exists {
+                Ok(1) => {
+                    tracing::debug!(
+                        "Valid Redis step-up session found for user {} action {:?}",
+                        user_id,
+                        action
+                    );
+                    return true;
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::warn!("Redis EXISTS check for trading session failed: {}", e);
+                }
             }
-            Ok(_) => false,
-            Err(e) => {
-                tracing::warn!("Redis EXISTS check for trading session failed: {}", e);
-                false
-            }
+        } else {
+            tracing::warn!("Failed to get Redis connection for trading session check");
         }
-    } else {
-        tracing::warn!("Failed to get Redis connection for trading session check");
-        false
     }
+
+    let action_key = action.session_key_suffix();
+    let valid_db_session = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(
+            SELECT 1 FROM step_up_sessions
+             WHERE user_id = $1
+               AND action = $2
+               AND expires_at > NOW()
+        )",
+    )
+    .bind(user_id)
+    .bind(action_key)
+    .fetch_optional(db)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(false);
+
+    if valid_db_session {
+        let _ = sqlx::query(
+            "UPDATE step_up_sessions SET updated_at = NOW() WHERE user_id = $1 AND action = $2",
+        )
+        .bind(user_id)
+        .bind(action_key)
+        .execute(db)
+        .await;
+        tracing::debug!(
+            "Valid PostgreSQL step-up session found for user {} action {:?}",
+            user_id,
+            action
+        );
+    }
+
+    valid_db_session
 }
 
 /// Verify a TOTP code and create a trading session for the specified action.
@@ -272,7 +334,7 @@ async fn check_trading_session(
 /// This is the main entry point for step-up verification:
 /// 1. Looks up the user's TOTP secret
 /// 2. Verifies the provided code
-/// 3. Creates a 15-minute trading session in Redis
+/// 3. Creates a 15-minute server-side step-up session
 pub async fn verify_and_create_trading_session(
     db: &sqlx::PgPool,
     redis: Option<&deadpool_redis::Pool>,
@@ -304,7 +366,7 @@ pub async fn verify_and_create_trading_session(
     }
 
     // 3. Create trading session
-    create_trading_session(redis, user_id, action).await?;
+    create_trading_session(db, redis, user_id, action).await?;
 
     Ok(())
 }

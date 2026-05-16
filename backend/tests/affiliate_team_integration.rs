@@ -564,3 +564,245 @@ async fn dashboard_context_filter_separates_personal_and_business() {
     cleanup_user(&p, dev).await;
     cleanup_user(&p, mem).await;
 }
+
+// ─── I1 fix: commission-rate-branching (mig 166 + 168) ──────────────────────
+//
+// Verifies the core invariant of mig 166: link_type drives which rate the
+// commission_cents calculation uses.
+//   * personal link  → uses `affiliates.commission_rate_bps` of payout user
+//   * team_business  → uses `developer_teams.team_commission_rate_bps`
+// Plus mig 168's gross_amount_cents stamping on every INSERT.
+
+#[tokio::test]
+#[ignore]
+async fn commission_rate_branches_by_link_type() {
+    let p = pool().await;
+    let dev = make_user(&p, "dev_rate").await;
+    let mem = make_user(&p, "mem_rate").await;
+    let customer_personal = make_user(&p, "cust_p").await;
+    let customer_business = make_user(&p, "cust_b").await;
+
+    make_active_affiliate(&p, dev).await;
+    make_active_affiliate(&p, mem).await;
+
+    // Bump member's personal rate to 100 bps (Pro). Team gets 450 bps
+    // (Sovereign) via developer_teams override.
+    sqlx::query!(
+        "UPDATE affiliates SET commission_rate_bps = 100, current_tier = 'Pro' WHERE user_id = $1",
+        mem
+    )
+    .execute(&p)
+    .await
+    .expect("set member personal rate");
+
+    let team_id = make_team(&p, dev).await;
+    sqlx::query!(
+        "UPDATE developer_teams SET team_commission_rate_bps = 450, current_team_tier = 'Sovereign' WHERE id = $1",
+        team_id
+    )
+    .execute(&p)
+    .await
+    .expect("set team rate");
+
+    // create_team_business_link requires an active membership.
+    sqlx::query!(
+        "INSERT INTO developer_team_memberships (team_id, user_id, status, role, joined_at) \
+         VALUES ($1, $2, 'active', 'member', NOW())",
+        team_id,
+        mem
+    )
+    .execute(&p)
+    .await
+    .expect("membership");
+
+    let personal_link = team_links::create_personal_link(&p, mem)
+        .await
+        .expect("personal link");
+    let business_link = team_links::create_team_business_link(&p, team_id, mem, mem)
+        .await
+        .expect("business link");
+
+    let ref_p = sqlx::query!(
+        r#"INSERT INTO affiliate_referrals
+              (affiliate_id, referred_user_id, link_id, attribution_user_id, payout_user_id, status)
+           VALUES ($1, $2, $3, $4, $5, 'registered')
+           RETURNING id"#,
+        mem,
+        customer_personal,
+        personal_link.id,
+        mem,
+        mem
+    )
+    .fetch_one(&p)
+    .await
+    .expect("ref personal");
+    let ref_b = sqlx::query!(
+        r#"INSERT INTO affiliate_referrals
+              (affiliate_id, referred_user_id, link_id, attribution_user_id, payout_user_id, status)
+           VALUES ($1, $2, $3, $4, $5, 'registered')
+           RETURNING id"#,
+        dev,
+        customer_business,
+        business_link.id,
+        mem,
+        dev
+    )
+    .fetch_one(&p)
+    .await
+    .expect("ref business");
+
+    let order_p = sqlx::query_scalar!(
+        r#"INSERT INTO orders (user_id, order_number, total_cents, status, currency)
+           VALUES ($1, $2, 100000, 'completed', 'EUR') RETURNING id"#,
+        customer_personal,
+        format!("TEST-P-{}", &Uuid::new_v4().to_string()[..8])
+    )
+    .fetch_one(&p)
+    .await
+    .expect("order p");
+    let order_b = sqlx::query_scalar!(
+        r#"INSERT INTO orders (user_id, order_number, total_cents, status, currency)
+           VALUES ($1, $2, 100000, 'completed', 'EUR') RETURNING id"#,
+        customer_business,
+        format!("TEST-B-{}", &Uuid::new_v4().to_string()[..8])
+    )
+    .fetch_one(&p)
+    .await
+    .expect("order b");
+
+    let mut tx_p = p.begin().await.expect("tx p");
+    service::check_and_track_affiliate_commission(&mut tx_p, customer_personal, order_p, 100000)
+        .await
+        .expect("track personal");
+    tx_p.commit().await.expect("commit p");
+
+    let mut tx_b = p.begin().await.expect("tx b");
+    service::check_and_track_affiliate_commission(&mut tx_b, customer_business, order_b, 100000)
+        .await
+        .expect("track business");
+    tx_b.commit().await.expect("commit b");
+
+    let row_p = sqlx::query!(
+        "SELECT provisional_amount_cents, gross_amount_cents, tier_at_execution, currency
+           FROM affiliate_commissions WHERE referral_id = $1",
+        ref_p.id
+    )
+    .fetch_one(&p)
+    .await
+    .expect("commission p");
+    assert_eq!(
+        row_p.provisional_amount_cents, 1000,
+        "personal link: €1000 × 100 bps = €10.00 = 1000 cents"
+    );
+    assert_eq!(row_p.gross_amount_cents, 100000);
+    assert_eq!(row_p.tier_at_execution, "Pro");
+    assert_eq!(row_p.currency, "EUR");
+
+    let row_b = sqlx::query!(
+        "SELECT provisional_amount_cents, gross_amount_cents, tier_at_execution, currency
+           FROM affiliate_commissions WHERE referral_id = $1",
+        ref_b.id
+    )
+    .fetch_one(&p)
+    .await
+    .expect("commission b");
+    assert_eq!(
+        row_b.provisional_amount_cents, 4500,
+        "team_business link: €1000 × 450 bps = €45.00 = 4500 cents"
+    );
+    assert_eq!(row_b.gross_amount_cents, 100000);
+    assert_eq!(row_b.tier_at_execution, "Sovereign");
+    assert_eq!(row_b.currency, "EUR");
+
+    let _ = sqlx::query!("DELETE FROM orders WHERE id IN ($1, $2)", order_p, order_b)
+        .execute(&p)
+        .await;
+    cleanup_user(&p, customer_personal).await;
+    cleanup_user(&p, customer_business).await;
+    cleanup_user(&p, dev).await;
+    cleanup_user(&p, mem).await;
+}
+
+// ─── I1 fix: terminated team blocks new commissions (Bug 3) ─────────────────
+
+#[tokio::test]
+#[ignore]
+async fn terminated_team_skips_commission_insert() {
+    let p = pool().await;
+    let dev = make_user(&p, "dev_term").await;
+    let mem = make_user(&p, "mem_term").await;
+    let customer = make_user(&p, "cust_term").await;
+    make_active_affiliate(&p, dev).await;
+
+    let team_id = make_team(&p, dev).await;
+    sqlx::query!(
+        "INSERT INTO developer_team_memberships (team_id, user_id, status, role, joined_at) \
+         VALUES ($1, $2, 'active', 'member', NOW())",
+        team_id,
+        mem
+    )
+    .execute(&p)
+    .await
+    .expect("membership");
+    let link = team_links::create_team_business_link(&p, team_id, mem, mem)
+        .await
+        .expect("business link");
+
+    sqlx::query!(
+        r#"INSERT INTO affiliate_referrals
+              (affiliate_id, referred_user_id, link_id, attribution_user_id, payout_user_id, status)
+           VALUES ($1, $2, $3, $4, $5, 'registered')"#,
+        dev,
+        customer,
+        link.id,
+        mem,
+        dev
+    )
+    .execute(&p)
+    .await
+    .expect("ref");
+
+    sqlx::query!(
+        "UPDATE developer_teams SET status = 'terminated' WHERE id = $1",
+        team_id
+    )
+    .execute(&p)
+    .await
+    .expect("terminate");
+
+    let order = sqlx::query_scalar!(
+        r#"INSERT INTO orders (user_id, order_number, total_cents, status, currency)
+           VALUES ($1, $2, 100000, 'completed', 'EUR') RETURNING id"#,
+        customer,
+        format!("TEST-T-{}", &Uuid::new_v4().to_string()[..8])
+    )
+    .fetch_one(&p)
+    .await
+    .expect("order");
+
+    let mut tx = p.begin().await.expect("tx");
+    let result =
+        service::check_and_track_affiliate_commission(&mut tx, customer, order, 100000).await;
+    tx.commit().await.expect("commit");
+
+    assert!(
+        matches!(result, Ok(None)),
+        "terminated team must skip commission insert (Bug 3 fix)"
+    );
+
+    let count: i64 = sqlx::query_scalar!(
+        "SELECT COUNT(*) AS \"c!\" FROM affiliate_commissions WHERE link_id = $1",
+        link.id
+    )
+    .fetch_one(&p)
+    .await
+    .expect("count");
+    assert_eq!(count, 0, "no commission stamped on terminated team");
+
+    let _ = sqlx::query!("DELETE FROM orders WHERE id = $1", order)
+        .execute(&p)
+        .await;
+    cleanup_user(&p, customer).await;
+    cleanup_user(&p, dev).await;
+    cleanup_user(&p, mem).await;
+}

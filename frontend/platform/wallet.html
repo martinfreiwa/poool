@@ -3,7 +3,7 @@ transaction history securely.", no_index=True, extra_css=['wallet', 'bem/table',
 'mobile-wallet', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation'],
 external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.html" %}{% endwith %}
 
-<body id="wallet-body" class="fouc-guard">
+<body id="wallet-body" class="fouc-guard{% if account_frozen %} wallet-account-frozen{% endif %}" data-account-frozen="{% if account_frozen %}true{% else %}false{% endif %}">
   {% include 'components/mobile-menu.html' %}
 
   <div class="wallet-page">
@@ -20,6 +20,38 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <!--  <img class="mobile-wallet-title__icon" src="/static/images/icons/wallet-02.svg" alt="Wallet" width="24" height="24" /> -->
           <div class="mobile-wallet-title__text">Wallet</div>
         </div>
+
+        {% if account_frozen %}
+        <section id="wallet-frozen-banner" class="wallet-frozen-banner" aria-labelledby="wallet-frozen-title" data-unfreeze-requested="{% if unfreeze_requested %}true{% else %}false{% endif %}">
+          <div class="wallet-frozen-banner__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3 21 19H3L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M12 9v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <circle cx="12" cy="16" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="wallet-frozen-banner__body">
+            <p class="wallet-frozen-banner__eyebrow">Account frozen</p>
+            <h2 id="wallet-frozen-title" class="wallet-frozen-banner__title">Wallet actions are paused while compliance reviews your account.</h2>
+            <p class="wallet-frozen-banner__copy">
+              Reason: <strong>{{ frozen_reason_label }}</strong>. You can still review balances and transactions, but deposits, withdrawals, cards, and bank changes are disabled until your account is restored.
+            </p>
+            <div class="wallet-frozen-banner__request">
+              <label class="wallet-frozen-banner__label" for="wallet-unfreeze-note">Optional note for compliance</label>
+              <textarea id="wallet-unfreeze-note" class="ds-input wallet-frozen-banner__textarea" maxlength="500" rows="2"
+                placeholder="Share context for the review team"{% if unfreeze_requested %} disabled{% endif %}></textarea>
+              <div class="wallet-frozen-banner__actions">
+                <button id="wallet-unfreeze-request-btn" type="button" class="ds-btn ds-btn--primary"{% if unfreeze_requested %} disabled{% endif %}>
+                  {% if unfreeze_requested %}Review already requested{% else %}Request review{% endif %}
+                </button>
+                <span id="wallet-unfreeze-status" class="wallet-frozen-banner__status" role="status" aria-live="polite">
+                  {% if unfreeze_requested %}Compliance has your request and will respond within 1 business day.{% else %}Submit one review request every 24 hours.{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+        {% endif %}
 
         <!-- Phase 4: State Layers -->
         <!-- 1. LOADING STATE (skeleton) -->
@@ -59,13 +91,13 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 Rewards and dividends land here automatically.
               </p>
               <div class="wallet-empty__actions">
-                <button id="empty-deposit-btn" type="button" class="ds-btn ds-btn--primary wallet-empty__cta-primary" onclick="openDepositModal()">
+                <button id="empty-deposit-btn" type="button" class="ds-btn ds-btn--primary wallet-empty__cta-primary" onclick="openDepositModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
                   <span>Make a deposit</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 5v14m-7-7 7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </button>
-                <button id="empty-withdraw-btn" type="button" class="ds-btn ds-btn--secondary wallet-empty__cta-secondary" onclick="openWithdrawModal()">
+                <button id="empty-withdraw-btn" type="button" class="ds-btn ds-btn--secondary wallet-empty__cta-secondary" onclick="openWithdrawModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
                   <span>Withdraw</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 19V5m-7 7 7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -147,7 +179,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               <div class="wallet-empty__step-body">
                 <h4 class="wallet-empty__step-title">Link a payment method</h4>
                 <p class="wallet-empty__step-desc">Bank transfer, debit, or credit card. No fee on deposits.</p>
-                <a href="#wallet-payment-methods" class="wallet-empty__step-link">Add a method →</a>
+                <a href="{% if account_frozen %}#wallet-frozen-banner{% else %}#wallet-payment-methods{% endif %}" class="wallet-empty__step-link"{% if account_frozen %} aria-disabled="true"{% endif %}>Add a method →</a>
               </div>
             </li>
             <li class="wallet-empty__step" data-step-id="fund">
@@ -155,7 +187,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               <div class="wallet-empty__step-body">
                 <h4 class="wallet-empty__step-title">Deposit funds</h4>
                 <p class="wallet-empty__step-desc">Start with as little as $50. Balance appears in seconds.</p>
-                <button type="button" class="wallet-empty__step-link wallet-empty__step-link--btn" onclick="openDepositModal()">Deposit now →</button>
+                <button type="button" class="wallet-empty__step-link wallet-empty__step-link--btn" onclick="openDepositModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>Deposit now →</button>
               </div>
             </li>
           </ol>
@@ -414,7 +446,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   {{ cards_html | safe }}
                 </div>
                 <button id="wallet-payment-cards-add-button" class="ds-btn ds-btn--secondary ds-btn--full"
-                  onclick="openCardModal()">
+                  onclick="openCardModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round">
                     </path>
@@ -437,7 +469,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   {{ banks_html | safe }}
                 </div>
                 <button id="wallet-payment-banks-add-button" class="ds-btn ds-btn--secondary ds-btn--full"
-                  onclick="openBankModal()">
+                  onclick="openBankModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round">
                     </path>
@@ -456,10 +488,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             <h2 class="mobile-cash-balance-card__amount">{{ cash_balance }}</h2>
           </div>
           <div class="mobile-cash-balance-card__actions">
-            <button class="ds-btn ds-btn--primary ds-btn--full">
+            <button class="ds-btn ds-btn--primary ds-btn--full"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
               <span class="mobile-cash-balance-card__button-text--primary">Deposit</span>
             </button>
-            <button class="ds-btn ds-btn--secondary ds-btn--full">
+            <button class="ds-btn ds-btn--secondary ds-btn--full"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
               <span class="mobile-cash-balance-card__button-text--secondary">Withdraw</span>
             </button>
           </div>
@@ -615,7 +647,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <h2 class="mobile-cards-title">Cards</h2>
           {{ mobile_cards_html | safe }}
           <div class="mobile-card-item">
-            <button class="mobile-add-card-button" onclick="openCardModal()">
+            <button class="mobile-add-card-button" onclick="openCardModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#0000FF" stroke-width="1.66667"
                   stroke-linecap="round" stroke-linejoin="round"></path>
@@ -629,7 +661,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <h2 class="mobile-banks-title">Banks</h2>
           {{ mobile_banks_html | safe }}
           <div class="mobile-bank-item">
-            <button class="mobile-add-bank-button" onclick="openBankModal()">
+            <button class="mobile-add-bank-button" onclick="openBankModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#000000" stroke-width="1.66667"
                   stroke-linecap="round" stroke-linejoin="round"></path>
@@ -1636,7 +1668,74 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
   <!-- Wallet Actions & Initialization -->
   <script>
+    window.__WALLET_ACCOUNT_FROZEN = {% if account_frozen %}true{% else %}false{% endif %};
+    window.__WALLET_UNFREEZE_ALREADY_REQUESTED = {% if unfreeze_requested %}true{% else %}false{% endif %};
+
+    function walletIsFrozen() {
+      return window.__WALLET_ACCOUNT_FROZEN === true ||
+        document.body.getAttribute("data-account-frozen") === "true";
+    }
+
+    function showFrozenActionMessage() {
+      var status = document.getElementById("wallet-unfreeze-status");
+      if (status) {
+        status.textContent = "Wallet actions are paused. Request compliance review to restore account access.";
+      }
+      var banner = document.getElementById("wallet-frozen-banner");
+      if (banner) banner.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function guardWalletFrozenAction(event) {
+      if (!walletIsFrozen()) return false;
+      if (event && event.preventDefault) event.preventDefault();
+      showFrozenActionMessage();
+      return true;
+    }
+
+    async function requestWalletUnfreezeReview() {
+      var btn = document.getElementById("wallet-unfreeze-request-btn");
+      var note = document.getElementById("wallet-unfreeze-note");
+      var status = document.getElementById("wallet-unfreeze-status");
+      if (!btn || btn.disabled) return;
+      btn.disabled = true;
+      var original = btn.textContent;
+      btn.textContent = "Sending...";
+      if (status) status.textContent = "Submitting review request...";
+
+      try {
+        var resp = await fetch("/api/wallet/unfreeze-request", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ note: note ? note.value : "" }),
+        });
+        var data = await resp.json().catch(function () { return {}; });
+        if (resp.ok) {
+          btn.textContent = "Review requested";
+          if (note) note.disabled = true;
+          window.__WALLET_UNFREEZE_ALREADY_REQUESTED = true;
+          if (status) status.textContent = data.message || "Compliance review filed. We'll reply within 1 business day.";
+          return;
+        }
+        if (data.error === "already_requested") {
+          btn.textContent = "Review already requested";
+          if (note) note.disabled = true;
+          window.__WALLET_UNFREEZE_ALREADY_REQUESTED = true;
+          if (status) status.textContent = data.message || "Compliance already has your request.";
+          return;
+        }
+        btn.disabled = false;
+        btn.textContent = original;
+        if (status) status.textContent = data.message || "Could not submit the review request. Try again.";
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = original;
+        if (status) status.textContent = "Network error. Please try again.";
+      }
+    }
+
     async function openWithdrawModal() {
+      if (guardWalletFrozenAction()) return;
       var m = document.getElementById("withdraw-modal");
       if (!m) return;
       m.classList.add('active');
@@ -1766,6 +1865,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     }
 
     async function openDepositModal() {
+      if (guardWalletFrozenAction()) return;
       var m = document.getElementById("deposit-modal");
       if (!m) return;
       m.classList.add("active");
@@ -2283,9 +2383,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         btn.textContent = origLabel;
       }
     }
-    function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
+    function openBankModal() { if (guardWalletFrozenAction()) return; var m = document.getElementById("add-bank-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
     function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
     function openCardModal() {
+      if (guardWalletFrozenAction()) return;
       var m = document.getElementById("add-card-modal");
       if (m) {
         m.classList.add('active');
@@ -2296,11 +2397,15 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
     document.addEventListener("DOMContentLoaded", () => {
       const depositBtn = document.getElementById("deposit-btn");
-      if (depositBtn) { depositBtn.addEventListener("click", openDepositModal); depositBtn.removeAttribute("disabled"); depositBtn.style.cursor = "pointer"; }
+      if (depositBtn && !walletIsFrozen()) { depositBtn.addEventListener("click", openDepositModal); depositBtn.removeAttribute("disabled"); depositBtn.style.cursor = "pointer"; }
+      if (depositBtn && walletIsFrozen()) { depositBtn.disabled = true; depositBtn.setAttribute("aria-disabled", "true"); }
       const emptyDepositBtn = document.getElementById("empty-deposit-btn");
-      if (emptyDepositBtn) { emptyDepositBtn.addEventListener("click", openDepositModal); }
+      if (emptyDepositBtn && !walletIsFrozen()) { emptyDepositBtn.addEventListener("click", openDepositModal); }
       const withdrawBtn = document.getElementById("withdraw-btn");
-      if (withdrawBtn) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
+      if (withdrawBtn && !walletIsFrozen()) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
+      if (withdrawBtn && walletIsFrozen()) { withdrawBtn.disabled = true; withdrawBtn.setAttribute("aria-disabled", "true"); }
+      const unfreezeBtn = document.getElementById("wallet-unfreeze-request-btn");
+      if (unfreezeBtn) { unfreezeBtn.addEventListener("click", requestWalletUnfreezeReview); }
       document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
       document.querySelectorAll("#wallet-payment-cards-add-button, .mobile-add-card-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openCardModal(); }); });
 

@@ -24,6 +24,12 @@
   let isFetching = false;
   let searchTimeout = null;
   let cachedPrefs = null;
+  // Tab-switch coalescer — see scheduleTabRefetch() below. Rapid clicks on
+  // metric / timeframe tabs would otherwise fire one GET per click and hit
+  // the per-user `lb:get` rate-limit bucket. We collapse bursts to a single
+  // request after a short quiet window.
+  let tabSwitchTimer = null;
+  const TAB_DEBOUNCE_MS = 180;
 
   // ─── Demo data (audit C2) ───────────────────────────────────────
   // The 20-row sample fixture lives in leaderboard-demo.js and is fetched
@@ -57,33 +63,41 @@
   }
 
   function getMetricName(type) {
+    // Labels match the underlying calculation, not marketing copy:
+    //   - roi = weighted *target* yield (annual_yield_bps), not realized return
+    //   - revenue = sum of referees' active investments (network volume),
+    //     not commission earned
     var map = {
-      'invested': 'Total Investment',
-      'assets': 'Number of Assets',
-      'roi': 'Portfolio ROI',
-      'affiliates': 'Affiliates Count',
-      'revenue': 'Affiliate Revenue',
-      'highest_inv': 'Highest Single Investment'
+      'invested': 'Total Invested',
+      'assets': 'Assets Held',
+      'roi': 'Avg Target Yield',
+      'affiliates': 'Affiliates',
+      'revenue': 'Network Volume',
+      'highest_inv': 'Largest Single Investment'
     };
     return map[type] || 'Score';
   }
 
   function getInitials(name) {
     if (!name) return '??';
-    var parts = name.trim().split(/\s+/);
+    var trimmed = name.trim();
+    // Pseudonym pattern: "INVESTOR #B45F03" → use first 2 chars of the hex slug
+    // so avatars are unique per investor instead of collapsing to "I#".
+    var pseudo = trimmed.match(/^[A-Z]+\s*#([A-F0-9]+)/i);
+    if (pseudo) return pseudo[1].substring(0, 2).toUpperCase();
+    var parts = trimmed.split(/\s+/).filter(function (p) { return p && !p.startsWith('#'); });
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.substring(0, 2).toUpperCase();
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return trimmed.substring(0, 2).toUpperCase();
   }
 
-  // Compute percentages for asset mix donut/bar
-  function getAssetMixPct(entry) {
-    var inv = entry.metrics ? (entry.metrics.total_invested_cents || 0) : 0;
-    var ref = entry.metrics ? (entry.metrics.referral_revenue_cents || 0) : 0;
-    var total = inv + ref;
-    if (total === 0) return { primary: 100, secondary: 0 };
-    var p = Math.round((inv / total) * 100);
-    return { primary: Math.max(p, 5), secondary: Math.max(100 - p, 5) };
-  }
+  // NOTE: the previous "Asset Mix" donut/bar derived percentages from
+  //   invested_cents vs referral_network_value_cents and floored each side to 5%.
+  // It rendered the same "100 / 5" ratio for every user without referral
+  // activity, which is most users — pure visual noise. Real asset-class
+  // breakdown requires per-investment asset_type aggregation; until that
+  // ships, the bento donut and table mix column are removed entirely
+  // rather than displaying fake data.
 
   // ─── Init ──────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', init);
@@ -293,7 +307,7 @@
     var status = document.getElementById('lb-preference-status');
     if (!status) return;
     status.textContent = message;
-    status.style.color = isError ? '#B42318' : 'var(--btn-primary-bg, #0000FF)';
+    status.style.color = isError ? '#B42318' : '';
   }
 
   function showInlineStatus(message) {
@@ -311,9 +325,13 @@
   }
 
   function setControlsBusy(isBusy) {
+    // Important: we used to `control.disabled = true` here. Disabling the
+    // currently-focused button drops focus to <body>, which broke
+    // keyboard navigation inside the tablist (ArrowRight worked once,
+    // then the next key fired on body and went nowhere). Now we signal
+    // busy state via `aria-busy` + CSS opacity only — focus survives.
     var controls = document.querySelectorAll('.lb-topbar-tab[data-metric], .lb-tf-btn[data-timeframe], #lb-per-page-select, #lb-search-input, #lb-visibility-toggle');
     controls.forEach(function(control) {
-      control.disabled = isBusy;
       control.setAttribute('aria-busy', isBusy ? 'true' : 'false');
     });
   }
@@ -353,40 +371,30 @@
 
     top3.forEach(function (entry, i) {
       var rankNum = String(i + 1).padStart(2, '0');
-      var mix = getAssetMixPct(entry);
       var roi = entry.metrics ? entry.metrics.portfolio_roi_bps : 0;
       var roiPct = (roi / 100).toFixed(1);
       var isPositive = roi >= 0;
       var tierColor = entry.tier_badge_color || tierBgColors[entry.tier_name] || '#D0D5DD';
       var assetCount = entry.metrics ? entry.metrics.asset_count : 0;
-
-      // Donut SVG values
-      var circumference = 2 * Math.PI * 28; // r=28 → ~175.9
-      var primaryArc = (mix.primary / 100) * circumference;
-      var secondaryArc = (mix.secondary / 100) * circumference;
-      var primaryOffset = circumference - primaryArc;
-      var secondaryOffset = circumference - secondaryArc;
-      // Rotate the secondary arc to start after primary
-      var secondaryRotation = (mix.primary / 100) * 360;
-
+      // Tier badge styling moved to CSS data-tier attribute selectors so each
+      // known tier ships an AA-compliant bg + text pair (≥4.5:1 contrast at
+      // 10px). Inline `style="background:..."` only applied when the API
+      // explicitly returns a custom `tier_badge_color` — that override path
+      // is reserved for admin-managed bespoke tiers.
+      var badgeStyle = entry.tier_badge_color
+        ? ' style="background:' + escHtml(entry.tier_badge_color) + ';color:#181D27"'
+        : '';
       var card = document.createElement('div');
       card.className = 'lb-bento-card';
       card.innerHTML =
         '<div class="lb-bento-watermark">' + rankNum + '</div>' +
         '<div class="lb-bento-header">' +
           '<div class="lb-bento-info">' +
-            '<span class="lb-bento-tier-badge" style="background:' + escHtml(tierColor) + '">' + escHtml(entry.tier_name) + '</span>' +
+            '<span class="lb-bento-tier-badge" data-tier="' + escHtml(entry.tier_name || '') + '"' + badgeStyle + '>' + escHtml(entry.tier_name) + '</span>' +
             '<div class="lb-bento-name">' + escHtml(entry.display_name) + '</div>' +
             '<div class="lb-bento-subtitle">' + assetCount + ' Asset' + (assetCount !== 1 ? 's' : '') + '</div>' +
           '</div>' +
-          '<div class="lb-bento-donut">' +
-            '<svg viewBox="0 0 64 64">' +
-              '<circle cx="32" cy="32" r="28" fill="transparent" stroke="#f2f4f7" stroke-width="7"></circle>' +
-              '<circle cx="32" cy="32" r="28" fill="transparent" stroke="#0000FF" stroke-width="7" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + primaryOffset + '"></circle>' +
-              '<circle cx="32" cy="32" r="28" fill="transparent" stroke="#03FF88" stroke-width="7" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + secondaryOffset + '" style="transform: rotate(' + secondaryRotation + 'deg); transform-origin: center;"></circle>' +
-            '</svg>' +
-            '<span class="lb-bento-donut-label">MIX</span>' +
-          '</div>' +
+          renderAssetMixDonut(entry.asset_mix) +
         '</div>' +
         '<div class="lb-bento-values">' +
           '<div>' +
@@ -394,19 +402,82 @@
             '<div class="lb-bento-aum-value">' + escHtml(formatMetric(entry.metric_value, currentMetric)) + '</div>' +
           '</div>' +
           '<div style="text-align:right;">' +
-            '<span class="lb-bento-yield ' + (isPositive ? 'positive' : 'negative') + '">' +
+            '<span class="lb-bento-yield ' + (isPositive ? 'positive' : 'negative') + '" title="Average annual yield target across this investor’s active portfolio">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="' + (isPositive ? '23 6 13.5 15.5 8.5 10.5 1 18' : '23 18 13.5 8.5 8.5 13.5 1 6') + '"></polyline></svg>' +
               (isPositive ? '+' : '') + roiPct + '%' +
             '</span>' +
           '</div>' +
         '</div>' +
-        '<div class="lb-bento-legend">' +
-          '<div class="lb-bento-legend-item"><span class="lb-bento-legend-dot primary"></span>' + mix.primary + '% Direct</div>' +
-          '<div class="lb-bento-legend-item"><span class="lb-bento-legend-dot green"></span>' + mix.secondary + '% Referral</div>' +
-        '</div>';
+        renderAssetMixLegend(entry.asset_mix);
 
       grid.appendChild(card);
     });
+  }
+
+  /// Asset-type display labels + brand-aligned colors. Returned by the
+  /// backend as snake_case enum strings (real_estate, commercial_property,
+  /// commodity, business, startup, land_plot).
+  var ASSET_TYPE_META = {
+    'real_estate':         { label: 'Real Estate',  color: '#0000FF' },
+    'commercial_property': { label: 'Commercial',   color: '#7F56D9' },
+    'commodity':           { label: 'Commodity',    color: '#F79009' },
+    'business':            { label: 'Business',     color: '#03FF88' },
+    'startup':             { label: 'Startup',      color: '#2E90FA' },
+    'land_plot':           { label: 'Land Plot',    color: '#12B76A' },
+  };
+
+  /// Render a multi-slice SVG donut for the user's asset-type breakdown.
+  /// Falls back to an empty string when no mix data is present so older
+  /// API responses keep working.
+  function renderAssetMixDonut(mix) {
+    if (!mix || !mix.length) return '';
+    var total = mix.reduce(function (s, m) { return s + (m.invested_cents || 0); }, 0);
+    if (total === 0) return '';
+    var r = 28, circ = 2 * Math.PI * r;
+    var offset = 0;
+    var slices = mix.map(function (m) {
+      var meta = ASSET_TYPE_META[m.asset_type] || { label: m.asset_type, color: '#D0D5DD' };
+      var pct = m.invested_cents / total;
+      var dash = (pct * circ).toFixed(2) + ' ' + (circ - pct * circ).toFixed(2);
+      // Rotate each slice's start to where the previous one ended.
+      var rot = (offset / circ) * 360 - 90; // -90 = start at 12 o'clock
+      offset += pct * circ;
+      return '<circle cx="32" cy="32" r="' + r + '" fill="transparent"' +
+        ' stroke="' + meta.color + '" stroke-width="8"' +
+        ' stroke-dasharray="' + dash + '"' +
+        ' transform="rotate(' + rot.toFixed(2) + ' 32 32)"' +
+        '><title>' + escHtml(meta.label) + ': ' + Math.round(pct * 100) + '%</title></circle>';
+    }).join('');
+    var ariaParts = mix.map(function (m) {
+      var meta = ASSET_TYPE_META[m.asset_type] || { label: m.asset_type };
+      return Math.round(((m.invested_cents || 0) / total) * 100) + '% ' + meta.label;
+    }).join(', ');
+    return (
+      '<div class="lb-bento-donut">' +
+        '<svg viewBox="0 0 64 64" role="img" aria-label="Asset mix: ' + escHtml(ariaParts) + '">' +
+          '<circle cx="32" cy="32" r="' + r + '" fill="transparent" stroke="#f2f4f7" stroke-width="8"></circle>' +
+          slices +
+        '</svg>' +
+        '<span class="lb-bento-donut-label" aria-hidden="true">MIX</span>' +
+      '</div>'
+    );
+  }
+
+  /// Render the inline legend below the bento values — one row per slice,
+  /// up to 4 slices to keep the card compact.
+  function renderAssetMixLegend(mix) {
+    if (!mix || !mix.length) return '';
+    var total = mix.reduce(function (s, m) { return s + (m.invested_cents || 0); }, 0);
+    if (total === 0) return '';
+    var items = mix.slice(0, 4).map(function (m) {
+      var meta = ASSET_TYPE_META[m.asset_type] || { label: m.asset_type, color: '#D0D5DD' };
+      var pct = Math.round((m.invested_cents / total) * 100);
+      return '<div class="lb-bento-legend-item">' +
+        '<span class="lb-bento-legend-dot" style="background:' + meta.color + '"></span>' +
+        pct + '% ' + escHtml(meta.label) +
+      '</div>';
+    }).join('');
+    return '<div class="lb-bento-legend">' + items + '</div>';
   }
 
   // ─── Minor Cards (Ranks 4–9) ──────────────────────────────────
@@ -523,21 +594,27 @@
     if (!append) {
       tbody.innerHTML = '';
       if (rankings.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#667085;padding:24px;">No investors found matching your filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#667085;padding:24px;">No investors found matching your filters.</td></tr>';
         return;
       }
     }
 
-    // Update header
+    // Update header — show active sort indicator so it's visible the column
+    // is being driven by the topbar metric tab selection.
     var headerEl = document.getElementById('lb-table-metric-header');
-    if (headerEl) headerEl.textContent = getMetricName(currentMetric);
+    if (headerEl) {
+      headerEl.innerHTML =
+        '<span class="lb-th-label">' + escHtml(getMetricName(currentMetric)) + '</span>' +
+        '<span class="lb-th-sort" aria-hidden="true">▼</span>';
+      headerEl.setAttribute('aria-sort', 'descending');
+      headerEl.classList.add('is-sorted');
+    }
 
     for (var idx = 0; idx < rankings.length; idx++) {
       var entry = rankings[idx];
       var tr = document.createElement('tr');
       if (entry.is_current_user) tr.classList.add('is-me');
 
-      var mix = getAssetMixPct(entry);
       var roi = entry.metrics ? entry.metrics.portfolio_roi_bps : 0;
       var roiPct = (roi / 100).toFixed(1);
       var isPositive = roi >= 0;
@@ -568,51 +645,32 @@
       tdEntity.innerHTML = entityHtml;
       tr.appendChild(tdEntity);
 
-      // Asset Mix
-      var tdMix = document.createElement('td');
-      tdMix.className = 'col-mix';
-      tdMix.innerHTML =
-        '<div class="lb-mix-bar-cell">' +
-          '<div class="lb-mix-bar">' +
-            '<div class="lb-mix-bar-primary" style="width:' + mix.primary + '%"></div>' +
-            '<div class="lb-mix-bar-green" style="width:' + mix.secondary + '%"></div>' +
-          '</div>' +
-          '<span class="lb-mix-ratio">' + mix.primary + '/' + mix.secondary + '</span>' +
-        '</div>';
-      tr.appendChild(tdMix);
-
-      // Holdings (with tooltip)
+      // Holdings (with hover/focus tooltip — see CSS .lb-holdings-cell:hover)
       var tdHoldings = document.createElement('td');
       tdHoldings.className = 'text-right lb-holdings-cell';
+      tdHoldings.setAttribute('tabindex', '0');
       var holdingsHtml = '<span class="lb-holdings-value">' + escHtml(formatMetric(entry.metric_value, currentMetric)) + '</span>';
       if (entry.metrics) {
         holdingsHtml +=
-          '<div class="lb-score-tooltip">' +
-            '<div class="lb-tt-header">Investor Details</div>' +
-            '<div class="lb-tt-row"><span>Total Investment:</span> <span>' + escHtml(formatMetric(entry.metrics.total_invested_cents, 'invested')) + '</span></div>' +
-            '<div class="lb-tt-row"><span>Assets:</span> <span>' + escHtml(String(entry.metrics.asset_count)) + '</span></div>' +
-            '<div class="lb-tt-row"><span>Portfolio ROI:</span> <span>' + escHtml(formatMetric(entry.metrics.portfolio_roi_bps, 'roi')) + '</span></div>' +
+          '<div class="lb-score-tooltip" role="tooltip">' +
+            '<div class="lb-tt-header">Investor Breakdown</div>' +
+            '<div class="lb-tt-row"><span>Total Invested:</span> <span>' + escHtml(formatMetric(entry.metrics.total_invested_cents, 'invested')) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Assets Held:</span> <span>' + escHtml(String(entry.metrics.asset_count)) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Avg Target Yield:</span> <span>' + escHtml(formatMetric(entry.metrics.portfolio_roi_bps, 'roi')) + '</span></div>' +
             '<div class="lb-tt-row"><span>Affiliates:</span> <span>' + escHtml(String(entry.metrics.affiliate_count)) + '</span></div>' +
-            '<div class="lb-tt-row"><span>Ref Revenue:</span> <span>' + escHtml(formatMetric(entry.metrics.referral_revenue_cents, 'revenue')) + '</span></div>' +
-            '<div class="lb-tt-row"><span>Highest Inv:</span> <span>' + escHtml(formatMetric(entry.metrics.highest_investment_cents, 'highest_inv')) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Network Volume:</span> <span>' + escHtml(formatMetric(entry.metrics.referral_network_value_cents, 'revenue')) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Highest Single Inv.:</span> <span>' + escHtml(formatMetric(entry.metrics.highest_investment_cents, 'highest_inv')) + '</span></div>' +
           '</div>';
       }
       tdHoldings.innerHTML = holdingsHtml;
       tr.appendChild(tdHoldings);
 
-      // Yield
+      // Yield — investment-weighted average TARGET yield (annual_yield_bps of
+      // each asset weighted by purchase_value_cents). Not realized return.
       var tdYield = document.createElement('td');
       tdYield.className = 'text-right col-yield';
-      tdYield.innerHTML = '<span class="lb-yield-value ' + (isPositive ? 'positive' : 'negative') + '">' + (isPositive ? '+' : '') + roiPct + '%</span>';
+      tdYield.innerHTML = '<span class="lb-yield-value ' + (isPositive ? 'positive' : 'negative') + '" title="Investment-weighted average target yield (annual)">' + (isPositive ? '+' : '') + roiPct + '%</span>';
       tr.appendChild(tdYield);
-
-      // Status
-      var tdStatus = document.createElement('td');
-      tdStatus.className = 'text-right col-status';
-      var statusClass = (entry.metrics && entry.metrics.portfolio_roi_bps < 0) ? 'lb-status-hedged' : 'lb-status-active';
-      var statusText = (entry.metrics && entry.metrics.portfolio_roi_bps < 0) ? 'HEDGED' : 'ACTIVE';
-      tdStatus.innerHTML = '<span class="lb-status-pill ' + statusClass + '">' + statusText + '</span>';
-      tr.appendChild(tdStatus);
 
       tbody.appendChild(tr);
     }
@@ -641,41 +699,77 @@
   // ─── Preferences ───────────────────────────────────────────────
   function applyPrefs(prefs) {
     var toggle = document.getElementById('lb-visibility-toggle');
-    if (toggle) toggle.checked = prefs.visible;
+    if (toggle) toggle.checked = !!prefs.visible;
     var label = document.getElementById('lb-visibility-label');
     if (label) {
       label.textContent = prefs.visible ? 'Visible in public rankings' : 'Hidden from public rankings';
     }
-    setPreferenceStatus(prefs.visible ? 'Your public leaderboard profile is visible.' : 'Your public leaderboard profile is hidden.', false);
+    var avatarToggle = document.getElementById('lb-show-avatar-toggle');
+    if (avatarToggle) {
+      avatarToggle.checked = !!prefs.show_avatar;
+      avatarToggle.disabled = !prefs.visible;
+    }
+    var nameInput = document.getElementById('lb-display-name-input');
+    if (nameInput && document.activeElement !== nameInput) {
+      nameInput.value = prefs.display_name || '';
+      nameInput.disabled = !prefs.visible;
+    }
+    setPreferenceStatus(
+      prefs.visible
+        ? 'Your profile appears in the public leaderboard.'
+        : 'Your profile is hidden — only you can see your rank.',
+      false
+    );
   }
 
   // ─── Global Handlers ──────────────────────────────────────────
 
+  // Coalesce rapid tab clicks into a single refetch after TAB_DEBOUNCE_MS
+  // of quiet. Visual tab state still updates instantly on every click —
+  // only the network request is deferred, so the UI feels responsive while
+  // bursts (e.g. tab-cycling with arrow keys) hit the API just once.
+  function scheduleTabRefetch() {
+    if (tabSwitchTimer) clearTimeout(tabSwitchTimer);
+    tabSwitchTimer = setTimeout(function () {
+      tabSwitchTimer = null;
+      refetchAndRender();
+    }, TAB_DEBOUNCE_MS);
+  }
+
   // Top bar metric tabs
-  window.switchMetricTab = async function (metric, btn) {
+  window.switchMetricTab = function (metric, btn) {
     currentMetric = metric;
     currentPage = 1;
 
-    // Update tab active state globally but only for metric components
+    // Update tab active state globally but only for metric components.
+    // Also keeps the roving-tabindex in sync when mouse-clicked so the
+    // tablist W3C pattern works for both pointer and keyboard users.
     var metricTabs = document.querySelectorAll('.lb-topbar-tab[data-metric], .lb-tf-btn[data-metric]');
     metricTabs.forEach(function (t) {
-      if (t.dataset.metric === currentMetric) {
-        t.classList.add('active');
-      } else {
-        t.classList.remove('active');
-      }
+      var on = t.dataset.metric === currentMetric;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.setAttribute('tabindex', on ? '0' : '-1');
     });
 
-    await refetchAndRender();
+    scheduleTabRefetch();
   };
 
-  window.switchTimeframe = async function (tf, btn) {
+  window.switchTimeframe = function (tf, btn) {
     currentTimeframe = tf;
     currentPage = 1;
     var buttons = document.querySelectorAll('.lb-tf-btn[data-timeframe]');
-    buttons.forEach(function (b) { b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
-    await refetchAndRender();
+    buttons.forEach(function (b) {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+      b.setAttribute('tabindex', '-1');
+    });
+    if (btn) {
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      btn.setAttribute('tabindex', '0');
+    }
+    scheduleTabRefetch();
   };
 
   window.debounceSearch = function(event) {
@@ -691,8 +785,14 @@
     currentTier = tierId || '';
     currentPage = 1;
     var buttons = document.querySelectorAll('#lb-tier-filter [data-tier-id]');
-    buttons.forEach(function (b) { b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
+    buttons.forEach(function (b) {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+    });
+    if (btn) {
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+    }
     await refetchAndRender();
   };
 
@@ -773,17 +873,128 @@
     }
   };
 
-  window.toggleVisibility = function (checkbox) {
-    var previousPrefs = cachedPrefs ? Object.assign({}, cachedPrefs) : { visible: !checkbox.checked, show_avatar: false, display_name: null };
-    var prefs = {
-      visible: checkbox.checked,
-      show_avatar: cachedPrefs ? (cachedPrefs.show_avatar || false) : false,
-      display_name: cachedPrefs ? (cachedPrefs.display_name || null) : null,
-    };
-    cachedPrefs = Object.assign({}, cachedPrefs, { visible: checkbox.checked });
-    updatePreferences(prefs).catch(function() {
+  // ─── Preference handlers ──────────────────────────────────────
+  // All three handlers share the same optimistic-update + rollback shape:
+  //   1. Snapshot the previous prefs for rollback on failure.
+  //   2. Optimistically mutate cachedPrefs + UI (applyPrefs).
+  //   3. Refetch the rankings so visibility changes update the list
+  //      (toggling off makes the viewer disappear, toggling on can add
+  //      them; display_name edits update their entity row).
+  //   4. On error, restore the previous prefs + UI.
+
+  function commitPrefs(nextPrefs) {
+    var previousPrefs = cachedPrefs ? Object.assign({}, cachedPrefs) : { visible: false, show_avatar: false, display_name: null };
+    cachedPrefs = Object.assign({}, cachedPrefs, nextPrefs);
+    applyPrefs(cachedPrefs);
+    updatePreferences(cachedPrefs).then(function () {
+      refetchAndRender();
+    }).catch(function () {
       cachedPrefs = previousPrefs;
       applyPrefs(previousPrefs);
     });
+  }
+
+  window.toggleVisibility = function (checkbox) {
+    commitPrefs({
+      visible: checkbox.checked,
+      show_avatar: cachedPrefs ? !!cachedPrefs.show_avatar : false,
+      display_name: cachedPrefs ? (cachedPrefs.display_name || null) : null,
+    });
   };
+
+  window.toggleShowAvatar = function (checkbox) {
+    commitPrefs({
+      visible: cachedPrefs ? !!cachedPrefs.visible : false,
+      show_avatar: checkbox.checked,
+      display_name: cachedPrefs ? (cachedPrefs.display_name || null) : null,
+    });
+  };
+
+  // Debounce display_name updates so we don't PUT on every keystroke.
+  var displayNameTimer = null;
+  window.updateDisplayName = function (input) {
+    if (displayNameTimer) clearTimeout(displayNameTimer);
+    displayNameTimer = setTimeout(function () {
+      var trimmed = (input.value || '').trim();
+      commitPrefs({
+        visible: cachedPrefs ? !!cachedPrefs.visible : false,
+        show_avatar: cachedPrefs ? !!cachedPrefs.show_avatar : false,
+        display_name: trimmed === '' ? null : trimmed,
+      });
+    }, 600);
+  };
+
+  // ─── Tablist keyboard navigation (W3C ARIA APG pattern) ──────
+  // Roving-tabindex: only the active tab is tab-reachable. Inside the
+  // tablist, ← / → move and activate, Home / End jump to ends, Enter / Space
+  // re-confirm the active tab. Pattern is applied to both the metric tabs
+  // (left of topbar) and the timeframe tabs (right of topbar).
+  function wireTablistKeyboardNav(root) {
+    if (!root) return;
+    var tabs = Array.prototype.slice.call(root.querySelectorAll('[role="tab"]'));
+    if (!tabs.length) return;
+
+    function setRovingFocus(targetIdx) {
+      tabs.forEach(function (t, i) {
+        t.setAttribute('tabindex', i === targetIdx ? '0' : '-1');
+      });
+    }
+
+    function activate(idx) {
+      var t = tabs[idx];
+      if (!t) return;
+      // Existing handlers (switchMetricTab / switchTimeframe / switchTier)
+      // are inline onclick bindings — synthesizing a click runs the same
+      // path the mouse does, including the async refetchAndRender.
+      t.click();
+      setRovingFocus(idx);
+      t.focus();
+    }
+
+    // Seed roving tabindex: 0 on the active tab, -1 on the others.
+    var activeIdx = Math.max(0, tabs.findIndex(function (t) {
+      return t.classList.contains('active') || t.getAttribute('aria-selected') === 'true';
+    }));
+    setRovingFocus(activeIdx);
+
+    tabs.forEach(function (tab, idx) {
+      tab.addEventListener('keydown', function (e) {
+        var next = null;
+        switch (e.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+            next = (idx + 1) % tabs.length;
+            break;
+          case 'ArrowLeft':
+          case 'ArrowUp':
+            next = (idx - 1 + tabs.length) % tabs.length;
+            break;
+          case 'Home':
+            next = 0;
+            break;
+          case 'End':
+            next = tabs.length - 1;
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            activate(idx);
+            return;
+          default:
+            return;
+        }
+        e.preventDefault();
+        activate(next);
+      });
+    });
+  }
+
+  // Wire all three tablists on DOMContentLoaded. Defer to a microtask so
+  // any inline `aria-selected="true"` set in the template is reflected
+  // before the roving-tabindex seed runs.
+  document.addEventListener('DOMContentLoaded', function () {
+    // Tier filter was removed by product decision but the markup may come
+    // back — query defensively for all role=tablist groups.
+    document.querySelectorAll('[role="tablist"]').forEach(wireTablistKeyboardNav);
+  });
 })();

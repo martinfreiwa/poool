@@ -17,29 +17,280 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
-      <div class="ds-main__content">
+      <div class="ds-main__content dat-settings-page">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <section class="ds-card dat-content-card">
-          <div class="dat-section__intro">
-            <h3 class="dat-section__title">Team Settings</h3>
-            <p class="dat-section__hint">A public slug enables employees to self-request joining. You confirm each request.</p>
-          </div>
-          <form id="dat-settings-form" class="dat-settings-form">
-            <div class="dat-form-row">
-              <label for="dat-team-display-name">Display name</label>
-              <input type="text" id="dat-team-display-name" maxlength="120" autocomplete="off"/>
+        <form id="dat-settings-form" class="dat-settings-form" novalidate>
+
+          <!-- ── CARD 1: Team Identity ─────────────────────────────── -->
+          <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-identity-title">
+            <header class="dat-settings-card__header">
+              <div>
+                <h3 class="dat-section__title" id="dat-identity-title">Team Identity</h3>
+                <p class="dat-section__hint">How your team appears to employees and on the public join page.</p>
+              </div>
+              <span class="dat-status dat-status--active" id="dat-team-status" data-status="active" title="Team is currently active">Active</span>
+            </header>
+
+            <div class="dat-settings-grid">
+              <div class="dat-form-row">
+                <label for="dat-team-display-name" class="dat-form-row__label">
+                  Display name
+                  <span class="dat-form-row__required" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="dat-team-display-name"
+                  class="ds-input"
+                  maxlength="120"
+                  autocomplete="off"
+                  placeholder="e.g., Acme Sales Team"
+                  aria-describedby="dat-team-display-name-hint"
+                  required
+                />
+                <small class="dat-form-row__hint" id="dat-team-display-name-hint">1–120 characters. Visible to invited members.</small>
+              </div>
+
+              <div class="dat-form-row">
+                <label for="dat-public-slug" class="dat-form-row__label">
+                  Public slug
+                  <span class="dat-form-row__optional">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  id="dat-public-slug"
+                  class="ds-input"
+                  maxlength="40"
+                  pattern="[a-z0-9](?:[a-z0-9\-]{1,38}[a-z0-9])?"
+                  autocomplete="off"
+                  placeholder="e.g., acme-team"
+                  aria-describedby="dat-public-slug-hint"
+                />
+                <small class="dat-form-row__hint" id="dat-public-slug-hint">3–40 chars: <code>a–z</code>, <code>0–9</code>, <code>-</code> (not at start/end).</small>
+              </div>
             </div>
-            <div class="dat-form-row">
-              <label for="dat-public-slug">Public slug <span class="dat-form-row__optional">(optional)</span></label>
-              <input type="text" id="dat-public-slug" maxlength="40" pattern="[a-z0-9\-]+" autocomplete="off"/>
-              <small class="dat-form-row__hint">Public join URL: <code>/affiliate/join/&lt;slug&gt;</code></small>
+          </section>
+
+          <!-- ── CARD 2: Public Join Page ──────────────────────────── -->
+          <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-public-title">
+            <header class="dat-settings-card__header">
+              <div>
+                <h3 class="dat-section__title" id="dat-public-title">Public Join Page</h3>
+                <p class="dat-section__hint">Share this URL so employees can self-request joining. You confirm each request manually.</p>
+              </div>
+              <span class="dat-status" id="dat-public-status" data-status="off">Not published</span>
+            </header>
+
+            <!-- Active state: slug set → show full URL + copy + open buttons -->
+            <div class="dat-public-link" id="dat-public-link" hidden>
+              <div class="dat-public-link__url-wrap">
+                <span class="dat-public-link__label" id="dat-public-link-label">Public join URL</span>
+                <code class="dat-public-link__url" id="dat-public-link-url" aria-live="polite"></code>
+              </div>
+              <div class="dat-public-link__actions">
+                <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="dat-public-copy" aria-label="Copy public join URL to clipboard" title="Copy URL">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  <span>Copy</span>
+                </button>
+                <a class="ds-btn ds-btn--secondary ds-btn--sm" id="dat-public-open" target="_blank" rel="noopener noreferrer" aria-label="Open public join page in new tab" title="Open in new tab" href="#">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                  <span>Open</span>
+                </a>
+              </div>
             </div>
-            <div class="dat-form-actions">
-              <button type="submit" class="ds-btn ds-btn--primary">Save</button>
+
+            <!-- Empty state: no slug set → CTA -->
+            <div class="dat-public-empty" id="dat-public-empty">
+              <svg class="dat-public-empty__icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              <p class="dat-public-empty__msg">Set a <strong>public slug</strong> above to publish your team's join page.</p>
             </div>
-          </form>
-        </section>
+          </section>
+
+          <!-- ── CARD 2.5: Brand Customization (Phase 4) ─────────────── -->
+          <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-branding-title">
+            <header class="dat-settings-card__header">
+              <div>
+                <h3 class="dat-section__title" id="dat-branding-title">Brand Customization</h3>
+                <p class="dat-section__hint">Personalize invitation emails and the public join page with your logo and accent color. Falls back to POOOL branding if left empty.</p>
+              </div>
+            </header>
+
+            <div class="ds-form-group">
+              <label class="ds-form-label" for="dat-branding-logo-url">Logo URL (HTTPS)</label>
+              <input id="dat-branding-logo-url" type="url" class="ds-input"
+                     placeholder="https://your-cdn.example.com/logo.png"
+                     maxlength="512" autocomplete="off"/>
+              <small class="dat-input-hint">PNG or SVG, ideally 240×64. Shown at the top of invite emails + public join page.</small>
+            </div>
+
+            <div class="ds-form-row" style="display:flex;gap:16px;align-items:flex-end;">
+              <div class="ds-form-group" style="flex:0 0 200px;">
+                <label class="ds-form-label" for="dat-branding-accent">Accent color</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input id="dat-branding-accent-picker" type="color" value="#0000FF"
+                         style="width:42px;height:38px;padding:0;border:1px solid var(--border-color,#E5E7EB);border-radius:6px;cursor:pointer;"
+                         aria-label="Accent color picker"/>
+                  <input id="dat-branding-accent" type="text" class="ds-input"
+                         placeholder="#0000FF" pattern="^#[0-9A-Fa-f]{6}$"
+                         maxlength="7" style="font-family:ui-monospace,monospace;"/>
+                </div>
+                <small class="dat-input-hint">Used for email CTA buttons.</small>
+              </div>
+
+              <div class="ds-form-group" style="flex:1;">
+                <label class="ds-form-label" for="dat-branding-from-display">Email sender name</label>
+                <input id="dat-branding-from-display" type="text" class="ds-input"
+                       placeholder="e.g. Acme Property" maxlength="80" autocomplete="off"/>
+                <small class="dat-input-hint">Shown as the sender in invite emails. Defaults to "POOOL".</small>
+              </div>
+            </div>
+
+            <!-- Live preview: mini-card showing how the invite button will look. -->
+            <div class="dat-branding-preview" id="dat-branding-preview" aria-label="Email button preview" role="img">
+              <div class="dat-branding-preview__label">Preview</div>
+              <div class="dat-branding-preview__card">
+                <img id="dat-branding-preview-logo" alt="" style="max-height:32px;max-width:120px;display:none;"/>
+                <p style="margin:8px 0;color:#101828;font-size:13px;">You've been invited to join your team.</p>
+                <a id="dat-branding-preview-btn" href="#" onclick="return false;"
+                   style="display:inline-block;padding:10px 18px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:13px;">Accept Invitation</a>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── CARD 3: Payouts & Banking ─────────────────────────── -->
+          <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-payout-title">
+            <header class="dat-settings-card__header">
+              <div>
+                <h3 class="dat-section__title" id="dat-payout-title">Payouts &amp; Banking</h3>
+                <p class="dat-section__hint">Bank account that receives your team's commission payouts. Required before the next payout can be released.</p>
+              </div>
+              <span class="dat-status" id="dat-bank-status" data-status="off">Not configured</span>
+            </header>
+
+            <!-- Next-payout read-only tiles (moved from the affiliate-team
+                 hero row so all payout-related context lives next to the
+                 destination form). Hydrated by developer-affiliate-team-analytics.js
+                 via the existing #dat-k-next-amount / #dat-k-next-date IDs. -->
+            <div class="dat-overview-grid">
+              <article class="dat-overview-tile">
+                <span class="dat-overview-tile__label">Next payout amount</span>
+                <strong class="dat-overview-tile__value" id="dat-k-next-amount" aria-live="polite">—</strong>
+              </article>
+              <article class="dat-overview-tile">
+                <span class="dat-overview-tile__label">Earliest release date</span>
+                <strong class="dat-overview-tile__value" id="dat-k-next-date">—</strong>
+              </article>
+            </div>
+
+            <div class="dat-settings-grid" style="margin-top:16px">
+              <div class="dat-form-row">
+                <label for="dat-bank-account-holder" class="dat-form-row__label">
+                  Account holder
+                  <span class="dat-form-row__required" aria-hidden="true">*</span>
+                </label>
+                <input type="text" id="dat-bank-account-holder" class="ds-input"
+                       maxlength="120" autocomplete="off"
+                       placeholder="Full legal name as on the bank account" />
+                <small class="dat-form-row__hint">Must match the account exactly.</small>
+              </div>
+
+              <div class="dat-form-row">
+                <label for="dat-bank-iban" class="dat-form-row__label">
+                  IBAN
+                  <span class="dat-form-row__required" aria-hidden="true">*</span>
+                </label>
+                <input type="text" id="dat-bank-iban" class="ds-input"
+                       maxlength="40" autocomplete="off"
+                       placeholder="e.g. DE89 3704 0044 0532 0130 00"
+                       aria-describedby="dat-bank-iban-hint" />
+                <small class="dat-form-row__hint" id="dat-bank-iban-hint">Spaces are ignored. Stored masked — only the first and last 4 chars are visible after save.</small>
+              </div>
+
+              <div class="dat-form-row">
+                <label for="dat-bank-bic" class="dat-form-row__label">
+                  BIC / SWIFT
+                  <span class="dat-form-row__optional">(optional for SEPA)</span>
+                </label>
+                <input type="text" id="dat-bank-bic" class="ds-input"
+                       maxlength="11" autocomplete="off"
+                       placeholder="e.g. DEUTDEDBBER" />
+                <small class="dat-form-row__hint">8 or 11 characters, letters + digits.</small>
+              </div>
+
+              <div class="dat-form-row">
+                <label for="dat-bank-name" class="dat-form-row__label">
+                  Bank name
+                  <span class="dat-form-row__optional">(optional)</span>
+                </label>
+                <input type="text" id="dat-bank-name" class="ds-input"
+                       maxlength="120" autocomplete="off"
+                       placeholder="e.g. Deutsche Bank AG" />
+              </div>
+
+              <div class="dat-form-row">
+                <label for="dat-bank-country" class="dat-form-row__label">
+                  Country
+                  <span class="dat-form-row__optional">(2-letter)</span>
+                </label>
+                <input type="text" id="dat-bank-country" class="ds-input"
+                       maxlength="2" autocomplete="off"
+                       placeholder="DE" style="text-transform:uppercase" />
+                <small class="dat-form-row__hint">ISO-3166-1 alpha-2 (DE, AT, US, GB, …).</small>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── CARD 4: Team Overview (read-only stats) ───────────── -->
+          <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-overview-title">
+            <header class="dat-settings-card__header">
+              <div>
+                <h3 class="dat-section__title" id="dat-overview-title">Team Overview</h3>
+                <p class="dat-section__hint">Lifetime totals across all members and assets.</p>
+              </div>
+            </header>
+
+            <div class="dat-overview-grid">
+              <article class="dat-overview-tile">
+                <span class="dat-overview-tile__label">Active members</span>
+                <strong class="dat-overview-tile__value" id="dat-ov-members">—</strong>
+              </article>
+              <article class="dat-overview-tile">
+                <span class="dat-overview-tile__label">Lifetime revenue</span>
+                <strong class="dat-overview-tile__value" id="dat-ov-revenue">—</strong>
+              </article>
+              <article class="dat-overview-tile">
+                <span class="dat-overview-tile__label">Lifetime commission</span>
+                <strong class="dat-overview-tile__value" id="dat-ov-commission">—</strong>
+              </article>
+              <article class="dat-overview-tile">
+                <span class="dat-overview-tile__label">Team created</span>
+                <strong class="dat-overview-tile__value" id="dat-ov-created">—</strong>
+              </article>
+            </div>
+          </section>
+
+          <!-- ── Sticky action footer ──────────────────────────────── -->
+          <footer class="dat-settings-footer" id="dat-settings-footer" data-state="pristine">
+            <span class="dat-settings-footer__status" id="dat-settings-status" role="status" aria-live="polite"></span>
+            <div class="dat-settings-footer__actions">
+              <button type="button" class="ds-btn ds-btn--secondary" id="dat-settings-cancel" disabled>Discard changes</button>
+              <button type="submit" class="ds-btn ds-btn--primary" id="dat-settings-save" disabled>
+                <span class="dat-btn__label">Save changes</span>
+                <span class="dat-btn__spinner" hidden aria-hidden="true"></span>
+              </button>
+            </div>
+          </footer>
+        </form>
       </div>
 
       {% include 'developer/_affiliate_team_invite_modal.html' %}

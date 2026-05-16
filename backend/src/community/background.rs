@@ -234,15 +234,26 @@ async fn retry_circle_auto_joins(
         let referred_id: Uuid = row.try_get("referred_id")?;
         let referrer_id: Uuid = row.try_get("referrer_id")?;
 
-        // 2. Check if already in a circle (community DB)
-        let already_in_circle: Option<Uuid> =
-            sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1")
-                .bind(referred_id)
+        // 2. Skip if user is already in the REFERRER's circle (multi-circle
+        // era — being in some other circle doesn't block joining this one).
+        // The referrer's primary circle id lives on community_profiles.
+        let referrer_circle: Option<Uuid> =
+            sqlx::query_scalar("SELECT circle_id FROM community_profiles WHERE user_id = $1")
+                .bind(referrer_id)
                 .fetch_optional(c_pool)
                 .await?;
-
-        if already_in_circle.is_some() {
-            continue; // already in a circle, skip
+        let Some(target_circle) = referrer_circle else {
+            continue; // referrer has no primary circle, nothing to auto-join into
+        };
+        let already_in_target: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM circle_members WHERE user_id = $1 AND circle_id = $2)",
+        )
+        .bind(referred_id)
+        .bind(target_circle)
+        .fetch_one(c_pool)
+        .await?;
+        if already_in_target {
+            continue; // already in referrer's circle, skip
         }
 
         // 3. Ensure community profile exists
@@ -405,4 +416,94 @@ async fn run_weekly_digest(
     }
 
     Ok(())
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Circle trending refresh worker (2026-05-16) — keeps
+// `circles.recent_post_count` accurate so the Discover > Trending section
+// can sort by activity.
+//
+// Previously the column stayed at its default 0, which made the trending
+// section sort identically to "by member_count + created_at" — i.e. not
+// actually trending.
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Background worker: every 5 minutes, recompute `recent_post_count` for
+/// every circle as the count of posts in the last 7 days.
+///
+/// This is a single UPDATE … FROM that runs in milliseconds even at 100k
+/// posts (no per-circle loop, no app-side join). Skips when the community
+/// pool is unavailable (handled by the worker setup in lib.rs).
+pub async fn circle_trending_refresh_worker(c_pool: PgPool) {
+    let interval_secs: u64 = std::env::var("POOOL_CIRCLE_TRENDING_REFRESH_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .map(|n| n.max(60))
+        .unwrap_or(5 * 60);
+    tracing::info!(
+        interval_secs = interval_secs,
+        "Circle trending refresh worker starting (override via POOOL_CIRCLE_TRENDING_REFRESH_SECS)"
+    );
+    let mut interval = tokio::time::interval(Duration::from_secs(interval_secs));
+    // Small startup delay so a fresh boot doesn't slam the DB before
+    // initial migrations / health checks are done.
+    tokio::time::sleep(Duration::from_secs(20)).await;
+    let mut consecutive_failures: u32 = 0;
+    loop {
+        interval.tick().await;
+        let started = std::time::Instant::now();
+        let res = sqlx::query(
+            r#"
+            UPDATE circles c SET
+                recent_post_count = COALESCE(sub.cnt, 0),
+                recent_post_count_updated_at = NOW()
+            FROM (
+                SELECT circle_id, COUNT(*)::INT AS cnt
+                FROM posts
+                WHERE created_at >= NOW() - INTERVAL '7 days'
+                  AND circle_id IS NOT NULL
+                  AND is_hidden = false
+                GROUP BY circle_id
+            ) sub
+            WHERE c.id = sub.circle_id
+               OR (c.id NOT IN (
+                       SELECT DISTINCT circle_id FROM posts
+                       WHERE created_at >= NOW() - INTERVAL '7 days'
+                         AND circle_id IS NOT NULL
+                         AND is_hidden = false
+                   )
+                   AND c.recent_post_count <> 0)
+            "#,
+        )
+        .execute(&c_pool)
+        .await;
+        match res {
+            Ok(r) => {
+                consecutive_failures = 0;
+                tracing::info!(
+                    metric_name = "circle_trending_refresh_duration_ms",
+                    elapsed_ms = started.elapsed().as_millis() as u64,
+                    rows_affected = r.rows_affected(),
+                    "Circle trending refresh OK"
+                );
+            }
+            Err(e) => {
+                consecutive_failures = consecutive_failures.saturating_add(1);
+                tracing::error!(
+                    metric_name = "circle_trending_refresh_failure",
+                    consecutive_failures = consecutive_failures,
+                    error = %e,
+                    "Circle trending refresh failed"
+                );
+                if consecutive_failures >= 3 {
+                    tracing::warn!(
+                        metric_name = "circle_trending_refresh_consecutive_failures",
+                        value = consecutive_failures,
+                        "Circle trending refresh has failed {} times in a row",
+                        consecutive_failures
+                    );
+                }
+            }
+        }
+    }
 }

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE developer_teams\n                          SET bank_iban_encrypted = $1,\n                              bank_iban_last4 = $2,\n                              bank_iban_key_version = $3,\n                              bank_iban = NULL,\n                              updated_at = NOW()\n                        WHERE id = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Varchar",
+        "Int2",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e2a9415761e46867602f7554ec98de8a2d3df75cb5692f5d98d4860ea4edd7f6"
+}

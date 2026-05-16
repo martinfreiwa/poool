@@ -871,20 +871,17 @@ window.initCommunityCircles = function () {
                 resultsEl.replaceChildren();
                 if (users.length === 0) {
                     const empty = document.createElement('div');
-                    empty.className = 'community-invite-results__empty ds-helper-text';
+                    empty.className = 'cc-invite-results__empty';
                     empty.textContent = 'No matches.';
                     resultsEl.appendChild(empty);
                 } else {
                     for (const u of users) {
                         const row = document.createElement('button');
                         row.type = 'button';
-                        row.className = 'community-invite-results__row';
-                        row.style.cssText = 'display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:0; background:transparent; cursor:pointer; text-align:left; border-radius:8px;';
-                        row.onmouseover = () => { row.style.background = 'var(--ds-color-surface-hover, #F2F4F7)'; };
-                        row.onmouseout = () => { row.style.background = 'transparent'; };
+                        row.className = 'cc-invite-results__row';
 
                         const avatar = document.createElement('div');
-                        avatar.style.cssText = 'width:28px; height:28px; border-radius:50%; background:#E3F2FD; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px; flex-shrink:0;';
+                        avatar.className = 'cc-invite-results__avatar';
                         if (u.avatar_url) {
                             avatar.style.background = `url(${u.avatar_url}) center/cover`;
                         } else {
@@ -892,12 +889,12 @@ window.initCommunityCircles = function () {
                         }
 
                         const name = document.createElement('span');
+                        name.className = 'cc-invite-results__name';
                         name.textContent = u.display_name || ('User ' + String(u.user_id).slice(0, 8));
-                        name.style.cssText = 'flex:1; font-size:14px;';
 
                         const action = document.createElement('span');
+                        action.className = 'cc-invite-results__cta';
                         action.textContent = 'Invite';
-                        action.style.cssText = 'font-size:12px; color:var(--ds-color-primary, #03FF88); font-weight:600;';
 
                         row.appendChild(avatar);
                         row.appendChild(name);
@@ -1089,10 +1086,23 @@ window.initCommunityCircles = function () {
     // ─── Init ────────────────────────────────────────────────────
 
     function loadAll() {
-        loadXpSummary();
-        loadMyCircle();
-        loadXpHistory();
-        loadCircleLeaderboard();
+        // 2026-05-16: the MyCircle tab was redesigned as a multi-circle
+        // discovery + my-circles list (`community-circles-discover.js`).
+        // The legacy XP-summary + single-circle stats + recent-activity
+        // sections were removed from the partial. Skip the legacy load
+        // path when none of its target nodes are present so we don't
+        // burn HTTP requests on dead UI.
+        var legacyMode = !!document.getElementById('xp-summary-card')
+                      || !!document.getElementById('circle-stats-row')
+                      || !!document.getElementById('xp-history-list');
+        if (legacyMode) {
+            loadXpSummary();
+            loadMyCircle();
+            loadXpHistory();
+            loadCircleLeaderboard();
+        }
+        // Pending invites + join requests are still rendered in the new
+        // partial under the same #pending-* IDs, so always run.
         loadPendingInvites();
         loadPendingJoinRequests();
     }

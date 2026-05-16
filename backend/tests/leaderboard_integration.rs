@@ -152,7 +152,7 @@ async fn refresh_all_scores_sql(pool: &PgPool) {
         r#"
         INSERT INTO leaderboard_scores (
             user_id, total_invested_cents, asset_count, portfolio_roi_bps,
-            affiliate_count, referral_revenue_cents, highest_investment_cents,
+            affiliate_count, referral_network_value_cents, highest_investment_cents,
             computed_at
         )
         SELECT
@@ -834,7 +834,12 @@ async fn has_more_false_on_exact_multiple_page() {
     let pool = pool().await;
     let test_id = "exact20";
     let (users, asset) = seed_searchable_users(&pool, 20, test_id).await;
-    let viewer = users[0];
+    // Viewer must NOT be in the seeded cohort. Post-audit the service
+    // excludes the viewer from the listing (`m.user_id <> $current_user`)
+    // so that the user sees themselves only in the "Your Standing" card.
+    // If we used `users[0]` here the cohort effectively shrinks to 19 and
+    // the total_participants assertion below breaks.
+    let viewer = Uuid::new_v4();
 
     let resp = poool_backend::leaderboard::service::get_rankings(
         &pool,
@@ -877,7 +882,7 @@ async fn has_more_true_with_overflow() {
     let pool = pool().await;
     let test_id = "over25";
     let (users, asset) = seed_searchable_users(&pool, 25, test_id).await;
-    let viewer = users[0];
+    let viewer = Uuid::new_v4(); // not in seeded cohort — see exact20 test rationale
 
     let resp = poool_backend::leaderboard::service::get_rankings(
         &pool,
@@ -911,7 +916,7 @@ async fn has_more_false_partial_last_page() {
     let pool = pool().await;
     let test_id = "part15";
     let (users, asset) = seed_searchable_users(&pool, 15, test_id).await;
-    let viewer = users[0];
+    let viewer = Uuid::new_v4(); // not in seeded cohort — see exact20 test rationale
 
     let resp = poool_backend::leaderboard::service::get_rankings(
         &pool,
@@ -939,5 +944,715 @@ async fn has_more_false_partial_last_page() {
     assert!(
         !resp.has_more,
         "has_more must be FALSE on a partial last page"
+    );
+}
+
+// ─── Task 4: visibility filter excludes hidden users + viewer self ─────────
+//
+// Production behavior (audit fix, 2026-05-16): only users with
+// `leaderboard_preferences.visible = true` show up in the public listing,
+// and the viewer is always excluded from the listing as well (they see
+// themselves separately in the "Your Standing" card).
+//
+// Regression scenario:
+//   - Seed 4 users. Mark 2 as visible, 2 as hidden (visible=false).
+//   - The viewer is the 5th (unseeded) user — also visible toggle does
+//     not matter for them since they're always excluded.
+//   - The returned listing must have exactly 2 rows (the visible non-self
+//     pair) and `total_participants` must match.
+//   - Ranks must be sequential (1, 2) — re-ranked via ROW_NUMBER over
+//     the visible-only set, NOT pulled from the precomputed rank columns
+//     where the hidden users would still occupy positions.
+
+#[ignore]
+#[tokio::test]
+async fn visibility_filter_excludes_hidden_users_and_reranks() {
+    let pool = pool().await;
+    let test_id = "vis_filter";
+
+    // Seed 4 users with HMTEST_<id>_<uuid> display names so the test cohort
+    // is isolated via the service's `search` parameter.
+    let asset = Uuid::new_v4();
+    cleanup_asset(&pool, asset).await;
+    insert_asset(&pool, asset, 500).await;
+
+    let visible_a = Uuid::new_v4();
+    let visible_b = Uuid::new_v4();
+    let hidden_a = Uuid::new_v4();
+    let hidden_b = Uuid::new_v4();
+    let users = [visible_a, visible_b, hidden_a, hidden_b];
+
+    for u in &users {
+        cleanup_user(&pool, *u).await;
+        insert_user(&pool, *u, "active").await;
+    }
+    // Distinct amounts so re-ranking is observable and deterministic.
+    insert_investment(&pool, visible_a, asset, 40_000_000_000).await;
+    insert_investment(&pool, hidden_a, asset, 30_000_000_000).await;
+    insert_investment(&pool, visible_b, asset, 20_000_000_000).await;
+    insert_investment(&pool, hidden_b, asset, 10_000_000_000).await;
+
+    // Set preferences: 2 visible, 2 hidden.
+    for (u, vis) in [
+        (visible_a, true),
+        (visible_b, true),
+        (hidden_a, false),
+        (hidden_b, false),
+    ] {
+        sqlx::query(
+            r#"INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name)
+               VALUES ($1, $2, FALSE, $3)
+               ON CONFLICT (user_id) DO UPDATE SET
+                   visible = EXCLUDED.visible,
+                   display_name = EXCLUDED.display_name"#,
+        )
+        .bind(u)
+        .bind(vis)
+        .bind(format!("HMTEST_{}_{}", test_id, u.simple()))
+        .execute(&pool)
+        .await
+        .expect("insert pref");
+    }
+
+    refresh_all_scores_sql(&pool).await;
+    sqlx::query(
+        r#"UPDATE leaderboard_scores ls SET rank_invested = sub.r_inv
+           FROM (
+               SELECT user_id, ROW_NUMBER() OVER (ORDER BY total_invested_cents DESC, computed_at ASC) AS r_inv
+               FROM leaderboard_scores
+           ) sub WHERE ls.user_id = sub.user_id"#,
+    )
+    .execute(&pool)
+    .await
+    .expect("rank refresh");
+
+    // Viewer is a 5th, unseeded user — so they're excluded simply by the
+    // service's `m.user_id <> $current_user` predicate. We're testing the
+    // visibility filter, not the self-exclusion edge case.
+    let viewer = Uuid::new_v4();
+
+    let resp = poool_backend::leaderboard::service::get_rankings(
+        &pool,
+        viewer,
+        "invested",
+        "alltime",
+        1,
+        10,
+        None,
+        Some(format!("HMTEST_{}", test_id)),
+        None,
+    )
+    .await
+    .expect("get_rankings");
+
+    // Cleanup before assertions so failures don't leak test data.
+    for u in &users {
+        cleanup_user(&pool, *u).await;
+    }
+    cleanup_asset(&pool, asset).await;
+
+    assert_eq!(
+        resp.total_participants, 2,
+        "only visible_a + visible_b should be counted; got {}",
+        resp.total_participants
+    );
+    assert_eq!(
+        resp.rankings.len(),
+        2,
+        "listing must contain only the 2 visible users; got {} rows",
+        resp.rankings.len()
+    );
+    // Ranks must be re-derived (1 and 2) — NOT inherited from the
+    // precomputed rank_invested column (which would have placed the
+    // visible users at positions 1 and 3 because hidden_a sat between them).
+    let ranks: Vec<i32> = resp.rankings.iter().map(|r| r.rank).collect();
+    assert_eq!(
+        ranks,
+        vec![1, 2],
+        "ranks must be sequential after visibility filter (re-ranked); got {:?}",
+        ranks,
+    );
+    // Top row must be visible_a (largest invested among visible users).
+    assert_eq!(resp.rankings[0].metric_value, 40_000_000_000);
+    assert_eq!(resp.rankings[1].metric_value, 20_000_000_000);
+}
+
+// ─── Task 5: viewer is excluded from public listing even when visible ──────
+//
+// Edge case of the visibility filter: a user who has opted in (visible=true)
+// must still NOT appear in their own view of the leaderboard. The product
+// rule is that their rank is surfaced in the "Your Standing" card via
+// get_my_rank_*, while the listing always shows other people.
+
+#[ignore]
+#[tokio::test]
+async fn visible_viewer_excluded_from_own_listing() {
+    let pool = pool().await;
+    let test_id = "viewer_excl";
+    let asset = Uuid::new_v4();
+    cleanup_asset(&pool, asset).await;
+    insert_asset(&pool, asset, 500).await;
+
+    let viewer = Uuid::new_v4();
+    let other = Uuid::new_v4();
+    for u in [viewer, other] {
+        cleanup_user(&pool, u).await;
+        insert_user(&pool, u, "active").await;
+    }
+
+    insert_investment(&pool, viewer, asset, 99_000_000_000).await;
+    insert_investment(&pool, other, asset, 10_000_000_000).await;
+
+    for (u, n) in [(viewer, "viewer"), (other, "other")] {
+        sqlx::query(
+            r#"INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name)
+               VALUES ($1, TRUE, FALSE, $2)
+               ON CONFLICT (user_id) DO UPDATE SET
+                   visible = TRUE,
+                   display_name = EXCLUDED.display_name"#,
+        )
+        .bind(u)
+        .bind(format!("HMTEST_{}_{}", test_id, n))
+        .execute(&pool)
+        .await
+        .expect("insert pref");
+    }
+
+    refresh_all_scores_sql(&pool).await;
+    sqlx::query(
+        r#"UPDATE leaderboard_scores ls SET rank_invested = sub.r_inv
+           FROM (
+               SELECT user_id, ROW_NUMBER() OVER (ORDER BY total_invested_cents DESC, computed_at ASC) AS r_inv
+               FROM leaderboard_scores
+           ) sub WHERE ls.user_id = sub.user_id"#,
+    )
+    .execute(&pool)
+    .await
+    .expect("rank refresh");
+
+    let resp = poool_backend::leaderboard::service::get_rankings(
+        &pool,
+        viewer,
+        "invested",
+        "alltime",
+        1,
+        10,
+        None,
+        Some(format!("HMTEST_{}", test_id)),
+        None,
+    )
+    .await
+    .expect("get_rankings");
+
+    cleanup_user(&pool, viewer).await;
+    cleanup_user(&pool, other).await;
+    cleanup_asset(&pool, asset).await;
+
+    assert_eq!(
+        resp.total_participants, 1,
+        "viewer is excluded → total_participants is 1 (other only); got {}",
+        resp.total_participants,
+    );
+    assert_eq!(
+        resp.rankings.len(),
+        1,
+        "listing must have only the other user"
+    );
+    assert_eq!(
+        resp.rankings[0].metric_value, 10_000_000_000,
+        "only `other` (10B) should appear; viewer (99B) is filtered out despite being visible",
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tests for the precomputed weekly / monthly leaderboard tables (added
+// in migration 168 to close the Bereich-1+7 audit gap where weekly /
+// monthly rankings were recomputed live on every request).
+//
+// These mirror the SQL the production `refresh_timeframed_scores`
+// function runs, so the test does not need to link the bin crate's
+// service module — same pattern as `refresh_all_scores_sql` above.
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Replay the SQL that `service::refresh_timeframed_scores(pool, timeframe)`
+/// runs against the given timeframe table. `cutoff` is the SQL expression
+/// the production code interpolates (e.g. `"NOW() - INTERVAL '7 days'"`).
+async fn refresh_timeframed_sql(pool: &PgPool, table: &str, cutoff_sql: &str) {
+    let truncate = format!("TRUNCATE TABLE {table}");
+    sqlx::query(&truncate)
+        .execute(pool)
+        .await
+        .expect("truncate timeframed table");
+
+    let insert = format!(
+        r#"
+        INSERT INTO {table} (
+            user_id, total_invested_cents, asset_count, portfolio_roi_bps,
+            affiliate_count, referral_network_value_cents, highest_investment_cents,
+            computed_at
+        )
+        SELECT
+            u.id,
+            COALESCE(inv_agg.total_invested, 0),
+            COALESCE(inv_agg.unique_assets, 0)::INTEGER,
+            COALESCE(inv_agg.weighted_roi_bps, 0)::INTEGER,
+            0::INTEGER, 0, COALESCE(inv_agg.highest_inv, 0), NOW()
+        FROM users u
+        LEFT JOIN (
+            SELECT
+                i.user_id,
+                SUM(i.purchase_value_cents)::BIGINT          AS total_invested,
+                COUNT(DISTINCT i.asset_id)                   AS unique_assets,
+                MAX(i.purchase_value_cents)                  AS highest_inv,
+                COALESCE(
+                    ROUND(
+                        SUM(i.purchase_value_cents::NUMERIC * COALESCE(a.annual_yield_bps, 0)::NUMERIC)
+                        / NULLIF(SUM(i.purchase_value_cents::NUMERIC), 0)
+                    ),
+                    0
+                )                                            AS weighted_roi_bps
+            FROM investments i
+            JOIN assets a ON a.id = i.asset_id
+            WHERE i.status = 'active'
+              AND i.purchased_at >= {cutoff}
+            GROUP BY i.user_id
+        ) inv_agg ON inv_agg.user_id = u.id
+        WHERE u.status = 'active'
+          AND inv_agg.total_invested > 0
+        "#,
+        table = table,
+        cutoff = cutoff_sql,
+    );
+    sqlx::query(&insert)
+        .execute(pool)
+        .await
+        .expect("insert timeframed");
+
+    // Same rank-update CTE as production.
+    let rank_sql = format!(
+        r#"
+        UPDATE {table} ts SET
+            rank_invested    = sub.r_inv,
+            rank_assets      = sub.r_ast,
+            rank_roi         = sub.r_roi,
+            rank_affiliates  = sub.r_aff,
+            rank_ref_revenue = sub.r_rev,
+            rank_highest_inv = sub.r_hi
+        FROM (
+            SELECT user_id,
+                ROW_NUMBER() OVER (ORDER BY total_invested_cents DESC, computed_at ASC)                                 AS r_inv,
+                ROW_NUMBER() OVER (ORDER BY asset_count DESC, total_invested_cents DESC, computed_at ASC)                AS r_ast,
+                ROW_NUMBER() OVER (ORDER BY portfolio_roi_bps DESC, total_invested_cents DESC, computed_at ASC)          AS r_roi,
+                ROW_NUMBER() OVER (ORDER BY affiliate_count DESC, referral_network_value_cents DESC, computed_at ASC)    AS r_aff,
+                ROW_NUMBER() OVER (ORDER BY referral_network_value_cents DESC, affiliate_count DESC, computed_at ASC)    AS r_rev,
+                ROW_NUMBER() OVER (ORDER BY highest_investment_cents DESC, computed_at ASC)                              AS r_hi
+            FROM {table}
+        ) sub WHERE ts.user_id = sub.user_id
+        "#,
+        table = table,
+    );
+    sqlx::query(&rank_sql)
+        .execute(pool)
+        .await
+        .expect("update ranks");
+}
+
+/// Insert investment with explicit `purchased_at` so timeframe-window tests
+/// can stage rows inside vs. outside the cutoff.
+async fn insert_investment_with_date(
+    pool: &PgPool,
+    user_id: Uuid,
+    asset_id: Uuid,
+    value_cents: i64,
+    purchased_at_sql: &str, // e.g. "NOW() - INTERVAL '3 days'"
+) {
+    let q = format!(
+        "INSERT INTO investments
+            (user_id, asset_id, tokens_owned, purchase_value_cents, current_value_cents, status, purchased_at)
+         VALUES ($1, $2, 100, $3, $3, 'active', {purchased_at})",
+        purchased_at = purchased_at_sql,
+    );
+    sqlx::query(&q)
+        .bind(user_id)
+        .bind(asset_id)
+        .bind(value_cents)
+        .execute(pool)
+        .await
+        .expect("insert investment with date");
+}
+
+#[ignore]
+#[tokio::test]
+async fn weekly_table_populated_by_refresh_sql() {
+    let pool = pool().await;
+    let user = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    insert_user(&pool, user, "active").await;
+    insert_asset(&pool, asset, 500).await;
+    insert_investment_with_date(&pool, user, asset, 50_000, "NOW() - INTERVAL '2 days'").await;
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_weekly",
+        "NOW() - INTERVAL '7 days'",
+    )
+    .await;
+
+    let value: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(user)
+    .fetch_optional(&pool)
+    .await
+    .expect("query weekly");
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    assert_eq!(
+        value,
+        Some(50_000),
+        "weekly table must contain the user's recent investment after refresh"
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn monthly_table_populated_by_refresh_sql() {
+    let pool = pool().await;
+    let user = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    insert_user(&pool, user, "active").await;
+    insert_asset(&pool, asset, 500).await;
+    insert_investment_with_date(&pool, user, asset, 75_000, "NOW() - INTERVAL '15 days'").await;
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_monthly",
+        "NOW() - INTERVAL '30 days'",
+    )
+    .await;
+
+    let value: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_monthly WHERE user_id = $1",
+    )
+    .bind(user)
+    .fetch_optional(&pool)
+    .await
+    .expect("query monthly");
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    assert_eq!(
+        value,
+        Some(75_000),
+        "monthly table must contain a 15-day-old investment"
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn weekly_filters_old_purchases() {
+    // Investment from 30 days ago must NOT contribute to the weekly table.
+    let pool = pool().await;
+    let user = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    insert_user(&pool, user, "active").await;
+    insert_asset(&pool, asset, 500).await;
+    insert_investment_with_date(&pool, user, asset, 99_000, "NOW() - INTERVAL '30 days'").await;
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_weekly",
+        "NOW() - INTERVAL '7 days'",
+    )
+    .await;
+
+    let row: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(user)
+    .fetch_optional(&pool)
+    .await
+    .expect("query weekly");
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    assert!(
+        row.is_none(),
+        "investment outside the 7-day window must not appear in weekly table; got {:?}",
+        row,
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn weekly_ranks_assigned_sequentially() {
+    // Three users with distinct invested amounts → ranks 1, 2, 3.
+    let pool = pool().await;
+    let u1 = Uuid::new_v4();
+    let u2 = Uuid::new_v4();
+    let u3 = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    for u in [u1, u2, u3] {
+        cleanup_user(&pool, u).await;
+    }
+    cleanup_asset(&pool, asset).await;
+
+    insert_user(&pool, u1, "active").await;
+    insert_user(&pool, u2, "active").await;
+    insert_user(&pool, u3, "active").await;
+    insert_asset(&pool, asset, 500).await;
+
+    insert_investment_with_date(&pool, u1, asset, 30_000, "NOW() - INTERVAL '1 day'").await;
+    insert_investment_with_date(&pool, u2, asset, 10_000, "NOW() - INTERVAL '1 day'").await;
+    insert_investment_with_date(&pool, u3, asset, 20_000, "NOW() - INTERVAL '1 day'").await;
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_weekly",
+        "NOW() - INTERVAL '7 days'",
+    )
+    .await;
+
+    let rank_u1: Option<i32> = sqlx::query_scalar(
+        "SELECT rank_invested FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(u1)
+    .fetch_optional(&pool)
+    .await
+    .expect("rank u1")
+    .flatten();
+    let rank_u2: Option<i32> = sqlx::query_scalar(
+        "SELECT rank_invested FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(u2)
+    .fetch_optional(&pool)
+    .await
+    .expect("rank u2")
+    .flatten();
+    let rank_u3: Option<i32> = sqlx::query_scalar(
+        "SELECT rank_invested FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(u3)
+    .fetch_optional(&pool)
+    .await
+    .expect("rank u3")
+    .flatten();
+
+    for u in [u1, u2, u3] {
+        cleanup_user(&pool, u).await;
+    }
+    cleanup_asset(&pool, asset).await;
+
+    // Other production rows may share the weekly table, so absolute ranks
+    // vary by environment. The invariant we care about is relative order:
+    // u1 (€30K) outranks u3 (€20K) outranks u2 (€10K).
+    let r1 = rank_u1.expect("u1 must have a rank");
+    let r3 = rank_u3.expect("u3 must have a rank");
+    let r2 = rank_u2.expect("u2 must have a rank");
+    assert!(
+        r1 < r3,
+        "u1 (€30K, rank {}) must outrank u3 (€20K, rank {})",
+        r1,
+        r3
+    );
+    assert!(
+        r3 < r2,
+        "u3 (€20K, rank {}) must outrank u2 (€10K, rank {})",
+        r3,
+        r2
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn timeframed_table_truncated_on_refresh() {
+    // A row that no longer qualifies (e.g. investment aged out of window)
+    // must be REMOVED by the next refresh, not retained as stale data.
+    let pool = pool().await;
+    let user = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    insert_user(&pool, user, "active").await;
+    insert_asset(&pool, asset, 500).await;
+    insert_investment_with_date(&pool, user, asset, 10_000, "NOW() - INTERVAL '2 days'").await;
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_weekly",
+        "NOW() - INTERVAL '7 days'",
+    )
+    .await;
+
+    // Pre-condition: row exists.
+    let pre: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(user)
+    .fetch_optional(&pool)
+    .await
+    .expect("pre query");
+    assert_eq!(pre, Some(10_000), "pre-condition: weekly row exists");
+
+    // Age the investment out of the window by updating purchased_at.
+    sqlx::query(
+        "UPDATE investments SET purchased_at = NOW() - INTERVAL '30 days' WHERE user_id = $1",
+    )
+    .bind(user)
+    .execute(&pool)
+    .await
+    .expect("age investment");
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_weekly",
+        "NOW() - INTERVAL '7 days'",
+    )
+    .await;
+
+    let post: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(user)
+    .fetch_optional(&pool)
+    .await
+    .expect("post query");
+
+    cleanup_user(&pool, user).await;
+    cleanup_asset(&pool, asset).await;
+
+    assert!(
+        post.is_none(),
+        "TRUNCATE + reinsert pattern must wipe rows that no longer qualify; got {:?}",
+        post,
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn weekly_excludes_inactive_users() {
+    // Even with a fresh investment inside the window, status != 'active'
+    // must keep the user out of the weekly table.
+    let pool = pool().await;
+    let active = Uuid::new_v4();
+    let suspended = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    cleanup_user(&pool, active).await;
+    cleanup_user(&pool, suspended).await;
+    cleanup_asset(&pool, asset).await;
+
+    insert_user(&pool, active, "active").await;
+    insert_user(&pool, suspended, "suspended").await;
+    insert_asset(&pool, asset, 500).await;
+    insert_investment_with_date(&pool, active, asset, 10_000, "NOW() - INTERVAL '1 day'").await;
+    insert_investment_with_date(&pool, suspended, asset, 10_000, "NOW() - INTERVAL '1 day'").await;
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_weekly",
+        "NOW() - INTERVAL '7 days'",
+    )
+    .await;
+
+    let active_row: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(active)
+    .fetch_optional(&pool)
+    .await
+    .expect("active");
+    let suspended_row: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_weekly WHERE user_id = $1",
+    )
+    .bind(suspended)
+    .fetch_optional(&pool)
+    .await
+    .expect("suspended");
+
+    cleanup_user(&pool, active).await;
+    cleanup_user(&pool, suspended).await;
+    cleanup_asset(&pool, asset).await;
+
+    assert_eq!(active_row, Some(10_000));
+    assert!(
+        suspended_row.is_none(),
+        "suspended users must be excluded from the weekly table too"
+    );
+}
+
+#[ignore]
+#[tokio::test]
+async fn monthly_window_30_days_inclusive() {
+    // Investment exactly 29 days old must be IN; 31 days old must be OUT.
+    let pool = pool().await;
+    let inside = Uuid::new_v4();
+    let outside = Uuid::new_v4();
+    let asset = Uuid::new_v4();
+
+    cleanup_user(&pool, inside).await;
+    cleanup_user(&pool, outside).await;
+    cleanup_asset(&pool, asset).await;
+
+    insert_user(&pool, inside, "active").await;
+    insert_user(&pool, outside, "active").await;
+    insert_asset(&pool, asset, 500).await;
+    insert_investment_with_date(&pool, inside, asset, 12_000, "NOW() - INTERVAL '29 days'").await;
+    insert_investment_with_date(&pool, outside, asset, 12_000, "NOW() - INTERVAL '31 days'").await;
+
+    refresh_timeframed_sql(
+        &pool,
+        "leaderboard_scores_monthly",
+        "NOW() - INTERVAL '30 days'",
+    )
+    .await;
+
+    let inside_row: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_monthly WHERE user_id = $1",
+    )
+    .bind(inside)
+    .fetch_optional(&pool)
+    .await
+    .expect("inside");
+    let outside_row: Option<i64> = sqlx::query_scalar(
+        "SELECT total_invested_cents FROM leaderboard_scores_monthly WHERE user_id = $1",
+    )
+    .bind(outside)
+    .fetch_optional(&pool)
+    .await
+    .expect("outside");
+
+    cleanup_user(&pool, inside).await;
+    cleanup_user(&pool, outside).await;
+    cleanup_asset(&pool, asset).await;
+
+    assert_eq!(
+        inside_row,
+        Some(12_000),
+        "29-day-old investment is within the 30-day window"
+    );
+    assert!(
+        outside_row.is_none(),
+        "31-day-old investment must be outside the 30-day window; got {:?}",
+        outside_row,
     );
 }

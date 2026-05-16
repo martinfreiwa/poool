@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.invitation_expires_at,\n                  t.display_name AS team_name,\n                  COALESCE(NULLIF(TRIM(u.email), ''), 'the team owner') AS \"inviter_name!\"\n           FROM developer_team_memberships m\n           JOIN developer_teams t ON t.id = m.team_id\n           LEFT JOIN users u ON u.id = t.developer_user_id\n           WHERE m.invitation_token_hash = $1\n             AND m.status = 'invited'\n           LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "invitation_expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 1,
+        "name": "team_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "inviter_name!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "3bd1dbc83bc976d0fd427fa900f63f4e03359f70d60e9224c1a496dd172f71b1"
+}

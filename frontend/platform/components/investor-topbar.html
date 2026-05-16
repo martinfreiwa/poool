@@ -7,13 +7,13 @@
       {% if investor_topbar_subtitle %}<p class="{{ investor_topbar_subtitle_class | default("lb-topbar-subtitle") }}">{{ investor_topbar_subtitle }}</p>{% endif %}
 
       {% if investor_topbar_variant == 'leaderboard' %}
-      <div class="lb-topbar-tabs">
-        <button class="lb-topbar-tab active" data-metric="invested" onclick="switchMetricTab('invested', this)">Investment</button>
-        <button class="lb-topbar-tab" data-metric="assets" onclick="switchMetricTab('assets', this)">Assets</button>
-        <button class="lb-topbar-tab" data-metric="roi" onclick="switchMetricTab('roi', this)">ROI</button>
-        <button class="lb-topbar-tab" data-metric="affiliates" onclick="switchMetricTab('affiliates', this)">Affiliates</button>
-        <button class="lb-topbar-tab" data-metric="revenue" onclick="switchMetricTab('revenue', this)">Revenue</button>
-        <button class="lb-topbar-tab" data-metric="highest_inv" onclick="switchMetricTab('highest_inv', this)">Highest Inv.</button>
+      <div class="lb-topbar-tabs lb-topbar-tabs--metric" role="tablist" aria-label="Leaderboard metric">
+        <button type="button" role="tab" aria-selected="true"  class="lb-topbar-tab active" data-metric="invested"    onclick="switchMetricTab('invested', this)">Investment</button>
+        <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab"        data-metric="assets"      onclick="switchMetricTab('assets', this)">Assets</button>
+        <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab"        data-metric="roi"         onclick="switchMetricTab('roi', this)">ROI</button>
+        <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab"        data-metric="affiliates"  onclick="switchMetricTab('affiliates', this)">Affiliates</button>
+        <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab"        data-metric="revenue"     onclick="switchMetricTab('revenue', this)">Revenue</button>
+        <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab"        data-metric="highest_inv" onclick="switchMetricTab('highest_inv', this)">Highest Inv.</button>
       </div>
       {% elif investor_topbar_variant == 'rewards' %}
       <div class="lb-topbar-tabs">
@@ -30,10 +30,6 @@
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="switchCommunityTab(this)">My Circle</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-challenges-tab" hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges" onclick="switchCommunityTab(this)">Challenges</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="switchCommunityTab(this)">Expert AMAs</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-leaderboard-tab" data-tab="community-leaderboard-tab" data-client-tab="leaderboard" onclick="switchCommunityTab(this)">Leaderboard</button>
-        <!-- M6-FEAT.4 — searchable member directory. Client-rendered. -->
-        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-members-tab" data-tab="community-members-tab" data-client-tab="members" onclick="switchCommunityTab(this)">Members</button>
-        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-saved-tab" data-tab="community-saved-tab" data-client-tab="saved" onclick="switchCommunityTab(this)">Saved</button>
         <!-- 14.8.20 — direct messages tab. Client-rendered (no HTMX partial). -->
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-dms-tab" data-tab="community-dms-tab" data-client-tab="dms" onclick="switchCommunityTab(this)">Messages</button>
         <!-- Search + Notifications are exposed as right-side topbar utilities; these buttons are
@@ -46,10 +42,10 @@
 
     {% if investor_topbar_variant == 'leaderboard' %}
     <div class="lb-topbar-right">
-      <div class="lb-topbar-tabs" style="gap: 16px;">
-        <button class="lb-topbar-tab lb-tf-btn active" data-timeframe="alltime" onclick="switchTimeframe('alltime', this)">All-Time</button>
-        <button class="lb-topbar-tab lb-tf-btn" data-timeframe="weekly" onclick="switchTimeframe('weekly', this)">This Week</button>
-        <button class="lb-topbar-tab lb-tf-btn" data-timeframe="monthly" onclick="switchTimeframe('monthly', this)">This Month</button>
+      <div class="lb-topbar-tabs lb-topbar-tabs--timeframe" role="tablist" aria-label="Leaderboard timeframe">
+        <button type="button" role="tab" aria-selected="true"  class="lb-topbar-tab lb-tf-btn active" data-timeframe="alltime" onclick="switchTimeframe('alltime', this)">All-Time</button>
+        <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab lb-tf-btn"        data-timeframe="weekly"  onclick="switchTimeframe('weekly', this)">This Week</button>
+        <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab lb-tf-btn"        data-timeframe="monthly" onclick="switchTimeframe('monthly', this)">This Month</button>
       </div>
     </div>
     {% elif investor_topbar_variant == 'wallet' %}
@@ -78,25 +74,8 @@
       </div>
     </div>
     {% elif investor_topbar_variant == 'community' %}
-    <div class="lb-topbar-right">
-      <div class="lb-topbar-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input id="community-topbar-search" type="search" placeholder="Search community..." autocomplete="off" aria-label="Search community" />
-      </div>
-      <button type="button" id="community-notifications-btn"
-              class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm community-notif-trigger"
-              aria-label="Notifications"
-              onclick="activateCommunityTab('notifications')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
-        <span id="community-notifications-badge" class="community-notif-badge" hidden aria-hidden="true">0</span>
-      </button>
-    </div>
+    {# Right-side block intentionally omitted — community topbar matches rewards 1:1 (title + tabs only).
+       Search + Notifications remain reachable via the sr-only tab buttons and deep-link URLs (?tab=search, ?tab=notifications). #}
     {% elif investor_topbar_variant == 'settings' %}
     <div class="lb-topbar-right">
       <div class="settings-topbar__search">
@@ -138,5 +117,22 @@
     {% elif investor_topbar_variant == 'empty-right' %}
     <div class="lb-topbar-right"></div>
     {% endif %}
+
+    <!-- Phase-3 P1: in-app inbox bell. Sits to the right of the variant
+         block so it's always present. JS in inbox-bell.js wires the
+         badge poll + dropdown render. The button is hidden when the user
+         is anonymous (script removes it on a 401 response). -->
+    <div class="inbox-bell" id="inbox-bell">
+      <button type="button" id="inbox-bell-btn" class="inbox-bell__btn"
+              aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span id="inbox-bell-badge" class="inbox-bell__badge" hidden>0</span>
+      </button>
+      <!-- Dropdown injected by inbox-bell.js on first open. -->
+    </div>
   </div>
 </header>

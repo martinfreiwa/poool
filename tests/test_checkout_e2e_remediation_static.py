@@ -76,7 +76,9 @@ def test_cart_replaces_repeat_add_and_shows_terms_errors():
 
     assert "SET tokens_quantity = LEAST($3, $5)" in source
     assert "cart_items.tokens_quantity + $3" not in source
-    assert '"usd_to_idr_rate": crate::config::DEFAULT_USD_TO_IDR_RATE_I64' in source
+    assert "crate::payments::service::get_usd_to_idr_rate_i64().await" in source
+    assert '"usd_to_idr_rate": usd_to_idr_rate' in source
+    assert '"usd_to_idr_rate": crate::config::DEFAULT_USD_TO_IDR_RATE_I64' not in source
     assert 'id="cart-validation-error"' in source
     assert "Please accept the Terms and Conditions" in source
     assert "Please read and acknowledge the Key Facts Statement" in source

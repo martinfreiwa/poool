@@ -1,9 +1,12 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
+use crate::storage::reconciler::{run_reconciliation, SourceTable};
+use crate::storage::retention::{arm_retention_for_user, run_retention_worker};
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Path, Query, State},
     response::IntoResponse,
 };
+use serde::Deserialize;
 
 /// GET /api/admin/storage — GCS storage analytics.
 ///
@@ -217,6 +220,141 @@ pub async fn api_admin_storage(
         })).collect::<Vec<_>>(),
         "recent_uploads": recent,
         "monthly_trend": trend,
+    }))
+    .into_response())
+}
+
+// ─── Reconciler admin endpoint (Phase 3.3) ─────────────────────────
+//
+// POST /api/admin/storage/reconcile?source=kyc|assets
+//
+// Triggers a DB↔GCS drift scan over the requested source table. Writes
+// audit rows into storage_reconcile_runs + storage_reconcile_findings
+// (migration 199) and returns the run summary. Admin-only.
+//
+// Designed to be invoked both interactively (operator clicks Refresh)
+// and by Cloud Scheduler nightly. The scheduler request must carry an
+// admin-token; the route does NOT support an unauth bypass.
+
+/// Query parameters for the storage-reconciliation admin endpoint.
+#[derive(Debug, Deserialize)]
+pub struct ReconcileQuery {
+    /// Which table to scan. Accepts "kyc" or "assets".
+    pub source: String,
+    /// Optional operator note attached to the run row for triage.
+    pub note: Option<String>,
+}
+
+/// POST /admin/api/storage/reconcile?source=kyc|assets — manual trigger
+/// for the storage reconciliation pass. Also invoked nightly by Cloud
+/// Scheduler with an admin token.
+pub async fn api_admin_storage_reconcile(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    Query(q): Query<ReconcileQuery>,
+) -> Result<axum::response::Response, ApiError> {
+    let source = match q.source.as_str() {
+        "kyc" => SourceTable::KycDocuments,
+        "assets" | "asset_documents" => SourceTable::AssetDocuments,
+        other => {
+            return Err(ApiError::BadRequest(format!(
+                "unknown source '{}'; expected 'kyc' or 'assets'",
+                other
+            )));
+        }
+    };
+
+    let default_bucket = state
+        .config
+        .gcs_bucket
+        .as_deref()
+        .ok_or_else(|| ApiError::Internal("GCS_BUCKET not configured".to_string()))?
+        .to_string();
+
+    let summary = run_reconciliation(&state.db, source, &default_bucket, q.note.as_deref())
+        .await
+        .map_err(|e| ApiError::Internal(format!("reconciler failed: {}", e)))?;
+
+    Ok(Json(serde_json::to_value(&summary).unwrap_or_default()).into_response())
+}
+
+// ─── Retention worker admin endpoint (Phase 4.1) ───────────────────
+//
+// POST /api/admin/storage/retention/run?dry_run=true|false
+//
+// Triggers the GwG §8 retention worker. dry_run=true returns the same
+// summary without touching either GCS or the DB — intended for the ops
+// dashboard preview + scheduler canaries. dry_run=false is the actual
+// nightly delete. Admin-only.
+
+/// Query parameters for the retention-worker admin endpoint.
+#[derive(Debug, Deserialize)]
+pub struct RetentionQuery {
+    /// When true (default), no objects/rows are touched — summary only.
+    /// Set to false for a real delete pass.
+    pub dry_run: Option<bool>,
+    /// Optional operator note attached to the run row.
+    pub note: Option<String>,
+}
+
+/// POST /api/admin/storage/retention/run — invoke the KYC retention
+/// worker (GwG §8 deletions). Admin-only. See
+/// `docs/storage/04-compliance-and-retention.md` for the runbook.
+pub async fn api_admin_storage_retention_run(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    Query(q): Query<RetentionQuery>,
+) -> Result<axum::response::Response, ApiError> {
+    let default_bucket = state
+        .config
+        .gcs_bucket
+        .as_deref()
+        .ok_or_else(|| ApiError::Internal("GCS_BUCKET not configured".to_string()))?
+        .to_string();
+
+    let dry_run = q.dry_run.unwrap_or(true);
+
+    let summary = run_retention_worker(&state.db, &default_bucket, dry_run, q.note.as_deref())
+        .await
+        .map_err(|e| ApiError::Internal(format!("retention worker failed: {}", e)))?;
+
+    Ok(Json(serde_json::to_value(&summary).unwrap_or_default()).into_response())
+}
+
+// ─── DSGVO trigger: arm retention on a single user (Phase 4.4) ─────
+
+/// POST /api/admin/storage/retention/arm/:user_id?years=5
+///
+/// Admin endpoint that arms the retention clock for a user. Called by
+/// the DSGVO user-delete flow + the admin off-boarding flow. Idempotent
+/// — repeated calls don't move the trigger date.
+
+#[derive(Debug, Deserialize)]
+/// Query parameters for the DSGVO retention-arming admin endpoint.
+pub struct ArmRetentionQuery {
+    /// Retention window in years (default 5; max 10 per GwG §8).
+    pub years: Option<i32>,
+}
+
+/// POST /api/admin/storage/retention/arm/:user_id — set the retention
+/// clock for the given user's KYC docs. Idempotent.
+pub async fn api_admin_storage_retention_arm(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<String>,
+    Query(q): Query<ArmRetentionQuery>,
+) -> Result<axum::response::Response, ApiError> {
+    let uid = ApiError::parse_uuid(&user_id)?;
+    let years = q.years.unwrap_or(5).clamp(5, 10);
+
+    let n = arm_retention_for_user(&state.db, uid, years)
+        .await
+        .map_err(|e| ApiError::Internal(format!("arm_retention failed: {}", e)))?;
+
+    Ok(Json(serde_json::json!({
+        "user_id": uid,
+        "retention_years": years,
+        "kyc_docs_armed": n,
     }))
     .into_response())
 }

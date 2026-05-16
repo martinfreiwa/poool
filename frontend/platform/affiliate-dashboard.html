@@ -205,6 +205,65 @@
               </ul>
             </div>
 
+            <!-- Phase-5: Coupon codes (Phase-4 feature, UI here) -->
+            <div class="ds-card table-card" style="margin-bottom: 24px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;">
+                <h3 style="margin:0;">Coupon codes</h3>
+                <button type="button" id="aff-coupon-new-btn" class="ds-btn ds-btn--primary ds-btn--sm">
+                  + New coupon
+                </button>
+              </div>
+              <p style="margin:0 0 12px;font-size:13px;color:#667085;">
+                Codes a customer enters at checkout to attribute the purchase to your affiliate link. Use them when you can't share a tracking URL (e.g. on TV, podcast, print).
+              </p>
+
+              <form id="aff-coupon-form" hidden style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:16px;margin-bottom:16px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <label>
+                    <span style="font-size:12px;color:#475467;font-weight:600;">Coupon code *</span>
+                    <input type="text" id="aff-coupon-code" required minlength="3" maxlength="40"
+                           pattern="^[A-Za-z0-9_\-]+$"
+                           class="ds-input" placeholder="INFLUENCER10" style="font-family:ui-monospace,monospace;text-transform:uppercase;"/>
+                  </label>
+                  <label>
+                    <span style="font-size:12px;color:#475467;font-weight:600;">Discount (bps, optional)</span>
+                    <input type="number" id="aff-coupon-discount" min="0" max="10000" step="50"
+                           class="ds-input" placeholder="500 = 5%"/>
+                  </label>
+                  <label>
+                    <span style="font-size:12px;color:#475467;font-weight:600;">Max uses (optional)</span>
+                    <input type="number" id="aff-coupon-max-uses" min="1" class="ds-input" placeholder="Unlimited"/>
+                  </label>
+                  <label>
+                    <span style="font-size:12px;color:#475467;font-weight:600;">Valid until (optional)</span>
+                    <input type="date" id="aff-coupon-valid-to" class="ds-input"/>
+                  </label>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                  <button type="submit" class="ds-btn ds-btn--primary ds-btn--sm">Create</button>
+                  <button type="button" id="aff-coupon-cancel" class="ds-btn ds-btn--secondary ds-btn--sm">Cancel</button>
+                  <span id="aff-coupon-error" style="color:#B42318;font-size:12px;align-self:center;"></span>
+                </div>
+              </form>
+
+              <div style="overflow-x: auto;">
+                <table class="ds-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--admin-border);">
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Code</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Discount</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Uses</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Valid until</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="aff-coupon-list-body">
+                    <tr><td colspan="5" style="padding:18px;text-align:center;color:#98A2B3;">No coupons yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <!-- SubID Tracking Report -->
             <div class="ds-card table-card">
               <h3>SubID Tracking Report</h3>
@@ -215,8 +274,8 @@
                       <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">SubID</th>
                       <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Clicks</th>
                       <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Registrations</th>
-                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Earned (USD)</th>
-                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Pending (USD)</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Earned (EUR)</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Pending (EUR)</th>
                     </tr>
                   </thead>
                   <tbody id="subid-stats-body">

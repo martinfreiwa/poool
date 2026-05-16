@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, method_type, identifier_encrypted, identifier_plain\n             FROM affiliate_payout_methods\n            WHERE affiliate_id = $1 AND is_default = TRUE AND is_active = TRUE\n            LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "method_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "identifier_encrypted",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "identifier_plain",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "24ba82258b2de0b702ae5aaa3c7028d03164ee96da131e2592acf6f4154c87d8"
+}

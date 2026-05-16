@@ -8,7 +8,10 @@
 
   function fmtCents(c) {
     if (c == null || isNaN(c)) return '—';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(c / 100);
+    // Phase-2 P0: match the platform-wide formatter on the developer/team
+    // dashboard (`developer-affiliate-team-shell.js#DAT.fmtCents`). Was
+    // en-US/USD which contradicted the rest of the affiliate UI.
+    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(c / 100);
   }
   function fmtDate(s) {
     if (!s) return '—';

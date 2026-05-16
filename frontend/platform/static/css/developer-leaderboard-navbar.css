@@ -176,6 +176,7 @@ body#developer-asset-detail-body .developer-lb-topbar .btn-cancel-edit:hover {
 #developer-dashboard-main,
 #developer-assets-main,
 #developer-submissions-main,
+#developer-affiliate-team-main,
 .developer-support-main,
 .developer-lb-shell-main {
   padding: 0 !important;
@@ -183,9 +184,25 @@ body#developer-asset-detail-body .developer-lb-topbar .btn-cancel-edit:hover {
   background: var(--content-bg, #fafafa);
 }
 
-body#developer-dashboard-body #developer-dashboard-main {
+body#developer-dashboard-body #developer-dashboard-main,
+body#developer-affiliate-team-body #developer-affiliate-team-main {
   width: calc(100% - var(--sidebar-width, 256px)) !important;
   margin-left: var(--sidebar-width, 256px) !important;
+}
+
+/* Mobile: hide desktop sidebar container (mobile-menu component takes over),
+   and let main take full width without sidebar offset. */
+@media (max-width: 768px) {
+  body#developer-affiliate-team-body .developer-dashboard-sidebar {
+    display: none !important;
+  }
+  body#developer-affiliate-team-body #developer-affiliate-team-main {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+  body#developer-affiliate-team-body .developer-dashboard-page {
+    display: block !important;
+  }
 }
 
 body#developer-submissions-body #developer-submissions-main,
@@ -194,7 +211,8 @@ body#developer-asset-detail-body .developer-lb-shell-main {
   margin-left: var(--sidebar-width, 256px) !important;
 }
 
-body#developer-dashboard-body #developer-dashboard-main .developer-lb-topbar .lb-topbar-inner {
+body#developer-dashboard-body #developer-dashboard-main .developer-lb-topbar .lb-topbar-inner,
+body#developer-affiliate-team-body #developer-affiliate-team-main .developer-lb-topbar .lb-topbar-inner {
   width: 100%;
   max-width: var(--page-max-width, 1200px) !important;
   padding: 0 var(--page-padding-x, 32px);
@@ -212,11 +230,13 @@ body#developer-asset-detail-body .developer-lb-shell-main .developer-lb-topbar .
 }
 
 #developer-dashboard-main .ds-main__content,
-#developer-dashboard-main #dashboard-content-wrapper {
+#developer-dashboard-main #dashboard-content-wrapper,
+#developer-affiliate-team-main .ds-main__content {
   width: 100%;
 }
 
-#developer-dashboard-main .ds-main__content {
+#developer-dashboard-main .ds-main__content,
+#developer-affiliate-team-main .ds-main__content {
   max-width: var(--page-max-width, 1200px) !important;
   padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
   margin: 0 !important;

@@ -351,7 +351,10 @@ mod tests {
     #[ignore = "requires CHAIN_KMS_KEY env + GCP auth"]
     async fn kms_signer_round_trip_against_real_key() {
         let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
-        let key = std::env::var("CHAIN_KMS_KEY").expect("CHAIN_KMS_KEY not set");
+        let Ok(key) = std::env::var("CHAIN_KMS_KEY") else {
+            eprintln!("[skip] CHAIN_KMS_KEY not set");
+            return;
+        };
         let signer = KmsSigner::new(key).await.expect("KmsSigner::new failed");
         let hash = keccak256(b"poool kms round trip test");
         let signed = signer.sign_prehash(&hash).await.expect("sign failed");
@@ -373,7 +376,10 @@ mod tests {
     #[ignore = "requires CHAIN_KMS_KEY env + GCP auth"]
     async fn kms_signed_legacy_tx_recovers_to_kms_address() {
         let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
-        let key = std::env::var("CHAIN_KMS_KEY").expect("CHAIN_KMS_KEY not set");
+        let Ok(key) = std::env::var("CHAIN_KMS_KEY") else {
+            eprintln!("[skip] CHAIN_KMS_KEY not set");
+            return;
+        };
         let signer = KmsSigner::new(key).await.expect("KmsSigner::new failed");
 
         let signed_hex = super::super::signing::sign_legacy_transaction_with(
@@ -481,7 +487,10 @@ mod tests {
         use reqwest::Client;
         let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
 
-        let key = std::env::var("CHAIN_KMS_KEY").expect("CHAIN_KMS_KEY not set");
+        let Ok(key) = std::env::var("CHAIN_KMS_KEY") else {
+            eprintln!("[skip] CHAIN_KMS_KEY not set");
+            return;
+        };
         let signer = KmsSigner::new(key).await.expect("KmsSigner::new failed");
         let settler = super::super::signing::format_address(&signer.address());
         println!("Settler: {}", settler);
@@ -624,7 +633,10 @@ mod stress_tests {
     #[ignore = "requires CHAIN_KMS_KEY env + GCP auth, makes 10 KMS calls"]
     async fn kms_signer_hammer() {
         let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
-        let key = std::env::var("CHAIN_KMS_KEY").expect("CHAIN_KMS_KEY not set");
+        let Ok(key) = std::env::var("CHAIN_KMS_KEY") else {
+            eprintln!("[skip] CHAIN_KMS_KEY not set");
+            return;
+        };
         let signer = KmsSigner::new(key).await.unwrap();
         for i in 0..10 {
             let hash = keccak256(format!("kms hammer {}", i).as_bytes());

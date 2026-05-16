@@ -34,6 +34,21 @@
 .dat-section__intro {
   margin-bottom: 16px;
 }
+.dat-section__intro--with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.dat-section__intro-text {
+  flex: 1;
+  min-width: 0;
+}
+.dat-section__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .dat-section__title {
   margin: 0 0 4px;
   font-size: 16px;
@@ -54,12 +69,23 @@
 .dat-filter-label {
   font-size: 13px;
   color: var(--text-secondary, #717680);
+  /* Flex parent (.dat-section__controls / .dat-section__actions) handles
+     vertical-centering; an explicit line-height pulled the text baseline
+     up relative to the select sibling. */
+  line-height: 1;
+  /* Reset the global `label { margin-bottom: 6px }` so the label box
+     centers cleanly inside the 32px row instead of being lifted by
+     bottom margin. */
+  margin: 0;
 }
 .dat-select {
-  padding: 6px 10px;
+  /* Match ds-btn--sm height (32px) so filter + Export CSV align in one row. */
+  height: 32px;
+  padding: 0 28px 0 10px; /* right padding for native dropdown arrow */
   border: 1px solid var(--border-subtle, #E9EAEB);
   border-radius: 6px;
   font-size: 13px;
+  line-height: 30px;
   background: var(--bg-default, #fff);
   color: var(--text-primary, #181D27);
 }
@@ -95,8 +121,26 @@
 .dat-table tbody tr:last-child td {
   border-bottom: 0;
 }
-.dat-table tbody tr:hover {
-  background: var(--bg-subtle, #FAFAFA);
+/* Zebra rows on opt-in tables only — keeps default tables flat. */
+.dat-table--hoverable tbody tr:nth-child(even) td {
+  background: var(--bg-subtle, #FAFBFC);
+}
+.dat-table--hoverable tbody tr:hover td {
+  background: #EEF1FF;
+  cursor: default;
+}
+/* Sort indicator on column header */
+.dat-table__sorted {
+  color: var(--page-title-color, #181D27) !important;
+  position: relative;
+}
+.dat-sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--btn-primary-bg, #0000FF);
+  font-size: 11px;
+  font-weight: 700;
+  transform: translateY(-1px);
 }
 .dat-empty {
   text-align: center;
@@ -288,5 +332,2091 @@
   .dat-table td {
     padding: 8px 10px;
     font-size: 12px;
+  }
+}
+
+/* ── Analytics tiles + filter controls ────────────────────────── */
+.dat-analytics-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.dat-analytics-tile {
+  background: var(--bg-default, #fff);
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.dat-analytics-tile__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #717680);
+  display: block;
+  margin-bottom: 6px;
+}
+.dat-analytics-tile__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #181D27);
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Compact range-label + date-input matching ds-input visual */
+.dat-range-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #717680);
+  font-weight: 600;
+}
+.dat-date-input {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--input-border-color, #D5D7DA);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--card-bg, #fff);
+  color: var(--body-color, #344054);
+  font-family: inherit;
+  line-height: 1;
+  min-width: 130px;
+}
+.dat-date-input:focus {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: -1px;
+  border-color: var(--btn-primary-bg, #0000FF);
+}
+.dat-table__num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 768px) {
+  .dat-section__intro--with-actions {
+    flex-direction: column;
+  }
+  .dat-section__actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ANALYTICS DASHBOARD — compact tiles, charts grid, insights
+   ─────────────────────────────────────────────────────────────────── */
+
+/* Per DESIGN.md §8 (Layout & Spacing): vertical section spacing uses
+   `--section-gap` (24px). Apply to the analytics page root so every
+   top-level section (toolbar, KPI grid, charts grid, insights grid,
+   tables) has consistent breathing room — and gridded sections keep
+   their own denser internal gap. */
+#dat-analytics-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-gap, 24px);
+}
+#dat-analytics-root > #dat-team-meta-mount { display: none; }
+
+/* ── Toolbar — compact, design-system aligned ──────────────────
+   Single dense row. Heights = ds-btn--sm (32px) for visual harmony.
+   DESIGN.md compliance: no card-in-card (preset group has NO border),
+   no Apply button (auto-apply on date-input change), placeholders
+   replace "From"/"To" labels for visual density. */
+.dat-toolbar-card { padding: 10px 14px; }
+.dat-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-height: 32px;
+}
+.dat-toolbar__presets {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-subtle, #F4F4F5);
+  /* Card-in-card avoided: no outer border. The pill-bar reads as a
+     tonal control within the parent ds-card. */
+  border-radius: 8px;
+  height: 32px;
+  box-sizing: border-box;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.dat-toolbar__presets::-webkit-scrollbar { display: none; }
+.dat-preset {
+  background: transparent;
+  border: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #717680);
+  padding: 0 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  /* FI1 fix: 24px → 32px so the touch target meets WCAG 2.5.5 AAA (24×24
+     was already AA pass but borderline). At 32px tall the date-range
+     presets are comfortably tappable on mobile. */
+  height: 32px;
+  line-height: 1;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dat-preset:hover { color: var(--body-color, #344054); }
+.dat-preset--active {
+  background: var(--card-bg, #fff);
+  color: var(--page-title-color, #181D27);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.dat-preset--custom[hidden] { display: none; }
+.dat-preset--custom {
+  /* Subtle "you're in custom range" indicator — surfaces only when active. */
+  background: var(--card-bg, #fff);
+  color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.dat-toolbar__range {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 32px;
+}
+.dat-range-sep {
+  color: var(--text-secondary, #717680);
+  font-size: 13px;
+  user-select: none;
+  line-height: 1;
+}
+.dat-toolbar__exports {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+  height: 32px;
+}
+
+/* ── Mobile responsive (DESIGN.md §13) ────────────────────────── */
+@media (max-width: 900px) {
+  .dat-toolbar { gap: 8px; }
+  .dat-toolbar__exports { margin-left: auto; }
+}
+@media (max-width: 640px) {
+  /* Stack: presets row, then range + exports inline. */
+  .dat-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .dat-toolbar__presets {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .dat-toolbar__range {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .dat-date-input {
+    flex: 1;
+    min-width: 0;
+  }
+  .dat-toolbar__exports {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+  /* Icon-only export buttons on mobile (hide labels). */
+  .dat-toolbar__exports .dat-btn-label {
+    display: none;
+  }
+  .dat-toolbar__exports .ds-btn {
+    padding: 0;
+    width: 32px;
+  }
+}
+
+/* ── Hero KPI row — 2 primary metrics (Revenue / Commission).
+   Next-payout tile was moved to the Settings → Payouts & Banking card. */
+.dat-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+/* Uniform hero cards — Revenue / Commission / Next Payout all share the same
+   chrome (white bg, neutral border, single muted left-strip, identical
+   typography). Per-tone color tinting + the accent gradient were removed to
+   reduce the palette to one accent (brand blue) reserved for active states.
+   All 3 cards reserve the same min-height so the optional CTA on Next Payout
+   doesn't make that tile grow taller than the other two. */
+.dat-hero-kpi {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+  min-height: 132px;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10,13,18,0.05));
+}
+.dat-hero-kpi::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--card-border-color, #E5E7EB);
+}
+.dat-hero-kpi__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.dat-hero-kpi__label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #535862;  /* AAA contrast on white */
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dat-hero-kpi__icon { color: #717680; flex-shrink: 0; }
+.dat-hero-kpi__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+.dat-hero-kpi__sub {
+  font-size: 12px;
+  color: #535862;
+  min-height: 16px;
+}
+.dat-hero-kpi__cta {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--btn-primary-bg, #0000FF);
+  text-decoration: none;
+  align-self: flex-start;
+}
+.dat-hero-kpi__cta:hover { text-decoration: underline; }
+.dat-hero-kpi__cta[hidden] { display: none; }
+
+/* Delta pill (↑ +12% / ↓ -8% / · flat) */
+.dat-delta {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.dat-delta--up   { background: #ECFDF3; color: #027A48; }
+.dat-delta--down { background: #FEF3F2; color: #B42318; }
+.dat-delta--flat { background: #F4F4F5; color: #717680; }
+
+/* Compact KPI grid — secondary metrics, denser than hero */
+.dat-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+.dat-kpi__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.dat-kpi__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.dat-kpi__icon { color: #717680; flex-shrink: 0; }
+.dat-kpi[data-tone="success"] .dat-kpi__icon { color: #137333; }
+.dat-kpi[data-tone="warning"] .dat-kpi__icon { color: #B54708; }
+.dat-kpi[data-tone="info"]    .dat-kpi__icon { color: #2B45B5; }
+/* Reserve sub min-height so empty subs don't jitter row heights */
+.dat-kpi__sub { min-height: 16px; }
+
+@media (max-width: 900px) {
+  .dat-hero-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .dat-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .dat-kpi--wide { grid-column: span 2; }
+}
+@media (max-width: 380px) {
+  .dat-kpi-grid { grid-template-columns: 1fr; }
+  .dat-kpi--wide { grid-column: span 1; }
+}
+
+/* Last-updated indicator row */
+.dat-meta-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 -8px;
+}
+.dat-last-updated {
+  font-size: 11px;
+  color: #717680;
+  font-style: italic;
+}
+
+/* Loading skeleton — animated gray block replacing placeholder text */
+.dat-skeleton {
+  display: inline-block;
+  height: 18px;
+  width: 60px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #F1F2F4 0%, #E9EAEB 50%, #F1F2F4 100%);
+  background-size: 200% 100%;
+  animation: dat-skeleton-pulse 1.4s ease-in-out infinite;
+  vertical-align: middle;
+}
+.dat-skeleton--lg { height: 24px; width: 84px; }
+@keyframes dat-skeleton-pulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dat-skeleton { animation: none; opacity: 0.5; }
+}
+.dat-kpi {
+  background: var(--bg-default, #fff);
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.dat-kpi::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--bg-subtle, #E9EAEB);
+}
+.dat-kpi[data-tone="success"]::before { background: #137333; }
+.dat-kpi[data-tone="warning"]::before { background: #C66D18; }
+.dat-kpi[data-tone="info"]::before    { background: #2B45B5; }
+.dat-kpi[data-tone="accent"]::before  { background: var(--accent-primary, #0000FF); }
+.dat-kpi--wide { grid-column: span 2; }
+.dat-kpi__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #717680);
+}
+.dat-kpi__value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.dat-kpi__sub {
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+  margin-top: 2px;
+}
+
+/* Hero trend chart: full width single row. Satellites below in 3-col. */
+.dat-chart-card--hero { margin-bottom: 0; }
+.dat-chart-body--hero {
+  min-height: 280px;
+}
+.dat-charts-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+/* Collapse 3→2 only when truly cramped (≤980px). At 1100-1200 we still
+   want 3 columns visible — the sidebar offset already eats ~256px so
+   the effective viewport for the grid is narrower than its absolute width. */
+@media (max-width: 980px) {
+  .dat-charts-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .dat-charts-row { grid-template-columns: 1fr; }
+}
+
+/* Header right-side controls (toggle + legend) */
+.dat-chart-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Resolution toggle (Day / Week / Month) */
+.dat-res-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-subtle, #F4F4F5);
+  border-radius: 7px;
+}
+.dat-res-btn {
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary, #717680);
+  padding: 0 12px;
+  /* FI1 fix: 22px → 32px so the Day/Week/Month resolution toggle is
+     comfortably tappable on mobile. Old 22px failed WCAG 2.5.5 AAA. */
+  height: 32px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.dat-res-btn:hover { color: var(--page-title-color, #181D27); }
+.dat-res-btn--active {
+  background: #fff;
+  color: var(--page-title-color, #181D27);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+/* Keyboard focus-visible — accessible outline on tab navigation. */
+.dat-res-btn:focus-visible,
+.dat-preset:focus-visible,
+.dat-hero-kpi__cta:focus-visible,
+.dat-chart-empty__cta:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.dat-hero-kpi__link:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+
+/* Hero tile as clickable drill-down link — keep visual identical,
+   add subtle hover lift + invisible-when-unhovered cursor hint. */
+.dat-hero-kpi__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 12px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.dat-hero-kpi__link:hover {
+  transform: translateY(-1px);
+}
+.dat-hero-kpi__link:hover .dat-hero-kpi {
+  box-shadow: 0 4px 12px rgba(10,13,18,0.08);
+  border-color: #D0D5DD;
+}
+/* Drill-down hint chevron in the head — appears on hover only. */
+.dat-hero-kpi__chevron {
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  color: var(--text-secondary, #717680);
+}
+.dat-hero-kpi__link:hover .dat-hero-kpi__chevron,
+.dat-hero-kpi__link:focus-visible .dat-hero-kpi__chevron {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* Reserve invisible delta-slot so layout doesn't shift when delta lands. */
+.dat-delta:empty {
+  display: inline-block;
+  min-width: 60px;
+  height: 18px;
+}
+
+/* Hover-hint over trend chart (shows until first hover, then hidden). */
+.dat-chart-hover-hint {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 10px;
+  color: var(--text-secondary, #717680);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+.dat-chart-card { position: relative; }
+.dat-chart-card.dat-chart-card--touched .dat-chart-hover-hint {
+  opacity: 0;
+}
+
+/* Empty-state on hero chart with explicit title + msg */
+.dat-chart-empty--hero {
+  height: 280px;
+}
+.dat-chart-empty__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  font-style: normal;
+}
+.dat-chart-empty__msg {
+  font-size: 13px;
+  margin: 0;
+  font-style: normal;
+  max-width: 360px;
+  color: var(--text-secondary, #535862);
+}
+.dat-chart-empty__cta {
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--btn-primary-bg, #0000FF);
+  text-decoration: none;
+}
+.dat-chart-empty__cta:hover { text-decoration: underline; }
+
+/* Trend SVG: prevent text selection on hover overlay */
+.dat-trend-svg { user-select: none; -webkit-user-select: none; }
+.dat-chart-card { padding: 16px 18px; }
+.dat-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dat-chart-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+}
+.dat-chart-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+.dat-chart-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+}
+.dat-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.dat-legend-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: #717680;
+}
+.dat-legend-dot--commission { background: #0000FF; }
+.dat-legend-dot--revenue    { background: #C7D1FF; }
+.dat-chart-body {
+  min-height: 220px;
+}
+/* Empty state with subtle POOOL watermark logo.
+   Allowed per DESIGN.md §8 ("light brand expression") and §15
+   ("optional very subtle brand watermark or radial accent only for
+   empty/onboarding states"). */
+.dat-chart-empty {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 220px;
+  color: var(--text-secondary, #717680);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+  font-style: normal;
+}
+.dat-chart-empty::before {
+  content: '';
+  display: block;
+  width: 96px;
+  height: 28px;
+  background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
+  opacity: 1;
+}
+/* Also apply the watermark to empty rank lists (top-performers /
+   members-at-risk) and to the inline "no rows" table cells. */
+.dat-rank-list:has(> .dat-empty:only-child) {
+  position: relative;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dat-rank-list .dat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary, #717680);
+  font-style: normal;
+  padding: 20px 12px;
+}
+.dat-rank-list .dat-empty::before {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 22px;
+  background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
+  opacity: 1;
+}
+/* Table empty cell: no orphaned logo (looks misplaced in a row). Just
+   tighter padding + max-width on the message for readability. */
+.dat-table tbody tr td.dat-empty {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--text-secondary, #717680);
+  font-style: italic;
+  line-height: 1.5;
+  max-width: 100%;
+}
+
+/* Funnel chart (3 horizontal bars) */
+.dat-funnel { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
+.dat-funnel__row {
+  display: grid;
+  grid-template-columns: 80px 1fr 80px;
+  align-items: center;
+  gap: 12px;
+}
+.dat-funnel__label {
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+  font-weight: 500;
+}
+.dat-funnel__bar-wrap {
+  background: var(--bg-subtle, #F4F4F5);
+  border-radius: 6px;
+  height: 22px;
+  overflow: hidden;
+}
+.dat-funnel__bar {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+.dat-funnel__value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Horizontal bar chart (members / assets) */
+.dat-hbars { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+.dat-hbar__row {
+  display: grid;
+  grid-template-columns: 140px 1fr 90px;
+  align-items: center;
+  gap: 10px;
+}
+.dat-hbar__label {
+  font-size: 12px;
+  color: var(--text-primary, #181D27);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dat-hbar__wrap {
+  background: var(--bg-subtle, #F4F4F5);
+  border-radius: 4px;
+  height: 14px;
+  overflow: hidden;
+}
+.dat-hbar__fill {
+  display: block;
+  height: 100%;
+  background: #0000FF;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.dat-hbar__value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Insights grid (top performers + at-risk) */
+.dat-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .dat-insights-grid { grid-template-columns: 1fr; }
+}
+.dat-rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dat-rank__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--bg-subtle, #FAFAFA);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.dat-rank__item--warning {
+  background: #FFF7E6;
+  border-left: 3px solid #C66D18;
+}
+.dat-rank__name {
+  font-weight: 500;
+  color: var(--text-primary, #181D27);
+}
+.dat-rank__value {
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Print stylesheet — clean PDF output */
+@media print {
+  .developer-dashboard-sidebar,
+  .lb-topbar,
+  .dat-toolbar-card,
+  .dat-modal,
+  #affiliate-team-banner,
+  .featured-card,
+  .chat-to-support,
+  .sidebar__featured-card,
+  .ds-btn,
+  .dat-section__actions {
+    display: none !important;
+  }
+  body { background: #fff !important; }
+  .developer-dashboard-page { display: block !important; }
+  #developer-affiliate-team-main {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .ds-main__content {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .ds-card {
+    box-shadow: none !important;
+    border: 1px solid #E9EAEB !important;
+    page-break-inside: avoid;
+    margin-bottom: 12px;
+  }
+  .dat-charts-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Sub-page polish: table semantics, skeleton rows, empty-state CTAs,
+   confirm-dialog, slug-preview, save-button spinner.
+   Added by the post-launch a11y/UX audit pass.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* sr-only utility (used by hidden table captions). Lifted from the
+   commonly-used WCAG snippet so we don't depend on the global stylesheet
+   exposing one — keeps this module self-contained. */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Right-align numeric cells/headers for readability. Combine with
+   tabular-nums so digits stay vertically aligned. */
+.dat-table .dat-th--num,
+.dat-table .dat-td--num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.dat-table .dat-th--actions {
+  text-align: right;
+}
+.dat-table .dat-actions {
+  justify-content: flex-end;
+}
+
+/* First-column emphasis: the customer name / member name / asset name
+   reads as the row's identifier so it gets a touch more weight than the
+   other cells without escalating to <th scope="row"> (which would
+   complicate left-aligned headers). */
+.dat-cell-strong {
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+}
+.dat-muted {
+  color: var(--text-secondary, #717680);
+  font-style: italic;
+}
+
+/* Skeleton rows: each <td> holds a single shimmering bar so the table
+   reserves vertical space + columns during fetch. Avoids the layout-shift
+   from "Loading…" → real rows. */
+.dat-row--skeleton td {
+  padding-block: 14px;
+}
+.dat-skeleton--cell {
+  display: block;
+  height: 12px;
+  width: 80%;
+  border-radius: 4px;
+}
+
+/* Empty-state with an inline CTA (title + descriptive message). Used by
+   the per-page tables when the API returns zero rows. */
+.dat-empty--cta {
+  padding: 36px 16px;
+  font-style: normal;
+}
+.dat-empty--cta .dat-empty__title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+  margin-bottom: 4px;
+}
+.dat-empty--cta .dat-empty__msg {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+  max-width: 540px;
+  margin-inline: auto;
+  line-height: 1.5;
+}
+.dat-empty--error {
+  color: #B42318;
+  font-style: normal;
+}
+
+/* Confirm dialog (used to replace native confirm() on destructive
+   actions). Backdrop dims, dialog centers, focus is trapped. */
+.dat-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: dat-confirm-fade 0.12s ease-out;
+}
+@keyframes dat-confirm-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dat-confirm-dialog {
+  background: var(--card-bg, #fff);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 440px;
+  width: calc(100% - 32px);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.24);
+  animation: dat-confirm-pop 0.14s ease-out;
+}
+@keyframes dat-confirm-pop {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.dat-confirm-dialog__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+}
+.dat-confirm-dialog__msg {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--text-secondary, #535862);
+  line-height: 1.5;
+}
+.dat-confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Settings page: live slug preview + invalid state. */
+.dat-form-row__preview {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+.dat-slug-preview-code {
+  background: var(--bg-subtle, #F4F4F5);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+  color: var(--text-primary, #181D27);
+}
+.dat-slug-preview-code--invalid {
+  background: #FDE7E7;
+  color: #B42318;
+}
+.dat-form-row__hint--error {
+  color: #B42318;
+}
+
+/* Save-button spinner + status pill (settings page). */
+.dat-settings-status {
+  font-size: 13px;
+  align-self: center;
+  margin-right: 8px;
+  color: #137333;
+}
+.dat-settings-status[data-kind="error"]   { color: #B42318; }
+.dat-settings-status[data-kind="info"]    { color: var(--text-secondary, #717680); }
+.dat-settings-status[data-kind="success"] { color: #137333; }
+
+.ds-btn--loading {
+  cursor: progress;
+  opacity: 0.85;
+}
+.dat-btn__spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: -2px;
+  animation: dat-btn-spin 0.7s linear infinite;
+}
+@keyframes dat-btn-spin {
+  to { transform: rotate(360deg); }
+}
+.dat-btn__spinner[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .dat-btn__spinner,
+  .dat-confirm-backdrop,
+  .dat-confirm-dialog { animation: none !important; }
+}
+
+/* Section intro that hosts both filter + export side-by-side on the
+   right. Keeps consistent with members-page actions slot. */
+.dat-section__intro--with-actions .dat-section__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dat-section__actions .dat-section__controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0; /* reset the 12px margin used when controls live below the intro */
+}
+@media (max-width: 640px) {
+  .dat-section__intro--with-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dat-section__intro--with-actions .dat-section__actions {
+    justify-content: flex-start;
+  }
+}
+
+/* Focus-visible polish on the new export/invite buttons so keyboard
+   users get a clear ring without affecting mouse users. */
+#dat-members-export:focus-visible,
+#dat-customers-export:focus-visible,
+#dat-products-export:focus-visible,
+#dat-invite-btn:focus-visible,
+#dat-settings-save:focus-visible,
+#dat-settings-cancel:focus-visible,
+#dat-public-copy:focus-visible,
+#dat-public-open:focus-visible {
+  outline: 2px solid var(--brand-blue, #0000FF);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Settings page redesign — 3-card layout (Identity / Public Join Page /
+   Overview) with a sticky action footer below.
+   ───────────────────────────────────────────────────────────────────── */
+
+.dat-settings-page {
+  /* Stack the cards with consistent vertical rhythm + leave room for
+     the sticky action footer at the bottom (max-height worst-case 88px). */
+  padding-bottom: 96px;
+}
+.dat-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Each card: header (title + pill) on top, content below. */
+.dat-settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+@media (min-width: 768px) {
+  .dat-settings-card { padding: 24px; }
+}
+.dat-settings-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.dat-settings-card__header > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.dat-settings-card__header .dat-section__title { margin-bottom: 2px; }
+.dat-settings-card__header .dat-section__hint  { margin: 0; max-width: 640px; }
+
+/* Identity form: 2 columns on wide screens, 1 on mobile. */
+.dat-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+@media (max-width: 720px) {
+  .dat-settings-grid { grid-template-columns: 1fr; }
+}
+
+/* Form rows in the redesigned settings page lean on ds-input rather
+   than the old bare <input>. Reset label margin so spacing is owned by
+   the row's flex/grid layout. */
+.dat-settings-form .dat-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+.dat-settings-form .dat-form-row__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.dat-form-row__required {
+  color: #B42318;
+  font-weight: 700;
+}
+.dat-form-row__optional {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary, #717680);
+}
+.dat-settings-form .ds-input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--bg-default, #fff);
+  color: var(--text-primary, #181D27);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.dat-settings-form .ds-input:focus-visible {
+  outline: none;
+  border-color: var(--brand-blue, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.12);
+}
+.dat-settings-form .ds-input[aria-invalid="true"] {
+  border-color: #B42318;
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.10);
+}
+
+/* Status pill --muted variant for "Not published". */
+.dat-status--muted {
+  background: #F1F2F4;
+  color: #535862;
+}
+
+/* ── Public Join Page card ─────────────────────────────────────── */
+.dat-public-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 10px;
+  background: var(--bg-subtle, #F8F9FB);
+  flex-wrap: wrap;
+}
+.dat-public-link__url-wrap {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dat-public-link__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #717680);
+}
+.dat-public-link__url {
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 13px;
+  color: var(--text-primary, #181D27);
+  word-break: break-all;
+  background: transparent;
+  padding: 0;
+}
+.dat-public-link__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Empty / invalid state in the Public-link card. */
+.dat-public-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 16px;
+  border: 1px dashed var(--border-subtle, #E9EAEB);
+  border-radius: 10px;
+  background: var(--bg-subtle, #FAFAFA);
+  color: var(--text-secondary, #717680);
+}
+.dat-public-empty__icon {
+  color: var(--text-secondary, #B0B5BD);
+  flex-shrink: 0;
+}
+.dat-public-empty__msg {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dat-public-empty--error {
+  border-color: #FDA29B;
+  background: #FEF3F2;
+  color: #B42318;
+}
+.dat-public-empty--error .dat-public-empty__icon {
+  color: #B42318;
+}
+
+/* ── Overview tiles (read-only stat row) ───────────────────────── */
+.dat-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 980px) {
+  .dat-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .dat-overview-grid { grid-template-columns: 1fr; }
+}
+.dat-overview-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 10px;
+  background: var(--card-bg, #fff);
+}
+.dat-overview-tile__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #717680);
+}
+.dat-overview-tile__value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* ── Sticky action footer ─────────────────────────────────────── */
+.dat-settings-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  margin-top: 8px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.dat-settings-footer[data-state="pristine"] {
+  /* Keep footer visible even when pristine — buttons are disabled.
+     This gives users a clear, predictable affordance instead of having
+     the bar slide in/out. Lower the visual weight via opacity. */
+  opacity: 0.85;
+}
+.dat-settings-footer[data-state="dirty"] {
+  opacity: 1;
+  border-color: #0000FF;
+  box-shadow: 0 8px 24px rgba(0, 0, 255, 0.10);
+}
+.dat-settings-footer__status {
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.dat-settings-footer__status[data-kind="error"]   { color: #B42318; }
+.dat-settings-footer__status[data-kind="success"] { color: #137333; }
+.dat-settings-footer__status[data-kind="info"]    { color: var(--text-secondary, #717680); }
+.dat-settings-footer__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* When the form is dirty, hint the user with a soft "*" before the
+   page title would normally live — here we keep it simple via the
+   footer state colors. */
+@media (max-width: 640px) {
+  .dat-settings-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dat-settings-footer__actions {
+    justify-content: flex-end;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UI AUDIT PASS — additive overrides
+   ─ Sticky filter toolbar
+   ─ Page-level CTA buttons (Export CSV / Invite)
+   ─ Composite "Payouts" KPI card (3 inline rows)
+   ─ 4-up secondary KPI grid (was 6-up)
+   ─ Date input visual hint when a preset is the source of truth
+   ─ Single Members-at-risk card (Top performers removed)
+   ─ Mobile pass: member table → card list, KPI cards 2-up,
+     preset bar horizontal-scrollable
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Sticky toolbar ──────────────────────────────────────────── */
+.dat-toolbar-card--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: saturate(180%) blur(8px);
+  -webkit-backdrop-filter: saturate(180%) blur(8px);
+  background-color: rgba(255, 255, 255, 0.92);
+}
+
+/* When a preset is active, the date inputs are showing the *result*
+   of that preset, not user input. Mute them so the preset reads as the
+   source of truth. The :has() polyfill is supported in 2025 browsers. */
+.dat-toolbar:not(:has(.dat-preset--custom.dat-preset--active)) .dat-date-input {
+  opacity: 0.6;
+}
+.dat-toolbar:not(:has(.dat-preset--custom.dat-preset--active)) .dat-date-input:focus {
+  opacity: 1;
+}
+
+/* ── Page-level CTAs in the toolbar ─────────────────────────── */
+.dat-toolbar__actions {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+  height: 32px;
+  align-items: center;
+}
+/* FM1 fix: `.dat-action-btn` removed. The analytics toolbar now uses
+   `ds-btn` / `ds-btn--sm` / `ds-btn--primary` / `ds-btn--secondary` —
+   single button system across the whole module. */
+
+/* ── Secondary KPI grid: 4-up ───────────────────────────────── */
+.dat-kpi-grid--4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 980px) {
+  .dat-kpi-grid--4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .dat-kpi-grid--4 { grid-template-columns: 1fr; }
+}
+
+/* ── Composite "Payouts" card ───────────────────────────────── */
+.dat-kpi--composite {
+  /* The composite card replaces a normal big numeric value with a list of
+     three small rows. Keep the same outer footprint as a regular KPI tile. */
+  padding: 14px 16px;
+}
+.dat-payouts-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.dat-payouts-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px dashed rgba(0, 0, 0, 0.06);
+}
+.dat-payouts-row:first-child { border-top: 0; padding-top: 0; }
+.dat-payouts-row__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #717680);
+}
+.dat-payouts-row__value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.dat-payouts-row__hint {
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+  white-space: nowrap;
+}
+/* Stage-color accents on the label dot — pending=amber, payable=blue, paid=green */
+.dat-payouts-row--pending  .dat-payouts-row__label { color: #B54708; }
+.dat-payouts-row--payable  .dat-payouts-row__label { color: var(--btn-primary-bg, #0000FF); }
+.dat-payouts-row--paid     .dat-payouts-row__label { color: #027A48; }
+
+/* Smaller skeleton variant for inline composite rows */
+.dat-skeleton--sm {
+  display: inline-block;
+  width: 48px;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #F2F4F7 0%, #E4E7EC 50%, #F2F4F7 100%);
+  background-size: 200% 100%;
+  animation: dat-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+/* ── Members at risk — full-width card (Top performers removed) ── */
+.dat-deficit-card {
+  /* Stand-alone card now — was previously paired in a 2-col grid with
+     "Top performers". Keep margins consistent with sibling sections. */
+}
+
+/* ── Mobile: member table → stacked card list ───────────────── */
+@media (max-width: 720px) {
+  /* Hide the table header row; rows become labelled cards. */
+  #dat-bymember-table thead {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  #dat-bymember-table,
+  #dat-bymember-table tbody,
+  #dat-bymember-table tr,
+  #dat-bymember-table td {
+    display: block;
+    width: 100%;
+  }
+  #dat-bymember-table tr {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--card-border-color, #E4E7EC);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 12px;
+  }
+  #dat-bymember-table td {
+    border: 0;
+    padding: 2px 0;
+    text-align: right;
+    font-size: 13px;
+  }
+  /* Member name takes top row, full width, bold */
+  #dat-bymember-table td:first-child {
+    grid-column: 1 / -1;
+    text-align: left;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  /* Email becomes a subtitle under the name */
+  #dat-bymember-table td:nth-child(2) {
+    grid-column: 1 / -1;
+    text-align: left;
+    color: var(--text-secondary, #717680);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  /* Add metric labels for the numeric cells via ::before */
+  #dat-bymember-table td:nth-child(3)::before { content: 'Clicks'; }
+  #dat-bymember-table td:nth-child(4)::before { content: 'Signups'; }
+  #dat-bymember-table td:nth-child(5)::before { content: 'Qualified'; }
+  #dat-bymember-table td:nth-child(6)::before { content: 'Revenue'; }
+  #dat-bymember-table td:nth-child(7)::before { content: 'Commission'; }
+  #dat-bymember-table td:nth-child(n+3)::before {
+    color: var(--text-secondary, #717680);
+    font-weight: 600;
+    margin-right: 8px;
+    float: left;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Tier sub-page (/developer/affiliate-team/tier)
+   Hero card with tier name + rate + volume + progress, ladder table,
+   personal-vs-team compare, history.
+   ───────────────────────────────────────────────────────────────────── */
+.dat-tier-page {
+  padding-bottom: 32px;
+}
+.dat-tier-page .dat-settings-card { padding: 20px 24px; margin-bottom: 16px; }
+
+.dat-tier-hero {
+  background: linear-gradient(135deg, var(--card-bg, #fff) 0%, #F8F9FF 100%);
+}
+
+.dat-tier-hero__grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+@media (max-width: 820px) {
+  .dat-tier-hero__grid { grid-template-columns: 1fr; }
+}
+
+.dat-tier-hero__cur,
+.dat-tier-hero__volume,
+.dat-tier-hero__next {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 12px;
+  background: var(--card-bg, #fff);
+}
+.dat-tier-hero__cur {
+  background: linear-gradient(135deg, #EEF1FF 0%, #F8F9FF 100%);
+  border-color: #C7CFFF;
+}
+
+.dat-tier-hero__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #717680);
+}
+.dat-tier-hero__tier {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--brand-blue, #0000FF);
+  line-height: 1.1;
+}
+.dat-tier-hero__rate {
+  font-size: 15px;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+}
+.dat-tier-hero__rate strong { font-weight: 700; }
+.dat-tier-hero__rate-suffix {
+  color: var(--text-secondary, #717680);
+  font-size: 13px;
+}
+.dat-tier-hero__num {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+}
+.dat-tier-hero__hint {
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+  line-height: 1.4;
+}
+
+/* Progress bar */
+.dat-tier-progress {
+  margin-top: 20px;
+}
+.dat-tier-progress__bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 6px;
+  background: #E9EAEB;
+  overflow: hidden;
+}
+.dat-tier-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0000FF 0%, #6B7BFF 100%);
+  border-radius: 6px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dat-tier-progress__labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+  font-weight: 600;
+}
+.dat-tier-progress__pct {
+  color: var(--brand-blue, #0000FF);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ladder table — highlight current row */
+.dat-ladder-row--current td {
+  background: #EEF1FF !important;
+  font-weight: 600;
+}
+.dat-ladder-row--current td:first-child {
+  border-left: 3px solid var(--brand-blue, #0000FF);
+}
+
+/* Personal vs Team compare */
+.dat-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .dat-compare-grid { grid-template-columns: 1fr; }
+}
+.dat-compare-card {
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--card-bg, #fff);
+}
+.dat-compare-card--personal { border-left: 3px solid #137333; }
+.dat-compare-card--team     { border-left: 3px solid var(--brand-blue, #0000FF); }
+.dat-compare-card__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #717680);
+}
+.dat-compare-card__tier {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary, #181D27);
+}
+.dat-compare-card--personal .dat-compare-card__tier { color: #137333; }
+.dat-compare-card--team .dat-compare-card__tier { color: var(--brand-blue, #0000FF); }
+.dat-compare-card__rate {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #181D27);
+}
+.dat-compare-card__msg {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary, #535862);
+  line-height: 1.5;
+}
+.dat-compare-card__msg em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text-primary, #181D27);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   FA3 fix: Skip-to-content link. WCAG 2.4.1. Invisible until keyboard
+   focus reveals it at top-left of viewport.
+   ───────────────────────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10001;
+  padding: 12px 18px;
+  background: var(--brand-blue, #0000FF);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 0 0 8px 0;
+  text-decoration: none;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 0;
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   DAT.dataTable widget — shared toolbar (search + page-size + summary),
+   sortable headers, pagination. Used on Members / Customers / Products.
+   ───────────────────────────────────────────────────────────────────── */
+
+.dat-table-pager-host {
+  margin-bottom: 12px;
+}
+.dat-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+.dat-table-toolbar__search {
+  flex: 1 1 220px;
+  min-width: 200px;
+  max-width: 360px;
+}
+.dat-table-toolbar__search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 8px;
+  background: var(--bg-default, #fff);
+  font-size: 13px;
+}
+.dat-table-toolbar__search-input:focus-visible {
+  outline: 2px solid var(--brand-blue, #0000FF);
+  outline-offset: -1px;
+}
+.dat-table-toolbar__pagesize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+  white-space: nowrap;
+}
+.dat-table-toolbar__pagesize .dat-select {
+  width: auto;
+  min-width: 76px;
+}
+.dat-table-toolbar__summary {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sortable column headers */
+.dat-th--sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.12s ease;
+}
+.dat-th--sortable:hover {
+  color: var(--text-primary, #181D27);
+}
+.dat-th--sortable:focus-visible {
+  outline: 2px solid var(--brand-blue, #0000FF);
+  outline-offset: -2px;
+}
+.dat-th--sortable[aria-sort="ascending"],
+.dat-th--sortable[aria-sort="descending"] {
+  color: var(--text-primary, #181D27);
+  background: #EEF1FF;
+}
+.dat-sort-arrow {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.dat-th--sortable[aria-sort="ascending"] .dat-sort-arrow,
+.dat-th--sortable[aria-sort="descending"] .dat-sort-arrow {
+  opacity: 1;
+  color: var(--brand-blue, #0000FF);
+}
+
+/* Cell stack (primary + secondary line inside one cell) */
+.dat-cell-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dat-cell-sub {
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pagination controls */
+.dat-pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 12px 0 4px;
+}
+.dat-pager__btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 6px;
+  background: var(--bg-default, #fff);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary, #181D27);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+.dat-pager__btn:hover:not(.dat-pager__btn--disabled):not(.dat-pager__btn--active) {
+  background: #EEF1FF;
+  border-color: var(--brand-blue, #0000FF);
+}
+.dat-pager__btn:focus-visible {
+  outline: 2px solid var(--brand-blue, #0000FF);
+  outline-offset: 2px;
+}
+.dat-pager__btn--active {
+  background: var(--brand-blue, #0000FF);
+  border-color: var(--brand-blue, #0000FF);
+  color: #fff;
+  font-weight: 600;
+}
+.dat-pager__btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dat-pager__ellipsis {
+  padding: 0 4px;
+  color: var(--text-secondary, #717680);
+}
+
+/* Mobile: toolbar stacks, search full-width */
+@media (max-width: 640px) {
+  .dat-table-toolbar { flex-direction: column; align-items: stretch; }
+  .dat-table-toolbar__search { max-width: none; }
+  .dat-table-toolbar__summary { margin-left: 0; text-align: right; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase-1: chip-bar (status filters), date-range row, lifecycle pills,
+   traffic-light "days since" badges.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dat-chip-bar-host {
+  margin: 0 0 12px;
+}
+.dat-chip-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.dat-chip {
+  background: transparent;
+  border: 1px solid var(--border-color, #E4E7EC);
+  color: var(--text-secondary, #717680);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 12px;
+  height: 28px;
+  line-height: 1;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+.dat-chip:hover {
+  color: var(--body-color, #344054);
+  border-color: var(--text-secondary, #717680);
+}
+.dat-chip:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+.dat-chip--active {
+  background: var(--btn-primary-bg, #0000FF);
+  color: #fff;
+  border-color: var(--btn-primary-bg, #0000FF);
+}
+
+/* Date-range row (Customers + Products Phase-1) */
+.dat-date-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+}
+.dat-date-range__label {
+  font-weight: 600;
+  color: var(--body-color, #344054);
+  margin-right: 4px;
+}
+.dat-date-range__presets {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface-muted, #F9FAFB);
+  border: 1px solid var(--border-color, #E4E7EC);
+  border-radius: 8px;
+  padding: 2px;
+  height: 32px;
+  box-sizing: border-box;
+}
+.dat-date-range .ds-input[type="date"] {
+  height: 32px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+/* Lifecycle pills (New / Active / Dormant / Churned) — derived from
+   last_activity_at. Solid tonal background, no border for visual rhythm. */
+.dat-lifecycle {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.dat-lifecycle--new     { background: #EFF4FF; color: #1849A9; }
+.dat-lifecycle--active  { background: #ECFDF3; color: #027A48; }
+.dat-lifecycle--dormant { background: #FFFAEB; color: #B54708; }
+.dat-lifecycle--churned { background: #FEF3F2; color: #B42318; }
+
+/* Traffic-light "days since last activity" — terse numeric chip in the
+   table body. Lives in dat-td--num cells so it inherits right-alignment. */
+.dat-days {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.dat-days--good { background: #ECFDF3; color: #027A48; }
+.dat-days--warn { background: #FFFAEB; color: #B54708; }
+.dat-days--bad  { background: #FEF3F2; color: #B42318; }
+
+/* Mobile: chips wrap; date-range stacks label above presets. */
+@media (max-width: 640px) {
+  .dat-date-range { flex-direction: column; align-items: flex-start; }
+  .dat-date-range__presets { width: 100%; overflow-x: auto; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase-4: bulk selection bar + checkbox columns + saved views.
+   ───────────────────────────────────────────────────────────────────────── */
+.dat-th--checkbox,
+.dat-td--checkbox {
+  width: 36px;
+  text-align: center;
+  padding-left: 12px;
+  padding-right: 4px;
+}
+.dat-th--checkbox input[type="checkbox"],
+.dat-td--checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--btn-primary-bg, #0000FF);
+}
+
+.dat-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin: 0 0 12px;
+  background: #EFF3FF;
+  border: 1px solid var(--btn-primary-bg, #0000FF);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--page-title-color, #181D27);
+}
+.dat-selection-bar__summary {
+  font-weight: 600;
+  margin-right: 12px;
+}
+
+.dat-table-toolbar__views {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+}
+.dat-table-toolbar__views .dat-select {
+  min-width: 140px;
+}
+
+/* Phase-5: branding preview card on team-settings page. */
+.dat-branding-preview {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--surface-muted, #F9FAFB);
+  border: 1px dashed var(--border-color, #E5E7EB);
+  border-radius: 10px;
+}
+.dat-branding-preview__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #717680);
+  margin-bottom: 8px;
+}
+.dat-branding-preview__card {
+  background: #fff;
+  border: 1px solid var(--border-color, #E5E7EB);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.dat-input-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary, #667085);
+  margin-top: 4px;
+}
+
+/* Phase-5: cohort retention heatmap. Table-based so it remains
+   screen-reader friendly + prints cleanly. */
+.dat-cohort-wrap {
+  overflow-x: auto;
+}
+table.dat-cohort {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+table.dat-cohort th,
+table.dat-cohort td {
+  padding: 6px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+table.dat-cohort thead th {
+  background: var(--surface-muted, #F9FAFB);
+  color: var(--text-secondary, #475467);
+  font-weight: 600;
+  font-size: 11px;
+  border-radius: 4px;
+}
+table.dat-cohort tbody th {
+  text-align: left;
+  background: var(--surface-muted, #F9FAFB);
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  border-radius: 4px;
+}
+.dat-cohort__size {
+  font-weight: 600;
+  color: var(--text-secondary, #475467);
+  background: #F2F4F7;
+  border-radius: 4px;
+}
+.dat-cohort__cell {
+  border-radius: 4px;
+  font-weight: 600;
+  min-width: 44px;
+  transition: filter .12s ease;
+}
+.dat-cohort__cell:hover { filter: brightness(0.92); }
+
+/* Phase-6: cohort heatmap mobile collapse.
+   Columns are: 1=Cohort label, 2=Size, 3=M+0, 4=M+1, 5=M+2, 6=M+3,
+   7=M+4, 8=M+5, 9=M+6, 10=M+7, 11=M+8, 12=M+9, 13=M+10, 14=M+11
+   Under 640px, keep only the milestone months (M+0, M+3, M+6, M+12 =
+   nth-child 3, 6, 9, 14) — same row in `thead` so headers + cells
+   stay aligned. Other M+N hidden + a small note explains the elision. */
+@media (max-width: 640px) {
+  table.dat-cohort thead th:nth-child(4),
+  table.dat-cohort thead th:nth-child(5),
+  table.dat-cohort thead th:nth-child(7),
+  table.dat-cohort thead th:nth-child(8),
+  table.dat-cohort thead th:nth-child(10),
+  table.dat-cohort thead th:nth-child(11),
+  table.dat-cohort thead th:nth-child(12),
+  table.dat-cohort thead th:nth-child(13),
+  table.dat-cohort tbody td:nth-child(4),
+  table.dat-cohort tbody td:nth-child(5),
+  table.dat-cohort tbody td:nth-child(7),
+  table.dat-cohort tbody td:nth-child(8),
+  table.dat-cohort tbody td:nth-child(10),
+  table.dat-cohort tbody td:nth-child(11),
+  table.dat-cohort tbody td:nth-child(12),
+  table.dat-cohort tbody td:nth-child(13) {
+    display: none;
+  }
+  /* Append a milestone-only hint after the table */
+  .dat-cohort-wrap::after {
+    content: "Mobile view: showing M+0, M+3, M+6 and M+12 only.";
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-secondary, #98A2B3);
+    text-align: center;
   }
 }

@@ -20,32 +20,63 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
       <div class="ds-main__content">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <section class="ds-card dat-content-card">
-          <div class="dat-section__intro">
-            <h3 class="dat-section__title">Customers</h3>
-            <p class="dat-section__hint">Customers acquired via your team's business affiliate links.</p>
-            <div class="dat-section__controls">
-              <label class="dat-filter-label" for="dat-cust-filter">Member</label>
-              <select id="dat-cust-filter" class="dat-select">
-                <option value="">All members</option>
-              </select>
+        <section class="ds-card dat-content-card" aria-labelledby="dat-cust-title">
+          <div class="dat-section__intro dat-section__intro--with-actions">
+            <div class="dat-section__intro-text">
+              <h3 class="dat-section__title" id="dat-cust-title">Customers</h3>
+              <p class="dat-section__hint" id="dat-cust-hint">Customers acquired via your team's business affiliate links.</p>
+            </div>
+            <div class="dat-section__actions">
+              <div class="dat-section__controls">
+                <label class="dat-filter-label" for="dat-cust-filter">Member</label>
+                <select id="dat-cust-filter" class="dat-select" aria-label="Filter customers by team member">
+                  <option value="">All members</option>
+                </select>
+              </div>
+              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="dat-customers-export" title="Download customers as CSV" aria-label="Export customers to CSV">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Export CSV</span>
+              </button>
             </div>
           </div>
+          <!-- Phase-1: status chips + date-range filter above the table. -->
+          <div id="dat-customers-chips" class="dat-chip-bar-host"></div>
+          <div class="dat-date-range" id="dat-customers-date-range">
+            <span class="dat-date-range__label" id="dat-customers-date-label">Acquired:</span>
+            <div class="dat-date-range__presets" role="group" aria-labelledby="dat-customers-date-label">
+              <button type="button" class="dat-preset" data-preset="all">All time</button>
+              <button type="button" class="dat-preset" data-preset="7d">Last 7d</button>
+              <button type="button" class="dat-preset" data-preset="30d">Last 30d</button>
+              <button type="button" class="dat-preset" data-preset="this-month">This month</button>
+              <button type="button" class="dat-preset" data-preset="ytd">YTD</button>
+            </div>
+            <input type="date" id="dat-customers-from" class="ds-input" aria-label="From date"/>
+            <span>—</span>
+            <input type="date" id="dat-customers-to" class="ds-input" aria-label="To date"/>
+          </div>
+          <div id="dat-customers-pager-host" class="dat-table-pager-host"></div>
           <div class="dat-table-wrap">
-            <table class="dat-table">
+            <table class="dat-table dat-table--hoverable" aria-describedby="dat-cust-hint">
+              <caption class="dat-table__caption sr-only">Customers acquired via team-business affiliate links. Sortable by name, via-member, status, invested amount, commission, orders, last activity, acquisition date.</caption>
               <thead>
-                <tr>
-                  <th>Customer</th>
-                  <th>Via Member</th>
-                  <th>Status</th>
-                  <th>Invested</th>
-                  <th>Commission</th>
-                  <th>Acquired</th>
+                <tr id="dat-customers-thead-row">
+                  <th scope="col" data-col="full_name">Customer</th>
+                  <th scope="col" data-col="via_member">Via member</th>
+                  <th scope="col" data-col="status">Status</th>
+                  <th scope="col" class="dat-th--num" data-col="invested">Invested</th>
+                  <th scope="col" class="dat-th--num" data-col="commission">Commission</th>
+                  <th scope="col" class="dat-th--num" data-col="n_purchases">Orders</th>
+                  <th scope="col">Lifecycle</th>
+                  <th scope="col" data-col="last_activity">Last activity</th>
+                  <th scope="col" class="dat-th--num">Days since</th>
+                  <th scope="col" data-col="acquired">Acquired</th>
                 </tr>
               </thead>
-              <tbody id="dat-customers-tbody">
-                <tr><td colspan="6" class="dat-empty">Loading…</td></tr>
-              </tbody>
+              <tbody id="dat-customers-tbody"></tbody>
             </table>
           </div>
         </section>

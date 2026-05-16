@@ -129,20 +129,36 @@ function initCookieBanner() {
 }
 
 function saveConsent(preferences) {
-  // 1. Save to Local Storage
+  // 1. Save to Local Storage (rich record for the prefs UI).
   const consentObj = {
     granted_at: new Date().toISOString(),
     preferences: preferences,
   };
   localStorage.setItem("poool_cookie_consent", JSON.stringify(consentObj));
 
-  // 2. Hide Banner
+  // 2. Phase-2 P0: write a server-readable cookie so the backend can gate
+  //    behavioural cookies (affiliate `?ref=` attribution lives in
+  //    `marketing`). Value is a `+`-joined flag list — matches the
+  //    Rust-side `has_marketing_consent` parser in
+  //    `backend/src/rewards/attribution.rs`. Keep it small to stay well
+  //    under the per-cookie size budget.
+  const flags = ["essential"];
+  if (preferences && preferences.analytics) flags.push("analytics");
+  if (preferences && preferences.marketing) flags.push("marketing");
+  const value = flags.join("+");
+  const maxAgeSecs = 60 * 60 * 24 * 180; // 6 months — matches typical CMP behaviour
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie =
+    "poool_consent=" + value + "; Path=/; Max-Age=" + maxAgeSecs +
+    "; SameSite=Lax" + secure;
+
+  // 3. Hide Banner
   const banner = document.getElementById("cookie-consent-banner");
   if (banner) {
     banner.classList.remove("visible");
     setTimeout(() => banner.remove(), 400);
   }
 
-  // 3. Send async audit payload to backend if needed
+  // 4. Send async audit payload to backend if needed
   // fetch('/api/audit/cookie-consent', { ... })
 }

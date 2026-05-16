@@ -124,27 +124,27 @@
                 <div class="tv3-social-proof">
                     <div class="tv3-sp-item">
                         <span class="tv3-sp-label">Share Price</span>
-                        <span class="tv3-sp-value" id="tv3-ticker-price">$105.00</span>
+                        <span class="tv3-sp-value" id="tv3-ticker-price">—</span>
                     </div>
                     <div class="tv3-sp-sep"></div>
                     <div class="tv3-sp-item">
                         <span class="tv3-sp-label">Annual Yield</span>
-                        <span class="tv3-sp-value tv3-sp-value--green" id="tv3-ticker-yield">12.4%</span>
+                        <span class="tv3-sp-value" id="tv3-ticker-yield">—</span>
                     </div>
                     <div class="tv3-sp-sep"></div>
                     <div class="tv3-sp-item">
                         <span class="tv3-sp-label">3 Months</span>
-                        <span class="tv3-sp-value tv3-sp-value--green" id="tv3-ticker-3m">+4.2%</span>
+                        <span class="tv3-sp-value" id="tv3-ticker-3m">—</span>
                     </div>
                     <div class="tv3-sp-sep"></div>
                     <div class="tv3-sp-item">
                         <span class="tv3-sp-label">6 Months</span>
-                        <span class="tv3-sp-value tv3-sp-value--green" id="tv3-ticker-6m">+8.7%</span>
+                        <span class="tv3-sp-value" id="tv3-ticker-6m">—</span>
                     </div>
                     <div class="tv3-sp-sep"></div>
                     <div class="tv3-sp-item">
                         <span class="tv3-sp-label">12 Months</span>
-                        <span class="tv3-sp-value tv3-sp-value--green" id="tv3-ticker-12m">+15.3%</span>
+                        <span class="tv3-sp-value" id="tv3-ticker-12m">—</span>
                     </div>
                 </div>
 
@@ -335,12 +335,12 @@
                             <div class="tv3-fin-content" id="tv3-fin-cost">
                                 <div class="tv3-fin-row"><span>Property price</span><span id="tv3-fin-price">—</span>
                                 </div>
-                                <div class="tv3-fin-row"><span>POOOL platform fee ({{ fee_pct_display | default("5") }}%)</span><span
+                                <div class="tv3-fin-row"><span>POOOL platform fee ({{ fee_pct_display | default("—") }}%)</span><span
                                         id="tv3-fin-fee">—</span></div>
                                 <div class="tv3-fin-divider"></div>
                                 <div class="tv3-fin-row tv3-fin-row--total"><span>Total investment cost</span><span
                                         id="tv3-fin-total">—</span></div>
-                                <div class="tv3-fin-note">Includes POOOL's {{ fee_pct_display | default("5") }}% Fee</div>
+                                <div class="tv3-fin-note">Includes POOOL's {{ fee_pct_display | default("—") }}% Fee</div>
                             </div>
                             <div class="tv3-fin-content" id="tv3-fin-rental" style="display:none">
                                 <div class="tv3-fin-row"><span>Annual gross yield</span><span
@@ -820,7 +820,7 @@
                                     <div class="tv3-order-summary">
                                         <div class="tv3-sum-row"><span>Subtotal</span><span
                                                 id="tv3-subtotal">$0.00</span></div>
-                                        <div class="tv3-sum-row"><span>Platform Fee ({{ fee_pct_display | default("5") }}%)</span><span
+                                        <div class="tv3-sum-row"><span>Platform Fee ({{ fee_pct_display | default("—") }}%)</span><span
                                                 id="tv3-fee">$0.00</span></div>
                                         <div class="tv3-sum-row tv3-sum-row--total"><span id="tv3-order-summary-total-label">Total</span><span
                                                 id="tv3-total">$0.00</span></div>
@@ -914,8 +914,8 @@
 
     <!-- Initialize live trading (after all scripts loaded) -->
     <script>
-        window.POOOL_FEE_PCT = parseFloat("{{ fee_pct | default(5.0) }}");
-        window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('5') }}";
+        window.POOOL_FEE_PCT = parseFloat("{{ fee_pct | default('') }}");
+        window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('') }}";
         
         document.addEventListener('DOMContentLoaded', function () {
             // Extract asset_id from URL query param or data attribute

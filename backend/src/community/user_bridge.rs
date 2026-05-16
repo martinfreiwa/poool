@@ -280,3 +280,25 @@ pub async fn get_users_info_batch(
 
     Ok(result_map)
 }
+
+/// Evicts the Redis cache entry for a single user's bridge info.
+///
+/// Call this after writing to `users.avatar_url` or `user_profiles.display_name`
+/// so the community feed, comments, and any other surface that reads via
+/// `get_user_info` / `get_users_info_batch` picks up the new value on next read
+/// instead of serving stale data for up to 5 minutes.
+///
+/// Failures are intentionally swallowed: Redis is a cache, not a source of
+/// truth. If eviction fails, the worst case is one user sees a stale avatar
+/// for the 5-minute TTL window — never a write inconsistency.
+pub async fn invalidate_user_cache(redis_pool: Option<&deadpool_redis::Pool>, user_id: Uuid) {
+    let Some(pool) = redis_pool else {
+        return;
+    };
+    let Ok(mut conn) = pool.get().await else {
+        return;
+    };
+    use redis::AsyncCommands;
+    let key = format!("community:user_bridge:{}", user_id);
+    let _: Result<(), _> = conn.del(&key).await;
+}

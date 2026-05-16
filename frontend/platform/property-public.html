@@ -796,6 +796,22 @@
       }
       @media (max-width: 767px) {
         body.property-public-body .header-nav { display: none; }
+        /* Bump tap targets to 44px (Apple HIG) on mobile */
+        body.property-public-body .public-header-signup {
+          min-height: 44px;
+          height: 44px;
+          padding: 12px 20px;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        body.property-public-body .header-action-link {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          padding: 12px 8px;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
       }
 
       body.property-public-body .public-preview-notice {

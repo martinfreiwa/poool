@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM recompute_team_tier($1::uuid)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "team_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "old_tier",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "new_tier",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "old_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "new_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "volume_cents",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a5b9cc411b4a2a4e572c5d3bcc4f9f4cd4a8440abff55041f993bb3102fffae8"
+}

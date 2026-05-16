@@ -277,5 +277,222 @@ pub async fn run_metrics_refresh_worker(pool: sqlx::PgPool) {
     loop {
         interval.tick().await;
         refresh_compliance_alert_gauge(&pool).await;
+        refresh_storage_gauges(&pool).await;
+    }
+}
+
+// ─── Storage subsystem metrics (Phase 5) ───────────────────────────
+//
+// Counters: per-upload events with class+outcome dimensions.
+// Histograms: upload duration so SLOs can be set per class.
+// Gauges: snapshot-style state (open reconciler findings, retention
+// backlog, quota usage) refreshed by `refresh_storage_gauges` from the
+// 60-second worker above.
+//
+// Naming follows the existing convention: `storage_*_total` for
+// counters, `storage_*_seconds` for histograms, `storage_*` for
+// gauges. Label cardinality is bounded — `class` enumerates over the
+// 6 `QuotaClass` values, `outcome` over a small closed set.
+
+/// Counter for storage upload events by class + outcome.
+/// Outcome ∈ {ok, quota_exceeded, av_infected, mime_mismatch, gcs_error, svg_rejected}.
+pub static STORAGE_UPLOADS_TOTAL: Lazy<IntCounterVec> = Lazy::new(|| {
+    register_int_counter_vec_with_registry!(
+        "storage_uploads_total",
+        "Count of upload attempts by class + outcome.",
+        &["class", "outcome"],
+        REGISTRY
+    )
+    .expect("register storage_uploads_total")
+});
+
+/// Counter for upload bytes accepted (outcome=ok only). Tracks growth
+/// rate per class.
+pub static STORAGE_UPLOAD_BYTES_TOTAL: Lazy<CounterVec> = Lazy::new(|| {
+    register_counter_vec_with_registry!(
+        "storage_upload_bytes_total",
+        "Bytes successfully uploaded, by class.",
+        &["class"],
+        REGISTRY
+    )
+    .expect("register storage_upload_bytes_total")
+});
+
+/// Histogram for upload duration in seconds, per class. Buckets are
+/// tuned for "small image to 20 MB doc" range — adjust once we have
+/// production data.
+pub static STORAGE_UPLOAD_DURATION_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
+    register_histogram_vec_with_registry!(
+        "storage_upload_duration_seconds",
+        "End-to-end upload duration in seconds, by class.",
+        &["class"],
+        // 50ms .. 16s exponential covers realistic image + doc uploads.
+        vec![0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0],
+        REGISTRY
+    )
+    .expect("register storage_upload_duration_seconds")
+});
+
+/// Counter for GCS API errors by operation + error kind. Used by the
+/// "storage error budget" alert.
+pub static STORAGE_GCS_ERRORS_TOTAL: Lazy<IntCounterVec> = Lazy::new(|| {
+    register_int_counter_vec_with_registry!(
+        "storage_gcs_errors_total",
+        "GCS API errors by operation (upload|download|delete|head|sign) and kind (auth|404|timeout|other).",
+        &["op", "kind"],
+        REGISTRY
+    )
+    .expect("register storage_gcs_errors_total")
+});
+
+/// Counter for AV scan outcomes by terminal verdict.
+pub static STORAGE_AV_OUTCOMES_TOTAL: Lazy<IntCounterVec> = Lazy::new(|| {
+    register_int_counter_vec_with_registry!(
+        "storage_av_outcomes_total",
+        "AV scan terminal outcomes (clean|infected|error|not_yet_scanned).",
+        &["outcome"],
+        REGISTRY
+    )
+    .expect("register storage_av_outcomes_total")
+});
+
+/// Gauge for the current count of KYC docs past their retention
+/// deadline but not yet deleted (worker backlog). Refreshed every 60s.
+pub static STORAGE_RETENTION_DUE: Lazy<GaugeVec> = Lazy::new(|| {
+    register_gauge_vec_with_registry!(
+        "storage_retention_due",
+        "KYC docs past retention deadline awaiting worker deletion.",
+        &["bucket"],
+        REGISTRY
+    )
+    .expect("register storage_retention_due")
+});
+
+/// Gauge for the current count of open reconciler findings by kind +
+/// severity. `acknowledged_at IS NULL` only.
+pub static STORAGE_RECONCILE_OPEN: Lazy<GaugeVec> = Lazy::new(|| {
+    register_gauge_vec_with_registry!(
+        "storage_reconcile_findings_open",
+        "Open (unacknowledged) reconciler findings by kind + severity.",
+        &["kind", "severity"],
+        REGISTRY
+    )
+    .expect("register storage_reconcile_findings_open")
+});
+
+/// Gauge for aggregate quota usage in bytes, by class. Sum across all
+/// users — Prometheus would not handle per-user labels at scale.
+pub static STORAGE_QUOTA_USED_BYTES: Lazy<GaugeVec> = Lazy::new(|| {
+    register_gauge_vec_with_registry!(
+        "storage_quota_used_bytes",
+        "Aggregate quota usage in bytes by class (sum across all users).",
+        &["class"],
+        REGISTRY
+    )
+    .expect("register storage_quota_used_bytes")
+});
+
+/// Convenience: record one upload attempt with its outcome + bytes +
+/// elapsed duration. Bytes are only credited on `outcome="ok"`.
+pub fn record_storage_upload(class: &str, outcome: &str, bytes: i64, elapsed_secs: f64) {
+    STORAGE_UPLOADS_TOTAL
+        .with_label_values(&[class, outcome])
+        .inc();
+    STORAGE_UPLOAD_DURATION_SECONDS
+        .with_label_values(&[class])
+        .observe(elapsed_secs);
+    if outcome == "ok" && bytes > 0 {
+        STORAGE_UPLOAD_BYTES_TOTAL
+            .with_label_values(&[class])
+            .inc_by(bytes as f64);
+    }
+}
+
+/// Convenience: record one GCS API error.
+pub fn record_storage_gcs_error(op: &str, kind: &str) {
+    STORAGE_GCS_ERRORS_TOTAL
+        .with_label_values(&[op, kind])
+        .inc();
+}
+
+/// Convenience: record one AV scan outcome.
+pub fn record_storage_av_outcome(outcome: &str) {
+    STORAGE_AV_OUTCOMES_TOTAL
+        .with_label_values(&[outcome])
+        .inc();
+}
+
+/// Snapshot all storage-subsystem gauges that don't update on hot
+/// paths. Called from the 60s metrics refresh worker. Failures are
+/// silent — a transient DB blip should not crash the worker.
+pub async fn refresh_storage_gauges(pool: &sqlx::PgPool) {
+    // Retention backlog: rows past deadline + still alive.
+    if let Ok((due,)) = sqlx::query_as::<_, (i64,)>(
+        "SELECT COUNT(*)::bigint FROM kyc_documents
+         WHERE retention_until IS NOT NULL
+           AND retention_until <= NOW()
+           AND deleted_at IS NULL",
+    )
+    .fetch_one(pool)
+    .await
+    {
+        STORAGE_RETENTION_DUE
+            .with_label_values(&["kyc_documents"])
+            .set(due as f64);
+    }
+
+    // Open reconciler findings by (kind, severity). Zero out the
+    // known cells first so disappeared combinations don't stick.
+    for kind in [
+        "missing_object",
+        "orphan_object",
+        "hash_mismatch",
+        "size_mismatch",
+    ] {
+        for sev in ["info", "warning", "critical"] {
+            STORAGE_RECONCILE_OPEN
+                .with_label_values(&[kind, sev])
+                .set(0.0);
+        }
+    }
+    let rows: Vec<(String, String, i64)> = sqlx::query_as(
+        "SELECT kind, severity, COUNT(*)::bigint
+           FROM storage_reconcile_findings
+          WHERE acknowledged_at IS NULL
+          GROUP BY kind, severity",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    for (kind, sev, count) in rows {
+        STORAGE_RECONCILE_OPEN
+            .with_label_values(&[&kind, &sev])
+            .set(count as f64);
+    }
+
+    // Aggregate quota usage by class.
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT class, COALESCE(SUM(bytes_used), 0)::bigint
+           FROM storage_user_quotas
+          GROUP BY class",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    // Zero out known classes first so a vanished class drops.
+    for c in [
+        "avatar",
+        "post_image",
+        "asset_image",
+        "asset_document",
+        "kyc_document",
+        "developer_logo",
+    ] {
+        STORAGE_QUOTA_USED_BYTES.with_label_values(&[c]).set(0.0);
+    }
+    for (class, bytes) in rows {
+        STORAGE_QUOTA_USED_BYTES
+            .with_label_values(&[&class])
+            .set(bytes as f64);
     }
 }

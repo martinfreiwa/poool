@@ -40,11 +40,15 @@ body {
 /* ─── Page Layout ─────────────────────────────────────────────────────────── */
 .error-page {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 96px 24px 72px;
+    /* iOS safe-area */
+    padding-top: calc(96px + env(safe-area-inset-top));
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
     background: var(--white);
     text-align: center;
     position: relative;
@@ -362,6 +366,7 @@ body {
     margin-left: var(--sidebar-width, 256px);
     width: calc(100% - var(--sidebar-width, 256px));
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 0;
     gap: 0;
     background: var(--content-bg, #FAFAFA);

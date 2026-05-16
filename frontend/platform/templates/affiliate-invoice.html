@@ -1,0 +1,102 @@
+{% extends "templates/pdf-base.html" %}
+
+{% block summary_line %}
+<div class="pdf-summary-row">
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Total payout</span>
+    <strong class="pdf-summary-value">{{ currency }} {{ amount_display }}</strong>
+  </div>
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Commissions</span>
+    <strong class="pdf-summary-value">{{ commission_count }}</strong>
+  </div>
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Currency</span>
+    <strong class="pdf-summary-value">{{ currency }}</strong>
+  </div>
+  <div class="pdf-summary-item">
+    <span class="pdf-summary-label">Issue date</span>
+    <strong class="pdf-summary-value">{{ issued_at }}</strong>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section style="margin-bottom: 24px;">
+  <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.04em;color:#475467;margin:0 0 8px;">Payee details</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;color:#101828;">
+    <tr>
+      <td style="padding:6px 0;color:#717680;width:160px;">Name</td>
+      <td style="padding:6px 0;font-weight:500;">{{ recipient_full_name | default("—") }}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#717680;">Email</td>
+      <td style="padding:6px 0;font-weight:500;">{{ recipient_email | default("—") }}</td>
+    </tr>
+    {% if bank_account_holder %}
+    <tr>
+      <td style="padding:6px 0;color:#717680;">Account holder</td>
+      <td style="padding:6px 0;font-weight:500;">{{ bank_account_holder }}</td>
+    </tr>
+    {% endif %}
+    {% if bank_iban_last4 %}
+    <tr>
+      <td style="padding:6px 0;color:#717680;">IBAN</td>
+      <td style="padding:6px 0;font-family:ui-monospace,monospace;font-weight:500;">**** **** **** {{ bank_iban_last4 }}</td>
+    </tr>
+    {% endif %}
+    {% if bank_bic %}
+    <tr>
+      <td style="padding:6px 0;color:#717680;">BIC / SWIFT</td>
+      <td style="padding:6px 0;font-family:ui-monospace,monospace;font-weight:500;">{{ bank_bic }}</td>
+    </tr>
+    {% endif %}
+    {% if bank_country %}
+    <tr>
+      <td style="padding:6px 0;color:#717680;">Country</td>
+      <td style="padding:6px 0;font-weight:500;">{{ bank_country }}</td>
+    </tr>
+    {% endif %}
+  </table>
+</section>
+
+<section style="margin-bottom: 24px;">
+  <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.04em;color:#475467;margin:0 0 8px;">Line items</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #E5E7EB;">
+    <thead>
+      <tr style="background:#F9FAFB;color:#475467;text-align:left;">
+        <th style="padding:10px 12px;font-weight:600;">Date</th>
+        <th style="padding:10px 12px;font-weight:600;">Tier</th>
+        <th style="padding:10px 12px;font-weight:600;text-align:right;">Gross order</th>
+        <th style="padding:10px 12px;font-weight:600;text-align:right;">Commission ({{ currency }})</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr style="border-top:1px solid #E5E7EB;">
+        <td style="padding:8px 12px;color:#101828;">{{ line.date }}</td>
+        <td style="padding:8px 12px;color:#475467;">{{ line.tier | default("—") }}</td>
+        <td style="padding:8px 12px;color:#475467;text-align:right;font-variant-numeric:tabular-nums;">{{ currency }} {{ line.gross_eur }}</td>
+        <td style="padding:8px 12px;color:#101828;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;">{{ currency }} {{ line.commission_eur }}</td>
+      </tr>
+      {% endfor %}
+      {% if not lines %}
+      <tr><td colspan="4" style="padding:16px;text-align:center;color:#98A2B3;">No line items recorded for this batch.</td></tr>
+      {% endif %}
+    </tbody>
+    <tfoot>
+      <tr style="background:#F9FAFB;border-top:2px solid #E5E7EB;">
+        <td colspan="3" style="padding:10px 12px;text-align:right;font-weight:600;color:#475467;">Total</td>
+        <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:14px;color:#101828;font-variant-numeric:tabular-nums;">{{ currency }} {{ amount_display }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</section>
+
+<section style="margin-top:24px;padding:14px 16px;background:#FFFAEB;border:1px solid #F79009;border-radius:8px;color:#B54708;font-size:12px;line-height:1.5;">
+  <strong>Tax note:</strong> VAT treatment depends on the recipient's jurisdiction and tax status.
+  EU recipients under §13b UStG (reverse charge) should self-account the VAT on this credit-note.
+  For Kleinunternehmer (§19 UStG) recipients, no VAT applies.
+  Please consult your tax advisor — this invoice is generated electronically and does not constitute tax advice.
+</section>
+{% endblock %}

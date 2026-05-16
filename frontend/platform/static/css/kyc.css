@@ -9,6 +9,7 @@
   display: flex;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--content-bg);
 }
 
@@ -20,6 +21,7 @@
 .kyc-main {
   width: calc(100% - var(--sidebar-width, 256px));
   min-height: 100vh;
+  min-height: 100dvh;
   margin-left: var(--sidebar-width, 256px);
   padding: 0;
   background: var(--content-bg);
@@ -633,7 +635,8 @@
   .kyc-main {
     width: 100%;
     margin-left: 0;
-    padding: 80px 16px 64px;
+    /* Top padding accounts for fixed mobile-header + iOS safe area */
+    padding: calc(80px + env(safe-area-inset-top)) 16px calc(64px + env(safe-area-inset-bottom));
   }
 
   .kyc-container {
@@ -652,10 +655,11 @@
   .kyc-stepper-bar {
     padding: 14px 10px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .kyc-step-label {
-    font-size: 10px;
+    font-size: 11px; /* bump 10→11 for legibility */
   }
 
   .kyc-subtitle {
@@ -664,6 +668,23 @@
 
   .kyc-upload-container {
     padding: 24px 16px;
+    /* 48px min tap target for file upload zone */
+    min-height: 120px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* ds-input font-size 16px on mobile to prevent iOS auto-zoom */
+  .ds-input,
+  .ds-select,
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px;
   }
 }
 

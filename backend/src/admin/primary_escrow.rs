@@ -884,6 +884,27 @@ async fn process_expired_escrow_refunds(pool: &PgPool) -> Result<(), ApiError> {
             .await
             .map_err(|e| ApiError::Internal(e.to_string()))?;
 
+        // Phase-3 P1: after the refund tx commits, reverse any affiliate
+        // commissions earned on the now-refunded investments. Failure is
+        // non-fatal — the refund already stands; clawback only adjusts
+        // commission ledger and live counters.
+        for inv in &investments {
+            if let Err(e) = crate::rewards::service::auto_clawback_for_refunded_investment(
+                pool,
+                inv.id,
+                inv.user_id,
+                "primary-escrow auto-refund (funding target not met)",
+            )
+            .await
+            {
+                tracing::warn!(
+                    investment_id = %inv.id,
+                    error = %e,
+                    "auto-clawback failed during escrow auto-refund (non-fatal)"
+                );
+            }
+        }
+
         sentry::capture_message(
             &format!(
                 "Auto-refund completed for '{}'. {} investors refunded.",

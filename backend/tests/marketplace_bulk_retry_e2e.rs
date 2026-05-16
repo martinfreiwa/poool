@@ -39,13 +39,17 @@ async fn make_minimal_users_and_asset(
     .await
     .expect("insert users");
 
+    // Real schema (post-migration 167): assets has no `symbol` column, NOT
+    // NULL columns include slug + asset_type + funding_status etc.
     sqlx::query(
-        "INSERT INTO assets (id, title, symbol, status, created_at)
-         VALUES ($1, $2, $3, 'active', NOW())",
+        "INSERT INTO assets
+            (id, slug, title, asset_type, tokens_total, tokens_available,
+             token_price_cents, total_value_cents, funding_status, published)
+         VALUES ($1, $2, $3, 'real_estate', 1000, 0, 100, 100000, 'funded', TRUE)",
     )
     .bind(asset_id)
+    .bind(format!("bulkretry-{}", asset_id))
     .bind(format!("Test Asset {}", asset_id))
-    .bind("TEST")
     .execute(&mut **tx)
     .await
     .expect("insert asset");
@@ -62,15 +66,36 @@ async fn insert_trade(
     tx_hash: Option<&str>,
 ) -> Uuid {
     let id = Uuid::new_v4();
+    // buy_order_id + sell_order_id are NOT NULL + FK-bound to market_orders.
+    // Insert two minimal orders so the trade row passes the FK check; the
+    // bulk-retry test cares about the on_chain_status UPDATE, not order
+    // semantics.
+    let buy_order_id = Uuid::new_v4();
+    let sell_order_id = Uuid::new_v4();
+    sqlx::query(
+        "INSERT INTO market_orders (id, user_id, asset_id, side, price_cents, quantity)
+         VALUES ($1, $2, $3, 'buy', 1000, 1), ($4, $5, $3, 'sell', 1000, 1)",
+    )
+    .bind(buy_order_id)
+    .bind(buyer_id)
+    .bind(asset_id)
+    .bind(sell_order_id)
+    .bind(seller_id)
+    .execute(&mut **tx)
+    .await
+    .expect("insert market_orders");
     sqlx::query(
         r#"INSERT INTO trade_history (
-            id, asset_id, buyer_user_id, seller_user_id,
+            id, asset_id, buy_order_id, sell_order_id,
+            buyer_user_id, seller_user_id,
             price_cents, quantity, fee_cents,
             on_chain_status, on_chain_tx_hash, executed_at
-         ) VALUES ($1, $2, $3, $4, 1000, 1, 10, $5, $6, NOW())"#,
+         ) VALUES ($1, $2, $3, $4, $5, $6, 1000, 1, 10, $7, $8, NOW())"#,
     )
     .bind(id)
     .bind(asset_id)
+    .bind(buy_order_id)
+    .bind(sell_order_id)
     .bind(buyer_id)
     .bind(seller_id)
     .bind(on_chain_status)

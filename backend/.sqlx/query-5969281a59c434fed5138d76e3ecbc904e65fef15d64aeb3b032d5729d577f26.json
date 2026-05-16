@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_postback_outbox\n                              SET status = $2,\n                                  attempts = $3,\n                                  next_attempt_at = NOW() + ($4 || ' seconds')::INTERVAL,\n                                  last_response_status = $5,\n                                  last_error = $6,\n                                  updated_at = NOW()\n                            WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Int4",
+        "Text",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5969281a59c434fed5138d76e3ecbc904e65fef15d64aeb3b032d5729d577f26"
+}

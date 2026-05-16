@@ -360,3 +360,230 @@
   background: var(--ds-surface-hover);
   color: var(--btn-primary-bg);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-05-16 compaction pass — align profile-page cards with the
+   investor-dashboard ds-stat-card density and POOOL brand tokens.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Circle card — emoji 40px → 28px, padding 20px → 14px, tighter grid */
+.community-profile-circle-card {
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.community-profile-circle-card__emoji {
+  font-size: 28px;
+  width: 48px; height: 48px;
+  background: #F2F4F7;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.community-profile-circle-card__name {
+  font-size: 15px;
+  font-weight: 700;
+}
+.community-profile-circle-card__meta {
+  font-size: 12px;
+  margin: 2px 0 8px;
+}
+
+/* Analytics tiles — value 24 → 20, padding 16 → 12, grid minmax 140 → 120 */
+.community-profile-analytics {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.community-profile-analytics-card {
+  padding: 12px 14px;
+  text-align: left;
+  position: relative;
+}
+.community-profile-analytics-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--card-border-color, #E5E7EB);
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+.community-profile-analytics-card__value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--page-title-color, #181D27);
+  font-variant-numeric: tabular-nums;
+}
+.community-profile-analytics-card__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #717680);
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* Top-30 posts wrapper compaction */
+.community-profile-analytics-top {
+  padding: 16px;
+  gap: 10px;
+}
+.community-profile-analytics-top h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+}
+.community-profile-analytics-top ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--text-secondary, #475467);
+  line-height: 1.6;
+}
+
+/* Settings sub-cards on profile page — padding 20 → 14, tighter rhythm */
+.community-profile-settings__card {
+  padding: 14px 16px;
+  gap: 6px;
+  border-radius: 12px;
+}
+.community-profile-settings__card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+.community-profile-settings__card .ds-helper-text {
+  font-size: 12px;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-05-16 profile-page polish pass — Circle tab card, Analytics
+   "Open post" CTA, Settings density. Each block addresses a specific
+   visual-debt item from the user audit.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* All `.cp-panel` tabs get a max-width so panels don't stretch to the
+   full viewport and read as "empty white slabs". Matches the leaderboard
+   container width. */
+.cp-panel {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+/* ── Circle card (per-profile) ──────────────────────────────────── */
+.cp-circle-card {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+.cp-circle-card__icon {
+  width: 48px; height: 48px;
+  background: #F2F4F7;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--btn-primary-bg, #0000FF);
+  flex-shrink: 0;
+}
+.cp-circle-card__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+}
+.cp-circle-card__meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+.cp-circle-card__meta strong {
+  color: var(--page-title-color, #181D27);
+  font-weight: 700;
+}
+.cp-circle-card__sep { color: #D0D5DD; }
+.cp-circle-card__actions { flex-shrink: 0; }
+
+/* ── Analytics: top-post CTA card ──────────────────────────────── */
+.community-profile-analytics-top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+}
+.community-profile-analytics-top h3,
+.community-profile-analytics-top h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  grid-column: 1 / -1;
+}
+.community-profile-analytics-top p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #475467);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.community-profile-analytics-top .ds-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Settings panel — kill the white-slab effect ───────────────── */
+#community-profile-panel-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#community-profile-panel-settings .community-profile-settings__card {
+  padding: 14px 16px;
+  gap: 4px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+#community-profile-panel-settings .community-profile-settings__card h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  grid-column: 1;
+}
+#community-profile-panel-settings .community-profile-settings__card .ds-helper-text {
+  grid-column: 1;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+  margin: 0;
+}
+#community-profile-panel-settings .community-profile-settings__card .ds-btn,
+#community-profile-panel-settings .community-profile-settings__card a.ds-btn {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  white-space: nowrap;
+  align-self: center;
+}
+
+@media (max-width: 640px) {
+  #community-profile-panel-settings .community-profile-settings__card {
+    grid-template-columns: 1fr;
+  }
+  #community-profile-panel-settings .community-profile-settings__card .ds-btn {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: stretch;
+  }
+  .cp-circle-card { grid-template-columns: 40px 1fr; }
+  .cp-circle-card__actions { grid-column: 1 / -1; }
+}

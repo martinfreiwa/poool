@@ -41,6 +41,7 @@ body.tv2-body {
 .tv2-wrapper {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .tv2-sidebar {

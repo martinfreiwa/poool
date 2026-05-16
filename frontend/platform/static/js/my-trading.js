@@ -271,10 +271,18 @@
     }
 
     // ── Open Orders ─────────────────────────────────────────────
+    function isActiveMarketOrder(order) {
+        return order && (order.status === 'open' || order.status === 'partially_filled');
+    }
+
+    function getOpenOrders() {
+        return state.orders.filter(isActiveMarketOrder);
+    }
+
     function getFilteredOrders() {
         const f = state.filter.orders;
         const q = f.search.trim().toLowerCase();
-        return state.orders.filter(o => {
+        return getOpenOrders().filter(o => {
             if (q && !(o.asset || '').toLowerCase().includes(q)) return false;
             if (f.side && o.side !== f.side) return false;
             if (f.status && o.status !== f.status) return false;
@@ -297,13 +305,14 @@
             return;
         }
 
-        if (countBadge) countBadge.textContent = state.orders.length;
+        const openOrders = getOpenOrders();
+        if (countBadge) countBadge.textContent = openOrders.length;
 
         const filtered = getFilteredOrders();
         const sorted = sortRows(filtered, state.sort.orders.key, state.sort.orders.dir);
         const info = paginate(sorted, 'orders');
 
-        if (state.orders.length === 0) {
+        if (openOrders.length === 0) {
             tbody.innerHTML = emptyState(11, {
                 title: 'No open orders',
                 description: 'Place buy or sell orders once you own assets, then track fills, fees, and activity here.',
@@ -640,7 +649,7 @@
     }
 
     function renderSummaryCards() {
-        const openCount = state.orders.filter(o => ['open', 'partially_filled', 'pending_review'].includes(o.status)).length;
+        const openCount = getOpenOrders().length;
         if ($('summary-open-orders')) $('summary-open-orders').textContent = state.loaded.orders ? openCount : '—';
         if ($('summary-trades')) $('summary-trades').textContent = state.loaded.trades ? state.trades.length : '—';
         if ($('summary-assets')) $('summary-assets').textContent = state.loaded.assets ? state.assets.length : '—';
@@ -1214,6 +1223,10 @@
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const data = await r.json();
             state.orders = Array.isArray(data) ? data : (data.orders || []);
+            const activeIds = new Set(getOpenOrders().map(o => o.id));
+            state.selected.forEach(id => {
+                if (!activeIds.has(id)) state.selected.delete(id);
+            });
             state.loaded.orders = true;
         } catch (err) {
             state.errors.orders = 'Failed to load orders. ' + (err.message || '');

@@ -22,6 +22,7 @@
      ============================================ */
   #developer-application-form-body {
     min-height: 100vh !important;
+    min-height: 100dvh !important;
     background: #fafafa !important;
   }
 

@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO notifications\n              (user_id, type, title, message, link_url, metadata, is_read)\n           VALUES ($1, $2, $3, $4, $5, $6, false)\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6e5850ba50a6b303545f54e689833c3579dcd410daa65cb1ae96e76b50e92f09"
+}

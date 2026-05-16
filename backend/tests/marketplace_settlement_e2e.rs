@@ -257,7 +257,12 @@ async fn e2e_buy_sell_match_settlement_happy_path() {
     assert_eq!(before.buyer_held, 5775);
     assert_eq!(before.seller_balance, 0);
     assert_eq!(before.seller_tokens, 100);
-    assert_eq!(before.seller_held, 50);
+    // `seller_held` reads wallets.held_balance_cents (cash escrow). The
+    // seller has 0 cash + 50 held *tokens*; the token escrow lives on
+    // investments.held_tokens, not the wallet. Cash-held therefore must
+    // be 0. (Earlier revision asserted 50 here — wrong unit, mixed tokens
+    // with cents.)
+    assert_eq!(before.seller_held, 0);
 
     // Build a MatchEvent and call settle_trade. NOTE: we can't directly
     // `pub use settle_trade` from a non-cdylib binary, so this test exercises

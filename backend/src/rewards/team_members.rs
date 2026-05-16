@@ -43,14 +43,42 @@ fn generate_token() -> String {
 /// Developer lädt einen User per email ein. Wenn User noch keinen Account
 /// hat, kann der Email-Empfänger nach Registrierung den Token einlösen.
 ///
-/// Rückgabe: (membership_id, plain_token). Plain-Token NUR per Email
-/// versenden, NICHT loggen.
+/// Rückgabe: Ok(Some((membership_id, plain_token))) wenn die Einladung
+/// tatsächlich ausgestellt wurde; Ok(None) wenn die Einladung aus einem
+/// nicht-fataler Grund übersprungen wurde (Email nicht registriert, User
+/// bereits in einem Team, Inviter ist selbst der Inviter). Plain-Token NUR
+/// per Email versenden, NICHT loggen.
+///
+/// F11 fix: bisher leakte diese Funktion User-Existenz an den Developer
+/// (unterscheidbare Fehler für "Email nicht registriert" vs "bereits
+/// Mitglied"). Jetzt loggen wir den tatsächlichen Outcome ins audit_log
+/// und liefern dem Aufrufer einen einheitlichen Ok(None) für alle nicht-
+/// fatalen Skip-Pfade — der Caller (route handler) gibt dem Developer
+/// einen generischen "Invitation queued" Response zurück.
 pub async fn invite_by_email(
     pool: &PgPool,
     team_id: Uuid,
     invited_email: &str,
     inviter_user_id: Uuid,
-) -> Result<(Uuid, String), AppError> {
+) -> Result<Option<(Uuid, String)>, AppError> {
+    // Helper to write a "skipped" audit-log line. The dev cannot see this
+    // (no API surface returns it), but operators can debug from logs and
+    // detect enumeration attempts via aggregation.
+    async fn audit_skipped(pool: &PgPool, actor: Uuid, team_id: Uuid, email: &str, reason: &str) {
+        let _ = sqlx::query(
+            "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)
+             VALUES ($1, 'team_invitation_skipped', 'developer_teams', $2, $3)",
+        )
+        .bind(actor)
+        .bind(team_id)
+        .bind(serde_json::json!({
+            "email": email,
+            "reason": reason,
+        }))
+        .execute(pool)
+        .await;
+    }
+
     // Resolve email → user_id (existiert der Account?)
     let target_user_id: Option<Uuid> =
         sqlx::query_scalar("SELECT id FROM users WHERE LOWER(email) = LOWER($1)")
@@ -58,11 +86,22 @@ pub async fn invite_by_email(
             .fetch_optional(pool)
             .await?;
 
-    let target_user_id = target_user_id.ok_or_else(|| {
-        AppError::BadRequest("Cannot invite — user with this email is not registered yet.".into())
-    })?;
+    let Some(target_user_id) = target_user_id else {
+        // No such user → don't tell the developer. Log + return None.
+        audit_skipped(
+            pool,
+            inviter_user_id,
+            team_id,
+            invited_email,
+            "user_not_registered",
+        )
+        .await;
+        return Ok(None);
+    };
 
     if target_user_id == inviter_user_id {
+        // Self-invite is the one case we DO surface explicitly — the dev
+        // already knows their own email exists, so there's no leak.
         return Err(AppError::BadRequest(
             "Cannot invite yourself to your own team.".into(),
         ));
@@ -81,9 +120,16 @@ pub async fn invite_by_email(
     .await
     .unwrap_or(false);
     if conflict {
-        return Err(AppError::Conflict(
-            "User is already invited to or member of a team.".into(),
-        ));
+        // User already in some team → don't tell the developer. Log + return None.
+        audit_skipped(
+            pool,
+            inviter_user_id,
+            team_id,
+            invited_email,
+            "already_in_team",
+        )
+        .await;
+        return Ok(None);
     }
 
     let token = generate_token();
@@ -109,9 +155,17 @@ pub async fn invite_by_email(
         Err(sqlx::Error::Database(db_err))
             if db_err.constraint() == Some("one_active_membership_per_user") =>
         {
-            return Err(AppError::Conflict(
-                "User already has an active or pending membership.".into(),
-            ));
+            // Race: target user joined a team between our SELECT and INSERT.
+            // Same enumeration protection — log + return None.
+            audit_skipped(
+                pool,
+                inviter_user_id,
+                team_id,
+                invited_email,
+                "already_in_team_race",
+            )
+            .await;
+            return Ok(None);
         }
         Err(e) => return Err(e.into()),
     };
@@ -130,8 +184,12 @@ pub async fn invite_by_email(
     .await;
 
     // Trigger Email (fire-and-forget; failure does NOT block invite creation).
+    // Phase-4: also pulls per-team branding columns (mig 188) so the
+    // email body renders the team's logo + accent color.
     let team_meta = sqlx::query!(
-        "SELECT t.display_name AS team_name, u.email::text AS inviter_email
+        "SELECT t.display_name AS team_name,
+                t.logo_url, t.accent_color, t.email_from_display,
+                u.email::text AS inviter_email
          FROM developer_teams t
          LEFT JOIN users u ON u.id = $2
          WHERE t.id = $1",
@@ -146,6 +204,11 @@ pub async fn invite_by_email(
         .as_ref()
         .map(|r| r.team_name.clone())
         .unwrap_or_else(|| "POOOL Affiliate Team".to_string());
+    let logo_url = team_meta.as_ref().and_then(|r| r.logo_url.clone());
+    let accent_color = team_meta.as_ref().and_then(|r| r.accent_color.clone());
+    let _email_from_display = team_meta
+        .as_ref()
+        .and_then(|r| r.email_from_display.clone());
     let inviter_email = team_meta
         .and_then(|r| r.inviter_email)
         .unwrap_or_else(|| "POOOL team".to_string());
@@ -153,6 +216,8 @@ pub async fn invite_by_email(
         "team_name": team_name,
         "inviter_name": inviter_email,
         "token": token,
+        "logo_url": logo_url,
+        "accent_color": accent_color,
     });
     let _ = crate::email::trigger_transactional_email(
         pool,
@@ -162,7 +227,76 @@ pub async fn invite_by_email(
     )
     .await;
 
-    Ok((row.id, token))
+    Ok(Some((row.id, token)))
+}
+
+/// Phase-1 fix: regenerate token + extend expiry + re-send invitation email.
+/// Used when the original token expired or the email was never received.
+/// Idempotent — repeated calls produce fresh tokens but keep the
+/// membership row id stable.
+pub async fn resend_invitation(
+    pool: &PgPool,
+    membership_id: Uuid,
+    actor_user_id: Uuid,
+) -> Result<(), AppError> {
+    let row = sqlx::query!(
+        r#"SELECT m.id, m.team_id, m.user_id, t.display_name AS team_name,
+                  t.logo_url, t.accent_color,
+                  inviter.email::text AS inviter_email
+              FROM developer_team_memberships m
+              JOIN developer_teams t ON t.id = m.team_id
+              LEFT JOIN users inviter ON inviter.id = $2
+             WHERE m.id = $1 AND m.status = 'invited'"#,
+        membership_id,
+        actor_user_id
+    )
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Invited membership not found.".into()))?;
+
+    let token = generate_token();
+    let token_hash = hash_token(&token);
+    let expires_at = chrono::Utc::now() + chrono::Duration::days(INVITATION_VALIDITY_DAYS);
+
+    sqlx::query!(
+        r#"UPDATE developer_team_memberships
+              SET invitation_token_hash = $1,
+                  invitation_expires_at = $2,
+                  invited_at = NOW(),
+                  updated_at = NOW()
+            WHERE id = $3"#,
+        token_hash,
+        expires_at,
+        membership_id
+    )
+    .execute(pool)
+    .await?;
+
+    let _ = sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)
+         VALUES ($1, 'team_invitation_resent', 'developer_team_memberships', $2, $3)",
+    )
+    .bind(actor_user_id)
+    .bind(membership_id)
+    .bind(serde_json::json!({ "team_id": row.team_id, "user_id": row.user_id }))
+    .execute(pool)
+    .await;
+
+    let _ = crate::email::trigger_transactional_email(
+        pool,
+        &row.user_id,
+        "team_invitation_received",
+        serde_json::json!({
+            "team_name": row.team_name,
+            "inviter_name": row.inviter_email.unwrap_or_else(|| "POOOL team".to_string()),
+            "token": token,
+            "logo_url": row.logo_url,
+            "accent_color": row.accent_color,
+        }),
+    )
+    .await;
+
+    Ok(())
 }
 
 /// User akzeptiert eine Einladung per Token. Erzeugt sofort den
@@ -210,6 +344,22 @@ pub async fn accept_invitation(
 
     tx.commit().await?;
 
+    // Bug 8 fix: ensure the developer (payout recipient) has an active
+    // `affiliates` row BEFORE the new member starts earning. Without this,
+    // the first commission JOIN drops the row and revenue is silently lost.
+    // Look up the developer for this team and ensure their affiliate row.
+    if let Ok(team_row) = sqlx::query!(
+        "SELECT developer_user_id FROM developer_teams WHERE id = $1",
+        row.team_id
+    )
+    .fetch_one(pool)
+    .await
+    {
+        let _ =
+            super::team_links::ensure_developer_has_affiliate_row(pool, team_row.developer_user_id)
+                .await;
+    }
+
     // Team-Business-Link nach Commit erzeugen. Bei Fehler: laut loggen,
     // damit Operators / Admin-Repair-Tool das nachholen können. Die
     // Membership ist bereits aktiv; das Link-Backfill ist idempotent via
@@ -235,6 +385,59 @@ pub async fn accept_invitation(
     .bind(serde_json::json!({ "team_id": row.team_id }))
     .execute(pool)
     .await;
+
+    // Phase-2 P0: notify the inviter (team developer) that their invitee
+    // accepted. Closes a feedback loop the audit found was completely
+    // missing — developers had to refresh the dashboard to learn the
+    // outcome. Failure here is non-fatal (membership is already active);
+    // we log and continue so the user-visible accept response succeeds.
+    if let Ok(notify_ctx) = sqlx::query!(
+        r#"SELECT t.developer_user_id, t.display_name AS team_name,
+                  COALESCE(NULLIF(TRIM(u.email), ''), 'A new member') AS "member_email!"
+           FROM developer_teams t
+           CROSS JOIN users u
+           WHERE t.id = $1 AND u.id = $2"#,
+        row.team_id,
+        user_id
+    )
+    .fetch_one(pool)
+    .await
+    {
+        if let Err(e) = crate::email::trigger_transactional_email(
+            pool,
+            &notify_ctx.developer_user_id,
+            "team_invitation_accepted",
+            serde_json::json!({
+                "team_name": notify_ctx.team_name,
+                "member_email": notify_ctx.member_email,
+            }),
+        )
+        .await
+        {
+            tracing::warn!(
+                team_id = %row.team_id,
+                inviter = %notify_ctx.developer_user_id,
+                error = %e,
+                "team_invitation_accepted email trigger failed (non-fatal)"
+            );
+        }
+
+        // Phase-3 P1: in-app inbox notification for the inviter.
+        let _ = crate::common::notifications::enqueue_notification(
+            pool,
+            notify_ctx.developer_user_id,
+            "team_invitation_accepted",
+            &format!("{} joined your team", notify_ctx.member_email),
+            Some("They now have an active business-affiliate link tied to your team."),
+            Some("/developer/affiliate-team/members"),
+            serde_json::json!({
+                "team_id": row.team_id,
+                "team_name": notify_ctx.team_name,
+                "member_id": user_id,
+            }),
+        )
+        .await;
+    }
 
     Ok(row.id)
 }
@@ -301,6 +504,14 @@ pub async fn self_request_join(
         }
         Err(e) => return Err(e.into()),
     };
+
+    // Bug 8 fix: ensure the developer (payout recipient) has an active
+    // `affiliates` row before commissions start flowing. A self-requested
+    // member may convert customers before the dev ever opens the Team UI,
+    // and without an active affiliates row those commissions are silently
+    // lost. Idempotent — no-op if the row already exists.
+    let _ =
+        super::team_links::ensure_developer_has_affiliate_row(pool, team.developer_user_id).await;
 
     let _ = sqlx::query(
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)

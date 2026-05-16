@@ -1301,7 +1301,10 @@ pub async fn api_admin_emails_workflow_toggle(
         )));
     }
 
-    let enabled = body.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+    let enabled = body
+        .get("enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
     let note = body
         .get("note")
         .and_then(|v| v.as_str())
@@ -1357,12 +1360,10 @@ pub async fn api_admin_emails_workflows(
 
     // Bulk-load enabled state for all events in one query so the loop
     // below doesn't N+1 the DB.
-    let settings_rows = sqlx::query(
-        "SELECT event_type, enabled FROM email_workflow_settings",
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let settings_rows = sqlx::query("SELECT event_type, enabled FROM email_workflow_settings")
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
     let settings: std::collections::HashMap<String, bool> = settings_rows
         .iter()
         .map(|r| {
@@ -1380,8 +1381,7 @@ pub async fn api_admin_emails_workflows(
                 serde_json::from_str(e.sample_metadata_json).unwrap_or(serde_json::Value::Null);
             // Mandatory → always enabled. Otherwise look up DB row;
             // missing row defaults to enabled.
-            let enabled = e.mandatory
-                || settings.get(e.event_type).copied().unwrap_or(true);
+            let enabled = e.mandatory || settings.get(e.event_type).copied().unwrap_or(true);
             serde_json::json!({
                 "event_type": e.event_type,
                 "category": e.category,

@@ -45,6 +45,62 @@ function showCartPageAlert() {
   wrapper.prepend(alert);
 }
 
+let cachedUsdToIdrRate = null;
+
+function getUsdToIdrRate() {
+  if (Number.isFinite(cachedUsdToIdrRate) && cachedUsdToIdrRate > 0) {
+    return cachedUsdToIdrRate;
+  }
+
+  const summaryBox = document.getElementById("payment-summary-box");
+  const candidates = [
+    window.POOOL_USD_TO_IDR_RATE,
+    window.POOOL_CART_DATA && window.POOOL_CART_DATA.usd_to_idr_rate,
+    summaryBox && summaryBox.dataset.usdToIdrRate,
+    document.body && document.body.dataset.usdToIdrRate,
+  ];
+
+  for (const candidate of candidates) {
+    const rate = Number(candidate);
+    if (Number.isFinite(rate) && rate > 0) {
+      cachedUsdToIdrRate = rate;
+      return rate;
+    }
+  }
+
+  return null;
+}
+
+function formatApproxIdrFromUsd(usdAmount) {
+  const rate = getUsdToIdrRate();
+  if (!rate) return "";
+  return `≈ Rp ${Math.round(usdAmount * rate).toLocaleString("de-DE").replace(/,/g, ".")}`;
+}
+
+function setApproxIdrFromUsd(element, usdAmount) {
+  if (!element) return;
+  element.textContent = formatApproxIdrFromUsd(usdAmount);
+}
+
+async function hydrateCartFxRate() {
+  if (getUsdToIdrRate()) return;
+  if (!document.getElementById("cart-page-content") && !document.querySelector(".checkout-invest-button")) return;
+
+  try {
+    const response = await fetch("/api/cart", { headers: { Accept: "application/json" } });
+    if (!response.ok) return;
+    const data = await response.json();
+    const rate = Number(data && data.usd_to_idr_rate);
+    if (Number.isFinite(rate) && rate > 0) {
+      cachedUsdToIdrRate = rate;
+      if (document.getElementById("cart-page-content")) updateCartTotal();
+      else if (document.querySelector(".checkout-invest-button")) updateCheckoutTotal();
+    }
+  } catch (e) {
+    console.warn("Could not hydrate cart FX rate:", e);
+  }
+}
+
 // Persist quantity change to DB
 const persistQuantityUpdate = debounce(async (cartId, newQuantity) => {
   try {
@@ -161,13 +217,12 @@ function handleQuantityChange(button) {
   const idxMatch = itemId.match(/(\d+)$/);
   if (idxMatch) {
     const idx = idxMatch[1];
-    const IDR_RATE = 15500;
     const summaryQtyEl = document.getElementById(`summary-item-${idx}-qty`);
     if (summaryQtyEl) summaryQtyEl.textContent = `${newQty} × $${unitPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
     const summaryUsdEl = document.getElementById(`summary-item-${idx}-usd`);
     if (summaryUsdEl) summaryUsdEl.textContent = `USD ${newPrice.toLocaleString("en-US", formatOpts)}`;
     const summaryIdrEl = document.getElementById(`summary-item-${idx}-idr`);
-    if (summaryIdrEl) summaryIdrEl.textContent = `≈ Rp ${Math.round(newPrice * IDR_RATE).toLocaleString("de-DE").replace(/,/g, ".")}`;
+    setApproxIdrFromUsd(summaryIdrEl, newPrice);
   }
 
   // Update Progress Bar
@@ -247,13 +302,12 @@ function handleQuantityInput(input) {
   const idxMatchInput = itemId.match(/(\d+)$/);
   if (idxMatchInput) {
     const idx = idxMatchInput[1];
-    const IDR_RATE = 15500;
     const summaryQtyEl = document.getElementById(`summary-item-${idx}-qty`);
     if (summaryQtyEl) summaryQtyEl.textContent = `${newQty} × $${unitPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
     const summaryUsdEl = document.getElementById(`summary-item-${idx}-usd`);
     if (summaryUsdEl) summaryUsdEl.textContent = `USD ${newPrice.toLocaleString("en-US", formatOpts)}`;
     const summaryIdrEl = document.getElementById(`summary-item-${idx}-idr`);
-    if (summaryIdrEl) summaryIdrEl.textContent = `≈ Rp ${Math.round(newPrice * IDR_RATE).toLocaleString("de-DE").replace(/,/g, ".")}`;
+    setApproxIdrFromUsd(summaryIdrEl, newPrice);
   }
 
   // Update Progress Bar
@@ -329,9 +383,6 @@ function updateCartTotal() {
   const fee = Math.round(total * feePct) / 100;
   const grandTotal = total + fee;
 
-  // IDR conversion rate (must match backend)
-  const IDR_RATE = 15500;
-
   // Format options to match backend (2 decimal places)
   const formatOpts = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
 
@@ -339,13 +390,6 @@ function updateCartTotal() {
   const formattedSubtotal = "USD " + total.toLocaleString("en-US", formatOpts);
   const formattedTotal = "USD " + grandTotal.toLocaleString("en-US", formatOpts);
   const formattedFee = "USD " + fee.toLocaleString("en-US", formatOpts);
-
-  // Format IDR values
-  const subtotalIdr = Math.round(total * IDR_RATE);
-  const feeIdr = Math.round(fee * IDR_RATE);
-  const totalIdr = Math.round(grandTotal * IDR_RATE);
-
-  const formatIdr = (val) => "≈ Rp " + val.toLocaleString("de-DE").replace(/,/g, ".");
 
   if (totalElement) {
     totalElement.textContent = formattedTotal;
@@ -360,14 +404,14 @@ function updateCartTotal() {
   }
 
   if (feeIdrElement) {
-    feeIdrElement.textContent = formatIdr(feeIdr);
+    setApproxIdrFromUsd(feeIdrElement, fee);
   }
 
   // Update subtotal IDR
   const subtotalIdrEl = subtotalElement ? subtotalElement.closest(".summary-line-values") : null;
   if (subtotalIdrEl) {
     const idrSpan = subtotalIdrEl.querySelector(".summary-line-idr");
-    if (idrSpan) idrSpan.textContent = formatIdr(subtotalIdr);
+    setApproxIdrFromUsd(idrSpan, total);
   }
 
   // Also update summary section if it exists
@@ -379,7 +423,7 @@ function updateCartTotal() {
   // Update total IDR
   const totalIdrEl = document.getElementById("cart-total-idr");
   if (totalIdrEl) {
-    totalIdrEl.textContent = formatIdr(totalIdr);
+    setApproxIdrFromUsd(totalIdrEl, grandTotal);
   }
 
   // Update checkout invest button if on checkout page
@@ -501,6 +545,7 @@ document.addEventListener("DOMContentLoaded", function () {
   } else if (document.querySelector(".checkout-invest-button")) {
     updateCheckoutTotal();
   }
+  hydrateCartFxRate();
   startCheckoutTimer();
 });
 
@@ -514,6 +559,7 @@ document.body.addEventListener("htmx:afterSwap", function (evt) {
   } else if (evt.detail.target.id === "checkout-content") {
     updateCheckoutTotal();
   }
+  hydrateCartFxRate();
   startCheckoutTimer();
 });
 

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE developer_teams\n                          SET bank_iban_encrypted = NULL,\n                              bank_iban_last4 = NULL,\n                              bank_iban = NULL,\n                              updated_at = NOW()\n                        WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5938c38cf9e4d576368bdbbfabcd327cc444bc90a87db7ce40c689984dad1694"
+}

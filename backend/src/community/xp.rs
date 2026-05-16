@@ -113,6 +113,60 @@ pub async fn award_xp(
     Ok(amount)
 }
 
+/// Award XP for a reason only once per user (idempotent).
+/// Used for milestone reasons like `first_post`, `profile_completed`,
+/// `onboarding_complete` so they cannot be farmed by repeating the action.
+pub async fn award_xp_once(
+    pool: &PgPool,
+    user_id: Uuid,
+    reason: &str,
+    description: Option<&str>,
+) -> Result<i32, AppError> {
+    let already: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM xp_ledger WHERE user_id = $1 AND reason = $2)",
+    )
+    .bind(user_id)
+    .bind(reason)
+    .fetch_one(pool)
+    .await?;
+    if already {
+        return Ok(0);
+    }
+    award_xp(pool, user_id, reason, description, None).await
+}
+
+/// Check Getting-Started step completion and award `onboarding_complete`
+/// once when all three steps are done. Called from update_profile,
+/// create_user_post, and follow_user so it fires whichever action closes
+/// the third step.
+pub async fn maybe_award_onboarding_complete(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
+    let row: Option<(Option<String>, Option<String>, i32, i32)> = sqlx::query_as(
+        "SELECT bio, flair, post_count, following_count
+         FROM community_profiles WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+    let Some((bio, flair, post_count, following_count)) = row else {
+        return Ok(());
+    };
+    let bio_done = bio
+        .as_deref()
+        .map(|b| !b.trim().is_empty())
+        .unwrap_or(false)
+        || flair.as_deref().map(|f| !f.is_empty()).unwrap_or(false);
+    if bio_done && following_count >= 5 && post_count >= 1 {
+        let _ = award_xp_once(
+            pool,
+            user_id,
+            "onboarding_complete",
+            Some("Completed Getting Started"),
+        )
+        .await;
+    }
+    Ok(())
+}
+
 // ─── Level Calculation ──────────────────────────────────────────────
 
 /// Update user level based on current xp_total.

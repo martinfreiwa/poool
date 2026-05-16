@@ -41,12 +41,14 @@ body.my-trading-body {
     font-family: var(--myt-font);
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 /* === Layout === */
 .myt {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .myt__sidebar {
@@ -63,6 +65,7 @@ body.my-trading-body {
     margin-left: var(--sidebar-width, 256px);
     padding: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     background: var(--myt-bg);
 }
 

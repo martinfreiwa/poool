@@ -64,8 +64,7 @@ pub fn html_to_plain_text(html: &str) -> String {
     let strip_head = Regex::new(r"(?is)<head\b[^>]*>.*?</head>").unwrap();
     let strip_style = Regex::new(r"(?is)<style\b[^>]*>.*?</style>").unwrap();
     let strip_script = Regex::new(r"(?is)<script\b[^>]*>.*?</script>").unwrap();
-    let block_breaks =
-        Regex::new(r"(?i)<(br\s*/?|/(p|div|li|tr|h[1-6]))\s*>").unwrap();
+    let block_breaks = Regex::new(r"(?i)<(br\s*/?|/(p|div|li|tr|h[1-6]))\s*>").unwrap();
     let any_tag = Regex::new(r"(?s)<[^>]+>").unwrap();
     let collapse_blank = Regex::new(r"\n{3,}").unwrap();
     let trailing_spaces = Regex::new(r"[ \t]+\n").unwrap();
@@ -670,18 +669,13 @@ pub const HARD_SUPPRESSION_REASONS: &[&str] = &["hard_bounce", "spam_complaint"]
 /// call is a no-op — admin alerts are operationally useful but never
 /// load-bearing, so a missing inbox should not break the caller's
 /// happy path.
-pub async fn trigger_admin_alert(
-    pool: &PgPool,
-    event_type: &str,
-    metadata: serde_json::Value,
-) {
-    let admin_id: Option<Uuid> = sqlx::query_scalar(
-        "SELECT id FROM users WHERE email = 'admin@poool.app' LIMIT 1",
-    )
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten();
+pub async fn trigger_admin_alert(pool: &PgPool, event_type: &str, metadata: serde_json::Value) {
+    let admin_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM users WHERE email = 'admin@poool.app' LIMIT 1")
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
 
     let Some(id) = admin_id else {
         tracing::warn!(
@@ -1158,7 +1152,10 @@ mod tests {
     fn html_to_plain_preserves_paragraph_breaks() {
         let html = "<p>First</p><p>Second</p>";
         let out = html_to_plain_text(html);
-        assert!(out.contains("First\n"), "expected newline after First; got: {out:?}");
+        assert!(
+            out.contains("First\n"),
+            "expected newline after First; got: {out:?}"
+        );
         assert!(out.contains("Second"));
     }
 
@@ -1178,7 +1175,10 @@ mod tests {
         let out = html_to_plain_text(html);
         // &eacute; not in our decode set, so it survives — that's fine
         // because POOOL bodies don't emit it. The ones we do emit decode.
-        assert!(out.contains("&") || out.contains("&amp;") == false, "& should decode");
+        assert!(
+            out.contains("&") || out.contains("&amp;") == false,
+            "& should decode"
+        );
         assert!(out.contains("—"));
         assert!(out.contains("\"test\""));
     }

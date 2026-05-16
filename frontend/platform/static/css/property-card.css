@@ -687,5 +687,13 @@ img.property-image--fallback {
   .property-nav-arrow {
     display: flex;
     opacity: 1;
+    /* Mobile tap target: bump 32px → 44px (Apple HIG / iOS) */
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.5);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }

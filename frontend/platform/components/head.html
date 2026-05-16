@@ -233,6 +233,10 @@
     <script src="/static/js/sidebar-community.js?v={{ asset_version }}"></script>
     <link rel="stylesheet" href="/static/css/global-search.css?v={{ asset_version }}" />
     <script src="/static/js/global-search.js?v={{ asset_version }}"></script>
+    <!-- Phase-3 P1: in-app inbox bell icon + dropdown. Loaded globally so
+         the bell appears on every page that includes investor-topbar. -->
+    <link rel="stylesheet" href="/static/css/inbox-bell.css?v={{ asset_version }}" />
+    <script defer src="/static/js/inbox-bell.js?v={{ asset_version }}"></script>
 
     <!-- Page Specific CSS and Scripts -->
     {% if extra_css %}

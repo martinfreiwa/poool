@@ -8,6 +8,7 @@
     display: flex;
     width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
     background: #f5f6fa;
     font-family: 'TT Norms Pro', sans-serif;
 }

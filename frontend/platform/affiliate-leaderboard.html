@@ -1,0 +1,34 @@
+{% with title="Affiliate Leaderboard – POOOL",
+extra_css=['affiliate-leaderboard'],
+extra_js=['affiliate-leaderboard'] %}{% include "components/head.html" %}{% endwith %}
+
+<body class="app-body fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <main class="leaderboard-shell" id="leaderboard-shell" role="main">
+    <header class="leaderboard-hero">
+      <h1>POOOL Affiliate Leaderboard</h1>
+      <p class="leaderboard-hero__sub">Top affiliates by paid commission. Anyone can opt in from <a href="/affiliate/settings">affiliate settings</a>.</p>
+
+      <div class="leaderboard-tabs" role="tablist" aria-label="Time period">
+        <button type="button" role="tab" class="leaderboard-tab active"
+                aria-selected="true" data-period="month">This month</button>
+        <button type="button" role="tab" class="leaderboard-tab"
+                aria-selected="false" data-period="lifetime">All-time</button>
+      </div>
+    </header>
+
+    <section class="leaderboard-list-wrap" aria-live="polite">
+      <ol class="leaderboard-list" id="leaderboard-list">
+        <li class="leaderboard-row leaderboard-row--loading">Loading…</li>
+      </ol>
+      <p class="leaderboard-empty" id="leaderboard-empty" hidden>
+        No affiliates have opted in yet. Be the first — enable the leaderboard in your <a href="/affiliate/settings">affiliate settings</a>.
+      </p>
+    </section>
+
+    <footer class="leaderboard-footer">
+      <p>Rankings refresh every 15 minutes. Only affiliates who explicitly opt in are listed.</p>
+    </footer>
+  </main>
+</body>

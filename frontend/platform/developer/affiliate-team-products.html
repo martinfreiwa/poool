@@ -20,24 +20,53 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
       <div class="ds-main__content">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <section class="ds-card dat-content-card">
-          <div class="dat-section__intro">
-            <h3 class="dat-section__title">Product Sales</h3>
-            <p class="dat-section__hint">Assets sold via your team's business affiliate links.</p>
+        <section class="ds-card dat-content-card" aria-labelledby="dat-prod-title">
+          <div class="dat-section__intro dat-section__intro--with-actions">
+            <div class="dat-section__intro-text">
+              <h3 class="dat-section__title" id="dat-prod-title">Product Sales</h3>
+              <p class="dat-section__hint" id="dat-prod-hint">Assets sold via your team's business affiliate links — sorted by gross revenue.</p>
+            </div>
+            <div class="dat-section__actions">
+              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="dat-products-export" title="Download product sales as CSV" aria-label="Export product sales to CSV">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Export CSV</span>
+              </button>
+            </div>
           </div>
+          <!-- Phase-1: date-range filter (matches Customers + Analytics presets). -->
+          <div class="dat-date-range" id="dat-products-date-range">
+            <span class="dat-date-range__label" id="dat-products-date-label">Sales window:</span>
+            <div class="dat-date-range__presets" role="group" aria-labelledby="dat-products-date-label">
+              <button type="button" class="dat-preset" data-preset="all">All time</button>
+              <button type="button" class="dat-preset" data-preset="7d">Last 7d</button>
+              <button type="button" class="dat-preset" data-preset="30d">Last 30d</button>
+              <button type="button" class="dat-preset" data-preset="this-month">This month</button>
+              <button type="button" class="dat-preset" data-preset="ytd">YTD</button>
+            </div>
+            <input type="date" id="dat-products-from" class="ds-input" aria-label="From date"/>
+            <span>—</span>
+            <input type="date" id="dat-products-to" class="ds-input" aria-label="To date"/>
+          </div>
+          <div id="dat-products-pager-host" class="dat-table-pager-host"></div>
           <div class="dat-table-wrap">
-            <table class="dat-table">
+            <table class="dat-table dat-table--hoverable" aria-describedby="dat-prod-hint">
+              <caption class="dat-table__caption sr-only">Assets sold via team-business affiliate links. Sortable by asset name, units sold, unique buyers, gross revenue, avg sale, commission, last sale.</caption>
               <thead>
-                <tr>
-                  <th>Asset</th>
-                  <th>Units sold</th>
-                  <th>Gross revenue</th>
-                  <th>Commission</th>
+                <tr id="dat-products-thead-row">
+                  <th scope="col" data-col="asset_name">Asset</th>
+                  <th scope="col" class="dat-th--num" data-col="units_sold">Units sold</th>
+                  <th scope="col" class="dat-th--num" data-col="n_buyers">Unique buyers</th>
+                  <th scope="col" class="dat-th--num" data-col="gross_revenue">Gross revenue</th>
+                  <th scope="col" class="dat-th--num" data-col="avg_sale">Avg sale</th>
+                  <th scope="col" class="dat-th--num" data-col="commission">Commission</th>
+                  <th scope="col" data-col="last_sale">Last sale</th>
                 </tr>
               </thead>
-              <tbody id="dat-products-tbody">
-                <tr><td colspan="4" class="dat-empty">Loading…</td></tr>
-              </tbody>
+              <tbody id="dat-products-tbody"></tbody>
             </table>
           </div>
         </section>

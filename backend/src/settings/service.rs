@@ -1563,6 +1563,18 @@ pub async fn delete_account_selective(
         .await
         .map_err(|e| AppError::Internal(format!("Failed to commit account deletion: {}", e)))?;
 
+    // Phase-3 P1: scrub affiliate-domain PII as part of the account
+    // deletion. Historical commission / referral rows STAY (tax retention)
+    // but the profile + bank details + tax-id ciphertext are blanked.
+    // Non-fatal — the user-table deletion already committed.
+    if let Err(e) = crate::rewards::service::anonymize_affiliate_user(pool, user_id).await {
+        tracing::warn!(
+            user_id = %user_id,
+            error = %e,
+            "affiliate anonymization failed during account deletion (non-fatal)"
+        );
+    }
+
     // 6. Audit log the deletion (immutable record, best-effort after commit)
     crate::common::audit::log(
         pool,

@@ -251,6 +251,14 @@ pub async fn cancel_investment(
     .await
     .map_err(|e| e.to_string())?;
 
+    // Phase-3 P1: auto-clawback any affiliate commissions tied to this
+    // investment. The helper runs in its own transaction (it `pool.begin()`s
+    // internally) so we must commit our wallet/refund tx FIRST. Failure
+    // here must NOT fail the refund — log + continue.
+    // NB: we capture investment_id BEFORE committing so the FK isn't lost.
+    let inv_for_clawback = investment_id;
+    let actor_for_clawback = user_id;
+
     // 4. Replenish Asset available tokens
     sqlx::query!(
         "UPDATE assets SET tokens_available = tokens_available + $1, updated_at = NOW() WHERE id = $2",
@@ -276,6 +284,23 @@ pub async fn cancel_investment(
     .map_err(|e| e.to_string())?;
 
     tx.commit().await.map_err(|e| e.to_string())?;
+
+    // After-commit: reverse any affiliate commissions earned on this
+    // investment. Non-fatal — the cooling-off refund is already complete.
+    if let Err(e) = crate::rewards::service::auto_clawback_for_refunded_investment(
+        pool,
+        inv_for_clawback,
+        actor_for_clawback,
+        "48h cooling-off cancellation",
+    )
+    .await
+    {
+        tracing::warn!(
+            investment_id = %inv_for_clawback,
+            error = %e,
+            "auto-clawback failed after cooling-off refund (non-fatal — refund stands)"
+        );
+    }
 
     Ok(())
 }

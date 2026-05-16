@@ -44,6 +44,7 @@
      ============================================ */
   #developer-submission-success-body {
     min-height: 100vh !important;
+    min-height: 100dvh !important;
     background: #fafafa !important;
     display: flex !important;
     align-items: center !important;
@@ -57,6 +58,7 @@
     overflow-x: hidden !important;
     background: #fafafa !important;
     min-height: 100vh !important;
+    min-height: 100dvh !important;
   }
 
   /* Hide sidebar on mobile */
@@ -91,6 +93,7 @@
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    height: 100dvh !important;
     pointer-events: none !important;
     z-index: 1000 !important;
     overflow: hidden !important;

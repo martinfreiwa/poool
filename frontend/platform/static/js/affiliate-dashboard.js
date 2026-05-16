@@ -61,6 +61,10 @@
 
             dashboardData = await res.json();
 
+            // Phase-5: expose the active personal-link id so the coupon
+            // form can attach codes without a second round-trip.
+            window.__affiliatePersonalLinkId = dashboardData.personal_link_id || null;
+
             // Pending applicants stay in the affiliate flow until admin approval.
             if (dashboardData.status === 'pending_approval') {
                 renderPendingReviewState();
@@ -150,7 +154,7 @@
             };
         } else {
             btn.disabled = true;
-            btn.textContent = `Need $${(50 - payable).toFixed(2)} to Payout`;
+            btn.textContent = `Need ${formatCurrency(50 - payable)} to Payout`;
             btn.onclick = null;
         }
 
@@ -366,8 +370,12 @@
         document.body.prepend(banner);
     }
 
+    // Phase-2 P0: align with developer dashboard formatter (de-DE / EUR).
+    // Earlier this page used en-US / USD which contradicted the rest of the
+    // platform — same `payable_cents` rendered as "$50.00" here and as
+    // "50 €" on /developer/affiliate-team. Single source of truth now.
     function formatCurrency(num) {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+        return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(num);
     }
 
     // Dynamic Link Generator
@@ -629,5 +637,107 @@
         loadSubIDStats();
         loadTeamBanner();
         setupModeSwitcher();
+        loadCoupons();
+        wireCouponForm();
     });
+
+    // ── Phase-5: coupon manager ──────────────────────────────────────────
+    function fmtCouponStatus(c) {
+        if (!c.is_active) return '<span style="color:#98A2B3;">Inactive</span>';
+        if (c.max_uses && c.usage_count >= c.max_uses) {
+            return '<span style="color:#B42318;">Exhausted</span>';
+        }
+        if (c.valid_to && new Date(c.valid_to) < new Date()) {
+            return '<span style="color:#B42318;">Expired</span>';
+        }
+        return '<span style="color:#027A48;">Active</span>';
+    }
+    async function loadCoupons() {
+        const tbody = document.getElementById('aff-coupon-list-body');
+        if (!tbody) return;
+        try {
+            const res = await fetch('/api/affiliate/coupons', { credentials: 'same-origin' });
+            if (!res.ok) return;
+            const data = await res.json();
+            const items = data.items || [];
+            if (!items.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:18px;text-align:center;color:#98A2B3;">No coupons yet. Click + New coupon to create one.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(function (c) {
+                const codeSafe = String(c.code).replace(/[<>&"]/g, '');
+                const disc = c.discount_bps != null
+                    ? ((c.discount_bps / 100).toFixed(2) + '%') : '—';
+                const uses = (c.usage_count || 0)
+                    + (c.max_uses ? (' / ' + c.max_uses) : '');
+                const validTo = c.valid_to
+                    ? new Date(c.valid_to).toLocaleDateString() : '—';
+                return '<tr style="border-bottom:1px solid #F2F4F7;">'
+                    + '<td style="padding:10px 12px;font-family:ui-monospace,monospace;font-weight:600;">' + codeSafe + '</td>'
+                    + '<td style="padding:10px 12px;">' + disc + '</td>'
+                    + '<td style="padding:10px 12px;">' + uses + '</td>'
+                    + '<td style="padding:10px 12px;">' + validTo + '</td>'
+                    + '<td style="padding:10px 12px;">' + fmtCouponStatus(c) + '</td>'
+                    + '</tr>';
+            }).join('');
+        } catch (_) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:18px;text-align:center;color:#B42318;">Failed to load coupons.</td></tr>';
+        }
+    }
+    function wireCouponForm() {
+        const newBtn = document.getElementById('aff-coupon-new-btn');
+        const form = document.getElementById('aff-coupon-form');
+        const cancel = document.getElementById('aff-coupon-cancel');
+        if (!newBtn || !form) return;
+        newBtn.addEventListener('click', function () {
+            form.hidden = false;
+            form.querySelector('#aff-coupon-code').focus();
+        });
+        cancel?.addEventListener('click', function () {
+            form.hidden = true;
+            form.reset();
+            document.getElementById('aff-coupon-error').textContent = '';
+        });
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const errEl = document.getElementById('aff-coupon-error');
+            errEl.textContent = '';
+            const code = document.getElementById('aff-coupon-code').value.trim().toUpperCase();
+            const disc = document.getElementById('aff-coupon-discount').value;
+            const maxUses = document.getElementById('aff-coupon-max-uses').value;
+            const validTo = document.getElementById('aff-coupon-valid-to').value;
+            // Need the affiliate's personal link id. Pull from the dashboard
+            // context fetched on load (set by loadDashboard via global).
+            const linkId = window.__affiliatePersonalLinkId;
+            if (!linkId) {
+                errEl.textContent = 'No active affiliate link to attach coupons to.';
+                return;
+            }
+            const body = {
+                affiliate_link_id: linkId,
+                code: code,
+                discount_bps: disc ? Number(disc) : null,
+                max_uses: maxUses ? Number(maxUses) : null,
+                valid_to: validTo ? new Date(validTo).toISOString() : null,
+            };
+            try {
+                const res = await fetch('/api/affiliate/coupons', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(body),
+                });
+                if (!res.ok) {
+                    const j = await res.json().catch(() => ({}));
+                    errEl.textContent = j.error || 'Create failed.';
+                    return;
+                }
+                form.reset();
+                form.hidden = true;
+                loadCoupons();
+            } catch (e) {
+                errEl.textContent = 'Network error.';
+            }
+        });
+    }
 })();

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT current_tier, commission_rate_bps FROM affiliates WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "current_tier",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "commission_rate_bps",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "85a9da925377ddee8baee21bc3f5ba9dac4d55d72f082cbf1b63daf1cd1d044c"
+}
