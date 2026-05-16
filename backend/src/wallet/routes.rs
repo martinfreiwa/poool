@@ -1605,6 +1605,170 @@ pub async fn api_wallet_balance(
 }
 
 /// GET /api/wallet/transactions – returns paginated recent wallet transactions as JSON.
+/// Query params for the wallet-transactions CSV export.
+#[derive(Debug, Deserialize)]
+pub struct TransactionExportQuery {
+    /// Optional ISO-8601 lower bound, e.g. `2026-01-01T00:00:00Z`.
+    pub from: Option<String>,
+    /// Optional ISO-8601 upper bound (exclusive). Defaults to NOW().
+    pub to: Option<String>,
+}
+
+fn parse_export_bound(s: &str) -> Option<DateTime<Utc>> {
+    DateTime::parse_from_rfc3339(s)
+        .ok()
+        .map(|d| d.with_timezone(&Utc))
+}
+
+fn csv_escape(field: &str) -> String {
+    // RFC 4180: wrap in double-quotes if the value contains comma,
+    // quote, or newline; escape inner quotes by doubling them.
+    let needs_quote = field.contains([',', '"', '\n', '\r']);
+    if needs_quote {
+        let escaped = field.replace('"', "\"\"");
+        format!("\"{}\"", escaped)
+    } else {
+        field.to_string()
+    }
+}
+
+/// GET /api/wallet/transactions/export
+///
+/// Streams the caller's wallet transactions as RFC-4180 CSV. Designed
+/// for bookkeeping / tax-prep workflows — columns are stable and the
+/// `Content-Disposition` header triggers a download in the browser.
+///
+/// Query params (both optional):
+///   from — ISO-8601 lower bound (`>=`)
+///   to   — ISO-8601 upper bound (`<`); defaults to NOW().
+///
+/// The export is bounded to 10 000 rows so a runaway query can't blow
+/// memory. Users with denser histories should narrow the date range.
+pub async fn api_wallet_transactions_export(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(params): Query<TransactionExportQuery>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                [(
+                    axum::http::header::CONTENT_TYPE,
+                    "application/json".to_string(),
+                )],
+                serde_json::json!({"error": "Unauthorized"}).to_string(),
+            )
+                .into_response();
+        }
+    };
+
+    let from = params
+        .from
+        .as_deref()
+        .and_then(parse_export_bound)
+        .unwrap_or_else(|| Utc::now() - chrono::Duration::days(365 * 5));
+    let to = params
+        .to
+        .as_deref()
+        .and_then(parse_export_bound)
+        .unwrap_or_else(Utc::now);
+
+    let rows = sqlx::query_as::<
+        _,
+        (
+            Uuid,
+            String,
+            String,
+            i64,
+            String,
+            DateTime<Utc>,
+            Option<DateTime<Utc>>,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ),
+    >(
+        r#"
+        SELECT t.id, t.type, t.status, t.amount_cents, w.wallet_type,
+               t.created_at, t.completed_at, w.currency,
+               t.description, t.external_ref_id
+          FROM wallet_transactions t
+          JOIN wallets w ON w.id = t.wallet_id
+         WHERE w.user_id = $1
+           AND t.created_at >= $2
+           AND t.created_at <  $3
+         ORDER BY t.created_at DESC
+         LIMIT 10000
+        "#,
+    )
+    .bind(user.id)
+    .bind(from)
+    .bind(to)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let mut body = String::with_capacity(rows.len() * 128 + 256);
+    body.push_str(
+        "transaction_id,created_at,completed_at,type,status,wallet_type,currency,amount_cents,amount_display,description,reference\n",
+    );
+    for (
+        id,
+        tx_type,
+        status,
+        amount,
+        wallet_type,
+        created_at,
+        completed_at,
+        currency,
+        description,
+        reference,
+    ) in rows
+    {
+        let abs = amount.unsigned_abs();
+        let sign = if amount < 0 { "-" } else { "" };
+        let display = format!("{}{}.{:02}", sign, abs / 100, abs % 100);
+        body.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{},{},{}\n",
+            id,
+            created_at.to_rfc3339(),
+            completed_at.map(|d| d.to_rfc3339()).unwrap_or_default(),
+            csv_escape(&tx_type),
+            csv_escape(&status),
+            csv_escape(&wallet_type),
+            csv_escape(currency.as_deref().unwrap_or("USD")),
+            amount,
+            csv_escape(&display),
+            csv_escape(description.as_deref().unwrap_or("")),
+            csv_escape(reference.as_deref().unwrap_or("")),
+        ));
+    }
+
+    let filename = format!(
+        "poool-transactions-{}-to-{}.csv",
+        from.format("%Y%m%d"),
+        to.format("%Y%m%d"),
+    );
+
+    (
+        StatusCode::OK,
+        [
+            (
+                axum::http::header::CONTENT_TYPE,
+                "text/csv; charset=utf-8".to_string(),
+            ),
+            (
+                axum::http::header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{}\"", filename),
+            ),
+        ],
+        body,
+    )
+        .into_response()
+}
+
 pub async fn api_wallet_transactions(
     jar: CookieJar,
     State(state): State<AppState>,

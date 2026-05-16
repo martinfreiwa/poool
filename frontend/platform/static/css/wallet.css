@@ -1452,7 +1452,11 @@ body.kyc-hidden .wallet-main {
 
 .wallet-deposit-steps__item[aria-current="step"] .wallet-deposit-steps__num {
   background: #0000FF;
-  color: #FFFFFF;
+  /* Active step pairs Electric Blue bg with brand-green numerals, matching
+     the design-token primary button (`--btn-primary-color: #98FB96`).
+     Was white; switched to brand green so the step indicator reads as
+     part of the POOOL primary action palette. */
+  color: #98FB96;
 }
 
 .wallet-deposit-steps__divider {
@@ -1515,23 +1519,35 @@ body.kyc-hidden .wallet-main {
   color: #0000FF;
 }
 
+/* AML notice — aligned with POOOL DESIGN.md warning tokens.
+ *   bg     : #FFFAEB  (warning surface)
+ *   border : #F79009  (warning accent)
+ *   text   : #B54708  (warning ink)
+ * 12 px radius + 14 px padding matches the dashboard card spec.
+ */
 .wallet-deposit-aml-note {
   display: flex;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   margin-top: 16px;
-  background: #FFFBEB;
-  border: 1px solid #FED7AA;
-  border-radius: 8px;
-  font-size: 12px;
+  background: #FFFAEB;
+  border: 1px solid #F79009;
+  border-radius: 12px;
+  font-size: 13px;
   line-height: 1.5;
-  color: #92400E;
+  color: #B54708;
 }
 
 .wallet-deposit-aml-note strong {
   display: block;
   margin-bottom: 2px;
-  color: #78350F;
+  color: #B54708;
+  font-weight: 600;
+}
+
+.wallet-deposit-aml-note span {
+  color: #B54708;
+  opacity: 0.85;
 }
 
 .wallet-deposit-aml-note svg {
@@ -1666,6 +1682,47 @@ body.kyc-hidden .wallet-main {
   color: #052E16 !important;
 }
 
+/* Icon-only Copy buttons in the deposit-bank rows. Compact 28x28 square,
+ * borderless on rest state, brand-blue on hover for affordance. Cleaner
+ * than the original text "Copy" button which competed visually with the
+ * IBAN/BIC monospace value. */
+.wallet-deposit-copy--icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #667085;
+  border-radius: 6px;
+}
+.wallet-deposit-copy--icon:hover {
+  background: #F2F4F7;
+  border-color: transparent;
+  color: #0000FF;
+}
+.wallet-deposit-copy--icon:focus-visible {
+  outline: 2px solid #0000FF;
+  outline-offset: 2px;
+}
+.wallet-deposit-copy--icon.wallet-deposit-copy--primary {
+  background: transparent;
+  border-color: transparent;
+  color: #0000FF;
+}
+.wallet-deposit-copy--icon.wallet-deposit-copy--primary:hover {
+  background: #EFF3FF;
+  color: #0000FF;
+}
+/* Copied state on the icon variant — green tint flash to confirm. */
+.wallet-deposit-copy--icon.wallet-deposit-copy--copied {
+  background: #ECFDF3 !important;
+  border-color: transparent !important;
+  color: #027A48 !important;
+}
+
 .wallet-deposit-upload {
   display: flex;
   flex-direction: column;
@@ -1760,6 +1817,31 @@ body.kyc-hidden .wallet-main {
 .wallet-deposit-optional {
   color: #98A2B3;
   font-weight: 500;
+}
+
+.wallet-transactions-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #D0D5DD;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.12s ease;
+}
+
+.wallet-transactions-export:hover {
+  border-color: #0000FF;
+  color: #0000FF;
+  background: #F5F8FF;
+}
+
+.wallet-transactions-export svg {
+  flex-shrink: 0;
 }
 
 .wallet-deposit-sof {
@@ -3004,4 +3086,61 @@ body.kyc-hidden .wallet-main {
   font-size: 12px;
   color: #344054;
   word-break: break-all;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Withdraw button — explicit brand styling (green bg + blue text)
+   per Token-Secondary spec in `dashboard-tokens.css`:
+       --btn-secondary-bg: #98FB96  (mint green)
+       --btn-secondary-color: #0000FF  (electric blue)
+   The four Withdraw buttons (topbar, wallet empty-state CTA, modal
+   confirm, mobile cash-card) all live across cascades that historically
+   overrode the design tokens with grey/transparent variants. Pinning
+   here with high specificity guarantees the brand look survives.
+   ───────────────────────────────────────────────────────────────────────── */
+#withdraw-btn.ds-btn,
+#empty-withdraw-btn.ds-btn,
+#withdraw-submit-btn.ds-btn,
+.mobile-cash-balance-card__actions .ds-btn--secondary {
+  background: var(--btn-secondary-bg, #98FB96);
+  color: var(--btn-secondary-color, #0000FF);
+  border-color: var(--btn-secondary-border, transparent);
+}
+#withdraw-btn.ds-btn:hover,
+#empty-withdraw-btn.ds-btn:hover,
+#withdraw-submit-btn.ds-btn:hover,
+.mobile-cash-balance-card__actions .ds-btn--secondary:hover {
+  background: var(--btn-secondary-hover-bg, #7BE079);
+  color: var(--btn-secondary-color, #0000FF);
+}
+#withdraw-btn.ds-btn:active,
+#empty-withdraw-btn.ds-btn:active,
+#withdraw-submit-btn.ds-btn:active,
+.mobile-cash-balance-card__actions .ds-btn--secondary:active {
+  background: var(--btn-secondary-active-bg, #60C85E);
+  color: var(--btn-secondary-color, #0000FF);
+}
+/* SVG icons + the inner span on the mobile button inherit the brand
+   blue so the chevron and label stay legible on the mint background. */
+#withdraw-btn.ds-btn svg,
+#empty-withdraw-btn.ds-btn svg,
+#withdraw-submit-btn.ds-btn svg,
+.mobile-cash-balance-card__actions .ds-btn--secondary svg {
+  color: var(--btn-secondary-color, #0000FF);
+  stroke: currentColor;
+}
+.mobile-cash-balance-card__actions .ds-btn--secondary
+  .mobile-cash-balance-card__button-text--secondary {
+  color: var(--btn-secondary-color, #0000FF);
+}
+/* Disabled state preserves the brand pair at reduced opacity rather than
+   falling back to the global grey-disabled token (which would otherwise
+   shift the colour pair on a button that just lacks balance). */
+#withdraw-btn.ds-btn:disabled,
+#empty-withdraw-btn.ds-btn:disabled,
+#withdraw-submit-btn.ds-btn:disabled {
+  background: var(--btn-secondary-bg, #98FB96);
+  color: var(--btn-secondary-color, #0000FF);
+  opacity: 0.55;
+  cursor: not-allowed;
 }
