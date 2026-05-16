@@ -946,6 +946,27 @@ pub async fn handle_deposit_submit(
     // log enrichment below.
     let _ = sof_reason;
 
+    // ── P0 / C-1 fix: when the AMLD threshold mandates a SoF document,
+    // VALIDATE the upload here before we touch the proof row. A failure
+    // path that "logs and continues" would let users bypass the gate by
+    // submitting a 1-byte file. We pre-sniff the MIME and reject the
+    // whole submission on failure so the deposit never gets recorded
+    // without its mandatory evidence.
+    let mandatory_sof_sniff = if needs_sof_doc {
+        match sof_doc_bytes.as_deref().and_then(storage_svc::sniff_mime) {
+            Some(m) if storage_svc::mime_matches(&sof_doc_mime, m)
+                && storage_svc::validate_kyc_mime(m).is_ok() =>
+            {
+                Some(m)
+            }
+            _ => {
+                return release_and_redirect("/wallet?error=sof_doc_unsupported_format").await;
+            }
+        }
+    } else {
+        None
+    };
+
     // ── Validate proof: magic-byte sniff + allow-list ────────────
     let sniffed = match storage_svc::sniff_mime(&file_bytes) {
         Some(m) => m,
@@ -975,7 +996,11 @@ pub async fn handle_deposit_submit(
                 match storage_svc::upload_local(&object_path, file_bytes).await {
                     Ok(p) => p,
                     Err(_) => {
-                        return Redirect::to("/wallet?error=proof_upload_failed").into_response()
+                        // H-3 fix: release the reservation so the user can
+                        // retry with the same Idempotency-Key after a
+                        // transient storage failure (no point locking them
+                        // out for 24h on a flaky upload).
+                        return release_and_redirect("/wallet?error=proof_upload_failed").await;
                     }
                 }
             }
@@ -983,7 +1008,9 @@ pub async fn handle_deposit_submit(
     } else {
         match storage_svc::upload_local(&object_path, file_bytes).await {
             Ok(p) => p,
-            Err(_) => return Redirect::to("/wallet?error=proof_upload_failed").into_response(),
+            Err(_) => {
+                return release_and_redirect("/wallet?error=proof_upload_failed").await;
+            }
         }
     };
 
@@ -1004,21 +1031,31 @@ pub async fn handle_deposit_submit(
             e,
             proof_path
         );
-        return Redirect::to("/wallet?error=proof_save_failed").into_response();
+        // H-3 fix: release so the user can retry; the orphaned GCS file
+        // will be cleaned up by the storage GC sweep.
+        return release_and_redirect("/wallet?error=proof_save_failed").await;
     }
 
-    // ── Upload SoF document if supplied ──────────────────────────
-    // Validation already enforced that it's present when required; here we
-    // just persist it. Same MIME allow-list as the proof. Failure to upload
-    // is logged but does NOT block the deposit — the operations team can
-    // chase the document via email.
+    // ── Upload SoF document ─────────────────────────────────────
+    // For mandatory submissions (`needs_sof_doc`) any failure aborts and
+    // logs an explicit error so the user retries. For optional submissions
+    // (below the threshold) we keep the best-effort behaviour — chase via
+    // email if the upload fails.
     if let Some(doc_bytes) = sof_doc_bytes {
-        let sof_sniffed = storage_svc::sniff_mime(&doc_bytes);
-        let sof_ok = matches!(sof_sniffed, Some(m) if storage_svc::mime_matches(&sof_doc_mime, m)
+        let sof_sniffed = if needs_sof_doc {
+            mandatory_sof_sniff
+        } else {
+            let s = storage_svc::sniff_mime(&doc_bytes);
+            let ok = matches!(s, Some(m) if storage_svc::mime_matches(&sof_doc_mime, m)
                 && storage_svc::validate_kyc_mime(m).is_ok());
-        if !sof_ok {
-            tracing::warn!(deposit_id = %deposit_id, "SoF doc rejected: unsupported MIME");
-        } else if let Some(sniffed_mime) = sof_sniffed {
+            if ok {
+                s
+            } else {
+                tracing::warn!(deposit_id = %deposit_id, "Optional SoF doc rejected: unsupported MIME");
+                None
+            }
+        };
+        if let Some(sniffed_mime) = sof_sniffed {
             let sof_ext = storage_svc::extension_for_mime(sniffed_mime);
             let sof_path = format!("deposits/{}/{}-sof.{}", user.id, deposit_id, sof_ext);
             let uploaded = if let Some(ref b) = bucket {
@@ -1034,15 +1071,31 @@ pub async fn handle_deposit_submit(
             } else {
                 storage_svc::upload_local(&sof_path, doc_bytes).await.ok()
             };
-            if let Some(p) = uploaded {
-                let _ = sqlx::query(
-                    "UPDATE deposit_requests SET source_of_funds_doc_path = $1 WHERE id = $2",
-                )
-                .bind(&p)
-                .bind(deposit_id)
-                .execute(&state.db)
-                .await;
+            match uploaded {
+                Some(p) => {
+                    let persisted = sqlx::query(
+                        "UPDATE deposit_requests SET source_of_funds_doc_path = $1 WHERE id = $2",
+                    )
+                    .bind(&p)
+                    .bind(deposit_id)
+                    .execute(&state.db)
+                    .await
+                    .is_ok();
+                    if needs_sof_doc && !persisted {
+                        tracing::error!(deposit_id = %deposit_id, gcs_path = %p, "SoF doc upload succeeded but DB persist failed; aborting deposit");
+                        return release_and_redirect("/wallet?error=sof_doc_save_failed").await;
+                    }
+                }
+                None => {
+                    if needs_sof_doc {
+                        tracing::error!(deposit_id = %deposit_id, "Mandatory SoF doc upload failed; aborting deposit");
+                        return release_and_redirect("/wallet?error=sof_doc_upload_failed").await;
+                    }
+                }
             }
+        } else if needs_sof_doc {
+            // Defensive — mandatory_sof_sniff should have caught this.
+            return release_and_redirect("/wallet?error=sof_doc_unsupported_format").await;
         }
     }
 
@@ -1137,77 +1190,13 @@ pub async fn api_request_unfreeze(
             }
         };
 
-    let row: Option<(
-        String,
-        Option<DateTime<Utc>>,
-        Option<DateTime<Utc>>,
-        Option<String>,
-    )> = sqlx::query_as(
-        "SELECT status, frozen_at, unfreeze_requested_at, frozen_reason
-               FROM users WHERE id = $1",
-    )
-    .bind(user.id)
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten();
-
-    let (status, frozen_at, unfreeze_requested_at, frozen_reason) = match row {
-        Some(r) => r,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({"error": "user_not_found"})),
-            )
-                .into_response();
-        }
-    };
-
-    if status != "frozen" {
-        return (
-            StatusCode::CONFLICT,
-            Json(serde_json::json!({
-                "error": "not_frozen",
-                "message": "Your account is not currently frozen.",
-            })),
-        )
-            .into_response();
-    }
-
-    // Rate-limit: one open request per 24h.
-    if let Some(prev) = unfreeze_requested_at {
-        if (Utc::now() - prev).num_hours() < 24 {
-            return (
-                StatusCode::TOO_MANY_REQUESTS,
-                Json(serde_json::json!({
-                    "error": "already_requested",
-                    "message": "Review already requested. Compliance will respond within 1 business day.",
-                })),
-            )
-                .into_response();
-        }
-    }
-
-    let note = payload
-        .note
-        .as_deref()
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .map(|s| s.chars().take(500).collect::<String>());
-
-    let frozen_for_hours = frozen_at.map(|f| (Utc::now() - f).num_hours()).unwrap_or(0);
-
-    let summary = format!(
-        "User requested unfreeze review (frozen {}h ago, reason: {})",
-        frozen_for_hours,
-        frozen_reason.unwrap_or_else(|| "unknown".to_string())
-    );
-    let details = serde_json::json!({
-        "frozen_at": frozen_at,
-        "frozen_for_hours": frozen_for_hours,
-        "user_note": note,
-    });
-
+    // M-2 fix: collapse the SELECT-then-INSERT race into a single
+    // conditional UPDATE. The UPDATE is the atomic gate — it only
+    // succeeds when the user is frozen AND not within the 24h
+    // rate-limit window. RETURNING gives us the metadata for the alert
+    // body in the same round-trip. Two concurrent requests now serialise
+    // on the row lock; the loser sees rows_affected==0 and we map it to
+    // the right error after a tiny disambiguating SELECT.
     let mut tx = match state.db.begin().await {
         Ok(tx) => tx,
         Err(e) => {
@@ -1219,6 +1208,79 @@ pub async fn api_request_unfreeze(
                 .into_response();
         }
     };
+
+    let claimed: Option<(Option<DateTime<Utc>>, Option<String>)> = sqlx::query_as(
+        r#"UPDATE users
+              SET unfreeze_requested_at = NOW()
+            WHERE id = $1
+              AND status = 'frozen'
+              AND (unfreeze_requested_at IS NULL
+                   OR unfreeze_requested_at < NOW() - INTERVAL '24 hours')
+            RETURNING frozen_at, frozen_reason"#,
+    )
+    .bind(user.id)
+    .fetch_optional(&mut *tx)
+    .await
+    .ok()
+    .flatten();
+
+    let (frozen_at, frozen_reason) = match claimed {
+        Some(row) => row,
+        None => {
+            let _ = tx.rollback().await;
+            // Disambiguate: not frozen, missing user, or rate-limited.
+            let row: Option<(String, Option<DateTime<Utc>>)> = sqlx::query_as(
+                "SELECT status, unfreeze_requested_at FROM users WHERE id = $1",
+            )
+            .bind(user.id)
+            .fetch_optional(&state.db)
+            .await
+            .ok()
+            .flatten();
+            return match row {
+                None => (
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({"error": "user_not_found"})),
+                )
+                    .into_response(),
+                Some((status, _)) if status != "frozen" => (
+                    StatusCode::CONFLICT,
+                    Json(serde_json::json!({
+                        "error": "not_frozen",
+                        "message": "Your account is not currently frozen.",
+                    })),
+                )
+                    .into_response(),
+                _ => (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(serde_json::json!({
+                        "error": "already_requested",
+                        "message": "Review already requested. Compliance will respond within 1 business day.",
+                    })),
+                )
+                    .into_response(),
+            };
+        }
+    };
+
+    let note = payload
+        .note
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.chars().take(500).collect::<String>());
+
+    let frozen_for_hours = frozen_at.map(|f| (Utc::now() - f).num_hours()).unwrap_or(0);
+    let summary = format!(
+        "User requested unfreeze review (frozen {}h ago, reason: {})",
+        frozen_for_hours,
+        frozen_reason.unwrap_or_else(|| "unknown".to_string())
+    );
+    let details = serde_json::json!({
+        "frozen_at": frozen_at,
+        "frozen_for_hours": frozen_for_hours,
+        "user_note": note,
+    });
 
     if let Err(e) = sqlx::query(
         r#"INSERT INTO compliance_alerts (user_id, kind, severity, summary, details)
@@ -1235,32 +1297,6 @@ pub async fn api_request_unfreeze(
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": "request_failed"})),
-        )
-            .into_response();
-    }
-
-    let updated = match sqlx::query("UPDATE users SET unfreeze_requested_at = NOW() WHERE id = $1")
-        .bind(user.id)
-        .execute(&mut *tx)
-        .await
-    {
-        Ok(result) => result,
-        Err(e) => {
-            tracing::error!("Failed to stamp unfreeze request on user: {}", e);
-            let _ = tx.rollback().await;
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "request_failed"})),
-            )
-                .into_response();
-        }
-    };
-
-    if updated.rows_affected() != 1 {
-        let _ = tx.rollback().await;
-        return (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "user_not_found"})),
         )
             .into_response();
     }
@@ -1974,12 +2010,32 @@ fn parse_export_bound(s: &str) -> Option<DateTime<Utc>> {
 fn csv_escape(field: &str) -> String {
     // RFC 4180: wrap in double-quotes if the value contains comma,
     // quote, or newline; escape inner quotes by doubling them.
-    let needs_quote = field.contains([',', '"', '\n', '\r']);
-    if needs_quote {
-        let escaped = field.replace('"', "\"\"");
-        format!("\"{}\"", escaped)
+    //
+    // OWASP CSV-injection defence (M-1): prefix a leading `=`, `+`, `-`,
+    // `@`, TAB or CR with a single quote so spreadsheets don't evaluate
+    // it as a formula. The prefix is dropped automatically when the
+    // file is parsed back into a column — it's only there to defang the
+    // formula trigger for Excel/Sheets/Numbers.
+    let starts_with_formula = field
+        .chars()
+        .next()
+        .map(|c| matches!(c, '=' | '+' | '-' | '@' | '\t' | '\r'))
+        .unwrap_or(false);
+    let defanged = if starts_with_formula {
+        let mut s = String::with_capacity(field.len() + 1);
+        s.push('\'');
+        s.push_str(field);
+        s
     } else {
         field.to_string()
+    };
+
+    let needs_quote = defanged.contains([',', '"', '\n', '\r']);
+    if needs_quote {
+        let escaped = defanged.replace('"', "\"\"");
+        format!("\"{}\"", escaped)
+    } else {
+        defanged
     }
 }
 

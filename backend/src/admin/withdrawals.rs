@@ -40,11 +40,30 @@ pub struct RejectWithdrawalPayload {
     pub reason: String,
 }
 
+/// Permission gate shared by every withdrawal admin endpoint. Returns
+/// `AppError::Forbidden` when the admin role doesn't carry the required
+/// permission so the bulk + per-row paths fail with the same shape.
+async fn require_withdraw_permission(
+    admin: &AdminUser,
+    pool: &sqlx::PgPool,
+    permission: &str,
+) -> Result<(), AppError> {
+    if crate::auth::middleware::has_permission(pool, admin.user.id, permission).await {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden(format!(
+            "Missing permission: {}",
+            permission
+        )))
+    }
+}
+
 /// GET /api/admin/withdrawals
 pub async fn api_admin_withdrawals(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<WithdrawalRequestView>>, AppError> {
+    require_withdraw_permission(&admin, &state.db, "withdrawals.read").await?;
     let rows = sqlx::query(
         r#"
         SELECT wr.id, wr.user_id, u.email as user_email, wr.amount_cents, wr.currency, wr.status,
@@ -78,10 +97,11 @@ pub async fn api_admin_withdrawals(
 /// POST /api/admin/withdrawals/:req_id/approve
 /// Atomically: verify balance → deduct → mark approved → update ledger tx
 pub async fn api_admin_withdrawal_approve(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(req_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    require_withdraw_permission(&admin, &state.db, "withdrawals.write").await?;
     let mut tx = state
         .db
         .begin()
@@ -242,10 +262,11 @@ pub struct AdminWithdrawBulkPayload {
 /// Mirrors the deposits bulk endpoint — per-id results, partial-failure
 /// tolerant.
 pub async fn api_admin_withdrawals_bulk(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<AdminWithdrawBulkPayload>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    require_withdraw_permission(&admin, &state.db, "withdrawals.write").await?;
     if payload.ids.is_empty() {
         return Err(AppError::BadRequest("No withdrawal ids supplied".into()));
     }
@@ -412,11 +433,12 @@ async fn reject_one(db: &sqlx::PgPool, req_id: Uuid, reason: &str) -> Result<(),
 
 /// POST /api/admin/withdrawals/:req_id/reject
 pub async fn api_admin_withdrawal_reject(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(req_id): Path<Uuid>,
     Json(payload): Json<RejectWithdrawalPayload>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    require_withdraw_permission(&admin, &state.db, "withdrawals.write").await?;
     let mut tx = state
         .db
         .begin()
@@ -479,7 +501,12 @@ pub async fn api_admin_withdrawal_reject(
         .await
         .map_err(|e| AppError::Internal(format!("TX commit failed: {}", e)))?;
 
-    tracing::info!("Withdrawal {} rejected: {}", req_id, payload.reason);
+    // Reason stored in admin_notes (DB); not logged to avoid PII/free-text leak.
+    tracing::info!(
+        request_id = %req_id,
+        user_id = %user_id,
+        "Withdrawal rejected"
+    );
 
     spawn_withdraw_email(
         state.db.clone(),

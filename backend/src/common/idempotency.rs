@@ -73,7 +73,7 @@ pub async fn try_reserve(
     let insert_res = sqlx::query(
         r#"INSERT INTO idempotency_keys (key, user_id, request_path, request_method)
            VALUES ($1, $2, $3, $4)
-           ON CONFLICT (key) DO NOTHING"#,
+           ON CONFLICT (key, user_id) DO NOTHING"#,
     )
     .bind(&key)
     .bind(user_id)
@@ -127,12 +127,7 @@ pub async fn try_reserve(
 
 /// Persist a JSON response body so future requests with the same key get
 /// the same answer.
-pub async fn commit_json(
-    pool: &PgPool,
-    key: &str,
-    status: StatusCode,
-    body: &serde_json::Value,
-) {
+pub async fn commit_json(pool: &PgPool, key: &str, status: StatusCode, body: &serde_json::Value) {
     let _ = sqlx::query(
         r#"UPDATE idempotency_keys
               SET response_status = $1, response_body = $2

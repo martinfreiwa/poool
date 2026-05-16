@@ -8,6 +8,41 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use uuid::Uuid;
 
+/// Atomic deposit-cancel + audit entry. Wraps both in one transaction
+/// so a cancel without its audit_log row is impossible (H-4 fix).
+async fn cancel_one_deposit_with_audit(
+    db: &sqlx::PgPool,
+    deposit_id: uuid::Uuid,
+    admin_id: uuid::Uuid,
+    reason: &str,
+) -> Result<&'static str, String> {
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let res = sqlx::query(
+        "UPDATE deposit_requests
+            SET status = 'cancelled', updated_at = NOW()
+          WHERE id = $1 AND status IN ('pending', 'requested')",
+    )
+    .bind(deposit_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    if res.rows_affected() != 1 {
+        return Err("not_pending".to_string());
+    }
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.deposit_cancel_bulk', 'deposit_request', $2, $3)"#,
+    )
+    .bind(admin_id)
+    .bind(deposit_id)
+    .bind(serde_json::json!({ "reason": reason }))
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok("cancelled")
+}
+
 async fn require_deposit_permission(
     jar: &CookieJar,
     state: &AppState,
@@ -431,41 +466,11 @@ pub async fn api_admin_deposits_bulk(
                     .clone()
                     .filter(|s| !s.trim().is_empty())
                     .unwrap_or_else(|| "Bulk admin cancellation".to_string());
-                sqlx::query(
-                    "UPDATE deposit_requests
-                        SET status = 'cancelled', updated_at = NOW()
-                      WHERE id = $1 AND status IN ('pending', 'requested')",
-                )
-                .bind(uid)
-                .execute(&state.db)
-                .await
-                .map_err(|e| e.to_string())
-                .and_then(|res| {
-                    if res.rows_affected() == 1 {
-                        Ok("cancelled")
-                    } else {
-                        Err("not_pending".to_string())
-                    }
-                })
-                .and_then(|status| {
-                    // Fire-and-forget audit entry; failure here is not
-                    // serious enough to mark the cancel itself as failed.
-                    let db = state.db.clone();
-                    let admin_id = admin.id;
-                    let reason_clone = reason.clone();
-                    tokio::spawn(async move {
-                        let _ = sqlx::query(
-                            r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
-                               VALUES ($1, 'admin.deposit_cancel_bulk', 'deposit_request', $2, $3)"#,
-                        )
-                        .bind(admin_id)
-                        .bind(uid)
-                        .bind(serde_json::json!({"reason": reason_clone}))
-                        .execute(&db)
-                        .await;
-                    });
-                    Ok(status)
-                })
+                // H-4 fix: do the cancel UPDATE + audit INSERT in one
+                // transaction so we never have a state change without
+                // its corresponding audit row. Compliance reviewers can
+                // reconstruct every transition.
+                cancel_one_deposit_with_audit(&state.db, uid, admin.id, &reason).await
             }
             other => Err(format!("unknown_action_{}", other)),
         };
