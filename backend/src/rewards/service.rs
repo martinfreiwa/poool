@@ -2620,7 +2620,8 @@ pub async fn auto_clawback_for_refunded_investment(
     // Move every commission tied to this investment that isn't already
     // clawed_back/paid into the clawback flow. We DON'T pull money out of
     // `paid` rows here — those need ops review; we just flag for follow-up.
-    let res = sqlx::query!(
+    // RETURNING captures affected affiliates so we can ping each one ONCE.
+    let affected = sqlx::query!(
         r#"UPDATE affiliate_commissions
               SET status = CASE
                               WHEN status = 'paid' THEN 'clawback_pending'
@@ -2628,14 +2629,15 @@ pub async fn auto_clawback_for_refunded_investment(
                           END,
                   updated_at = NOW()
             WHERE source_order_id = $1
-              AND status NOT IN ('clawed_back', 'clawback_pending')"#,
+              AND status NOT IN ('clawed_back', 'clawback_pending')
+        RETURNING affiliate_id"#,
         investment_id
     )
-    .execute(pool)
+    .fetch_all(pool)
     .await
     .map_err(|e| AppError::Internal(format!("auto-clawback update failed: {e}")))?;
 
-    let rows = res.rows_affected();
+    let rows = affected.len() as u64;
     if rows > 0 {
         // Best-effort audit; failure is non-fatal to the clawback itself.
         let _ = crate::common::audit::log(
@@ -2651,6 +2653,24 @@ pub async fn auto_clawback_for_refunded_investment(
             None,
         )
         .await;
+
+        // Phase-3 fresh: in-app notification to each affected affiliate.
+        // Dedup by affiliate_id so a single refund hitting multiple
+        // commission lines for the same affiliate produces ONE bell ping.
+        let mut seen: std::collections::HashSet<Uuid> = std::collections::HashSet::new();
+        for row in &affected {
+            if let Some(aff_id) = row.affiliate_id {
+                if seen.insert(aff_id) {
+                    crate::rewards::notifications::notify_commission_clawed_back(
+                        pool,
+                        aff_id,
+                        investment_id,
+                        reason,
+                    )
+                    .await;
+                }
+            }
+        }
     }
     Ok(rows)
 }
