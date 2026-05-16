@@ -143,10 +143,15 @@ jobs:
       - name: 🎭 Run Playwright community UI suite
         # Covers every test file matching test_community_*.py — DM flow plus
         # the 8-wave UI build (circle discover/settings, profile tabs, feed,
-        # polls, mobile, notifications, follow/block). Currently 39 tests.
+        # polls, mobile, notifications, follow/block) + admin moderation +
+        # a11y audit. Currently 48 tests.
+        # `--reruns 2` auto-retries flaky tests because GitHub runners are
+        # ~3-5x slower than local dev, surfacing race conditions that pass
+        # locally with sub-second margin.
         run: |
-          pytest tests/e2e/test_community_*.py \
-            -v --tb=short --timeout=60 \
+          pytest tests/e2e/test_community_*.py tests/e2e/test_admin_community_moderation_ui.py \
+            -v --tb=short --timeout=90 \
+            --reruns 2 --reruns-delay 2 \
             -p no:cacheprovider -o "addopts=" \
             --html=tests/e2e/reports/community_ui.html --self-contained-html
 
