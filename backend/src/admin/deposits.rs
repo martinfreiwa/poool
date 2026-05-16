@@ -357,6 +357,32 @@ pub async fn api_admin_deposit_extend_expiry(
     .into_response())
 }
 
+/// GET /api/admin/deposits/reconciliation
+///
+/// On-demand reconciliation report. Runs the same checks the background
+/// worker runs hourly: expires stale deposits, counts stuck pending
+/// deposits split by proof-uploaded vs not, counts withdrawals beyond
+/// the review SLA. Returns the resulting counts as JSON.
+pub async fn api_admin_deposits_reconciliation(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, ApiError> {
+    require_deposit_permission(&jar, &state, "deposits.read").await?;
+
+    let report = crate::wallet::reconciliation::run_once(&state.db)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(serde_json::json!({
+        "deposits_expired": report.deposits_expired,
+        "deposits_stuck_no_proof": report.deposits_stuck_no_proof,
+        "deposits_stuck_with_proof": report.deposits_stuck_with_proof,
+        "withdrawals_stuck": report.withdrawals_stuck,
+        "generated_at": chrono::Utc::now().to_rfc3339(),
+    }))
+    .into_response())
+}
+
 /// GET /api/admin/deposits/:tx_id/proof-url
 ///
 /// Mints a short-lived (15-minute) signed URL for the deposit's

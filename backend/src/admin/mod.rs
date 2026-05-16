@@ -455,6 +455,10 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/deposits/:tx_id/proof-url",
             get(api_admin_deposit_proof_url),
         )
+        .route(
+            "/api/admin/deposits/reconciliation",
+            get(api_admin_deposits_reconciliation),
+        )
         // Withdrawals
         .route("/api/admin/withdrawals", get(api_admin_withdrawals))
         .route(
@@ -761,11 +765,17 @@ pub fn router() -> axum::Router<AppState> {
         .route("/api/admin/emails/templates", post(api_admin_emails_create))
         .route(
             "/api/admin/emails/templates/:id",
-            put(api_admin_emails_update),
+            get(api_admin_emails_get)
+                .put(api_admin_emails_update)
+                .delete(api_admin_emails_delete),
         )
         .route(
             "/api/admin/emails/campaigns",
             post(api_admin_emails_campaign),
+        )
+        .route(
+            "/api/admin/emails/audiences/:segment/count",
+            get(api_admin_emails_audience_count),
         )
         // Settings
         .route(

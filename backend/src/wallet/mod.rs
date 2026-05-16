@@ -1,5 +1,6 @@
 /// Wallet domain – handles user fiat balances and transactions (deposits/withdrawals)
 pub mod models;
+pub mod reconciliation;
 pub mod routes;
 pub mod safety;
 

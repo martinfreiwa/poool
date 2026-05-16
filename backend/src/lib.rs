@@ -454,6 +454,12 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Auto-refund worker for expired primary escrow offerings
     tokio::spawn(admin::primary_escrow::run_auto_refund_worker(pool.clone()));
 
+    // Wallet reconciliation worker — expires stale deposit requests, flags
+    // pending deposits/withdrawals that exceed their processing SLA.
+    tokio::spawn(wallet::reconciliation::run_reconciliation_worker(
+        pool.clone(),
+    ));
+
     // Affiliate holdback worker (runs every 6 hours)
     tokio::spawn(rewards::service::run_affiliate_holdback_worker(
         pool.clone(),
