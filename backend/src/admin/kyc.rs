@@ -131,7 +131,73 @@ pub async fn api_admin_kyc_documents(
     )
     .await;
 
+    let default_bucket = state
+        .config
+        .gcs_bucket
+        .as_deref()
+        .unwrap_or("poool-assets-primary");
+
     for (id, path, doc_type) in docs {
+        // Phase 7.5 — AV gate: refuse to mint a signed URL if the
+        // ClamAV Cloud Function flagged the object as infected. KYC
+        // is PII-class A; serving a known-infected file would be a
+        // P0 security incident.
+        let (av_bucket, av_path) =
+            crate::storage::reconciler::extract_bucket_and_path(&path, default_bucket)
+                .unwrap_or_else(|| (default_bucket.to_string(), path.clone()));
+        let av_outcome_label;
+        let av_blocked = match crate::storage::service::av_status(&av_bucket, &av_path).await {
+            Ok(crate::storage::service::AvStatus::Clean) => {
+                av_outcome_label = "clean";
+                false
+            }
+            Ok(crate::storage::service::AvStatus::Infected(detection)) => {
+                tracing::error!(
+                    doc_id = %id,
+                    detection = %detection,
+                    "KYC signed-URL blocked: object is AV-infected"
+                );
+                av_outcome_label = "infected";
+                true
+            }
+            Ok(crate::storage::service::AvStatus::ScannerError(err)) => {
+                tracing::warn!(
+                    doc_id = %id,
+                    error = %err,
+                    "KYC signed-URL: scanner reported error — serving with operator caveat"
+                );
+                av_outcome_label = "error";
+                false
+            }
+            Ok(crate::storage::service::AvStatus::NotYetScanned) => {
+                // ClamAV typically completes within seconds of upload.
+                // For v1 we serve with a warning rather than block —
+                // tightening to deny-by-default is a Phase 7 toggle once
+                // scanner deploy-latency is characterised.
+                av_outcome_label = "not_yet_scanned";
+                false
+            }
+            Err(e) => {
+                tracing::warn!(
+                    doc_id = %id,
+                    error = %e,
+                    "KYC signed-URL: failed to read AV metadata — serving with caveat"
+                );
+                av_outcome_label = "not_yet_scanned";
+                false
+            }
+        };
+        crate::metrics::record_storage_av_outcome(av_outcome_label);
+        if av_blocked {
+            result.push(serde_json::json!({
+                "id": id,
+                "document_type": doc_type,
+                "url": null,
+                "blocked_reason": "av_infected",
+            }));
+            continue;
+        }
+
         // Force-download disposition so KYC PDFs / images cannot render
         // inline in the admin browser — closes the PDF-JS / SVG-script
         // XSS surface (Phase 2.1). Filename = `kyc_<doc-id>_<type>.bin`

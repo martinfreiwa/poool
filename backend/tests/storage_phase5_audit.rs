@@ -171,6 +171,20 @@ fn known_upload_outcomes_form_closed_set() {
     assert_eq!(known.len(), 7, "upload outcome catalog must be exactly 7");
 }
 
+/// AV-outcome catalog matches the admin/kyc.rs labelling. Adding a
+/// new value here means updating the AV-status alert in
+/// docs/storage/05-observability.md and the gate in admin/kyc.rs.
+#[test]
+fn known_av_outcomes_form_closed_set() {
+    let known = ["clean", "infected", "error", "not_yet_scanned"];
+    for outcome in known {
+        STORAGE_AV_OUTCOMES_TOTAL
+            .with_label_values(&[outcome])
+            .inc_by(0);
+    }
+    assert_eq!(known.len(), 4, "AV outcome catalog must be exactly 4");
+}
+
 /// Verify each known outcome label produces a distinct time series.
 #[test]
 fn each_outcome_label_is_a_separate_series() {
