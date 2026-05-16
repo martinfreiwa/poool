@@ -200,6 +200,10 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><rect x="2" y="4" width="14" height="16" rx="2"/></svg>
                             <span>KYC & AML</span>
                         </a>
+                        <a href="/admin/compliance.html" class="admin-nav-item ${isPathActive(["/admin/compliance.html"]) ? "active" : ""}" id="nav-compliance">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+                            <span>Compliance Queue</span>
+                        </a>
                         <a href="/admin/support.html" class="admin-nav-item ${isPathActive(["/admin/support.html", "/admin/support-ticket.html"]) ? "active" : ""}" id="nav-support">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10c0 4.418-3.582 8-8 8a8 8 0 110-16c4.418 0 8 3.582 8 8z"/><path d="M10 14v.01M10 6v6"/></svg>
                             <span>Support</span>

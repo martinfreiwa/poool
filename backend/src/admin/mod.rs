@@ -161,6 +161,8 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/settings", get(page_admin_generic))
         .route("/admin/system.html", get(page_admin_generic))
         .route("/admin/system", get(page_admin_generic))
+        .route("/admin/compliance.html", get(page_admin_generic))
+        .route("/admin/compliance", get(page_admin_generic))
         .route("/admin/storage.html", get(page_admin_generic))
         .route("/admin/storage", get(page_admin_generic))
         .route("/admin/templates/icons.html", get(page_admin_generic))
