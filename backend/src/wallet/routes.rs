@@ -1105,8 +1105,8 @@ pub async fn api_request_unfreeze(
     State(state): State<AppState>,
     Json(payload): Json<UnfreezeRequestPayload>,
 ) -> impl IntoResponse {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
+    let session_token = match jar.get(middleware::SESSION_COOKIE) {
+        Some(cookie) => cookie.value().to_string(),
         None => {
             return (
                 StatusCode::UNAUTHORIZED,
@@ -1115,6 +1115,27 @@ pub async fn api_request_unfreeze(
                 .into_response();
         }
     };
+    let user =
+        match crate::auth::service::get_user_by_session_allowing_frozen(&state.db, &session_token)
+            .await
+        {
+            Ok(Some(user)) => user,
+            Ok(None) => {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(serde_json::json!({"error": "Unauthorized"})),
+                )
+                    .into_response();
+            }
+            Err(e) => {
+                tracing::error!("Unfreeze request auth lookup failed: {}", e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"error": "request_failed"})),
+                )
+                    .into_response();
+            }
+        };
 
     let row: Option<(
         String,
@@ -1187,20 +1208,71 @@ pub async fn api_request_unfreeze(
         "user_note": note,
     });
 
-    let _ = sqlx::query(
+    let mut tx = match state.db.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            tracing::error!("Failed to start unfreeze request transaction: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "request_failed"})),
+            )
+                .into_response();
+        }
+    };
+
+    if let Err(e) = sqlx::query(
         r#"INSERT INTO compliance_alerts (user_id, kind, severity, summary, details)
            VALUES ($1, 'manual_review', 'high', $2, $3)"#,
     )
     .bind(user.id)
     .bind(&summary)
     .bind(&details)
-    .execute(&state.db)
-    .await;
+    .execute(&mut *tx)
+    .await
+    {
+        tracing::error!("Failed to insert unfreeze compliance alert: {}", e);
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "request_failed"})),
+        )
+            .into_response();
+    }
 
-    let _ = sqlx::query("UPDATE users SET unfreeze_requested_at = NOW() WHERE id = $1")
+    let updated = match sqlx::query("UPDATE users SET unfreeze_requested_at = NOW() WHERE id = $1")
         .bind(user.id)
-        .execute(&state.db)
-        .await;
+        .execute(&mut *tx)
+        .await
+    {
+        Ok(result) => result,
+        Err(e) => {
+            tracing::error!("Failed to stamp unfreeze request on user: {}", e);
+            let _ = tx.rollback().await;
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "request_failed"})),
+            )
+                .into_response();
+        }
+    };
+
+    if updated.rows_affected() != 1 {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": "user_not_found"})),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = tx.commit().await {
+        tracing::error!("Failed to commit unfreeze request transaction: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "request_failed"})),
+        )
+            .into_response();
+    }
 
     Json(serde_json::json!({
         "status": "requested",
@@ -2635,6 +2707,143 @@ async fn build_deposit_timeline(pool: &sqlx::PgPool, row: &TxRow) -> Vec<Timelin
 }
 
 /// GET /transactions/:id – render the transaction detail page.
+/// GET /wallet/statements/:year/:month
+///
+/// Renders the user's monthly statement as a print-styled HTML page
+/// (P1-2). User saves to PDF via the browser's "Print → Save as PDF"
+/// dialog — keeps the implementation free of native PDF deps.
+///
+/// Includes: opening + closing balance for the period, the period's
+/// transactions with running balance, totals by type, the platform's
+/// footer (registered entity, support email).
+pub async fn page_monthly_statement(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path((year, month)): Path<(i32, u32)>,
+) -> axum::response::Response {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
+
+    // Reject out-of-range dates early so we don't query NaT.
+    if !(2020..=2100).contains(&year) || !(1..=12).contains(&month) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Html("<h1>Invalid statement period</h1>".to_string()),
+        )
+            .into_response();
+    }
+
+    let period_start = chrono::NaiveDate::from_ymd_opt(year, month, 1)
+        .and_then(|d| d.and_hms_opt(0, 0, 0))
+        .map(|d| chrono::DateTime::<Utc>::from_naive_utc_and_offset(d, Utc))
+        .unwrap_or_else(Utc::now);
+    let next_month_first = if month == 12 {
+        chrono::NaiveDate::from_ymd_opt(year + 1, 1, 1)
+    } else {
+        chrono::NaiveDate::from_ymd_opt(year, month + 1, 1)
+    }
+    .and_then(|d| d.and_hms_opt(0, 0, 0))
+    .map(|d| chrono::DateTime::<Utc>::from_naive_utc_and_offset(d, Utc))
+    .unwrap_or_else(Utc::now);
+
+    // Closing balance is just the current balance for an open month;
+    // for historical months we replay the ledger up to period_end.
+    let opening_balance_cents: i64 = sqlx::query_scalar::<_, Option<i64>>(
+        r#"
+        SELECT COALESCE(SUM(t.amount_cents), 0)::bigint
+          FROM wallet_transactions t
+          JOIN wallets w ON w.id = t.wallet_id
+         WHERE w.user_id = $1
+           AND w.wallet_type = 'cash'
+           AND t.status = 'completed'
+           AND t.created_at < $2
+        "#,
+    )
+    .bind(user.id)
+    .bind(period_start)
+    .fetch_one(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(0);
+
+    let rows = sqlx::query_as::<_, (Uuid, String, String, i64, DateTime<Utc>, Option<String>)>(
+        r#"
+        SELECT t.id, t.type, t.status, t.amount_cents, t.created_at, t.description
+          FROM wallet_transactions t
+          JOIN wallets w ON w.id = t.wallet_id
+         WHERE w.user_id = $1
+           AND w.wallet_type = 'cash'
+           AND t.created_at >= $2
+           AND t.created_at <  $3
+         ORDER BY t.created_at ASC
+        "#,
+    )
+    .bind(user.id)
+    .bind(period_start)
+    .bind(next_month_first)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let mut running = opening_balance_cents;
+    let mut total_in = 0i64;
+    let mut total_out = 0i64;
+    let mut tx_rows: Vec<serde_json::Value> = Vec::with_capacity(rows.len());
+    for (id, tx_type, status, amount, created_at, description) in &rows {
+        running += amount;
+        if *amount >= 0 {
+            total_in += amount;
+        } else {
+            total_out += amount.abs();
+        }
+        tx_rows.push(serde_json::json!({
+            "id": id.to_string(),
+            "date": created_at.format("%d %b %Y").to_string(),
+            "type": tx_type,
+            "status": status,
+            "amount_display": format_usd(*amount),
+            "amount_class": if *amount >= 0 { "pos" } else { "neg" },
+            "balance_display": format_usd(running),
+            "description": description.clone().unwrap_or_default(),
+        }));
+    }
+
+    let template = match state.templates.get_template("wallet/statement.html") {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::error!("Failed to load wallet/statement.html: {}", e);
+            return Html("<h1>Statement template missing</h1>".to_string()).into_response();
+        }
+    };
+
+    let month_label = period_start.format("%B %Y").to_string();
+    let html = match template.render(minijinja::context! {
+        user => user,
+        period_label => month_label,
+        period_start => period_start.format("%d %b %Y").to_string(),
+        period_end => (next_month_first - chrono::Duration::seconds(1))
+            .format("%d %b %Y").to_string(),
+        opening_balance => format_usd(opening_balance_cents),
+        closing_balance => format_usd(running),
+        total_in_display => format_usd(total_in),
+        total_out_display => format_usd(total_out),
+        transactions => tx_rows,
+        has_transactions => !rows.is_empty(),
+        generated_at => Utc::now().format("%d %B %Y at %H:%M UTC").to_string(),
+    }) {
+        Ok(h) => h,
+        Err(e) => {
+            tracing::error!("Failed to render statement: {}", e);
+            return Html("<h1>Internal error</h1>".to_string()).into_response();
+        }
+    };
+
+    Html(html).into_response()
+}
+
 pub async fn page_transaction_detail(
     jar: CookieJar,
     State(state): State<AppState>,

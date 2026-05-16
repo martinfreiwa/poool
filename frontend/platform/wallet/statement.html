@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POOOL — Statement {{ period_label }}</title>
+<style>
+  :root {
+    --ink: #101828;
+    --muted: #667085;
+    --line: #EAECF0;
+    --accent: #0000FF;
+    --pos: #027A48;
+    --neg: #B42318;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "TT Norms Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #fff;
+    color: var(--ink);
+    margin: 0;
+    padding: 32px 40px;
+    max-width: 840px;
+    margin: 0 auto;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 18px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 24px;
+  }
+  .brand-mark {
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+  .doc-meta {
+    text-align: right;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+  }
+  .period {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+    padding: 18px 20px;
+    background: #F8FAFC;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .summary__cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .summary__label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .summary__value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  thead th {
+    text-align: left;
+    padding: 10px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    font-weight: 700;
+  }
+  tbody td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .amt { font-weight: 600; text-align: right; }
+  .amt.pos { color: var(--pos); }
+  .amt.neg { color: var(--neg); }
+  .bal { text-align: right; color: var(--muted); }
+  .status-pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: #F2F4F7;
+    color: var(--muted);
+  }
+  .status-pill.completed { background: #ECFDF5; color: #027A48; }
+  .status-pill.failed,
+  .status-pill.cancelled { background: #FEF3F2; color: #B42318; }
+  .empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+  }
+  footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0 0;
+  }
+  .actions button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .actions button.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  @media print {
+    body { padding: 0; }
+    .actions { display: none; }
+    header { padding-bottom: 14px; margin-bottom: 18px; }
+    .summary { background: transparent; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="brand-mark">POOOL</div>
+    <h1>Monthly statement</h1>
+    <div class="period">{{ period_label }} · {{ period_start }} — {{ period_end }}</div>
+  </div>
+  <div class="doc-meta">
+    Generated {{ generated_at }}<br>
+    Account: {{ user.email }}
+  </div>
+</header>
+
+<div class="actions">
+  <button class="primary" onclick="window.print()">Download / print PDF</button>
+  <a href="/wallet" style="text-decoration:none;color:inherit;align-self:center;font-size:12px;">← Back to wallet</a>
+</div>
+
+<section class="summary" aria-label="Period summary">
+  <div class="summary__cell">
+    <span class="summary__label">Opening balance</span>
+    <span class="summary__value">{{ opening_balance }}</span>
+  </div>
+  <div class="summary__cell">
+    <span class="summary__label">Money in</span>
+    <span class="summary__value" style="color:var(--pos);">{{ total_in_display }}</span>
+  </div>
+  <div class="summary__cell">
+    <span class="summary__label">Money out</span>
+    <span class="summary__value" style="color:var(--neg);">{{ total_out_display }}</span>
+  </div>
+  <div class="summary__cell">
+    <span class="summary__label">Closing balance</span>
+    <span class="summary__value">{{ closing_balance }}</span>
+  </div>
+</section>
+
+{% if has_transactions %}
+<table>
+  <thead>
+    <tr>
+      <th style="width:90px">Date</th>
+      <th style="width:80px">Type</th>
+      <th>Description</th>
+      <th style="width:90px">Status</th>
+      <th style="width:100px;text-align:right">Amount</th>
+      <th style="width:100px;text-align:right">Balance</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for tx in transactions %}
+    <tr>
+      <td>{{ tx.date }}</td>
+      <td style="text-transform:capitalize;color:var(--muted);">{{ tx.type }}</td>
+      <td>{{ tx.description or "—" }}</td>
+      <td><span class="status-pill {{ tx.status }}">{{ tx.status }}</span></td>
+      <td class="amt {{ tx.amount_class }}">{{ tx.amount_display }}</td>
+      <td class="bal">{{ tx.balance_display }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No transactions in this period.</div>
+{% endif %}
+
+<footer>
+  This statement is generated automatically from POOOL ledger data and is
+  unaudited. POOOL Finance · support@poool.app · Questions about a
+  specific transaction? Visit /transactions/&lt;id&gt; in your wallet.
+</footer>
+
+</body>
+</html>

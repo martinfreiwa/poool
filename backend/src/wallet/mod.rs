@@ -17,6 +17,10 @@ pub fn router() -> Router<AppState> {
         // HTML pages
         .route("/wallet", get(page_wallet))
         .route("/transactions/:id", get(page_transaction_detail))
+        .route(
+            "/wallet/statements/:year/:month",
+            get(page_monthly_statement),
+        )
         // Form actions
         .route("/wallet/deposit", post(handle_deposit))
         .route("/wallet/deposit/:id/submit", post(handle_deposit_submit))
