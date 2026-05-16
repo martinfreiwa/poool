@@ -567,3 +567,199 @@ async fn process_win_backs(_pool: &PgPool) -> Result<(), Box<dyn std::error::Err
 async fn process_milestones(_pool: &PgPool) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
+
+// ─── Baseline tests for the transactional email body builder ──────────────
+//
+// Pure unit tests (no DB / no network). These pin the current behaviour of
+// `build_email_html` and `html_escape_email` so subsequent refactors cannot
+// silently break a customer-facing email. The catalog test is the canonical
+// list of "events that already have a hand-written body" — the inverse list
+// (events that still fall through to the generic body) is captured by
+// `EVENTS_FALLING_THROUGH_TO_DEFAULT` so the gap is visible in CI rather
+// than buried in `email.rs`.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// Events that have a custom HTML body in `build_email_html`. Adding a
+    /// new branch to the match arm? Add it here too and the assertion will
+    /// confirm it produces something useful.
+    const EVENTS_WITH_CUSTOM_BODY: &[&str] = &[
+        "kyc_approved",
+        "kyc_rejected",
+        "kyc_submitted",
+        "deposit_confirmed",
+        "deposit_submitted",
+        "withdraw_requested",
+        "withdraw_approved",
+        "withdraw_rejected",
+        "support_ticket_reply",
+        "support_ticket_new",
+        "support_ticket_resolved",
+        "team_invitation_received",
+        "team_member_approved",
+        "team_member_removed",
+        "team_self_request_received",
+        "team_invitation_accepted",
+        "affiliate_application_received",
+        "affiliate_approved",
+        "affiliate_rejected",
+        "affiliate_suspended",
+        "affiliate_payout_released",
+        "affiliate_commission_earned",
+    ];
+
+    /// Events that `trigger_transactional_email` knows a subject for but
+    /// that currently fall through to the generic "you have a new
+    /// notification" body. Documenting them here makes the gap part of the
+    /// suite — Commit 3 (mid bugs) fixes these by adding real bodies.
+    const EVENTS_FALLING_THROUGH_TO_DEFAULT: &[&str] = &[
+        "welcome",
+        "verify_email",
+        "password_reset",
+        "2fa_setup",
+        "new_login",
+        "withdrawal_processed",
+        "dividend_payout",
+        "monthly_statement",
+        "order_confirmation",
+        "invoice_available",
+        "asset_funded",
+        "operations_rejected",
+        "operations_approved",
+        "operations_published",
+    ];
+
+    /// Sentinel substring of the generic fallback body. If a "custom body"
+    /// event suddenly emits this string, the match arm was removed.
+    const GENERIC_FALLBACK_MARKER: &str = "You have a new notification from POOOL";
+
+    #[test]
+    fn all_known_custom_body_events_render_non_generic_html() {
+        for event in EVENTS_WITH_CUSTOM_BODY {
+            let html = build_email_html(event, &json!({}));
+            assert!(
+                !html.contains(GENERIC_FALLBACK_MARKER),
+                "event '{}' fell through to generic body — match arm removed?",
+                event
+            );
+            assert!(
+                html.contains("<div") || html.contains("<p"),
+                "event '{}' produced no HTML block: {:?}",
+                event,
+                html
+            );
+        }
+    }
+
+    #[test]
+    fn fallthrough_events_are_documented() {
+        for event in EVENTS_FALLING_THROUGH_TO_DEFAULT {
+            let html = build_email_html(event, &json!({}));
+            assert!(
+                html.contains(GENERIC_FALLBACK_MARKER),
+                "event '{}' is in fallthrough list but now has a custom body — \
+                 move it into EVENTS_WITH_CUSTOM_BODY",
+                event
+            );
+        }
+    }
+
+    #[test]
+    fn unknown_event_falls_back_to_generic_notice() {
+        let html = build_email_html("this_event_does_not_exist", &json!({}));
+        assert!(html.contains(GENERIC_FALLBACK_MARKER));
+    }
+
+    #[test]
+    fn kyc_rejected_renders_reason_when_provided() {
+        let html =
+            build_email_html("kyc_rejected", &json!({ "rejection_reason": "ID expired" }));
+        assert!(html.contains("ID expired"));
+    }
+
+    #[test]
+    fn kyc_rejected_renders_default_reason_when_missing() {
+        let html = build_email_html("kyc_rejected", &json!({}));
+        assert!(html.contains("Please review the requirements"));
+    }
+
+    #[test]
+    fn deposit_confirmed_includes_amount_when_provided() {
+        let html =
+            build_email_html("deposit_confirmed", &json!({ "amount_display": "€1,500.00" }));
+        assert!(html.contains("€1,500.00"));
+        assert!(html.contains("Credited:"));
+    }
+
+    #[test]
+    fn deposit_confirmed_skips_amount_block_when_missing() {
+        let html = build_email_html("deposit_confirmed", &json!({}));
+        assert!(!html.contains("Credited:"));
+    }
+
+    #[test]
+    fn affiliate_payout_formats_minor_units_as_currency() {
+        let html = build_email_html(
+            "affiliate_payout_released",
+            &json!({ "amount_cents": 12345_i64, "currency": "EUR", "bank_last4": "4242" }),
+        );
+        assert!(html.contains("EUR 123.45"));
+        assert!(html.contains("4242"));
+    }
+
+    #[test]
+    fn affiliate_commission_uses_default_holdback_when_missing() {
+        let html = build_email_html(
+            "affiliate_commission_earned",
+            &json!({ "amount_cents": 5000_i64, "currency": "EUR" }),
+        );
+        // Default holdback = 30 days per `build_email_html`.
+        assert!(html.contains("30-day refund window"));
+    }
+
+    #[test]
+    fn team_invitation_uses_provided_accept_url_over_default() {
+        let html = build_email_html(
+            "team_invitation_received",
+            &json!({
+                "team_name": "Acme Capital",
+                "inviter_name": "Maria",
+                "token": "abc123",
+                "accept_url": "https://example.test/accept?t=abc123",
+            }),
+        );
+        assert!(html.contains("https://example.test/accept?t=abc123"));
+        assert!(html.contains("Acme Capital"));
+        assert!(html.contains("Maria"));
+    }
+
+    #[test]
+    fn html_escape_email_escapes_dangerous_chars() {
+        let escaped = html_escape_email(r#"<script>alert("xss")</script> & friends"#);
+        assert_eq!(
+            escaped,
+            "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt; &amp; friends"
+        );
+    }
+
+    #[test]
+    fn html_escape_email_is_idempotent_for_safe_text() {
+        let plain = "Hello world 12345";
+        assert_eq!(html_escape_email(plain), plain);
+    }
+
+    #[test]
+    fn user_supplied_metadata_is_html_escaped_in_bodies() {
+        // Reason fields are user-controlled inputs from admin notes — must
+        // not allow HTML injection into the rendered customer email.
+        let html = build_email_html(
+            "kyc_rejected",
+            &json!({ "rejection_reason": "<img src=x onerror=alert(1)>" }),
+        );
+        assert!(!html.contains("<img src=x"));
+        assert!(html.contains("&lt;img src=x"));
+    }
+}
