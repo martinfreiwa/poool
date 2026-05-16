@@ -1190,6 +1190,33 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         </button>
       </div>
       <div class="ds-modal__body wallet-bank-modal__body">
+        <div class="wallet-bank-modal__intro">
+          <div class="wallet-bank-modal__brand">
+            <span class="wallet-bank-modal__logo" aria-hidden="true">
+              <img src="/static/images/logos/poool-icon.svg" alt="">
+            </span>
+            <div>
+              <p class="wallet-bank-modal__eyebrow">POOOL withdrawals</p>
+              <p>Connect a bank account you own. We use these details only for verified payout and withdrawal requests.</p>
+            </div>
+          </div>
+          <div class="wallet-bank-modal__trust-row" aria-label="Bank account safety">
+            <span>
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <rect x="3.5" y="7" width="9" height="6" rx="1.4" stroke="currentColor" stroke-width="1.4"/>
+              </svg>
+              Encrypted at rest
+            </span>
+            <span>
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M8 2.5 12.5 4v3.2c0 2.7-1.8 5.1-4.5 6.3-2.7-1.2-4.5-3.6-4.5-6.3V4L8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                <path d="m5.8 8 1.4 1.4 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Verified profile only
+            </span>
+          </div>
+        </div>
 
         <form id="bank-modal-form" class="wallet-bank-form">
           <!-- Hidden system field set by JS -->
@@ -1521,7 +1548,19 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     }
 
     // ─── Multi-step deposit modal ─────────────────────────────────
-    var __depositCtx = { settings: null, init: null };
+    var __depositCtx = { settings: null, init: null, initKey: null, submitKey: null };
+
+    function newIdempotencyKey() {
+      // RFC 4122 random hex string. crypto.randomUUID exists in all modern
+      // browsers we target; the fallback covers very old WebView contexts.
+      if (typeof crypto !== "undefined" && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      var hex = "0123456789abcdef";
+      var s = "";
+      for (var i = 0; i < 32; i++) s += hex.charAt(Math.floor(Math.random() * 16));
+      return s;
+    }
 
     function parseAmountCents(input) {
       var raw = (input || "").replace(/[^0-9.]/g, "");
@@ -1585,8 +1624,12 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       m.classList.add("active");
       document.body.style.overflow = "hidden";
 
-      // Reset state so reopening the modal feels fresh
+      // Reset state so reopening the modal feels fresh. Idempotency keys
+      // are scoped per modal-open: a retry inside the same session is
+      // deduped server-side, a fresh modal opens with a clean slate.
       __depositCtx.init = null;
+      __depositCtx.initKey = newIdempotencyKey();
+      __depositCtx.submitKey = newIdempotencyKey();
       var amt = document.getElementById("deposit-amount");
       if (amt) amt.value = "";
       var fileInput = document.getElementById("deposit-proof-file");
@@ -1639,7 +1682,11 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         var resp = await fetch("/api/wallet/deposit/init", {
           method: "POST",
           credentials: "same-origin",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Idempotency-Key": __depositCtx.initKey || newIdempotencyKey()
+          },
           body: JSON.stringify({ amount: input.value })
         });
         var data = await resp.json().catch(function () { return {}; });
@@ -1824,6 +1871,9 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             var resp = await fetch(__depositCtx.init.submit_url, {
               method: "POST",
               credentials: "same-origin",
+              headers: {
+                "Idempotency-Key": __depositCtx.submitKey || newIdempotencyKey()
+              },
               body: fd,
               redirect: "follow"
             });

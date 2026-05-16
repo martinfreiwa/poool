@@ -1,7 +1,7 @@
 /// Wallet route handlers – view balances and execute deposit/withdraw actions.
 use axum::{
     extract::{Form, Multipart, Path, Query, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Redirect},
     Json,
 };
@@ -13,6 +13,7 @@ use uuid::Uuid;
 use super::models::*;
 use crate::auth::middleware;
 use crate::auth::routes::AppState;
+use crate::common::idempotency::{self, Reservation};
 use crate::payment_methods;
 use crate::storage::service as storage_svc;
 
@@ -544,6 +545,7 @@ pub struct DepositInitPayload {
 pub async fn api_deposit_init(
     jar: CookieJar,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<DepositInitPayload>,
 ) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {
@@ -557,9 +559,40 @@ pub async fn api_deposit_init(
         }
     };
 
+    // ── Idempotency-Key check ────────────────────────────────────
+    // A retried POST returns the original deposit reference + bank details
+    // instead of allocating a second deposit_requests row.
+    let idem_key = match idempotency::try_reserve(
+        &state.db,
+        &headers,
+        user.id,
+        "/api/wallet/deposit/init",
+        "POST",
+    )
+    .await
+    {
+        Reservation::NoKey => None,
+        Reservation::Reserved(key) => Some(key),
+        Reservation::CachedJson { status, body } => return (status, Json(body)).into_response(),
+        Reservation::CachedRedirect { location } => return Redirect::to(&location).into_response(),
+        Reservation::InProgress => {
+            return (
+                StatusCode::CONFLICT,
+                Json(serde_json::json!({
+                    "error": "in_progress",
+                    "message": "An earlier request with this Idempotency-Key is still processing.",
+                })),
+            )
+                .into_response();
+        }
+    };
+
     let bank = crate::payments::service::fetch_deposit_bank_settings(&state.db).await;
     let amount_cents = parse_dollars_to_cents(&payload.amount);
     if amount_cents <= 0 {
+        if let Some(ref k) = idem_key {
+            idempotency::release(&state.db, k).await;
+        }
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Enter an amount greater than zero"})),
@@ -567,6 +600,9 @@ pub async fn api_deposit_init(
             .into_response();
     }
     if amount_cents < bank.min_amount_cents {
+        if let Some(ref k) = idem_key {
+            idempotency::release(&state.db, k).await;
+        }
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
@@ -577,6 +613,9 @@ pub async fn api_deposit_init(
             .into_response();
     }
     if amount_cents > bank.max_amount_cents {
+        if let Some(ref k) = idem_key {
+            idempotency::release(&state.db, k).await;
+        }
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
@@ -598,6 +637,9 @@ pub async fn api_deposit_init(
         Ok(r) => r,
         Err(e) => {
             tracing::error!("deposit_init create failed for user {}: {}", user.id, e);
+            if let Some(ref k) = idem_key {
+                idempotency::release(&state.db, k).await;
+            }
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({"error": "Could not create deposit request"})),
@@ -608,7 +650,7 @@ pub async fn api_deposit_init(
 
     let expires_at = (Utc::now() + chrono::Duration::hours(bank.processing_hours)).to_rfc3339();
 
-    Json(serde_json::json!({
+    let response_body = serde_json::json!({
         "deposit_id": deposit_res.deposit_id.to_string(),
         "reference": deposit_res.provider_reference.unwrap_or_default(),
         "amount_cents": amount_cents,
@@ -624,8 +666,13 @@ pub async fn api_deposit_init(
         "processing_hours": bank.processing_hours,
         "expires_at": expires_at,
         "submit_url": format!("/wallet/deposit/{}/submit", deposit_res.deposit_id),
-    }))
-    .into_response()
+    });
+
+    if let Some(ref k) = idem_key {
+        idempotency::commit_json(&state.db, k, StatusCode::OK, &response_body).await;
+    }
+
+    Json(response_body).into_response()
 }
 
 /// POST /wallet/deposit/:id/submit  – step 2 of the modal flow.
@@ -642,11 +689,52 @@ pub async fn handle_deposit_submit(
     jar: CookieJar,
     State(state): State<AppState>,
     Path(deposit_id): Path<Uuid>,
+    headers: HeaderMap,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
         None => return Redirect::to("/auth/login").into_response(),
+    };
+
+    // ── Idempotency ──────────────────────────────────────────────
+    // A double-submit (double-click, network retry) would otherwise upload
+    // a second proof file and burn GCS bandwidth. Reservation also unblocks
+    // safe browser refresh after a slow upload.
+    let idem_key = match idempotency::try_reserve(
+        &state.db,
+        &headers,
+        user.id,
+        &format!("/wallet/deposit/{}/submit", deposit_id),
+        "POST",
+    )
+    .await
+    {
+        Reservation::NoKey => None,
+        Reservation::Reserved(k) => Some(k),
+        Reservation::CachedRedirect { location } => return Redirect::to(&location).into_response(),
+        Reservation::CachedJson { .. } => {
+            return Redirect::to("/wallet?deposit_completed=true").into_response();
+        }
+        Reservation::InProgress => {
+            return Redirect::to("/wallet?error=in_progress").into_response();
+        }
+    };
+
+    // Helper: every "give up early" path goes through this so the
+    // idempotency reservation is released and the user can retry with the
+    // same key. Side-effect-free errors only — errors after the GCS upload
+    // keep the reservation (handled inline below).
+    let release_and_redirect = |url: &str| {
+        let db = state.db.clone();
+        let key = idem_key.clone();
+        let url = url.to_string();
+        async move {
+            if let Some(k) = key {
+                idempotency::release(&db, &k).await;
+            }
+            Redirect::to(&url).into_response()
+        }
     };
 
     // Confirm the deposit exists, belongs to this user, and is still open.
@@ -662,17 +750,17 @@ pub async fn handle_deposit_submit(
 
     let (owner, status, amount_cents, provider_ref, existing_proof) = match deposit_row {
         Some(row) => row,
-        None => return Redirect::to("/wallet?error=deposit_not_found").into_response(),
+        None => return release_and_redirect("/wallet?error=deposit_not_found").await,
     };
 
     if owner != user.id {
-        return Redirect::to("/wallet?error=deposit_not_found").into_response();
+        return release_and_redirect("/wallet?error=deposit_not_found").await;
     }
     if status != "pending" && status != "requested" {
-        return Redirect::to("/wallet?error=deposit_not_pending").into_response();
+        return release_and_redirect("/wallet?error=deposit_not_pending").await;
     }
     if existing_proof.is_some() {
-        return Redirect::to("/wallet?error=proof_already_uploaded").into_response();
+        return release_and_redirect("/wallet?error=proof_already_uploaded").await;
     }
 
     // ── Parse multipart fields ───────────────────────────────────
@@ -694,15 +782,14 @@ pub async fn handle_deposit_submit(
                     match field.chunk().await {
                         Ok(Some(chunk)) => {
                             if bytes.len().saturating_add(chunk.len()) > MAX_DEPOSIT_PROOF_BYTES {
-                                return Redirect::to("/wallet?error=proof_too_large")
-                                    .into_response();
+                                return release_and_redirect("/wallet?error=proof_too_large")
+                                    .await;
                             }
                             bytes.extend_from_slice(&chunk);
                         }
                         Ok(None) => break,
                         Err(_) => {
-                            return Redirect::to("/wallet?error=proof_read_failed")
-                                .into_response();
+                            return release_and_redirect("/wallet?error=proof_read_failed").await;
                         }
                     }
                 }
@@ -716,19 +803,19 @@ pub async fn handle_deposit_submit(
 
     let file_bytes = match file_bytes {
         Some(b) => b,
-        None => return Redirect::to("/wallet?error=proof_missing").into_response(),
+        None => return release_and_redirect("/wallet?error=proof_missing").await,
     };
 
     // ── Validate proof: magic-byte sniff + allow-list ────────────
     let sniffed = match storage_svc::sniff_mime(&file_bytes) {
         Some(m) => m,
-        None => return Redirect::to("/wallet?error=proof_unsupported_format").into_response(),
+        None => return release_and_redirect("/wallet?error=proof_unsupported_format").await,
     };
     if !storage_svc::mime_matches(&declared_mime, sniffed) {
-        return Redirect::to("/wallet?error=proof_mime_mismatch").into_response();
+        return release_and_redirect("/wallet?error=proof_mime_mismatch").await;
     }
     if storage_svc::validate_kyc_mime(sniffed).is_err() {
-        return Redirect::to("/wallet?error=proof_unsupported_format").into_response();
+        return release_and_redirect("/wallet?error=proof_unsupported_format").await;
     }
 
     // ── Upload to GCS (local fallback for dev) ───────────────────
@@ -802,22 +889,63 @@ pub async fn handle_deposit_submit(
         .await;
     });
 
-    Redirect::to(&format!(
+    let success_url = format!(
         "/wallet?deposit_completed=true&ref={}&amount={}",
         ref_str, amount_cents
-    ))
-    .into_response()
+    );
+
+    if let Some(ref k) = idem_key {
+        idempotency::commit_redirect(&state.db, k, &success_url).await;
+    }
+
+    Redirect::to(&success_url).into_response()
 }
 
 /// POST /wallet/withdraw
 pub async fn handle_withdraw(
     jar: CookieJar,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Form(form): Form<WithdrawForm>,
 ) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
         None => return Redirect::to("/auth/login").into_response(),
+    };
+
+    // ── Idempotency check ───────────────────────────────────────
+    // Critical for withdrawals: a double-submit could deduct twice and
+    // create two pending withdrawal_requests rows.
+    let idem_key = match idempotency::try_reserve(
+        &state.db,
+        &headers,
+        user.id,
+        "/wallet/withdraw",
+        "POST",
+    )
+    .await
+    {
+        Reservation::NoKey => None,
+        Reservation::Reserved(k) => Some(k),
+        Reservation::CachedRedirect { location } => return Redirect::to(&location).into_response(),
+        Reservation::CachedJson { .. } => {
+            return Redirect::to("/wallet?withdraw_requested=true").into_response();
+        }
+        Reservation::InProgress => {
+            return Redirect::to("/wallet?error=in_progress").into_response();
+        }
+    };
+
+    let release_and_redirect = |url: &str| {
+        let db = state.db.clone();
+        let key = idem_key.clone();
+        let url = url.to_string();
+        async move {
+            if let Some(k) = key {
+                idempotency::release(&db, &k).await;
+            }
+            Redirect::to(&url).into_response()
+        }
     };
 
     let amount_cents = parse_dollars_to_cents(&form.amount);
@@ -827,7 +955,7 @@ pub async fn handle_withdraw(
         let kyc = crate::kyc::service::get_kyc_status(&state.db, user.id).await;
         let kyc_ok = matches!(&kyc, Ok(r) if matches!(r.status.as_str(), "approved" | "verified" | "completed"));
         if !kyc_ok {
-            return Redirect::to("/wallet?error=kyc_required").into_response();
+            return release_and_redirect("/wallet?error=kyc_required").await;
         }
 
         // ─── 18.6–18.9: Withdrawal safety controls ──────────────────
@@ -842,8 +970,7 @@ pub async fn handle_withdraw(
         )
         .await
         {
-            return Redirect::to(&format!("/wallet?error={}", safety.query_param()))
-                .into_response();
+            return release_and_redirect(&format!("/wallet?error={}", safety.query_param())).await;
         }
 
         // Use a transaction with FOR UPDATE lock to prevent TOCTOU double-spend race
@@ -851,7 +978,7 @@ pub async fn handle_withdraw(
             Ok(t) => t,
             Err(e) => {
                 tracing::error!("Withdraw TX begin failed: {}", e);
-                return Redirect::to("/wallet?error=withdraw_failed").into_response();
+                return release_and_redirect("/wallet?error=withdraw_failed").await;
             }
         };
 
@@ -873,12 +1000,12 @@ pub async fn handle_withdraw(
             Ok(None) => {
                 let _ = tx.rollback().await;
                 tracing::warn!("No wallet found for user {}", user.id);
-                return Redirect::to("/wallet?error=insufficient_funds").into_response();
+                return release_and_redirect("/wallet?error=insufficient_funds").await;
             }
             Err(e) => {
                 let _ = tx.rollback().await;
                 tracing::error!("Wallet lookup failed: {}", e);
-                return Redirect::to("/wallet?error=withdraw_failed").into_response();
+                return release_and_redirect("/wallet?error=withdraw_failed").await;
             }
         };
 
@@ -893,7 +1020,7 @@ pub async fn handle_withdraw(
                 available,
                 amount_cents
             );
-            return Redirect::to("/wallet?error=insufficient_funds").into_response();
+            return release_and_redirect("/wallet?error=insufficient_funds").await;
         }
 
         let pm_uuid = if let Some(pm_id) = &form.payment_method_id {
@@ -912,7 +1039,7 @@ pub async fn handle_withdraw(
         {
             let _ = tx.rollback().await;
             tracing::error!("Failed to freeze balance: {}", e);
-            return Redirect::to("/wallet?error=withdraw_failed").into_response();
+            return release_and_redirect("/wallet?error=withdraw_failed").await;
         }
 
         // Create withdrawal request inside the transaction
@@ -986,7 +1113,11 @@ pub async fn handle_withdraw(
                             .await;
                         });
 
-                        return Redirect::to("/wallet?withdraw_requested=true").into_response();
+                        let success_url = "/wallet?withdraw_requested=true";
+                        if let Some(ref k) = idem_key {
+                            idempotency::commit_redirect(&state.db, k, success_url).await;
+                        }
+                        return Redirect::to(success_url).into_response();
                     }
                     Err(e) => {
                         tracing::error!("Withdraw TX commit failed: {}", e);
@@ -1001,11 +1132,14 @@ pub async fn handle_withdraw(
                     user.id,
                     e
                 );
-                return Redirect::to("/wallet?error=withdraw_failed").into_response();
+                return release_and_redirect("/wallet?error=withdraw_failed").await;
             }
         }
     }
 
+    if let Some(ref k) = idem_key {
+        idempotency::release(&state.db, k).await;
+    }
     Redirect::to("/wallet").into_response()
 }
 

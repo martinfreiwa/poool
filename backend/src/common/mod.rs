@@ -1,6 +1,7 @@
 pub mod audit;
 pub mod currency;
 pub mod email;
+pub mod idempotency;
 pub mod leader;
 pub mod net;
 pub mod routes_helper;
