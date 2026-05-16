@@ -3,6 +3,38 @@ use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+/// Render a `{{variable}}` template body against a JSON context using
+/// MiniJinja. Errors short-circuit to the raw template so a typo in an
+/// admin-written email cannot block a transactional send (the unrendered
+/// `{{first_name}}` is ugly but still arrives).
+///
+/// Use it for both:
+///   * Per-recipient rendering in the campaign loop (first_name, email)
+///   * Admin "preview as" rendering in the workflows tab
+pub fn render_template(template: &str, context: &serde_json::Value) -> String {
+    let mut env = minijinja::Environment::new();
+    // Auto-escape HTML output for any block whose name ends in .html — the
+    // template_name is "email" below so we set auto-escape explicitly via
+    // the per-environment setting instead.
+    env.set_auto_escape_callback(|_| minijinja::AutoEscape::Html);
+
+    let Ok(tmpl) = env.template_from_str(template) else {
+        tracing::warn!("render_template: failed to compile, returning raw body");
+        return template.to_string();
+    };
+
+    match tmpl.render(context) {
+        Ok(rendered) => rendered,
+        Err(err) => {
+            tracing::warn!(
+                "render_template: render error {} — returning raw body",
+                err
+            );
+            template.to_string()
+        }
+    }
+}
+
 /// Returns true when transactional email delivery is configured.
 pub fn resend_configured() -> bool {
     std::env::var("RESEND_API_KEY")
@@ -778,5 +810,60 @@ mod tests {
         // Defensive: clamp guarantees we never panic on weird inputs.
         assert_eq!(retry_delay_seconds(0), 60);
         assert_eq!(retry_delay_seconds(-5), 60);
+    }
+
+    // ── render_template (MiniJinja interpolation) ─────────────────────
+
+    #[test]
+    fn render_template_interpolates_known_vars() {
+        let ctx = serde_json::json!({ "first_name": "Maria", "email": "m@x.test" });
+        let out = render_template("Hi {{first_name}} ({{email}})", &ctx);
+        assert_eq!(out, "Hi Maria (m@x.test)");
+    }
+
+    #[test]
+    fn render_template_leaves_unknown_vars_blank() {
+        // MiniJinja's default behaviour: undefined → empty string.
+        let ctx = serde_json::json!({ "first_name": "Maria" });
+        let out = render_template("{{first_name}} / {{last_name}}", &ctx);
+        assert_eq!(out, "Maria / ");
+    }
+
+    #[test]
+    fn render_template_auto_escapes_html_in_context() {
+        // Auto-escape is on so a user-controlled first_name cannot inject
+        // markup into the rendered email body.
+        let ctx = serde_json::json!({ "first_name": "<script>x</script>" });
+        let out = render_template("Hello {{first_name}}", &ctx);
+        assert!(!out.contains("<script>"));
+        assert!(out.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn render_template_returns_raw_on_syntax_error() {
+        // Bad template should not crash the send loop — return the raw
+        // body so the unrendered `{{` is at least delivered.
+        let ctx = serde_json::json!({});
+        let bad = "{{ unbalanced";
+        let out = render_template(bad, &ctx);
+        assert_eq!(out, bad);
+    }
+
+    #[test]
+    fn render_template_passthrough_when_no_variables() {
+        let ctx = serde_json::json!({});
+        let html = "<h1>Welcome</h1><p>Static content.</p>";
+        assert_eq!(render_template(html, &ctx), html);
+    }
+
+    #[test]
+    fn render_template_handles_if_blocks() {
+        // Lets admins write conditional bodies like
+        // `{% if first_name %}Hi {{first_name}}{% else %}Hi there{% endif %}`.
+        let ctx_named = serde_json::json!({ "first_name": "Sam" });
+        let ctx_anon = serde_json::json!({ "first_name": "" });
+        let tmpl = "{% if first_name %}Hi {{first_name}}{% else %}Hi there{% endif %}!";
+        assert_eq!(render_template(tmpl, &ctx_named), "Hi Sam!");
+        assert_eq!(render_template(tmpl, &ctx_anon), "Hi there!");
     }
 }

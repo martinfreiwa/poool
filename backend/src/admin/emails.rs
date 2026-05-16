@@ -332,7 +332,11 @@ pub async fn api_admin_emails_delete(
     Ok(Json(serde_json::json!({"status":"deleted"})).into_response())
 }
 
-/// SQL fragment selecting `(id, email)` pairs for a given audience segment.
+/// SQL fragment selecting `(id, email, first_name)` triples for a given
+/// audience segment. `first_name` is left-joined from `user_profiles` and
+/// returned as empty string when missing, so the campaign render context
+/// can always interpolate `{{first_name}}` without a NULL panic.
+///
 /// Centralised so the campaign endpoint and the recipient-count preview
 /// stay in sync — and so the queries can be regression-tested in one place.
 ///
@@ -340,42 +344,52 @@ pub async fn api_admin_emails_delete(
 fn audience_query(segment: &str) -> Option<&'static str> {
     match segment {
         "all" => Some(
-            "SELECT id, email FROM users
-             WHERE status = 'active' AND email_verified = TRUE",
+            "SELECT u.id, u.email, COALESCE(p.first_name, '') AS first_name
+               FROM users u
+               LEFT JOIN user_profiles p ON p.user_id = u.id
+              WHERE u.status = 'active' AND u.email_verified = TRUE",
         ),
         "investors" => Some(
-            "SELECT u.id, u.email FROM users u
-             WHERE u.status = 'active' AND u.email_verified = TRUE
-               AND EXISTS (SELECT 1 FROM investments i WHERE i.user_id = u.id)",
+            "SELECT u.id, u.email, COALESCE(p.first_name, '') AS first_name
+               FROM users u
+               LEFT JOIN user_profiles p ON p.user_id = u.id
+              WHERE u.status = 'active' AND u.email_verified = TRUE
+                AND EXISTS (SELECT 1 FROM investments i WHERE i.user_id = u.id)",
         ),
         "kyc_approved" => Some(
-            "SELECT u.id, u.email FROM users u
-             WHERE u.status = 'active' AND u.email_verified = TRUE
-               AND EXISTS (
-                 SELECT 1 FROM kyc_records k
-                 WHERE k.user_id = u.id AND k.status = 'approved'
-               )",
+            "SELECT u.id, u.email, COALESCE(p.first_name, '') AS first_name
+               FROM users u
+               LEFT JOIN user_profiles p ON p.user_id = u.id
+              WHERE u.status = 'active' AND u.email_verified = TRUE
+                AND EXISTS (
+                  SELECT 1 FROM kyc_records k
+                  WHERE k.user_id = u.id AND k.status = 'approved'
+                )",
         ),
         // Tier 'Plus' has sort_order = 2 (Intro=1, Plus=2, Pro=3, Elite=4, Premium=5).
         // "Plus and above" = sort_order >= 2.
         "tier_plus" => Some(
-            "SELECT u.id, u.email FROM users u
-             JOIN user_tiers ut ON ut.user_id = u.id
-             JOIN tiers t ON t.id = ut.tier_id
-             WHERE u.status = 'active' AND u.email_verified = TRUE
-               AND t.sort_order >= 2",
+            "SELECT u.id, u.email, COALESCE(p.first_name, '') AS first_name
+               FROM users u
+               LEFT JOIN user_profiles p ON p.user_id = u.id
+               JOIN user_tiers ut ON ut.user_id = u.id
+               JOIN tiers t ON t.id = ut.tier_id
+              WHERE u.status = 'active' AND u.email_verified = TRUE
+                AND t.sort_order >= 2",
         ),
         // Dormant = no successful login in the past 30 days. `user_sessions`
         // is the source of truth (one row per login). Users with no session
         // at all are also dormant.
         "dormant" => Some(
-            "SELECT u.id, u.email FROM users u
-             WHERE u.status = 'active' AND u.email_verified = TRUE
-               AND NOT EXISTS (
-                 SELECT 1 FROM user_sessions s
-                 WHERE s.user_id = u.id
-                   AND s.created_at >= NOW() - INTERVAL '30 days'
-               )",
+            "SELECT u.id, u.email, COALESCE(p.first_name, '') AS first_name
+               FROM users u
+               LEFT JOIN user_profiles p ON p.user_id = u.id
+              WHERE u.status = 'active' AND u.email_verified = TRUE
+                AND NOT EXISTS (
+                  SELECT 1 FROM user_sessions s
+                  WHERE s.user_id = u.id
+                    AND s.created_at >= NOW() - INTERVAL '30 days'
+                )",
         ),
         _ => None,
     }
@@ -462,6 +476,18 @@ pub async fn api_admin_emails_campaign(
     for row in users {
         let u_id: sqlx::types::Uuid = row.get("id");
         let u_email: String = row.get("email");
+        let first_name: String = row.try_get("first_name").unwrap_or_default();
+
+        // Per-recipient render: {{first_name}} / {{email}} interpolated via
+        // MiniJinja. Subject is rendered too so admins can personalise the
+        // email subject line (`Hi {{first_name}}, your asset shipped`).
+        let ctx = serde_json::json!({
+            "first_name": first_name,
+            "email": u_email,
+            "user_id": u_id.to_string(),
+        });
+        let rendered_subject = crate::common::email::render_template(&subject, &ctx);
+        let rendered_body = crate::common::email::render_template(&html_body, &ctx);
 
         // Durable enqueue. Worker picks it up via process_transactional_email_outbox.
         let outbox_result = sqlx::query(
@@ -472,8 +498,8 @@ pub async fn api_admin_emails_campaign(
         .bind(u_id)
         .bind(MARKETING_CAMPAIGN_EVENT_TYPE)
         .bind(&u_email)
-        .bind(&subject)
-        .bind(&html_body)
+        .bind(&rendered_subject)
+        .bind(&rendered_body)
         .execute(&state.db)
         .await;
 
@@ -490,7 +516,7 @@ pub async fn api_admin_emails_campaign(
         )
         .bind(u_id)
         .bind(uid)
-        .bind(&subject)
+        .bind(&rendered_subject)
         .bind(&u_email)
         .execute(&state.db)
         .await;
@@ -567,17 +593,27 @@ mod tests {
     }
 
     #[test]
-    fn audience_queries_all_select_id_and_email() {
-        // Every segment query must expose `id` and `email` for the
-        // campaign loop to pull them out. Catches accidental column drops.
+    fn audience_queries_all_select_id_email_and_first_name() {
+        // Every segment query must expose `id`, `email`, and `first_name`
+        // (left-joined from user_profiles, COALESCED to empty string) so
+        // the campaign render loop can construct a per-user context.
         for seg in ["all", "investors", "kyc_approved", "tier_plus", "dormant"] {
             let sql = audience_query(seg).unwrap();
-            // Either "id," (bare from `users`) or "u.id" (aliased).
+            assert!(sql.contains("u.id"), "segment '{seg}' missing u.id column");
             assert!(
-                sql.contains("id,") || sql.contains("u.id"),
-                "segment '{seg}' missing id column"
+                sql.contains("u.email"),
+                "segment '{seg}' missing u.email column"
             );
-            assert!(sql.contains("email"), "segment '{seg}' missing email column");
+            assert!(
+                sql.contains("first_name"),
+                "segment '{seg}' missing first_name column — render loop \
+                 would crash trying to read it"
+            );
+            assert!(
+                sql.contains("LEFT JOIN user_profiles"),
+                "segment '{seg}' must LEFT JOIN user_profiles so users \
+                 with no profile row still receive campaign mail"
+            );
         }
     }
 

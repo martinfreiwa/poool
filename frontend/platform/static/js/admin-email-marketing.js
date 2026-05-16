@@ -29,6 +29,10 @@ document.addEventListener("alpine:init", () => {
       description: "",
       html_template: "",
     },
+    // Live CodeMirror instance (created when editor opens, torn down on
+    // cancel/save). Plain textarea is no good for editing HTML email
+    // markup — no syntax colouring, no line numbers.
+    _cm: null,
 
     // Campaign State
     sending: false,
@@ -45,7 +49,46 @@ document.addEventListener("alpine:init", () => {
     },
 
     async init() {
+      // Bring up CodeMirror whenever the editor opens, and tear it down
+      // when it closes, so a fresh instance is bound to each template.
+      this.$watch("editingTemplate", (opened) => {
+        if (opened) {
+          this.$nextTick(() => this._mountCodeMirror());
+        } else {
+          this._destroyCodeMirror();
+        }
+      });
       await this.loadData();
+    },
+
+    _mountCodeMirror() {
+      if (this._cm || typeof CodeMirror === "undefined") return;
+      const el = document.getElementById("html_editor");
+      if (!el) return;
+      this._cm = CodeMirror.fromTextArea(el, {
+        mode: "htmlmixed",
+        lineNumbers: true,
+        lineWrapping: true,
+        theme: "default",
+        indentUnit: 2,
+        tabSize: 2,
+      });
+      this._cm.setSize("100%", 480);
+      this._cm.on("change", (cm) => {
+        // Keep Alpine state in sync — saveTemplate reads from
+        // currentTemplate.html_template, not from the DOM.
+        this.currentTemplate.html_template = cm.getValue();
+      });
+    },
+
+    _destroyCodeMirror() {
+      if (!this._cm) return;
+      try {
+        this._cm.toTextArea();
+      } catch (_) {
+        // Already detached — ignore.
+      }
+      this._cm = null;
     },
 
     async loadData() {
@@ -200,7 +243,11 @@ document.addEventListener("alpine:init", () => {
           body: JSON.stringify(this.campaign),
         });
         if (!resp.ok) {
-          throw new Error("Failed to start campaign.");
+          // Surface the real backend error (rate limit / unknown segment /
+          // missing template / missing permission) instead of a generic
+          // "Failed to start campaign" string.
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || `Campaign send failed (${resp.status})`);
         }
         const data = await resp.json();
         this.showToast(`Campaign started! ${data.target_count} users queued.`);
