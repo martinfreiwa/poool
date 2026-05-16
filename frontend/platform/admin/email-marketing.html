@@ -676,35 +676,37 @@
       <!-- ═══ PREVIEW MODAL ═══ -->
       <div x-show="preview.show" x-cloak x-transition.opacity
            @keydown.escape.window="closePreview()"
-           style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:32px;">
+           style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;">
         <div @click.outside="closePreview()"
-             style="background:var(--admin-surface);border-radius:var(--admin-radius-lg);max-width:780px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--admin-border);">
-          <!-- Header -->
-          <div style="padding:18px 24px;border-bottom:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-            <div style="min-width:0;">
-              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--admin-text-muted);">Preview as customer</div>
-              <h3 style="margin:4px 0 0;font-size:16px;font-weight:700;color:var(--admin-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="preview.subject || 'Loading…'"></h3>
-              <div style="font-size:12px;color:var(--admin-text-muted);font-family:ui-monospace,monospace;margin-top:2px;" x-text="preview.event_type ? 'event: ' + preview.event_type : (preview.template_id ? 'template: ' + preview.template_id : '')"></div>
+             style="background:var(--admin-surface);border-radius:var(--admin-radius-lg);max-width:960px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--admin-border);box-shadow:0 24px 60px rgba(0,0,0,0.4);">
+          <!-- Header (compact, single row) -->
+          <div style="padding:12px 16px 12px 20px;border-bottom:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;gap:16px;">
+            <div style="min-width:0;display:flex;align-items:center;gap:12px;flex:1;">
+              <span class="admin-badge admin-badge--neutral" style="flex-shrink:0;">Preview</span>
+              <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--admin-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;" x-text="preview.subject || 'Loading…'"></h3>
+              <span style="font-size:11px;color:var(--admin-text-muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;flex-shrink:0;" x-text="preview.event_type ? preview.event_type : (preview.template_id ? 'tpl: ' + preview.template_id.slice(0,8) : '')"></span>
             </div>
-            <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="closePreview()" aria-label="Close preview">✕</button>
+            <button @click="closePreview()" aria-label="Close preview"
+                    style="background:transparent;border:1px solid var(--admin-border);color:var(--admin-text-muted);width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;padding:0;">✕</button>
           </div>
-          <!-- Iframe body -->
-          <div style="flex:1;overflow:auto;background:#f4f4f5;padding:16px;">
-            <iframe x-ref="previewFrame" sandbox="allow-same-origin"
-                    style="width:100%;height:520px;border:1px solid var(--admin-border);border-radius:8px;background:#fff;"
+          <!-- Iframe body (grows to fill available vertical space) -->
+          <div style="flex:1;overflow:auto;background:#FAFAFA;padding:20px;min-height:0;">
+            <iframe x-ref="previewFrame" sandbox="allow-same-origin allow-popups"
+                    style="display:block;width:100%;height:100%;min-height:560px;border:0;border-radius:8px;background:#FFFFFF;box-shadow:0 1px 3px rgba(16,24,40,0.08);"
                     title="Email preview"></iframe>
           </div>
           <!-- Footer -->
-          <div style="padding:16px 24px;border-top:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <div style="padding:14px 20px;border-top:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
             <span style="font-size:12px;color:var(--admin-text-muted);">
-              Sample data is used — variables like
-              <code>&#123;&#123;first_name&#125;&#125;</code> resolve to the registered defaults.
+              Sample data &mdash; variables like
+              <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;">&#123;&#123;first_name&#125;&#125;</code>
+              resolve to registered defaults.
             </span>
             <div style="display:flex;gap:8px;">
               <button class="admin-btn admin-btn--secondary" @click="closePreview()">Close</button>
               <button class="admin-btn admin-btn--primary" @click="sendTestFromPreview()" :disabled="preview.sending">
                 <span x-show="!preview.sending">Send test to me</span>
-                <span x-show="preview.sending">Sending…</span>
+                <span x-show="preview.sending">Sending&hellip;</span>
               </button>
             </div>
           </div>
