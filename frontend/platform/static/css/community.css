@@ -52,36 +52,21 @@ button .poool-icon-custom {
 /* .community-tab-nav removed in commit 8 — old in-page tab strip was a
    dead wrapper deleted in commit 1; topbar now hosts community tabs. */
 
-/* Override global button { border:none } from main.css */
-button.community-tab-btn {
-  padding: 12px 24px;
-  font-family: var(--font-family);
-  font-size: 14px;
-  font-weight: 600;
-  color: #717680;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  cursor: pointer;
-  transition: color 0.2s ease, border-bottom-color 0.2s ease;
-  white-space: nowrap;
-  border-radius: 0;
-}
-
-button.community-tab-btn:hover {
-  color: var(--page-title-color);
-}
-
-button.community-tab-btn.active {
-  color: var(--btn-primary-bg, var(--btn-primary-bg));
-  border-bottom: 2px solid var(--btn-primary-bg, var(--btn-primary-bg));
-}
+/* Community tabs intentionally inherit the base `.lb-topbar-tab` look from
+   leaderboard.css (font-size 14, weight 500 → 700 on .active, blue underline,
+   tight 4px vertical padding, 24px parent gap) so the community topbar is a
+   1:1 visual match with the rewards page topbar.
+   The `community-tab-btn` class itself is retained on each <button> because
+   switchCommunityTab() in community.html uses it as a query selector — it
+   carries no styling on desktop. Mobile-only sizing overrides still apply
+   inside the @media (max-width: 768px) block further down. */
 
 /* ── Content Layout ─────────────────────────────────────────────── */
 .community-content-layout {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  /* Rail trimmed 300→280 to give the main feed ~20px more breathing room
+     without breaking widget legibility (DESIGN.md hierarchy pass). */
+  grid-template-columns: minmax(0, 1fr) 280px;
   gap: 24px;
   align-items: start;
 }
@@ -110,6 +95,16 @@ button.community-tab-btn.active {
   height: 48px;
   font-size: 16px;
   border: 2px solid var(--btn-primary-bg, var(--btn-primary-bg));
+}
+
+.profile-card-avatar-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--btn-primary-bg);
+  flex-shrink: 0;
+  background: #EEF4FF;
 }
 
 /* ── Feed ────────────────────────────────────────────────────────── */
@@ -197,7 +192,7 @@ button.community-tab-btn.active {
 .feed-post-time {
   font-family: var(--font-family);
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
 }
 
 .feed-post-badge {
@@ -235,11 +230,14 @@ button.community-tab-btn.active {
   font-size: 14px;
   color: #667085;
   background: transparent;
-  padding: 8px 16px;
+  /* Padding + min-height lift the tap target to the 44px recommended
+     by DESIGN.md mobile rules. Visually identical on desktop. */
+  padding: 10px 14px;
+  min-height: 36px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 .feed-toggle-btn.active {
   background: #EEF4FF;
@@ -248,6 +246,13 @@ button.community-tab-btn.active {
 .feed-toggle-btn:hover:not(.active) {
   background: #F2F4F7;
   color: #101828;
+}
+.feed-toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--btn-primary-bg, #001DCA);
+}
+@media (max-width: 768px) {
+  .feed-toggle-btn { min-height: 44px; }
 }
 
 
@@ -374,7 +379,7 @@ button.community-tab-btn.active {
   display: flex;
   gap: 6px;
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
 }
 
 /* Milestone */
@@ -460,11 +465,13 @@ button.community-tab-btn.active {
   font-weight: 700;
   color: var(--page-title-color);
   display: block;
+  /* Lock digit width so future double-digit counts don't reflow stats row */
+  font-variant-numeric: tabular-nums;
 }
 
 .profile-stat-label {
   font-size: 11px;
-  color: #98A2B3;
+  color: #667085;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-top: 2px;
@@ -516,8 +523,10 @@ button.community-tab-btn.active {
 
 .trending-card-title {
   font-family: var(--font-family);
-  font-size: 15px;
-  font-weight: 600;
+  /* Bumped 15→16 / 600→700 for stronger top-of-card hierarchy vs body
+     copy below (DESIGN.md §9 stat cards). */
+  font-size: 16px;
+  font-weight: 700;
   color: var(--page-title-color);
   margin-bottom: 16px;
   display: flex;
@@ -636,21 +645,13 @@ button.community-tab-btn.active {
   margin-bottom: 16px;
 }
 
-.ann-filter-btn {
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--input-border-color);
-  background: #fff;
-  color: var(--body-color);
-  cursor: pointer;
-  transition: all 0.15s;
+/* Allow the segmented control to wrap on narrow viewports without breaking
+   the pill background. The .ds-segmented primitive is inline-flex; on
+   announcements we let it span the full row and wrap children. */
+.announcements-filter-bar__group {
+  flex-wrap: wrap;
+  row-gap: 2px;
 }
-
-.ann-filter-btn:hover { border-color: var(--btn-primary-bg); color: var(--btn-primary-bg); }
-.ann-filter-btn.active { background: var(--btn-primary-bg); border-color: var(--btn-primary-bg); color: #fff; }
 
 .announcements-list {
   display: flex;
@@ -658,15 +659,12 @@ button.community-tab-btn.active {
   gap: 16px;
 }
 
+/* Announcement cards use the .ds-card base for surface (bg, border, radius,
+   shadow, padding) — these rules add announcement-specific layout only. */
 .ann-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border-color);
-  border-radius: var(--card-border-radius);
   padding: 20px;
-  transition: box-shadow 0.2s;
+  gap: 12px;
 }
-
-.ann-card:hover { box-shadow: var(--card-shadow-hover, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)); }
 
 .ann-card--pinned { border-left: 3px solid var(--btn-primary-bg); }
 
@@ -679,34 +677,41 @@ button.community-tab-btn.active {
   color: var(--btn-primary-bg);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-bottom: 12px;
 }
 
+/* Override .ds-card__header's space-between — icon + meta read left-aligned
+   as a single block on announcement cards. */
 .ann-card-header {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .ann-icon {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background: #EEF4FF;
+  color: #3538CD;
 }
 
-
-
+.ann-icon--platform   { background: #EEF4FF; color: #3538CD; }
+.ann-icon--commodity  { background: #ECFDF5; color: #047857; }
+.ann-icon--dividend   { background: #FEF3C7; color: #B45309; }
+.ann-icon--market     { background: #F5F3FF; color: #6D28D9; }
+.ann-icon--farm       { background: #FFF1F2; color: #BE123C; }
 
 
 
 .ann-meta { display: flex; flex-direction: column; gap: 2px; }
 .ann-category { font-size: 12px; font-weight: 600; color: #667085; text-transform: uppercase; letter-spacing: 0.03em; }
-.ann-date { font-size: 12px; color: #98A2B3; }
+.ann-date { font-size: 12px; color: #667085; }
 
 .ann-title {
   font-family: var(--font-family);
@@ -749,7 +754,7 @@ button.community-tab-btn.active {
 
 .ann-reactions {
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -918,7 +923,7 @@ button.community-tab-btn.active {
 
 .reviews-overall-count {
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
 }
 
 .reviews-breakdown-card {
@@ -1028,7 +1033,7 @@ button.community-tab-btn.active {
   padding-top: 12px;
   border-top: 1px solid var(--card-border-color);
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
 }
 
 .review-helpful { font-weight: 500; }
@@ -1074,7 +1079,7 @@ button.community-tab-btn.active {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
-  color: #98A2B3;
+  color: #667085;
   transition: all 0.2s ease;
   font-size: 13px;
 }
@@ -1204,7 +1209,7 @@ button.community-tab-btn.active {
   gap: 12px;
   margin-top: 10px;
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
 }
 
 .poll-meta span {
@@ -1278,6 +1283,15 @@ button.community-tab-btn.active {
   font-weight: 500;
   cursor: pointer;
   transition: opacity 0.15s;
+  /* Bump padding so the inline hashtag pill clears 44px on mobile. Inside
+     a paragraph the padding stays visually compact. */
+  padding: 4px 6px;
+  margin: -4px -2px;
+  border-radius: 4px;
+}
+.hashtag-tag:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--btn-primary-bg, #001DCA);
 }
 
 .hashtag-tag:hover {
@@ -1295,8 +1309,9 @@ button.community-tab-btn.active {
 
 .hashtag-trending-title {
   font-family: var(--font-family);
-  font-size: 15px;
-  font-weight: 600;
+  /* Matched to trending-card-title for consistent rail hierarchy. */
+  font-size: 16px;
+  font-weight: 700;
   color: var(--page-title-color);
   margin-bottom: 16px;
   display: flex;
@@ -1333,7 +1348,7 @@ button.community-tab-btn.active {
 
 .hashtag-trending-count {
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
   font-weight: 500;
 }
 
@@ -1551,7 +1566,7 @@ button.community-tab-btn.active {
 
 .notif-item__time {
   font-size: 12px;
-  color: #98A2B3;
+  color: #667085;
   font-weight: 400;
 }
 
@@ -2453,7 +2468,7 @@ button.community-tab-btn.active {
 
 .community-autocomplete__subtitle {
   font-size: 11px;
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
 }
 
 .community-autocomplete__empty {
@@ -2675,7 +2690,7 @@ button.community-tab-btn.active {
 }
 
 .feed-post-report-btn {
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
 }
 
 .feed-post-comments {
@@ -2718,7 +2733,7 @@ button.community-tab-btn.active {
 .community-loading-state {
   padding: 40px;
   text-align: center;
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
   font-size: 14px;
 }
 
@@ -2727,10 +2742,255 @@ button.community-tab-btn.active {
   font-size: 13px;
 }
 
+/* Branded empty state shared across community surfaces (announcements,
+   badge holders, etc.). Inherits .ds-card surface tokens when wrapped in
+   one; the page-level rules below own layout + brand expression only,
+   per DESIGN.md §"Empty States In Dashboards". */
 .community-empty-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 40px 24px;
   color: var(--body-color, #667085);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.community-empty-state__art {
+  width: 160px;
+  max-width: 60%;
+  margin-bottom: 8px;
+}
+
+.community-empty-state__art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.community-empty-state__actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* First-visit onboarding card. Shown in right rail when post_count === 0,
+   replacing the stacked-empty-state look of the trending widgets. */
+.community-getting-started {
+  background: var(--color-base-white, #ffffff);
+  border: 1px solid var(--ds-border, #E5E7EB);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.community-getting-started__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.community-getting-started__title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--page-title-color, #101828);
+}
+.community-getting-started__progress {
+  font-size: 11px;
+  color: var(--ds-text-secondary, #475467);
+  font-variant-numeric: tabular-nums;
+  background: #F2F4F7;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.community-getting-started__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.community-getting-started__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+}
+/* POOOL brand colors: blue background + mint green numerals, mirroring the
+   sidebar "Add Asset" CTA pattern. Previously used a soft #EEF4FF tint that
+   read as a Notion-style placeholder. */
+.community-getting-started__step {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--btn-primary-bg, #0000FF);
+  color: #98FB96;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 2px rgba(0, 0, 255, 0.18);
+}
+.community-getting-started__name {
+  font-weight: 600;
+  color: var(--page-title-color, #101828);
+  margin-bottom: 2px;
+}
+.community-getting-started__link {
+  color: var(--btn-primary-bg, #001DCA);
+  text-decoration: none;
+  font-size: 12px;
+}
+.community-getting-started__link:hover { text-decoration: underline; }
+
+/* Done-state — step badge becomes a green check, label is muted but
+   the link stays clickable in case the user wants to revisit. */
+.community-getting-started__item--done .community-getting-started__step {
+  background: #DCFCE7;
+  color: #15803D;
+}
+.community-getting-started__item--done .community-getting-started__name {
+  text-decoration: line-through;
+  color: var(--ds-text-secondary, #667085);
+}
+
+/* Sidebar nav grouping promoted Wave 6 to /static/css/sidebar-grouping.css
+   (loaded globally via head.html). The community-page-only rule that
+   originally lived here is now retired. */
+
+/* Feed empty state — shown when posts.length === 0 on the All tab.
+   Three quick actions so the first paint is never a dead end. */
+.community-feed-empty {
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+.community-feed-empty__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.community-feed-empty__icon {
+  color: var(--ds-text-secondary, #475467);
+}
+.community-feed-empty__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--page-title-color, #101828);
+  margin: 0;
+}
+.community-feed-empty__desc {
+  color: var(--ds-text-secondary, #475467);
+  margin: 0;
+  max-width: 38ch;
+}
+.community-feed-empty__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Rail skeleton — small shimmer rows for sidebar widgets while they
+   hydrate. Matches feed skeleton shimmer keyframe so both load together
+   visually. Auto-disabled by prefers-reduced-motion below. */
+.community-rail-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+.community-rail-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.community-rail-skeleton__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #EEF1F4 0%, #F7F8FA 50%, #EEF1F4 100%);
+  background-size: 200% 100%;
+  animation: community-skeleton-shimmer 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.community-rail-skeleton__line {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #EEF1F4 0%, #F7F8FA 50%, #EEF1F4 100%);
+  background-size: 200% 100%;
+  animation: community-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.community-rail-skeleton__line--short { max-width: 60%; }
+@media (prefers-reduced-motion: reduce) {
+  .community-rail-skeleton__dot,
+  .community-rail-skeleton__line { animation: none; }
+}
+
+/* Feed skeleton — placeholder cards while HTMX swaps in real posts. */
+.community-feed-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.community-feed-skeleton__card {
+  background: var(--color-base-white, #ffffff);
+  border: 1px solid var(--ds-border, #E5E7EB);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.community-feed-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.community-feed-skeleton__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #EEF1F4 0%, #F7F8FA 50%, #EEF1F4 100%);
+  background-size: 200% 100%;
+  animation: community-skeleton-shimmer 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.community-feed-skeleton__name {
+  width: 120px;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #EEF1F4 0%, #F7F8FA 50%, #EEF1F4 100%);
+  background-size: 200% 100%;
+  animation: community-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.community-feed-skeleton__line {
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #EEF1F4 0%, #F7F8FA 50%, #EEF1F4 100%);
+  background-size: 200% 100%;
+  animation: community-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.community-feed-skeleton__line--short { width: 60%; }
+@keyframes community-skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0;  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-feed-skeleton__avatar,
+  .community-feed-skeleton__name,
+  .community-feed-skeleton__line { animation: none; }
 }
 
 .community-empty-state__icon {
@@ -2739,15 +2999,19 @@ button.community-tab-btn.active {
 }
 
 .community-empty-state__title {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--page-title-color, #101828);
-  margin-bottom: 4px;
+  margin: 0 0 4px;
+  line-height: 28px;
 }
 
 .community-empty-state__desc {
   font-size: 14px;
   color: var(--body-color, #667085);
+  max-width: 420px;
+  line-height: 22px;
+  margin: 0;
 }
 
 /* ── Following empty state (commit 17) ────────────────────────────── */
@@ -3058,6 +3322,10 @@ button.community-tab-btn.active {
     scrollbar-width: none;
     width: 100%;
   }
+  /* WebKit/Blink scrollbar removal (Firefox uses scrollbar-width). */
+  .lb-topbar-tabs.community-topbar-tabs::-webkit-scrollbar {
+    display: none;
+  }
   .community-topbar-tabs::-webkit-scrollbar { display: none; }
   .community-tab-btn {
     scroll-snap-align: start;
@@ -3149,7 +3417,7 @@ button.community-tab-btn.active {
 
 .community-xp-overview__level-num {
   font-size: 13px;
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
 }
 
 .community-xp-overview__value-row {
@@ -3168,7 +3436,7 @@ button.community-tab-btn.active {
 
 .community-xp-overview__value-unit {
   font-size: 13px;
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
 }
 
 .community-xp-overview__progress {
@@ -3179,7 +3447,7 @@ button.community-tab-btn.active {
   display: flex;
   justify-content: space-between;
   margin-top: 4px;
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
 }
 
 .community-xp-overview__streak {
@@ -3873,7 +4141,7 @@ button.community-tab-btn.active {
 
 .community-disabled__icon {
   margin: 0 auto 16px;
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
 }
 
 .community-disabled__title {
@@ -4323,7 +4591,7 @@ button.community-tab-btn.active {
 
 .community-ama-question__time {
   font-size: 12px;
-  color: var(--text-secondary, #98A2B3);
+  color: var(--text-secondary, #667085);
 }
 
 /* ── Circle modals (commit 15) ────────────────────────────────────── */
@@ -4346,6 +4614,7 @@ button.community-tab-btn.active {
   max-width: 420px;
   width: 90%;
   max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
   overflow: auto;
 }
 
@@ -4710,9 +4979,9 @@ button.community-tab-btn.active {
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
-  /* Reduce the shared 24px gap slightly on small viewports to fit
-     more labels before scroll kicks in. */
-  gap: 20px;
+  /* Gap intentionally NOT set — inherits parent `.lb-topbar-tabs { gap:24px }`
+     from leaderboard.css to match the rewards topbar exactly. Mobile overrides
+     live in the @media (max-width: 768px) block above. */
 }
 
 .community-topbar-tabs::-webkit-scrollbar {
@@ -4966,6 +5235,7 @@ button.community-tab-btn.active {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 220px);
+  height: calc(100dvh - 220px);
   min-height: 480px;
 }
 
@@ -5081,7 +5351,7 @@ button.community-tab-btn.active {
 
 .community-dms__thread-time {
   font-size: 11px;
-  color: var(--ds-text-tertiary, #98A2B3);
+  color: var(--ds-text-tertiary, #667085);
 }
 
 .community-dms__thread-unread {
@@ -5173,7 +5443,7 @@ button.community-tab-btn.active {
 
 .community-dms__bubble-time {
   font-size: 10px;
-  color: var(--ds-text-tertiary, #98A2B3);
+  color: var(--ds-text-tertiary, #667085);
   margin-top: 2px;
   padding: 0 6px;
 }
@@ -5252,4 +5522,1000 @@ button.community-tab-btn.active {
 .community-dms__search-name {
   font-weight: 500;
   color: var(--page-title-color, #101828);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MyCircle tab rework (2026-05-16) — .cc-* primitives.
+
+   Goals (per user spec):
+     - Compact cards, less padding than the previous community-stat-card.
+     - Visually identical to investor-dashboard ds-stat-card density.
+     - 3-section discovery rail (Featured / Trending / New) + horizontal
+       grid of cards.
+     - Search input in toolbar header (matches leaderboard search style).
+     - Modals (.cc-modal) restyled with the same ds-card chrome.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cc-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 0 48px;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+.cc-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+}
+.cc-toolbar__left { min-width: 0; flex: 1 1 280px; }
+.cc-toolbar__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+}
+.cc-toolbar__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #535862);
+}
+.cc-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cc-search {
+  position: relative;
+  width: 280px;
+}
+.cc-search__icon {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #717680);
+  pointer-events: none;
+}
+.cc-search__input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--card-bg, #fff);
+  color: var(--page-title-color, #181D27);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cc-search__input:focus {
+  outline: none;
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.12);
+}
+.cc-create-btn {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Sections ────────────────────────────────────────────────────── */
+.cc-section { display: flex; flex-direction: column; gap: 12px; }
+.cc-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 4px;
+}
+.cc-section__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cc-section__title svg { color: var(--btn-primary-bg, #0000FF); }
+.cc-section__hint {
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+.cc-section__count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #717680);
+}
+
+/* ── Rail grid (compact cards) ───────────────────────────────────── */
+.cc-rail {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .cc-rail { grid-template-columns: 1fr; }
+}
+
+/* ── Compact card ────────────────────────────────────────────────── */
+.cc-card-compact {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 12px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.cc-card-compact:hover {
+  transform: translateY(-1px);
+  border-color: #D0D5DD;
+  box-shadow: 0 4px 12px rgba(10,13,18,0.06);
+}
+.cc-card-compact__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.cc-card-compact__avatar {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: #F2F4F7;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.cc-card-compact__info { min-width: 0; flex: 1; }
+.cc-card-compact__name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.cc-card-compact__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-card-compact__meta {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+  font-variant-numeric: tabular-nums;
+}
+.cc-card-compact__desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #535862);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cc-card-compact__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.cc-card-compact__actions .ds-btn {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.cc-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.cc-card-badge--featured { background: #FEF3C7; color: #92400E; }
+.cc-card-badge--role     { background: #DBEAFE; color: #1E40AF; }
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+.cc-empty {
+  grid-column: 1 / -1;
+  padding: 20px 16px;
+  border: 1px dashed var(--card-border-color, #E5E7EB);
+  border-radius: 10px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+  background: var(--card-bg, #fff);
+}
+
+/* ── Pagination ──────────────────────────────────────────────────── */
+.cc-pagination {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.cc-page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--card-border-color, #D5D7DA);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #475467);
+  cursor: pointer;
+}
+.cc-page-btn:hover { border-color: #B8BCC0; color: var(--page-title-color, #181D27); }
+.cc-page-btn--active {
+  border-color: var(--btn-primary-bg, #0000FF);
+  color: var(--btn-primary-bg, #0000FF);
+  box-shadow: inset 0 -2px 0 var(--btn-primary-bg, #0000FF);
+}
+.cc-page-btn:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
+/* ── Modal (Create + Invite share .cc-modal chrome) ──────────────── */
+.cc-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(20, 24, 33, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.cc-modal__panel {
+  width: min(480px, calc(100% - 32px));
+  padding: 0;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+}
+.cc-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+}
+.cc-modal__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+.cc-modal__close {
+  background: transparent;
+  border: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text-secondary, #717680);
+  cursor: pointer;
+}
+.cc-modal__close:hover { background: #F2F4F7; color: var(--page-title-color, #181D27); }
+.cc-modal__body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cc-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--card-border-color, #E5E7EB);
+  background: #FAFAFA;
+  border-radius: 0 0 12px 12px;
+}
+
+.cc-form-row { display: flex; flex-direction: column; gap: 6px; }
+.cc-form-row--inline { flex-direction: row; gap: 12px; }
+.cc-form-row__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+.cc-form-row__hint {
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+}
+.cc-copy-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.cc-copy-row__input { flex: 1; }
+
+.cc-invite-results {
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 6px;
+  background: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Circle Settings sub-page (.ccs-*) — 2026-05-16 rework
+   Replaces the in-page circle-settings modal. Card density matches
+   ds-cards + investor-dashboard pattern.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ccs-page {
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0 96px;
+}
+
+.ccs-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #475467);
+  text-decoration: none;
+}
+.ccs-back:hover { color: var(--page-title-color, #181D27); }
+
+.ccs-header-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+}
+.ccs-header__avatar {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: #F2F4F7;
+  font-size: 28px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ccs-header__info { flex: 1; min-width: 0; }
+.ccs-header__name {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+}
+.ccs-header__meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+.ccs-header__role-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #F2F4F7;
+  color: #475467;
+}
+.ccs-header__role-badge--owner     { background: #FEF3C7; color: #92400E; }
+.ccs-header__role-badge--admin     { background: #DBEAFE; color: #1E40AF; }
+.ccs-header__role-badge--moderator { background: #F3E8FF; color: #5B21B6; }
+.ccs-header__role-badge--member    { background: #D1FADF; color: #054F31; }
+
+.ccs-card {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ccs-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ccs-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+.ccs-card__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+
+.ccs-card--danger { border-color: #FDA29B; }
+.ccs-card--danger .ccs-card__title { color: #B42318; }
+
+.ccs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ccs-field { display: flex; flex-direction: column; gap: 6px; }
+.ccs-field--full { grid-column: 1 / -1; }
+.ccs-field__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+.ccs-field__hint {
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+}
+.ccs-field__hint code {
+  background: #F2F4F7;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+}
+
+.ccs-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ccs-toggle-row__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+.ccs-toggle-row__desc {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+}
+.ccs-switch {
+  position: relative;
+  width: 40px; height: 22px;
+  display: inline-block;
+}
+.ccs-switch input {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer;
+  width: 100%; height: 100%;
+}
+.ccs-switch__track {
+  position: absolute; inset: 0;
+  background: #D5D7DA;
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+.ccs-switch__knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(16,24,40,0.15);
+  transition: transform 0.15s ease;
+}
+.ccs-switch input:checked + .ccs-switch__track { background: var(--btn-primary-bg, #0000FF); }
+.ccs-switch input:checked + .ccs-switch__track .ccs-switch__knob { transform: translateX(18px); }
+
+.ccs-members { display: flex; flex-direction: column; gap: 8px; }
+.ccs-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--card-border-color, #E9EAEB);
+  border-radius: 8px;
+  background: #fff;
+}
+.ccs-member-row__info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ccs-member-row__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+.ccs-member-row__role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #F2F4F7;
+  color: #475467;
+}
+.ccs-member-row__role--owner     { background: #FEF3C7; color: #92400E; }
+.ccs-member-row__role--admin     { background: #DBEAFE; color: #1E40AF; }
+.ccs-member-row__role--moderator { background: #F3E8FF; color: #5B21B6; }
+
+.ccs-member-row__actions { display: flex; gap: 6px; flex-shrink: 0; }
+.ccs-member-row__actions .ds-btn { height: 28px; padding: 0 10px; font-size: 12px; }
+
+.ccs-empty {
+  padding: 16px;
+  border: 1px dashed var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+}
+
+.ccs-danger-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ds-btn--danger {
+  background: #B42318;
+  color: #fff;
+  border: 1px solid #B42318;
+}
+.ds-btn--danger:hover { background: #912018; border-color: #912018; }
+
+/* Sticky footer */
+.ccs-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-top: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 0;
+  margin: 0 -16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.ccs-footer[data-state="dirty"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ccs-footer__status { font-size: 12px; color: var(--text-secondary, #717680); }
+.ccs-footer__actions { display: flex; gap: 8px; }
+
+@media (max-width: 720px) {
+  .ccs-grid { grid-template-columns: 1fr; }
+  .ccs-header-card { flex-wrap: wrap; }
+}
+
+/* ── Invite modal — clean up the old inline-styled dropdown ─────── */
+.cc-invite-results__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  color: var(--page-title-color, #181D27);
+  transition: background 0.1s ease;
+}
+.cc-invite-results__row:hover,
+.cc-invite-results__row:focus-visible {
+  background: #F2F4F7;
+  outline: none;
+}
+.cc-invite-results__avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #F2F4F7;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 12px;
+  color: var(--page-title-color, #181D27);
+  flex-shrink: 0;
+}
+.cc-invite-results__name { flex: 1; }
+.cc-invite-results__cta {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--btn-primary-bg, #0000FF);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cc-invite-results__empty {
+  padding: 14px 12px;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+  text-align: center;
+}
+
+/* Mobile: stack toolbar + go full-bleed for modals */
+@media (max-width: 640px) {
+  .cc-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+  .cc-toolbar__right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cc-search { width: 100%; }
+  .cc-create-btn { width: 100%; justify-content: center; }
+  .cc-modal { padding: 0; }
+  .cc-modal__panel {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  .cc-modal__footer {
+    border-radius: 0;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+  .cc-modal__body { padding: 16px; }
+  /* Larger touch targets */
+  .cc-modal__body .ds-input { min-height: 44px; }
+  .cc-modal__footer .ds-btn { min-height: 44px; padding: 0 18px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Branded empty-state utility (2026-05-16) — POOOL watermark + neutral
+   chrome. Use `.community-empty-state` on any empty-state ds-card to
+   get the logo watermark + standardized spacing.
+
+   Matches the leaderboard.css `.dat-chart-empty::before` pattern that
+   already ships throughout the dashboard, so empty states feel
+   intentional + branded, not "broken".
+   ═══════════════════════════════════════════════════════════════════ */
+.community-empty-state {
+  position: relative;
+  padding: 40px 24px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.community-empty-state::before {
+  content: '';
+  display: block;
+  width: 88px;
+  height: 26px;
+  margin: 0 auto 6px;
+  background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
+  opacity: 0.85;
+}
+
+/* Apply branding to the existing follow-empty + feed-empty classes
+   without changing their layout. */
+.community-following-empty,
+.community-feed-empty {
+  position: relative;
+  padding: 36px 24px 28px;
+}
+.community-following-empty::before {
+  content: '';
+  display: block;
+  width: 88px;
+  height: 26px;
+  margin: 0 auto 10px;
+  background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
+  opacity: 0.85;
+}
+
+/* Drop the old emoji icon (🔭) — partial now omits it; CSS guards if
+   any legacy markup still tries to render. */
+.community-following-empty__icon { display: none !important; }
+
+/* Profile-card buttons: align with rest of platform's ghost+primary
+   pattern. Edit profile is the primary action; View profile becomes
+   a quiet link to reduce visual weight. */
+.community-profile-card__edit-btn {
+  background: var(--btn-primary-bg, #0000FF);
+  color: #fff;
+  border-color: var(--btn-primary-bg, #0000FF);
+}
+.community-profile-card__edit-btn:hover {
+  background: #0019B0;
+  border-color: #0019B0;
+  color: #fff;
+}
+.community-profile-card__view-btn {
+  background: transparent;
+  color: var(--btn-primary-bg, #0000FF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  margin-top: 6px;
+}
+.community-profile-card__view-btn:hover {
+  background: #F8F9FB;
+  border-color: var(--btn-primary-bg, #0000FF);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Community Profile (Facebook-style layout) — 2026-05-16 rework
+   POOOL design tokens preserved; only layout pattern borrowed from FB:
+     - Cover-photo banner (260px tall, gradient fallback)
+     - Avatar overlaps banner bottom-left
+     - Name + bio + inline counts to the right of avatar
+     - Sticky tab strip below
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cp-hero {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.cp-hero__banner {
+  position: relative;
+  height: 260px;
+  /* Default = POOOL brand gradient when no banner uploaded */
+  background: linear-gradient(135deg, #0000FF 0%, #2E2EF9 50%, #98FB96 200%);
+  background-size: cover;
+  background-position: center;
+}
+.cp-hero__banner-edit {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(255,255,255,0.92);
+  color: #181D27;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(4px);
+}
+.cp-hero__banner-edit:hover { background: #fff; }
+
+.cp-hero__body {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 0 24px 20px;
+}
+.cp-hero__avatar {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: var(--card-bg, #fff);
+  border: 4px solid var(--card-bg, #fff);
+  margin-top: -60px; /* overlap banner */
+  box-shadow: 0 4px 12px rgba(10,13,18,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cp-hero__avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.cp-hero__avatar-initials {
+  font-size: 56px;
+  font-weight: 800;
+  color: var(--btn-primary-bg, #0000FF);
+  background: #EEF1FF;
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+
+.cp-hero__info {
+  min-width: 0;
+  padding-bottom: 4px;
+}
+.cp-hero__name {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--page-title-color, #181D27);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cp-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #F2F4F7;
+  color: #475467;
+}
+.cp-hero__badge--verified { background: #DBEAFE; color: #1E40AF; }
+
+/* Level badge — softer chrome than the prior solid-blue pill, which read
+   as a "broken button" rather than a status badge. Now a bordered chip
+   with a tinted dot accent. Tier overrides below let higher levels feel
+   earned without screaming. */
+.cp-hero__badge--level {
+  background: #F4F0FF;
+  color: #4F3FB8;
+  border: 1px solid #E0D6FF;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cp-hero__badge--level::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.65;
+}
+.cp-hero__badge--level-legend     { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
+.cp-hero__badge--level-mogul      { background: #F3E8FF; color: #5B21B6; border-color: #E9D5FF; }
+.cp-hero__badge--level-strategist { background: #DBEAFE; color: #1E40AF; border-color: #BFDBFE; }
+.cp-hero__badge--level-expert     { background: #DBEAFE; color: #1E40AF; border-color: #BFDBFE; }
+.cp-hero__badge--level-cultivator { background: #D1FADF; color: #054F31; border-color: #A6F4C5; }
+.cp-hero__badge--level-harvester  { background: #D1FADF; color: #054F31; border-color: #A6F4C5; }
+
+.cp-hero__bio {
+  margin: 4px 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary, #475467);
+  line-height: 1.4;
+}
+.cp-hero__meta {
+  margin: 0;
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+  flex-wrap: wrap;
+}
+.cp-hero__meta strong {
+  color: var(--page-title-color, #181D27);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-hero__actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding-bottom: 4px;
+}
+
+/* Tab strip — FB-style underline, sticky on scroll */
+.cp-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  padding: 0 8px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cp-tabs::-webkit-scrollbar { display: none; }
+
+/* Empty / loading inside panels */
+.cp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--text-secondary, #717680);
+  font-size: 13px;
+}
+.cp-loading__spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--card-border-color, #E5E7EB);
+  border-top-color: var(--btn-primary-bg, #0000FF);
+  border-radius: 50%;
+  animation: cp-spin 0.7s linear infinite;
+}
+@keyframes cp-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .cp-loading__spinner { animation: none; }
+}
+
+.cp-empty__title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+}
+.cp-empty__desc {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--text-secondary, #535862);
+  max-width: 320px;
+}
+
+/* Mobile: stack hero body, push avatar to centered top */
+@media (max-width: 720px) {
+  .cp-hero__banner { height: 160px; }
+  .cp-hero__body {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 0 16px 18px;
+  }
+  .cp-hero__avatar {
+    margin: -50px auto 0;
+    width: 100px; height: 100px;
+  }
+  .cp-hero__avatar-initials { font-size: 42px; }
+  .cp-hero__name { justify-content: center; }
+  .cp-hero__meta { justify-content: center; }
+  .cp-hero__actions { justify-content: center; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WCAG 2.4.7 focus-visible audit (2026-05-16) — every interactive
+   `.cc-*` and `.ccs-*` primitive gets a visible focus ring so keyboard-
+   only users can see their position. Matches the leaderboard pattern.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cc-search__input:focus-visible,
+.cc-create-btn:focus-visible,
+.cc-card-compact:focus-visible,
+.cc-card-compact [data-cc-join]:focus-visible,
+.cc-page-btn:focus-visible,
+.cc-modal__close:focus-visible,
+.ccs-back:focus-visible,
+.ccs-member-row__actions button:focus-visible,
+.ccs-danger-actions button:focus-visible,
+.ccs-footer__actions button:focus-visible,
+.ccs-card input:focus-visible,
+.ccs-card textarea:focus-visible,
+.cc-modal__panel input:focus-visible,
+.cc-modal__panel textarea:focus-visible,
+.cc-invite-results__row:focus-visible {
+  outline: 2px solid var(--btn-primary-bg, #0000FF);
+  outline-offset: 2px;
+}
+
+/* Switch input — focus shows on the visible track, not the hidden checkbox */
+.ccs-switch input:focus-visible + .ccs-switch__track {
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.25);
 }

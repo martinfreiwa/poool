@@ -1,4 +1,4 @@
-{% with title="Edit Community Profile",
+{% with title="Community Profile",
    meta_description="Update your community bio, flair, and avatar.",
    extra_css=['ds-cards', 'leaderboard', 'settings', 'community'],
    extra_js=['htmx-init', 'profile-dropdown', 'mobile-navigation'] %}{% include "components/head.html" %}{% endwith %}
@@ -12,7 +12,7 @@
     </div>
 
     <main class="ds-main lb-main">
-      {% with investor_topbar_title="Edit Community Profile",
+      {% with investor_topbar_title="Community Profile",
          investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="lb-container community-profile-edit">
@@ -64,7 +64,8 @@
                 </button>
                 <input type="file" id="profile-photo-upload"
                        accept="image/jpeg,image/png,image/webp" capture="user"
-                       class="ds-sr-only" onchange="uploadAvatar(event)">
+                       class="ds-sr-only" onchange="uploadAvatar(event)"
+                       aria-label="Upload a new profile photo">
               </div>
 
               <hr class="settings-divider settings-divider--edge-32">
@@ -113,7 +114,8 @@
                   <div class="community-profile-edit__row-desc">When off, your name and avatar are hidden from public rankings.</div>
                 </div>
                 <label class="community-toggle">
-                  <input type="checkbox" id="pref-leaderboard" checked>
+                  <input type="checkbox" id="pref-leaderboard" checked
+                         aria-label="Show me on the leaderboard">
                   <span class="community-toggle__track"></span>
                 </label>
               </div>
@@ -123,7 +125,8 @@
                   <div class="community-profile-edit__row-desc">When off, only people you follow can start a DM with you.</div>
                 </div>
                 <label class="community-toggle">
-                  <input type="checkbox" id="pref-dms" checked>
+                  <input type="checkbox" id="pref-dms" checked
+                         aria-label="Allow direct messages from anyone">
                   <span class="community-toggle__track"></span>
                 </label>
               </div>
@@ -133,7 +136,8 @@
                   <div class="community-profile-edit__row-desc">Show your bio, flair, and posts to logged-out visitors.</div>
                 </div>
                 <label class="community-toggle">
-                  <input type="checkbox" id="pref-public-profile" checked>
+                  <input type="checkbox" id="pref-public-profile" checked
+                         aria-label="Make my profile visible to logged-out visitors">
                   <span class="community-toggle__track"></span>
                 </label>
               </div>
@@ -217,7 +221,8 @@
               <input type="hidden" id="verify-evidence-url">
               <div class="ds-form-group community-profile-edit__attach-row">
                 <input type="file" id="verify-file" class="ds-sr-only" accept="image/jpeg,image/png,image/webp"
-                       capture="environment" onchange="uploadVerifyProof(event)">
+                       capture="environment" onchange="uploadVerifyProof(event)"
+                       aria-label="Attach proof image for verified-owner request">
                 <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm"
                         onclick="document.getElementById('verify-file').click()">Attach proof image</button>
                 <span id="verify-file-name" class="ds-helper-text"></span>

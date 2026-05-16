@@ -54,6 +54,7 @@ markers = [
     "desktop: Tests parameterized for desktop viewport",
     "slow: Tests that take > 15 seconds",
     "destructive: Tests that modify DB state significantly",
+    "a11y: WCAG / accessibility audits (axe-core injected)",
 ]
 
 # Console output settings

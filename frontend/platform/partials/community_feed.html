@@ -12,16 +12,16 @@
 
       <!-- Feed filter row -->
       <div class="community-feed__filters">
-        <div class="community-feed__filter-group" role="group" aria-label="Feed source">
-          <button type="button" class="feed-toggle-btn active" id="feed-btn-all"
+        <div class="community-feed__filter-group ds-segmented" role="group" aria-label="Feed source">
+          <button type="button" class="ds-segmented__item feed-toggle-btn active" id="feed-btn-all"
             aria-pressed="true" onclick="setFeedMode('all')">All Posts</button>
-          <button type="button" class="feed-toggle-btn" id="feed-btn-following"
+          <button type="button" class="ds-segmented__item feed-toggle-btn" id="feed-btn-following"
             aria-pressed="false" onclick="setFeedMode('following')">Following</button>
         </div>
-        <div class="community-feed__filter-group" role="group" aria-label="Feed sort">
-          <button type="button" class="feed-toggle-btn active" id="sort-btn-fresh"
+        <div class="community-feed__filter-group ds-segmented" role="group" aria-label="Feed sort">
+          <button type="button" class="ds-segmented__item feed-toggle-btn active" id="sort-btn-fresh"
             aria-pressed="true" onclick="setSortMode('fresh')">Fresh</button>
-          <button type="button" class="feed-toggle-btn" id="sort-btn-hot"
+          <button type="button" class="ds-segmented__item feed-toggle-btn" id="sort-btn-hot"
             aria-pressed="false" onclick="setSortMode('hot')">Hot</button>
         </div>
       </div>
@@ -32,26 +32,7 @@
            ondragover="event.preventDefault(); this.classList.add('community-composer--dragover');"
            ondragleave="this.classList.remove('community-composer--dragover');"
            ondrop="window.handleComposerDrop(event)">
-        <!-- Author + post-type row -->
-        <div class="community-composer__author">
-          <div id="fb-compose-avatar" class="ds-avatar ds-avatar--md community-composer__avatar" aria-hidden="true">U</div>
-          <div class="community-composer__author-meta">
-            <span id="fb-compose-name" class="community-composer__author-name">User</span>
-            <div class="community-composer__type-wrap">
-              <label for="fb-post-type-select" class="ds-sr-only">Post type</label>
-              <select id="fb-post-type-select" class="community-composer__type-select"
-                onchange="document.getElementById('post-type-input').value = this.value;">
-                <option value="general">🌍 General</option>
-                <option value="market_insight">📈 Insight</option>
-                <option value="review">⭐ Review</option>
-              </select>
-              <svg class="community-composer__type-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </div>
-            <input type="hidden" id="post-type-input" value="general">
-          </div>
-        </div>
+        <input type="hidden" id="post-type-input" value="general">
 
         <!-- Composer textarea -->
         <label for="post-content-input" class="ds-sr-only">Write a post</label>
@@ -94,7 +75,7 @@
         <div class="community-composer__toolbar" role="toolbar" aria-label="Add to post">
           <span class="community-composer__toolbar-label">Add to your post</span>
           <div class="community-composer__toolbar-actions">
-            <input type="file" id="post-image-file-input" class="ds-sr-only" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="uploadPostImage(event)">
+            <input type="file" id="post-image-file-input" class="ds-sr-only" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="uploadPostImage(event)" aria-label="Upload an image for your post">
             <button type="button" class="ds-btn ds-btn--ghost ds-btn--icon ds-btn--sm" onclick="document.getElementById('post-image-file-input').click()" aria-label="Add photo">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
@@ -120,28 +101,45 @@
 
         <div class="ds-helper-text community-composer__upload-status" id="post-image-uploading" hidden>Uploading image...</div>
 
-        <!-- CO.7 — optional schedule. Toggle reveals a datetime-local input. -->
-        <div style="display:flex; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap;">
-          <button type="button" id="post-schedule-toggle" class="ds-btn ds-btn--ghost ds-btn--sm"
-                  onclick="window.toggleSchedulePicker && window.toggleSchedulePicker()"
-                  aria-pressed="false">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Schedule
-          </button>
-          <input type="datetime-local" id="post-schedule-input" class="ds-input"
-                 hidden style="flex:1; min-width:180px;">
-          <button type="button" id="post-schedule-clear" class="ds-btn ds-btn--ghost ds-btn--sm"
-                  onclick="window.clearScheduledPost && window.clearScheduledPost()" hidden>Clear</button>
-        </div>
-
         <button type="button" class="ds-btn ds-btn--primary ds-btn--full" id="submit-post-btn" onclick="submitUserPost()">Post</button>
       </div>
 
       <div id="community-feed-container"
-           hx-get="/community/partials/feed/list" 
+           hx-get="/community/partials/feed/list"
            hx-include="#feed-filters"
            hx-trigger="load, reload-feed from:body">
-          <div class="community-loading-state">Loading feed...</div>
+          <!-- Skeleton placeholder for the first paint. HTMX swaps in real
+               posts on `load`; if the network is slow this gives the
+               viewer 3 post-shaped blocks instead of a "Loading feed…"
+               text dead-end. -->
+          <div class="community-feed-skeleton" aria-hidden="true">
+            <div class="community-feed-skeleton__card">
+              <div class="community-feed-skeleton__row">
+                <div class="community-feed-skeleton__avatar"></div>
+                <div class="community-feed-skeleton__name"></div>
+              </div>
+              <div class="community-feed-skeleton__line"></div>
+              <div class="community-feed-skeleton__line community-feed-skeleton__line--short"></div>
+            </div>
+            <div class="community-feed-skeleton__card">
+              <div class="community-feed-skeleton__row">
+                <div class="community-feed-skeleton__avatar"></div>
+                <div class="community-feed-skeleton__name"></div>
+              </div>
+              <div class="community-feed-skeleton__line"></div>
+              <div class="community-feed-skeleton__line"></div>
+              <div class="community-feed-skeleton__line community-feed-skeleton__line--short"></div>
+            </div>
+            <div class="community-feed-skeleton__card">
+              <div class="community-feed-skeleton__row">
+                <div class="community-feed-skeleton__avatar"></div>
+                <div class="community-feed-skeleton__name"></div>
+              </div>
+              <div class="community-feed-skeleton__line"></div>
+              <div class="community-feed-skeleton__line community-feed-skeleton__line--short"></div>
+            </div>
+            <span class="ds-sr-only">Loading feed</span>
+          </div>
       </div>
     </div> <!-- closing community-feed-container -->
 
@@ -150,24 +148,47 @@
       <!-- My Profile Card -->
       <div class="community-profile-card">
         <div class="profile-card-header">
-          <div id="my-profile-avatar-circle" class="profile-card-avatar-circle" aria-hidden="true"></div>
+          <img id="my-profile-avatar-img" class="profile-card-avatar-img" alt="" />
           <div class="profile-card-info">
             <span id="my-profile-name" class="profile-card-name"></span>
             <div id="my-profile-bio" class="profile-card-bio"></div>
           </div>
         </div>
-        <div class="profile-card-stats">
-          <div class="profile-stat"><span id="my-profile-posts" class="profile-stat-value">0</span><span
-              class="profile-stat-label">Posts</span></div>
-          <div class="profile-stat"><span id="my-profile-followers" class="profile-stat-value">0</span><span
-              class="profile-stat-label">Followers</span></div>
-          <div class="profile-stat"><span id="my-profile-following" class="profile-stat-value">0</span><span
-              class="profile-stat-label">Following</span></div>
-        </div>
-        <div class="profile-card-badges" id="my-profile-badges">
-        </div>
-        <button type="button" onclick="window.openProfileEditModal()" class="ds-btn ds-btn--secondary ds-btn--full community-profile-card__edit-btn">Edit Profile</button>
+        <button type="button" onclick="window.openProfileEditModal()" class="ds-btn ds-btn--ghost ds-btn--full community-profile-card__edit-btn">Edit profile</button>
         <a href="/community/me" class="ds-btn ds-btn--ghost ds-btn--full community-profile-card__view-btn">View my profile →</a>
+      </div>
+
+      <!-- Getting Started — first-visit onboarding. Shown when post_count
+           === 0; replaces the stack of empty trending widgets that otherwise
+           reads as a dead app. Hidden by JS once the user has any posts. -->
+      <div class="community-getting-started" id="community-getting-started" hidden>
+        <div class="community-getting-started__head">
+          <div class="community-getting-started__title">Getting started</div>
+          <div class="community-getting-started__progress" id="community-getting-started-progress" aria-live="polite">0 of 3</div>
+        </div>
+        <ol class="community-getting-started__list">
+          <li class="community-getting-started__item" data-step="bio">
+            <span class="community-getting-started__step">1</span>
+            <div>
+              <div class="community-getting-started__name">Add a bio + flair</div>
+              <a class="community-getting-started__link" href="/community/me/edit">Edit your profile →</a>
+            </div>
+          </li>
+          <li class="community-getting-started__item" data-step="follow">
+            <span class="community-getting-started__step">2</span>
+            <div>
+              <div class="community-getting-started__name">Follow 5 investors</div>
+              <a class="community-getting-started__link" href="/community?tab=members">Browse the member directory →</a>
+            </div>
+          </li>
+          <li class="community-getting-started__item" data-step="post">
+            <span class="community-getting-started__step">3</span>
+            <div>
+              <div class="community-getting-started__name">Post your first insight</div>
+              <a class="community-getting-started__link" href="#post-content-input" onclick="document.getElementById('post-content-input')?.focus(); return false;">Open the composer →</a>
+            </div>
+          </li>
+        </ol>
       </div>
 
       <!-- Trending Commodities -->
@@ -181,78 +202,18 @@
           Trending This Week
         </div>
         <div id="trending-assets-container">
-          <div class="community-loading-state community-loading-state--inline">Loading trending assets...</div>
+          <div class="community-rail-skeleton" aria-hidden="true">
+            <div class="community-rail-skeleton__row">
+              <div class="community-rail-skeleton__dot"></div>
+              <div class="community-rail-skeleton__line"></div>
+            </div>
+            <div class="community-rail-skeleton__row">
+              <div class="community-rail-skeleton__dot"></div>
+              <div class="community-rail-skeleton__line community-rail-skeleton__line--short"></div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <!-- Trending Tags -->
-      <div class="community-hashtags-card">
-        <div class="hashtag-trending-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="9" x2="20" y2="9"></line>
-            <line x1="4" y1="15" x2="20" y2="15"></line>
-            <line x1="10" y1="3" x2="8" y2="21"></line>
-            <line x1="16" y1="3" x2="14" y2="21"></line>
-          </svg>
-          Trending Tags
-        </div>
-        <div id="trending-hashtags-container">
-          <div class="community-loading-state community-loading-state--inline">Loading trending tags...</div>
-        </div>
-      </div>
-
-      <!-- UX.8: Trending Posts (recommended for you) -->
-      <div class="community-trending-card" id="trending-posts-widget">
-        <div class="trending-card-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
-          </svg>
-          Hot Posts This Week
-        </div>
-        <div id="trending-posts-container">
-          <div class="community-loading-state community-loading-state--inline">Loading…</div>
-        </div>
-      </div>
-      <script>
-        // UX.8: hot-posts widget. Sidebar-only injection so the main feed
-        // ranking stays "by date" — surfacing trending content here gives
-        // users a "what should I read first?" entry point.
-        (function () {
-          const container = document.getElementById('trending-posts-container');
-          if (!container) return;
-          fetch('/api/community/trending?limit=3', { credentials: 'same-origin' })
-            .then(r => r.ok ? r.json() : { posts: [] })
-            .then(data => {
-              const posts = Array.isArray(data.posts) ? data.posts : [];
-              if (posts.length === 0) {
-                container.innerHTML = '<div class="community-loading-state community-loading-state--inline">No hot posts yet.</div>';
-                return;
-              }
-              container.replaceChildren();
-              posts.forEach((p) => {
-                const a = document.createElement('a');
-                a.href = '/community/post/' + p.id;
-                a.style.cssText = 'display:block; padding:10px 0; border-bottom:1px solid var(--ds-border,#E5E7EB); text-decoration:none; color:inherit;';
-                const author = document.createElement('div');
-                author.style.cssText = 'font-size:12px; font-weight:600; color:var(--ds-text-secondary,#475467);';
-                author.textContent = p.author_name || 'Anonymous';
-                const snippet = document.createElement('div');
-                snippet.style.cssText = 'font-size:13px; margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;';
-                snippet.textContent = p.content || '';
-                const stats = document.createElement('div');
-                stats.style.cssText = 'font-size:11px; color:var(--ds-text-secondary,#475467); margin-top:4px;';
-                stats.textContent = `🔥 ${p.reaction_count || 0} · 💬 ${p.comment_count || 0}`;
-                a.append(author, snippet, stats);
-                container.appendChild(a);
-              });
-            })
-            .catch(() => {
-              container.innerHTML = '<div class="community-loading-state community-loading-state--inline">Failed to load.</div>';
-            });
-        })();
-      </script>
 
       <!-- Upcoming AMA -->
       <div class="community-ama-card" id="sidebar-ama-widget" style="display: none;">
