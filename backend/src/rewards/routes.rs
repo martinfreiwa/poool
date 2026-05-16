@@ -2755,6 +2755,95 @@ pub async fn api_affiliate_webhook_test_fire(
     .into_response())
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-4: multi-payout-method per affiliate
+// ──────────────────────────────────────────────────────────────────────────
+
+#[derive(serde::Deserialize)]
+pub struct CreatePayoutMethodPayload {
+    pub method_type: String,
+    pub identifier: String,
+    pub label: Option<String>,
+    #[serde(default)]
+    pub is_default: bool,
+}
+
+/// GET /api/affiliate/payout-methods
+pub async fn api_affiliate_payout_method_list(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let rows = super::payout_methods::list_payout_methods(&state.db, user_id).await?;
+    Ok(Json(serde_json::json!({ "items": rows })).into_response())
+}
+
+/// POST /api/affiliate/payout-methods
+pub async fn api_affiliate_payout_method_create(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<CreatePayoutMethodPayload>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    if !is_active_affiliate(&state, user_id).await? {
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can add payout methods".into(),
+        ));
+    }
+    let id = super::payout_methods::create_payout_method(
+        &state.db,
+        user_id,
+        &payload.method_type,
+        &payload.identifier,
+        payload.label.as_deref(),
+        payload.is_default,
+    )
+    .await?;
+    Ok(Json(serde_json::json!({"id": id, "ok": true})).into_response())
+}
+
+/// POST /api/affiliate/payout-methods/:id/default
+pub async fn api_affiliate_payout_method_default(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let ok = super::payout_methods::set_default_payout_method(&state.db, user_id, id).await?;
+    if ok {
+        Ok(Json(serde_json::json!({"ok": true})).into_response())
+    } else {
+        Err(crate::error::AppError::NotFound(
+            "Payout method not found".into(),
+        ))
+    }
+}
+
+/// DELETE /api/affiliate/payout-methods/:id
+pub async fn api_affiliate_payout_method_delete(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let ok = super::payout_methods::deactivate_payout_method(&state.db, user_id, id).await?;
+    if ok {
+        Ok(Json(serde_json::json!({"ok": true})).into_response())
+    } else {
+        Err(crate::error::AppError::NotFound(
+            "Payout method not found".into(),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod data_export_tests {
     use super::data_export_readme;

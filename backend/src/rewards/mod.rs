@@ -2,6 +2,7 @@ pub mod attribution;
 pub mod models;
 pub mod notifications;
 pub mod payout_connectors;
+pub mod payout_methods;
 pub mod routes;
 pub mod service;
 pub mod team_links;
@@ -109,6 +110,22 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/affiliate/webhooks/:id/test",
             axum::routing::post(api_affiliate_webhook_test_fire),
+        )
+        // Phase-4: multi-payout-method (SEPA / PayPal / Wise / USDC / Stripe).
+        // Routes wired through to stub service helpers in rewards/service.rs
+        // (`list/create/set_default/deactivate_payout_method`) until the
+        // real persistence layer ships. POST returns 400 "not yet enabled".
+        .route(
+            "/api/affiliate/payout-methods",
+            get(api_affiliate_payout_method_list).post(api_affiliate_payout_method_create),
+        )
+        .route(
+            "/api/affiliate/payout-methods/:id/default",
+            axum::routing::post(api_affiliate_payout_method_default),
+        )
+        .route(
+            "/api/affiliate/payout-methods/:id",
+            axum::routing::delete(api_affiliate_payout_method_delete),
         )
         // GAP-10: Tax document upload (required for payout release)
         .route(

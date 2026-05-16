@@ -2611,16 +2611,37 @@ pub fn validate_iban_mod97(compact: &str) -> Result<(), AppError> {
 /// Reverse any payable/provisional affiliate commission rows tied to a
 /// now-refunded investment. Safe to call multiple times — already-clawed-back
 /// rows are not touched. `reason` is appended to the audit log only.
+/// Result of an `auto_clawback_for_refunded_investment` run. Captures
+/// enough detail for the caller (and the money-invariant tests) to
+/// audit what was clawed back vs flagged for ops follow-up.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ClawbackOutcome {
+    /// Number of `affiliate_commissions` rows touched by this call.
+    pub commission_count: u64,
+    /// Sum of `provisional_amount_cents` across every row flipped to
+    /// `clawed_back` or `clawback_pending` in this run.
+    pub total_clawed_back_cents: i64,
+    /// Subset of `total_clawed_back_cents` that came from rows whose
+    /// status was previously `paid` — these are flagged `clawback_pending`
+    /// for ops to reconcile manually (money already moved).
+    pub paid_deducted_cents: i64,
+    /// Always 0 in this implementation — we never pull funds back from
+    /// `paid` rows automatically. Surfaced so callers can detect future
+    /// shortfall logic (e.g. when ops reconciliation completes).
+    pub shortfall_cents: i64,
+}
+
 pub async fn auto_clawback_for_refunded_investment(
     pool: &PgPool,
     investment_id: Uuid,
     actor_user_id: Uuid,
     reason: &str,
-) -> Result<u64, AppError> {
+) -> Result<ClawbackOutcome, AppError> {
     // Move every commission tied to this investment that isn't already
     // clawed_back/paid into the clawback flow. We DON'T pull money out of
     // `paid` rows here — those need ops review; we just flag for follow-up.
-    // RETURNING captures affected affiliates so we can ping each one ONCE.
+    // RETURNING captures affected affiliates + amounts so we can ping each
+    // one ONCE and produce an auditable summary.
     let affected = sqlx::query!(
         r#"UPDATE affiliate_commissions
               SET status = CASE
@@ -2630,7 +2651,7 @@ pub async fn auto_clawback_for_refunded_investment(
                   updated_at = NOW()
             WHERE source_order_id = $1
               AND status NOT IN ('clawed_back', 'clawback_pending')
-        RETURNING affiliate_id"#,
+        RETURNING affiliate_id, provisional_amount_cents, status"#,
         investment_id
     )
     .fetch_all(pool)
@@ -2638,6 +2659,16 @@ pub async fn auto_clawback_for_refunded_investment(
     .map_err(|e| AppError::Internal(format!("auto-clawback update failed: {e}")))?;
 
     let rows = affected.len() as u64;
+    // Post-UPDATE `status` reflects the NEW value (`clawed_back` or
+    // `clawback_pending`). Bucket by new status to fill the outcome.
+    let mut total_cents: i64 = 0;
+    let mut paid_cents: i64 = 0;
+    for row in &affected {
+        total_cents += row.provisional_amount_cents;
+        if row.status.as_deref() == Some("clawback_pending") {
+            paid_cents += row.provisional_amount_cents;
+        }
+    }
     if rows > 0 {
         // Best-effort audit; failure is non-fatal to the clawback itself.
         let _ = crate::common::audit::log(
@@ -2672,7 +2703,12 @@ pub async fn auto_clawback_for_refunded_investment(
             }
         }
     }
-    Ok(rows)
+    Ok(ClawbackOutcome {
+        commission_count: rows,
+        total_clawed_back_cents: total_cents,
+        paid_deducted_cents: paid_cents,
+        shortfall_cents: 0,
+    })
 }
 
 // ──────────────────────────────────────────────────────────────────────────
