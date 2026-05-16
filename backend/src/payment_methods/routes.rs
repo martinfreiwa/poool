@@ -99,8 +99,67 @@ pub async fn handle_add_bank(
         }
     };
 
+    // ── P1-6: Compare typed holder name to the verified KYC profile.
+    // A mismatch doesn't block the save (legitimate edge cases: married
+    // name, transliteration) but opens a compliance alert so the team
+    // can review before the next withdrawal goes out.
+    let kyc_name: Option<(String, String)> = sqlx::query_as(
+        "SELECT COALESCE(first_name, ''), COALESCE(last_name, '')
+           FROM user_profiles WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+    let name_outcome = if let Some((first, last)) = kyc_name.as_ref() {
+        crate::common::name_match::compare(first, last, &form.account_holder_name)
+    } else {
+        // No profile yet — record a mismatch so onboarding can prompt
+        // for KYC before withdrawals.
+        crate::common::name_match::MatchOutcome::PotentialMismatch { missing: vec![] }
+    };
+    let holder_name_for_log = form.account_holder_name.clone();
+
     match service::add_bank(&state.db, &user_id, form).await {
-        Ok(_) => Html("".to_string()).into_response(),
+        Ok(pm) => {
+            // File a compliance_alerts row if the names don't match.
+            if let crate::common::name_match::MatchOutcome::PotentialMismatch { missing } =
+                &name_outcome
+            {
+                let kyc_display = kyc_name
+                    .as_ref()
+                    .map(|(f, l)| format!("{} {}", f, l).trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or_else(|| "(no KYC profile)".to_string());
+                let summary = format!(
+                    "Bank account holder \"{}\" does not match KYC profile \"{}\"",
+                    holder_name_for_log, kyc_display
+                );
+                let details = serde_json::json!({
+                    "payment_method_id": pm.id.to_string(),
+                    "holder_name": holder_name_for_log,
+                    "kyc_name": kyc_display,
+                    "missing_tokens": missing,
+                });
+                let _ = sqlx::query(
+                    r#"INSERT INTO compliance_alerts
+                            (user_id, kind, severity, summary, details)
+                       VALUES ($1, 'manual_review', 'high', $2, $3)"#,
+                )
+                .bind(user_id)
+                .bind(&summary)
+                .bind(&details)
+                .execute(&state.db)
+                .await;
+                tracing::warn!(
+                    user_id = %user_id,
+                    payment_method_id = %pm.id,
+                    "Bank-holder name mismatch — compliance alert opened"
+                );
+            }
+            Html("".to_string()).into_response()
+        }
         Err(e) => {
             tracing::error!("Error saving bank for user {}: {}", user_id, e);
             Html("Unable to save bank account. Please try again.".to_string()).into_response()

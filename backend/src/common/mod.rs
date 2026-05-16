@@ -5,6 +5,7 @@ pub mod email;
 pub mod email_webhooks;
 pub mod idempotency;
 pub mod leader;
+pub mod name_match;
 pub mod net;
 pub mod notifications;
 pub mod routes_helper;
