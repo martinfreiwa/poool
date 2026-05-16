@@ -239,6 +239,27 @@ async fn retention_until_index_used_for_worker_scan() {
     );
 }
 
+/// Phase 7.7 contract — the DSGVO account-delete path must call
+/// `arm_retention_for_user` after the user-row anonymisation commit.
+/// Without this, KYC docs never get a retention_until and the
+/// nightly worker has no work to do — the GwG retention SLA silently
+/// elapses with the file still sitting in the bucket.
+///
+/// This is a static-text grep so it works without spinning up the
+/// full account-delete flow. If the grep ever stops matching, the
+/// next test must assert the same behaviour via a real integration
+/// run.
+#[test]
+fn account_delete_handler_calls_arm_retention_for_user() {
+    let src = std::fs::read_to_string("src/settings/service.rs")
+        .expect("read backend/src/settings/service.rs");
+    assert!(
+        src.contains("storage::retention::arm_retention_for_user(pool, user_id, 5)"),
+        "Account-delete handler must call arm_retention_for_user(pool, user_id, 5) — \
+         see docs/storage/04-compliance-and-retention.md §Layer 2 step 3."
+    );
+}
+
 #[tokio::test]
 #[ignore = "requires live Postgres"]
 async fn retention_partial_index_actually_exists() {

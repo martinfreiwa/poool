@@ -1575,6 +1575,40 @@ pub async fn delete_account_selective(
         );
     }
 
+    // Storage Phase 4.4 — Arm the KYC retention clock now that the
+    // business relationship has ended. Sets
+    // users.business_relationship_ended_at + computes
+    // kyc_documents.retention_until for every doc owned by this user.
+    // The nightly retention worker will hard-delete the GCS object +
+    // soft-delete the row once retention_until elapses (default 5 y,
+    // GwG §8).
+    // Non-fatal: account-deletion has already committed; if arming
+    // fails, the deletion is still complete from the user's POV.
+    // The reconciler will surface the gap on the next nightly scan.
+    match crate::storage::retention::arm_retention_for_user(pool, user_id, 5).await {
+        Ok(n) => {
+            tracing::info!(
+                user_id = %user_id,
+                kyc_docs_armed = n,
+                "GwG §8 retention armed on account deletion"
+            );
+        }
+        Err(e) => {
+            tracing::error!(
+                user_id = %user_id,
+                error = %e,
+                "Failed to arm KYC retention on account deletion — manual follow-up required"
+            );
+            sentry::capture_message(
+                &format!(
+                    "GwG retention arming failed for user {} on account-deletion: {}",
+                    user_id, e
+                ),
+                sentry::Level::Error,
+            );
+        }
+    }
+
     // 6. Audit log the deletion (immutable record, best-effort after commit)
     crate::common::audit::log(
         pool,
