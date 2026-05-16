@@ -11,6 +11,96 @@ use tracing::info;
 /// events against sample metadata without going through the database.
 pub(crate) fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
     match event_type {
+        // ── Auth / security ───────────────────────────────────────────
+        //
+        // These five events are dispatched from `auth/service.rs` via
+        // dedicated send paths (token outbox, immediate Resend send),
+        // not through `trigger_transactional_email`. The bodies are
+        // mirrored here so the admin Workflows tab can preview them
+        // exactly as the customer sees them. Keep the HTML in sync with
+        // the auth service if you change either side.
+        "welcome" => {
+            let first_name = metadata.get("first_name").and_then(|v| v.as_str()).unwrap_or("there");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Welcome to POOOL, {first}</h2>
+  <p>Your account is live. POOOL gives you fractional access to tokenised real estate and other yield-bearing assets, with built-in custody, payouts, and reporting.</p>
+  <p>A quick checklist to get the most out of your first session:</p>
+  <ul style="color:#414651;line-height:1.7;">
+    <li>Complete identity verification (1–2 business days) so you can invest.</li>
+    <li>Make a first deposit — wires or SEPA, no card fees.</li>
+    <li>Browse the marketplace and follow assets you like.</li>
+  </ul>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Need help? Reply to this email or visit our <a href="https://platform.poool.app/support" style="color:#0000FF;">support centre</a>.</p>
+</div>"#, first = html_escape_email(first_name))
+        }
+
+        "verify_email" => {
+            let verify_url = metadata.get("verify_url").and_then(|v| v.as_str())
+                .unwrap_or("https://platform.poool.app/auth/verify-email?token=...");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Verify your POOOL email</h2>
+  <p>Tap the button below to confirm your email address. The link is valid for 24 hours.</p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">If you didn't sign up for POOOL, ignore this email — no account will be created without verification.</p>
+</div>"#, url = html_escape_email(verify_url))
+        }
+
+        "password_reset" => {
+            let reset_url = metadata.get("reset_url").and_then(|v| v.as_str())
+                .unwrap_or("https://platform.poool.app/auth/reset-password?token=...");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Reset your POOOL password</h2>
+  <p>You requested a password reset. Click the link below to set a new password — it expires in 1 hour.</p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Reset Password</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">If you did not request this reset, ignore this email and your password will stay unchanged. For any concern, contact <a href="mailto:security@poool.app" style="color:#0000FF;">security@poool.app</a>.</p>
+</div>"#, url = html_escape_email(reset_url))
+        }
+
+        "2fa_setup" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Two-factor authentication is on ✓</h2>
+  <p>Your POOOL account is now protected by an authenticator app. From now on you'll be asked for a 6-digit code on every sign-in, plus for sensitive actions like withdrawals and payment method changes.</p>
+  <p style="background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;color:#344054;font-size:14px;line-height:1.6;">
+    <strong>Save your recovery codes.</strong> If you lose access to your authenticator app, recovery codes are the only way back in. Find them in
+    <a href="https://platform.poool.app/settings/security" style="color:#0000FF;">Settings → Security</a>.
+  </p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Didn't enable 2FA? Sign in and disable it immediately, then contact <a href="mailto:security@poool.app" style="color:#0000FF;">security@poool.app</a>.</p>
+</div>"#.to_string(),
+
+        "new_login" => {
+            let location = metadata.get("location").and_then(|v| v.as_str()).unwrap_or("a new location");
+            let ip = metadata.get("ip").and_then(|v| v.as_str()).unwrap_or("");
+            let device = metadata.get("device").and_then(|v| v.as_str()).unwrap_or("a new device");
+            let ip_row = if ip.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;width:120px;">IP address</td><td style="padding:8px 0;color:#101828;font-family:ui-monospace,monospace;font-weight:500;">{}</td></tr>"#,
+                    html_escape_email(ip))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">New sign-in to your account</h2>
+  <p>We noticed a sign-in to your POOOL account from {device}.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr><td style="padding:8px 0;color:#717680;width:120px;">Location</td><td style="padding:8px 0;color:#101828;font-weight:500;">{location}</td></tr>
+    {ip_row}
+  </table>
+  <p>If this was you, no action needed.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;">
+    <strong>Wasn't you?</strong> Sign in and reset your password immediately, then revoke all sessions in
+    <a href="https://platform.poool.app/settings/security" style="color:#B42318;text-decoration:underline;">Settings → Security</a>.
+  </p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Concerns? Contact <a href="mailto:security@poool.app" style="color:#0000FF;">security@poool.app</a>.</p>
+</div>"#,
+                device = html_escape_email(device),
+                location = html_escape_email(location),
+                ip_row = ip_row)
+        }
+
         "kyc_approved" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#01011C;">Your identity has been verified ✓</h2>
@@ -741,31 +831,45 @@ mod tests {
     /// new branch to the match arm? Add it here too and the assertion will
     /// confirm it produces something useful.
     const EVENTS_WITH_CUSTOM_BODY: &[&str] = &[
+        // Auth / security — dispatched from auth/service.rs in production
+        // but mirrored here so the admin Workflows preview works.
+        "welcome",
+        "verify_email",
+        "password_reset",
+        "2fa_setup",
+        "new_login",
+        // KYC
         "kyc_approved",
         "kyc_rejected",
         "kyc_submitted",
+        // Wallet
         "deposit_confirmed",
         "deposit_submitted",
         "withdraw_requested",
         "withdraw_approved",
         "withdraw_rejected",
         "withdrawal_processed",
+        // Returns / orders
         "dividend_payout",
         "monthly_statement",
         "order_confirmation",
         "invoice_available",
         "asset_funded",
+        // Operations
         "operations_rejected",
         "operations_approved",
         "operations_published",
+        // Support
         "support_ticket_reply",
         "support_ticket_new",
         "support_ticket_resolved",
+        // Team
         "team_invitation_received",
         "team_member_approved",
         "team_member_removed",
         "team_self_request_received",
         "team_invitation_accepted",
+        // Affiliate
         "affiliate_application_received",
         "affiliate_approved",
         "affiliate_rejected",
@@ -775,18 +879,10 @@ mod tests {
     ];
 
     /// Events that `trigger_transactional_email` knows a subject for but
-    /// that currently fall through to the generic "you have a new
-    /// notification" body. The auth/security ones are intentionally here
-    /// because they take a dedicated path in `auth/service.rs` (welcome /
-    /// password reset have their own templates) and never actually flow
-    /// through `build_email_html` in practice.
-    const EVENTS_FALLING_THROUGH_TO_DEFAULT: &[&str] = &[
-        "welcome",
-        "verify_email",
-        "password_reset",
-        "2fa_setup",
-        "new_login",
-    ];
+    /// that intentionally fall through to the generic body. Currently
+    /// empty — every catalogued event has a hand-written body. New
+    /// events should land in `EVENTS_WITH_CUSTOM_BODY` from day one.
+    const EVENTS_FALLING_THROUGH_TO_DEFAULT: &[&str] = &[];
 
     /// Sentinel substring of the generic fallback body. If a "custom body"
     /// event suddenly emits this string, the match arm was removed.
@@ -1029,5 +1125,81 @@ mod tests {
         assert!(html.contains("€500.00"));
         assert!(html.contains("DE89 …4567"));
         assert!(html.contains("processed"));
+    }
+
+    // ── Auth / security event bodies ──────────────────────────────────
+
+    #[test]
+    fn welcome_renders_first_name() {
+        let html = build_email_html("welcome", &json!({ "first_name": "Maria" }));
+        assert!(html.contains("Welcome to POOOL, Maria"));
+        assert!(html.contains("identity verification"));
+    }
+
+    #[test]
+    fn welcome_falls_back_to_there_without_name() {
+        let html = build_email_html("welcome", &json!({}));
+        assert!(html.contains("Welcome to POOOL, there"));
+    }
+
+    #[test]
+    fn verify_email_renders_provided_url() {
+        let html = build_email_html(
+            "verify_email",
+            &json!({ "verify_url": "https://x.test/verify?t=abc" }),
+        );
+        assert!(html.contains("https://x.test/verify?t=abc"));
+        assert!(html.contains("24 hours"));
+    }
+
+    #[test]
+    fn password_reset_renders_provided_url() {
+        let html = build_email_html(
+            "password_reset",
+            &json!({ "reset_url": "https://x.test/reset?t=xyz" }),
+        );
+        assert!(html.contains("https://x.test/reset?t=xyz"));
+        assert!(html.contains("expires in 1 hour"));
+    }
+
+    #[test]
+    fn twofa_setup_includes_recovery_codes_callout() {
+        let html = build_email_html("2fa_setup", &json!({}));
+        assert!(html.contains("Two-factor authentication is on"));
+        assert!(html.contains("recovery codes"));
+    }
+
+    #[test]
+    fn new_login_renders_location_device_and_ip() {
+        let html = build_email_html(
+            "new_login",
+            &json!({
+                "location": "Munich, DE",
+                "ip": "203.0.113.42",
+                "device": "Chrome on macOS",
+            }),
+        );
+        assert!(html.contains("Munich, DE"));
+        assert!(html.contains("203.0.113.42"));
+        assert!(html.contains("Chrome on macOS"));
+        assert!(html.contains("Wasn't you"));
+    }
+
+    #[test]
+    fn new_login_omits_ip_row_when_missing() {
+        let html = build_email_html("new_login", &json!({}));
+        assert!(html.contains("New sign-in"));
+        assert!(!html.contains("IP address"));
+    }
+
+    #[test]
+    fn auth_event_bodies_html_escape_user_metadata() {
+        // Welcome takes first_name straight from the caller — must escape.
+        let html = build_email_html(
+            "welcome",
+            &json!({ "first_name": "<script>alert(1)</script>" }),
+        );
+        assert!(!html.contains("<script>alert"));
+        assert!(html.contains("&lt;script&gt;"));
     }
 }
