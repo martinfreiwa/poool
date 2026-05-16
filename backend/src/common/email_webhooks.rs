@@ -80,11 +80,11 @@ pub async fn handle_resend_webhook(
         }
     };
 
-    let event_type = event
-        .get("type")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    let data = event.get("data").cloned().unwrap_or(serde_json::Value::Null);
+    let event_type = event.get("type").and_then(|v| v.as_str()).unwrap_or("");
+    let data = event
+        .get("data")
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
 
     if let Err(err) = process_event(&state.db, event_type, &data).await {
         // Log + sentry, but ACK to Resend. They'll retry transient errors
@@ -141,8 +141,7 @@ async fn process_event(
         };
 
         let sql = if timestamp_col.is_empty() {
-            "UPDATE email_logs SET status = $1 WHERE provider_id = $2"
-                .to_string()
+            "UPDATE email_logs SET status = $1 WHERE provider_id = $2".to_string()
         } else {
             format!(
                 "UPDATE email_logs SET status = $1, {timestamp_col} = NOW() \
@@ -150,7 +149,11 @@ async fn process_event(
             )
         };
 
-        sqlx::query(&sql).bind(status).bind(eid).execute(pool).await?;
+        sqlx::query(&sql)
+            .bind(status)
+            .bind(eid)
+            .execute(pool)
+            .await?;
     }
 
     // Bounce → suppression list (hard bounces + spam complaints).
@@ -233,12 +236,33 @@ async fn process_event(
     Ok(())
 }
 
-/// Verify Resend's Svix-style HMAC signature.
+/// Maximum allowed clock-skew between Resend's webhook timestamp and our
+/// receive time. Svix's reference implementation uses 5 minutes — matches
+/// Stripe and protects against captured-and-replayed events.
+const SVIX_TIMESTAMP_TOLERANCE_SECS: i64 = 5 * 60;
+
+/// Verify Resend's Svix-style HMAC signature AND timestamp freshness.
 ///
 /// Format: header `svix-signature: v1,<base64>` (may contain multiple
 /// space-separated entries; we accept if ANY entry verifies). Payload
 /// signed: `<svix-id>.<svix-timestamp>.<raw_body>`.
+///
+/// The timestamp is compared against `now` (or `now_override` in tests)
+/// with a ±5min window. Without this check, an attacker who once
+/// captured a valid webhook could replay it forever.
 fn verify_svix_signature(headers: &HeaderMap, body: &[u8], secret: &str) -> bool {
+    verify_svix_signature_at(headers, body, secret, current_unix_ts())
+}
+
+fn current_unix_ts() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+fn verify_svix_signature_at(headers: &HeaderMap, body: &[u8], secret: &str, now: i64) -> bool {
     let id = match headers.get("svix-id").and_then(|h| h.to_str().ok()) {
         Some(v) => v,
         None => return false,
@@ -247,6 +271,15 @@ fn verify_svix_signature(headers: &HeaderMap, body: &[u8], secret: &str) -> bool
         Some(v) => v,
         None => return false,
     };
+    // Reject events outside the tolerance window — both stale (replay)
+    // and future-dated (forged timestamp).
+    if let Ok(ts_int) = ts.parse::<i64>() {
+        if (now - ts_int).abs() > SVIX_TIMESTAMP_TOLERANCE_SECS {
+            return false;
+        }
+    } else {
+        return false;
+    }
     let sig_header = match headers.get("svix-signature").and_then(|h| h.to_str().ok()) {
         Some(v) => v,
         None => return false,
@@ -307,6 +340,13 @@ mod tests {
         base64::engine::general_purpose::STANDARD.encode(mac.finalize().into_bytes())
     }
 
+    /// Tests treat `now` as the same epoch as `ts` so the timestamp
+    /// tolerance check always passes — we want each test to isolate one
+    /// failure mode.
+    fn now_for(ts: &str) -> i64 {
+        ts.parse::<i64>().unwrap_or(0)
+    }
+
     #[test]
     fn verify_svix_signature_accepts_valid_signature_raw_secret() {
         let secret = "shhh-test-secret";
@@ -317,11 +357,13 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert("svix-id", id.parse().unwrap());
         headers.insert("svix-timestamp", ts.parse().unwrap());
-        headers.insert(
-            "svix-signature",
-            format!("v1,{sig}").parse().unwrap(),
-        );
-        assert!(verify_svix_signature(&headers, body.as_bytes(), secret));
+        headers.insert("svix-signature", format!("v1,{sig}").parse().unwrap());
+        assert!(verify_svix_signature_at(
+            &headers,
+            body.as_bytes(),
+            secret,
+            now_for(ts)
+        ));
     }
 
     #[test]
@@ -339,11 +381,13 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert("svix-id", id.parse().unwrap());
         headers.insert("svix-timestamp", ts.parse().unwrap());
-        headers.insert(
-            "svix-signature",
-            format!("v1,{sig}").parse().unwrap(),
-        );
-        assert!(verify_svix_signature(&headers, body.as_bytes(), &secret));
+        headers.insert("svix-signature", format!("v1,{sig}").parse().unwrap());
+        assert!(verify_svix_signature_at(
+            &headers,
+            body.as_bytes(),
+            &secret,
+            now_for(ts)
+        ));
     }
 
     #[test]
@@ -355,14 +399,12 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert("svix-id", id.parse().unwrap());
         headers.insert("svix-timestamp", ts.parse().unwrap());
-        headers.insert(
-            "svix-signature",
-            format!("v1,{sig}").parse().unwrap(),
-        );
-        assert!(!verify_svix_signature(
+        headers.insert("svix-signature", format!("v1,{sig}").parse().unwrap());
+        assert!(!verify_svix_signature_at(
             &headers,
             body.as_bytes(),
-            "wrong-secret"
+            "wrong-secret",
+            now_for(ts)
         ));
     }
 
@@ -370,24 +412,26 @@ mod tests {
     fn verify_svix_signature_rejects_tampered_body() {
         let secret = "s";
         let id = "i";
-        let ts = "t";
+        let ts = "1700000000";
         let original = r#"{"amount":100}"#;
         let tampered = r#"{"amount":999}"#;
         let sig = make_sig(secret.as_bytes(), id, ts, original);
         let mut headers = HeaderMap::new();
         headers.insert("svix-id", id.parse().unwrap());
         headers.insert("svix-timestamp", ts.parse().unwrap());
-        headers.insert(
-            "svix-signature",
-            format!("v1,{sig}").parse().unwrap(),
-        );
-        assert!(!verify_svix_signature(&headers, tampered.as_bytes(), secret));
+        headers.insert("svix-signature", format!("v1,{sig}").parse().unwrap());
+        assert!(!verify_svix_signature_at(
+            &headers,
+            tampered.as_bytes(),
+            secret,
+            now_for(ts)
+        ));
     }
 
     #[test]
     fn verify_svix_signature_rejects_missing_headers() {
         let headers = HeaderMap::new();
-        assert!(!verify_svix_signature(&headers, b"{}", "s"));
+        assert!(!verify_svix_signature_at(&headers, b"{}", "s", 0));
     }
 
     #[test]
@@ -396,7 +440,7 @@ mod tests {
         // must accept the payload if any verifies.
         let secret = "current";
         let id = "i";
-        let ts = "t";
+        let ts = "1700000000";
         let body = "{}";
         let good = make_sig(secret.as_bytes(), id, ts, body);
         let bad = make_sig(b"old", id, ts, body);
@@ -407,14 +451,19 @@ mod tests {
             "svix-signature",
             format!("v1,{bad} v1,{good}").parse().unwrap(),
         );
-        assert!(verify_svix_signature(&headers, body.as_bytes(), secret));
+        assert!(verify_svix_signature_at(
+            &headers,
+            body.as_bytes(),
+            secret,
+            now_for(ts)
+        ));
     }
 
     #[test]
     fn verify_svix_signature_rejects_no_v1_prefix() {
         let secret = "s";
         let id = "i";
-        let ts = "t";
+        let ts = "1700000000";
         let body = "{}";
         let sig = make_sig(secret.as_bytes(), id, ts, body);
         let mut headers = HeaderMap::new();
@@ -422,7 +471,75 @@ mod tests {
         headers.insert("svix-timestamp", ts.parse().unwrap());
         // Missing "v1," prefix → rejected.
         headers.insert("svix-signature", sig.parse().unwrap());
-        assert!(!verify_svix_signature(&headers, body.as_bytes(), secret));
+        assert!(!verify_svix_signature_at(
+            &headers,
+            body.as_bytes(),
+            secret,
+            now_for(ts)
+        ));
+    }
+
+    #[test]
+    fn verify_svix_signature_rejects_stale_timestamp() {
+        // Captured webhook replayed >5min later — must be rejected even
+        // with a valid signature.
+        let secret = "s";
+        let id = "i";
+        let ts = "1700000000";
+        let body = "{}";
+        let sig = make_sig(secret.as_bytes(), id, ts, body);
+        let mut headers = HeaderMap::new();
+        headers.insert("svix-id", id.parse().unwrap());
+        headers.insert("svix-timestamp", ts.parse().unwrap());
+        headers.insert("svix-signature", format!("v1,{sig}").parse().unwrap());
+        // 6 minutes later = stale.
+        let stale_now = now_for(ts) + (SVIX_TIMESTAMP_TOLERANCE_SECS + 60);
+        assert!(!verify_svix_signature_at(
+            &headers,
+            body.as_bytes(),
+            secret,
+            stale_now
+        ));
+    }
+
+    #[test]
+    fn verify_svix_signature_rejects_future_timestamp() {
+        // Forged future-dated event — must be rejected.
+        let secret = "s";
+        let id = "i";
+        let ts = "1700000600"; // 10 min into the "future"
+        let body = "{}";
+        let sig = make_sig(secret.as_bytes(), id, ts, body);
+        let mut headers = HeaderMap::new();
+        headers.insert("svix-id", id.parse().unwrap());
+        headers.insert("svix-timestamp", ts.parse().unwrap());
+        headers.insert("svix-signature", format!("v1,{sig}").parse().unwrap());
+        // "now" is 10 min before the claimed ts.
+        assert!(!verify_svix_signature_at(
+            &headers,
+            body.as_bytes(),
+            secret,
+            1_700_000_000
+        ));
+    }
+
+    #[test]
+    fn verify_svix_signature_rejects_non_numeric_timestamp() {
+        // Garbage timestamp can't be parsed → reject.
+        let secret = "s";
+        let id = "i";
+        let ts = "not-a-number";
+        let body = "{}";
+        let sig = make_sig(secret.as_bytes(), id, ts, body);
+        let mut headers = HeaderMap::new();
+        headers.insert("svix-id", id.parse().unwrap());
+        headers.insert("svix-timestamp", ts.parse().unwrap());
+        headers.insert("svix-signature", format!("v1,{sig}").parse().unwrap());
+        assert!(!verify_svix_signature_at(
+            &headers,
+            body.as_bytes(),
+            secret,
+            1_700_000_000
+        ));
     }
 }
-
