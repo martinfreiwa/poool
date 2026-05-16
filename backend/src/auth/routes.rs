@@ -220,29 +220,23 @@ pub async fn login_submit(
     // used to carve out unshared buckets.
     let client_ip = crate::common::net::client_ip(&headers);
 
-    if let Err(retry_after) = state
-        .auth_rate_limiter
-        .check(&format!("login:{}", client_ip))
-        .await
-    {
-        tracing::warn!("Rate limit exceeded for login from IP: {}", client_ip);
-        return Ok(login_error_response(
-            AppError::RateLimited(retry_after),
-            &headers,
-        ));
-    }
-
-    // Per-email lockout — an attacker rotating IPs cannot grind a single
-    // account. Keyed on the normalised email so case/whitespace variants
-    // share the same bucket. Uses the same window/limit as the IP check
-    // (configured once on the shared limiter).
+    // Audit M#9: dual-tier rate-limit via ONE atomic check. Two
+    // separate `.check()` calls had a TOCTOU gap during which an
+    // attacker rotating IPs could burst the IP bucket without
+    // tripping the email bucket. `check_dual` is all-or-nothing.
     let email_key = form.email.trim().to_lowercase();
     if let Err(retry_after) = state
         .auth_rate_limiter
-        .check(&format!("login:email:{}", email_key))
+        .check_dual(
+            &format!("login:{}", client_ip),
+            &format!("login:email:{}", email_key),
+        )
         .await
     {
-        tracing::warn!("Rate limit exceeded for login on submitted email bucket");
+        tracing::warn!(
+            client_ip = %client_ip,
+            "Rate limit exceeded on login (IP or email bucket)"
+        );
         return Ok(login_error_response(
             AppError::RateLimited(retry_after),
             &headers,
@@ -426,30 +420,19 @@ pub async fn totp_verify_submit(
     };
 
     let client_ip = crate::common::net::client_ip(&headers);
+    // Audit M#9: atomic dual-tier check (IP × user_id).
     if let Err(retry_after) = state
         .auth_rate_limiter
-        .check(&format!("2fa:ip:{}", client_ip))
+        .check_dual(
+            &format!("2fa:ip:{}", client_ip),
+            &format!("2fa:user:{}", user.id),
+        )
         .await
     {
         tracing::warn!(
-            "Rate limit exceeded for 2FA verification from IP: {}",
-            client_ip
-        );
-        return Ok(auth_form_error_response(
-            AppError::RateLimited(retry_after),
-            &headers,
-            "/auth/2fa",
-        ));
-    }
-
-    if let Err(retry_after) = state
-        .auth_rate_limiter
-        .check(&format!("2fa:user:{}", user.id))
-        .await
-    {
-        tracing::warn!(
-            "Rate limit exceeded for 2FA verification for user: {}",
-            user.id
+            client_ip = %client_ip,
+            user_id = %user.id,
+            "Rate limit exceeded on 2FA verification (IP or user bucket)"
         );
         return Ok(auth_form_error_response(
             AppError::RateLimited(retry_after),
@@ -593,30 +576,19 @@ pub async fn totp_setup_submit(
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
 
     let client_ip = crate::common::net::client_ip(&headers);
+    // Audit M#9: atomic dual-tier check (IP × user_id).
     if let Err(retry_after) = state
         .auth_rate_limiter
-        .check(&format!("2fa_setup:ip:{}", client_ip))
+        .check_dual(
+            &format!("2fa_setup:ip:{}", client_ip),
+            &format!("2fa_setup:user:{}", user.id),
+        )
         .await
     {
         tracing::warn!(
-            "Rate limit exceeded for 2FA setup verification from IP: {}",
-            client_ip
-        );
-        return Ok(auth_form_error_response(
-            AppError::RateLimited(retry_after),
-            &headers,
-            "/auth/2fa/setup",
-        ));
-    }
-
-    if let Err(retry_after) = state
-        .auth_rate_limiter
-        .check(&format!("2fa_setup:user:{}", user.id))
-        .await
-    {
-        tracing::warn!(
-            "Rate limit exceeded for 2FA setup verification for user: {}",
-            user.id
+            client_ip = %client_ip,
+            user_id = %user.id,
+            "Rate limit exceeded on 2FA setup (IP or user bucket)"
         );
         return Ok(auth_form_error_response(
             AppError::RateLimited(retry_after),
@@ -1026,37 +998,22 @@ pub async fn forgot_password_submit(
         ));
     }
 
-    // Rate limiting — prevent email bombing
+    // Rate limiting — prevent email bombing. Audit M#9: atomic
+    // dual-tier (IP × email) so an attacker rotating IPs can't burst
+    // through the IP bucket without tripping the email enumeration cap.
     let client_ip = crate::common::net::client_ip(&headers);
-
-    if let Err(retry_after) = state
-        .auth_rate_limiter
-        .check(&format!("forgot:{}", client_ip))
-        .await
-    {
-        tracing::warn!(
-            "Rate limit exceeded for forgot-password from IP: {}",
-            client_ip
-        );
-        wait_for_password_reset_response_floor(started_at).await;
-        return Ok(auth_form_error_response(
-            AppError::RateLimited(retry_after),
-            &headers,
-            "/auth/forgot-password",
-        ));
-    }
-
-    // Per-email cap — stops attackers rotating IPs to spam a single inbox
-    // with reset emails (also a mild enumeration signal).
     let email_key = form.email.trim().to_lowercase();
     if let Err(retry_after) = state
         .auth_rate_limiter
-        .check(&format!("forgot:email:{}", email_key))
+        .check_dual(
+            &format!("forgot:{}", client_ip),
+            &format!("forgot:email:{}", email_key),
+        )
         .await
     {
         tracing::warn!(
-            "Rate limit exceeded for forgot-password on email: {}",
-            email_key
+            client_ip = %client_ip,
+            "Rate limit exceeded on forgot-password (IP or email bucket)"
         );
         wait_for_password_reset_response_floor(started_at).await;
         return Ok(auth_form_error_response(
@@ -1100,35 +1057,23 @@ pub async fn reset_password_submit(
     Form(form): Form<super::models::ResetPasswordForm>,
 ) -> Result<Response, AppError> {
     let client_ip = crate::common::net::client_ip(&headers);
-    if let Err(retry_after) = state
-        .auth_rate_limiter
-        .check(&format!("reset:{}", client_ip))
-        .await
-    {
-        tracing::warn!(
-            "Rate limit exceeded for reset-password from IP: {}",
-            client_ip
-        );
-        return Ok(auth_form_error_response(
-            AppError::RateLimited(retry_after),
-            &headers,
-            "/auth/reset-password",
-        ));
-    }
-
     let token_key = if form.token.trim().is_empty() {
         "missing".to_string()
     } else {
         crate::config::hash_token(form.token.trim())
     };
+    // Audit M#9: atomic dual-tier (IP × token).
     if let Err(retry_after) = state
         .auth_rate_limiter
-        .check(&format!("reset:token:{}", token_key))
+        .check_dual(
+            &format!("reset:{}", client_ip),
+            &format!("reset:token:{}", token_key),
+        )
         .await
     {
         tracing::warn!(
-            "Rate limit exceeded for reset-password token from IP: {}",
-            client_ip
+            client_ip = %client_ip,
+            "Rate limit exceeded on reset-password (IP or token bucket)"
         );
         return Ok(auth_form_error_response(
             AppError::RateLimited(retry_after),
