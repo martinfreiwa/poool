@@ -427,6 +427,10 @@ pub async fn upload_kyc_document(
     req_headers: axum::http::HeaderMap,
     mut multipart: Multipart,
 ) -> axum::response::Response {
+    // Phase 5 observability: time the whole request for the
+    // storage_upload_duration_seconds histogram.
+    let started_at = std::time::Instant::now();
+
     // Auth
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
@@ -578,10 +582,20 @@ pub async fn upload_kyc_document(
     let object_path = format!("kyc/{}/{}.{}", user.id, file_id, ext);
 
     // Upload to GCS if configured, otherwise fall back to local filesystem.
+    // KYC docs are PII-class A → use `upload_private_with_markers` so the
+    // object carries `x-goog-meta-pii-class=A` + retention-trigger from
+    // the start. The reconciler + retention worker dispatch on these.
     let gcs_path = if let Some(ref b) = bucket {
         match tokio::time::timeout(
             std::time::Duration::from_secs(15),
-            service::upload_private(b, &object_path, file_bytes.clone(), &mime_type),
+            service::upload_private_with_markers(
+                b,
+                &object_path,
+                file_bytes.clone(),
+                &mime_type,
+                service::PiiClass::A,
+                Some(user.id),
+            ),
         )
         .await
         {
@@ -752,6 +766,14 @@ pub async fn upload_kyc_document(
         );
     }
 
+    // Phase 5 observability: success counter + bytes + duration.
+    crate::metrics::record_storage_upload(
+        "kyc_document",
+        "ok",
+        content_size,
+        started_at.elapsed().as_secs_f64(),
+    );
+
     tracing::info!(
         "KYC document uploaded: user={}, doc_id={}, type={}",
         user.id,
@@ -872,6 +894,10 @@ pub async fn upload_asset_document(
     State(state): State<AppState>,
     mut multipart: Multipart,
 ) -> axum::response::Response {
+    // Phase 5 observability: time the whole request for the
+    // storage_upload_duration_seconds histogram.
+    let started_at = std::time::Instant::now();
+
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
         None => {
@@ -1039,8 +1065,18 @@ pub async fn upload_asset_document(
     // Upload to GCS if configured, otherwise fall back to local filesystem.
     // Use a 15-second timeout so dev environments (where GCS write perms may be
     // unavailable) don't hang forever — they fall back to local storage.
+    // Asset docs are PII-class B → use `upload_private_with_markers` so the
+    // object carries `x-goog-meta-pii-class=B` + retention-trigger for the
+    // reconciler / retention / DLP pipeline.
     let file_url = if let Some(ref b) = bucket {
-        let gcs_fut = service::upload_private(b, &object_path, file_bytes.clone(), &mime_type);
+        let gcs_fut = service::upload_private_with_markers(
+            b,
+            &object_path,
+            file_bytes.clone(),
+            &mime_type,
+            service::PiiClass::B,
+            Some(user.id),
+        );
         match tokio::time::timeout(std::time::Duration::from_secs(15), gcs_fut).await {
             Ok(Ok(url)) => url,
             Ok(Err(e)) => {
@@ -1097,6 +1133,14 @@ pub async fn upload_asset_document(
                 .into_response();
         }
     };
+
+    // Phase 5 observability: success counter + bytes + duration.
+    crate::metrics::record_storage_upload(
+        "asset_document",
+        "ok",
+        file_size,
+        started_at.elapsed().as_secs_f64(),
+    );
 
     Json(serde_json::json!({
         "status": "success",
