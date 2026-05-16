@@ -419,6 +419,9 @@ pub fn is_optional_email_event(event_type: &str) -> bool {
             | "asset_funded"
             | "monthly_statement"
             | "dividend_payout"
+            // Admin-triggered marketing blasts. List-Unsubscribe + the
+            // `email_notifications=false` preference both silence these.
+            | "marketing_campaign"
     ) || event_type.starts_with("milestone_")
 }
 
@@ -649,6 +652,7 @@ mod tests {
         "asset_funded",
         "monthly_statement",
         "dividend_payout",
+        "marketing_campaign",
         "milestone_first_investment",
         "milestone_anniversary",
     ];

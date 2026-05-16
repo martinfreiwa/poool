@@ -244,7 +244,7 @@
                     <th>Subject</th>
                     <th>Version</th>
                     <th>Updated</th>
-                    <th style="width: 100px">Actions</th>
+                    <th style="width: 160px">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -260,9 +260,14 @@
                       </td>
                       <td x-text="new Date(t.updated_at).toLocaleDateString()"></td>
                       <td>
-                        <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="editTemplate(t)">
-                          Edit
-                        </button>
+                        <div style="display:flex;gap:6px;">
+                          <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="editTemplate(t)">
+                            Edit
+                          </button>
+                          <button class="admin-btn admin-btn--danger admin-btn--sm" @click="deleteTemplate(t)" title="Delete template">
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   </template>

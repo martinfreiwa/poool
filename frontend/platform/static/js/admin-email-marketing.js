@@ -102,17 +102,47 @@ document.addEventListener("alpine:init", () => {
       this.editingTemplate = true;
     },
 
-    editTemplate(t) {
-      this.currentTemplate = {
-        id: t.id,
-        name: t.name,
-        subject: t.subject,
-        description: t.description || "",
-        // we won't have the html_template from the overview endpoint, we should probably fetch it deep
-        // but for now let's just use what's returned. We should make sure the GET /api/admin/emails includes HTML.
-        html_template: t.html_template || "<h1>" + t.subject + "</h1>",
-      };
-      this.editingTemplate = true;
+    async editTemplate(t) {
+      // The list endpoint omits `html_template` to keep payload small —
+      // fetch the full record from the detail endpoint.
+      try {
+        const resp = await fetch(`/api/admin/emails/templates/${t.id}`);
+        if (!resp.ok) throw new Error("Failed to load template");
+        const data = await resp.json();
+        this.currentTemplate = {
+          id: data.id,
+          name: data.name,
+          subject: data.subject,
+          description: data.description || "",
+          html_template: data.html_template || "",
+        };
+        this.editingTemplate = true;
+      } catch (err) {
+        this.showToast("Failed to load template HTML.", "error");
+      }
+    },
+
+    async deleteTemplate(t) {
+      if (
+        !confirm(
+          `Delete template "${t.name}"? This cannot be undone. Historical delivery logs will be preserved.`,
+        )
+      ) {
+        return;
+      }
+      try {
+        const resp = await fetch(`/api/admin/emails/templates/${t.id}`, {
+          method: "DELETE",
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || "Failed to delete template");
+        }
+        await this.loadData();
+        this.showToast(`Template "${t.name}" deleted.`);
+      } catch (err) {
+        this.showToast(err.message, "error");
+      }
     },
 
     cancelEdit() {
