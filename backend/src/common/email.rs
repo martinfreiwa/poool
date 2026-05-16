@@ -58,16 +58,21 @@ pub fn html_to_plain_text(html: &str) -> String {
     use regex::Regex;
     // Build regexes once per call — cheap enough at email frequency, and
     // avoids the static-mut / `once_cell` ceremony for a helper that's
-    // called once per outbox flush.
-    let strip_head_style_script =
-        Regex::new(r"(?is)<(head|style|script)\b[^>]*>.*?</\1>").unwrap();
+    // called once per outbox flush. Rust's `regex` crate doesn't support
+    // backreferences, so each strip pattern lists its closing tag
+    // literal instead of using `\1`.
+    let strip_head = Regex::new(r"(?is)<head\b[^>]*>.*?</head>").unwrap();
+    let strip_style = Regex::new(r"(?is)<style\b[^>]*>.*?</style>").unwrap();
+    let strip_script = Regex::new(r"(?is)<script\b[^>]*>.*?</script>").unwrap();
     let block_breaks =
         Regex::new(r"(?i)<(br\s*/?|/(p|div|li|tr|h[1-6]))\s*>").unwrap();
     let any_tag = Regex::new(r"(?s)<[^>]+>").unwrap();
     let collapse_blank = Regex::new(r"\n{3,}").unwrap();
     let trailing_spaces = Regex::new(r"[ \t]+\n").unwrap();
 
-    let mut out = strip_head_style_script.replace_all(html, "").to_string();
+    let mut out = strip_head.replace_all(html, "").to_string();
+    out = strip_style.replace_all(&out, "").to_string();
+    out = strip_script.replace_all(&out, "").to_string();
     out = block_breaks.replace_all(&out, "\n").to_string();
     out = any_tag.replace_all(&out, "").to_string();
 

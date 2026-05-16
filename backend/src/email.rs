@@ -71,6 +71,48 @@ fn preheader_for_event(event_type: &str) -> &'static str {
         "referral_signed_up" => "Someone you referred just joined POOOL.",
         "support_ticket_reply" => "You have a new reply on your support ticket.",
         "support_ticket_resolved" => "Your support ticket has been resolved.",
+        "support_ticket_new" => "A new support ticket was submitted.",
+        "payment_method_added" => "A new payment method was added to your account.",
+        "payment_method_removed" => "A payment method was removed from your account.",
+        "compliance_alert_user" => "Action required on your account.",
+        "onboarding_drip_24h" => "A few minutes to finish setting up your account.",
+        "onboarding_drip_72h" => "Need a hand finishing your POOOL setup?",
+
+        // Affiliate lifecycle
+        "affiliate_application_received" => "We received your Partner Syndicate application.",
+        "affiliate_approved" => "Your Partner Syndicate application is approved.",
+        "affiliate_rejected" => "Update on your Partner Syndicate application.",
+        "affiliate_suspended" => "Your affiliate account is on hold.",
+        "affiliate_payout_released" => "Your affiliate payout is on its way.",
+        "affiliate_commission_earned" => "A new commission was tracked on your account.",
+        "affiliate_commission_qualified" => "A commission of yours is now payable.",
+        "affiliate_application_info_requested" => "Compliance needs a bit more information.",
+        "affiliate_tier_promoted" => "Tier upgrade — new commission rate applied.",
+        "affiliate_tier_demoted" => "Your affiliate tier was rebalanced.",
+        "affiliate_material_approved" => "Your marketing material is approved.",
+        "affiliate_material_rejected" => "Your marketing material needs revision.",
+
+        // Team affiliate
+        "team_invitation_received" => "You've been invited to join an affiliate team.",
+        "team_member_approved" => "You're now an active member of an affiliate team.",
+        "team_member_removed" => "Your affiliate-team membership has ended.",
+        "team_self_request_received" => "A new join request for your team.",
+        "team_invitation_accepted" => "An invited member just joined your team.",
+
+        // Operations / villa lifecycle
+        "operations_rejected" => "Operations submission requires changes.",
+        "operations_approved" => "Operations submission approved.",
+        "operations_published" => "Operations live on the asset page.",
+
+        // Developer-facing
+        "developer_project_revision_required" => "Compliance flagged your project for revision.",
+
+        // Internal (admin@poool.app)
+        "admin_invitation" => "You've been invited to the POOOL admin team.",
+        "admin_new_affiliate_application" => "A new Partner Syndicate application is waiting.",
+        "admin_payout_request" => "An affiliate just requested a manual payout.",
+        "admin_new_marketing_material" => "Affiliate marketing material pending review.",
+
         _ => "An update from POOOL",
     }
 }
@@ -271,7 +313,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
     <li>Make a first deposit — wires or SEPA, no card fees.</li>
     <li>Browse the marketplace and follow assets you like.</li>
   </ul>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Dashboard</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Need help? Reply to this email or visit our <a href="https://platform.poool.app/support" style="color:#0000FF;">support centre</a>.</p>
 </div>"#, first = html_escape_email(first_name))
         }
@@ -283,7 +325,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Verify your POOOL email</h2>
   <p>Tap the button below to confirm your email address. The link is valid for 24 hours.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Verify Email</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you didn't sign up for POOOL, ignore this email — no account will be created without verification.</p>
 </div>"#, url = html_escape_email(verify_url))
         }
@@ -295,7 +337,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Reset your POOOL password</h2>
   <p>You requested a password reset. Click the link below to set a new password — it expires in 1 hour.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Reset Password</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Reset Password</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you did not request this reset, ignore this email and your password will stay unchanged. For any concern, contact <a href="mailto:security@poool.app" style="color:#0000FF;">security@poool.app</a>.</p>
 </div>"#, url = html_escape_email(reset_url))
         }
@@ -345,7 +387,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Your identity has been verified ✓</h2>
   <p>Great news — your KYC application has been approved. You can now invest in tokenised assets on POOOL.</p>
-  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Browse Assets</a></p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Browse Assets</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you have questions, reply to this email or visit our support centre.</p>
 </div>"#.to_string(),
 
@@ -359,7 +401,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
   <p>Unfortunately your identity verification could not be approved at this time.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
   <p>Please resubmit your documents addressing the issue above.</p>
-  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Verification</a></p>
+  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Resubmit Verification</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Need help? Contact us at support@poool.app</p>
 </div>"#, reason = html_escape_email(reason))
         }
@@ -385,7 +427,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
   <h2 style="color:#181D27;">Your deposit has been received</h2>
   <p>Your wire transfer has been verified and your POOOL wallet balance has been updated.</p>
   {amount}
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Wallet</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at support@poool.app</p>
 </div>"#, amount = amount_block)
         }
@@ -414,7 +456,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
     {amount_row}
     {reference_row}
   </table>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Track Deposit</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Track Deposit</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Make sure the reference above appears on the wire transfer — without it, we cannot match your deposit.</p>
 </div>"#, hours = processing_hours, amount_row = amount_row, reference_row = reference_row)
         }
@@ -437,7 +479,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
     <tr><td style="padding:8px 0;color:#717680;">Destination</td><td style="padding:8px 0;color:#101828;font-weight:500;">{dest}</td></tr>
     <tr><td style="padding:8px 0;color:#717680;">Processing time</td><td style="padding:8px 0;color:#101828;font-weight:500;">1–3 business days</td></tr>
   </table>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Wallet</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you did not request this withdrawal, contact support@poool.app immediately.</p>
 </div>"#, amount_row = amount_row, dest = html_escape_email(destination))
         }
@@ -457,7 +499,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
   <p>Your withdrawal has been approved and the funds are on their way to {dest}.</p>
   {amount}
   <p>Bank settlement typically takes 1–3 business days depending on your bank.</p>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Transactions</a></p>
 </div>"#, amount = amount_block, dest = html_escape_email(destination))
         }
 
@@ -476,7 +518,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
   <p>Unfortunately your withdrawal request was rejected. The held amount has been returned to your wallet balance.</p>
   {amount}
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Wallet</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Wallet</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact support@poool.app</p>
 </div>"#, amount = amount_block, reason = html_escape_email(reason))
         }
@@ -490,7 +532,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
   <h2 style="color:#181D27;">You have a new reply on your support ticket</h2>
   <p style="color:#414651;">Our support team has replied to: <strong>{subject}</strong></p>
   {preview_block}
-  <p><a href="https://platform.poool.app/support#{ticket_id}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Conversation</a></p>
+  <p><a href="https://platform.poool.app/support#{ticket_id}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Conversation</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Reply directly in your support portal. Please do not reply to this email.</p>
 </div>"#,
                 ticket_id = ticket_id,
@@ -514,7 +556,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
     <tr><td style="padding:8px 0;color:#717680;">Subject</td><td style="padding:8px 0;color:#101828;font-weight:500;">{subject}</td></tr>
     <tr><td style="padding:8px 0;color:#717680;">Priority</td><td style="padding:8px 0;color:#101828;font-weight:500;">{priority}</td></tr>
   </table>
-  <p><a href="https://platform.poool.app/admin/support.html" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View in Admin Panel</a></p>
+  <p><a href="https://platform.poool.app/admin/support.html" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View in Admin Panel</a></p>
 </div>"#,
                 user = html_escape_email(user_email),
                 subject = html_escape_email(subject_line),
@@ -529,7 +571,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
   <h2 style="color:#181D27;">Your support ticket has been resolved</h2>
   <p style="color:#414651;">We've marked <strong>{subject}</strong> as resolved.</p>
   <p style="color:#414651;">If your issue isn't fully sorted, you can reopen the ticket from your support portal at any time.</p>
-  <p><a href="https://platform.poool.app/support" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Ticket</a></p>
+  <p><a href="https://platform.poool.app/support" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Ticket</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Thank you for using POOOL support.</p>
 </div>"#,
                 subject = html_escape_email(subject_line),
@@ -579,7 +621,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Welcome to {team}</h2>
   <p>You're now an active member of <strong>{team}</strong>. Your business affiliate link is live — commissions from referrals route to the team owner.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Affiliate Dashboard</a></p>
 </div>"#, team = html_escape_email(team_name))
         }
 
@@ -600,7 +642,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">New join request for {team}</h2>
   <p><strong>{requester}</strong> has requested to join your affiliate team. Review and approve the request in your team dashboard.</p>
-  <p><a href="https://platform.poool.app/developer/affiliate-team" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Review Request</a></p>
+  <p><a href="https://platform.poool.app/developer/affiliate-team" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Review Request</a></p>
 </div>"#,
                 team = html_escape_email(team_name),
                 requester = html_escape_email(requester))
@@ -618,7 +660,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">{member} joined {team}</h2>
   <p>Your invitation was accepted. {member} now has an active team-business affiliate link and any commissions they drive route directly to you.</p>
-  <p><a href="https://platform.poool.app/developer/affiliate-team/members" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Team Members</a></p>
+  <p><a href="https://platform.poool.app/developer/affiliate-team/members" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Team Members</a></p>
 </div>"#,
                 team = html_escape_email(team_name),
                 member = html_escape_email(member))
@@ -639,7 +681,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
   <h2 style="color:#181D27;">We received your Partner Syndicate application</h2>
   <p>Thanks for applying to the POOOL Partner Syndicate. Our team reviews new applications within 1–3 business days.</p>
   <p>You'll receive a follow-up email as soon as a decision is made. In the meantime you can continue to use your investor account as usual.</p>
-  <p><a href="https://platform.poool.app/affiliate" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Application</a></p>
+  <p><a href="https://platform.poool.app/affiliate" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Application</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at <a href="mailto:partners@poool.app" style="color:#0000FF;">partners@poool.app</a>.</p>
 </div>"#.to_string()
         }
@@ -666,7 +708,7 @@ Your unique referral code:
   <p>Your application has been approved. You're starting at the <strong>{tier}</strong> tier with a commission rate of <strong>{rate}</strong>.</p>
   {referral_block}
   <p>Your personal affiliate link is ready in your dashboard. Share it to start tracking referrals and earning commissions on qualified investments.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Affiliate Dashboard</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Before your first payout you'll need to upload a valid tax document and confirm your payout details.</p>
 </div>"#,
                 tier = html_escape_email(tier),
@@ -696,7 +738,7 @@ Your unique referral code:
   <p>Your POOOL affiliate account has been temporarily suspended pending {reason}. New referrals and payouts are paused while we complete this review.</p>
   <p>Existing referrals, commissions earned, and any positive balance remain intact and will be released once the account is reinstated.</p>
   <p>Please contact our partner team within 7 days to resolve this:</p>
-  <p><a href="mailto:partners@poool.app" style="display:inline-block;padding:12px 24px;background:#B42318;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Contact Partner Team</a></p>
+  <p><a href="mailto:partners@poool.app" style="display:inline-block;padding:12px 24px;background:#B42318;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Contact Partner Team</a></p>
 </div>"#, reason = html_escape_email(reason))
         }
 
@@ -717,7 +759,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">Payout released: {amount}</h2>
   <p>{dest}</p>
   <p>A detailed statement is available in your affiliate dashboard.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Payout Statement</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Payout Statement</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">For tax purposes, retain this email as confirmation of payout. Annual statements (1099 / VAT summary) are issued in January.</p>
 </div>"#,
                 amount = formatted_amount, dest = dest_line)
@@ -739,7 +781,7 @@ Your unique referral code:
     <tr><td style="padding:8px 0;color:#717680;">Status</td><td style="padding:8px 0;color:#101828;">Under holdback ({holdback}-day refund window)</td></tr>
   </table>
   <p>Commissions become payable once the holdback period ends and the underlying investment remains active.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View in Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View in Dashboard</a></p>
 </div>"#,
                 amount = formatted_amount,
                 referred = html_escape_email(referred_name),
@@ -761,7 +803,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">Withdrawal processed ✓</h2>
   <p>Your withdrawal has been settled and credited to {dest}.</p>
   {amount}
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Transactions</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Keep this email for your records — it is your settlement confirmation.</p>
 </div>"#, amount = amount_block, dest = html_escape_email(destination))
         }
@@ -781,7 +823,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">You've earned a dividend</h2>
   <p>A dividend distribution from <strong>{asset}</strong> has just landed in your POOOL wallet.</p>
   {amount}
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Distribution</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Distribution</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Tax-relevant payout statements are available in your annual report.</p>
 </div>"#, asset = html_escape_email(asset), amount = amount_block)
         }
@@ -793,7 +835,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Your POOOL statement for {month} is ready</h2>
   <p>Your performance, dividends, fees, and tax summary for {month} are now available in your account.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Statement</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Statement</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Statements are kept for 10 years per regulatory retention rules.</p>
 </div>"#, month = html_escape_email(month), url = html_escape_email(download))
         }
@@ -823,7 +865,7 @@ Your unique referral code:
     {amount_row}
     {order_row}
   </table>
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Portfolio</a></p>
 </div>"#, asset = html_escape_email(asset), amount_row = amount_row, order_row = order_row)
         }
 
@@ -839,7 +881,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Invoice{suffix} is ready</h2>
   <p>Your invoice is available to download. Keep it for your tax records.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Download Invoice (PDF)</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Download Invoice (PDF)</a></p>
 </div>"#, suffix = header_suffix, url = html_escape_email(download))
         }
 
@@ -851,7 +893,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">{asset} is 100% funded</h2>
   <p><strong>{asset}</strong> has reached its funding target. The primary offering is now closed; the asset moves to operations and (if applicable) the secondary marketplace once settlement completes.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Asset Page</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Asset Page</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">You're receiving this because you follow this asset. Manage your watchlist in <a href="https://platform.poool.app/settings" style="color:#0000FF;">settings</a>.</p>
 </div>"#, asset = html_escape_email(asset), url = html_escape_email(asset_url))
         }
@@ -866,7 +908,7 @@ Your unique referral code:
   <p>Your operations submission for <strong>{asset}</strong> could not be approved.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
   <p>Address the points above and resubmit from your developer dashboard.</p>
-  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Operations</a></p>
 </div>"#, asset = html_escape_email(asset), reason = html_escape_email(reason))
         }
 
@@ -876,7 +918,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Operations approved — pending publish</h2>
   <p>Your operations submission for <strong>{asset}</strong> has been reviewed and approved by the compliance team. It will be published live with the next scheduled NAV update.</p>
-  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Submission</a></p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Submission</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -886,7 +928,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Operations published — now live</h2>
   <p>The operations period for <strong>{asset}</strong> has gone live. Investors can now see the latest revenue, occupancy, and NAV figures on the asset page.</p>
-  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Operations</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -895,7 +937,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Commission qualified ✓</h2>
   <p>Great news — the 30-day holdback period for one of your referred investments has ended. The underlying commission has upgraded from <em>under holdback</em> to <strong>payable</strong> and will be included in the next batch payout cycle.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Affiliate Dashboard</a></p>
 </div>"#.to_string(),
 
         "affiliate_application_info_requested" => {
@@ -922,7 +964,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">Tier upgrade — welcome to {tier} 🎉</h2>
   <p>Based on your qualified referral volume in the last 12 months (<strong>{volume}</strong>), you've been promoted to the <strong>{tier}</strong> tier.</p>
   <p>Your new commission rate is <strong>{rate}</strong> ({bps} bps) and applies to all future commissions. Earnings already accrued at the previous rate are unaffected.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Your Tier</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Your Tier</a></p>
 </div>"#,
                 tier = html_escape_email(new_tier),
                 volume = volume_display,
@@ -943,7 +985,7 @@ Your unique referral code:
   <p>Your tier has moved from <strong>{prev}</strong> to <strong>{tier}</strong> based on your qualified referral volume in the last 12 months ({volume}).</p>
   <p>Your new commission rate is <strong>{rate}</strong> ({bps} bps) and applies to all future commissions. Earnings already accrued at the previous rate are unaffected.</p>
   <p>To climb back, focus on qualified referrals — the next-tier threshold is shown in your dashboard.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Dashboard</a></p>
 </div>"#,
                 prev = html_escape_email(previous),
                 tier = html_escape_email(new_tier),
@@ -958,7 +1000,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Marketing material approved ✓</h2>
   <p>Your custom marketing material <strong>{material}</strong> has been reviewed and approved. You may now use it in your campaigns.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Affiliate Dashboard</a></p>
 </div>"#, material = html_escape_email(material))
         }
 
@@ -971,7 +1013,7 @@ Your unique referral code:
   <p>Your custom marketing material <strong>{material}</strong> could not be approved at this time.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
   <p>Please revise and resubmit from your affiliate dashboard.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Material</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Resubmit Material</a></p>
 </div>"#,
                 material = html_escape_email(material),
                 reason = html_escape_email(reason))
@@ -987,7 +1029,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">Action required: revision needed for {project}</h2>
   <p>The compliance team has reviewed your project submission and requires revisions before it can be approved for the marketplace.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Review notes:</strong> {notes}</p>
-  <p><a href="https://platform.poool.app/developer/projects" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Project</a></p>
+  <p><a href="https://platform.poool.app/developer/projects" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Project</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Reach the compliance team at <a href="mailto:compliance@poool.app" style="color:#0000FF;">compliance@poool.app</a>.</p>
 </div>"#,
                 project = html_escape_email(project),
@@ -1005,7 +1047,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">You've been invited to the POOOL Admin portal</h2>
   <p>{inviter} has invited you to join the POOOL admin team as <strong>{role}</strong>.</p>
   <p>Accept the invitation to set your password and enable two-factor authentication. The link is valid for 72 hours.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Accept Invitation</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you weren't expecting this, ignore the email — the invitation expires automatically.</p>
 </div>"#,
                 inviter = html_escape_email(inviter),
@@ -1030,7 +1072,7 @@ Your unique referral code:
     <tr><td style="padding:8px 0;color:#717680;width:140px;">From</td><td style="padding:8px 0;color:#101828;font-weight:500;">{applicant}</td></tr>
     {id_row}
   </table>
-  <p><a href="https://platform.poool.app/admin/affiliate-applications" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Review Application</a></p>
+  <p><a href="https://platform.poool.app/admin/affiliate-applications" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Review Application</a></p>
 </div>"#,
                 applicant = html_escape_email(applicant),
                 id_row = id_row)
@@ -1061,7 +1103,7 @@ Your unique referral code:
     {code_row}
     {amount_row}
   </table>
-  <p><a href="https://platform.poool.app/admin/rewards" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Pending Payouts</a></p>
+  <p><a href="https://platform.poool.app/admin/rewards" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Pending Payouts</a></p>
 </div>"#,
                 email = html_escape_email(affiliate_email),
                 code_row = code_row,
@@ -1075,7 +1117,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">New marketing material pending review</h2>
   <p>{affiliate} has uploaded a custom marketing material named <strong>{material}</strong> that requires compliance review before it can be used in campaigns.</p>
-  <p><a href="https://platform.poool.app/admin/affiliate-fraud" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Compliance Panel</a></p>
+  <p><a href="https://platform.poool.app/admin/affiliate-fraud" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Compliance Panel</a></p>
 </div>"#,
                 affiliate = html_escape_email(affiliate),
                 material = html_escape_email(material))
@@ -1104,7 +1146,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Two-factor authentication was disabled</h2>
   <p>2FA is no longer required to sign in or perform sensitive actions. We strongly recommend re-enabling it — accounts without 2FA have significantly higher takeover risk.</p>
-  <p><a href="https://platform.poool.app/settings/security" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Re-enable 2FA</a></p>
+  <p><a href="https://platform.poool.app/settings/security" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Re-enable 2FA</a></p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Didn't disable 2FA?</strong> Contact <a href="mailto:security@poool.app" style="color:#B42318;text-decoration:underline;">security@poool.app</a> immediately.</p>
 </div>"#.to_string(),
 
@@ -1140,7 +1182,7 @@ Your unique referral code:
   <p>Thanks for your deposit. Because of its size, our compliance policy requires us to confirm the source of funds before the deposit can be credited.</p>
   {amount_line}
   <p>Please upload a recent bank statement, salary slip, or other documentation showing the funds' origin.</p>
-  <p><a href="https://platform.poool.app/wallet/source-of-funds" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Upload Documentation</a></p>
+  <p><a href="https://platform.poool.app/wallet/source-of-funds" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Upload Documentation</a></p>
 </div>"#, amount_line = amount_line)
         }
 
@@ -1152,7 +1194,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">Action required on your account</h2>
   <p>{summary}</p>
   <p>Please sign in and follow the on-screen instructions to resolve this.</p>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open POOOL</a></p>
 </div>"#, summary = html_escape_email(summary))
         }
 
@@ -1167,7 +1209,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">Trade executed ✓</h2>
   <p>Your {side} of <strong>{asset}</strong> has been executed on the POOOL marketplace.</p>
   {amount_line}
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Portfolio</a></p>
 </div>"#, side = html_escape_email(side), asset = html_escape_email(asset), amount_line = amount_line)
         }
 
@@ -1177,7 +1219,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Your limit order has been filled</h2>
   <p>Your limit order on <strong>{asset}</strong> matched at your target price.</p>
-  <p><a href="https://platform.poool.app/marketplace/orders" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Orders</a></p>
+  <p><a href="https://platform.poool.app/marketplace/orders" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Orders</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -1199,7 +1241,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Your listing has expired</h2>
   <p>Your secondary-market listing for <strong>{asset}</strong> has expired without filling. You can relist anytime.</p>
-  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Relist</a></p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Relist</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -1213,7 +1255,7 @@ Your unique referral code:
   <h2 style="color:#181D27;">Your investment in {asset} is live</h2>
   <p>Settlement is complete and your fractional tokens have been minted on-chain.</p>
   {token_line}
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Position</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Position</a></p>
 </div>"#, asset = html_escape_email(asset), token_line = token_line)
         }
 
@@ -1244,7 +1286,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Your {year} tax document is ready</h2>
   <p>Your annual tax summary for {year} is now available — dividends, realised gains, fees, and withholding tax for your filing.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Download Tax Document (PDF)</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Download Tax Document (PDF)</a></p>
 </div>"#, year = html_escape_email(year), url = html_escape_email(download))
         }
 
@@ -1254,7 +1296,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">POOOL Terms of Service updated</h2>
   <p>We've updated our Terms of Service. Changes take effect on <strong>{date}</strong>. Continued use after that date constitutes acceptance.</p>
-  <p><a href="https://platform.poool.app/legal/terms" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Review new Terms</a></p>
+  <p><a href="https://platform.poool.app/legal/terms" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Review new Terms</a></p>
 </div>"#, date = html_escape_email(effective))
         }
 
@@ -1265,7 +1307,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Hi {first} — let's get your account live</h2>
   <p>Welcome to POOOL. To start investing, we just need a quick identity verification. Takes about 2 minutes; most users are approved within hours.</p>
-  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Verify Identity (2 min)</a></p>
+  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Verify Identity (2 min)</a></p>
 </div>"#, first = html_escape_email(first))
         }
 
@@ -1273,7 +1315,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Need help getting started?</h2>
   <p>We noticed you haven't finished your POOOL onboarding yet. Two steps to your first investment: verify identity, fund wallet (SEPA / wire). Reply to this email if anything blocks you — a real person will help.</p>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open POOOL</a></p>
 </div>"#.to_string(),
 
         "abandoned_cart" => {
@@ -1282,7 +1324,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Still thinking about it?</h2>
   <p>You left without completing your investment in <strong>{asset}</strong>. The offering is still open.</p>
-  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Return to Marketplace</a></p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Return to Marketplace</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -1290,7 +1332,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">We miss you 👋</h2>
   <p>It's been a while since your last POOOL visit. New assets, secondary market trading, improved Plus+ rates — see what's new.</p>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open POOOL</a></p>
 </div>"#.to_string(),
 
         "milestone_first_investment" => {
@@ -1299,7 +1341,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Welcome to investing with POOOL 🎉</h2>
   <p>Congratulations on your first investment in <strong>{asset}</strong>. Your fractional ownership is now live on-chain.</p>
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Portfolio</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Portfolio</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -1317,14 +1359,14 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Your POOOL weekly</h2>
   <p>A quick summary of what happened across your POOOL holdings this week — performance, dividends, new offerings.</p>
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Dashboard</a></p>
 </div>"#.to_string(),
 
         "monthly_affiliate_summary" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Your monthly affiliate summary</h2>
   <p>This month's POOOL Partner Syndicate performance — clicks, signups, qualified investments, commissions earned and pending.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">Open Affiliate Dashboard</a></p>
 </div>"#.to_string(),
 
         "referral_signed_up" => {
@@ -1333,7 +1375,7 @@ Your unique referral code:
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">{referred} just joined POOOL</h2>
   <p>Through your referral link, {referred} created a POOOL account. You'll earn a commission once they complete a qualified investment.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Referrals</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;mso-padding-alt:12px 24px;">View Referrals</a></p>
 </div>"#, referred = html_escape_email(referred))
         }
 
@@ -1429,9 +1471,7 @@ pub fn subject_for_event(event_type: &str) -> &'static str {
         "payment_method_removed" => "A payment method was removed from your account",
 
         // Compliance / wallet alerts
-        "large_deposit_received" => {
-            "Large deposit received — source-of-funds documentation requested"
-        }
+        "large_deposit_received" => "Source-of-funds documentation requested",
         "compliance_alert_user" => "Action required on your POOOL account",
 
         // Marketplace (secondary market)
@@ -2239,6 +2279,117 @@ mod tests {
                 assert!(
                     !subject.contains(pat),
                     "subject for '{event}' contains spammy punctuation '{pat}': {subject:?}"
+                );
+            }
+        }
+    }
+
+    // ── Link audit (deliverability + brand integrity) ─────────────────
+
+    /// Every link in every catalogued event body must satisfy:
+    ///   * HTTPS only (HTTP triggers Gmail's "Your connection is not
+    ///     secure" warning + SpamAssassin penalty + GDPR concern).
+    ///   * No `localhost` or `127.0.0.1` (dev URLs sneaking into prod
+    ///     bodies were a real bug class).
+    ///   * No URL shorteners (bit.ly / t.co / tinyurl — flagged by every
+    ///     enterprise spam gateway as evasion).
+    ///   * No tracking-pixel image hosts (we run zero images by design).
+    #[test]
+    fn every_link_in_every_event_body_passes_deliverability_audit() {
+        use regex::Regex;
+        let href_re = Regex::new(r#"href\s*=\s*"([^"]+)""#).unwrap();
+        let banned_shorteners = ["bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly"];
+        for event in ALL_EVENT_TYPES {
+            // Render with a representative sample so dynamic URLs (verify_url,
+            // reset_url, asset_url, etc.) are populated.
+            let sample = json!({
+                "first_name": "Maria",
+                "verify_url": "https://platform.poool.app/verify?t=x",
+                "reset_url": "https://platform.poool.app/reset?t=x",
+                "asset_url": "https://platform.poool.app/assets/x",
+                "download_url": "https://platform.poool.app/statements/x",
+                "invite_url": "https://platform.poool.app/admin/accept-invite?token=x",
+                "accept_url": "https://platform.poool.app/affiliate/team/accept?t=x",
+            });
+            let html = build_email_html(event, &sample);
+            for cap in href_re.captures_iter(&html) {
+                let url = &cap[1];
+                // mailto: links are allowed (support / security inbox).
+                if url.starts_with("mailto:") {
+                    continue;
+                }
+                // tel: not used but cheap to allow.
+                if url.starts_with("tel:") {
+                    continue;
+                }
+                assert!(
+                    url.starts_with("https://"),
+                    "event '{event}' body has non-HTTPS link: {url}"
+                );
+                assert!(
+                    !url.contains("localhost") && !url.contains("127.0.0.1"),
+                    "event '{event}' body leaks dev URL: {url}"
+                );
+                for shortener in banned_shorteners {
+                    assert!(
+                        !url.contains(shortener),
+                        "event '{event}' body uses banned URL shortener '{shortener}': {url}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// `preheader_for_event` should return event-specific copy for every
+    /// catalogued event — falling back to the generic "An update from
+    /// POOOL" line is a deliverability + UX miss (Gmail / Apple Mail
+    /// show that snippet right next to the subject in the inbox).
+    #[test]
+    fn every_event_has_a_custom_preheader() {
+        const GENERIC: &str = "An update from POOOL";
+        for event in ALL_EVENT_TYPES {
+            let pre = preheader_for_event(event);
+            assert!(
+                pre != GENERIC,
+                "event '{event}' falls back to the generic preheader — \
+                 add a specific line in preheader_for_event so the inbox \
+                 preview reads meaningfully"
+            );
+            assert!(
+                !pre.is_empty(),
+                "event '{event}' preheader is empty"
+            );
+            assert!(
+                pre.chars().count() <= 120,
+                "event '{event}' preheader too long ({} chars > 120): {pre:?}",
+                pre.chars().count()
+            );
+        }
+    }
+
+    /// Outlook desktop strips `padding:` from `<a>` elements — without
+    /// `mso-padding-alt` the CTA buttons render as bare text-on-color
+    /// with no spacing. Pin that the workaround is present everywhere.
+    #[test]
+    fn every_cta_button_carries_mso_padding_alt() {
+        // We use blue (#0000FF) and danger-red (#B42318) CTAs. Either
+        // colour, the next inline rule on the same `<a>` must be the
+        // mso-padding-alt hint.
+        for event in ALL_EVENT_TYPES {
+            let html = build_email_html(event, &json!({}));
+            // Any body with a primary CTA must carry the MSO hint.
+            if html.contains("background:#0000FF;color:#98FB96;") {
+                assert!(
+                    html.contains("mso-padding-alt:12px 24px;"),
+                    "event '{event}' has a primary CTA but no mso-padding-alt — \
+                     Outlook will render the button with no padding"
+                );
+            }
+            if html.contains("background:#B42318;color:#fff;") {
+                assert!(
+                    html.contains("mso-padding-alt:12px 24px;"),
+                    "event '{event}' has a danger CTA but no mso-padding-alt — \
+                     Outlook will render the button with no padding"
                 );
             }
         }
