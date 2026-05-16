@@ -482,6 +482,10 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/compliance/users/:user_id/rescreen",
             post(crate::compliance::routes::api_admin_compliance_rescreen),
         )
+        .route(
+            "/api/admin/compliance/monitoring/run",
+            post(crate::compliance::routes::api_admin_compliance_run_monitoring),
+        )
         // KYC
         .route("/api/admin/kyc", get(api_admin_kyc_records))
         .route(
@@ -794,6 +798,14 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/emails/workflows",
             get(api_admin_emails_workflows),
+        )
+        .route(
+            "/api/admin/emails/suppressions",
+            get(api_admin_emails_suppressions),
+        )
+        .route(
+            "/api/admin/emails/suppressions/:id",
+            delete(api_admin_emails_suppression_clear),
         )
         .route("/api/admin/emails/preview", post(api_admin_emails_preview))
         .route(

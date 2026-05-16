@@ -333,6 +333,32 @@ pub async fn send_transactional_outbox_item(pool: &PgPool, outbox_id: Uuid) {
 
     let (id, user_id, event_type, recipient_email, subject, html_body, attempts) = row;
 
+    // Pre-send suppression check. Once an address hard-bounces or files
+    // a spam complaint, Resend will progressively throttle our sender
+    // domain — keep sending and the throttle escalates to a hard block
+    // for all other recipients. The suppression list is honoured for
+    // every event type, including security/payment, because a bounced
+    // address physically cannot receive mail anyway. Admins can clear
+    // a row to retry after the recipient confirms the issue is gone.
+    if email_is_suppressed(pool, &recipient_email).await {
+        tracing::info!(
+            outbox_id = %id,
+            recipient_email = %recipient_email,
+            event_type = %event_type,
+            "Recipient on suppression list — skipping send."
+        );
+        let _ = sqlx::query(
+            "UPDATE transactional_email_outbox
+               SET status='skipped', sent_at=NOW(),
+                   last_error='recipient on suppression list', updated_at=NOW()
+             WHERE id=$1",
+        )
+        .bind(id)
+        .execute(pool)
+        .await;
+        return;
+    }
+
     // Pref-gate optional event classes. We honour `user_settings.email_notifications`
     // for the classes audit-flagged as opt-out-able (affiliate + team
     // notifications). Security / payment events bypass this so users can't
@@ -429,6 +455,33 @@ pub async fn send_transactional_outbox_item(pool: &PgPool, outbox_id: Uuid) {
 // payout or compliance email has worse blast radius than sending an
 // extra one.
 // ───────────────────────────────────────────────────────────────────────────
+
+/// Returns true when an active suppression exists for the address. Used
+/// by the outbox worker to skip known-bad recipients before incurring
+/// another Resend API call (and another bounce that would hurt our
+/// sender reputation).
+///
+/// Casing-insensitive — Resend normalises addresses to lowercase before
+/// reporting bounces, but customer-submitted addresses are stored as-is.
+pub async fn email_is_suppressed(pool: &PgPool, address: &str) -> bool {
+    sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(
+             SELECT 1 FROM email_suppressions
+              WHERE LOWER(email) = LOWER($1)
+                AND cleared_at IS NULL
+         )",
+    )
+    .bind(address)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(false)
+}
+
+/// Categories of bounce that should add the recipient to the
+/// suppression list. Soft bounces (rate limits, transient DNS) are
+/// excluded — we just retry those via the outbox backoff.
+pub const HARD_SUPPRESSION_REASONS: &[&str] =
+    &["hard_bounce", "spam_complaint"];
 
 /// Returns true when the event-type is opt-out-able by the recipient.
 pub fn is_optional_email_event(event_type: &str) -> bool {

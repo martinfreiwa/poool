@@ -75,6 +75,8 @@ pub mod dividends;
 pub mod email;
 #[allow(missing_docs)]
 pub mod error;
+/// Phase-3 P1 in-app inbox (bell icon + dropdown). API at `/api/inbox/*`.
+pub mod inbox;
 /// IPFS integration — Pinata-based metadata storage for ERC-1155 asset tokens.
 pub mod ipfs;
 #[allow(missing_docs)]
@@ -313,9 +315,45 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         auth::rate_limit::RateLimiter::new(10, std::time::Duration::from_secs(15 * 60))
     };
 
+    // Separate, lighter limiter for leaderboard endpoints. Browsing the
+    // leaderboard is benign so the cap is much higher than auth, but a
+    // per-user cap of 60 req/min still blocks scraping bots and throttles
+    // PUT-preferences spam (each request hits the DB).
+    let leaderboard_rate_limiter = if rate_limit_disabled {
+        auth::rate_limit::RateLimiter::disabled()
+    } else if let Some(ref pool) = redis_pool {
+        tracing::info!("Leaderboard rate limiter: Redis-backed (60 req / 1 min per key)");
+        auth::rate_limit::RateLimiter::new_redis(
+            pool.clone(),
+            60,
+            std::time::Duration::from_secs(60),
+        )
+    } else {
+        tracing::info!("Leaderboard rate limiter: in-memory (60 req / 1 min per key)");
+        auth::rate_limit::RateLimiter::new(60, std::time::Duration::from_secs(60))
+    };
+
     let leaderboard_last_refresh = std::sync::Arc::new(tokio::sync::RwLock::new(
         None::<chrono::DateTime<chrono::Utc>>,
     ));
+
+    // Community mutating endpoints rate limiter: 30 ops/min/user. Caps
+    // join/leave/invite/promote/ban spam without throttling normal feed
+    // browsing. Redis-backed when available so multi-instance fleets share
+    // the bucket.
+    let community_rate_limiter = if rate_limit_disabled {
+        auth::rate_limit::RateLimiter::disabled()
+    } else if let Some(ref pool) = redis_pool {
+        tracing::info!("Community rate limiter: Redis-backed (30 req / 1 min per key)");
+        auth::rate_limit::RateLimiter::new_redis(
+            pool.clone(),
+            30,
+            std::time::Duration::from_secs(60),
+        )
+    } else {
+        tracing::info!("Community rate limiter: in-memory (30 req / 1 min per key)");
+        auth::rate_limit::RateLimiter::new(30, std::time::Duration::from_secs(60))
+    };
 
     let state = AppState {
         db: pool.clone(),
@@ -325,6 +363,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         config: config.clone(),
         redis: redis_pool,
         auth_rate_limiter: auth_rate_limiter.clone(),
+        leaderboard_rate_limiter: leaderboard_rate_limiter.clone(),
+        community_rate_limiter: community_rate_limiter.clone(),
         leaderboard_last_refresh: leaderboard_last_refresh.clone(),
     };
 
@@ -445,6 +485,12 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             c_pool.clone(),
             pool.clone(),
         ));
+        // 2026-05-16 — keeps `circles.recent_post_count` accurate so the
+        // Discover > Trending section sorts by real activity. Refresh
+        // every 5 min by default (POOOL_CIRCLE_TRENDING_REFRESH_SECS).
+        tokio::spawn(community::background::circle_trending_refresh_worker(
+            c_pool.clone(),
+        ));
         tokio::spawn(community::background::gdpr_anonymization_worker(
             c_pool.clone(),
             pool.clone(),
@@ -470,6 +516,10 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         pool.clone(),
     ));
 
+    // Transaction-monitoring rule engine — sweeps wallet movements for
+    // structuring / velocity / new-bank patterns hourly.
+    tokio::spawn(compliance::monitoring::run_monitoring_worker(pool.clone()));
+
     // Refreshes Prometheus gauges that don't update on the mutation path
     // (e.g. compliance_alerts_open).
     tokio::spawn(metrics::run_metrics_refresh_worker(pool.clone()));
@@ -481,6 +531,13 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     // Affiliate tier progression worker (runs every 24 hours)
     tokio::spawn(rewards::service::run_affiliate_tier_progression_worker(
+        pool.clone(),
+    ));
+
+    // F19 fix: durable affiliate S2S postback worker (30s cadence).
+    // Replaces the fire-and-forget tokio::spawn pattern that lost
+    // postbacks on graceful shutdown.
+    tokio::spawn(rewards::service::run_affiliate_postback_worker(
         pool.clone(),
     ));
 
@@ -557,32 +614,193 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     // Leaderboard: Refresh metrics and rankings periodically.
     //
-    // Audit P3 follow-up: each instance picks a random 0-300s jitter offset on
-    // startup so multiple horizontally-scaled instances don't all hit the DB on
-    // the same 15-minute tick (thundering herd). The offset is logged once at
-    // startup for ops visibility.
+    // Concurrency contract for horizontal scaling: every backend instance
+    // spawns this task, but only ONE may run the refresh per tick. We use a
+    // Postgres advisory lock (`pg_try_advisory_lock`) with a deterministic
+    // 64-bit key. `try_*` is non-blocking — instances that lose the race
+    // skip the tick and log a debug line. The jitter that pre-dates the
+    // lock is kept as a second layer of defense (in case the lock function
+    // ever changes semantics or the DB driver swallows the bool).
+    //
+    // Lock key: arbitrary `i64`, chosen to be visibly distinct from other
+    // POOOL advisory locks. Search for `LEADERBOARD_REFRESH_LOCK_KEY` to
+    // find every caller.
+    const LEADERBOARD_REFRESH_LOCK_KEY: i64 = 0x10AD_BD_0001;
+    const LEADERBOARD_SNAPSHOT_LOCK_KEY: i64 = 0x10AD_BD_0002;
+
     let leaderboard_pool = pool.clone();
     let leaderboard_cache = leaderboard_last_refresh.clone();
     tokio::spawn(async move {
+        // Cadence configurable via env var. Default 900s (15min). Floor at
+        // 60s so a misconfigured value can't slam the DB. Audit Bereich-1
+        // close-out: ops can now tune at deploy-time without code change.
+        let interval_secs: u64 = std::env::var("POOOL_LEADERBOARD_REFRESH_SECS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .map(|n| n.max(60))
+            .unwrap_or(15 * 60);
         let jitter_secs: u64 = rand::Rng::gen_range(&mut rand::thread_rng(), 0..300);
         tracing::info!(
-            "Leaderboard refresh worker starting (15min cadence, +{}s jitter)",
-            jitter_secs
+            interval_secs = interval_secs,
+            jitter_secs = jitter_secs,
+            "Leaderboard refresh worker starting (override via POOOL_LEADERBOARD_REFRESH_SECS, advisory-lock guarded)"
         );
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(15 * 60)); // 15 mins
-                                                                                           // Small initial delay (+ jitter) to avoid slamming the DB on immediate startup
-                                                                                           // and to stagger multiple instances.
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(interval_secs));
         tokio::time::sleep(std::time::Duration::from_secs(10 + jitter_secs)).await;
+        // Consecutive-failure counter — drives a WARN log every 3 fails in
+        // a row so ops dashboards can alert on a single structured key
+        // (`leaderboard_refresh_consecutive_failures`) instead of parsing
+        // Sentry. Resets to 0 on the next OK tick.
+        let mut consecutive_failures: u32 = 0;
         loop {
-            match crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await {
+            // Try-acquire the cluster-wide refresh lock.
+            let acquired: bool =
+                match sqlx::query_scalar::<_, bool>("SELECT pg_try_advisory_lock($1)")
+                    .bind(LEADERBOARD_REFRESH_LOCK_KEY)
+                    .fetch_one(&leaderboard_pool)
+                    .await
+                {
+                    Ok(v) => v,
+                    Err(e) => {
+                        tracing::warn!(error = %e, "advisory_lock acquire failed; skipping tick");
+                        interval.tick().await;
+                        continue;
+                    }
+                };
+
+            if !acquired {
+                tracing::debug!("leaderboard refresh skipped — lock held by another instance");
+                interval.tick().await;
+                continue;
+            }
+
+            let started = std::time::Instant::now();
+            // Refresh ALL three timeframes inside the SAME lock window so
+            // partial states are never visible to readers. Each timeframe
+            // is independent — a failure in one does NOT abort the others.
+            let alltime_res =
+                crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await;
+            let weekly_res =
+                crate::leaderboard::service::refresh_timeframed_scores(&leaderboard_pool, "weekly")
+                    .await;
+            let monthly_res = crate::leaderboard::service::refresh_timeframed_scores(
+                &leaderboard_pool,
+                "monthly",
+            )
+            .await;
+
+            // Release the lock regardless of refresh outcome.
+            let _ = sqlx::query("SELECT pg_advisory_unlock($1)")
+                .bind(LEADERBOARD_REFRESH_LOCK_KEY)
+                .execute(&leaderboard_pool)
+                .await;
+
+            // Combined: OK only if all three succeeded.
+            let combined = alltime_res.and(weekly_res).and(monthly_res);
+            match combined {
                 Ok(()) => {
+                    consecutive_failures = 0;
                     // Audit task C1: refresh the in-process `last_updated`
                     // cache so /api/leaderboard reads don't have to run
                     // SELECT MAX(computed_at).
                     *leaderboard_cache.write().await = Some(chrono::Utc::now());
+                    tracing::info!(
+                        metric_name = "leaderboard_refresh_duration_ms",
+                        elapsed_ms = started.elapsed().as_millis() as u64,
+                        timeframes = "alltime,weekly,monthly",
+                        "leaderboard refresh OK"
+                    );
                 }
                 Err(e) => {
-                    tracing::error!("Error refreshing leaderboard scores: {}", e);
+                    consecutive_failures = consecutive_failures.saturating_add(1);
+                    tracing::error!(
+                        metric_name = "leaderboard_refresh_failure",
+                        consecutive_failures = consecutive_failures,
+                        error = %e,
+                        elapsed_ms = started.elapsed().as_millis() as u64,
+                        "Error refreshing leaderboard scores"
+                    );
+                    if consecutive_failures >= 3 {
+                        tracing::warn!(
+                            metric_name = "leaderboard_refresh_consecutive_failures",
+                            value = consecutive_failures,
+                            "Leaderboard refresh has failed {} times in a row — investigate",
+                            consecutive_failures
+                        );
+                    }
+                    // Sentry capture so ops gets a page on persistent failure.
+                    sentry::capture_message(
+                        &format!("Background leaderboard refresh failed: {}", e),
+                        sentry::Level::Error,
+                    );
+                }
+            }
+            interval.tick().await;
+        }
+    });
+
+    // Leaderboard: Daily snapshot writer.
+    //
+    // One row per (user, metric, snapshot_date) gets written into
+    // `leaderboard_snapshots` (re-introduced in migration 177) so trend
+    // queries can compare a user's rank today vs N days ago without
+    // recomputing. Same advisory-lock pattern as the refresh task — only
+    // one instance writes per day.
+    //
+    // Cadence: every 24h. The first tick runs ~60s after process start so
+    // a fresh deploy still gets today's snapshot even if the wall-clock is
+    // past the usual run hour.
+    let snapshot_pool = pool.clone();
+    tokio::spawn(async move {
+        tracing::info!("Leaderboard snapshot worker starting (24h cadence, advisory-lock guarded)");
+        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(24 * 60 * 60));
+        loop {
+            let acquired: bool =
+                match sqlx::query_scalar::<_, bool>("SELECT pg_try_advisory_lock($1)")
+                    .bind(LEADERBOARD_SNAPSHOT_LOCK_KEY)
+                    .fetch_one(&snapshot_pool)
+                    .await
+                {
+                    Ok(v) => v,
+                    Err(e) => {
+                        tracing::warn!(error = %e, "snapshot lock acquire failed; skipping tick");
+                        interval.tick().await;
+                        continue;
+                    }
+                };
+            if !acquired {
+                tracing::debug!("leaderboard snapshot skipped — lock held by another instance");
+                interval.tick().await;
+                continue;
+            }
+
+            let started = std::time::Instant::now();
+            // top_n=100 keeps the daily insert at ~600 rows (6 metrics × top 100).
+            let snapshot_result =
+                crate::leaderboard::service::write_daily_snapshot(&snapshot_pool, 100).await;
+
+            let _ = sqlx::query("SELECT pg_advisory_unlock($1)")
+                .bind(LEADERBOARD_SNAPSHOT_LOCK_KEY)
+                .execute(&snapshot_pool)
+                .await;
+
+            match snapshot_result {
+                Ok(rows) => tracing::info!(
+                    rows = rows,
+                    elapsed_ms = started.elapsed().as_millis() as u64,
+                    "leaderboard snapshot OK"
+                ),
+                Err(e) => {
+                    tracing::error!(
+                        error = %e,
+                        elapsed_ms = started.elapsed().as_millis() as u64,
+                        "Error writing leaderboard snapshot"
+                    );
+                    sentry::capture_message(
+                        &format!("Leaderboard snapshot failed: {}", e),
+                        sentry::Level::Error,
+                    );
                 }
             }
             interval.tick().await;
@@ -1317,6 +1535,20 @@ pub fn build_platform_router(state: AppState) -> Router {
             "/logout",
             get(auth::routes::logout_page).post(auth::routes::logout),
         )
+        // Phase-2 P0: RFC 2369 + RFC 8058 one-click unsubscribe endpoint.
+        // GET = human-clickable confirmation page; POST = bulk-mail-pipe
+        // (Gmail / Apple Mail / Yahoo) one-click hit.
+        .route(
+            "/email/unsubscribe",
+            get(common::email::handle_unsubscribe).post(common::email::handle_unsubscribe),
+        )
+        // Resend posts delivery/open/click/bounce events here. Signature
+        // is verified via Svix HMAC; see common::email_webhooks for the
+        // RESEND_WEBHOOK_SECRET env requirement.
+        .route(
+            "/webhooks/resend",
+            post(common::email_webhooks::handle_resend_webhook),
+        )
         // ── Domain Routers (each module owns its routes) ────────────────
         .merge(assets::router())
         .merge(kyc::router())
@@ -1334,6 +1566,8 @@ pub fn build_platform_router(state: AppState) -> Router {
         .merge(admin::router())
         .merge(blog::router())
         .merge(community::router())
+        // Phase-3 P1: in-app inbox / notifications API
+        .merge(inbox::router())
         // ── Marketplace (trading engine APIs) ─────────────────────────
         .merge(marketplace::router())
         // ── Support (merged router handles /support and /api/support) ──
@@ -1369,6 +1603,10 @@ pub fn build_platform_router(state: AppState) -> Router {
         .route("/community/me", get(page_community_my_profile))
         .route("/community/me/edit", get(page_community_profile_edit))
         .route("/community/u/:user_id", get(page_community_user_profile))
+        .route(
+            "/community/circle/:slug/settings",
+            get(page_community_circle_settings),
+        )
         .route("/community/badge/:id", get(page_community_badge))
         .route(
             "/community/partials/feed/list",
@@ -3311,6 +3549,26 @@ async fn page_community_profile_edit(
         .into_response()
 }
 
+/// GET /community/circle/:slug/settings — full circle settings sub-page
+/// (replaces the in-page modal that was the only entry point before
+/// 2026-05-16). The handler just gates on auth + serves the template;
+/// per-circle authorization (owner-vs-moderator-vs-member visibility of
+/// each card) is enforced by the JS layer reading `my_role` from
+/// `/api/community/circles/by-slug/:slug`.
+async fn page_community_circle_settings(
+    Path(_slug): Path<String>,
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db).await;
+    if user.is_none() {
+        return axum::response::Redirect::to("/auth/login").into_response();
+    }
+    common::routes_helper::serve_protected(jar, &state, "community-circle-settings.html")
+        .await
+        .into_response()
+}
+
 async fn page_community_user_profile(
     Path(user_id): Path<uuid::Uuid>,
     jar: CookieJar,
@@ -3356,10 +3614,11 @@ async fn render_community_profile(
         i32,
         bool,
         bool,
+        Option<String>,
     )> = sqlx::query_as(
         "SELECT bio, post_count, follower_count, following_count, xp_total, level, \
                 level_name, login_streak, COALESCE(is_verified_owner, false), \
-                COALESCE(is_shadowbanned, false) \
+                COALESCE(is_shadowbanned, false), banner_url \
          FROM community_profiles WHERE user_id = $1",
     )
     .bind(target_user_id)
@@ -3378,7 +3637,20 @@ async fn render_community_profile(
         login_streak,
         is_verified_owner,
         is_shadowbanned,
-    ) = cp_row.unwrap_or((None, 0, 0, 0, 0, 1, "Seedling".into(), 0, false, false));
+        banner_url,
+    ) = cp_row.unwrap_or((
+        None,
+        0,
+        0,
+        0,
+        0,
+        1,
+        "Seedling".into(),
+        0,
+        false,
+        false,
+        None,
+    ));
 
     let is_following = if let Some(ref v) = viewer {
         crate::community::service::is_following(c_pool, v.id, target_user_id)
@@ -3427,6 +3699,7 @@ async fn render_community_profile(
         is_shadowbanned: bool,
         is_following: bool,
         circle: Option<CircleSummary>,
+        banner_url: Option<String>,
         base_url: String,
     }
 
@@ -3450,6 +3723,7 @@ async fn render_community_profile(
         is_shadowbanned: if is_own { is_shadowbanned } else { false },
         is_following,
         circle,
+        banner_url,
         base_url: state.config.base_url.clone(),
     };
 

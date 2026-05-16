@@ -854,6 +854,78 @@ pub async fn api_admin_emails_logs(
     Ok(Json(serde_json::json!({ "logs": logs, "filters": { "days": days } })).into_response())
 }
 
+/// GET /api/admin/emails/suppressions — list active suppressions.
+///
+/// Resend keeps its own internal suppression list, but mirroring it
+/// locally means the outbox worker can skip a bounced address without
+/// a Resend API round-trip per send and admins can audit the list from
+/// the platform UI.
+pub async fn api_admin_emails_suppressions(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "emails.view").await?;
+
+    let rows = sqlx::query(
+        "SELECT id::text, email, reason, bounce_count, last_event_at::text,
+                created_at::text, cleared_at::text
+           FROM email_suppressions
+          WHERE cleared_at IS NULL
+          ORDER BY last_event_at DESC
+          LIMIT 500",
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    let suppressions: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.get::<String, _>("id"),
+                "email": r.get::<String, _>("email"),
+                "reason": r.get::<String, _>("reason"),
+                "bounce_count": r.get::<i32, _>("bounce_count"),
+                "last_event_at": r.get::<String, _>("last_event_at"),
+                "created_at": r.get::<String, _>("created_at"),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "suppressions": suppressions })).into_response())
+}
+
+/// DELETE /api/admin/emails/suppressions/:id — manually clear a
+/// suppression (e.g. after the recipient updated their mailbox quota).
+/// Sets `cleared_at` rather than deleting so the history is preserved.
+pub async fn api_admin_emails_suppression_clear(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "emails.edit").await?;
+    let uid = ApiError::parse_uuid(&id)?;
+
+    let res = sqlx::query(
+        "UPDATE email_suppressions
+            SET cleared_at = NOW(), cleared_by_admin = $2
+          WHERE id = $1 AND cleared_at IS NULL",
+    )
+    .bind(uid)
+    .bind(admin.user.id)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    if res.rows_affected() == 0 {
+        return Err(ApiError::NotFound(
+            "Suppression not found or already cleared".to_string(),
+        ));
+    }
+
+    Ok(Json(serde_json::json!({"status":"cleared"})).into_response())
+}
+
 /// Query string for `api_admin_emails_logs`.
 #[derive(serde::Deserialize)]
 pub struct LogsQuery {

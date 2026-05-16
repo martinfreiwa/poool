@@ -1,9 +1,12 @@
 pub mod audit;
 pub mod currency;
 pub mod email;
+/// Resend → email_logs / email_suppressions webhook receiver.
+pub mod email_webhooks;
 pub mod idempotency;
 pub mod leader;
 pub mod net;
+pub mod notifications;
 pub mod routes_helper;
 pub mod sanitize;
 /// Common utilities shared across all domains.
