@@ -621,6 +621,197 @@ pub(crate) fn build_email_html(event_type: &str, metadata: &serde_json::Value) -
 </div>"#, asset = html_escape_email(asset))
         }
 
+        // ── Affiliate lifecycle (mirroring direct rewards/* send paths) ──
+        "affiliate_commission_qualified" => r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Commission qualified ✓</h2>
+  <p>Great news — the 30-day holdback period for one of your referred investments has ended. The underlying commission has upgraded from <em>under holdback</em> to <strong>payable</strong> and will be included in the next batch payout cycle.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+</div>"#.to_string(),
+
+        "affiliate_application_info_requested" => {
+            let message = metadata.get("message").and_then(|v| v.as_str())
+                .unwrap_or("Please reply with the additional details requested by our compliance team.");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Additional information requested</h2>
+  <p>Thank you for applying to the POOOL Partner Syndicate. Before we can complete the review of your application we need a bit more information from you:</p>
+  <blockquote style="background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;color:#344054;font-size:14px;line-height:1.6;">{message}</blockquote>
+  <p>Please reply to this email with the requested details. Your application will remain on file in <em>pending</em> status until we hear back.</p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at <a href="mailto:partners@poool.app" style="color:#0000FF;">partners@poool.app</a>.</p>
+</div>"#, message = html_escape_email(message))
+        }
+
+        "affiliate_tier_promoted" => {
+            let new_tier = metadata.get("new_tier").and_then(|v| v.as_str()).unwrap_or("a higher");
+            let rate_bps = metadata.get("new_rate_bps").and_then(|v| v.as_u64()).unwrap_or(0);
+            let volume_cents = metadata.get("volume_12m_cents").and_then(|v| v.as_i64()).unwrap_or(0);
+            let rate_pct = format!("{}.{:02}%", rate_bps / 100, rate_bps % 100);
+            let volume_display = format!("${:.2}", (volume_cents as f64) / 100.0);
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Tier upgrade — welcome to {tier} 🎉</h2>
+  <p>Based on your qualified referral volume in the last 12 months (<strong>{volume}</strong>), you've been promoted to the <strong>{tier}</strong> tier.</p>
+  <p>Your new commission rate is <strong>{rate}</strong> ({bps} bps) and applies to all future commissions. Earnings already accrued at the previous rate are unaffected.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Your Tier</a></p>
+</div>"#,
+                tier = html_escape_email(new_tier),
+                volume = volume_display,
+                rate = rate_pct,
+                bps = rate_bps)
+        }
+
+        "affiliate_tier_demoted" => {
+            let previous = metadata.get("previous_tier").and_then(|v| v.as_str()).unwrap_or("your previous tier");
+            let new_tier = metadata.get("new_tier").and_then(|v| v.as_str()).unwrap_or("a different");
+            let rate_bps = metadata.get("new_rate_bps").and_then(|v| v.as_u64()).unwrap_or(0);
+            let volume_cents = metadata.get("volume_12m_cents").and_then(|v| v.as_i64()).unwrap_or(0);
+            let rate_pct = format!("{}.{:02}%", rate_bps / 100, rate_bps % 100);
+            let volume_display = format!("${:.2}", (volume_cents as f64) / 100.0);
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Tier update</h2>
+  <p>Your tier has moved from <strong>{prev}</strong> to <strong>{tier}</strong> based on your qualified referral volume in the last 12 months ({volume}).</p>
+  <p>Your new commission rate is <strong>{rate}</strong> ({bps} bps) and applies to all future commissions. Earnings already accrued at the previous rate are unaffected.</p>
+  <p>To climb back, focus on qualified referrals — the next-tier threshold is shown in your dashboard.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+</div>"#,
+                prev = html_escape_email(previous),
+                tier = html_escape_email(new_tier),
+                volume = volume_display,
+                rate = rate_pct,
+                bps = rate_bps)
+        }
+
+        "affiliate_material_approved" => {
+            let material = metadata.get("material_name").and_then(|v| v.as_str()).unwrap_or("your custom marketing material");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Marketing material approved ✓</h2>
+  <p>Your custom marketing material <strong>{material}</strong> has been reviewed and approved. You may now use it in your campaigns.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+</div>"#, material = html_escape_email(material))
+        }
+
+        "affiliate_material_rejected" => {
+            let material = metadata.get("material_name").and_then(|v| v.as_str()).unwrap_or("your custom marketing material");
+            let reason = metadata.get("reason").and_then(|v| v.as_str()).unwrap_or("No reason provided");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Marketing material requires changes</h2>
+  <p>Your custom marketing material <strong>{material}</strong> could not be approved at this time.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
+  <p>Please revise and resubmit from your affiliate dashboard.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Material</a></p>
+</div>"#,
+                material = html_escape_email(material),
+                reason = html_escape_email(reason))
+        }
+
+        // ── Developer-facing ───────────────────────────────────────────
+        "developer_project_revision_required" => {
+            let project = metadata.get("project_name").and_then(|v| v.as_str()).unwrap_or("your project");
+            let notes = metadata.get("revision_notes").and_then(|v| v.as_str())
+                .unwrap_or("See the admin review notes in your developer dashboard for details.");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Action required: revision needed for {project}</h2>
+  <p>The compliance team has reviewed your project submission and requires revisions before it can be approved for the marketplace.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Review notes:</strong> {notes}</p>
+  <p><a href="https://platform.poool.app/developer/projects" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Project</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Reach the compliance team at <a href="mailto:compliance@poool.app" style="color:#0000FF;">compliance@poool.app</a>.</p>
+</div>"#,
+                project = html_escape_email(project),
+                notes = html_escape_email(notes))
+        }
+
+        // ── Admin-facing (recipient is admin@poool.app) ───────────────
+        "admin_invitation" => {
+            let invite_url = metadata.get("invite_url").and_then(|v| v.as_str())
+                .unwrap_or("https://platform.poool.app/admin/accept-invite?token=...");
+            let role = metadata.get("role").and_then(|v| v.as_str()).unwrap_or("admin");
+            let inviter = metadata.get("inviter_email").and_then(|v| v.as_str()).unwrap_or("a POOOL admin");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">You've been invited to the POOOL Admin portal</h2>
+  <p>{inviter} has invited you to join the POOOL admin team as <strong>{role}</strong>.</p>
+  <p>Accept the invitation to set your password and enable two-factor authentication. The link is valid for 72 hours.</p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">If you weren't expecting this, ignore the email — the invitation expires automatically.</p>
+</div>"#,
+                inviter = html_escape_email(inviter),
+                role = html_escape_email(role),
+                url = html_escape_email(invite_url))
+        }
+
+        "admin_new_affiliate_application" => {
+            let applicant = metadata.get("applicant_email").and_then(|v| v.as_str()).unwrap_or("a new applicant");
+            let user_id = metadata.get("user_id").and_then(|v| v.as_str()).unwrap_or("");
+            let id_row = if user_id.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;width:140px;">User ID</td><td style="padding:8px 0;color:#101828;font-family:ui-monospace,monospace;font-weight:500;">{}</td></tr>"#,
+                    html_escape_email(user_id))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">New affiliate application</h2>
+  <p>A new POOOL Partner Syndicate application has been submitted. Please log into the admin portal to review.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr><td style="padding:8px 0;color:#717680;width:140px;">From</td><td style="padding:8px 0;color:#101828;font-weight:500;">{applicant}</td></tr>
+    {id_row}
+  </table>
+  <p><a href="https://platform.poool.app/admin/affiliate-applications" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Review Application</a></p>
+</div>"#,
+                applicant = html_escape_email(applicant),
+                id_row = id_row)
+        }
+
+        "admin_payout_request" => {
+            let affiliate_email = metadata.get("affiliate_email").and_then(|v| v.as_str()).unwrap_or("an affiliate");
+            let referral_code = metadata.get("referral_code").and_then(|v| v.as_str()).unwrap_or("");
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let amount_row = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;width:160px;">Requested amount</td><td style="padding:8px 0;color:#101828;font-weight:600;">{}</td></tr>"#,
+                    html_escape_email(amount))
+            };
+            let code_row = if referral_code.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;">Referral code</td><td style="padding:8px 0;color:#101828;font-family:ui-monospace,monospace;font-weight:500;">{}</td></tr>"#,
+                    html_escape_email(referral_code))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Manual payout request</h2>
+  <p>An affiliate has requested a manual payout of their payable commissions. Review and batch in the admin rewards panel.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr><td style="padding:8px 0;color:#717680;width:160px;">Affiliate</td><td style="padding:8px 0;color:#101828;font-weight:500;">{email}</td></tr>
+    {code_row}
+    {amount_row}
+  </table>
+  <p><a href="https://platform.poool.app/admin/rewards" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Pending Payouts</a></p>
+</div>"#,
+                email = html_escape_email(affiliate_email),
+                code_row = code_row,
+                amount_row = amount_row)
+        }
+
+        "admin_new_marketing_material" => {
+            let affiliate = metadata.get("affiliate_email").and_then(|v| v.as_str()).unwrap_or("an affiliate");
+            let material = metadata.get("material_name").and_then(|v| v.as_str()).unwrap_or("a custom marketing material");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">New marketing material pending review</h2>
+  <p>{affiliate} has uploaded a custom marketing material named <strong>{material}</strong> that requires compliance review before it can be used in campaigns.</p>
+  <p><a href="https://platform.poool.app/admin/affiliate-fraud" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Compliance Panel</a></p>
+</div>"#,
+                affiliate = html_escape_email(affiliate),
+                material = html_escape_email(material))
+        }
+
         _ => format!(
             r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;"><p>You have a new notification from POOOL.</p></div>"#
         ),
@@ -683,6 +874,25 @@ pub fn subject_for_event(event_type: &str) -> &'static str {
         "operations_rejected" => "Action Required: Operations Submission Rejected",
         "operations_approved" => "Operations Approved — Pending Publish",
         "operations_published" => "Operations Published — Now Live",
+
+        // Affiliate lifecycle (mirroring direct send_email paths in rewards/*)
+        "affiliate_commission_qualified" => "You earned a new POOOL Affiliate Commission!",
+        "affiliate_application_info_requested" => {
+            "More information needed for your POOOL Affiliate Application"
+        }
+        "affiliate_tier_promoted" => "You've been promoted to a new affiliate tier!",
+        "affiliate_tier_demoted" => "Your affiliate tier has changed",
+        "affiliate_material_approved" => "Your marketing material has been approved",
+        "affiliate_material_rejected" => "Your marketing material requires changes",
+
+        // Developer-facing
+        "developer_project_revision_required" => "Revision Required for your POOOL project",
+
+        // Admin-facing (sent to admin@poool.app)
+        "admin_invitation" => "You have been invited to be a POOOL Admin",
+        "admin_new_affiliate_application" => "New Affiliate Application",
+        "admin_payout_request" => "Affiliate Commission Payout Request",
+        "admin_new_marketing_material" => "New Affiliate Marketing Material Pending Review",
 
         _ => "You Have a New Notification",
     }
@@ -876,6 +1086,19 @@ mod tests {
         "affiliate_suspended",
         "affiliate_payout_released",
         "affiliate_commission_earned",
+        "affiliate_commission_qualified",
+        "affiliate_application_info_requested",
+        "affiliate_tier_promoted",
+        "affiliate_tier_demoted",
+        "affiliate_material_approved",
+        "affiliate_material_rejected",
+        // Developer
+        "developer_project_revision_required",
+        // Internal (admin@poool.app)
+        "admin_invitation",
+        "admin_new_affiliate_application",
+        "admin_payout_request",
+        "admin_new_marketing_material",
     ];
 
     /// Events that `trigger_transactional_email` knows a subject for but
@@ -1201,5 +1424,117 @@ mod tests {
         );
         assert!(!html.contains("<script>alert"));
         assert!(html.contains("&lt;script&gt;"));
+    }
+
+    // ── Newly catalogued events (direct send_email paths) ─────────────
+
+    #[test]
+    fn affiliate_tier_promoted_renders_tier_rate_and_volume() {
+        let html = build_email_html(
+            "affiliate_tier_promoted",
+            &json!({
+                "new_tier": "Pro",
+                "new_rate_bps": 300_u64,
+                "volume_12m_cents": 1_500_000_i64,
+            }),
+        );
+        assert!(html.contains("Pro"));
+        assert!(html.contains("3.00%"));
+        assert!(html.contains("300 bps"));
+        assert!(html.contains("$15000.00"));
+    }
+
+    #[test]
+    fn affiliate_tier_demoted_shows_previous_and_new_tier() {
+        let html = build_email_html(
+            "affiliate_tier_demoted",
+            &json!({ "previous_tier": "Pro", "new_tier": "Plus", "new_rate_bps": 200_u64 }),
+        );
+        assert!(html.contains("Pro"));
+        assert!(html.contains("Plus"));
+        assert!(html.contains("2.00%"));
+    }
+
+    #[test]
+    fn affiliate_material_rejected_renders_reason_html_escaped() {
+        let html = build_email_html(
+            "affiliate_material_rejected",
+            &json!({
+                "material_name": "Q2 banner",
+                "reason": "<b>past-performance</b> claims not permitted",
+            }),
+        );
+        assert!(html.contains("Q2 banner"));
+        assert!(!html.contains("<b>past-performance</b>"));
+        assert!(html.contains("&lt;b&gt;past-performance&lt;/b&gt;"));
+    }
+
+    #[test]
+    fn developer_revision_required_renders_project_and_notes() {
+        let html = build_email_html(
+            "developer_project_revision_required",
+            &json!({
+                "project_name": "Villa Sunset",
+                "revision_notes": "Provide land title before resubmit.",
+            }),
+        );
+        assert!(html.contains("Villa Sunset"));
+        assert!(html.contains("Provide land title before resubmit."));
+    }
+
+    #[test]
+    fn admin_invitation_renders_role_and_inviter_and_url() {
+        let html = build_email_html(
+            "admin_invitation",
+            &json!({
+                "invite_url": "https://x.test/admin/accept?t=abc",
+                "role": "compliance",
+                "inviter_email": "ceo@poool.app",
+            }),
+        );
+        assert!(html.contains("https://x.test/admin/accept?t=abc"));
+        assert!(html.contains("compliance"));
+        assert!(html.contains("ceo@poool.app"));
+    }
+
+    #[test]
+    fn admin_new_affiliate_application_includes_applicant_email() {
+        let html = build_email_html(
+            "admin_new_affiliate_application",
+            &json!({ "applicant_email": "x@test.test", "user_id": "abc-123" }),
+        );
+        assert!(html.contains("x@test.test"));
+        assert!(html.contains("abc-123"));
+    }
+
+    #[test]
+    fn admin_payout_request_renders_amount_and_code() {
+        let html = build_email_html(
+            "admin_payout_request",
+            &json!({
+                "affiliate_email": "earner@test.test",
+                "referral_code": "ACME-2026",
+                "amount_display": "€420.00",
+            }),
+        );
+        assert!(html.contains("earner@test.test"));
+        assert!(html.contains("ACME-2026"));
+        assert!(html.contains("€420.00"));
+    }
+
+    #[test]
+    fn affiliate_commission_qualified_has_dashboard_cta() {
+        let html = build_email_html("affiliate_commission_qualified", &json!({}));
+        assert!(html.contains("Commission qualified"));
+        assert!(html.contains("Affiliate Dashboard"));
+    }
+
+    #[test]
+    fn affiliate_application_info_requested_renders_message() {
+        let html = build_email_html(
+            "affiliate_application_info_requested",
+            &json!({ "message": "Send your VAT number." }),
+        );
+        assert!(html.contains("Send your VAT number."));
     }
 }

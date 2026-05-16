@@ -249,6 +249,75 @@ pub const EVENT_REGISTRY: &[(&str, &str, &str, &str)] = &[
         "Custom template sent to a user segment.",
         r#"{"first_name":"Maria","email":"maria@example.test"}"#,
     ),
+    // ── Affiliate lifecycle (direct-send paths bypassing trigger_transactional_email) ──
+    (
+        "affiliate_commission_qualified",
+        "Affiliate",
+        "Holdback period ended — commission is now payable.",
+        r#"{}"#,
+    ),
+    (
+        "affiliate_application_info_requested",
+        "Affiliate",
+        "Compliance needs more information before approving the application.",
+        r#"{"message":"Please share the URL of your primary investment-content channel."}"#,
+    ),
+    (
+        "affiliate_tier_promoted",
+        "Affiliate",
+        "Affiliate volume crossed a tier threshold — rate goes up.",
+        r#"{"new_tier":"Pro","new_rate_bps":300,"volume_12m_cents":1500000}"#,
+    ),
+    (
+        "affiliate_tier_demoted",
+        "Affiliate",
+        "Affiliate volume dropped — tier rebalanced down.",
+        r#"{"previous_tier":"Pro","new_tier":"Plus","new_rate_bps":200,"volume_12m_cents":800000}"#,
+    ),
+    (
+        "affiliate_material_approved",
+        "Affiliate",
+        "Custom marketing material approved by compliance.",
+        r#"{"material_name":"Q2 Bali Villas banner"}"#,
+    ),
+    (
+        "affiliate_material_rejected",
+        "Affiliate",
+        "Custom marketing material rejected — needs revision.",
+        r#"{"material_name":"Q2 Bali Villas banner","reason":"Includes unapproved past-performance figures."}"#,
+    ),
+    // ── Developer-facing ───────────────────────────────────────────
+    (
+        "developer_project_revision_required",
+        "Developer",
+        "Compliance flagged the submitted project for revisions before publish.",
+        r#"{"project_name":"Penthouse Marbella","revision_notes":"Provide notarised land title before resubmit."}"#,
+    ),
+    // ── Internal (recipient is admin@poool.app, not a customer) ───
+    (
+        "admin_invitation",
+        "Internal",
+        "New admin invited to the platform — internal sign-up email.",
+        r#"{"invite_url":"https://platform.poool.app/admin/accept-invite?token=...","role":"compliance","inviter_email":"founder@poool.app"}"#,
+    ),
+    (
+        "admin_new_affiliate_application",
+        "Internal",
+        "Routed to ops: a new Partner Syndicate application is waiting.",
+        r#"{"applicant_email":"new@partner.test","user_id":"00000000-0000-0000-0000-000000000000"}"#,
+    ),
+    (
+        "admin_payout_request",
+        "Internal",
+        "Affiliate manually requested a payout — ops review needed.",
+        r#"{"affiliate_email":"earner@partner.test","referral_code":"ACME-2026","amount_display":"€420.00"}"#,
+    ),
+    (
+        "admin_new_marketing_material",
+        "Internal",
+        "Affiliate uploaded a custom marketing asset — compliance review needed.",
+        r#"{"affiliate_email":"earner@partner.test","material_name":"Q2 Bali Villas banner"}"#,
+    ),
 ];
 
 //
@@ -1220,6 +1289,11 @@ mod tests {
         let registry_events: std::collections::HashSet<&str> =
             EVENT_REGISTRY.iter().map(|(e, _, _, _)| *e).collect();
         for event in [
+            "welcome",
+            "verify_email",
+            "password_reset",
+            "2fa_setup",
+            "new_login",
             "kyc_approved",
             "kyc_rejected",
             "kyc_submitted",
@@ -1251,6 +1325,17 @@ mod tests {
             "affiliate_suspended",
             "affiliate_payout_released",
             "affiliate_commission_earned",
+            "affiliate_commission_qualified",
+            "affiliate_application_info_requested",
+            "affiliate_tier_promoted",
+            "affiliate_tier_demoted",
+            "affiliate_material_approved",
+            "affiliate_material_rejected",
+            "developer_project_revision_required",
+            "admin_invitation",
+            "admin_new_affiliate_application",
+            "admin_payout_request",
+            "admin_new_marketing_material",
         ] {
             assert!(
                 registry_events.contains(event),
@@ -1275,6 +1360,8 @@ mod tests {
             "Support",
             "Operations",
             "Marketing",
+            "Developer",
+            "Internal",
         ]
         .iter()
         .copied()
