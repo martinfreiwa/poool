@@ -123,6 +123,17 @@ This is a security or transactional message related to your POOOL account and ca
 </p>"#
     };
 
+    // Brand font stack:
+    //   * 'TT Norms Pro' — the real brand font, picked up by recipients
+    //     who happen to have it installed (rare but it's free for us).
+    //   * 'Inter' — Google Font, closest open-source match to TT Norms
+    //     Pro's geometric sans-serif feel. Pulled via <link> below.
+    //     Most clients ignore @import inside <head>; Apple Mail, iOS
+    //     Mail and Outlook 365 honour <link>. Gmail web silently strips
+    //     it and falls back to the next entry.
+    //   * System stack — last-resort defaults that ship on every OS.
+    const BRAND_FONT: &str = "'Inter','TT Norms Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+
     format!(
         r#"<!doctype html>
 <html lang="en">
@@ -132,18 +143,27 @@ This is a security or transactional message related to your POOOL account and ca
 <meta name="color-scheme" content="light only" />
 <meta name="supported-color-schemes" content="light only" />
 <title>POOOL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Inter @ 400/600/700/900 — closest free font to TT Norms Pro. Mail
+     clients that don't honour <link> fall back to the system stack
+     declared inline on every element below. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
 <style>
   /* Mobile tweaks — only padding shrinks, never layout. */
   @media only screen and (max-width: 600px) {{
     .px {{ padding-left: 20px !important; padding-right: 20px !important; }}
     .pt {{ padding-top: 24px !important; }}
   }}
-  /* Force every link in the body to use the brand accent; many email
-     clients otherwise override <a> styling. */
+  /* Brand-locked link colour — every email client tends to recolour <a>. */
   a {{ color: #0000FF; }}
+  /* Brand font everywhere — wins over the body inline font-family. */
+  body, table, td, p, h1, h2, h3, h4, ul, ol, li, a {{
+    font-family: {brand_font};
+  }}
 </style>
 </head>
-<body style="margin:0;padding:0;background:#FAFAFA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#181D27;-webkit-font-smoothing:antialiased;">
+<body style="margin:0;padding:0;background:#FAFAFA;font-family:{brand_font};color:#181D27;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;">
   <!-- Hidden preheader — parsed by Gmail / Apple Mail as the inbox preview snippet. -->
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FAFAFA;opacity:0;">
     {preheader}
@@ -153,14 +173,22 @@ This is a security or transactional message related to your POOOL account and ca
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E9EAEB;box-shadow:0 1px 2px rgba(10,13,18,0.05);">
 
-        <!-- ─── Header — electric blue + mint wordmark (signature POOOL combo) ─── -->
-        <tr><td class="px" style="padding:28px 32px;background:#0000FF;">
+        <!-- ─── Header — image-free POOOL wordmark, mint on brand-blue ─── -->
+        <!--
+          The wordmark is rendered as live text so:
+            * no image hosting / Resend asset CDN required,
+            * dark-mode mail clients can't invert our brand,
+            * accessibility tools can read it.
+          Visual character matches the SVG logo: ultra-bold weight, tight
+          tracking, all-caps, the "three O" rhythm that IS the brand mark.
+        -->
+        <tr><td class="px" style="padding:28px 32px;background:#0000FF;text-align:left;font-family:{brand_font};">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
             <tr>
-              <td align="left" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-                <a href="https://platform.poool.app/" style="text-decoration:none;color:#98FB96;letter-spacing:0.18em;font-weight:800;font-size:20px;">POOOL</a>
+              <td align="left" valign="middle" style="font-family:{brand_font};">
+                <a href="https://platform.poool.app/" style="text-decoration:none;color:#98FB96;font-weight:900;font-size:26px;letter-spacing:0.04em;line-height:1;font-family:{brand_font};display:inline-block;">POOOL</a>
               </td>
-              <td align="right" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;color:#D4FFE9;letter-spacing:0.06em;text-transform:uppercase;">
+              <td align="right" valign="middle" style="font-family:{brand_font};font-size:10px;font-weight:600;color:#D4FFE9;letter-spacing:0.14em;text-transform:uppercase;line-height:1.4;">
                 Tokenised real-asset investing
               </td>
             </tr>
@@ -168,18 +196,18 @@ This is a security or transactional message related to your POOOL account and ca
         </td></tr>
 
         <!-- ─── Body ─── -->
-        <tr><td class="px pt" style="padding:36px 40px 28px;font-size:15px;line-height:1.6;color:#181D27;">
+        <tr><td class="px pt" style="padding:36px 40px 28px;font-family:{brand_font};font-size:15px;line-height:1.6;color:#181D27;">
 {inner}
         </td></tr>
 
         <!-- ─── Footer ─── -->
-        <tr><td class="px" style="padding:24px 32px 32px;background:#FAFAFA;border-top:1px solid #E9EAEB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.55;color:#535862;">
+        <tr><td class="px" style="padding:24px 32px 32px;background:#FAFAFA;border-top:1px solid #E9EAEB;font-family:{brand_font};font-size:11px;line-height:1.55;color:#535862;">
           {unsubscribe_block}
-          <p style="margin:8px 0 4px;">
+          <p style="margin:8px 0 4px;font-family:{brand_font};">
             POOOL Capital GmbH · Maximilianstraße 13 · 80539 München · Germany ·
             <a href="mailto:support@poool.app" style="color:#535862;text-decoration:underline;">support@poool.app</a>
           </p>
-          <p style="margin:0;color:#717680;">© POOOL Capital GmbH. All rights reserved.</p>
+          <p style="margin:0;color:#717680;font-family:{brand_font};">© POOOL Capital GmbH. All rights reserved.</p>
         </td></tr>
 
       </table>
@@ -190,6 +218,7 @@ This is a security or transactional message related to your POOOL account and ca
         preheader = html_escape_email(opts.preheader),
         inner = inner,
         unsubscribe_block = unsubscribe_block,
+        brand_font = BRAND_FONT,
     )
 }
 
