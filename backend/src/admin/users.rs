@@ -15,17 +15,26 @@ pub async fn api_admin_users(
     admin.require_permission(&state.db, "users.view").await?;
     admin.require_permission(&state.db, "pii.view").await?;
 
-    // Audit every PII read — admin listing exposes emails, names, balances
-    // and KYC state. We want after-the-fact forensics on who looked at
-    // what, even without a mutation.
-    let _ = sqlx::query(
+    // Audit every PII read — admin listing exposes emails, names,
+    // balances and KYC state. We want after-the-fact forensics on who
+    // looked at what, even without a mutation.
+    //
+    // Audit M#7: this INSERT is fail-closed. If we can't record the
+    // PII access (DB pressure, audit_logs table down, etc.) we must
+    // refuse the read — silent forensics gaps are worse than a
+    // temporary outage.
+    sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
            VALUES ($1, 'admin.pii_access', 'users', $2)"#,
     )
     .bind(admin.user.id)
     .bind(serde_json::json!({"scope": "list", "endpoint": "GET /api/admin/users"}))
     .execute(&state.db)
-    .await;
+    .await
+    .map_err(|e| {
+        tracing::error!(error = %e, "PII-access audit write failed; refusing read");
+        ApiError::Internal("Audit log unavailable; PII read blocked".into())
+    })?;
     // Verify the user has admin privileges
     // Fetch users with profiles, roles, KYC, and balance in a single query
     // to avoid N+1 problem (previously 3 extra queries per user)
