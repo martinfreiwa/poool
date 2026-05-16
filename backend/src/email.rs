@@ -9,7 +9,187 @@ use tracing::info;
 /// Build an HTML email body for a transactional event. Exposed `pub(crate)`
 /// so the admin preview + workflows-tab endpoints can render arbitrary
 /// events against sample metadata without going through the database.
+///
+/// The body returned here goes through `wrap_with_shell` at the end so
+/// every event ships in the same POOOL branded template — header with
+/// logo, the event-specific content, and a footer with company info +
+/// unsubscribe link (for optional events).
 pub(crate) fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
+    let inner_or_full = build_event_body(event_type, metadata);
+    let inner = strip_legacy_wrapper(&inner_or_full);
+    let is_optional = crate::common::email::is_optional_email_event(event_type);
+    let preheader = preheader_for_event(event_type);
+    wrap_with_shell(&inner, ShellOpts {
+        is_optional,
+        preheader,
+    })
+}
+
+/// Short hidden preview text shown in the inbox before the body is opened.
+/// Gmail / Apple Mail render this as the line after the subject. Defaults
+/// to a generic line if no event-specific copy is registered.
+fn preheader_for_event(event_type: &str) -> &'static str {
+    match event_type {
+        "welcome" => "Your POOOL account is live — let's get you investing.",
+        "verify_email" => "Confirm your email address to activate POOOL.",
+        "password_reset" => "Reset your POOOL password. Link expires in 1 hour.",
+        "2fa_setup" => "Two-factor authentication is now protecting your account.",
+        "new_login" => "We noticed a sign-in to your POOOL account.",
+        "email_changed" => "Your account email address was just changed.",
+        "password_changed" => "Your account password was just changed.",
+        "2fa_disabled" => "Two-factor authentication is off — re-enable now.",
+        "kyc_approved" => "Identity verified — you can now invest on POOOL.",
+        "kyc_rejected" => "Your identity verification needs another look.",
+        "kyc_submitted" => "We received your verification documents.",
+        "deposit_confirmed" => "Your deposit has been credited to your wallet.",
+        "deposit_submitted" => "We received your proof of transfer.",
+        "withdraw_requested" => "Your withdrawal request is in review.",
+        "withdraw_approved" => "Your withdrawal is on its way.",
+        "withdraw_rejected" => "Your withdrawal request could not be processed.",
+        "withdrawal_processed" => "Your withdrawal has settled.",
+        "large_deposit_received" => "Compliance needs source-of-funds documentation.",
+        "order_confirmation" => "Your investment order is confirmed.",
+        "investment_confirmed" => "Your fractional tokens have been minted.",
+        "invoice_available" => "Your invoice is ready to download.",
+        "asset_funded" => "An asset you follow is 100% funded.",
+        "asset_matured" => "An asset in your portfolio has matured.",
+        "dividend_payout" => "A dividend has been credited to your POOOL wallet.",
+        "dividend_announced" => "A new distribution has been declared.",
+        "monthly_statement" => "Your monthly POOOL statement is ready.",
+        "trade_executed" => "Your trade has been executed.",
+        "order_filled" => "Your limit order matched at target price.",
+        "order_cancelled" => "Your order has been cancelled.",
+        "listing_expired" => "Your secondary-market listing expired.",
+        "tax_document_available" => "Your annual tax summary is ready to download.",
+        "terms_updated" => "POOOL Terms of Service have been updated.",
+        "abandoned_cart" => "Pick up where you left off — your investment is still open.",
+        "win_back" => "What's new on POOOL since your last visit.",
+        "milestone_first_investment" => "Welcome to investing with POOOL.",
+        "milestone_anniversary" => "Thanks for another year on POOOL.",
+        "weekly_digest" => "Your weekly POOOL portfolio summary.",
+        "monthly_affiliate_summary" => "Your monthly affiliate performance.",
+        "referral_signed_up" => "Someone you referred just joined POOOL.",
+        "support_ticket_reply" => "You have a new reply on your support ticket.",
+        "support_ticket_resolved" => "Your support ticket has been resolved.",
+        _ => "An update from POOOL",
+    }
+}
+
+/// Options for `wrap_with_shell`. Kept as a struct so additions don't break callers.
+pub(crate) struct ShellOpts {
+    /// When `true`, the footer includes a visible unsubscribe link in addition
+    /// to the `List-Unsubscribe` header. Marketing / drip / non-essential mail.
+    pub is_optional: bool,
+    /// Inbox preview text (rendered hidden but parsed by Gmail / Apple Mail).
+    pub preheader: &'static str,
+}
+
+/// Strip the legacy outer `<div style="font-family:sans-serif;max-width:600px;...">`
+/// wrapper from a body, leaving just the inner content. Bodies that don't
+/// match the pattern are returned unchanged.
+fn strip_legacy_wrapper(body: &str) -> String {
+    let trimmed = body.trim();
+    const LEGACY_OPEN: &str =
+        r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">"#;
+    if let Some(rest) = trimmed.strip_prefix(LEGACY_OPEN) {
+        if let Some(inner) = rest.trim_end().strip_suffix("</div>") {
+            return inner.trim().to_string();
+        }
+    }
+    trimmed.to_string()
+}
+
+/// Wrap event-specific inner HTML in the POOOL branded email shell —
+/// header with logo, white content card, gray footer with legal info.
+/// Email-client safe: tables-only layout, inline styles, no SVG, no
+/// background-image, no flexbox, max-width 600px.
+pub(crate) fn wrap_with_shell(inner: &str, opts: ShellOpts) -> String {
+    let unsubscribe_block = if opts.is_optional {
+        r#"<p style="margin:0 0 8px;color:#717680;font-size:11px;">
+You're receiving this because you opted in to POOOL updates. Manage email preferences in your
+<a href="https://platform.poool.app/settings" style="color:#717680;text-decoration:underline;">account settings</a>
+or use the one-click unsubscribe link in your email client.
+</p>"#
+    } else {
+        r#"<p style="margin:0 0 8px;color:#717680;font-size:11px;">
+This is a security or transactional message related to your POOOL account and cannot be unsubscribed from.
+</p>"#
+    };
+
+    format!(
+        r#"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light only" />
+<meta name="supported-color-schemes" content="light only" />
+<title>POOOL</title>
+<style>
+  /* Mobile tweaks — only padding shrinks, never layout. */
+  @media only screen and (max-width: 600px) {{
+    .px {{ padding-left: 20px !important; padding-right: 20px !important; }}
+    .pt {{ padding-top: 24px !important; }}
+  }}
+  /* Force every link in the body to use the brand accent; many email
+     clients otherwise override <a> styling. */
+  a {{ color: #0000FF; }}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#F4F4F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#101828;-webkit-font-smoothing:antialiased;">
+  <!-- Hidden preheader — parsed by Gmail / Apple Mail as the inbox preview snippet. -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#F4F4F5;opacity:0;">
+    {preheader}
+  </div>
+
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#F4F4F5;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,0.04);">
+
+        <!-- ─── Header ─── -->
+        <tr><td class="px" style="padding:28px 32px;background:#01011C;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td align="left" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+                <a href="https://platform.poool.app/" style="text-decoration:none;color:#FFFFFF;letter-spacing:0.18em;font-weight:800;font-size:18px;">POOOL</a>
+              </td>
+              <td align="right" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;color:#9BA3AF;letter-spacing:0.06em;text-transform:uppercase;">
+                Tokenised real-asset investing
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- ─── Body ─── -->
+        <tr><td class="px pt" style="padding:36px 40px 28px;font-size:15px;line-height:1.6;color:#101828;">
+{inner}
+        </td></tr>
+
+        <!-- ─── Footer ─── -->
+        <tr><td class="px" style="padding:24px 32px 32px;background:#FAFAFA;border-top:1px solid #E9EAEB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.55;color:#717680;">
+          {unsubscribe_block}
+          <p style="margin:8px 0 4px;">
+            POOOL Capital GmbH · Maximilianstraße 13 · 80539 München · Germany ·
+            <a href="mailto:support@poool.app" style="color:#717680;text-decoration:underline;">support@poool.app</a>
+          </p>
+          <p style="margin:0;color:#9BA3AF;">© POOOL Capital GmbH. All rights reserved.</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"#,
+        preheader = html_escape_email(opts.preheader),
+        inner = inner,
+        unsubscribe_block = unsubscribe_block,
+    )
+}
+
+/// Renders the event-specific inner content. The outer shell is added by
+/// `build_email_html`. New events: add a match arm that returns the inner
+/// HTML — the header + footer come for free.
+fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
     match event_type {
         // ── Auth / security ───────────────────────────────────────────
         //
