@@ -2487,8 +2487,7 @@ mod tests {
             let html = build_email_html(event, &json!({}));
             let has_poool_link = html.contains("platform.poool.app")
                 || html.contains("poool.app/")
-                || html.contains("mailto:")
-                    && (html.contains("@poool.app"));
+                || html.contains("mailto:") && (html.contains("@poool.app"));
             assert!(
                 has_poool_link,
                 "event '{event}' body has no link back to POOOL — \

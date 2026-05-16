@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO affiliate_commissions\n              (referral_id, affiliate_id, link_id, attribution_user_id, payout_user_id,\n               source_order_id, gross_amount_cents, provisional_amount_cents, currency, status, tier_at_execution)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8,\n                   COALESCE((SELECT currency FROM orders WHERE id = $6), 'USD'),\n                   'provisionally_tracked', $9)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Int8",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "668c57a05590e1c5d2f0cb1c31b476a18420ba3496f668f1714a5be067d1fe9c"
+}
