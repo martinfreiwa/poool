@@ -305,20 +305,60 @@ function setupBulkActions() {
 async function bulkAction(endpoint, method, verbPast) {
   const ids = [...selectedIds];
   if (ids.length === 0) return;
-  const body = endpoint === "cancel"
-    ? { reason: "Bulk admin cancel" }
-    : endpoint === "confirm"
-      ? { notes: "Bulk admin confirm" }
-      : null;
+
+  // P1-9 — confirm + cancel now have a one-shot server endpoint
+  // (`/api/admin/deposits/bulk`) that processes the whole batch in a
+  // single request and returns per-id results. Extend (admin-only
+  // expiry bump) still uses the per-row route.
+  if (endpoint === "confirm" || endpoint === "cancel") {
+    showToast(`Updating ${ids.length} deposit(s)…`, "info");
+    const body = { ids, action: endpoint };
+    if (endpoint === "cancel") body.reason = "Bulk admin cancel";
+    if (endpoint === "confirm") body.notes = "Bulk admin confirm";
+    try {
+      const r = await fetch("/api/admin/deposits/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        showToast(err.error || "Bulk request failed.", "danger");
+        return;
+      }
+      const data = await r.json();
+      if (data.failed > 0) {
+        showToast(
+          `${data.succeeded} ${verbPast.toLowerCase()}, ${data.failed} failed.`,
+          "danger",
+        );
+      } else {
+        showToast(`${data.succeeded} deposit(s) ${verbPast.toLowerCase()}.`, "success");
+      }
+    } catch (e) {
+      showToast("Network error during bulk action.", "danger");
+      return;
+    }
+    selectedIds.clear();
+    await loadDeposits();
+    return;
+  }
+
+  // Legacy per-row fan-out for endpoints without a bulk handler.
+  const body = null;
   showToast(`Updating ${ids.length} deposit(s)…`, "info");
   const results = await Promise.allSettled(
-    ids.map((id) => fetch(`/api/admin/deposits/${id}/${endpoint}`, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
-    })),
+    ids.map((id) =>
+      fetch(`/api/admin/deposits/${id}/${endpoint}`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    ),
   );
-  const failed = results.filter((r) => r.status === "rejected" || (r.value && !r.value.ok)).length;
+  const failed = results.filter(
+    (r) => r.status === "rejected" || (r.value && !r.value.ok),
+  ).length;
   if (failed > 0) showToast(`${failed} update(s) failed.`, "danger");
   else showToast(`${ids.length} deposit(s) ${verbPast.toLowerCase()}.`, "success");
   selectedIds.clear();
