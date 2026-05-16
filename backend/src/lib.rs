@@ -86,6 +86,8 @@ pub mod legal;
 /// Marketplace module — secondary market trading engine for tokenized assets.
 #[allow(missing_docs)]
 pub mod marketplace;
+/// Prometheus metrics registry + `/metrics` endpoint.
+pub mod metrics;
 #[allow(missing_docs)]
 pub mod payment_methods;
 #[allow(missing_docs)]
@@ -467,6 +469,10 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(compliance::rescreening::run_rescreening_worker(
         pool.clone(),
     ));
+
+    // Refreshes Prometheus gauges that don't update on the mutation path
+    // (e.g. compliance_alerts_open).
+    tokio::spawn(metrics::run_metrics_refresh_worker(pool.clone()));
 
     // Affiliate holdback worker (runs every 6 hours)
     tokio::spawn(rewards::service::run_affiliate_holdback_worker(
@@ -1401,6 +1407,7 @@ pub fn build_platform_router(state: AppState) -> Router {
         )
         .nest_service("/uploads", ServeDir::new("../uploads"))
         .route("/health", get(handle_health))
+        .route("/metrics", get(handle_metrics))
         .fallback_service(
             ServeDir::new("../frontend/platform")
                 .fallback(ServeFile::new("../frontend/platform/404.html")),
@@ -2816,6 +2823,32 @@ async fn redirect_www_property(Path(slug): Path<String>) -> Redirect {
 /// Probes the database (via `SELECT 1`) and Redis (via `PING`) to determine
 /// system health. Returns 200 if the DB is reachable, 503 otherwise.
 /// Redis is optional — if not configured, health is still "ok".
+/// Prometheus text-exposition endpoint. Scraped by the Prometheus server
+/// at the cadence configured in infra/prometheus/scrape.yml. No auth —
+/// follow the Prometheus convention of restricting access at the network
+/// edge (k8s NetworkPolicy or VPC SG).
+async fn handle_metrics() -> impl IntoResponse {
+    match crate::metrics::render() {
+        Ok(body) => (
+            axum::http::StatusCode::OK,
+            [(
+                axum::http::header::CONTENT_TYPE,
+                "text/plain; version=0.0.4; charset=utf-8",
+            )],
+            body,
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("metrics render failed: {}", e);
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "metrics_error",
+            )
+                .into_response()
+        }
+    }
+}
+
 async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
     let mut db_ok = false;
     let mut redis_status = "not_configured";

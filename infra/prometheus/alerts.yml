@@ -1,0 +1,142 @@
+## Prometheus alert rules for the POOOL wallet + compliance stack (P0-5).
+##
+## Severity guide:
+##   page    — pages oncall immediately (24/7)
+##   ticket  — opens a ticket / Slack ping during business hours
+##   info    — observe-only
+
+groups:
+  - name: wallet_deposits
+    interval: 1m
+    rules:
+      # Sudden drop in deposit volume — either marketing channel down, or
+      # the deposit flow itself broke. Compare current hour to previous.
+      - alert: WalletDepositRateDrop
+        expr: |
+          (sum(rate(wallet_deposits_total{outcome="initiated"}[10m]))
+            < 0.5 * sum(rate(wallet_deposits_total{outcome="initiated"}[1h] offset 1h)))
+          AND sum(rate(wallet_deposits_total{outcome="initiated"}[1h] offset 1h)) > 0
+        for: 15m
+        labels:
+          severity: ticket
+          team: payments
+        annotations:
+          summary: "Deposit initiation rate dropped >50% vs the previous hour"
+          runbook: docs/runbooks/wallet-deposit-rate-drop.md
+
+      # Deposit submission failing while initiation succeeds — proof-upload
+      # pipeline issue (e.g. GCS outage).
+      - alert: WalletDepositSubmitGap
+        expr: |
+          sum(rate(wallet_deposits_total{outcome="initiated"}[15m])) > 0.1
+          AND sum(rate(wallet_deposits_total{outcome="submitted"}[15m]))
+              < 0.3 * sum(rate(wallet_deposits_total{outcome="initiated"}[15m]))
+        for: 20m
+        labels:
+          severity: page
+          team: payments
+        annotations:
+          summary: "Most users start a deposit but few submit proof — likely upload pipeline broken"
+
+      # Stuck deposits with proof attached — users wired AND uploaded but
+      # admin hasn't matched within SLA.
+      - alert: WalletStuckDepositsWithProof
+        expr: wallet_reconciliation_findings{finding="deposits_stuck_with_proof"} > 5
+        for: 30m
+        labels:
+          severity: page
+          team: compliance
+        annotations:
+          summary: "{{ $value }} deposits with proof waiting >24h for admin verification"
+
+      - alert: WalletAutoExpiredSpike
+        expr: increase(wallet_deposits_total{outcome="expired"}[1h]) > 20
+        for: 5m
+        labels:
+          severity: ticket
+          team: payments
+        annotations:
+          summary: "Reconciliation auto-expired >20 deposits in the last hour"
+
+  - name: wallet_withdrawals
+    interval: 1m
+    rules:
+      - alert: WalletWithdrawalsStuckSlaBreach
+        expr: wallet_reconciliation_findings{finding="withdrawals_stuck"} > 3
+        for: 15m
+        labels:
+          severity: page
+          team: ops
+        annotations:
+          summary: "{{ $value }} withdrawals pending >48h — funds frozen for the user"
+          runbook: docs/runbooks/withdrawal-stuck.md
+
+      # Safety pipeline rejecting most withdrawals — usually means a tighter
+      # cap landed or velocity counter is broken.
+      - alert: WalletWithdrawalsMostlyBlocked
+        expr: |
+          sum(rate(wallet_withdrawals_total{outcome=~"blocked_.*"}[10m]))
+            > 2 * sum(rate(wallet_withdrawals_total{outcome="requested"}[10m]))
+          AND sum(rate(wallet_withdrawals_total[10m])) > 0.05
+        for: 15m
+        labels:
+          severity: ticket
+          team: payments
+        annotations:
+          summary: "Withdrawal safety pipeline rejecting more requests than it lets through"
+
+  - name: compliance
+    interval: 1m
+    rules:
+      - alert: ComplianceCriticalAlertOpen
+        expr: compliance_alerts_open{severity="critical"} > 0
+        for: 1m
+        labels:
+          severity: page
+          team: compliance
+        annotations:
+          summary: "{{ $value }} critical compliance alert(s) require triage NOW (sanctions hits)"
+
+      - alert: ComplianceAlertBacklog
+        expr: sum(compliance_alerts_open{severity=~"high|critical"}) > 10
+        for: 30m
+        labels:
+          severity: ticket
+          team: compliance
+        annotations:
+          summary: "More than 10 high-priority compliance alerts open"
+
+      - alert: ComplianceScreeningErrorRate
+        expr: |
+          sum(rate(compliance_screening_runs_total{outcome="error"}[30m]))
+            > 0.1 * sum(rate(compliance_screening_runs_total[30m]))
+        for: 30m
+        labels:
+          severity: ticket
+          team: compliance
+        annotations:
+          summary: "Sanctions provider failing >10% of re-screening calls"
+
+  - name: backend_http
+    interval: 30s
+    rules:
+      - alert: BackendHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status_class="5xx"}[5m]))
+            > 0.02 * sum(rate(http_requests_total[5m]))
+          AND sum(rate(http_requests_total[5m])) > 1
+        for: 10m
+        labels:
+          severity: page
+          team: platform
+        annotations:
+          summary: "Backend 5xx rate above 2%"
+
+      - alert: BackendLatencyP99
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 15m
+        labels:
+          severity: ticket
+          team: platform
+        annotations:
+          summary: "Backend p99 latency above 2s"

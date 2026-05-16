@@ -1,0 +1,31 @@
+## Prometheus scrape configuration for POOOL backend (P0-5).
+##
+## Deploy this as part of your Prometheus server's scrape_configs block.
+## The backend exposes /metrics with no auth; restrict at the network
+## edge (k8s NetworkPolicy, VPC SG, ingress controller allowlist).
+
+scrape_configs:
+  - job_name: poool-backend
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets:
+          - poool-backend:8888
+        labels:
+          service: poool-backend
+          env: production
+
+  # Lower cadence for compliance gauges — they only change on the
+  # background worker tick. Saves scrape budget when you have many
+  # backend replicas.
+  - job_name: poool-backend-compliance
+    metrics_path: /metrics
+    scrape_interval: 2m
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'compliance_alerts_open|wallet_reconciliation_findings'
+        action: keep
+    static_configs:
+      - targets:
+          - poool-backend:8888

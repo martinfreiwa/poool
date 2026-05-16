@@ -49,9 +49,8 @@ const SCAN_LIMIT: i64 = 500;
 /// Spawn-target for `tokio::spawn` in `lib.rs`. Loops forever; errors are
 /// logged + reported to Sentry but do not stop the worker.
 pub async fn run_reconciliation_worker(pool: PgPool) {
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(
-        RECONCILIATION_INTERVAL_SECS,
-    ));
+    let mut interval =
+        tokio::time::interval(std::time::Duration::from_secs(RECONCILIATION_INTERVAL_SECS));
     // Skip the immediate tick — give the server a few seconds to settle.
     interval.tick().await;
 
@@ -94,6 +93,18 @@ pub async fn run_once(pool: &PgPool) -> Result<ReconciliationReport, sqlx::Error
     report.deposits_stuck_no_proof = no_proof;
     report.deposits_stuck_with_proof = with_proof;
     report.withdrawals_stuck = count_stuck_withdrawals(pool).await?;
+
+    // Mirror the run findings into Prometheus gauges so Grafana shows
+    // both the latest state and rate-of-change.
+    crate::metrics::record_reconciliation_snapshot(
+        report.deposits_expired,
+        report.deposits_stuck_no_proof,
+        report.deposits_stuck_with_proof,
+        report.withdrawals_stuck,
+    );
+    if report.deposits_expired > 0 {
+        crate::metrics::record_deposit(crate::metrics::deposit_outcome::EXPIRED, "USD", 0);
+    }
 
     Ok(report)
 }

@@ -398,8 +398,7 @@ pub async fn handle_deposit(
                         }
                         Ok(None) => break,
                         Err(_) => {
-                            return Redirect::to("/wallet?error=proof_read_failed")
-                                .into_response();
+                            return Redirect::to("/wallet?error=proof_read_failed").into_response();
                         }
                     }
                 }
@@ -754,6 +753,12 @@ pub async fn api_deposit_init(
         idempotency::commit_json(&state.db, k, StatusCode::OK, &response_body).await;
     }
 
+    crate::metrics::record_deposit(
+        crate::metrics::deposit_outcome::INITIATED,
+        "USD",
+        amount_cents,
+    );
+
     Json(response_body).into_response()
 }
 
@@ -843,18 +848,11 @@ pub async fn handle_deposit_submit(
     .ok()
     .flatten();
 
-    let (
-        owner,
-        status,
-        amount_cents,
-        provider_ref,
-        existing_proof,
-        sof_reason,
-        existing_sof_doc,
-    ) = match deposit_row {
-        Some(row) => row,
-        None => return release_and_redirect("/wallet?error=deposit_not_found").await,
-    };
+    let (owner, status, amount_cents, provider_ref, existing_proof, sof_reason, existing_sof_doc) =
+        match deposit_row {
+            Some(row) => row,
+            None => return release_and_redirect("/wallet?error=deposit_not_found").await,
+        };
 
     if owner != user.id {
         return release_and_redirect("/wallet?error=deposit_not_found").await;
@@ -888,8 +886,7 @@ pub async fn handle_deposit_submit(
                     match field.chunk().await {
                         Ok(Some(chunk)) => {
                             if bytes.len().saturating_add(chunk.len()) > MAX_DEPOSIT_PROOF_BYTES {
-                                return release_and_redirect("/wallet?error=proof_too_large")
-                                    .await;
+                                return release_and_redirect("/wallet?error=proof_too_large").await;
                             }
                             bytes.extend_from_slice(&chunk);
                         }
@@ -920,8 +917,7 @@ pub async fn handle_deposit_submit(
                         }
                         Ok(None) => break,
                         Err(_) => {
-                            return release_and_redirect("/wallet?error=sof_doc_read_failed")
-                                .await;
+                            return release_and_redirect("/wallet?error=sof_doc_read_failed").await;
                         }
                     }
                 }
@@ -942,8 +938,7 @@ pub async fn handle_deposit_submit(
     // The threshold is admin-configurable; reload to pick up changes since
     // the row was created.
     let bank = crate::payments::service::fetch_deposit_bank_settings(&state.db).await;
-    let needs_sof_doc =
-        amount_cents >= bank.sof_doc_threshold_cents && existing_sof_doc.is_none();
+    let needs_sof_doc = amount_cents >= bank.sof_doc_threshold_cents && existing_sof_doc.is_none();
     if needs_sof_doc && sof_doc_bytes.is_none() {
         return release_and_redirect("/wallet?error=sof_doc_required").await;
     }
@@ -1082,6 +1077,12 @@ pub async fn handle_deposit_submit(
         idempotency::commit_redirect(&state.db, k, &success_url).await;
     }
 
+    crate::metrics::record_deposit(
+        crate::metrics::deposit_outcome::SUBMITTED,
+        "USD",
+        amount_cents,
+    );
+
     Redirect::to(&success_url).into_response()
 }
 
@@ -1100,25 +1101,22 @@ pub async fn handle_withdraw(
     // ── Idempotency check ───────────────────────────────────────
     // Critical for withdrawals: a double-submit could deduct twice and
     // create two pending withdrawal_requests rows.
-    let idem_key = match idempotency::try_reserve(
-        &state.db,
-        &headers,
-        user.id,
-        "/wallet/withdraw",
-        "POST",
-    )
-    .await
-    {
-        Reservation::NoKey => None,
-        Reservation::Reserved(k) => Some(k),
-        Reservation::CachedRedirect { location } => return Redirect::to(&location).into_response(),
-        Reservation::CachedJson { .. } => {
-            return Redirect::to("/wallet?withdraw_requested=true").into_response();
-        }
-        Reservation::InProgress => {
-            return Redirect::to("/wallet?error=in_progress").into_response();
-        }
-    };
+    let idem_key =
+        match idempotency::try_reserve(&state.db, &headers, user.id, "/wallet/withdraw", "POST")
+            .await
+        {
+            Reservation::NoKey => None,
+            Reservation::Reserved(k) => Some(k),
+            Reservation::CachedRedirect { location } => {
+                return Redirect::to(&location).into_response()
+            }
+            Reservation::CachedJson { .. } => {
+                return Redirect::to("/wallet?withdraw_requested=true").into_response();
+            }
+            Reservation::InProgress => {
+                return Redirect::to("/wallet?error=in_progress").into_response();
+            }
+        };
 
     let release_and_redirect = |url: &str| {
         let db = state.db.clone();
@@ -1139,6 +1137,10 @@ pub async fn handle_withdraw(
         let kyc = crate::kyc::service::get_kyc_status(&state.db, user.id).await;
         let kyc_ok = matches!(&kyc, Ok(r) if matches!(r.status.as_str(), "approved" | "verified" | "completed"));
         if !kyc_ok {
+            crate::metrics::record_withdrawal(
+                crate::metrics::withdraw_outcome::BLOCKED_SAFETY,
+                amount_cents,
+            );
             return release_and_redirect("/wallet?error=kyc_required").await;
         }
 
@@ -1154,6 +1156,10 @@ pub async fn handle_withdraw(
         )
         .await
         {
+            crate::metrics::record_withdrawal(
+                crate::metrics::withdraw_outcome::BLOCKED_SAFETY,
+                amount_cents,
+            );
             return release_and_redirect(&format!("/wallet?error={}", safety.query_param())).await;
         }
 
@@ -1184,6 +1190,10 @@ pub async fn handle_withdraw(
             Ok(None) => {
                 let _ = tx.rollback().await;
                 tracing::warn!("No wallet found for user {}", user.id);
+                crate::metrics::record_withdrawal(
+                    crate::metrics::withdraw_outcome::BLOCKED_FUNDS,
+                    amount_cents,
+                );
                 return release_and_redirect("/wallet?error=insufficient_funds").await;
             }
             Err(e) => {
@@ -1203,6 +1213,10 @@ pub async fn handle_withdraw(
                 held_balance,
                 available,
                 amount_cents
+            );
+            crate::metrics::record_withdrawal(
+                crate::metrics::withdraw_outcome::BLOCKED_FUNDS,
+                amount_cents,
             );
             return release_and_redirect("/wallet?error=insufficient_funds").await;
         }
@@ -1301,6 +1315,10 @@ pub async fn handle_withdraw(
                         if let Some(ref k) = idem_key {
                             idempotency::commit_redirect(&state.db, k, success_url).await;
                         }
+                        crate::metrics::record_withdrawal(
+                            crate::metrics::withdraw_outcome::REQUESTED,
+                            amount_cents,
+                        );
                         return Redirect::to(success_url).into_response();
                     }
                     Err(e) => {
@@ -1541,7 +1559,10 @@ pub async fn api_deposit_settings(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    if middleware::get_current_user(&jar, &state.db).await.is_none() {
+    if middleware::get_current_user(&jar, &state.db)
+        .await
+        .is_none()
+    {
         return (
             axum::http::StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({"error": "Unauthorized"})),

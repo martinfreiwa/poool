@@ -117,12 +117,20 @@ pub async fn run_once(pool: &PgPool, interval_days: i64, limit: i64) -> Result<i
     let mut count = 0i64;
     for (user_id,) in due {
         match screen_user(pool, user_id).await {
-            ScreeningResult::Skipped(_) => continue,
+            ScreeningResult::Skipped(_) => {
+                crate::metrics::record_screening("skipped");
+                continue;
+            }
             result => {
                 let log_id = persist_log(pool, user_id, &result).await;
-                if let ScreeningResult::Hit { ref summary, ref details } = result {
+                if let ScreeningResult::Hit {
+                    ref summary,
+                    ref details,
+                } = result
+                {
                     persist_alert(pool, user_id, log_id, summary, details).await;
                 }
+                crate::metrics::record_screening(result.db_status());
                 count += 1;
             }
         }
@@ -136,7 +144,11 @@ pub async fn rescreen_user(pool: &PgPool, user_id: Uuid) -> ScreeningResult {
     let result = screen_user(pool, user_id).await;
     if !matches!(result, ScreeningResult::Skipped(_)) {
         let log_id = persist_log(pool, user_id, &result).await;
-        if let ScreeningResult::Hit { ref summary, ref details } = result {
+        if let ScreeningResult::Hit {
+            ref summary,
+            ref details,
+        } = result
+        {
             persist_alert(pool, user_id, log_id, summary, details).await;
         }
     }
@@ -255,7 +267,11 @@ async fn persist_alert(
         "adverse_media"
     };
 
-    let severity = if kind == "sanctions_hit" { "critical" } else { "high" };
+    let severity = if kind == "sanctions_hit" {
+        "critical"
+    } else {
+        "high"
+    };
 
     let _ = sqlx::query(
         r#"INSERT INTO compliance_alerts
