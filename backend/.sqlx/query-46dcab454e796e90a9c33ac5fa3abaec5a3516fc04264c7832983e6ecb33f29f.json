@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT provisional_amount_cents, gross_amount_cents, tier_at_execution, currency\n           FROM affiliate_commissions WHERE referral_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "provisional_amount_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "gross_amount_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "tier_at_execution",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "currency",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "46dcab454e796e90a9c33ac5fa3abaec5a3516fc04264c7832983e6ecb33f29f"
+}

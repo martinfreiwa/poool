@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM affiliate_commissions WHERE affiliate_id = $1 OR payout_user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ed528f025e3307c6b8fb00c1e1792ba2e126778356c604ed20f740073a82ea09"
+}

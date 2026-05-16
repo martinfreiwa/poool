@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO investments (user_id, asset_id, tokens_owned, purchase_value_cents,\n                                    current_value_cents, status)\n           VALUES ($1, $2, 1, 100000, 100000, 'funding_in_progress')\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bb21ebca12fcc501b3b24e45296bea84cc5d01de5488ab54e9d308e707e5d3c4"
+}

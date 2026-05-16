@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_commissions\n              SET status = CASE\n                              WHEN status = 'paid' THEN 'clawback_pending'\n                              ELSE 'clawed_back'\n                          END,\n                  updated_at = NOW()\n            WHERE source_order_id = $1\n              AND status NOT IN ('clawed_back', 'clawback_pending')\n        RETURNING affiliate_id, provisional_amount_cents, status",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "affiliate_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "provisional_amount_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "status",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "d37e78bfe79da1e59343fdd3c9259879047576d6ab15681e2e6d175a860d5853"
+}

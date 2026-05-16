@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO affiliate_referrals\n              (affiliate_id, referred_user_id, link_id, attribution_user_id, payout_user_id, status)\n           VALUES ($1, $2, $3, $4, $5, 'registered')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4eecddf532cf823b96f6ccbf8b6a74a51ef15825072fbca0ac84f7b5de8c4296"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_commissions SET status = 'clawed_back' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "83bf2ef65774ef407c7d031d2620a2d97d973cad0a0a3a439ba7998257b66970"
+}

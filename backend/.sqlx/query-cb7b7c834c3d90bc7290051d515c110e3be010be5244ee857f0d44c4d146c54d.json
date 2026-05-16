@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO affiliate_commissions\n              (referral_id, affiliate_id, source_order_id,\n               provisional_amount_cents, gross_amount_cents, status,\n               link_id, attribution_user_id, payout_user_id, currency,\n               tier_at_execution)\n           VALUES ($1, $2, $3, 5000, 100000, 'paid', $4, $2, $2, 'EUR', 'Access')\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cb7b7c834c3d90bc7290051d515c110e3be010be5244ee857f0d44c4d146c54d"
+}

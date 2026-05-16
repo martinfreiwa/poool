@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliates SET commission_rate_bps = 100, current_tier = 'Pro' WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "19c5e32f3ef7d7b876bd97cc530dfc42af2d006ffd0a51cc616486cf8477745c"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE developer_teams SET team_commission_rate_bps = 450, current_team_tier = 'Sovereign' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6d69ec9ac54cb22b20eb92cd126dba231c7959285252620a6cbf21043dedadd0"
+}

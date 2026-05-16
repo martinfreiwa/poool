@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO orders (user_id, order_number, total_cents, status, currency)\n               VALUES ($1, $2, 100000, 'completed', $3) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2f91ed039fe19f81b58fec18b0eea0a3789aee378e66d4d27cfd173d09fa9785"
+}

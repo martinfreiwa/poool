@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, url, attempts, event, subscription_id\n                 FROM affiliate_postback_outbox\n                WHERE status = 'queued'\n                  AND next_attempt_at <= NOW()\n                ORDER BY next_attempt_at ASC\n                LIMIT 25",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "event",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "subscription_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "6fd14dc41840dbc5c648a335e1c2cc6287c46209db45d40c7f5842c51033360d"
+}

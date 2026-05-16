@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO developer_team_memberships (team_id, user_id, status, joined_at)\n         VALUES ($1, $2, 'active', NOW()),\n                ($1, $3, 'active', NOW())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "699f9dd8d0f806f6f55f8d941cee9a448c9ed8a1ace7f1c56b096bd207ed0df0"
+}
