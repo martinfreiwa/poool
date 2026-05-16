@@ -225,6 +225,191 @@ fn spawn_withdraw_email(
     });
 }
 
+/// Payload for the bulk withdrawal action endpoint.
+#[derive(serde::Deserialize)]
+pub struct AdminWithdrawBulkPayload {
+    /// Withdrawal request UUIDs to act on.
+    pub ids: Vec<String>,
+    /// "approve" | "reject"
+    pub action: String,
+    /// Required when action="reject"; ignored for approve.
+    pub reason: Option<String>,
+}
+
+/// POST /api/admin/withdrawals/bulk
+///
+/// Apply the same action to many withdrawal_requests in one call.
+/// Mirrors the deposits bulk endpoint — per-id results, partial-failure
+/// tolerant.
+pub async fn api_admin_withdrawals_bulk(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    Json(payload): Json<AdminWithdrawBulkPayload>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    if payload.ids.is_empty() {
+        return Err(AppError::BadRequest("No withdrawal ids supplied".into()));
+    }
+    if payload.ids.len() > 200 {
+        return Err(AppError::BadRequest(
+            "Bulk size capped at 200 — split your selection".into(),
+        ));
+    }
+
+    let mut results: Vec<serde_json::Value> = Vec::with_capacity(payload.ids.len());
+    let mut succeeded = 0;
+    let mut failed = 0;
+
+    for raw_id in &payload.ids {
+        let uid = match Uuid::parse_str(raw_id) {
+            Ok(u) => u,
+            Err(_) => {
+                failed += 1;
+                results.push(serde_json::json!({"id": raw_id, "ok": false, "error": "invalid_id"}));
+                continue;
+            }
+        };
+
+        let outcome: Result<&'static str, String> = match payload.action.as_str() {
+            "approve" => approve_one(&state.db, uid).await.map(|_| "approved"),
+            "reject" => {
+                let reason = payload
+                    .reason
+                    .clone()
+                    .filter(|s| !s.trim().is_empty())
+                    .unwrap_or_else(|| "Bulk admin rejection".to_string());
+                reject_one(&state.db, uid, &reason)
+                    .await
+                    .map(|_| "rejected")
+            }
+            other => Err(format!("unknown_action_{}", other)),
+        };
+
+        match outcome {
+            Ok(s) => {
+                succeeded += 1;
+                results.push(serde_json::json!({"id": raw_id, "ok": true, "status": s}));
+            }
+            Err(e) => {
+                failed += 1;
+                results.push(serde_json::json!({"id": raw_id, "ok": false, "error": e}));
+            }
+        }
+    }
+
+    Ok(Json(serde_json::json!({
+        "succeeded": succeeded,
+        "failed": failed,
+        "results": results,
+    })))
+}
+
+/// Approve a single withdrawal. Extracted so the bulk handler shares
+/// the same transition logic as the per-row endpoint.
+async fn approve_one(db: &sqlx::PgPool, req_id: Uuid) -> Result<(), String> {
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let req: Option<(Uuid, i64, String, String)> = sqlx::query_as(
+        "SELECT user_id, amount_cents, currency, status FROM withdrawal_requests
+           WHERE id = $1 FOR UPDATE",
+    )
+    .bind(req_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    let (user_id, amount_cents, _currency, status) = req.ok_or_else(|| "not_found".to_string())?;
+    if status != "pending" {
+        return Err(format!("not_pending_{}", status));
+    }
+    sqlx::query(
+        "UPDATE withdrawal_requests SET status = 'approved', approved_at = NOW() WHERE id = $1",
+    )
+    .bind(req_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "UPDATE wallet_transactions SET status = 'completed'
+           WHERE external_ref_id = $1 AND type = 'withdrawal'",
+    )
+    .bind(req_id.to_string())
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id)
+         VALUES ($1, 'withdrawal.approved_bulk', 'withdrawal_request', $2)",
+    )
+    .bind(user_id)
+    .bind(req_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    tx.commit().await.map_err(|e| e.to_string())?;
+    spawn_withdraw_email(
+        db.clone(),
+        user_id,
+        req_id,
+        amount_cents,
+        "withdraw_approved",
+        None,
+    );
+    Ok(())
+}
+
+/// Reject a single withdrawal + refund amount + fee. Mirrors the
+/// per-row endpoint's logic.
+async fn reject_one(db: &sqlx::PgPool, req_id: Uuid, reason: &str) -> Result<(), String> {
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let req: Option<(String, i64, i64, String, Uuid)> = sqlx::query_as(
+        "SELECT status, amount_cents, fee_cents, currency, user_id
+           FROM withdrawal_requests WHERE id = $1 FOR UPDATE",
+    )
+    .bind(req_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    let (status, amount_cents, fee_cents, currency, user_id) =
+        req.ok_or_else(|| "not_found".to_string())?;
+    if status != "pending" {
+        return Err(format!("not_pending_{}", status));
+    }
+    sqlx::query(
+        "UPDATE withdrawal_requests SET status = 'rejected', admin_notes = $1 WHERE id = $2",
+    )
+    .bind(reason)
+    .bind(req_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "UPDATE wallets SET balance_cents = balance_cents + $1
+           WHERE user_id = $2 AND wallet_type = 'cash' AND currency = $3",
+    )
+    .bind(amount_cents.saturating_add(fee_cents))
+    .bind(user_id)
+    .bind(currency)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "UPDATE wallet_transactions SET status = 'failed'
+           WHERE external_ref_id = $1 AND type = 'withdrawal'",
+    )
+    .bind(req_id.to_string())
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    tx.commit().await.map_err(|e| e.to_string())?;
+    spawn_withdraw_email(
+        db.clone(),
+        user_id,
+        req_id,
+        amount_cents,
+        "withdraw_rejected",
+        Some(reason.to_string()),
+    );
+    Ok(())
+}
+
 /// POST /api/admin/withdrawals/:req_id/reject
 pub async fn api_admin_withdrawal_reject(
     _admin: AdminUser,

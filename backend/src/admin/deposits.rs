@@ -195,16 +195,14 @@ pub async fn api_admin_deposit_confirm(
                 // Pull both the user id AND the amount in one round-trip so the
                 // email can include "Credited: USD 1,234.00" instead of a bare
                 // notification with no figure.
-                if let Ok(Some((user_id, amount_cents))) =
-                    sqlx::query_as::<_, (uuid::Uuid, i64)>(
-                        "SELECT user_id, amount_cents FROM deposit_requests WHERE id = $1",
-                    )
-                    .bind(uid)
-                    .fetch_optional(&db_clone)
-                    .await
+                if let Ok(Some((user_id, amount_cents))) = sqlx::query_as::<_, (uuid::Uuid, i64)>(
+                    "SELECT user_id, amount_cents FROM deposit_requests WHERE id = $1",
+                )
+                .bind(uid)
+                .fetch_optional(&db_clone)
+                .await
                 {
-                    let amount_display =
-                        crate::common::currency::format_usd(amount_cents);
+                    let amount_display = crate::common::currency::format_usd(amount_cents);
                     let _ = crate::email::trigger_transactional_email(
                         &db_clone,
                         &user_id,
@@ -357,6 +355,141 @@ pub async fn api_admin_deposit_extend_expiry(
     .into_response())
 }
 
+/// Payload for the bulk deposit action endpoint.
+#[derive(serde::Deserialize)]
+pub struct AdminDepositBulkPayload {
+    /// Deposit request UUIDs to act on.
+    pub ids: Vec<String>,
+    /// "confirm" | "cancel"
+    pub action: String,
+    /// Optional admin notes attached to the confirm audit entry.
+    pub notes: Option<String>,
+    /// Optional rejection reason — overrides the default for action="cancel".
+    pub reason: Option<String>,
+}
+
+/// POST /api/admin/deposits/bulk
+///
+/// Apply the same action (confirm / cancel) to many deposit_requests in
+/// one request. Returns per-id results so the UI can show partial-
+/// failure detail instead of "X of Y succeeded". Each id is processed
+/// independently — a failure on one doesn't roll back the others.
+pub async fn api_admin_deposits_bulk(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<AdminDepositBulkPayload>,
+) -> Result<axum::response::Response, ApiError> {
+    let admin = require_deposit_permission(&jar, &state, "deposits.write").await?;
+    if payload.ids.is_empty() {
+        return Err(ApiError::BadRequest("No deposit ids supplied".into()));
+    }
+    if payload.ids.len() > 200 {
+        return Err(ApiError::BadRequest(
+            "Bulk size capped at 200 — split your selection".into(),
+        ));
+    }
+
+    let mut results: Vec<serde_json::Value> = Vec::with_capacity(payload.ids.len());
+    let mut succeeded = 0;
+    let mut failed = 0;
+
+    for raw_id in &payload.ids {
+        let uid = match ApiError::parse_uuid(raw_id) {
+            Ok(u) => u,
+            Err(_) => {
+                failed += 1;
+                results.push(serde_json::json!({"id": raw_id, "ok": false, "error": "invalid_id"}));
+                continue;
+            }
+        };
+
+        let outcome: Result<&'static str, String> = match payload.action.as_str() {
+            "confirm" => {
+                let provider_ref: Option<String> = sqlx::query_scalar(
+                    "SELECT provider_reference FROM deposit_requests WHERE id = $1",
+                )
+                .bind(uid)
+                .fetch_optional(&state.db)
+                .await
+                .ok()
+                .flatten();
+                match provider_ref {
+                    Some(r) => crate::payments::service::confirm_deposit_with_audit(
+                        &state.db,
+                        &r,
+                        Some(admin.id),
+                        payload.notes.clone().filter(|s| !s.trim().is_empty()),
+                    )
+                    .await
+                    .map(|_| "confirmed"),
+                    None => Err("not_found".to_string()),
+                }
+            }
+            "cancel" => {
+                let reason = payload
+                    .reason
+                    .clone()
+                    .filter(|s| !s.trim().is_empty())
+                    .unwrap_or_else(|| "Bulk admin cancellation".to_string());
+                sqlx::query(
+                    "UPDATE deposit_requests
+                        SET status = 'cancelled', updated_at = NOW()
+                      WHERE id = $1 AND status IN ('pending', 'requested')",
+                )
+                .bind(uid)
+                .execute(&state.db)
+                .await
+                .map_err(|e| e.to_string())
+                .and_then(|res| {
+                    if res.rows_affected() == 1 {
+                        Ok("cancelled")
+                    } else {
+                        Err("not_pending".to_string())
+                    }
+                })
+                .and_then(|status| {
+                    // Fire-and-forget audit entry; failure here is not
+                    // serious enough to mark the cancel itself as failed.
+                    let db = state.db.clone();
+                    let admin_id = admin.id;
+                    let reason_clone = reason.clone();
+                    tokio::spawn(async move {
+                        let _ = sqlx::query(
+                            r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+                               VALUES ($1, 'admin.deposit_cancel_bulk', 'deposit_request', $2, $3)"#,
+                        )
+                        .bind(admin_id)
+                        .bind(uid)
+                        .bind(serde_json::json!({"reason": reason_clone}))
+                        .execute(&db)
+                        .await;
+                    });
+                    Ok(status)
+                })
+            }
+            other => Err(format!("unknown_action_{}", other)),
+        };
+
+        match outcome {
+            Ok(status) => {
+                succeeded += 1;
+                results.push(serde_json::json!({"id": raw_id, "ok": true, "status": status}));
+            }
+            Err(e) => {
+                failed += 1;
+                results.push(serde_json::json!({"id": raw_id, "ok": false, "error": e}));
+            }
+        }
+    }
+
+    Ok(Json(serde_json::json!({
+        "succeeded": succeeded,
+        "failed": failed,
+        "results": results,
+    }))
+    .into_response())
+}
+
 /// GET /api/admin/deposits/reconciliation
 ///
 /// On-demand reconciliation report. Runs the same checks the background
@@ -397,15 +530,18 @@ pub async fn api_admin_deposit_proof_url(
     require_deposit_permission(&jar, &state, "deposits.read").await?;
     let uid = ApiError::parse_uuid(&tx_id)?;
 
-    let row: Option<(Option<String>, Option<chrono::DateTime<chrono::Utc>>, Option<String>)> =
-        sqlx::query_as(
-            "SELECT proof_gcs_path, proof_uploaded_at, user_notes
+    let row: Option<(
+        Option<String>,
+        Option<chrono::DateTime<chrono::Utc>>,
+        Option<String>,
+    )> = sqlx::query_as(
+        "SELECT proof_gcs_path, proof_uploaded_at, user_notes
                FROM deposit_requests WHERE id = $1",
-        )
-        .bind(uid)
-        .fetch_optional(&state.db)
-        .await
-        .map_err(ApiError::from)?;
+    )
+    .bind(uid)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(ApiError::from)?;
 
     let (proof_gcs_path, proof_uploaded_at, user_notes) = match row {
         Some(r) => r,
@@ -414,7 +550,11 @@ pub async fn api_admin_deposit_proof_url(
 
     let gcs_path = match proof_gcs_path {
         Some(p) => p,
-        None => return Err(ApiError::NotFound("No proof attached to this deposit".to_string())),
+        None => {
+            return Err(ApiError::NotFound(
+                "No proof attached to this deposit".to_string(),
+            ))
+        }
     };
 
     // Strip the gs://bucket/ prefix to get the object path
@@ -435,11 +575,14 @@ pub async fn api_admin_deposit_proof_url(
         .into_response());
     };
 
-    let signed = match crate::storage::service::generate_signed_url(&bucket, &object_path, 15).await {
+    let signed = match crate::storage::service::generate_signed_url(&bucket, &object_path, 15).await
+    {
         Ok(url) => url,
         Err(e) => {
             tracing::error!("Failed to sign deposit proof URL for {}: {}", tx_id, e);
-            return Err(ApiError::Internal("Could not generate signed URL".to_string()));
+            return Err(ApiError::Internal(
+                "Could not generate signed URL".to_string(),
+            ));
         }
     };
 
