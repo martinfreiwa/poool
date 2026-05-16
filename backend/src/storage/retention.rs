@@ -142,6 +142,17 @@ async fn delete_gcs_object(default_bucket: &str, stored_url: &str) -> Result<boo
 /// Top-level entrypoint. Scans, optionally deletes, returns a summary.
 /// When `dry_run=true`, neither the GCS object nor the DB row is
 /// touched — only the count of due rows is recorded.
+#[tracing::instrument(
+    name = "storage.retention.run",
+    skip(pool),
+    fields(
+        bucket = default_bucket,
+        dry_run,
+        run_id = tracing::field::Empty,
+        rows_due = tracing::field::Empty,
+        rows_deleted = tracing::field::Empty,
+    )
+)]
 pub async fn run_retention_worker(
     pool: &PgPool,
     default_bucket: &str,

@@ -66,6 +66,11 @@ pub async fn upload_public(
 /// Signed URLs are generated on-demand by [`generate_signed_url`] only
 /// when admins or the user need to view the document.  This avoids
 /// requiring a service-account RSA key just for uploads.
+#[tracing::instrument(
+    name = "storage.upload_private",
+    skip(data),
+    fields(bucket, object_path, bytes = data.len(), content_type)
+)]
 pub async fn upload_private(
     bucket: &str,
     object_path: &str,
@@ -151,6 +156,18 @@ impl PiiClass {
 ///
 /// The `uploaded_by_user_id` is captured for the BAIT 8.3 audit trail
 /// (who uploaded the object, separate from who owns it).
+#[tracing::instrument(
+    name = "storage.upload_private_with_markers",
+    skip(data),
+    fields(
+        bucket,
+        object_path,
+        bytes = data.len(),
+        content_type,
+        pii_class = pii_class.as_str(),
+        uploaded_by_user_id = ?uploaded_by_user_id,
+    )
+)]
 pub async fn upload_private_with_markers(
     bucket: &str,
     object_path: &str,
@@ -228,6 +245,10 @@ pub async fn generate_signed_url(
 /// parameter on signed URLs (signed alongside the rest of the URL so a
 /// MitM can't strip it). We inject it via the `query_parameters` field
 /// of `SignedURLOptions`.
+#[tracing::instrument(
+    name = "storage.signed_url",
+    fields(bucket, object_path, expires_in_minutes, disposition = ?force_download_filename)
+)]
 pub async fn generate_signed_url_with_disposition(
     bucket: &str,
     object_path: &str,
@@ -285,6 +306,10 @@ pub async fn delete_object(bucket: &str, object_path: &str) -> Result<(), AppErr
 ///
 /// Returns `(content_type, bytes)`. Uses standard ADC auth which only
 /// requires `storage.objects.get` — no signing / `signBlob` permission needed.
+#[tracing::instrument(
+    name = "storage.download",
+    fields(bucket, object_path, bytes = tracing::field::Empty)
+)]
 pub async fn download_object(
     bucket: &str,
     object_path: &str,

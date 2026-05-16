@@ -318,6 +318,15 @@ pub async fn check_one(
 /// Top-level entry: open run row, scan all DB rows in `source`, check
 /// each one, close run row with final status. Returns a summary that
 /// the admin route can render as JSON.
+#[tracing::instrument(
+    name = "storage.reconcile.run",
+    skip(pool),
+    fields(
+        source_table = source.as_str(),
+        bucket = default_bucket,
+        run_id = tracing::field::Empty,
+    )
+)]
 pub async fn run_reconciliation(
     pool: &PgPool,
     source: SourceTable,
