@@ -262,6 +262,24 @@ pub struct TransactionDetailContext {
     /// Whether the user can still cancel this withdrawal — withdrawal in
     /// `pending` state with a valid request id (P1-4).
     pub cancellable_withdrawal_id: Option<Uuid>,
+    /// Visual progress timeline for deposits (P1-3). Empty for other
+    /// transaction types.
+    pub timeline: Vec<TimelineStep>,
+}
+
+/// One step in the deposit-status timeline. `state` drives the CSS:
+///   "done"      — completed, ✓
+///   "current"   — actively in progress, pulse animation
+///   "pending"   — not yet reached, muted
+///   "skipped"   — terminal state (expired/failed) past this point
+#[derive(Debug, Clone, Serialize)]
+pub struct TimelineStep {
+    /// Short label e.g. "Submitted", "Wire received", "Verified", "Credited".
+    pub label: String,
+    /// Sub-text shown under the label (timestamp or hint).
+    pub hint: Option<String>,
+    /// CSS state — one of "done" | "current" | "pending" | "skipped".
+    pub state: String,
 }
 
 /// The complete wallet page context passed to the MiniJinja template.

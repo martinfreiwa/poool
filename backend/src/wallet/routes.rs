@@ -2325,6 +2325,15 @@ async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDe
 
     let wire_amount_display = format_usd(abs_cents);
 
+    // P1-3: deposit timeline. Drives the visual stepper on the
+    // transaction-detail page so the user can see at a glance where
+    // their wire is in the pipeline. Only populated for deposits.
+    let timeline = if matches!(tx_type, TransactionType::Deposit) {
+        build_deposit_timeline(pool, row).await
+    } else {
+        Vec::new()
+    };
+
     // P1-4: surface the cancellable-withdrawal id only when the request
     // is still in flight. Status comes from withdrawal_requests, not the
     // ledger tx (which can lag during state transitions).
@@ -2371,7 +2380,130 @@ async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDe
         wire_reference,
         wire_amount_display,
         cancellable_withdrawal_id,
+        timeline,
     }
+}
+
+/// Build the 4-step deposit timeline. Reads the matching
+/// `deposit_requests` row to figure out which states are done vs
+/// pending, and stamps each completed step with its timestamp.
+async fn build_deposit_timeline(pool: &sqlx::PgPool, row: &TxRow) -> Vec<TimelineStep> {
+    let ref_id = match &row.external_ref_id {
+        Some(r) => r.clone(),
+        None => return Vec::new(),
+    };
+
+    let dep: Option<(
+        String,
+        chrono::DateTime<chrono::Utc>,
+        Option<chrono::DateTime<chrono::Utc>>,
+        Option<chrono::DateTime<chrono::Utc>>,
+        Option<chrono::DateTime<chrono::Utc>>,
+    )> = sqlx::query_as(
+        r#"
+        SELECT status, created_at, proof_uploaded_at, paid_at, expires_at
+          FROM deposit_requests
+         WHERE provider_reference = $1 AND user_id = $2
+         LIMIT 1
+        "#,
+    )
+    .bind(&ref_id)
+    .bind(row.user_id)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    let Some((status, created_at, proof_at, paid_at, expires_at)) = dep else {
+        return Vec::new();
+    };
+
+    let terminal_bad = matches!(status.as_str(), "failed" | "cancelled" | "expired");
+
+    let fmt_short = |dt: chrono::DateTime<chrono::Utc>| dt.format("%d %b %Y · %H:%M UTC").to_string();
+
+    // Step 1 — request created
+    let step1 = TimelineStep {
+        label: "Submitted".to_string(),
+        hint: Some(fmt_short(created_at)),
+        state: "done".to_string(),
+    };
+
+    // Step 2 — proof uploaded
+    let step2 = if let Some(p) = proof_at {
+        TimelineStep {
+            label: "Proof uploaded".to_string(),
+            hint: Some(fmt_short(p)),
+            state: "done".to_string(),
+        }
+    } else if terminal_bad {
+        TimelineStep {
+            label: "Proof uploaded".to_string(),
+            hint: Some("Skipped".to_string()),
+            state: "skipped".to_string(),
+        }
+    } else {
+        TimelineStep {
+            label: "Proof uploaded".to_string(),
+            hint: Some("Waiting for your proof of transfer".to_string()),
+            state: "current".to_string(),
+        }
+    };
+
+    // Step 3 — admin verification
+    let step3 = if paid_at.is_some() {
+        TimelineStep {
+            label: "Verified by compliance".to_string(),
+            hint: None,
+            state: "done".to_string(),
+        }
+    } else if terminal_bad {
+        TimelineStep {
+            label: "Verified by compliance".to_string(),
+            hint: Some(match status.as_str() {
+                "expired" => "Expired without verification".to_string(),
+                "cancelled" => "Cancelled".to_string(),
+                _ => "Failed".to_string(),
+            }),
+            state: "skipped".to_string(),
+        }
+    } else if proof_at.is_some() {
+        TimelineStep {
+            label: "Verified by compliance".to_string(),
+            hint: Some("Usually within 24 hours".to_string()),
+            state: "current".to_string(),
+        }
+    } else {
+        TimelineStep {
+            label: "Verified by compliance".to_string(),
+            hint: Some(match expires_at {
+                Some(e) => format!("By {}", fmt_short(e)),
+                None => "Awaiting proof".to_string(),
+            }),
+            state: "pending".to_string(),
+        }
+    };
+
+    // Step 4 — credited to wallet
+    let step4 = match (paid_at, terminal_bad) {
+        (Some(p), _) => TimelineStep {
+            label: "Credited to wallet".to_string(),
+            hint: Some(fmt_short(p)),
+            state: "done".to_string(),
+        },
+        (None, true) => TimelineStep {
+            label: "Credited to wallet".to_string(),
+            hint: Some("Skipped".to_string()),
+            state: "skipped".to_string(),
+        },
+        (None, false) => TimelineStep {
+            label: "Credited to wallet".to_string(),
+            hint: Some("Pending verification".to_string()),
+            state: "pending".to_string(),
+        },
+    };
+
+    vec![step1, step2, step3, step4]
 }
 
 /// GET /transactions/:id – render the transaction detail page.

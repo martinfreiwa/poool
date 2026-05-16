@@ -66,6 +66,36 @@
           {% endif %}
         </section>
 
+        {% if tx.timeline %}
+        <!-- Deposit status timeline (P1-3) -->
+        <section class="ds-card tx-detail-timeline" aria-label="Deposit progress">
+          <h2 class="tx-detail-section__title">Progress</h2>
+          <ol class="tx-timeline">
+            {% for step in tx.timeline %}
+            <li class="tx-timeline__step tx-timeline__step--{{ step.state }}">
+              <span class="tx-timeline__dot" aria-hidden="true">
+                {% if step.state == "done" %}
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {% elif step.state == "skipped" %}
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                {% endif %}
+              </span>
+              <div class="tx-timeline__body">
+                <div class="tx-timeline__label">{{ step.label }}</div>
+                {% if step.hint %}
+                <div class="tx-timeline__hint">{{ step.hint }}</div>
+                {% endif %}
+              </div>
+            </li>
+            {% endfor %}
+          </ol>
+        </section>
+        {% endif %}
+
         <!-- Detail sections -->
         {% for section in tx.sections %}
         <section class="ds-card tx-detail-section" aria-label="{{ section.title }}">
