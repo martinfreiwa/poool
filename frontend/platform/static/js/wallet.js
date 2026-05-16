@@ -364,6 +364,13 @@
                 : "the requested amount";
             showDepositInstructionsModal(ref, amountFmt);
             window.history.replaceState({}, "", window.location.pathname);
+        } else if (params.has("withdraw_cancelled")) {
+            showToast(
+                "Withdrawal cancelled",
+                "Funds have been returned to your wallet.",
+                "success"
+            );
+            window.history.replaceState({}, "", window.location.pathname);
         } else if (params.has("withdraw_requested")) {
             showToast(
                 "Withdrawal Request Submitted",

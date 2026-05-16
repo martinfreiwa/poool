@@ -259,6 +259,9 @@ pub struct TransactionDetailContext {
     pub wire_reference: String,
     /// Formatted amount for the wire instructions block (no prefix)
     pub wire_amount_display: String,
+    /// Whether the user can still cancel this withdrawal — withdrawal in
+    /// `pending` state with a valid request id (P1-4).
+    pub cancellable_withdrawal_id: Option<Uuid>,
 }
 
 /// The complete wallet page context passed to the MiniJinja template.

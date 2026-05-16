@@ -1086,6 +1086,149 @@ pub async fn handle_deposit_submit(
     Redirect::to(&success_url).into_response()
 }
 
+/// POST /api/wallet/withdrawals/:id/cancel
+///
+/// User-initiated cancellation of a pending withdrawal (P1-4). Allowed
+/// only while the request is still `pending` — once admin transitions
+/// it to `approved`/`rejected` the funds are downstream and the user
+/// must contact support.
+///
+/// Refunds amount + fee atomically to the cash wallet, transitions the
+/// request to `cancelled`, and marks the ledger row as `cancelled`.
+pub async fn api_cancel_withdrawal(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(req_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Unauthorized"})),
+            )
+                .into_response();
+        }
+    };
+
+    let mut tx = match state.db.begin().await {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::error!("Cancel TX begin failed: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "cancel_failed"})),
+            )
+                .into_response();
+        }
+    };
+
+    let row: Option<(Uuid, String, i64, i64, String)> = sqlx::query_as(
+        "SELECT user_id, status, amount_cents, fee_cents, currency
+           FROM withdrawal_requests WHERE id = $1 FOR UPDATE",
+    )
+    .bind(req_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .ok()
+    .flatten();
+
+    let (owner, status, amount_cents, fee_cents, currency) = match row {
+        Some(r) => r,
+        None => {
+            let _ = tx.rollback().await;
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"error": "not_found"})),
+            )
+                .into_response();
+        }
+    };
+
+    if owner != user.id {
+        let _ = tx.rollback().await;
+        // Don't leak ownership info — return 404 like the not-found case.
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": "not_found"})),
+        )
+            .into_response();
+    }
+
+    if status != "pending" {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::CONFLICT,
+            Json(serde_json::json!({
+                "error": "not_cancellable",
+                "message": format!("Withdrawal is in '{}' state and can no longer be cancelled.", status),
+                "status": status,
+            })),
+        )
+            .into_response();
+    }
+
+    let refund = amount_cents.saturating_add(fee_cents);
+
+    if let Err(e) = sqlx::query(
+        "UPDATE wallets SET balance_cents = balance_cents + $1
+           WHERE user_id = $2 AND wallet_type = 'cash' AND currency = $3",
+    )
+    .bind(refund)
+    .bind(user.id)
+    .bind(&currency)
+    .execute(&mut *tx)
+    .await
+    {
+        tracing::error!("Cancel refund failed for req {}: {}", req_id, e);
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "cancel_failed"})),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = sqlx::query("UPDATE withdrawal_requests SET status = 'cancelled' WHERE id = $1")
+        .bind(req_id)
+        .execute(&mut *tx)
+        .await
+    {
+        tracing::error!("Cancel status update failed for req {}: {}", req_id, e);
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "cancel_failed"})),
+        )
+            .into_response();
+    }
+
+    let _ = sqlx::query(
+        "UPDATE wallet_transactions SET status = 'cancelled'
+           WHERE external_ref_id = $1 AND type = 'withdrawal'",
+    )
+    .bind(req_id.to_string())
+    .execute(&mut *tx)
+    .await;
+
+    if let Err(e) = tx.commit().await {
+        tracing::error!("Cancel commit failed for req {}: {}", req_id, e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "cancel_failed"})),
+        )
+            .into_response();
+    }
+
+    crate::metrics::record_withdrawal(crate::metrics::withdraw_outcome::CANCELLED, amount_cents);
+
+    Json(serde_json::json!({
+        "status": "cancelled",
+        "refunded_cents": refund,
+    }))
+    .into_response()
+}
+
 /// POST /wallet/withdraw
 pub async fn handle_withdraw(
     jar: CookieJar,
@@ -2182,6 +2325,33 @@ async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDe
 
     let wire_amount_display = format_usd(abs_cents);
 
+    // P1-4: surface the cancellable-withdrawal id only when the request
+    // is still in flight. Status comes from withdrawal_requests, not the
+    // ledger tx (which can lag during state transitions).
+    let cancellable_withdrawal_id = if matches!(tx_type, TransactionType::Withdrawal) {
+        match row.external_ref_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+            Some(req_id) => {
+                let cur: Option<String> = sqlx::query_scalar(
+                    "SELECT status FROM withdrawal_requests WHERE id = $1 AND user_id = $2",
+                )
+                .bind(req_id)
+                .bind(row.user_id)
+                .fetch_optional(pool)
+                .await
+                .ok()
+                .flatten();
+                if cur.as_deref() == Some("pending") {
+                    Some(req_id)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    } else {
+        None
+    };
+
     TransactionDetailContext {
         id: row.id,
         tx_type_label: tx_type.display_label().to_string(),
@@ -2200,6 +2370,7 @@ async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDe
         show_wire_instructions,
         wire_reference,
         wire_amount_display,
+        cancellable_withdrawal_id,
     }
 }
 

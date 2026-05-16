@@ -58,6 +58,8 @@ pub mod withdraw_outcome {
     pub const BLOCKED_SAFETY: &str = "blocked_safety";
     /// Blocked because available balance was insufficient.
     pub const BLOCKED_FUNDS: &str = "blocked_funds";
+    /// User cancelled before admin review (P1-4).
+    pub const CANCELLED: &str = "cancelled";
 }
 
 /// Counter for deposit lifecycle events by outcome and currency.

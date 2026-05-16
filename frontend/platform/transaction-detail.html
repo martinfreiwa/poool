@@ -138,6 +138,50 @@
         </section>
         {% endif %}
 
+        {% if tx.cancellable_withdrawal_id %}
+        <section class="ds-card tx-detail-cancel" aria-label="Cancel withdrawal">
+          <h2 class="tx-detail-section__title">Cancel this withdrawal</h2>
+          <p class="tx-detail-cancel__lede">
+            Funds will be returned to your wallet immediately. Cancellation is
+            available only while the request is in <strong>pending</strong> state.
+          </p>
+          <button type="button" class="ds-btn ds-btn--secondary tx-detail-cancel__btn"
+                  data-withdraw-cancel="{{ tx.cancellable_withdrawal_id }}">
+            Cancel withdrawal
+          </button>
+          <p class="ds-modal__error" id="tx-cancel-error" role="alert"></p>
+        </section>
+        <script>
+          (function () {
+            var btn = document.querySelector('[data-withdraw-cancel]');
+            if (!btn) return;
+            btn.addEventListener('click', async function () {
+              var err = document.getElementById('tx-cancel-error');
+              if (err) err.textContent = '';
+              if (!window.confirm('Cancel this withdrawal and return the funds to your wallet?')) return;
+              var id = btn.getAttribute('data-withdraw-cancel');
+              btn.disabled = true; var orig = btn.textContent; btn.textContent = 'Cancelling…';
+              try {
+                var r = await fetch('/api/wallet/withdrawals/' + encodeURIComponent(id) + '/cancel', {
+                  method: 'POST', credentials: 'same-origin',
+                  headers: { 'Accept': 'application/json' }
+                });
+                var data = await r.json().catch(function () { return {}; });
+                if (r.ok) {
+                  window.location.href = '/wallet?withdraw_cancelled=true';
+                  return;
+                }
+                if (err) err.textContent = data.message || 'Unable to cancel — refresh and try again.';
+                btn.disabled = false; btn.textContent = orig;
+              } catch (e) {
+                if (err) err.textContent = 'Network error. Please try again.';
+                btn.disabled = false; btn.textContent = orig;
+              }
+            });
+          })();
+        </script>
+        {% endif %}
+
         <!-- Help footer -->
         <div class="tx-detail-help">
           <a href="/support" class="tx-detail-help__link">Need help with this transaction? Contact support →</a>
