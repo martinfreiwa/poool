@@ -355,6 +355,24 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         auth::rate_limit::RateLimiter::new(30, std::time::Duration::from_secs(60))
     };
 
+    // Storage upload rate limiter: 10 ops/min/user/endpoint-class. Caps
+    // upload abuse (cost-DoS, scrape-then-replace) without blocking
+    // legitimate single-shot uploads. Tighter than community/leaderboard
+    // because every successful upload writes to GCS (cost + DB row).
+    let storage_rate_limiter = if rate_limit_disabled {
+        auth::rate_limit::RateLimiter::disabled()
+    } else if let Some(ref pool) = redis_pool {
+        tracing::info!("Storage rate limiter: Redis-backed (10 req / 1 min per key)");
+        auth::rate_limit::RateLimiter::new_redis(
+            pool.clone(),
+            10,
+            std::time::Duration::from_secs(60),
+        )
+    } else {
+        tracing::info!("Storage rate limiter: in-memory (10 req / 1 min per key)");
+        auth::rate_limit::RateLimiter::new(10, std::time::Duration::from_secs(60))
+    };
+
     let state = AppState {
         db: pool.clone(),
         db_replica: pools.replica,
@@ -365,6 +383,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         auth_rate_limiter: auth_rate_limiter.clone(),
         leaderboard_rate_limiter: leaderboard_rate_limiter.clone(),
         community_rate_limiter: community_rate_limiter.clone(),
+        storage_rate_limiter: storage_rate_limiter.clone(),
         leaderboard_last_refresh: leaderboard_last_refresh.clone(),
     };
 
@@ -591,6 +610,21 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
 
+    // Phase-6: leaderboard matview refresh (leader-gated, 15 min).
+    {
+        let p = pool.clone();
+        tokio::spawn(common::leader::run_as_leader(
+            pool.clone(),
+            common::leader::LockKey::AffiliateLeaderboardRefresh,
+            move || {
+                let p = p.clone();
+                async move {
+                    rewards::workers::run_affiliate_leaderboard_refresh_worker(p).await;
+                }
+            },
+        ));
+    }
+
     // Rate limiter cleanup (every 10 minutes)
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(10 * 60));
@@ -625,8 +659,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Lock key: arbitrary `i64`, chosen to be visibly distinct from other
     // POOOL advisory locks. Search for `LEADERBOARD_REFRESH_LOCK_KEY` to
     // find every caller.
-    const LEADERBOARD_REFRESH_LOCK_KEY: i64 = 0x10AD_BD_0001;
-    const LEADERBOARD_SNAPSHOT_LOCK_KEY: i64 = 0x10AD_BD_0002;
+    const LEADERBOARD_REFRESH_LOCK_KEY: i64 = 0x10AD_BD00_0001;
+    const LEADERBOARD_SNAPSHOT_LOCK_KEY: i64 = 0x10AD_BD00_0002;
 
     let leaderboard_pool = pool.clone();
     let leaderboard_cache = leaderboard_last_refresh.clone();

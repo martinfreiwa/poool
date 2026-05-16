@@ -31,7 +31,165 @@ use axum::{
 
 const REFERRAL_COOKIE: &str = "poool_referral";
 const MAX_REF_LEN: usize = 80;
-const COOKIE_MAX_AGE_SECS: i64 = 60 * 60 * 24 * 30; // 30 days
+// F21 fix: aligned with the 90-day first-conversion window enforced in
+// check_and_track_affiliate_commission. A 30-day cookie silently broke
+// attribution for any user who clicked but took 31-90 days to register.
+const COOKIE_MAX_AGE_SECS: i64 = 60 * 60 * 24 * 90; // 90 days
+
+/// Phase-2 P0: server-readable consent cookie. Set by
+/// `static/js/cookie-consent.js` alongside the localStorage record.
+///
+/// Value is a `+`-joined flag list such as:
+///   `essential`                              — strictly necessary only
+///   `essential+analytics`                    — analytics opt-in
+///   `essential+analytics+marketing`          — full opt-in
+///   `essential+marketing`                    — marketing without analytics
+///
+/// We test for the substring `marketing` since that's the bucket affiliate
+/// attribution lives in. Affiliate tracking is unambiguously marketing /
+/// behavioural under ePrivacy + GDPR — no legitimate-interest fall-back.
+pub const CONSENT_COOKIE: &str = "poool_consent";
+
+/// Phase-3 P1: server-side request fingerprint.
+///
+/// Returns the lowercase hex SHA-256 of:
+///   `<user-agent> || \n || <accept-language> || \n || <ip /24 prefix>`
+///
+/// The IP is reduced to its /24 subnet so a household NAT and a mobile
+/// carrier (small CGNAT) share the same fingerprint as long as User-Agent
+/// + Accept-Language match. That's the property we want — a legitimate
+///   human's browser stays stable between landing and signup; a bot
+///   rotating UA strings inside the same /24 won't.
+///
+/// Empty inputs are tolerated (returns the hash of empty headers). The
+/// only failure mode is "missing all signal" which still yields a stable
+/// (if unhelpful) hash that's at least matchable cross-row.
+/// Phase-3 P1: lightweight crawler / bot detector.
+///
+/// Returns `true` when the request looks like an automated visitor we
+/// should EXCLUDE from click attribution + the `referral_clicks` table.
+/// Detection is intentionally narrow: we only catch self-identified bots
+/// via well-known User-Agent substrings. Headless browsers that lie
+/// about their UA are out of scope for this filter (covered by the
+/// fingerprint anomaly scan instead).
+///
+/// List sourced from the union of:
+///   * Google's crawler list (`googlebot`, `mediapartners-google`)
+///   * Bing / Yandex / Baidu / DuckDuck / Apple
+///   * Common social-share previewers (`facebookexternalhit`, `twitterbot`,
+///     `linkedinbot`, `slackbot`, `discordbot`, `whatsapp`, `telegrambot`)
+///   * Headless / scraper signatures (`headlesschrome`, `puppeteer`,
+///     `selenium`, `phantomjs`, `playwright`, `httpclient`, `curl`,
+///     `wget`, `python-requests`)
+///   * Site-uptime monitors (`uptimerobot`, `pingdom`, `statuscake`)
+pub fn is_bot_user_agent(ua: &str) -> bool {
+    let ua = ua.to_ascii_lowercase();
+    const BOT_SIGNATURES: &[&str] = &[
+        // Search engines
+        "googlebot",
+        "mediapartners-google",
+        "adsbot-google",
+        "bingbot",
+        "yandex",
+        "baiduspider",
+        "duckduckbot",
+        "applebot",
+        // Social previewers
+        "facebookexternalhit",
+        "facebookcatalog",
+        "twitterbot",
+        "linkedinbot",
+        "slackbot",
+        "discordbot",
+        "whatsapp",
+        "telegrambot",
+        "skypeuripreview",
+        // Headless / scrapers
+        "headlesschrome",
+        "puppeteer",
+        "selenium",
+        "phantomjs",
+        "playwright",
+        "httpclient",
+        "python-requests",
+        "go-http-client",
+        "node-fetch",
+        "okhttp",
+        // Generic
+        "bot/",
+        "crawl",
+        "spider",
+        "scrap",
+        "monitor",
+        "curl/",
+        "wget/",
+        // Uptime monitors
+        "uptimerobot",
+        "pingdom",
+        "statuscake",
+        "siteimprove",
+    ];
+    BOT_SIGNATURES.iter().any(|sig| ua.contains(sig))
+}
+
+pub fn compute_request_fingerprint(headers: &axum::http::HeaderMap, ip: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let ua = headers
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    let lang = headers
+        .get(axum::http::header::ACCEPT_LANGUAGE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    // IP /24 reduction: drop the last octet for IPv4, drop the last
+    // hextet for IPv6. Anything malformed → use as-is.
+    let ip_class = if ip.contains(':') {
+        // IPv6 — keep first 4 hextets (= /64 — proper subnet boundary).
+        ip.split(':').take(4).collect::<Vec<_>>().join(":")
+    } else {
+        let parts: Vec<&str> = ip.split('.').collect();
+        if parts.len() == 4 {
+            format!("{}.{}.{}", parts[0], parts[1], parts[2])
+        } else {
+            ip.to_string()
+        }
+    };
+    let mut h = Sha256::new();
+    h.update(ua.as_bytes());
+    h.update(b"\n");
+    h.update(lang.as_bytes());
+    h.update(b"\n");
+    h.update(ip_class.as_bytes());
+    let bytes = h.finalize();
+    let mut hex = String::with_capacity(bytes.len() * 2);
+    for b in bytes.iter() {
+        hex.push_str(&format!("{:02x}", b));
+    }
+    hex
+}
+
+/// Returns `true` when the request carries explicit marketing consent.
+/// Conservative default: missing cookie → `false`. ePrivacy Art. 5(3)
+/// requires opt-in, not opt-out, so silence is rejection.
+pub fn has_marketing_consent(headers: &axum::http::HeaderMap) -> bool {
+    headers
+        .get(axum::http::header::COOKIE)
+        .and_then(|v| v.to_str().ok())
+        .map(|cookies| {
+            cookies.split(';').any(|c| {
+                let c = c.trim();
+                if let Some(v) = c.strip_prefix(&format!("{}=", CONSENT_COOKIE)) {
+                    // Tolerate URL-encoded `+` (`%2B`) since some browsers
+                    // encode the delimiter when writing via document.cookie.
+                    v.to_ascii_lowercase().contains("marketing")
+                } else {
+                    false
+                }
+            })
+        })
+        .unwrap_or(false)
+}
 
 /// Axum middleware that captures `?ref=<code>` and writes a 30-day cookie.
 pub async fn capture_referral(req: Request, next: Next) -> impl IntoResponse {
@@ -72,10 +230,17 @@ pub async fn capture_referral(req: Request, next: Next) -> impl IntoResponse {
         })
         .unwrap_or(false);
 
+    // Phase-2 P0: ePrivacy gate. The referral cookie is behavioural
+    // marketing, so we must NOT set it without explicit opt-in. The check
+    // happens against the request headers (consent set by an earlier
+    // banner interaction). No consent → silently skip; the `?ref` param
+    // simply doesn't stick.
+    let has_consent = has_marketing_consent(req.headers());
+
     let mut response = next.run(req).await;
 
     if let Some(code) = captured {
-        if !already_set {
+        if !already_set && has_consent {
             let cookie_str = format!(
                 "{}={}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}",
                 REFERRAL_COOKIE, code, COOKIE_MAX_AGE_SECS

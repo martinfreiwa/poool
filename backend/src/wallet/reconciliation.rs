@@ -86,13 +86,15 @@ pub async fn run_reconciliation_worker(pool: PgPool) {
 /// Single reconciliation pass. Public so admin / tests can trigger it
 /// on demand without waiting for the background tick.
 pub async fn run_once(pool: &PgPool) -> Result<ReconciliationReport, sqlx::Error> {
-    let mut report = ReconciliationReport::default();
-
-    report.deposits_expired = expire_stale_deposits(pool).await?;
+    let deposits_expired = expire_stale_deposits(pool).await?;
     let (no_proof, with_proof) = count_stuck_deposits(pool).await?;
-    report.deposits_stuck_no_proof = no_proof;
-    report.deposits_stuck_with_proof = with_proof;
-    report.withdrawals_stuck = count_stuck_withdrawals(pool).await?;
+    let withdrawals_stuck = count_stuck_withdrawals(pool).await?;
+    let report = ReconciliationReport {
+        deposits_expired,
+        deposits_stuck_no_proof: no_proof,
+        deposits_stuck_with_proof: with_proof,
+        withdrawals_stuck,
+    };
 
     // Mirror the run findings into Prometheus gauges so Grafana shows
     // both the latest state and rate-of-change.
@@ -154,7 +156,7 @@ pub async fn expire_stale_deposits(pool: &PgPool) -> Result<i64, sqlx::Error> {
 /// `(no_proof, with_proof)`:
 ///   - `no_proof`   — user never followed through, possibly never wired
 ///   - `with_proof` — wire & proof submitted but admin hasn't matched it;
-///                    operationally this is the more interesting bucket.
+///     operationally this is the more interesting bucket.
 async fn count_stuck_deposits(pool: &PgPool) -> Result<(i64, i64), sqlx::Error> {
     let row: (i64, i64) = sqlx::query_as(
         r#"
