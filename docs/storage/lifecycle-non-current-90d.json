@@ -1,0 +1,13 @@
+{
+  "lifecycle": {
+    "rule": [
+      {
+        "action": { "type": "Delete" },
+        "condition": {
+          "daysSinceNoncurrentTime": 90,
+          "numNewerVersions": 1
+        }
+      }
+    ]
+  }
+}

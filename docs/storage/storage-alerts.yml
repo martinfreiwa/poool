@@ -1,0 +1,67 @@
+# Prometheus alert rules for the POOOL storage subsystem.
+# Drop into infra/prometheus/alerts/ and reload Prometheus.
+# Full runbook + thresholds rationale: docs/storage/05-observability.md
+
+groups:
+- name: storage.rules
+  interval: 1m
+  rules:
+
+  - alert: StorageGcsErrorRateHigh
+    expr: sum by (op,kind) (rate(storage_gcs_errors_total[5m])) > 0.05
+    for: 10m
+    labels: { severity: P1, owner: storage }
+    annotations:
+      summary: "GCS {{ $labels.op }} errors ({{ $labels.kind }}) > 0.05/s for 10m"
+      runbook: "docs/storage/05-observability.md#triage-gcs-errors"
+
+  - alert: StorageAvInfected
+    expr: increase(storage_av_outcomes_total{outcome="infected"}[5m]) > 0
+    for: 0s
+    labels: { severity: P0, owner: storage }
+    annotations:
+      summary: "Infected file uploaded — quarantined; investigate"
+      runbook: "docs/storage/02-antivirus-scanning.md#triage-infected"
+
+  - alert: StorageRetentionBacklog
+    expr: storage_retention_due > 0
+    for: 2h
+    labels: { severity: P1, owner: compliance }
+    annotations:
+      summary: "{{ $value }} KYC docs past retention deadline >2h"
+      runbook: "docs/storage/04-compliance-and-retention.md#triage"
+
+  - alert: StorageReconcileDataLoss
+    expr: sum by (kind) (storage_reconcile_findings_open{kind="missing_object",severity="critical"}) > 0
+    for: 0s
+    labels: { severity: P0, owner: storage }
+    annotations:
+      summary: "Reconciler reports {{ $value }} missing GCS objects"
+      runbook: "docs/storage/03-backup-and-disaster-recovery.md#triage-runbook"
+
+  - alert: StorageGrowthSpike
+    expr: |
+      rate(storage_upload_bytes_total[1h])
+        > 5 * rate(storage_upload_bytes_total[7d] offset 7d)
+    for: 30m
+    labels: { severity: P2, owner: storage }
+    annotations:
+      summary: "{{ $labels.class }} upload rate 5x trailing 7d baseline"
+
+  - alert: StorageUploadLatencyP99High
+    expr: |
+      histogram_quantile(
+        0.99,
+        sum by (class,le) (rate(storage_upload_duration_seconds_bucket[10m]))
+      ) > 8
+    for: 30m
+    labels: { severity: P3, owner: storage }
+    annotations:
+      summary: "p99 upload latency for {{ $labels.class }} > 8s for 30m"
+
+  - alert: StorageAvNotYetScanned
+    expr: rate(storage_av_outcomes_total{outcome="not_yet_scanned"}[5m]) > 0.5
+    for: 15m
+    labels: { severity: P3, owner: storage }
+    annotations:
+      summary: "AV scanner lag — {{ $value }}/s NOT-YET-SCANNED reads"
