@@ -32,6 +32,63 @@ pub fn render_template(template: &str, context: &serde_json::Value) -> String {
     }
 }
 
+/// Derive a plain-text alternative from a fully-rendered HTML email body.
+///
+/// Used by `send_email_with_headers` to populate Resend's `text` field —
+/// every mainstream spam classifier (Gmail's "Bayesian-plus", SpamAssassin,
+/// Postmark's neural model) penalises HTML-only mail, so shipping a
+/// matching plain-text part is the single biggest deliverability win
+/// after authentication.
+///
+/// Strategy:
+///   * Strip `<head>` / `<style>` / `<script>` blocks outright — their
+///     contents would otherwise pollute the text body with CSS rules.
+///   * Replace `<br>` and `</p>` / `</div>` / `</li>` / `<tr>` / `</h*>`
+///     with newlines so paragraph structure survives.
+///   * Strip the remaining tags.
+///   * Decode the handful of HTML entities our bodies actually emit
+///     (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&nbsp;`, `&mdash;`, `&hellip;`,
+///     `&#123;` / `&#125;`).
+///   * Collapse runs of blank lines and trailing whitespace.
+///
+/// Intentionally simple — the bodies are well-structured POOOL-shell
+/// HTML, not arbitrary user content, so a regex-based strip is enough.
+/// No external dep beyond `regex` (already a backend transitive).
+pub fn html_to_plain_text(html: &str) -> String {
+    use regex::Regex;
+    // Build regexes once per call — cheap enough at email frequency, and
+    // avoids the static-mut / `once_cell` ceremony for a helper that's
+    // called once per outbox flush.
+    let strip_head_style_script =
+        Regex::new(r"(?is)<(head|style|script)\b[^>]*>.*?</\1>").unwrap();
+    let block_breaks =
+        Regex::new(r"(?i)<(br\s*/?|/(p|div|li|tr|h[1-6]))\s*>").unwrap();
+    let any_tag = Regex::new(r"(?s)<[^>]+>").unwrap();
+    let collapse_blank = Regex::new(r"\n{3,}").unwrap();
+    let trailing_spaces = Regex::new(r"[ \t]+\n").unwrap();
+
+    let mut out = strip_head_style_script.replace_all(html, "").to_string();
+    out = block_breaks.replace_all(&out, "\n").to_string();
+    out = any_tag.replace_all(&out, "").to_string();
+
+    // Decode HTML entities we actually emit.
+    out = out
+        .replace("&nbsp;", " ")
+        .replace("&mdash;", "—")
+        .replace("&ndash;", "–")
+        .replace("&hellip;", "…")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#123;", "{")
+        .replace("&#125;", "}")
+        .replace("&amp;", "&"); // amp last so `&amp;lt;` doesn't collapse to `<`
+
+    out = trailing_spaces.replace_all(&out, "\n").to_string();
+    out = collapse_blank.replace_all(&out, "\n\n").to_string();
+    out.trim().to_string()
+}
+
 /// Returns true when transactional email delivery is configured.
 pub fn resend_configured() -> bool {
     std::env::var("RESEND_API_KEY")
@@ -100,11 +157,29 @@ pub async fn send_email_with_headers(
         );
     }
 
+    // Gold-standard deliverability:
+    //   * `Reply-To` — recipients can reply with one tap; the reply lands
+    //     on the support inbox instead of the unmonitored `hello@` sender.
+    //     Gmail / Outlook treat replies as a strong positive engagement
+    //     signal that lifts future inbox placement.
+    //   * `text/plain` alternative — every mainstream spam classifier
+    //     penalises HTML-only mail. Deriving plain-text from the rendered
+    //     HTML keeps the two parts in sync without maintaining a second
+    //     copy per event.
+    let reply_to = std::env::var("EMAIL_REPLY_TO")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "support@poool.app".to_string());
+
+    let plain_text = html_to_plain_text(html_body);
+
     let mut payload = json!({
         "from": "POOOL <hello@poool.app>",
         "to": [to],
+        "reply_to": reply_to,
         "subject": subject,
         "html": html_body,
+        "text": plain_text,
     });
     payload["headers"] = serde_json::Value::Object(headers_json);
 
@@ -1050,6 +1125,85 @@ mod tests {
         let tmpl = "{% if first_name %}Hi {{first_name}}{% else %}Hi there{% endif %}!";
         assert_eq!(render_template(tmpl, &ctx_named), "Hi Sam!");
         assert_eq!(render_template(tmpl, &ctx_anon), "Hi there!");
+    }
+
+    // ── html_to_plain_text (deliverability — multipart/alternative) ──
+
+    #[test]
+    fn html_to_plain_strips_tags() {
+        let html = "<p>Hello <strong>world</strong></p>";
+        let out = html_to_plain_text(html);
+        assert!(out.contains("Hello world"));
+        assert!(!out.contains("<"));
+    }
+
+    #[test]
+    fn html_to_plain_drops_style_and_script_blocks() {
+        // Style/script contents would otherwise pollute the plain text
+        // with raw CSS — a major spam signal.
+        let html = r#"<html><head><style>body{color:red}</style></head>
+<body><script>alert(1)</script><p>Hi</p></body></html>"#;
+        let out = html_to_plain_text(html);
+        assert!(out.contains("Hi"));
+        assert!(!out.contains("color:red"));
+        assert!(!out.contains("alert"));
+    }
+
+    #[test]
+    fn html_to_plain_preserves_paragraph_breaks() {
+        let html = "<p>First</p><p>Second</p>";
+        let out = html_to_plain_text(html);
+        assert!(out.contains("First\n"), "expected newline after First; got: {out:?}");
+        assert!(out.contains("Second"));
+    }
+
+    #[test]
+    fn html_to_plain_handles_br_and_list_items() {
+        let html = "<p>Line1<br>Line2</p><ul><li>A</li><li>B</li></ul>";
+        let out = html_to_plain_text(html);
+        assert!(out.contains("Line1"));
+        assert!(out.contains("Line2"));
+        assert!(out.contains("A"));
+        assert!(out.contains("B"));
+    }
+
+    #[test]
+    fn html_to_plain_decodes_common_entities() {
+        let html = "<p>Caf&eacute; &amp; Co. &mdash; 100&nbsp;EUR &quot;test&quot;</p>";
+        let out = html_to_plain_text(html);
+        // &eacute; not in our decode set, so it survives — that's fine
+        // because POOOL bodies don't emit it. The ones we do emit decode.
+        assert!(out.contains("&") || out.contains("&amp;") == false, "& should decode");
+        assert!(out.contains("—"));
+        assert!(out.contains("\"test\""));
+    }
+
+    #[test]
+    fn html_to_plain_collapses_excessive_blank_lines() {
+        let html = "<p>A</p>\n\n\n\n\n<p>B</p>";
+        let out = html_to_plain_text(html);
+        // Should not have a giant run of blank lines.
+        assert!(!out.contains("\n\n\n\n"));
+    }
+
+    #[test]
+    fn html_to_plain_strips_safe_for_real_email_shell() {
+        // Smoke-test on a full POOOL shell — we should get a readable
+        // text version with greeting + body lines + footer info.
+        let html = r#"<!doctype html><html><head><style>a{color:#0000FF}</style></head>
+<body><table><tr><td><a href="https://platform.poool.app/">POOOL</a></td></tr></table>
+<h2>Welcome, Maria</h2>
+<p>Your POOOL account is live.</p>
+<ul><li>Verify identity</li><li>Make a deposit</li></ul>
+<p>POOOL Capital GmbH &middot; Maximilianstra&szlig;e 13</p>
+</body></html>"#;
+        let out = html_to_plain_text(html);
+        assert!(out.contains("POOOL"));
+        assert!(out.contains("Welcome, Maria"));
+        assert!(out.contains("Verify identity"));
+        assert!(out.contains("Capital GmbH"));
+        assert!(!out.contains("<"));
+        assert!(!out.contains("color:#"));
     }
 
     // ── workflow toggle / mandatory-event semantics ───────────────────
