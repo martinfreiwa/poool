@@ -140,3 +140,71 @@ groups:
           team: platform
         annotations:
           summary: "Backend p99 latency above 2s"
+
+  # ─── Security signals (added 2026-05-16) ────────────────────────────
+  #
+  # These ride on the existing `http_requests_total` counter (per-route,
+  # per-status_class). They watch the surfaces hardened in the May wallet
+  # audit (idempotency, webhook replay, admin permission gates) for the
+  # patterns that would indicate either an attempted exploit or a
+  # regression in the defence.
+  - name: backend_security
+    interval: 30s
+    rules:
+      # Resend webhook 401s = signature verification failing. A small
+      # background rate is normal during secret rotation; a sustained
+      # spike means either replay/spoofing attempts (C-2 defence working)
+      # or our shared secret drifted from Resend's.
+      - alert: ResendWebhookSignatureFailureSpike
+        expr: |
+          sum(rate(http_requests_total{path=~".*/webhooks/resend.*",status_class="4xx"}[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: ticket
+          team: payments
+        annotations:
+          summary: "Resend webhook 4xx rate sustained >0.05/s — signature mismatch or replay attempts"
+          runbook: docs/security-audits/2026-05-16-admin-auth-followup.md
+
+      # Admin 403 spike = a non-admin or under-privileged operator is
+      # probing admin routes (privilege escalation attempt) OR a
+      # legitimate role lost a permission. Either way: investigate.
+      - alert: AdminPermissionDeniedSpike
+        expr: |
+          sum(rate(http_requests_total{path=~"/admin/.*|/api/admin/.*",status_class="4xx"}[10m])) > 0.2
+        for: 15m
+        labels:
+          severity: ticket
+          team: platform
+        annotations:
+          summary: "Admin endpoints returning 4xx at >0.2/s — possible privilege probing"
+
+      # Idempotency conflict storm: the same Idempotency-Key arriving
+      # concurrently from one user manifests as 409s on the mutating
+      # endpoints. A short burst is the helper doing its job (a real
+      # double-submit). A sustained rate means either client retry-loop
+      # gone wrong or someone attempting replay attacks.
+      - alert: IdempotencyConflictStorm
+        expr: |
+          sum(rate(http_requests_total{path=~".*/(confirm|approve|reject|withdraw|deposit).*",status_class="4xx"}[5m]))
+            > 0.5
+        for: 10m
+        labels:
+          severity: ticket
+          team: payments
+        annotations:
+          summary: "High rate of 4xx on money-moving endpoints — likely idempotency replay or retry storm"
+
+      # Login + 2FA endpoints seeing many 4xx = credential stuffing / bot
+      # attack. The dual rate-limit (audit M#9) is the defence; this
+      # alert shows when it's earning its keep.
+      - alert: AuthEndpointAbusePattern
+        expr: |
+          sum(rate(http_requests_total{path=~"/auth/(login|2fa|forgot-password).*",status_class="4xx"}[5m])) > 1
+        for: 15m
+        labels:
+          severity: page
+          team: platform
+        annotations:
+          summary: "Auth endpoints 4xx rate >1/s sustained — credential stuffing / OTP brute-force in progress"
+          runbook: docs/runbooks/auth-abuse.md
