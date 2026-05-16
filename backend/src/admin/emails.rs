@@ -546,6 +546,79 @@ pub async fn api_admin_emails_campaign(
     .into_response())
 }
 
+/// GET /api/admin/emails/logs?status=&search=&days=
+///
+/// Filterable delivery logs with sane bounds — `days` defaults to 7,
+/// caps at 90; `status` filters to one of the known states (queued,
+/// sent, delivered, opened, clicked, bounced, failed, spam_complaint,
+/// skipped); `search` matches subject OR recipient_email substring.
+/// Result is capped at 500 rows; pagination on top is fine because the
+/// admin UI also paginates client-side.
+pub async fn api_admin_emails_logs(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<LogsQuery>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "emails.view").await?;
+
+    let days = q.days.unwrap_or(7).clamp(1, 90);
+    let status_filter = match q.status.as_deref() {
+        Some("all") | None | Some("") => None,
+        Some(s) => Some(s.to_string()),
+    };
+    let search = q.search.unwrap_or_default();
+    let search_pattern = if search.is_empty() {
+        None
+    } else {
+        Some(format!("%{}%", search.replace('%', "\\%").replace('_', "\\_")))
+    };
+
+    let rows = sqlx::query(
+        r#"SELECT e.id::text, e.subject, e.recipient_email, e.status, e.sent_at::text
+             FROM email_logs e
+            WHERE e.sent_at >= NOW() - ($1::TEXT || ' days')::INTERVAL
+              AND ($2::TEXT IS NULL OR e.status = $2)
+              AND ($3::TEXT IS NULL
+                   OR e.subject ILIKE $3
+                   OR e.recipient_email ILIKE $3)
+            ORDER BY e.sent_at DESC
+            LIMIT 500"#,
+    )
+    .bind(days.to_string())
+    .bind(status_filter.as_deref())
+    .bind(search_pattern.as_deref())
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    let logs: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.get::<String, _>("id"),
+                "subject": r.get::<String, _>("subject"),
+                "recipient_email": r.get::<String, _>("recipient_email"),
+                "status": r.get::<String, _>("status"),
+                "sent_at": r.get::<String, _>("sent_at"),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({ "logs": logs, "filters": { "days": days } }))
+        .into_response())
+}
+
+/// Query string for `api_admin_emails_logs`.
+#[derive(serde::Deserialize)]
+pub struct LogsQuery {
+    /// Status filter — `"all"`, empty, or `None` returns every row.
+    pub status: Option<String>,
+    /// Substring matched against subject OR recipient_email (case-insensitive).
+    pub search: Option<String>,
+    /// Lookback window in days. Clamped to 1..=90 server-side; defaults to 7.
+    pub days: Option<i64>,
+}
+
 /// GET /api/admin/emails/audiences/:segment/count — recipient count for a
 /// segment without sending. Powers the campaign preview "this will mail N
 /// users" UI introduced in Commit 5.

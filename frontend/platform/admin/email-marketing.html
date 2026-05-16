@@ -357,7 +357,7 @@
             </div>
 
             <div class="admin-form-group">
-              <label class="admin-form-label">HTML Content (Supports {{variables}})</label>
+              <label class="admin-form-label">HTML Content (Supports <code>&#123;&#123;first_name&#125;&#125;</code>, <code>&#123;&#123;email&#125;&#125;</code>)</label>
               <div style="
                     border: 1px solid var(--admin-border);
                     border-radius: var(--admin-radius-md);
@@ -420,7 +420,26 @@
             </div>
 
             <div style="
-                  margin-top: 28px;
+                  margin-top: 16px;
+                  padding: 14px 16px;
+                  background: var(--admin-bg);
+                  border: 1px solid var(--admin-border);
+                  border-radius: var(--admin-radius-md);
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  font-size: 13px;
+                ">
+              <span style="color: var(--admin-text-muted)">
+                Recipients in this segment:
+              </span>
+              <span style="font-weight: 700; color: var(--admin-text-primary)"
+                x-text="audienceCountLoading ? 'Counting…' : (audienceCount !== null ? audienceCount.toLocaleString() + ' users' : '—')">
+              </span>
+            </div>
+
+            <div style="
+                  margin-top: 20px;
                   padding-top: 20px;
                   border-top: 1px solid var(--admin-border);
                   display: flex;
@@ -431,7 +450,7 @@
                 user data. Sending
                 cannot be undone.</span>
               <button class="admin-btn admin-btn--primary" @click="sendCampaign()"
-                :disabled="sending || !campaign.templateId">
+                :disabled="sending || !campaign.templateId || audienceCount === 0">
                 <span x-show="!sending">Send Campaign</span>
                 <span x-show="sending">Starting Campaign...</span>
               </button>
@@ -446,16 +465,40 @@
                   padding: 24px;
                   border-bottom: 1px solid var(--admin-border);
                 ">
-              <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
-                Delivery Logs
-              </h3>
-              <p style="
-                    font-size: 13px;
-                    color: var(--admin-text-muted);
-                    margin: 0;
-                  ">
-                Recent email dispatch events and status.
-              </p>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;">
+                <div>
+                  <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+                    Delivery Logs
+                  </h3>
+                  <p style="
+                        font-size: 13px;
+                        color: var(--admin-text-muted);
+                        margin: 0;
+                      ">
+                    Recent email dispatch events and status. Filter by status, recipient, or time window.
+                  </p>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <select x-model="logFilters.status" @change="refreshLogs()" class="admin-select" style="width:140px;">
+                    <option value="all">All statuses</option>
+                    <option value="queued">Queued</option>
+                    <option value="sent">Sent</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="opened">Opened</option>
+                    <option value="clicked">Clicked</option>
+                    <option value="bounced">Bounced</option>
+                    <option value="failed">Failed</option>
+                    <option value="spam_complaint">Spam complaint</option>
+                  </select>
+                  <select x-model.number="logFilters.days" @change="refreshLogs()" class="admin-select" style="width:120px;">
+                    <option :value="1">Last 24h</option>
+                    <option :value="7">Last 7 days</option>
+                    <option :value="30">Last 30 days</option>
+                    <option :value="90">Last 90 days</option>
+                  </select>
+                  <input type="text" x-model.debounce.400ms="logFilters.search" @input.debounce.400ms="refreshLogs()" class="admin-input" placeholder="Search subject/recipient…" style="width:240px;" />
+                </div>
+              </div>
             </div>
             <table class="admin-table">
               <thead>

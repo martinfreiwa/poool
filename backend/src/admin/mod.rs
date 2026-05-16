@@ -777,6 +777,7 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/emails/audiences/:segment/count",
             get(api_admin_emails_audience_count),
         )
+        .route("/api/admin/emails/logs", get(api_admin_emails_logs))
         // Settings
         .route(
             "/api/admin/settings",

@@ -385,6 +385,150 @@ fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
                 holdback = holdback_days)
         }
 
+        // ── Wallet / payouts ──────────────────────────────────────────
+        "withdrawal_processed" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let destination = metadata.get("destination").and_then(|v| v.as_str()).unwrap_or("your bank account");
+            let amount_block = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<p style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;color:#065F46;font-weight:600;">Settled: {}</p>"#,
+                    html_escape_email(amount))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Withdrawal processed ✓</h2>
+  <p>Your withdrawal has been settled and credited to {dest}.</p>
+  {amount}
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Keep this email for your records — it is your settlement confirmation.</p>
+</div>"#, amount = amount_block, dest = html_escape_email(destination))
+        }
+
+        // ── Returns / dividends / statements ──────────────────────────
+        "dividend_payout" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("one of your investments");
+            let amount_block = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<p style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;color:#065F46;font-weight:600;">Credited: {}</p>"#,
+                    html_escape_email(amount))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">You've earned a dividend</h2>
+  <p>A dividend distribution from <strong>{asset}</strong> has just landed in your POOOL wallet.</p>
+  {amount}
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Distribution</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Tax-relevant payout statements are available in your annual report.</p>
+</div>"#, asset = html_escape_email(asset), amount = amount_block)
+        }
+
+        "monthly_statement" => {
+            let month = metadata.get("month").and_then(|v| v.as_str()).unwrap_or("the last month");
+            let download = metadata.get("download_url").and_then(|v| v.as_str()).unwrap_or("https://platform.poool.app/statements");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Your POOOL statement for {month} is ready</h2>
+  <p>Your performance, dividends, fees, and tax summary for {month} are now available in your account.</p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Statement</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Statements are kept for 10 years per regulatory retention rules.</p>
+</div>"#, month = html_escape_email(month), url = html_escape_email(download))
+        }
+
+        // ── Orders / invoices ─────────────────────────────────────────
+        "order_confirmation" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("your investment");
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let order_id = metadata.get("order_id").and_then(|v| v.as_str()).unwrap_or("");
+            let amount_row = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;width:140px;">Amount</td><td style="padding:8px 0;color:#101828;font-weight:600;">{}</td></tr>"#,
+                    html_escape_email(amount))
+            };
+            let order_row = if order_id.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;">Order ID</td><td style="padding:8px 0;color:#101828;font-family:ui-monospace,monospace;font-weight:600;">{}</td></tr>"#,
+                    html_escape_email(order_id))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Order confirmed</h2>
+  <p>Your investment in <strong>{asset}</strong> has been confirmed. Tokens will appear in your portfolio once settlement completes.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    {amount_row}
+    {order_row}
+  </table>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
+</div>"#, asset = html_escape_email(asset), amount_row = amount_row, order_row = order_row)
+        }
+
+        "invoice_available" => {
+            let download = metadata.get("download_url").and_then(|v| v.as_str()).unwrap_or("https://platform.poool.app/invoices");
+            let invoice_no = metadata.get("invoice_number").and_then(|v| v.as_str()).unwrap_or("");
+            let header_suffix = if invoice_no.is_empty() {
+                String::new()
+            } else {
+                format!(" #{}", html_escape_email(invoice_no))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Invoice{suffix} is ready</h2>
+  <p>Your invoice is available to download. Keep it for your tax records.</p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Download Invoice (PDF)</a></p>
+</div>"#, suffix = header_suffix, url = html_escape_email(download))
+        }
+
+        // ── Asset lifecycle ──────────────────────────────────────────
+        "asset_funded" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset you follow");
+            let asset_url = metadata.get("asset_url").and_then(|v| v.as_str()).unwrap_or("https://platform.poool.app/marketplace");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">{asset} is 100% funded</h2>
+  <p><strong>{asset}</strong> has reached its funding target. The primary offering is now closed; the asset moves to operations and (if applicable) the secondary marketplace once settlement completes.</p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Asset Page</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">You're receiving this because you follow this asset. Manage your watchlist in <a href="https://platform.poool.app/settings" style="color:#0000FF;">settings</a>.</p>
+</div>"#, asset = html_escape_email(asset), url = html_escape_email(asset_url))
+        }
+
+        // ── Villa-Returns operations lifecycle ───────────────────────
+        "operations_rejected" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("the asset");
+            let reason = metadata.get("rejection_reason").and_then(|v| v.as_str()).unwrap_or("Please review and resubmit.");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Action required: operations submission rejected</h2>
+  <p>Your operations submission for <strong>{asset}</strong> could not be approved.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
+  <p>Address the points above and resubmit from your developer dashboard.</p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
+</div>"#, asset = html_escape_email(asset), reason = html_escape_email(reason))
+        }
+
+        "operations_approved" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("the asset");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Operations approved — pending publish</h2>
+  <p>Your operations submission for <strong>{asset}</strong> has been reviewed and approved by the compliance team. It will be published live with the next scheduled NAV update.</p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Submission</a></p>
+</div>"#, asset = html_escape_email(asset))
+        }
+
+        "operations_published" => {
+            let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("the asset");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Operations published — now live</h2>
+  <p>The operations period for <strong>{asset}</strong> has gone live. Investors can now see the latest revenue, occupancy, and NAV figures on the asset page.</p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
+</div>"#, asset = html_escape_email(asset))
+        }
+
         _ => format!(
             r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;"><p>You have a new notification from POOOL.</p></div>"#
         ),
@@ -595,6 +739,15 @@ mod tests {
         "withdraw_requested",
         "withdraw_approved",
         "withdraw_rejected",
+        "withdrawal_processed",
+        "dividend_payout",
+        "monthly_statement",
+        "order_confirmation",
+        "invoice_available",
+        "asset_funded",
+        "operations_rejected",
+        "operations_approved",
+        "operations_published",
         "support_ticket_reply",
         "support_ticket_new",
         "support_ticket_resolved",
@@ -613,23 +766,16 @@ mod tests {
 
     /// Events that `trigger_transactional_email` knows a subject for but
     /// that currently fall through to the generic "you have a new
-    /// notification" body. Documenting them here makes the gap part of the
-    /// suite — Commit 3 (mid bugs) fixes these by adding real bodies.
+    /// notification" body. The auth/security ones are intentionally here
+    /// because they take a dedicated path in `auth/service.rs` (welcome /
+    /// password reset have their own templates) and never actually flow
+    /// through `build_email_html` in practice.
     const EVENTS_FALLING_THROUGH_TO_DEFAULT: &[&str] = &[
         "welcome",
         "verify_email",
         "password_reset",
         "2fa_setup",
         "new_login",
-        "withdrawal_processed",
-        "dividend_payout",
-        "monthly_statement",
-        "order_confirmation",
-        "invoice_available",
-        "asset_funded",
-        "operations_rejected",
-        "operations_approved",
-        "operations_published",
     ];
 
     /// Sentinel substring of the generic fallback body. If a "custom body"
@@ -761,5 +907,116 @@ mod tests {
         );
         assert!(!html.contains("<img src=x"));
         assert!(html.contains("&lt;img src=x"));
+    }
+
+    // ── New bodies added in Commit 4 (fallthrough fix) ────────────────
+
+    #[test]
+    fn dividend_payout_renders_asset_and_amount() {
+        let html = build_email_html(
+            "dividend_payout",
+            &json!({ "asset_name": "Villa Bali #12", "amount_display": "€42.50" }),
+        );
+        assert!(html.contains("Villa Bali #12"));
+        assert!(html.contains("€42.50"));
+        assert!(html.contains("dividend"));
+    }
+
+    #[test]
+    fn monthly_statement_renders_month_and_link() {
+        let html = build_email_html(
+            "monthly_statement",
+            &json!({ "month": "April 2026", "download_url": "https://x.test/s/123" }),
+        );
+        assert!(html.contains("April 2026"));
+        assert!(html.contains("https://x.test/s/123"));
+    }
+
+    #[test]
+    fn order_confirmation_skips_optional_blocks_when_missing() {
+        let html = build_email_html("order_confirmation", &json!({}));
+        assert!(html.contains("Order confirmed"));
+        assert!(!html.contains("Order ID"));
+        assert!(!html.contains("Amount"));
+    }
+
+    #[test]
+    fn order_confirmation_includes_amount_and_id_when_present() {
+        let html = build_email_html(
+            "order_confirmation",
+            &json!({
+                "asset_name": "Test Asset",
+                "amount_display": "$1,000",
+                "order_id": "ord-abc123",
+            }),
+        );
+        assert!(html.contains("Test Asset"));
+        assert!(html.contains("$1,000"));
+        assert!(html.contains("ord-abc123"));
+    }
+
+    #[test]
+    fn invoice_available_includes_invoice_number_when_present() {
+        let html = build_email_html(
+            "invoice_available",
+            &json!({ "invoice_number": "INV-2026-042" }),
+        );
+        assert!(html.contains("INV-2026-042"));
+    }
+
+    #[test]
+    fn invoice_available_works_without_invoice_number() {
+        let html = build_email_html("invoice_available", &json!({}));
+        assert!(html.contains("Invoice"));
+        assert!(html.contains("Download Invoice"));
+    }
+
+    #[test]
+    fn asset_funded_includes_asset_name_and_url() {
+        let html = build_email_html(
+            "asset_funded",
+            &json!({
+                "asset_name": "Penthouse Marbella",
+                "asset_url": "https://platform.poool.app/assets/abc",
+            }),
+        );
+        assert!(html.contains("Penthouse Marbella"));
+        assert!(html.contains("https://platform.poool.app/assets/abc"));
+        assert!(html.contains("100% funded"));
+    }
+
+    #[test]
+    fn operations_rejected_renders_reason() {
+        let html = build_email_html(
+            "operations_rejected",
+            &json!({
+                "asset_name": "Villa X",
+                "rejection_reason": "Missing occupancy data for week 32",
+            }),
+        );
+        assert!(html.contains("Villa X"));
+        assert!(html.contains("Missing occupancy data for week 32"));
+    }
+
+    #[test]
+    fn operations_approved_published_render_asset_name() {
+        for event in ["operations_approved", "operations_published"] {
+            let html = build_email_html(event, &json!({ "asset_name": "Casa Vista" }));
+            assert!(
+                html.contains("Casa Vista"),
+                "event '{event}' should include asset name"
+            );
+        }
+    }
+
+    #[test]
+    fn withdrawal_processed_renders_destination_and_amount() {
+        let html = build_email_html(
+            "withdrawal_processed",
+            &json!({ "amount_display": "€500.00", "destination": "DE89 …4567" }),
+        );
+        assert!(html.contains("€500.00"));
+        assert!(html.contains("DE89 …4567"));
+        assert!(html.contains("processed"));
     }
 }

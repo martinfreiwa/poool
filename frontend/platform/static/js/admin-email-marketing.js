@@ -40,6 +40,15 @@ document.addEventListener("alpine:init", () => {
       audience: "all",
       templateId: "",
     },
+    audienceCount: null,
+    audienceCountLoading: false,
+
+    // Logs filter state — server-side via /api/admin/emails/logs
+    logFilters: {
+      status: "all",
+      search: "",
+      days: 7,
+    },
 
     // Toast
     toast: {
@@ -58,7 +67,44 @@ document.addEventListener("alpine:init", () => {
           this._destroyCodeMirror();
         }
       });
+      // Re-fetch recipient count whenever the audience changes (campaign tab).
+      this.$watch("campaign.audience", () => this.refreshAudienceCount());
       await this.loadData();
+      this.refreshAudienceCount();
+    },
+
+    async refreshAudienceCount() {
+      this.audienceCountLoading = true;
+      this.audienceCount = null;
+      try {
+        const seg = this.campaign.audience;
+        const r = await fetch(`/api/admin/emails/audiences/${seg}/count`);
+        if (!r.ok) throw new Error("Failed to load audience count");
+        const d = await r.json();
+        this.audienceCount = d.count;
+      } catch (_) {
+        this.audienceCount = null;
+      } finally {
+        this.audienceCountLoading = false;
+      }
+    },
+
+    async refreshLogs() {
+      const p = new URLSearchParams();
+      if (this.logFilters.status && this.logFilters.status !== "all") {
+        p.set("status", this.logFilters.status);
+      }
+      if (this.logFilters.search) p.set("search", this.logFilters.search);
+      p.set("days", String(this.logFilters.days || 7));
+      try {
+        const r = await fetch(`/api/admin/emails/logs?${p.toString()}`);
+        if (!r.ok) throw new Error("Failed to load logs");
+        const d = await r.json();
+        this.logs = d.logs || [];
+        this.logPage = 1;
+      } catch (err) {
+        this.showToast("Failed to load filtered logs.", "error");
+      }
     },
 
     _mountCodeMirror() {
