@@ -99,19 +99,26 @@ fn strip_legacy_wrapper(body: &str) -> String {
     trimmed.to_string()
 }
 
-/// Wrap event-specific inner HTML in the POOOL branded email shell —
-/// header with logo, white content card, gray footer with legal info.
+/// Wrap event-specific inner HTML in the POOOL branded email shell.
+///
+/// Brand palette matches the live platform (`bundle.css`):
+///   * `#0000FF` — primary electric blue (header background, links, CTAs)
+///   * `#98FB96` — mint green (wordmark + CTA text — the signature POOOL combo)
+///   * `#FAFAFA` — page background (same as `--content-bg`)
+///   * `#181D27` — primary text (same as `--text-primary`)
+///   * `#535862` — secondary text (same as `--text-secondary`)
+///
 /// Email-client safe: tables-only layout, inline styles, no SVG, no
 /// background-image, no flexbox, max-width 600px.
 pub(crate) fn wrap_with_shell(inner: &str, opts: ShellOpts) -> String {
     let unsubscribe_block = if opts.is_optional {
-        r#"<p style="margin:0 0 8px;color:#717680;font-size:11px;">
+        r#"<p style="margin:0 0 8px;color:#535862;font-size:11px;">
 You're receiving this because you opted in to POOOL updates. Manage email preferences in your
-<a href="https://platform.poool.app/settings" style="color:#717680;text-decoration:underline;">account settings</a>
+<a href="https://platform.poool.app/settings" style="color:#535862;text-decoration:underline;">account settings</a>
 or use the one-click unsubscribe link in your email client.
 </p>"#
     } else {
-        r#"<p style="margin:0 0 8px;color:#717680;font-size:11px;">
+        r#"<p style="margin:0 0 8px;color:#535862;font-size:11px;">
 This is a security or transactional message related to your POOOL account and cannot be unsubscribed from.
 </p>"#
     };
@@ -136,24 +143,24 @@ This is a security or transactional message related to your POOOL account and ca
   a {{ color: #0000FF; }}
 </style>
 </head>
-<body style="margin:0;padding:0;background:#F4F4F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#101828;-webkit-font-smoothing:antialiased;">
+<body style="margin:0;padding:0;background:#FAFAFA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#181D27;-webkit-font-smoothing:antialiased;">
   <!-- Hidden preheader — parsed by Gmail / Apple Mail as the inbox preview snippet. -->
-  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#F4F4F5;opacity:0;">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FAFAFA;opacity:0;">
     {preheader}
   </div>
 
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#F4F4F5;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#FAFAFA;">
     <tr><td align="center" style="padding:32px 16px;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,0.04);">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E9EAEB;box-shadow:0 1px 2px rgba(10,13,18,0.05);">
 
-        <!-- ─── Header ─── -->
-        <tr><td class="px" style="padding:28px 32px;background:#01011C;">
+        <!-- ─── Header — electric blue + mint wordmark (signature POOOL combo) ─── -->
+        <tr><td class="px" style="padding:28px 32px;background:#0000FF;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
             <tr>
               <td align="left" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-                <a href="https://platform.poool.app/" style="text-decoration:none;color:#FFFFFF;letter-spacing:0.18em;font-weight:800;font-size:18px;">POOOL</a>
+                <a href="https://platform.poool.app/" style="text-decoration:none;color:#98FB96;letter-spacing:0.18em;font-weight:800;font-size:20px;">POOOL</a>
               </td>
-              <td align="right" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;color:#9BA3AF;letter-spacing:0.06em;text-transform:uppercase;">
+              <td align="right" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;color:#D4FFE9;letter-spacing:0.06em;text-transform:uppercase;">
                 Tokenised real-asset investing
               </td>
             </tr>
@@ -161,18 +168,18 @@ This is a security or transactional message related to your POOOL account and ca
         </td></tr>
 
         <!-- ─── Body ─── -->
-        <tr><td class="px pt" style="padding:36px 40px 28px;font-size:15px;line-height:1.6;color:#101828;">
+        <tr><td class="px pt" style="padding:36px 40px 28px;font-size:15px;line-height:1.6;color:#181D27;">
 {inner}
         </td></tr>
 
         <!-- ─── Footer ─── -->
-        <tr><td class="px" style="padding:24px 32px 32px;background:#FAFAFA;border-top:1px solid #E9EAEB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.55;color:#717680;">
+        <tr><td class="px" style="padding:24px 32px 32px;background:#FAFAFA;border-top:1px solid #E9EAEB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.55;color:#535862;">
           {unsubscribe_block}
           <p style="margin:8px 0 4px;">
             POOOL Capital GmbH · Maximilianstraße 13 · 80539 München · Germany ·
-            <a href="mailto:support@poool.app" style="color:#717680;text-decoration:underline;">support@poool.app</a>
+            <a href="mailto:support@poool.app" style="color:#535862;text-decoration:underline;">support@poool.app</a>
           </p>
-          <p style="margin:0;color:#9BA3AF;">© POOOL Capital GmbH. All rights reserved.</p>
+          <p style="margin:0;color:#717680;">© POOOL Capital GmbH. All rights reserved.</p>
         </td></tr>
 
       </table>
@@ -203,7 +210,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let first_name = metadata.get("first_name").and_then(|v| v.as_str()).unwrap_or("there");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Welcome to POOOL, {first}</h2>
+  <h2 style="color:#181D27;">Welcome to POOOL, {first}</h2>
   <p>Your account is live. POOOL gives you fractional access to tokenised real estate and other yield-bearing assets, with built-in custody, payouts, and reporting.</p>
   <p>A quick checklist to get the most out of your first session:</p>
   <ul style="color:#414651;line-height:1.7;">
@@ -211,7 +218,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
     <li>Make a first deposit — wires or SEPA, no card fees.</li>
     <li>Browse the marketplace and follow assets you like.</li>
   </ul>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Need help? Reply to this email or visit our <a href="https://platform.poool.app/support" style="color:#0000FF;">support centre</a>.</p>
 </div>"#, first = html_escape_email(first_name))
         }
@@ -221,9 +228,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("https://platform.poool.app/auth/verify-email?token=...");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Verify your POOOL email</h2>
+  <h2 style="color:#181D27;">Verify your POOOL email</h2>
   <p>Tap the button below to confirm your email address. The link is valid for 24 hours.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you didn't sign up for POOOL, ignore this email — no account will be created without verification.</p>
 </div>"#, url = html_escape_email(verify_url))
         }
@@ -233,16 +240,16 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("https://platform.poool.app/auth/reset-password?token=...");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Reset your POOOL password</h2>
+  <h2 style="color:#181D27;">Reset your POOOL password</h2>
   <p>You requested a password reset. Click the link below to set a new password — it expires in 1 hour.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Reset Password</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Reset Password</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you did not request this reset, ignore this email and your password will stay unchanged. For any concern, contact <a href="mailto:security@poool.app" style="color:#0000FF;">security@poool.app</a>.</p>
 </div>"#, url = html_escape_email(reset_url))
         }
 
         "2fa_setup" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Two-factor authentication is on ✓</h2>
+  <h2 style="color:#181D27;">Two-factor authentication is on ✓</h2>
   <p>Your POOOL account is now protected by an authenticator app. From now on you'll be asked for a 6-digit code on every sign-in, plus for sensitive actions like withdrawals and payment method changes.</p>
   <p style="background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;color:#344054;font-size:14px;line-height:1.6;">
     <strong>Save your recovery codes.</strong> If you lose access to your authenticator app, recovery codes are the only way back in. Find them in
@@ -263,7 +270,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">New sign-in to your account</h2>
+  <h2 style="color:#181D27;">New sign-in to your account</h2>
   <p>We noticed a sign-in to your POOOL account from {device}.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     <tr><td style="padding:8px 0;color:#717680;width:120px;">Location</td><td style="padding:8px 0;color:#101828;font-weight:500;">{location}</td></tr>
@@ -283,9 +290,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 
         "kyc_approved" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your identity has been verified ✓</h2>
+  <h2 style="color:#181D27;">Your identity has been verified ✓</h2>
   <p>Great news — your KYC application has been approved. You can now invest in tokenised assets on POOOL.</p>
-  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Browse Assets</a></p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Browse Assets</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you have questions, reply to this email or visit our support centre.</p>
 </div>"#.to_string(),
 
@@ -295,18 +302,18 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("Please review the requirements and resubmit.");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Action required: KYC resubmission</h2>
+  <h2 style="color:#181D27;">Action required: KYC resubmission</h2>
   <p>Unfortunately your identity verification could not be approved at this time.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
   <p>Please resubmit your documents addressing the issue above.</p>
-  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Verification</a></p>
+  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Verification</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Need help? Contact us at support@poool.app</p>
 </div>"#, reason = html_escape_email(reason))
         }
 
         "kyc_submitted" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">We received your verification documents</h2>
+  <h2 style="color:#181D27;">We received your verification documents</h2>
   <p>Your KYC application is now under review. This typically takes 1–2 business days.</p>
   <p>We'll email you as soon as a decision is made.</p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at support@poool.app</p>
@@ -322,10 +329,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your deposit has been received</h2>
+  <h2 style="color:#181D27;">Your deposit has been received</h2>
   <p>Your wire transfer has been verified and your POOOL wallet balance has been updated.</p>
   {amount}
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at support@poool.app</p>
 </div>"#, amount = amount_block)
         }
@@ -348,13 +355,13 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">We received your proof of transfer</h2>
+  <h2 style="color:#181D27;">We received your proof of transfer</h2>
   <p>Thanks — your deposit has been submitted and is awaiting verification. Your wallet will be credited within {hours} hours after the wire is received.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     {amount_row}
     {reference_row}
   </table>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Track Deposit</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Track Deposit</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Make sure the reference above appears on the wire transfer — without it, we cannot match your deposit.</p>
 </div>"#, hours = processing_hours, amount_row = amount_row, reference_row = reference_row)
         }
@@ -370,14 +377,14 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Withdrawal request received</h2>
+  <h2 style="color:#181D27;">Withdrawal request received</h2>
   <p>Your withdrawal is pending admin review. We'll email you again as soon as the funds are released.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     {amount_row}
     <tr><td style="padding:8px 0;color:#717680;">Destination</td><td style="padding:8px 0;color:#101828;font-weight:500;">{dest}</td></tr>
     <tr><td style="padding:8px 0;color:#717680;">Processing time</td><td style="padding:8px 0;color:#101828;font-weight:500;">1–3 business days</td></tr>
   </table>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you did not request this withdrawal, contact support@poool.app immediately.</p>
 </div>"#, amount_row = amount_row, dest = html_escape_email(destination))
         }
@@ -393,11 +400,11 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Withdrawal sent ✓</h2>
+  <h2 style="color:#181D27;">Withdrawal sent ✓</h2>
   <p>Your withdrawal has been approved and the funds are on their way to {dest}.</p>
   {amount}
   <p>Bank settlement typically takes 1–3 business days depending on your bank.</p>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
 </div>"#, amount = amount_block, dest = html_escape_email(destination))
         }
 
@@ -412,11 +419,11 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Withdrawal could not be processed</h2>
+  <h2 style="color:#181D27;">Withdrawal could not be processed</h2>
   <p>Unfortunately your withdrawal request was rejected. The held amount has been returned to your wallet balance.</p>
   {amount}
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Wallet</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Wallet</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact support@poool.app</p>
 </div>"#, amount = amount_block, reason = html_escape_email(reason))
         }
@@ -427,10 +434,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let ticket_id = metadata.get("ticket_id").and_then(|v| v.as_str()).unwrap_or("");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">You have a new reply on your support ticket</h2>
+  <h2 style="color:#181D27;">You have a new reply on your support ticket</h2>
   <p style="color:#414651;">Our support team has replied to: <strong>{subject}</strong></p>
   {preview_block}
-  <p><a href="https://platform.poool.app/support#{ticket_id}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Conversation</a></p>
+  <p><a href="https://platform.poool.app/support#{ticket_id}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Conversation</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Reply directly in your support portal. Please do not reply to this email.</p>
 </div>"#,
                 ticket_id = ticket_id,
@@ -448,13 +455,13 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let priority = metadata.get("priority").and_then(|v| v.as_str()).unwrap_or("normal");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">New support ticket submitted</h2>
+  <h2 style="color:#181D27;">New support ticket submitted</h2>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     <tr><td style="padding:8px 0;color:#717680;width:120px;">From</td><td style="padding:8px 0;color:#101828;font-weight:500;">{user}</td></tr>
     <tr><td style="padding:8px 0;color:#717680;">Subject</td><td style="padding:8px 0;color:#101828;font-weight:500;">{subject}</td></tr>
     <tr><td style="padding:8px 0;color:#717680;">Priority</td><td style="padding:8px 0;color:#101828;font-weight:500;">{priority}</td></tr>
   </table>
-  <p><a href="https://platform.poool.app/admin/support.html" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View in Admin Panel</a></p>
+  <p><a href="https://platform.poool.app/admin/support.html" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View in Admin Panel</a></p>
 </div>"#,
                 user = html_escape_email(user_email),
                 subject = html_escape_email(subject_line),
@@ -466,10 +473,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let subject_line = metadata.get("ticket_subject").and_then(|v| v.as_str()).unwrap_or("your ticket");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your support ticket has been resolved</h2>
+  <h2 style="color:#181D27;">Your support ticket has been resolved</h2>
   <p style="color:#414651;">We've marked <strong>{subject}</strong> as resolved.</p>
   <p style="color:#414651;">If your issue isn't fully sorted, you can reopen the ticket from your support portal at any time.</p>
-  <p><a href="https://platform.poool.app/support" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Ticket</a></p>
+  <p><a href="https://platform.poool.app/support" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Ticket</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Thank you for using POOOL support.</p>
 </div>"#,
                 subject = html_escape_email(subject_line),
@@ -498,7 +505,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   {logo}
-  <h2 style="color:#01011C;">You've been invited to {team}</h2>
+  <h2 style="color:#181D27;">You've been invited to {team}</h2>
   <p>{inviter} has invited you to join <strong>{team}</strong> as a team-affiliate. Commissions from referrals via your business link will route to the team owner, while your personal affiliate link (if any) remains entirely yours.</p>
   <p><a href="{accept}" style="display:inline-block;padding:12px 24px;background:{accent};color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
   <p style="color:#717680;font-size:13px;">Or paste this token in your affiliate dashboard:</p>
@@ -517,9 +524,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let team_name = metadata.get("team_name").and_then(|v| v.as_str()).unwrap_or("a POOOL Affiliate Team");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Welcome to {team}</h2>
+  <h2 style="color:#181D27;">Welcome to {team}</h2>
   <p>You're now an active member of <strong>{team}</strong>. Your business affiliate link is live — commissions from referrals route to the team owner.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
 </div>"#, team = html_escape_email(team_name))
         }
 
@@ -527,7 +534,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let team_name = metadata.get("team_name").and_then(|v| v.as_str()).unwrap_or("the POOOL Affiliate Team");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your team membership has ended</h2>
+  <h2 style="color:#181D27;">Your team membership has ended</h2>
   <p>You've been removed from <strong>{team}</strong>. Your business affiliate link is no longer active. Historical commissions remain with the team owner per program rules. Your personal affiliate link (if any) continues to work independently.</p>
   <p style="color:#717680;font-size:13px;margin-top:24px;">Questions? Contact support@poool.app</p>
 </div>"#, team = html_escape_email(team_name))
@@ -538,9 +545,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let requester = metadata.get("requester_email").and_then(|v| v.as_str()).unwrap_or("a user");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">New join request for {team}</h2>
+  <h2 style="color:#181D27;">New join request for {team}</h2>
   <p><strong>{requester}</strong> has requested to join your affiliate team. Review and approve the request in your team dashboard.</p>
-  <p><a href="https://platform.poool.app/developer/affiliate-team" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Review Request</a></p>
+  <p><a href="https://platform.poool.app/developer/affiliate-team" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Review Request</a></p>
 </div>"#,
                 team = html_escape_email(team_name),
                 requester = html_escape_email(requester))
@@ -556,9 +563,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("A new member");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">{member} joined {team}</h2>
+  <h2 style="color:#181D27;">{member} joined {team}</h2>
   <p>Your invitation was accepted. {member} now has an active team-business affiliate link and any commissions they drive route directly to you.</p>
-  <p><a href="https://platform.poool.app/developer/affiliate-team/members" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Team Members</a></p>
+  <p><a href="https://platform.poool.app/developer/affiliate-team/members" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Team Members</a></p>
 </div>"#,
                 team = html_escape_email(team_name),
                 member = html_escape_email(member))
@@ -576,10 +583,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
         "affiliate_application_received" => {
             r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">We received your Partner Syndicate application</h2>
+  <h2 style="color:#181D27;">We received your Partner Syndicate application</h2>
   <p>Thanks for applying to the POOOL Partner Syndicate. Our team reviews new applications within 1–3 business days.</p>
   <p>You'll receive a follow-up email as soon as a decision is made. In the meantime you can continue to use your investor account as usual.</p>
-  <p><a href="https://platform.poool.app/affiliate" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Application</a></p>
+  <p><a href="https://platform.poool.app/affiliate" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Application</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at <a href="mailto:partners@poool.app" style="color:#0000FF;">partners@poool.app</a>.</p>
 </div>"#.to_string()
         }
@@ -590,10 +597,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let rate_pct = format!("{}.{:02}%", rate_bps / 100, rate_bps % 100);
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Welcome to the POOOL Partner Syndicate 🎉</h2>
+  <h2 style="color:#181D27;">Welcome to the POOOL Partner Syndicate 🎉</h2>
   <p>Your application has been approved. You're starting at the <strong>{tier}</strong> tier with a commission rate of <strong>{rate}</strong>.</p>
   <p>Your personal affiliate link is ready in your dashboard. Share it to start tracking referrals and earning commissions on qualified investments.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Before your first payout you'll need to upload a valid tax document and confirm your payout details.</p>
 </div>"#,
                 tier = html_escape_email(tier),
@@ -605,7 +612,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("Our team reviewed your application and could not approve it at this time.");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Update on your Partner Syndicate application</h2>
+  <h2 style="color:#181D27;">Update on your Partner Syndicate application</h2>
   <p>Thank you for your interest in becoming a POOOL Partner.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;">{reason}</p>
   <p>You're welcome to reapply after addressing the points above. Your investor account remains active and unaffected.</p>
@@ -618,7 +625,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("a compliance review of recent activity");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Urgent: your affiliate account is on hold</h2>
+  <h2 style="color:#181D27;">Urgent: your affiliate account is on hold</h2>
   <p>Your POOOL affiliate account has been temporarily suspended pending {reason}. New referrals and payouts are paused while we complete this review.</p>
   <p>Existing referrals, commissions earned, and any positive balance remain intact and will be released once the account is reinstated.</p>
   <p>Please contact our partner team within 7 days to resolve this:</p>
@@ -640,10 +647,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Payout released: {amount}</h2>
+  <h2 style="color:#181D27;">Payout released: {amount}</h2>
   <p>{dest}</p>
   <p>A detailed statement is available in your affiliate dashboard.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Payout Statement</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Payout Statement</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">For tax purposes, retain this email as confirmation of payout. Annual statements (1099 / VAT summary) are issued in January.</p>
 </div>"#,
                 amount = formatted_amount, dest = dest_line)
@@ -658,14 +665,14 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let holdback_days = metadata.get("holdback_days").and_then(|v| v.as_i64()).unwrap_or(30);
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">New commission tracked: {amount}</h2>
+  <h2 style="color:#181D27;">New commission tracked: {amount}</h2>
   <p>You've earned a commission from a qualified investment by <strong>{referred}</strong>.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     <tr><td style="padding:8px 0;color:#717680;width:140px;">Commission</td><td style="padding:8px 0;color:#101828;font-weight:600;">{amount}</td></tr>
     <tr><td style="padding:8px 0;color:#717680;">Status</td><td style="padding:8px 0;color:#101828;">Under holdback ({holdback}-day refund window)</td></tr>
   </table>
   <p>Commissions become payable once the holdback period ends and the underlying investment remains active.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View in Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View in Dashboard</a></p>
 </div>"#,
                 amount = formatted_amount,
                 referred = html_escape_email(referred_name),
@@ -684,10 +691,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Withdrawal processed ✓</h2>
+  <h2 style="color:#181D27;">Withdrawal processed ✓</h2>
   <p>Your withdrawal has been settled and credited to {dest}.</p>
   {amount}
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Keep this email for your records — it is your settlement confirmation.</p>
 </div>"#, amount = amount_block, dest = html_escape_email(destination))
         }
@@ -704,10 +711,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">You've earned a dividend</h2>
+  <h2 style="color:#181D27;">You've earned a dividend</h2>
   <p>A dividend distribution from <strong>{asset}</strong> has just landed in your POOOL wallet.</p>
   {amount}
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Distribution</a></p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Distribution</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Tax-relevant payout statements are available in your annual report.</p>
 </div>"#, asset = html_escape_email(asset), amount = amount_block)
         }
@@ -717,9 +724,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let download = metadata.get("download_url").and_then(|v| v.as_str()).unwrap_or("https://platform.poool.app/statements");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your POOOL statement for {month} is ready</h2>
+  <h2 style="color:#181D27;">Your POOOL statement for {month} is ready</h2>
   <p>Your performance, dividends, fees, and tax summary for {month} are now available in your account.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Statement</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Statement</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Statements are kept for 10 years per regulatory retention rules.</p>
 </div>"#, month = html_escape_email(month), url = html_escape_email(download))
         }
@@ -743,13 +750,13 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Order confirmed</h2>
+  <h2 style="color:#181D27;">Order confirmed</h2>
   <p>Your investment in <strong>{asset}</strong> has been confirmed. Tokens will appear in your portfolio once settlement completes.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     {amount_row}
     {order_row}
   </table>
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
 </div>"#, asset = html_escape_email(asset), amount_row = amount_row, order_row = order_row)
         }
 
@@ -763,9 +770,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Invoice{suffix} is ready</h2>
+  <h2 style="color:#181D27;">Invoice{suffix} is ready</h2>
   <p>Your invoice is available to download. Keep it for your tax records.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Download Invoice (PDF)</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Download Invoice (PDF)</a></p>
 </div>"#, suffix = header_suffix, url = html_escape_email(download))
         }
 
@@ -775,9 +782,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let asset_url = metadata.get("asset_url").and_then(|v| v.as_str()).unwrap_or("https://platform.poool.app/marketplace");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">{asset} is 100% funded</h2>
+  <h2 style="color:#181D27;">{asset} is 100% funded</h2>
   <p><strong>{asset}</strong> has reached its funding target. The primary offering is now closed; the asset moves to operations and (if applicable) the secondary marketplace once settlement completes.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Asset Page</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Asset Page</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">You're receiving this because you follow this asset. Manage your watchlist in <a href="https://platform.poool.app/settings" style="color:#0000FF;">settings</a>.</p>
 </div>"#, asset = html_escape_email(asset), url = html_escape_email(asset_url))
         }
@@ -788,11 +795,11 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let reason = metadata.get("rejection_reason").and_then(|v| v.as_str()).unwrap_or("Please review and resubmit.");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Action required: operations submission rejected</h2>
+  <h2 style="color:#181D27;">Action required: operations submission rejected</h2>
   <p>Your operations submission for <strong>{asset}</strong> could not be approved.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
   <p>Address the points above and resubmit from your developer dashboard.</p>
-  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
 </div>"#, asset = html_escape_email(asset), reason = html_escape_email(reason))
         }
 
@@ -800,9 +807,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("the asset");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Operations approved — pending publish</h2>
+  <h2 style="color:#181D27;">Operations approved — pending publish</h2>
   <p>Your operations submission for <strong>{asset}</strong> has been reviewed and approved by the compliance team. It will be published live with the next scheduled NAV update.</p>
-  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Submission</a></p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Submission</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -810,18 +817,18 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("the asset");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Operations published — now live</h2>
+  <h2 style="color:#181D27;">Operations published — now live</h2>
   <p>The operations period for <strong>{asset}</strong> has gone live. Investors can now see the latest revenue, occupancy, and NAV figures on the asset page.</p>
-  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
+  <p><a href="https://platform.poool.app/developer/operations" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Operations</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
         // ── Affiliate lifecycle (mirroring direct rewards/* send paths) ──
         "affiliate_commission_qualified" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Commission qualified ✓</h2>
+  <h2 style="color:#181D27;">Commission qualified ✓</h2>
   <p>Great news — the 30-day holdback period for one of your referred investments has ended. The underlying commission has upgraded from <em>under holdback</em> to <strong>payable</strong> and will be included in the next batch payout cycle.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
 </div>"#.to_string(),
 
         "affiliate_application_info_requested" => {
@@ -829,7 +836,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("Please reply with the additional details requested by our compliance team.");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Additional information requested</h2>
+  <h2 style="color:#181D27;">Additional information requested</h2>
   <p>Thank you for applying to the POOOL Partner Syndicate. Before we can complete the review of your application we need a bit more information from you:</p>
   <blockquote style="background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;color:#344054;font-size:14px;line-height:1.6;">{message}</blockquote>
   <p>Please reply to this email with the requested details. Your application will remain on file in <em>pending</em> status until we hear back.</p>
@@ -845,10 +852,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let volume_display = format!("${:.2}", (volume_cents as f64) / 100.0);
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Tier upgrade — welcome to {tier} 🎉</h2>
+  <h2 style="color:#181D27;">Tier upgrade — welcome to {tier} 🎉</h2>
   <p>Based on your qualified referral volume in the last 12 months (<strong>{volume}</strong>), you've been promoted to the <strong>{tier}</strong> tier.</p>
   <p>Your new commission rate is <strong>{rate}</strong> ({bps} bps) and applies to all future commissions. Earnings already accrued at the previous rate are unaffected.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Your Tier</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Your Tier</a></p>
 </div>"#,
                 tier = html_escape_email(new_tier),
                 volume = volume_display,
@@ -865,11 +872,11 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let volume_display = format!("${:.2}", (volume_cents as f64) / 100.0);
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Tier update</h2>
+  <h2 style="color:#181D27;">Tier update</h2>
   <p>Your tier has moved from <strong>{prev}</strong> to <strong>{tier}</strong> based on your qualified referral volume in the last 12 months ({volume}).</p>
   <p>Your new commission rate is <strong>{rate}</strong> ({bps} bps) and applies to all future commissions. Earnings already accrued at the previous rate are unaffected.</p>
   <p>To climb back, focus on qualified referrals — the next-tier threshold is shown in your dashboard.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
 </div>"#,
                 prev = html_escape_email(previous),
                 tier = html_escape_email(new_tier),
@@ -882,9 +889,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let material = metadata.get("material_name").and_then(|v| v.as_str()).unwrap_or("your custom marketing material");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Marketing material approved ✓</h2>
+  <h2 style="color:#181D27;">Marketing material approved ✓</h2>
   <p>Your custom marketing material <strong>{material}</strong> has been reviewed and approved. You may now use it in your campaigns.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
 </div>"#, material = html_escape_email(material))
         }
 
@@ -893,11 +900,11 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let reason = metadata.get("reason").and_then(|v| v.as_str()).unwrap_or("No reason provided");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Marketing material requires changes</h2>
+  <h2 style="color:#181D27;">Marketing material requires changes</h2>
   <p>Your custom marketing material <strong>{material}</strong> could not be approved at this time.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
   <p>Please revise and resubmit from your affiliate dashboard.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Material</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Resubmit Material</a></p>
 </div>"#,
                 material = html_escape_email(material),
                 reason = html_escape_email(reason))
@@ -910,10 +917,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("See the admin review notes in your developer dashboard for details.");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Action required: revision needed for {project}</h2>
+  <h2 style="color:#181D27;">Action required: revision needed for {project}</h2>
   <p>The compliance team has reviewed your project submission and requires revisions before it can be approved for the marketplace.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Review notes:</strong> {notes}</p>
-  <p><a href="https://platform.poool.app/developer/projects" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Project</a></p>
+  <p><a href="https://platform.poool.app/developer/projects" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Project</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Reach the compliance team at <a href="mailto:compliance@poool.app" style="color:#0000FF;">compliance@poool.app</a>.</p>
 </div>"#,
                 project = html_escape_email(project),
@@ -928,10 +935,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let inviter = metadata.get("inviter_email").and_then(|v| v.as_str()).unwrap_or("a POOOL admin");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">You've been invited to the POOOL Admin portal</h2>
+  <h2 style="color:#181D27;">You've been invited to the POOOL Admin portal</h2>
   <p>{inviter} has invited you to join the POOOL admin team as <strong>{role}</strong>.</p>
   <p>Accept the invitation to set your password and enable two-factor authentication. The link is valid for 72 hours.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Accept Invitation</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">If you weren't expecting this, ignore the email — the invitation expires automatically.</p>
 </div>"#,
                 inviter = html_escape_email(inviter),
@@ -950,13 +957,13 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">New affiliate application</h2>
+  <h2 style="color:#181D27;">New affiliate application</h2>
   <p>A new POOOL Partner Syndicate application has been submitted. Please log into the admin portal to review.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     <tr><td style="padding:8px 0;color:#717680;width:140px;">From</td><td style="padding:8px 0;color:#101828;font-weight:500;">{applicant}</td></tr>
     {id_row}
   </table>
-  <p><a href="https://platform.poool.app/admin/affiliate-applications" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Review Application</a></p>
+  <p><a href="https://platform.poool.app/admin/affiliate-applications" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Review Application</a></p>
 </div>"#,
                 applicant = html_escape_email(applicant),
                 id_row = id_row)
@@ -980,14 +987,14 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Manual payout request</h2>
+  <h2 style="color:#181D27;">Manual payout request</h2>
   <p>An affiliate has requested a manual payout of their payable commissions. Review and batch in the admin rewards panel.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
     <tr><td style="padding:8px 0;color:#717680;width:160px;">Affiliate</td><td style="padding:8px 0;color:#101828;font-weight:500;">{email}</td></tr>
     {code_row}
     {amount_row}
   </table>
-  <p><a href="https://platform.poool.app/admin/rewards" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Pending Payouts</a></p>
+  <p><a href="https://platform.poool.app/admin/rewards" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Pending Payouts</a></p>
 </div>"#,
                 email = html_escape_email(affiliate_email),
                 code_row = code_row,
@@ -999,9 +1006,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let material = metadata.get("material_name").and_then(|v| v.as_str()).unwrap_or("a custom marketing material");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">New marketing material pending review</h2>
+  <h2 style="color:#181D27;">New marketing material pending review</h2>
   <p>{affiliate} has uploaded a custom marketing material named <strong>{material}</strong> that requires compliance review before it can be used in campaigns.</p>
-  <p><a href="https://platform.poool.app/admin/affiliate-fraud" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Compliance Panel</a></p>
+  <p><a href="https://platform.poool.app/admin/affiliate-fraud" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Compliance Panel</a></p>
 </div>"#,
                 affiliate = html_escape_email(affiliate),
                 material = html_escape_email(material))
@@ -1013,7 +1020,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let new_email = metadata.get("new_email").and_then(|v| v.as_str()).unwrap_or("a new address");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your POOOL email was changed</h2>
+  <h2 style="color:#181D27;">Your POOOL email was changed</h2>
   <p>The email address on your account was changed from <strong>{old}</strong> to <strong>{new}</strong>.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Didn't change this?</strong> Sign in and reset your password immediately, then contact <a href="mailto:security@poool.app" style="color:#B42318;text-decoration:underline;">security@poool.app</a>.</p>
 </div>"#, old = html_escape_email(old_email), new = html_escape_email(new_email))
@@ -1021,16 +1028,16 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
 
         "password_changed" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your POOOL password was changed</h2>
+  <h2 style="color:#181D27;">Your POOOL password was changed</h2>
   <p>Your account password was just updated. If this was you, no further action is needed.</p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Wasn't you?</strong> Reset your password immediately and revoke all sessions in <a href="https://platform.poool.app/settings/security" style="color:#B42318;text-decoration:underline;">Settings → Security</a>, then contact <a href="mailto:security@poool.app" style="color:#B42318;text-decoration:underline;">security@poool.app</a>.</p>
 </div>"#.to_string(),
 
         "2fa_disabled" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Two-factor authentication was disabled</h2>
+  <h2 style="color:#181D27;">Two-factor authentication was disabled</h2>
   <p>2FA is no longer required to sign in or perform sensitive actions. We strongly recommend re-enabling it — accounts without 2FA have significantly higher takeover risk.</p>
-  <p><a href="https://platform.poool.app/settings/security" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Re-enable 2FA</a></p>
+  <p><a href="https://platform.poool.app/settings/security" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Re-enable 2FA</a></p>
   <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Didn't disable 2FA?</strong> Contact <a href="mailto:security@poool.app" style="color:#B42318;text-decoration:underline;">security@poool.app</a> immediately.</p>
 </div>"#.to_string(),
 
@@ -1040,7 +1047,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let suffix = if last4.is_empty() { String::new() } else { format!(" ending in {}", html_escape_email(last4)) };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">A new payment method was added</h2>
+  <h2 style="color:#181D27;">A new payment method was added</h2>
   <p>A new {method}{suffix} was added to your POOOL account.</p>
   <p style="color:#717680;font-size:13px;">If you didn't do this, sign in to <a href="https://platform.poool.app/settings/payment-methods" style="color:#0000FF;">Settings → Payment Methods</a> to review and remove it, then contact <a href="mailto:security@poool.app" style="color:#0000FF;">security@poool.app</a>.</p>
 </div>"#, method = html_escape_email(method_type), suffix = suffix)
@@ -1050,7 +1057,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let method_type = metadata.get("method_type").and_then(|v| v.as_str()).unwrap_or("payment method");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">A payment method was removed</h2>
+  <h2 style="color:#181D27;">A payment method was removed</h2>
   <p>A {method} was removed from your account. Existing deposits and withdrawals are unaffected.</p>
   <p style="color:#717680;font-size:13px;">Didn't do this? <a href="mailto:security@poool.app" style="color:#0000FF;">Contact security</a>.</p>
 </div>"#, method = html_escape_email(method_type))
@@ -1062,11 +1069,11 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let amount_line = if amount.is_empty() { String::new() } else { format!("<p style=\"background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;color:#344054;\">Amount: <strong>{}</strong></p>", html_escape_email(amount)) };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Source-of-funds documentation requested</h2>
+  <h2 style="color:#181D27;">Source-of-funds documentation requested</h2>
   <p>Thanks for your deposit. Because of its size, our compliance policy requires us to confirm the source of funds before the deposit can be credited.</p>
   {amount_line}
   <p>Please upload a recent bank statement, salary slip, or other documentation showing the funds' origin.</p>
-  <p><a href="https://platform.poool.app/wallet/source-of-funds" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Upload Documentation</a></p>
+  <p><a href="https://platform.poool.app/wallet/source-of-funds" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Upload Documentation</a></p>
 </div>"#, amount_line = amount_line)
         }
 
@@ -1075,10 +1082,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
                 .unwrap_or("Our compliance team flagged recent activity for review.");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Action required on your account</h2>
+  <h2 style="color:#181D27;">Action required on your account</h2>
   <p>{summary}</p>
   <p>Please sign in and follow the on-screen instructions to resolve this.</p>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
 </div>"#, summary = html_escape_email(summary))
         }
 
@@ -1090,10 +1097,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let amount_line = if amount.is_empty() { String::new() } else { format!("<p>Amount: <strong>{}</strong></p>", html_escape_email(amount)) };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Trade executed ✓</h2>
+  <h2 style="color:#181D27;">Trade executed ✓</h2>
   <p>Your {side} of <strong>{asset}</strong> has been executed on the POOOL marketplace.</p>
   {amount_line}
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Portfolio</a></p>
 </div>"#, side = html_escape_email(side), asset = html_escape_email(asset), amount_line = amount_line)
         }
 
@@ -1101,9 +1108,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your limit order has been filled</h2>
+  <h2 style="color:#181D27;">Your limit order has been filled</h2>
   <p>Your limit order on <strong>{asset}</strong> matched at your target price.</p>
-  <p><a href="https://platform.poool.app/marketplace/orders" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Orders</a></p>
+  <p><a href="https://platform.poool.app/marketplace/orders" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Orders</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -1113,7 +1120,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let reason_line = if reason.is_empty() { String::new() } else { format!("<p style=\"color:#414651;\">Reason: <em>{}</em></p>", html_escape_email(reason)) };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your order has been cancelled</h2>
+  <h2 style="color:#181D27;">Your order has been cancelled</h2>
   <p>Your order on <strong>{asset}</strong> has been cancelled. Any escrowed funds have been returned to your wallet.</p>
   {reason_line}
 </div>"#, asset = html_escape_email(asset), reason_line = reason_line)
@@ -1123,9 +1130,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your listing has expired</h2>
+  <h2 style="color:#181D27;">Your listing has expired</h2>
   <p>Your secondary-market listing for <strong>{asset}</strong> has expired without filling. You can relist anytime.</p>
-  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Relist</a></p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Relist</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -1136,10 +1143,10 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let token_line = if tokens == 0 { String::new() } else { format!("<p>You now own <strong>{}</strong> fractional tokens of this asset.</p>", tokens) };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your investment in {asset} is live</h2>
+  <h2 style="color:#181D27;">Your investment in {asset} is live</h2>
   <p>Settlement is complete and your fractional tokens have been minted on-chain.</p>
   {token_line}
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Position</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Position</a></p>
 </div>"#, asset = html_escape_email(asset), token_line = token_line)
         }
 
@@ -1147,7 +1154,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("an asset");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">{asset} has matured</h2>
+  <h2 style="color:#181D27;">{asset} has matured</h2>
   <p>The investment period has ended. Principal plus realised yield is being processed for return to your POOOL wallet.</p>
 </div>"#, asset = html_escape_email(asset))
         }
@@ -1157,7 +1164,7 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let pay_date = metadata.get("pay_date").and_then(|v| v.as_str()).unwrap_or("the upcoming distribution date");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">A dividend has been announced</h2>
+  <h2 style="color:#181D27;">A dividend has been announced</h2>
   <p>A new distribution has been declared for <strong>{asset}</strong>. Funds will be credited to your wallet on {date}.</p>
 </div>"#, asset = html_escape_email(asset), date = html_escape_email(pay_date))
         }
@@ -1168,9 +1175,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let download = metadata.get("download_url").and_then(|v| v.as_str()).unwrap_or("https://platform.poool.app/tax-documents");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your {year} tax document is ready</h2>
+  <h2 style="color:#181D27;">Your {year} tax document is ready</h2>
   <p>Your annual tax summary for {year} is now available — dividends, realised gains, fees, and withholding tax for your filing.</p>
-  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Download Tax Document (PDF)</a></p>
+  <p><a href="{url}" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Download Tax Document (PDF)</a></p>
 </div>"#, year = html_escape_email(year), url = html_escape_email(download))
         }
 
@@ -1178,9 +1185,9 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let effective = metadata.get("effective_date").and_then(|v| v.as_str()).unwrap_or("the next billing cycle");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">POOOL Terms of Service updated</h2>
+  <h2 style="color:#181D27;">POOOL Terms of Service updated</h2>
   <p>We've updated our Terms of Service. Changes take effect on <strong>{date}</strong>. Continued use after that date constitutes acceptance.</p>
-  <p><a href="https://platform.poool.app/legal/terms" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Review new Terms</a></p>
+  <p><a href="https://platform.poool.app/legal/terms" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Review new Terms</a></p>
 </div>"#, date = html_escape_email(effective))
         }
 
@@ -1189,43 +1196,43 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let first = metadata.get("first_name").and_then(|v| v.as_str()).unwrap_or("there");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Hi {first} — let's get your account live</h2>
+  <h2 style="color:#181D27;">Hi {first} — let's get your account live</h2>
   <p>Welcome to POOOL. To start investing, we just need a quick identity verification. Takes about 2 minutes; most users are approved within hours.</p>
-  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Identity (2 min)</a></p>
+  <p><a href="https://platform.poool.app/kyc" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Verify Identity (2 min)</a></p>
 </div>"#, first = html_escape_email(first))
         }
 
         "onboarding_drip_72h" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Need help getting started?</h2>
+  <h2 style="color:#181D27;">Need help getting started?</h2>
   <p>We noticed you haven't finished your POOOL onboarding yet. Two steps to your first investment: verify identity, fund wallet (SEPA / wire). Reply to this email if anything blocks you — a real person will help.</p>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
 </div>"#.to_string(),
 
         "abandoned_cart" => {
             let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("the asset you were viewing");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Still thinking about it?</h2>
+  <h2 style="color:#181D27;">Still thinking about it?</h2>
   <p>You left without completing your investment in <strong>{asset}</strong>. The offering is still open.</p>
-  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Return to Marketplace</a></p>
+  <p><a href="https://platform.poool.app/marketplace" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Return to Marketplace</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
         "win_back" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">We miss you 👋</h2>
+  <h2 style="color:#181D27;">We miss you 👋</h2>
   <p>It's been a while since your last POOOL visit. New assets, secondary market trading, improved Plus+ rates — see what's new.</p>
-  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
+  <p><a href="https://platform.poool.app/" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open POOOL</a></p>
 </div>"#.to_string(),
 
         "milestone_first_investment" => {
             let asset = metadata.get("asset_name").and_then(|v| v.as_str()).unwrap_or("your first POOOL asset");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Welcome to investing with POOOL 🎉</h2>
+  <h2 style="color:#181D27;">Welcome to investing with POOOL 🎉</h2>
   <p>Congratulations on your first investment in <strong>{asset}</strong>. Your fractional ownership is now live on-chain.</p>
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Portfolio</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Portfolio</a></p>
 </div>"#, asset = html_escape_email(asset))
         }
 
@@ -1234,32 +1241,32 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let plural = if years == 1 { "year" } else { "years" };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Happy POOOL anniversary 🎂</h2>
+  <h2 style="color:#181D27;">Happy POOOL anniversary 🎂</h2>
   <p>It's been <strong>{years} {plural}</strong> since you joined POOOL. Thanks for trusting us with your portfolio.</p>
 </div>"#, years = years, plural = plural)
         }
 
         "weekly_digest" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your POOOL weekly</h2>
+  <h2 style="color:#181D27;">Your POOOL weekly</h2>
   <p>A quick summary of what happened across your POOOL holdings this week — performance, dividends, new offerings.</p>
-  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
+  <p><a href="https://platform.poool.app/portfolio" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Dashboard</a></p>
 </div>"#.to_string(),
 
         "monthly_affiliate_summary" => r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">Your monthly affiliate summary</h2>
+  <h2 style="color:#181D27;">Your monthly affiliate summary</h2>
   <p>This month's POOOL Partner Syndicate performance — clicks, signups, qualified investments, commissions earned and pending.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
 </div>"#.to_string(),
 
         "referral_signed_up" => {
             let referred = metadata.get("referred_name").and_then(|v| v.as_str()).unwrap_or("someone you referred");
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
-  <h2 style="color:#01011C;">{referred} just joined POOOL</h2>
+  <h2 style="color:#181D27;">{referred} just joined POOOL</h2>
   <p>Through your referral link, {referred} created a POOOL account. You'll earn a commission once they complete a qualified investment.</p>
-  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Referrals</a></p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">View Referrals</a></p>
 </div>"#, referred = html_escape_email(referred))
         }
 
