@@ -665,6 +665,11 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/rewards/affiliates/:id/clawback",
             post(api_admin_affiliate_clawback),
         )
+        // Phase-3 fresh: SEPA pain.001.001.03 batch export
+        .route(
+            "/api/admin/rewards/affiliates/batches/:batch_id/sepa.xml",
+            get(api_admin_affiliate_sepa_export),
+        )
         // GAP-11: Materials review board
         .route(
             "/api/admin/rewards/affiliates/materials",

@@ -1916,3 +1916,39 @@ pub async fn api_admin_affiliate_material_review(
 
     Ok(Json(serde_json::json!({"success": true, "new_status": new_status})).into_response())
 }
+
+/// GET /api/admin/rewards/affiliates/batches/:batch_id/sepa.xml
+///
+/// Phase-3 fresh: render the SEPA pain.001.001.03 XML for a payout batch.
+/// Returns 400 if any affiliate in the batch has no full IBAN on file.
+pub async fn api_admin_affiliate_sepa_export(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(batch_id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
+    let batch_uuid = ApiError::parse_uuid(&batch_id)?;
+
+    let xml = crate::rewards::service::generate_sepa_pain001_for_batch(&state.db, batch_uuid)
+        .await
+        .map_err(|e| match e {
+            crate::error::AppError::BadRequest(m) => ApiError::BadRequest(m),
+            other => ApiError::Internal(other.to_string()),
+        })?;
+
+    let fname = format!("poool-sepa-batch-{}.xml", batch_uuid);
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::CONTENT_TYPE,
+        axum::http::HeaderValue::from_static("application/xml; charset=utf-8"),
+    );
+    headers.insert(
+        axum::http::header::CONTENT_DISPOSITION,
+        axum::http::HeaderValue::from_str(&format!("attachment; filename=\"{}\"", fname))
+            .map_err(|e| ApiError::Internal(format!("bad filename header: {e}")))?,
+    );
+    Ok((axum::http::StatusCode::OK, headers, xml).into_response())
+}

@@ -2901,6 +2901,208 @@ pub fn invoice_amount_display(cents: i64) -> String {
     format!("{}{}.{:02}", sign, abs / 100, abs % 100)
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-3 fresh: SEPA pain.001.001.03 batch export
+// ──────────────────────────────────────────────────────────────────────────
+
+/// Build an ISO 20022 pain.001.001.03 CustomerCreditTransferInitiation
+/// XML for one payout batch. One PmtInf with N CdtTrfTxInf children —
+/// one per affiliate invoice in the batch.
+///
+/// Debtor bank details come from env so they don't leak into the
+/// repo: POOOL_SEPA_DEBTOR_IBAN, POOOL_SEPA_DEBTOR_BIC,
+/// POOOL_SEPA_DEBTOR_NAME. Missing values render as empty <BIC/>.
+pub async fn generate_sepa_pain001_for_batch(
+    pool: &PgPool,
+    batch_id: Uuid,
+) -> Result<String, AppError> {
+    // Pull every invoice in this batch with the recipient bank snapshot.
+    // affiliate_invoices already captures the IBAN-last4 + BIC + name at
+    // issue time, so a later profile change cannot retroactively rewrite
+    // a generated pain.001 file.
+    let invoices = sqlx::query(
+        r#"SELECT id::text, invoice_number, amount_cents, currency,
+                  recipient_full_name, bank_account_holder,
+                  bank_iban_last4, bank_bic, bank_country
+             FROM affiliate_invoices
+            WHERE payout_batch_id = $1
+         ORDER BY invoice_number ASC"#,
+    )
+    .bind(batch_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("invoice fetch failed: {e}")))?;
+
+    if invoices.is_empty() {
+        return Err(AppError::BadRequest(
+            "Batch has no issued invoices — nothing to export.".into(),
+        ));
+    }
+
+    // For an interbank file we MUST have the full IBAN (last4 is for
+    // receipt display only). Lift full IBANs from developer_teams via
+    // a per-affiliate decrypt. For MVP we surface an error if any
+    // affiliate is missing a full IBAN; ops can prompt the affiliate
+    // to re-onboard their bank record.
+    let mut tx_blocks: Vec<String> = Vec::with_capacity(invoices.len());
+    let mut total_minor: i128 = 0;
+    let mut tx_count = 0usize;
+
+    for inv in &invoices {
+        let cents: i64 = inv.try_get("amount_cents").unwrap_or(0);
+        let currency: String = inv.try_get::<String, _>("currency").unwrap_or_else(|_| "EUR".into());
+        let invoice_number: String = inv.try_get("invoice_number").unwrap_or_default();
+        let recipient_name: Option<String> = inv
+            .try_get::<Option<String>, _>("bank_account_holder")
+            .ok()
+            .flatten()
+            .or_else(|| {
+                inv.try_get::<Option<String>, _>("recipient_full_name")
+                    .ok()
+                    .flatten()
+            });
+        let bic: Option<String> = inv.try_get::<Option<String>, _>("bank_bic").ok().flatten();
+
+        // Lift the full IBAN from developer_teams via the affiliate's user_id.
+        // We re-resolve from affiliate_id since affiliate_invoices doesn't
+        // carry the full IBAN.
+        let aff_id: Uuid = sqlx::query_scalar::<_, Uuid>(
+            "SELECT affiliate_id FROM affiliate_invoices WHERE id = $1::uuid",
+        )
+        .bind(inv.try_get::<String, _>("id").unwrap_or_default())
+        .fetch_one(pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("affiliate lookup: {e}")))?;
+
+        let full_iban: Option<String> = sqlx::query_scalar::<_, Option<String>>(
+            r#"SELECT bank_iban
+                 FROM developer_teams
+                WHERE owner_user_id = $1
+             ORDER BY created_at ASC
+                LIMIT 1"#,
+        )
+        .bind(aff_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("iban lookup: {e}")))?
+        .flatten();
+
+        let iban = match full_iban {
+            Some(i) if !i.trim().is_empty() => i.trim().to_string(),
+            _ => {
+                return Err(AppError::BadRequest(format!(
+                    "Affiliate {} has no full IBAN on file — cannot include in SEPA export.",
+                    aff_id
+                )));
+            }
+        };
+
+        let amt_str = invoice_amount_display(cents);
+        total_minor += cents as i128;
+        tx_count += 1;
+
+        let bic_xml = match bic.as_deref() {
+            Some(b) if !b.is_empty() => format!(
+                "<CdtrAgt><FinInstnId><BIC>{}</BIC></FinInstnId></CdtrAgt>",
+                xml_escape(b)
+            ),
+            _ => String::new(),
+        };
+        let name_xml = recipient_name.as_deref().unwrap_or("Affiliate");
+
+        tx_blocks.push(format!(
+            r#"      <CdtTrfTxInf>
+        <PmtId><EndToEndId>{end}</EndToEndId></PmtId>
+        <Amt><InstdAmt Ccy="{ccy}">{amt}</InstdAmt></Amt>
+        {bic}
+        <Cdtr><Nm>{name}</Nm></Cdtr>
+        <CdtrAcct><Id><IBAN>{iban}</IBAN></Id></CdtrAcct>
+        <RmtInf><Ustrd>Affiliate payout {ref_}</Ustrd></RmtInf>
+      </CdtTrfTxInf>
+"#,
+            end = xml_escape(&invoice_number),
+            ccy = xml_escape(&currency),
+            amt = amt_str,
+            bic = bic_xml,
+            name = xml_escape(name_xml),
+            iban = xml_escape(&iban),
+            ref_ = xml_escape(&invoice_number),
+        ));
+    }
+
+    let total_str = invoice_amount_display(total_minor.try_into().unwrap_or(0));
+    let msg_id = format!("POOOL-{}", batch_id.simple());
+    let pmt_inf_id = format!("{}-PI1", msg_id);
+    let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
+    let exec_date = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let debtor_name =
+        std::env::var("POOOL_SEPA_DEBTOR_NAME").unwrap_or_else(|_| "POOOL".to_string());
+    let debtor_iban =
+        std::env::var("POOOL_SEPA_DEBTOR_IBAN").unwrap_or_else(|_| String::new());
+    let debtor_bic = std::env::var("POOOL_SEPA_DEBTOR_BIC").unwrap_or_else(|_| String::new());
+    let debtor_bic_xml = if debtor_bic.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "<DbtrAgt><FinInstnId><BIC>{}</BIC></FinInstnId></DbtrAgt>",
+            xml_escape(&debtor_bic)
+        )
+    };
+
+    Ok(format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+  <CstmrCdtTrfInitn>
+    <GrpHdr>
+      <MsgId>{msg_id}</MsgId>
+      <CreDtTm>{now}</CreDtTm>
+      <NbOfTxs>{cnt}</NbOfTxs>
+      <CtrlSum>{total}</CtrlSum>
+      <InitgPty><Nm>{name}</Nm></InitgPty>
+    </GrpHdr>
+    <PmtInf>
+      <PmtInfId>{pmt_id}</PmtInfId>
+      <PmtMtd>TRF</PmtMtd>
+      <NbOfTxs>{cnt}</NbOfTxs>
+      <CtrlSum>{total}</CtrlSum>
+      <PmtTpInf><SvcLvl><Cd>SEPA</Cd></SvcLvl></PmtTpInf>
+      <ReqdExctnDt>{exec}</ReqdExctnDt>
+      <Dbtr><Nm>{name}</Nm></Dbtr>
+      <DbtrAcct><Id><IBAN>{dbtr_iban}</IBAN></Id></DbtrAcct>
+      {dbtr_bic}
+      <ChrgBr>SLEV</ChrgBr>
+{txs}    </PmtInf>
+  </CstmrCdtTrfInitn>
+</Document>
+"#,
+        msg_id = xml_escape(&msg_id),
+        now = now,
+        cnt = tx_count,
+        total = total_str,
+        name = xml_escape(&debtor_name),
+        pmt_id = xml_escape(&pmt_inf_id),
+        exec = exec_date,
+        dbtr_iban = xml_escape(&debtor_iban),
+        dbtr_bic = debtor_bic_xml,
+        txs = tx_blocks.concat(),
+    ))
+}
+
+fn xml_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '&' => out.push_str("&amp;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&apos;"),
+            other => out.push(other),
+        }
+    }
+    out
+}
+
 pub async fn run_affiliate_postback_worker(pool: PgPool) {
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
@@ -3004,6 +3206,18 @@ pub async fn run_affiliate_postback_worker(pool: PgPool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn xml_escape_handles_all_xml_special_chars() {
+        assert_eq!(xml_escape("plain"), "plain");
+        assert_eq!(
+            xml_escape("a<b>c&d\"e'f"),
+            "a&lt;b&gt;c&amp;d&quot;e&apos;f"
+        );
+        // Idempotent on already-escaped chars (they pass through as the
+        // escaped form re-escaped, which is the safe XML behaviour).
+        assert_eq!(xml_escape("&amp;"), "&amp;amp;");
+    }
 
     #[test]
     fn invoice_amount_display_matches_decimal_pattern() {
