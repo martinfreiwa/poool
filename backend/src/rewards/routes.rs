@@ -2163,10 +2163,7 @@ pub async fn api_affiliate_data_export(
         add("referrals.csv", referrals_csv.as_bytes())?;
         add("payouts.csv", payouts_csv.as_bytes())?;
         add("policy_acceptances.csv", policy_csv.as_bytes())?;
-        add(
-            "README.txt",
-            data_export_readme(user_id).as_bytes(),
-        )?;
+        add("README.txt", data_export_readme(user_id).as_bytes())?;
         zip.finish()
             .map_err(|e| crate::error::AppError::Internal(format!("zip finish: {e}")))?;
     }
@@ -2281,9 +2278,8 @@ async fn build_referrals_csv_for_user(
     .await
     .map_err(crate::error::AppError::Database)?;
 
-    let mut out = String::from(
-        "id,referred_user_id,sub_id,qualified_at,disqualifying_reason,created_at\n",
-    );
+    let mut out =
+        String::from("id,referred_user_id,sub_id,qualified_at,disqualifying_reason,created_at\n");
     for r in &rows {
         let id: String = r.try_get("id").unwrap_or_default();
         let ref_user: String = r.try_get("referred_user_id").unwrap_or_default();

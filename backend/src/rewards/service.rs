@@ -2796,15 +2796,12 @@ pub async fn issue_affiliate_invoice(
 
     // 2. Snapshot recipient at issue time so a later profile change
     // doesn't rewrite history.
-    let user_row = sqlx::query(
-        r#"SELECT email, full_name FROM users WHERE id = $1"#,
-    )
-    .bind(affiliate_user_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| AppError::Internal(format!("user lookup failed: {e}")))?;
-    let recipient_email: Option<String> =
-        user_row.as_ref().and_then(|r| r.try_get("email").ok());
+    let user_row = sqlx::query(r#"SELECT email, full_name FROM users WHERE id = $1"#)
+        .bind(affiliate_user_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("user lookup failed: {e}")))?;
+    let recipient_email: Option<String> = user_row.as_ref().and_then(|r| r.try_get("email").ok());
     let recipient_full_name: Option<String> =
         user_row.as_ref().and_then(|r| r.try_get("full_name").ok());
 
@@ -2820,12 +2817,13 @@ pub async fn issue_affiliate_invoice(
     .fetch_optional(pool)
     .await
     .map_err(|e| AppError::Internal(format!("team lookup failed: {e}")))?;
-    let bank_account_holder: Option<String> =
-        team_row.as_ref().and_then(|r| r.try_get("bank_account_holder").ok());
-    let bank_iban_last4: Option<String> =
-        team_row.as_ref().and_then(|r| r.try_get("bank_iban_last4").ok());
-    let bank_bic: Option<String> =
-        team_row.as_ref().and_then(|r| r.try_get("bank_bic").ok());
+    let bank_account_holder: Option<String> = team_row
+        .as_ref()
+        .and_then(|r| r.try_get("bank_account_holder").ok());
+    let bank_iban_last4: Option<String> = team_row
+        .as_ref()
+        .and_then(|r| r.try_get("bank_iban_last4").ok());
+    let bank_bic: Option<String> = team_row.as_ref().and_then(|r| r.try_get("bank_bic").ok());
     let bank_country: Option<String> = team_row.as_ref().and_then(|r| {
         let raw: Option<String> = r.try_get("bank_country").ok();
         raw.filter(|s| !s.is_empty())
@@ -2950,7 +2948,9 @@ pub async fn generate_sepa_pain001_for_batch(
 
     for inv in &invoices {
         let cents: i64 = inv.try_get("amount_cents").unwrap_or(0);
-        let currency: String = inv.try_get::<String, _>("currency").unwrap_or_else(|_| "EUR".into());
+        let currency: String = inv
+            .try_get::<String, _>("currency")
+            .unwrap_or_else(|_| "EUR".into());
         let invoice_number: String = inv.try_get("invoice_number").unwrap_or_default();
         let recipient_name: Option<String> = inv
             .try_get::<Option<String>, _>("bank_account_holder")
@@ -3037,8 +3037,7 @@ pub async fn generate_sepa_pain001_for_batch(
     let exec_date = chrono::Utc::now().format("%Y-%m-%d").to_string();
     let debtor_name =
         std::env::var("POOOL_SEPA_DEBTOR_NAME").unwrap_or_else(|_| "POOOL".to_string());
-    let debtor_iban =
-        std::env::var("POOOL_SEPA_DEBTOR_IBAN").unwrap_or_else(|_| String::new());
+    let debtor_iban = std::env::var("POOOL_SEPA_DEBTOR_IBAN").unwrap_or_else(|_| String::new());
     let debtor_bic = std::env::var("POOOL_SEPA_DEBTOR_BIC").unwrap_or_else(|_| String::new());
     let debtor_bic_xml = if debtor_bic.is_empty() {
         String::new()
