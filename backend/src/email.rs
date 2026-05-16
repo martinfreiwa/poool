@@ -624,16 +624,30 @@ fn build_event_body(event_type: &str, metadata: &serde_json::Value) -> String {
             let tier = metadata.get("tier").and_then(|v| v.as_str()).unwrap_or("Access");
             let rate_bps = metadata.get("commission_rate_bps").and_then(|v| v.as_u64()).unwrap_or(50);
             let rate_pct = format!("{}.{:02}%", rate_bps / 100, rate_bps % 100);
+            let referral_code = metadata.get("referral_code").and_then(|v| v.as_str()).unwrap_or("");
+            let referral_block = if referral_code.is_empty() {
+                String::new()
+            } else {
+                format!(
+                    r#"<p style="background:#F4F5FF;border-left:3px solid #0000FF;padding:12px 16px;border-radius:4px;color:#344054;font-size:14px;">
+Your unique referral code:
+<code style="display:inline-block;background:#FFFFFF;border:1px solid #E9EAEB;padding:4px 10px;border-radius:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;color:#0000FF;margin-left:8px;">{}</code>
+</p>"#,
+                    html_escape_email(referral_code)
+                )
+            };
             format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#181D27;">Welcome to the POOOL Partner Syndicate 🎉</h2>
   <p>Your application has been approved. You're starting at the <strong>{tier}</strong> tier with a commission rate of <strong>{rate}</strong>.</p>
+  {referral_block}
   <p>Your personal affiliate link is ready in your dashboard. Share it to start tracking referrals and earning commissions on qualified investments.</p>
   <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#98FB96;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
   <p style="color:#717680;font-size:13px;margin-top:32px;">Before your first payout you'll need to upload a valid tax document and confirm your payout details.</p>
 </div>"#,
                 tier = html_escape_email(tier),
-                rate = html_escape_email(&rate_pct))
+                rate = html_escape_email(&rate_pct),
+                referral_block = referral_block)
         }
 
         "affiliate_rejected" => {

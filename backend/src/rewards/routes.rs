@@ -955,19 +955,25 @@ pub async fn submit_affiliate_onboarding_handler(
         .unwrap_or_default();
 
     if let Some(user_record) = user_row {
-        // To Admin
-        let _ = crate::common::email::send_email(
-            "admin@poool.app",
-            "New Affiliate Application",
-            &format!("<p>A new POOOL Affiliate application has been submitted by user <b>{}</b> ({}). Please log into the Admin portal to review it.</p>", user_id, user_record.email)
-        ).await;
+        // Ops alert via the durable outbox — branded, retried, toggleable.
+        crate::common::email::trigger_admin_alert(
+            &state.db,
+            "admin_new_affiliate_application",
+            serde_json::json!({
+                "applicant_email": user_record.email,
+                "user_id": user_id.to_string(),
+            }),
+        )
+        .await;
 
-        // To User
-        let _ = crate::common::email::send_email(
-            &user_record.email,
-            "Your POOOL Affiliate Application has been received",
-            "<h3>Application Received</h3><p>We have successfully received your application for the POOOL Affiliate Partner Syndicate.</p><p>Our compliance team will review your application shortly. You will receive another email once your account has been approved.</p>"
-        ).await;
+        // Applicant receipt via the durable outbox.
+        let _ = crate::email::trigger_transactional_email(
+            &state.db,
+            &user_id,
+            "affiliate_application_received",
+            serde_json::json!({}),
+        )
+        .await;
 
         // Slack notify ops channel (env-gated; non-blocking).
         if let Ok(webhook) = std::env::var("SLACK_AFFILIATE_WEBHOOK_URL") {
@@ -1118,18 +1124,20 @@ pub async fn api_affiliate_payout_request(
     tx.commit().await?;
 
     let amount_display = crate::common::currency::format_usd(payable);
-    let notification_sent = crate::common::email::send_email(
-        "admin@poool.app",
-        "Affiliate Commission Payout Request",
-        &format!(
-            "<h3>Payout Request</h3><p>Affiliate <b>{}</b> (code: <code>{}</code>) has manually requested a payout of their payable commissions totaling <b>{}</b>.</p><p>Please log into the Admin Rewards Dashboard under the <b>Pending Payouts</b> tab to approve and batch this payout to their cash wallet.</p>",
-            html_escape(&user_email),
-            html_escape(&referral_code),
-            amount_display
-        )
+    // Routed via the durable outbox — branded shell, retry, admin
+    // workflow toggle. `notification_sent` is true at the caller level;
+    // actual provider success happens asynchronously in the outbox worker.
+    crate::common::email::trigger_admin_alert(
+        &state.db,
+        "admin_payout_request",
+        serde_json::json!({
+            "affiliate_email": user_email,
+            "referral_code": referral_code,
+            "amount_display": amount_display,
+        }),
     )
-    .await
-    .is_ok();
+    .await;
+    let notification_sent = true;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -2003,12 +2011,24 @@ pub async fn api_affiliate_upload_material(
         crate::error::AppError::Internal("DB error".into())
     })?;
 
-    // Notify admin
-    let _ = crate::common::email::send_email(
-        "admin@poool.app",
-        "New Affiliate Marketing Material Pending Review",
-        &format!("<p>Affiliate <b>{}</b> has uploaded a custom marketing material named \"<b>{}</b>\" pending your review.</p><p>Please log into the Admin Affiliate Compliance panel to approve or reject it.</p>", user_id, asset_name)
-    ).await;
+    // Notify ops via admin_new_marketing_material — branded shell, retry,
+    // toggle-able from the admin Workflows tab.
+    let affiliate_email: Option<String> =
+        sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&state.db)
+            .await
+            .ok()
+            .flatten();
+    crate::common::email::trigger_admin_alert(
+        &state.db,
+        "admin_new_marketing_material",
+        serde_json::json!({
+            "affiliate_email": affiliate_email.unwrap_or_else(|| user_id.to_string()),
+            "material_name": asset_name,
+        }),
+    )
+    .await;
 
     tracing::info!(user_id = %user_id, gcs_path = %gcs_path, "Affiliate material uploaded for review");
 

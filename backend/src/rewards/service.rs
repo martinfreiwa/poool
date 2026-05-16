@@ -1989,12 +1989,15 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
                             .await
                             .unwrap_or_default();
 
-                    if let Some(email) = user_email {
-                        let _ = crate::common::email::send_email(
-                            &email,
-                            "You earned a new POOOL Affiliate Commission!",
-                            "<h3>Commission Qualified</h3><p>Great news! The 30-day holdback period for one of your referred investments has ended.</p><p>The underlying commission has successfully upgraded to <b>Payable</b> status and will be included in the next batch payout cycle.</p><p>Log into your POOOL Affiliate Dashboard to track your earnings.</p>"
-                        ).await;
+                    // Branded affiliate_commission_qualified via the durable outbox.
+                    if user_email.is_some() {
+                        let _ = crate::email::trigger_transactional_email(
+                            &pool,
+                            &aff_id,
+                            "affiliate_commission_qualified",
+                            serde_json::json!({}),
+                        )
+                        .await;
                     }
 
                     // Fire S2S Postback Webhook if configured
@@ -2255,15 +2258,19 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
                     .await
                     .unwrap_or_default();
 
-            if let Some(email) = user_email {
-                let _ = crate::common::email::send_email(
-                    &email,
-                    &format!("You've been promoted to {} Affiliate!", new_tier),
-                    &format!(
-                        "<h3>Tier Upgrade!</h3><p>Congratulations! Based on your qualified referral volume in the last 12 months (${:.2}), you have been promoted to the <b>{}</b> tier.</p><p>Your new commission rate is <b>{} bps ({:.2}%)</b>. This rate applies to all future commissions.</p><p>Log into your <a href=\"https://poool.app/affiliate/dashboard\">Affiliate Dashboard</a> to see your updated tier.</p>",
-                        (volume_12m as f64) / 100.0, new_tier, new_rate_bps, (new_rate_bps as f64) / 100.0
-                    )
-                ).await;
+            // Branded tier-promotion mail via the durable outbox.
+            if user_email.is_some() {
+                let _ = crate::email::trigger_transactional_email(
+                    &pool,
+                    &aff.user_id,
+                    "affiliate_tier_promoted",
+                    serde_json::json!({
+                        "new_tier": new_tier,
+                        "new_rate_bps": new_rate_bps,
+                        "volume_12m_cents": volume_12m,
+                    }),
+                )
+                .await;
             }
         }
 

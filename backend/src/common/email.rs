@@ -578,6 +578,42 @@ pub async fn email_is_suppressed(pool: &PgPool, address: &str) -> bool {
 /// excluded — we just retry those via the outbox backoff.
 pub const HARD_SUPPRESSION_REASONS: &[&str] = &["hard_bounce", "spam_complaint"];
 
+/// Fire an `event_type` notification targeted at the platform's admin /
+/// ops inbox (admin@poool.app).
+///
+/// Looks up the canonical `admin@poool.app` user row and routes the
+/// notification through `trigger_transactional_email` so the alert
+/// inherits everything the outbox gives transactional mail: branded
+/// shell, durable retry, suppression check, workflow toggle.
+///
+/// Best-effort: if no `admin@poool.app` row exists (fresh dev DB) the
+/// call is a no-op — admin alerts are operationally useful but never
+/// load-bearing, so a missing inbox should not break the caller's
+/// happy path.
+pub async fn trigger_admin_alert(
+    pool: &PgPool,
+    event_type: &str,
+    metadata: serde_json::Value,
+) {
+    let admin_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM users WHERE email = 'admin@poool.app' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    let Some(id) = admin_id else {
+        tracing::warn!(
+            event_type = %event_type,
+            "trigger_admin_alert: admin@poool.app user not found — alert skipped"
+        );
+        return;
+    };
+
+    let _ = crate::email::trigger_transactional_email(pool, &id, event_type, metadata).await;
+}
+
 /// Returns true when the event-type is opt-out-able by the recipient.
 pub fn is_optional_email_event(event_type: &str) -> bool {
     matches!(

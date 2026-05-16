@@ -734,24 +734,16 @@ pub async fn api_admin_affiliate_approve(
                 "Affiliate application approved"
             );
 
-            // Send email notification after the durable state change commits.
-            let user_email: Option<String> =
-                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                    .bind(uid)
-                    .fetch_optional(&state.db)
-                    .await
-                    .unwrap_or_default();
-
-            if let Some(email) = user_email {
-                let _ = crate::common::email::send_email(
-                    &email,
-                    "Welcome to the POOOL Affiliate Partner Syndicate",
-                    &format!(
-                        "<h3>Application Approved</h3><p>Congratulations! Your application to join the POOOL Affiliate Partner Syndicate has been approved.</p><p>Your unique referral code is: <b>{}</b></p><p>You can now log into your <a href=\"https://poool.app/affiliate/dashboard\">Affiliate Dashboard</a> to access your tracking links and monitor commissions.</p>",
-                        referral_code
-                    )
-                ).await;
-            }
+            // Branded approval via the durable outbox — POOOL email shell,
+            // retry on provider failure, suppression check, admin workflow
+            // toggle, List-Unsubscribe support.
+            let _ = crate::email::trigger_transactional_email(
+                &state.db,
+                &uid,
+                "affiliate_approved",
+                serde_json::json!({ "referral_code": referral_code }),
+            )
+            .await;
 
             Ok(
                 Json(serde_json::json!({"status": "approved", "referral_code": referral_code}))
@@ -873,24 +865,14 @@ pub async fn api_admin_affiliate_reject(
                 ApiError::Internal("Server error".to_string())
             })?;
 
-            // Send email notification after the durable state change commits.
-            let user_email: Option<String> =
-                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                    .bind(uid)
-                    .fetch_optional(&state.db)
-                    .await
-                    .unwrap_or_default();
-
-            if let Some(email) = user_email {
-                let _ = crate::common::email::send_email(
-                    &email,
-                    "Update on your POOOL Affiliate Application",
-                    &format!(
-                        "<h3>Application Update</h3><p>Thank you for your interest in the POOOL Affiliate Partner Syndicate.</p><p>After careful review, we are unable to approve your application at this time.</p><p>Reason provided: <i>{}</i></p>",
-                        reason
-                    )
-                ).await;
-            }
+            // Branded rejection via the durable outbox.
+            let _ = crate::email::trigger_transactional_email(
+                &state.db,
+                &uid,
+                "affiliate_rejected",
+                serde_json::json!({ "reason": reason }),
+            )
+            .await;
 
             Ok(Json(serde_json::json!({"status": "rejected"})).into_response())
         }
@@ -983,14 +965,13 @@ pub async fn api_admin_affiliate_request_info(
         ApiError::Internal("Database error".to_string())
     })?;
 
-    let _ = crate::common::email::send_email(
-        &row.email,
-        "More information needed for your POOOL Affiliate Application",
-        &format!(
-            "<h3>Additional Information Requested</h3><p>Thank you for applying to the POOOL Affiliate Partner Syndicate.</p><p>Before we can complete the review of your application, we need a bit more information:</p><blockquote style=\"border-left:3px solid #ddd;padding-left:12px;color:#444;\">{}</blockquote><p>Please reply to this email with the requested details. Your application will remain on file in pending status.</p>",
-            message
-        )
-    ).await;
+    let _ = crate::email::trigger_transactional_email(
+        &state.db,
+        &uid,
+        "affiliate_application_info_requested",
+        serde_json::json!({ "message": message }),
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "status": "info_requested" })).into_response())
 }
@@ -1041,24 +1022,14 @@ pub async fn api_admin_affiliate_suspend(
                 serde_json::json!({ "reason": reason.clone() })
             ).execute(&state.db).await;
 
-            // Send email notification
-            let user_email: Option<String> =
-                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                    .bind(uid)
-                    .fetch_optional(&state.db)
-                    .await
-                    .unwrap_or_default();
-
-            if let Some(email) = user_email {
-                let _ = crate::common::email::send_email(
-                    &email,
-                    "Important: Your POOOL Affiliate Account has been suspended",
-                    &format!(
-                        "<h3>Account Suspended</h3><p>Your POOOL Affiliate Partner Syndicate account has been temporarily suspended.</p><p>Reason provided: <i>{}</i></p><p>Please contact support for further information. Any pending commissions are on hold.</p>",
-                        reason
-                    )
-                ).await;
-            }
+            // Branded suspension via the durable outbox.
+            let _ = crate::email::trigger_transactional_email(
+                &state.db,
+                &uid,
+                "affiliate_suspended",
+                serde_json::json!({ "reason": reason }),
+            )
+            .await;
 
             Ok(Json(serde_json::json!({"status": "suspended"})).into_response())
         }
@@ -1404,23 +1375,17 @@ pub async fn api_admin_affiliate_batch_payout(
         .await
         .map_err(|_| ApiError::Internal("Commit failed".into()))?;
 
-    // Send email notification for payout
-    let user_email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-        .bind(affiliate_id)
-        .fetch_optional(&state.db)
-        .await
-        .unwrap_or_default();
-
-    if let Some(email) = user_email {
-        let _ = crate::common::email::send_email(
-            &email,
-            "Your POOOL Affiliate Commission Payout is Available!",
-            &format!(
-                "<h3>Payout Processed</h3><p>We have successfully released a payout of <b>${}.{:02}</b> for your {} referred investments.</p><p>This balance has been securely credited to your POOOL Cash Wallet and is available for immediate withdrawal or reinvestment.</p>",
-                total_payable_cents / 100, (total_payable_cents % 100).abs(), commissions.len()
-            )
-        ).await;
-    }
+    // Branded payout notification via the durable outbox.
+    let _ = crate::email::trigger_transactional_email(
+        &state.db,
+        &affiliate_id,
+        "affiliate_payout_released",
+        serde_json::json!({
+            "amount_cents": total_payable_cents,
+            "currency": "USD",
+        }),
+    )
+    .await;
 
     tracing::info!(
         "Admin {} executed batch payout {} for affiliate {} amount {}",
@@ -1921,32 +1886,28 @@ pub async fn api_admin_affiliate_material_review(
         use sqlx::Row;
         let affiliate_id_val: uuid::Uuid = m.try_get("affiliate_id").unwrap_or(uuid::Uuid::nil());
         let asset_name_val: String = m.try_get("asset_name").unwrap_or_default();
-        let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-            .bind(affiliate_id_val)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or_default();
-
-        if let Some(e) = email {
-            let subject = if new_status == "approved" {
-                format!(
-                    "Your marketing material '{}' has been approved!",
-                    asset_name_val
-                )
-            } else {
-                format!(
-                    "Your marketing material '{}' requires changes",
-                    asset_name_val
-                )
-            };
-            let body = if new_status == "approved" {
-                format!("<p>Your custom marketing material <b>{}</b> has been reviewed and <b>approved</b> for use. You may now use it in your campaigns.</p>", asset_name_val)
-            } else {
-                format!("<p>Your custom marketing material <b>{}</b> could not be approved at this time.</p><p>Reason: <i>{}</i></p><p>Please revise and resubmit.</p>",
-                    asset_name_val, payload.note.as_deref().unwrap_or("No reason provided"))
-            };
-            let _ = crate::common::email::send_email(&e, &subject, &body).await;
-        }
+        // Branded approval/rejection via the durable outbox.
+        let (event_type, metadata) = if new_status == "approved" {
+            (
+                "affiliate_material_approved",
+                serde_json::json!({ "material_name": asset_name_val }),
+            )
+        } else {
+            (
+                "affiliate_material_rejected",
+                serde_json::json!({
+                    "material_name": asset_name_val,
+                    "reason": payload.note.as_deref().unwrap_or("No reason provided"),
+                }),
+            )
+        };
+        let _ = crate::email::trigger_transactional_email(
+            &state.db,
+            &affiliate_id_val,
+            event_type,
+            metadata,
+        )
+        .await;
     }
 
     Ok(Json(serde_json::json!({"success": true, "new_status": new_status})).into_response())
