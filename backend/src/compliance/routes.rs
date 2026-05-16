@@ -30,7 +30,9 @@ pub async fn api_admin_compliance_alerts(
     State(state): State<AppState>,
     Query(params): Query<AlertListQuery>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "compliance.read").await?;
+    admin
+        .require_permission(&state.db, "compliance.read")
+        .await?;
 
     let mut wheres = Vec::<&'static str>::new();
     match params.status.as_deref().unwrap_or("open") {
@@ -119,7 +121,9 @@ pub async fn api_admin_compliance_close_alert(
     Path(id): Path<Uuid>,
     Json(payload): Json<CloseAlertPayload>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "compliance.write").await?;
+    admin
+        .require_permission(&state.db, "compliance.write")
+        .await?;
     let reason = payload.close_reason.trim();
     if reason.is_empty() {
         return Err(ApiError::BadRequest("Close reason is required".into()));
@@ -138,7 +142,9 @@ pub async fn api_admin_compliance_close_alert(
     .map_err(ApiError::from)?;
 
     if updated.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Alert not found or already closed".into()));
+        return Err(ApiError::NotFound(
+            "Alert not found or already closed".into(),
+        ));
     }
 
     let _ = sqlx::query(
@@ -154,6 +160,29 @@ pub async fn api_admin_compliance_close_alert(
     Ok(Json(serde_json::json!({ "status": "closed" })).into_response())
 }
 
+/// POST /api/admin/compliance/monitoring/run
+///
+/// Force a transaction-monitoring sweep right now instead of waiting
+/// for the hourly worker tick. Returns the number of new findings.
+pub async fn api_admin_compliance_run_monitoring(
+    _jar: CookieJar,
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "compliance.write")
+        .await?;
+    let count = crate::compliance::monitoring::run_once(&state.db)
+        .await
+        .map_err(ApiError::from)?;
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "new_findings": count,
+        "ran_at": chrono::Utc::now().to_rfc3339(),
+    }))
+    .into_response())
+}
+
 /// POST /api/admin/compliance/users/:user_id/rescreen
 ///
 /// Force a re-screening of one user immediately. Returns the resulting
@@ -164,7 +193,9 @@ pub async fn api_admin_compliance_rescreen(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> Result<axum::response::Response, ApiError> {
-    admin.require_permission(&state.db, "compliance.write").await?;
+    admin
+        .require_permission(&state.db, "compliance.write")
+        .await?;
     let result = crate::compliance::rescreening::rescreen_user(&state.db, user_id).await;
     let (status, summary): (&str, Option<String>) = match &result {
         crate::compliance::rescreening::ScreeningResult::Clear => ("clear", None),
@@ -172,7 +203,9 @@ pub async fn api_admin_compliance_rescreen(
             ("hit", Some(summary.clone()))
         }
         crate::compliance::rescreening::ScreeningResult::Error(e) => ("error", Some(e.clone())),
-        crate::compliance::rescreening::ScreeningResult::Skipped(r) => ("skipped", Some(r.to_string())),
+        crate::compliance::rescreening::ScreeningResult::Skipped(r) => {
+            ("skipped", Some(r.to_string()))
+        }
     };
     Ok(Json(serde_json::json!({
         "status": status,

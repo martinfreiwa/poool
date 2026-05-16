@@ -4,5 +4,6 @@
 //! compliance-alerts queue used by both re-screening and the upcoming
 //! transaction-monitoring rule engine (P0-1).
 
+pub mod monitoring;
 pub mod rescreening;
 pub mod routes;
