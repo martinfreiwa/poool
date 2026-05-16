@@ -88,6 +88,9 @@
           <button @click="activeTab = 'general'" class="admin-tab" :class="activeTab === 'general' ? 'active' : ''">
             General
           </button>
+          <button @click="activeTab = 'deposits'" class="admin-tab" :class="activeTab === 'deposits' ? 'active' : ''">
+            Deposits
+          </button>
           <button @click="activeTab = 'finance'" class="admin-tab" :class="activeTab === 'finance' ? 'active' : ''">
             Finance &amp; Fees
           </button>
@@ -181,6 +184,94 @@
                 ">
               <button @click="saveSettings()" class="admin-btn admin-btn--primary" :disabled="saving"
                 x-text="saving ? 'Saving…' : 'Save General Settings'"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ DEPOSITS ═══ -->
+        <div x-show="activeTab === 'deposits'">
+          <div class="admin-card" style="padding: 28px">
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+              Deposit Bank Wire Details
+            </h3>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0 0 24px;">
+              These are shown to users in the deposit modal and on the deposit confirmation page.
+              Changes apply to all <em>new</em> deposit requests immediately.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 760px;">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Bank Name</label>
+                <input type="text" x-model="settings.deposit_bank_name" class="admin-input"
+                  placeholder="e.g. Deutsche Bank AG" />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Account Holder</label>
+                <input type="text" x-model="settings.deposit_account_holder" class="admin-input"
+                  placeholder="e.g. POOOL GmbH" />
+              </div>
+              <div class="admin-form-group" style="grid-column: 1 / -1;">
+                <label class="admin-form-label">IBAN</label>
+                <input type="text" x-model="settings.deposit_iban" class="admin-input"
+                  placeholder="e.g. DE89370400440532013000"
+                  style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.5px;" />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">BIC / SWIFT</label>
+                <input type="text" x-model="settings.deposit_bic" class="admin-input"
+                  placeholder="e.g. DEUTDEDB"
+                  style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.5px;" />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Reference Prefix</label>
+                <input type="text" x-model="settings.deposit_reference_prefix" class="admin-input"
+                  placeholder="e.g. POOOL" maxlength="12" />
+                <p style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">
+                  Auto-prepended to each unique deposit reference (e.g. <code>POOOL-20260516-1A2B</code>)
+                </p>
+              </div>
+              <div class="admin-form-group" style="grid-column: 1 / -1;">
+                <label class="admin-form-label">Bank Address (optional)</label>
+                <input type="text" x-model="settings.deposit_bank_address" class="admin-input"
+                  placeholder="e.g. Taunusanlage 12, 60325 Frankfurt am Main, Germany" />
+              </div>
+            </div>
+
+            <h3 style="margin: 32px 0 4px; font-size: 16px; font-weight: 700;">
+              Deposit Limits &amp; Timing
+            </h3>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0 0 24px;">
+              Caps shown in the deposit modal and enforced server-side. Stored in cents.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 760px;">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Min. Deposit (cents)</label>
+                <input type="number" step="1" min="0" x-model.number="settings.deposit_min_amount_cents"
+                  class="admin-input" />
+                <p style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">
+                  5000 = $50.00
+                </p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Max. Deposit (cents)</label>
+                <input type="number" step="1" min="0" x-model.number="settings.deposit_max_amount_cents"
+                  class="admin-input" />
+                <p style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">
+                  10000000 = $100,000.00
+                </p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Processing Time (hours)</label>
+                <input type="number" step="1" min="1" x-model.number="settings.deposit_processing_hours"
+                  class="admin-input" />
+                <p style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">
+                  Shown to users as expected credit time
+                </p>
+              </div>
+            </div>
+
+            <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--admin-border);">
+              <button @click="saveSettings()" class="admin-btn admin-btn--primary" :disabled="saving"
+                x-text="saving ? 'Saving…' : 'Save Deposit Settings'"></button>
             </div>
           </div>
         </div>

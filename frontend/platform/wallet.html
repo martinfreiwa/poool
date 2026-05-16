@@ -62,10 +62,15 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 <button id="empty-deposit-btn" type="button" class="ds-btn ds-btn--primary wallet-empty__cta-primary" onclick="openDepositModal()">
                   <span>Make a deposit</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M5 12h14m-6-7 7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 5v14m-7-7 7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </button>
-                <a href="#wallet-payment-methods" class="ds-btn wallet-empty__cta-secondary">View payment methods</a>
+                <button id="empty-withdraw-btn" type="button" class="ds-btn ds-btn--secondary wallet-empty__cta-secondary" onclick="openWithdrawModal()">
+                  <span>Withdraw</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 19V5m-7 7 7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
               </div>
             </div>
             <div class="wallet-empty__hero-art" aria-hidden="true">
@@ -608,9 +613,9 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   </main> <!-- end wallet-main -->
 
   <div id="deposit-modal" class="ds-modal-overlay">
-    <div class="ds-modal">
+    <div class="ds-modal wallet-deposit-modal">
       <div class="ds-modal__header">
-        <h2 class="ds-modal__title">Deposit Funds</h2>
+        <h2 class="ds-modal__title" id="deposit-modal-title">Deposit funds</h2>
         <button class="ds-modal__close" onclick="closeDepositModal()" aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
@@ -618,28 +623,184 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </svg>
         </button>
       </div>
+
+      <!-- Step indicator -->
+      <ol class="wallet-deposit-steps" aria-label="Deposit steps">
+        <li class="wallet-deposit-steps__item" data-step="1" aria-current="step">
+          <span class="wallet-deposit-steps__num">1</span><span class="wallet-deposit-steps__label">Amount</span>
+        </li>
+        <li class="wallet-deposit-steps__divider" aria-hidden="true"></li>
+        <li class="wallet-deposit-steps__item" data-step="2">
+          <span class="wallet-deposit-steps__num">2</span><span class="wallet-deposit-steps__label">Wire &amp; proof</span>
+        </li>
+      </ol>
+
       <div class="ds-modal__body">
-        <form action="/wallet/deposit" method="POST" onsubmit="return onDepositSubmit(this)">
+        <!-- ═══ STEP 1 — Amount ═══ -->
+        <div id="deposit-step-1" class="wallet-deposit-step wallet-deposit-step--active">
           <div class="ds-form-group">
-            <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
-            <input type="text" inputmode="decimal" name="amount" required class="ds-input"
-              placeholder="e.g. 1,000" autocomplete="off" oninput="formatAmountInput(this)" />
+            <label class="ds-form-label ds-form-label--required" for="deposit-amount">Amount (USD)</label>
+            <div class="wallet-deposit-amount-input">
+              <span class="wallet-deposit-amount-input__prefix">$</span>
+              <input type="text" inputmode="decimal" id="deposit-amount" required class="ds-input"
+                     placeholder="0.00" autocomplete="off" oninput="formatAmountInput(this)" />
+            </div>
+            <p class="ds-form-hint" id="deposit-amount-hint">
+              Minimum <strong id="deposit-min-display">$50.00</strong> · Maximum
+              <strong id="deposit-max-display">$100,000.00</strong>
+            </p>
           </div>
-          <p class="ds-form-hint">You will receive bank wire instructions after confirming.</p>
-          <p class="ds-form-required-legend">* Required field</p>
+
+          <div class="wallet-deposit-quick-amounts" role="group" aria-label="Quick amount presets">
+            <button type="button" class="wallet-deposit-chip" data-amount="100">$100</button>
+            <button type="button" class="wallet-deposit-chip" data-amount="500">$500</button>
+            <button type="button" class="wallet-deposit-chip" data-amount="1000">$1,000</button>
+            <button type="button" class="wallet-deposit-chip" data-amount="5000">$5,000</button>
+            <button type="button" class="wallet-deposit-chip" data-amount="10000">$10,000</button>
+          </div>
+
+          <p id="deposit-step-1-error" class="ds-modal__error" role="alert"></p>
+
+          <div class="wallet-deposit-aml-note">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 2.5 18 16.5H2L10 2.5Z" fill="#FFF4D6" stroke="#D97706" stroke-width="1.4"/>
+              <path d="M10 7.25v4.25" stroke="#B45309" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="10" cy="14" r="1" fill="#B45309"/>
+            </svg>
+            <div>
+              <strong>Funds must come from an account in your name.</strong>
+              <span>Third-party transfers are rejected and may delay verification.</span>
+            </div>
+          </div>
+
           <div class="ds-modal__footer-actions">
             <button type="button" class="ds-btn ds-btn--secondary" onclick="closeDepositModal()">Cancel</button>
-            <button type="submit" class="ds-btn ds-btn--primary ds-btn--full">Confirm Deposit</button>
+            <button type="button" class="ds-btn ds-btn--primary" id="deposit-continue-btn"
+              onclick="depositContinueToStep2()">
+              <span>Continue</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
           </div>
-        </form>
+        </div>
+
+        <!-- ═══ STEP 2 — Wire instructions + proof ═══ -->
+        <div id="deposit-step-2" class="wallet-deposit-step">
+          <div class="wallet-deposit-summary" id="deposit-summary">
+            <div class="wallet-deposit-summary__label">You're depositing</div>
+            <div class="wallet-deposit-summary__amount" id="deposit-summary-amount">$0.00</div>
+            <div class="wallet-deposit-summary__processing">
+              Funds credited within <strong id="deposit-summary-hours">24</strong> hours after the wire is received.
+            </div>
+          </div>
+
+          <h3 class="wallet-deposit-section-title">Wire transfer details</h3>
+          <p class="wallet-deposit-section-hint">
+            Send a wire transfer using the exact details below. <strong>The reference is required</strong>
+            — without it we can't match your deposit to your account.
+          </p>
+
+          <div class="wallet-deposit-bank">
+            <div class="wallet-deposit-bank__row">
+              <span class="wallet-deposit-bank__label">Bank</span>
+              <span class="wallet-deposit-bank__value" id="deposit-bank-name">—</span>
+            </div>
+            <div class="wallet-deposit-bank__row">
+              <span class="wallet-deposit-bank__label">Account holder</span>
+              <span class="wallet-deposit-bank__value" id="deposit-bank-holder">—</span>
+            </div>
+            <div class="wallet-deposit-bank__row">
+              <span class="wallet-deposit-bank__label">IBAN</span>
+              <span class="wallet-deposit-bank__value wallet-deposit-bank__value--mono">
+                <span id="deposit-bank-iban">—</span>
+                <button type="button" class="wallet-deposit-copy" data-copy-target="deposit-bank-iban" aria-label="Copy IBAN">Copy</button>
+              </span>
+            </div>
+            <div class="wallet-deposit-bank__row">
+              <span class="wallet-deposit-bank__label">BIC / SWIFT</span>
+              <span class="wallet-deposit-bank__value wallet-deposit-bank__value--mono">
+                <span id="deposit-bank-bic">—</span>
+                <button type="button" class="wallet-deposit-copy" data-copy-target="deposit-bank-bic" aria-label="Copy BIC">Copy</button>
+              </span>
+            </div>
+            <div class="wallet-deposit-bank__row" id="deposit-bank-address-row" style="display:none">
+              <span class="wallet-deposit-bank__label">Bank address</span>
+              <span class="wallet-deposit-bank__value" id="deposit-bank-address">—</span>
+            </div>
+            <div class="wallet-deposit-bank__row wallet-deposit-bank__row--highlight">
+              <span class="wallet-deposit-bank__label">Reference</span>
+              <span class="wallet-deposit-bank__value wallet-deposit-bank__value--mono">
+                <span id="deposit-bank-reference">—</span>
+                <button type="button" class="wallet-deposit-copy wallet-deposit-copy--primary"
+                  data-copy-target="deposit-bank-reference" aria-label="Copy reference">Copy</button>
+              </span>
+            </div>
+          </div>
+
+          <form id="deposit-proof-form" enctype="multipart/form-data">
+            <h3 class="wallet-deposit-section-title">Upload proof of transfer</h3>
+            <p class="wallet-deposit-section-hint">
+              After completing the wire in your bank app, attach a PDF or screenshot of the
+              confirmation. Required before submitting.
+            </p>
+
+            <label class="wallet-deposit-upload" id="deposit-upload-zone" for="deposit-proof-file">
+              <input type="file" id="deposit-proof-file" name="proof"
+                     accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
+                     class="wallet-deposit-upload__input" required />
+              <div class="wallet-deposit-upload__icon" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                  <path d="M16 22V8m0 0-6 6m6-6 6 6" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="5" y="22" width="22" height="5" rx="1.5" stroke="#0000FF" stroke-width="2"/>
+                </svg>
+              </div>
+              <div class="wallet-deposit-upload__copy">
+                <strong>Click to upload</strong> or drag &amp; drop
+                <span>PDF, PNG, JPG or WebP · max 10 MB</span>
+              </div>
+            </label>
+            <div class="wallet-deposit-file" id="deposit-file-card" style="display:none">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M11.667 1.667H5a1.667 1.667 0 0 0-1.667 1.666v13.334A1.667 1.667 0 0 0 5 18.333h10a1.667 1.667 0 0 0 1.667-1.666V6.667l-5-5Z"
+                      stroke="#0000FF" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M11.667 1.667v5h5" stroke="#0000FF" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              <div class="wallet-deposit-file__info">
+                <span class="wallet-deposit-file__name" id="deposit-file-name">—</span>
+                <span class="wallet-deposit-file__meta" id="deposit-file-meta">—</span>
+              </div>
+              <button type="button" class="wallet-deposit-file__remove" id="deposit-file-remove" aria-label="Remove file">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M12 4 4 12M4 4l8 8" stroke="#667085" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="ds-form-group" style="margin-top:18px">
+              <label class="ds-form-label" for="deposit-notes">Notes for admin <span class="wallet-deposit-optional">(optional)</span></label>
+              <textarea id="deposit-notes" name="notes" class="ds-input" rows="2"
+                placeholder="e.g. Wire sent from my Wise account, may arrive in two batches."></textarea>
+            </div>
+
+            <p id="deposit-step-2-error" class="ds-modal__error" role="alert"></p>
+
+            <div class="ds-modal__footer-actions">
+              <button type="button" class="ds-btn ds-btn--secondary" onclick="depositBackToStep1()">Back</button>
+              <button type="submit" class="ds-btn ds-btn--primary" id="deposit-submit-btn" disabled>
+                <span>Submit deposit</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
 
   <div id="withdraw-modal" class="ds-modal-overlay">
-    <div class="ds-modal">
+    <div class="ds-modal wallet-withdraw-modal">
       <div class="ds-modal__header">
-        <h2 class="ds-modal__title">Withdraw Funds</h2>
+        <h2 class="ds-modal__title">Withdraw funds</h2>
         <button class="ds-modal__close" onclick="closeWithdrawModal()" aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
@@ -649,32 +810,69 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       </div>
       <div class="ds-modal__body">
         {% if has_cards or has_banks %}
+        <div class="wallet-withdraw-balance">
+          <span class="wallet-withdraw-balance__label">Available to withdraw</span>
+          <span class="wallet-withdraw-balance__value">{{ cash_balance }}</span>
+        </div>
+
         <form action="/wallet/withdraw" method="POST" onsubmit="return onWithdrawSubmit(this)">
           <div class="ds-form-group">
-            <label class="ds-form-label ds-form-label--required">Withdraw to</label>
+            <label class="ds-form-label ds-form-label--required" for="withdraw-payment-select">Destination</label>
             <select id="withdraw-payment-select" name="payment_method_id" class="ds-select" onchange="updateWithdrawBtn()">
               {{ payment_method_options | safe }}
             </select>
+            <p class="ds-form-hint">Funds are sent only to bank accounts in your verified name.</p>
           </div>
+
           <div class="ds-form-group">
-            <label class="ds-form-label ds-form-label--required">Amount (USD)</label>
-            <input type="text" inputmode="decimal" id="withdraw-amount-input" name="amount" required class="ds-input"
-              placeholder="e.g. 500" autocomplete="off" oninput="formatAmountInput(this)" />
-            <p class="ds-form-hint" id="withdraw-balance-hint">Available: <strong>{{ cash_balance }}</strong></p>
+            <label class="ds-form-label ds-form-label--required" for="withdraw-amount-input">Amount (USD)</label>
+            <div class="wallet-deposit-amount-input">
+              <span class="wallet-deposit-amount-input__prefix">$</span>
+              <input type="text" inputmode="decimal" id="withdraw-amount-input" name="amount" required class="ds-input"
+                placeholder="0.00" autocomplete="off" oninput="formatAmountInput(this)" />
+            </div>
+            <p class="ds-form-hint" id="withdraw-balance-hint">
+              Available: <strong>{{ cash_balance }}</strong>
+            </p>
           </div>
-          <p class="ds-form-required-legend">* Required field</p>
+
+          <div class="wallet-withdraw-info">
+            <div class="wallet-withdraw-info__row">
+              <span class="wallet-withdraw-info__label">Processing time</span>
+              <span class="wallet-withdraw-info__value">1–3 business days</span>
+            </div>
+            <div class="wallet-withdraw-info__row">
+              <span class="wallet-withdraw-info__label">Withdrawal fee</span>
+              <span class="wallet-withdraw-info__value">Network fee may apply</span>
+            </div>
+            <div class="wallet-withdraw-info__row">
+              <span class="wallet-withdraw-info__label">Admin review</span>
+              <span class="wallet-withdraw-info__value">Required for all withdrawals</span>
+            </div>
+          </div>
+
           <div class="ds-modal__footer-actions">
             <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal()">Cancel</button>
-            <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary ds-btn--full">Confirm Withdrawal</button>
+            <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary">Confirm withdrawal</button>
           </div>
         </form>
         {% else %}
-        <div class="ds-modal__empty-state">
-          <p class="ds-modal__empty-text">No payment methods on file. Add a bank account or card before withdrawing.</p>
+        <div class="wallet-withdraw-empty">
+          <div class="wallet-withdraw-empty__icon" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect x="6" y="12" width="28" height="20" rx="3" stroke="#0000FF" stroke-width="2"/>
+              <path d="M6 18h28" stroke="#0000FF" stroke-width="2"/>
+              <path d="M12 26h6" stroke="#0000FF" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="wallet-withdraw-empty__title">No payment method on file</h3>
+          <p class="wallet-withdraw-empty__desc">
+            Add a bank account before withdrawing. Cards are accepted for deposits only.
+          </p>
           <div class="ds-modal__footer-actions">
             <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal()">Cancel</button>
-            <button type="button" class="ds-btn ds-btn--secondary" onclick="closeWithdrawModal(); openCardModal();">Add Card</button>
-            <button type="button" class="ds-btn ds-btn--primary" onclick="closeWithdrawModal(); openBankModal();">Add Bank</button>
+            <button type="button" class="ds-btn ds-btn--primary"
+              onclick="closeWithdrawModal(); openBankModal();">Add bank account</button>
           </div>
         </div>
         {% endif %}
@@ -686,10 +884,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   <div id="add-card-modal" class="ds-modal-overlay">
     <div class="ds-modal">
       <div class="ds-modal__header">
-        <h2 class="ds-modal__title">Add Card</h2>
-        <button class="ds-modal__close" onclick="closeCardModal()">
+        <h2 class="ds-modal__title">Add card</h2>
+        <button class="ds-modal__close" onclick="closeCardModal()" aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
+            <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
         </button>
@@ -706,7 +904,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
         <form id="add-card-form">
           <div class="ds-form-group">
-            <label class="ds-form-label ds-form-label--required">Cardholder Name</label>
+            <label class="ds-form-label ds-form-label--required">Cardholder name</label>
             <input type="text" id="card-holder-name" name="holder_name" placeholder="John Doe" class="ds-input"
               required />
           </div>
@@ -714,7 +912,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <!-- Stripe Elements Container -->
           <div id="stripe-element-container" style="display: none;">
             <div class="ds-form-group">
-              <label class="ds-form-label ds-form-label--required">Card Details</label>
+              <label class="ds-form-label ds-form-label--required">Card details</label>
               <div id="card-element" class="ds-input" style="height: 44px; padding: 10px 14px;">
               </div>
             </div>
@@ -728,7 +926,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <!-- Manual Fallback Container -->
           <div id="manual-card-container" style="display: none;">
             <div class="ds-form-group">
-              <label class="ds-form-label ds-form-label--required">Card Number</label>
+              <label class="ds-form-label ds-form-label--required">Card number</label>
               <div style="position: relative">
                 <input type="text" id="card-number" name="card_number" placeholder="4242 4242 4242 4242"
                   class="ds-input" maxlength="19" autocomplete="cc-number" inputmode="numeric"
@@ -742,7 +940,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             </div>
             <div style="display: flex; gap: 16px">
               <div class="ds-form-group" style="flex: 1">
-                <label class="ds-form-label ds-form-label--required">Expiry Date</label>
+                <label class="ds-form-label ds-form-label--required">Expiry date</label>
                 <input type="text" id="card-expiry" name="expiry" placeholder="MM / YY" class="ds-input" maxlength="7"
                   autocomplete="cc-exp" inputmode="numeric" />
               </div>
@@ -755,8 +953,9 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
 
           <div id="card-errors" role="alert" class="ds-modal__error"></div>
-          <div class="form-actions" style="margin-top: 24px">
-            <button type="submit" id="submit-card-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Card</button>
+          <div class="ds-modal__footer-actions" style="margin-top: 24px">
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="closeCardModal()">Cancel</button>
+            <button type="submit" id="submit-card-btn" class="ds-btn ds-btn--primary">Save card</button>
           </div>
         </form>
 
@@ -843,7 +1042,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               if (manualCardCvv) manualCardCvv.required = false;
               if (submitCardBtn) {
                 submitCardBtn.disabled = true;
-                submitCardBtn.textContent = "Card Saving Unavailable";
+                submitCardBtn.textContent = "Card saving unavailable";
               }
               var errEl = document.getElementById("card-errors");
               if (errEl) errEl.textContent = message;
@@ -926,7 +1125,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
                     if (error) {
                       errEl.textContent = error.message;
-                      btn.disabled = false; btn.textContent = "Save Card";
+                      btn.disabled = false; btn.textContent = "Save card";
                       return;
                     }
 
@@ -936,7 +1135,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                     submitCardToBackend(paymentMethod.id, holderName, brand, last4, btn, errEl);
                   } catch (err) {
                     errEl.textContent = "Stripe integration error. Please try again.";
-                    btn.disabled = false; btn.textContent = "Save Card";
+                    btn.disabled = false; btn.textContent = "Save card";
                   }
                 } else {
                   errEl.textContent = "Card saving requires Stripe to be configured.";
@@ -963,13 +1162,13 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   } else {
                     return res.text().then(function (t) {
                       errEl.textContent = t || "Error saving card to server";
-                      btn.disabled = false; btn.textContent = "Save Card";
+                      btn.disabled = false; btn.textContent = "Save card";
                     });
                   }
                 })
                 .catch(function () {
                   errEl.textContent = "A network error occurred. Please try again.";
-                  btn.disabled = false; btn.textContent = "Save Card";
+                  btn.disabled = false; btn.textContent = "Save card";
                 });
             }
           });
@@ -981,53 +1180,48 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   <!-- Add Bank Details Modal -->
   <div id="add-bank-modal" class="ds-modal-overlay">
     <div class="ds-modal wallet-bank-modal">
-      <div class="ds-modal__header wallet-bank-modal__header">
-        <div class="wallet-bank-modal__brand">
-          <span class="wallet-bank-modal__logo" aria-hidden="true">
-            <img src="/static/images/logos/poool-icon.svg" alt="">
-          </span>
-          <div>
-            <p class="wallet-bank-modal__eyebrow">POOOL withdrawals</p>
-            <h2 class="ds-modal__title">Add bank account</h2>
-          </div>
-        </div>
-        <button class="ds-modal__close" onclick="closeBankModal()">
+      <div class="ds-modal__header">
+        <h2 class="ds-modal__title">Add bank account</h2>
+        <button class="ds-modal__close" onclick="closeBankModal()" aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
+            <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
         </button>
       </div>
       <div class="ds-modal__body wallet-bank-modal__body">
-        <div class="wallet-bank-modal__intro">
-          <p>Connect a bank account for withdrawals. The account holder name must match your verified POOOL profile.</p>
-          <div class="wallet-bank-modal__trust-row" aria-label="Bank account security">
-            <span>
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 8V6.5a3.5 3.5 0 1 1 7 0V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4.5" y="8" width="11" height="8.5" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 11.25v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              Encrypted
-            </span>
-            <span>
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5 8 14.5 16 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Withdrawal only
-            </span>
-          </div>
-        </div>
 
         <form id="bank-modal-form" class="wallet-bank-form">
           <!-- Hidden system field set by JS -->
           <input type="hidden" id="bank-system-field" name="bank_system" value="swift" />
+          <!-- Hidden combined name field for backend submission -->
+          <input type="hidden" id="bank-holder-name" name="account_holder_name" />
 
           <div class="wallet-bank-form__section">
             <div class="wallet-bank-form__section-header">
               <span class="wallet-bank-form__step">1</span>
-              <h3>Account details</h3>
+              <h3>Account holder</h3>
             </div>
+            <p class="wallet-bank-form__section-hint">
+              Must match the name on your verified POOOL profile.
+            </p>
 
-            <!-- Account Holder -->
-            <div class="ds-form-group">
-              <label class="ds-form-label ds-form-label--required">Account Holder Name</label>
-              <input type="text" name="account_holder_name" id="bank-holder-name" placeholder="Full legal name"
-                class="ds-input" required />
+            <div class="wallet-bank-form__name-grid">
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required">First name</label>
+                <input type="text" id="bank-first-name" placeholder="e.g. Maria" class="ds-input"
+                  autocomplete="given-name" required />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label">Middle name</label>
+                <input type="text" id="bank-middle-name" placeholder="Optional" class="ds-input"
+                  autocomplete="additional-name" />
+              </div>
+              <div class="ds-form-group">
+                <label class="ds-form-label ds-form-label--required">Last name</label>
+                <input type="text" id="bank-last-name" placeholder="e.g. Rossi" class="ds-input"
+                  autocomplete="family-name" required />
+              </div>
             </div>
           </div>
 
@@ -1037,64 +1231,86 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               <h3>Bank details</h3>
             </div>
 
-            <!-- Country -->
+            <!-- Country (poool-dropdown, no flags) -->
             <div class="ds-form-group">
               <label class="ds-form-label ds-form-label--required">Country</label>
-              <select name="bank_country" id="bank-country-select" class="ds-select">
-                <optgroup label="── Common ──">
-                  <option value="US">🇺🇸 United States (ACH)</option>
-                  <option value="GB">🇬🇧 United Kingdom (BACS)</option>
-                  <option value="AU">🇦🇺 Australia (BSB)</option>
-                  <option value="IN">🇮🇳 India (IFSC)</option>
-                </optgroup>
-                <optgroup label="── SEPA Zone ──">
-                  <option value="DE">🇩🇪 Germany</option>
-                  <option value="FR">🇫🇷 France</option>
-                  <option value="IT">🇮🇹 Italy</option>
-                  <option value="ES">🇪🇸 Spain</option>
-                  <option value="NL">🇳🇱 Netherlands</option>
-                  <option value="BE">🇧🇪 Belgium</option>
-                  <option value="AT">🇦🇹 Austria</option>
-                  <option value="PT">🇵🇹 Portugal</option>
-                  <option value="IE">🇮🇪 Ireland</option>
-                  <option value="FI">🇫🇮 Finland</option>
-                  <option value="SE">🇸🇪 Sweden</option>
-                  <option value="DK">🇩🇰 Denmark</option>
-                  <option value="NO">🇳🇴 Norway</option>
-                  <option value="CH">🇨🇭 Switzerland</option>
-                  <option value="PL">🇵🇱 Poland</option>
-                  <option value="CZ">🇨🇿 Czech Republic</option>
-                  <option value="HU">🇭🇺 Hungary</option>
-                  <option value="RO">🇷🇴 Romania</option>
-                  <option value="GR">🇬🇷 Greece</option>
-                  <option value="LU">🇱🇺 Luxembourg</option>
-                </optgroup>
-                <optgroup label="── Asia-Pacific ──">
-                  <option value="SG">🇸🇬 Singapore</option>
-                  <option value="HK">🇭🇰 Hong Kong</option>
-                  <option value="JP">🇯🇵 Japan</option>
-                  <option value="KR">🇰🇷 South Korea</option>
-                  <option value="NZ">🇳🇿 New Zealand</option>
-                </optgroup>
-                <optgroup label="── Americas ──">
-                  <option value="CA">🇨🇦 Canada</option>
-                  <option value="BR">🇧🇷 Brazil</option>
-                  <option value="MX">🇲🇽 Mexico</option>
-                </optgroup>
-                <optgroup label="── Middle East & Africa ──">
-                  <option value="AE">🇦🇪 UAE</option>
-                  <option value="SA">🇸🇦 Saudi Arabia</option>
-                  <option value="ZA">🇿🇦 South Africa</option>
-                  <option value="NG">🇳🇬 Nigeria</option>
-                  <option value="KE">🇰🇪 Kenya</option>
-                </optgroup>
-                <option value="OTHER">🌍 Other country (SWIFT/BIC)</option>
-              </select>
+              <input type="hidden" name="bank_country" id="bank-country-input" value="US" />
+              <div class="poool-dropdown poool-dropdown--full" data-dropdown data-searchable
+                   data-placeholder="Select country" id="bank-country-dropdown">
+                <button type="button" class="poool-dropdown__trigger" data-dropdown-trigger>
+                  <span class="poool-dropdown__value">United States (ACH)</span>
+                  <svg class="poool-dropdown__chevron" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.67"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <div class="poool-dropdown__panel" data-dropdown-panel>
+                  <div class="poool-dropdown__group-label">Common</div>
+                  <div class="poool-dropdown__option poool-dropdown__option--selected" data-value="US">
+                    <span class="poool-dropdown__option-text">United States <span class="poool-dropdown__option-meta">ACH</span></span>
+                  </div>
+                  <div class="poool-dropdown__option" data-value="GB">
+                    <span class="poool-dropdown__option-text">United Kingdom <span class="poool-dropdown__option-meta">BACS</span></span>
+                  </div>
+                  <div class="poool-dropdown__option" data-value="AU">
+                    <span class="poool-dropdown__option-text">Australia <span class="poool-dropdown__option-meta">BSB</span></span>
+                  </div>
+                  <div class="poool-dropdown__option" data-value="IN">
+                    <span class="poool-dropdown__option-text">India <span class="poool-dropdown__option-meta">IFSC</span></span>
+                  </div>
+
+                  <div class="poool-dropdown__group-label">SEPA Zone</div>
+                  <div class="poool-dropdown__option" data-value="DE"><span class="poool-dropdown__option-text">Germany</span></div>
+                  <div class="poool-dropdown__option" data-value="FR"><span class="poool-dropdown__option-text">France</span></div>
+                  <div class="poool-dropdown__option" data-value="IT"><span class="poool-dropdown__option-text">Italy</span></div>
+                  <div class="poool-dropdown__option" data-value="ES"><span class="poool-dropdown__option-text">Spain</span></div>
+                  <div class="poool-dropdown__option" data-value="NL"><span class="poool-dropdown__option-text">Netherlands</span></div>
+                  <div class="poool-dropdown__option" data-value="BE"><span class="poool-dropdown__option-text">Belgium</span></div>
+                  <div class="poool-dropdown__option" data-value="AT"><span class="poool-dropdown__option-text">Austria</span></div>
+                  <div class="poool-dropdown__option" data-value="PT"><span class="poool-dropdown__option-text">Portugal</span></div>
+                  <div class="poool-dropdown__option" data-value="IE"><span class="poool-dropdown__option-text">Ireland</span></div>
+                  <div class="poool-dropdown__option" data-value="FI"><span class="poool-dropdown__option-text">Finland</span></div>
+                  <div class="poool-dropdown__option" data-value="SE"><span class="poool-dropdown__option-text">Sweden</span></div>
+                  <div class="poool-dropdown__option" data-value="DK"><span class="poool-dropdown__option-text">Denmark</span></div>
+                  <div class="poool-dropdown__option" data-value="NO"><span class="poool-dropdown__option-text">Norway</span></div>
+                  <div class="poool-dropdown__option" data-value="CH"><span class="poool-dropdown__option-text">Switzerland</span></div>
+                  <div class="poool-dropdown__option" data-value="PL"><span class="poool-dropdown__option-text">Poland</span></div>
+                  <div class="poool-dropdown__option" data-value="CZ"><span class="poool-dropdown__option-text">Czech Republic</span></div>
+                  <div class="poool-dropdown__option" data-value="HU"><span class="poool-dropdown__option-text">Hungary</span></div>
+                  <div class="poool-dropdown__option" data-value="RO"><span class="poool-dropdown__option-text">Romania</span></div>
+                  <div class="poool-dropdown__option" data-value="GR"><span class="poool-dropdown__option-text">Greece</span></div>
+                  <div class="poool-dropdown__option" data-value="LU"><span class="poool-dropdown__option-text">Luxembourg</span></div>
+
+                  <div class="poool-dropdown__group-label">Asia-Pacific</div>
+                  <div class="poool-dropdown__option" data-value="SG"><span class="poool-dropdown__option-text">Singapore</span></div>
+                  <div class="poool-dropdown__option" data-value="HK"><span class="poool-dropdown__option-text">Hong Kong</span></div>
+                  <div class="poool-dropdown__option" data-value="JP"><span class="poool-dropdown__option-text">Japan</span></div>
+                  <div class="poool-dropdown__option" data-value="KR"><span class="poool-dropdown__option-text">South Korea</span></div>
+                  <div class="poool-dropdown__option" data-value="NZ"><span class="poool-dropdown__option-text">New Zealand</span></div>
+
+                  <div class="poool-dropdown__group-label">Americas</div>
+                  <div class="poool-dropdown__option" data-value="CA"><span class="poool-dropdown__option-text">Canada</span></div>
+                  <div class="poool-dropdown__option" data-value="BR"><span class="poool-dropdown__option-text">Brazil</span></div>
+                  <div class="poool-dropdown__option" data-value="MX"><span class="poool-dropdown__option-text">Mexico</span></div>
+
+                  <div class="poool-dropdown__group-label">Middle East &amp; Africa</div>
+                  <div class="poool-dropdown__option" data-value="AE"><span class="poool-dropdown__option-text">United Arab Emirates</span></div>
+                  <div class="poool-dropdown__option" data-value="SA"><span class="poool-dropdown__option-text">Saudi Arabia</span></div>
+                  <div class="poool-dropdown__option" data-value="ZA"><span class="poool-dropdown__option-text">South Africa</span></div>
+                  <div class="poool-dropdown__option" data-value="NG"><span class="poool-dropdown__option-text">Nigeria</span></div>
+                  <div class="poool-dropdown__option" data-value="KE"><span class="poool-dropdown__option-text">Kenya</span></div>
+
+                  <div class="poool-dropdown__group-label">Other</div>
+                  <div class="poool-dropdown__option" data-value="OTHER">
+                    <span class="poool-dropdown__option-text">Other country <span class="poool-dropdown__option-meta">SWIFT / BIC</span></span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Bank Name -->
             <div class="ds-form-group">
-              <label class="ds-form-label ds-form-label--required">Bank Name</label>
+              <label class="ds-form-label ds-form-label--required">Bank name</label>
               <input type="text" name="bank_name" id="bank-name-input" placeholder="e.g. Chase, Barclays, Wise"
                 class="ds-input" required />
             </div>
@@ -1102,17 +1318,25 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             <!-- Dynamic fields injected here -->
             <div id="bank-dynamic-fields" class="wallet-bank-form__dynamic"></div>
 
-            <!-- Label (optional) -->
+            <!-- Nickname -->
             <div class="ds-form-group">
-              <label class="ds-form-label">Nickname (optional)</label>
-              <input type="text" name="label" placeholder="e.g. My Savings Account" class="ds-input" />
+              <label class="ds-form-label">Nickname</label>
+              <input type="text" name="label" placeholder="e.g. Main account" class="ds-input" />
+              <p class="ds-form-hint">Helps you tell accounts apart in the wallet view. Visible only to you.</p>
             </div>
           </div>
 
           <div id="bank-errors" role="alert" class="ds-modal__error"></div>
+          <div class="wallet-bank-form__footer-note">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M5 7V5a3 3 0 1 1 6 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+            <span>Encrypted at rest &middot; Used for withdrawals only &middot; Never charged</span>
+          </div>
           <div class="wallet-bank-form__actions">
-            <button type="submit" id="submit-bank-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Bank
-              Account</button>
+            <button type="button" class="ds-btn ds-btn--secondary" onclick="closeBankModal()">Cancel</button>
+            <button type="submit" id="submit-bank-btn" class="ds-btn ds-btn--primary">Save bank account</button>
           </div>
         </form>
 
@@ -1200,22 +1424,55 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             });
           }
 
+          function combineHolderName() {
+            var first = (document.getElementById("bank-first-name")?.value || "").trim();
+            var middle = (document.getElementById("bank-middle-name")?.value || "").trim();
+            var last = (document.getElementById("bank-last-name")?.value || "").trim();
+            var combined = [first, middle, last].filter(Boolean).join(" ");
+            var hidden = document.getElementById("bank-holder-name");
+            if (hidden) hidden.value = combined;
+            return combined;
+          }
+
           document.addEventListener("DOMContentLoaded", function () {
-            var countrySelect = document.getElementById("bank-country-select");
-            if (countrySelect) {
-              countrySelect.addEventListener("change", function () { renderBankFields(this.value); });
-              renderBankFields(countrySelect.value); // render initial
+            // poool-dropdown auto-init runs on DOMContentLoaded; we only listen to its
+            // change event so we don't double-initialise (which would inject two search
+            // boxes).
+            var dropdownEl = document.getElementById("bank-country-dropdown");
+            var hiddenCountry = document.getElementById("bank-country-input");
+            if (dropdownEl) {
+              dropdownEl.addEventListener("dropdown:change", function (e) {
+                var value = e.detail && e.detail.value;
+                if (!value) return;
+                if (hiddenCountry) hiddenCountry.value = value;
+                renderBankFields(value);
+              });
             }
+            renderBankFields(hiddenCountry ? hiddenCountry.value : "US");
+
+            // Keep the hidden combined-name field in sync as the user types
+            ["bank-first-name", "bank-middle-name", "bank-last-name"].forEach(function (id) {
+              var el = document.getElementById(id);
+              if (el) el.addEventListener("input", combineHolderName);
+            });
 
             document.getElementById("bank-modal-form").addEventListener("submit", async function (e) {
               e.preventDefault();
               var btn = document.getElementById("submit-bank-btn");
               var errorDiv = document.getElementById("bank-errors");
-              btn.disabled = true; btn.textContent = "Saving...";
+              btn.disabled = true; btn.textContent = "Saving…";
               errorDiv.textContent = "";
 
+              // Collapse the three name inputs into the legacy account_holder_name field
+              var holder = combineHolderName();
+              if (!holder) {
+                errorDiv.textContent = "First and last name are required.";
+                btn.disabled = false; btn.textContent = "Save bank account";
+                return;
+              }
+
               // Client-side validation of dynamic fields
-              var countryCode = document.getElementById("bank-country-select").value;
+              var countryCode = hiddenCountry ? hiddenCountry.value : "US";
               var config = getBankConfig(countryCode);
               var valid = true;
               config.fields.forEach(function (f) {
@@ -1225,7 +1482,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 if (!f.optional && !val) { errorDiv.textContent = f.label + " is required."; valid = false; return; }
                 if (val && f.pattern && !f.pattern.test(val)) { errorDiv.textContent = f.label + ": " + f.patternMsg; valid = false; }
               });
-              if (!valid) { btn.disabled = false; btn.textContent = "Save Bank Account"; return; }
+              if (!valid) { btn.disabled = false; btn.textContent = "Save bank account"; return; }
 
               var formData = new FormData(e.target);
               var encoded = new URLSearchParams(formData).toString();
@@ -1234,7 +1491,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 if (response.ok) { closeBankModal(); window.location.reload(); }
                 else { var t = await response.text(); errorDiv.textContent = t || "An error occurred"; }
               } catch (err) { errorDiv.textContent = "An error occurred. Please try again."; }
-              btn.disabled = false; btn.textContent = "Save Bank Account";
+              btn.disabled = false; btn.textContent = "Save bank account";
             });
           });
         </script>
@@ -1244,8 +1501,6 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
   <!-- Wallet Actions & Initialization -->
   <script>
-    function openDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; } }
-    function closeDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
     function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.add('active'); document.body.style.overflow = "hidden"; updateWithdrawBtn(); } }
     function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.classList.remove('active'); document.body.style.overflow = ""; } }
     function updateWithdrawBtn() {
@@ -1265,10 +1520,335 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       input.value = parts.join(parts.length > 1 ? "." : "");
     }
 
-    function onDepositSubmit(form) {
-      var btn = form.querySelector("button[type=submit]");
+    // ─── Multi-step deposit modal ─────────────────────────────────
+    var __depositCtx = { settings: null, init: null };
+
+    function parseAmountCents(input) {
+      var raw = (input || "").replace(/[^0-9.]/g, "");
+      if (!raw) return 0;
+      var parts = raw.split(".");
+      var dollars = parseInt(parts[0] || "0", 10) || 0;
+      var cents = 0;
+      if (parts.length > 1) {
+        var frac = (parts[1] + "00").slice(0, 2);
+        cents = parseInt(frac, 10) || 0;
+      }
+      return dollars * 100 + cents;
+    }
+
+    function formatCentsUsd(cents) {
+      var sign = cents < 0 ? "-" : "";
+      var abs = Math.abs(cents);
+      var dollars = Math.floor(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      var rem = String(abs % 100).padStart(2, "0");
+      return sign + "$" + dollars + "." + rem;
+    }
+
+    async function loadDepositSettings() {
+      if (__depositCtx.settings) return __depositCtx.settings;
+      try {
+        var r = await fetch("/api/wallet/deposit-settings", { credentials: "same-origin" });
+        if (!r.ok) throw new Error("settings http " + r.status);
+        __depositCtx.settings = await r.json();
+        return __depositCtx.settings;
+      } catch (e) {
+        // Fall back to the documented defaults so the modal still opens.
+        __depositCtx.settings = {
+          bank_name: "—", account_holder: "—", iban: "—", bic: "—", bank_address: "",
+          reference_prefix: "POOOL", processing_hours: 24,
+          min_amount_cents: 5000, max_amount_cents: 10000000
+        };
+        return __depositCtx.settings;
+      }
+    }
+
+    function depositResetSteps() {
+      document.querySelectorAll(".wallet-deposit-step").forEach(function (el) {
+        el.classList.remove("wallet-deposit-step--active");
+      });
+      document.querySelectorAll(".wallet-deposit-steps__item").forEach(function (el) {
+        el.removeAttribute("aria-current");
+      });
+    }
+
+    function depositShowStep(n) {
+      depositResetSteps();
+      var step = document.getElementById("deposit-step-" + n);
+      if (step) step.classList.add("wallet-deposit-step--active");
+      var ind = document.querySelector('.wallet-deposit-steps__item[data-step="' + n + '"]');
+      if (ind) ind.setAttribute("aria-current", "step");
+    }
+
+    async function openDepositModal() {
+      var m = document.getElementById("deposit-modal");
+      if (!m) return;
+      m.classList.add("active");
+      document.body.style.overflow = "hidden";
+
+      // Reset state so reopening the modal feels fresh
+      __depositCtx.init = null;
+      var amt = document.getElementById("deposit-amount");
+      if (amt) amt.value = "";
+      var fileInput = document.getElementById("deposit-proof-file");
+      if (fileInput) fileInput.value = "";
+      var fileCard = document.getElementById("deposit-file-card");
+      if (fileCard) fileCard.style.display = "none";
+      var zone = document.getElementById("deposit-upload-zone");
+      if (zone) zone.style.display = "";
+      var notes = document.getElementById("deposit-notes");
+      if (notes) notes.value = "";
+      var submitBtn = document.getElementById("deposit-submit-btn");
+      if (submitBtn) submitBtn.disabled = true;
+      document.getElementById("deposit-step-1-error").textContent = "";
+      document.getElementById("deposit-step-2-error").textContent = "";
+      depositShowStep(1);
+
+      // Populate min/max from admin-configured platform settings
+      var s = await loadDepositSettings();
+      var minEl = document.getElementById("deposit-min-display");
+      var maxEl = document.getElementById("deposit-max-display");
+      if (minEl) minEl.textContent = formatCentsUsd(s.min_amount_cents);
+      if (maxEl) maxEl.textContent = formatCentsUsd(s.max_amount_cents);
+    }
+
+    function closeDepositModal() {
+      var m = document.getElementById("deposit-modal");
+      if (m) { m.classList.remove("active"); document.body.style.overflow = ""; }
+    }
+
+    function depositBackToStep1() {
+      depositShowStep(1);
+    }
+
+    async function depositContinueToStep2() {
+      var err = document.getElementById("deposit-step-1-error");
+      err.textContent = "";
+      var input = document.getElementById("deposit-amount");
+      var cents = parseAmountCents(input ? input.value : "");
+      var s = await loadDepositSettings();
+      if (cents <= 0) { err.textContent = "Enter a deposit amount."; return; }
+      if (cents < s.min_amount_cents) { err.textContent = "Minimum deposit is " + formatCentsUsd(s.min_amount_cents) + "."; return; }
+      if (cents > s.max_amount_cents) { err.textContent = "Maximum deposit is " + formatCentsUsd(s.max_amount_cents) + "."; return; }
+
+      var btn = document.getElementById("deposit-continue-btn");
       btn.disabled = true;
-      btn.textContent = "Processing...";
+      var origHtml = btn.innerHTML;
+      btn.innerHTML = "Preparing…";
+
+      try {
+        var resp = await fetch("/api/wallet/deposit/init", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ amount: input.value })
+        });
+        var data = await resp.json().catch(function () { return {}; });
+        if (!resp.ok) {
+          err.textContent = data.message || data.error || "Could not start deposit. Please try again.";
+          btn.disabled = false; btn.innerHTML = origHtml;
+          return;
+        }
+        __depositCtx.init = data;
+        depositRenderStep2(data);
+        depositShowStep(2);
+      } catch (e) {
+        err.textContent = "Network error. Please try again.";
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    function depositRenderStep2(data) {
+      // Prefer the cents value over the server-formatted "USD 500.00" string
+      // so the summary uses the $-prefixed style used elsewhere in the modal.
+      var summary = typeof data.amount_cents === "number"
+        ? formatCentsUsd(data.amount_cents)
+        : (data.amount_display || "$0.00");
+      document.getElementById("deposit-summary-amount").textContent = summary;
+      document.getElementById("deposit-summary-hours").textContent = String(data.processing_hours || 24);
+      var b = data.bank || {};
+      document.getElementById("deposit-bank-name").textContent = b.bank_name || "—";
+      document.getElementById("deposit-bank-holder").textContent = b.account_holder || "—";
+      document.getElementById("deposit-bank-iban").textContent = b.iban || "—";
+      document.getElementById("deposit-bank-bic").textContent = b.bic || "—";
+      var addrRow = document.getElementById("deposit-bank-address-row");
+      if (b.bank_address && b.bank_address.trim()) {
+        document.getElementById("deposit-bank-address").textContent = b.bank_address;
+        addrRow.style.display = "";
+      } else {
+        addrRow.style.display = "none";
+      }
+      document.getElementById("deposit-bank-reference").textContent = data.reference || "—";
+      var form = document.getElementById("deposit-proof-form");
+      if (form && data.submit_url) form.setAttribute("data-submit-url", data.submit_url);
+    }
+
+    function depositCopyToClipboard(text, btn) {
+      var doCopy = navigator.clipboard
+        ? navigator.clipboard.writeText(text)
+        : Promise.reject();
+      doCopy.then(function () {
+        var orig = btn.textContent;
+        btn.textContent = "Copied!";
+        btn.classList.add("wallet-deposit-copy--copied");
+        setTimeout(function () {
+          btn.textContent = orig;
+          btn.classList.remove("wallet-deposit-copy--copied");
+        }, 1500);
+      }).catch(function () {
+        // Best effort; older browsers fall back silently.
+      });
+    }
+
+    function depositHandleFile(file) {
+      var card = document.getElementById("deposit-file-card");
+      var zone = document.getElementById("deposit-upload-zone");
+      var nameEl = document.getElementById("deposit-file-name");
+      var metaEl = document.getElementById("deposit-file-meta");
+      var submitBtn = document.getElementById("deposit-submit-btn");
+      if (!file) {
+        card.style.display = "none";
+        zone.style.display = "";
+        if (submitBtn) submitBtn.disabled = true;
+        return;
+      }
+      // Light client-side validation; server validates again.
+      var maxBytes = 10 * 1024 * 1024;
+      var err = document.getElementById("deposit-step-2-error");
+      err.textContent = "";
+      if (file.size > maxBytes) {
+        err.textContent = "File is larger than 10 MB. Please attach a smaller file.";
+        return;
+      }
+      var allowed = ["application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp"];
+      if (allowed.indexOf(file.type) === -1 && !/\.(pdf|png|jpe?g|webp)$/i.test(file.name)) {
+        err.textContent = "Only PDF, PNG, JPG or WebP files are accepted.";
+        return;
+      }
+      nameEl.textContent = file.name;
+      var sizeKb = Math.max(1, Math.round(file.size / 1024));
+      var sizeDisplay = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + " MB" : sizeKb + " KB";
+      metaEl.textContent = (file.type || "file") + " · " + sizeDisplay;
+      card.style.display = "";
+      zone.style.display = "none";
+      if (submitBtn) submitBtn.disabled = false;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      // Quick-amount preset chips
+      document.querySelectorAll(".wallet-deposit-chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          var amt = chip.getAttribute("data-amount");
+          var input = document.getElementById("deposit-amount");
+          if (input && amt) {
+            input.value = amt;
+            formatAmountInput(input);
+          }
+        });
+      });
+
+      // Copy buttons (event delegation so they keep working after re-renders)
+      var modal = document.getElementById("deposit-modal");
+      if (modal) {
+        modal.addEventListener("click", function (e) {
+          var btn = e.target.closest(".wallet-deposit-copy");
+          if (!btn) return;
+          var targetId = btn.getAttribute("data-copy-target");
+          var target = targetId ? document.getElementById(targetId) : null;
+          var text = target ? target.textContent.trim() : "";
+          if (text && text !== "—") depositCopyToClipboard(text, btn);
+        });
+      }
+
+      // File upload zone — click handled natively by <label>, plus drag-drop
+      var fileInput = document.getElementById("deposit-proof-file");
+      var zone = document.getElementById("deposit-upload-zone");
+      var removeBtn = document.getElementById("deposit-file-remove");
+      if (fileInput) {
+        fileInput.addEventListener("change", function () {
+          depositHandleFile(fileInput.files && fileInput.files[0]);
+        });
+      }
+      if (zone) {
+        ["dragenter", "dragover"].forEach(function (evt) {
+          zone.addEventListener(evt, function (e) {
+            e.preventDefault();
+            zone.classList.add("wallet-deposit-upload--drag");
+          });
+        });
+        ["dragleave", "drop"].forEach(function (evt) {
+          zone.addEventListener(evt, function (e) {
+            e.preventDefault();
+            zone.classList.remove("wallet-deposit-upload--drag");
+          });
+        });
+        zone.addEventListener("drop", function (e) {
+          var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file && fileInput) {
+            var dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            depositHandleFile(file);
+          }
+        });
+      }
+      if (removeBtn) {
+        removeBtn.addEventListener("click", function () {
+          if (fileInput) fileInput.value = "";
+          depositHandleFile(null);
+        });
+      }
+
+      // Step 2 → final submit
+      var proofForm = document.getElementById("deposit-proof-form");
+      if (proofForm) {
+        proofForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          var err = document.getElementById("deposit-step-2-error");
+          err.textContent = "";
+          if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+            err.textContent = "Please attach proof of transfer before submitting.";
+            return;
+          }
+          if (!__depositCtx.init || !__depositCtx.init.submit_url) {
+            err.textContent = "Deposit session expired. Please go back and try again.";
+            return;
+          }
+          var btn = document.getElementById("deposit-submit-btn");
+          btn.disabled = true;
+          var orig = btn.textContent; btn.textContent = "Submitting…";
+
+          var fd = new FormData(proofForm);
+          try {
+            var resp = await fetch(__depositCtx.init.submit_url, {
+              method: "POST",
+              credentials: "same-origin",
+              body: fd,
+              redirect: "follow"
+            });
+            if (resp.redirected) {
+              window.location.href = resp.url;
+              return;
+            }
+            if (resp.ok) {
+              window.location.href = "/wallet?deposit_completed=true&ref=" +
+                encodeURIComponent(__depositCtx.init.reference || "");
+              return;
+            }
+            err.textContent = "Submission failed. Please try again.";
+            btn.disabled = false; btn.textContent = orig;
+          } catch (e2) {
+            err.textContent = "Network error. Please try again.";
+            btn.disabled = false; btn.textContent = orig;
+          }
+        });
+      }
+    });
+
+    function onDepositSubmit(form) {
+      // Legacy hook retained for the simple form; the new modal uses the
+      // multi-step flow above. Kept as a no-op fallback.
       return true;
     }
 

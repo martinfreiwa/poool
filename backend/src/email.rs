@@ -40,12 +40,114 @@ fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
   <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at support@poool.app</p>
 </div>"#.to_string(),
 
-        "deposit_confirmed" => r#"
+        "deposit_confirmed" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let amount_block = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<p style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;color:#065F46;font-weight:600;">Credited: {}</p>"#,
+                    html_escape_email(amount))
+            };
+            format!(r#"
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
   <h2 style="color:#01011C;">Your deposit has been received</h2>
-  <p>Your deposit has been confirmed and your POOOL wallet balance has been updated.</p>
-  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
-</div>"#.to_string(),
+  <p>Your wire transfer has been verified and your POOOL wallet balance has been updated.</p>
+  {amount}
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at support@poool.app</p>
+</div>"#, amount = amount_block)
+        }
+
+        "deposit_submitted" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let reference = metadata.get("reference").and_then(|v| v.as_str()).unwrap_or("");
+            let processing_hours = metadata.get("processing_hours").and_then(|v| v.as_i64()).unwrap_or(24);
+            let amount_row = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;width:140px;">Amount</td><td style="padding:8px 0;color:#101828;font-weight:600;">{}</td></tr>"#,
+                    html_escape_email(amount))
+            };
+            let reference_row = if reference.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;">Reference</td><td style="padding:8px 0;color:#101828;font-family:ui-monospace,monospace;font-weight:600;">{}</td></tr>"#,
+                    html_escape_email(reference))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">We received your proof of transfer</h2>
+  <p>Thanks — your deposit has been submitted and is awaiting verification. Your wallet will be credited within {hours} hours after the wire is received.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    {amount_row}
+    {reference_row}
+  </table>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Track Deposit</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Make sure the reference above appears on the wire transfer — without it, we cannot match your deposit.</p>
+</div>"#, hours = processing_hours, amount_row = amount_row, reference_row = reference_row)
+        }
+
+        "withdraw_requested" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let destination = metadata.get("destination").and_then(|v| v.as_str()).unwrap_or("your bank account");
+            let amount_row = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<tr><td style="padding:8px 0;color:#717680;width:140px;">Amount</td><td style="padding:8px 0;color:#101828;font-weight:600;">{}</td></tr>"#,
+                    html_escape_email(amount))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Withdrawal request received</h2>
+  <p>Your withdrawal is pending admin review. We'll email you again as soon as the funds are released.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    {amount_row}
+    <tr><td style="padding:8px 0;color:#717680;">Destination</td><td style="padding:8px 0;color:#101828;font-weight:500;">{dest}</td></tr>
+    <tr><td style="padding:8px 0;color:#717680;">Processing time</td><td style="padding:8px 0;color:#101828;font-weight:500;">1–3 business days</td></tr>
+  </table>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Wallet</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">If you did not request this withdrawal, contact support@poool.app immediately.</p>
+</div>"#, amount_row = amount_row, dest = html_escape_email(destination))
+        }
+
+        "withdraw_approved" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let destination = metadata.get("destination").and_then(|v| v.as_str()).unwrap_or("your bank account");
+            let amount_block = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<p style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;color:#065F46;font-weight:600;">Sent: {}</p>"#,
+                    html_escape_email(amount))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Withdrawal sent ✓</h2>
+  <p>Your withdrawal has been approved and the funds are on their way to {dest}.</p>
+  {amount}
+  <p>Bank settlement typically takes 1–3 business days depending on your bank.</p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Transactions</a></p>
+</div>"#, amount = amount_block, dest = html_escape_email(destination))
+        }
+
+        "withdraw_rejected" => {
+            let amount = metadata.get("amount_display").and_then(|v| v.as_str()).unwrap_or("");
+            let reason = metadata.get("admin_notes").and_then(|v| v.as_str()).unwrap_or("Please contact support for details.");
+            let amount_block = if amount.is_empty() {
+                String::new()
+            } else {
+                format!(r#"<p style="color:#414651;"><strong>Amount:</strong> {}</p>"#,
+                    html_escape_email(amount))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Withdrawal could not be processed</h2>
+  <p>Unfortunately your withdrawal request was rejected. The held amount has been returned to your wallet balance.</p>
+  {amount}
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;"><strong>Reason:</strong> {reason}</p>
+  <p><a href="https://platform.poool.app/wallet" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Wallet</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact support@poool.app</p>
+</div>"#, amount = amount_block, reason = html_escape_email(reason))
+        }
 
         "support_ticket_reply" => {
             let subject_line = metadata.get("ticket_subject").and_then(|v| v.as_str()).unwrap_or("your ticket");
@@ -157,6 +259,132 @@ fn build_email_html(event_type: &str, metadata: &serde_json::Value) -> String {
                 requester = html_escape_email(requester))
         }
 
+        // Phase-2 P0: inviter is notified when their invitee accepts the
+        // invitation. Closes a feedback loop the developer currently misses.
+        "team_invitation_accepted" => {
+            let team_name = metadata.get("team_name").and_then(|v| v.as_str()).unwrap_or("your team");
+            let member = metadata.get("member_name")
+                .or_else(|| metadata.get("member_email"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("A new member");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">{member} joined {team}</h2>
+  <p>Your invitation was accepted. {member} now has an active team-business affiliate link and any commissions they drive route directly to you.</p>
+  <p><a href="https://platform.poool.app/developer/affiliate-team/members" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Team Members</a></p>
+</div>"#,
+                team = html_escape_email(team_name),
+                member = html_escape_email(member))
+        }
+
+        // ── Affiliate Partner Syndicate lifecycle (Phase-2 P0) ────────────
+        //
+        // All six events previously fell through to the generic 1-line body
+        // ("You have a new notification from POOOL"), which is a CAN-SPAM /
+        // UX issue when real money or status changes are involved. Each body
+        // below uses the standard POOOL email shell (max-width 600 px,
+        // sans-serif, accent #0000FF) and includes a deep-link CTA where
+        // applicable. Numeric amounts arrive as integer minor units in
+        // metadata (`amount_cents`, `currency`) — formatted server-side.
+        "affiliate_application_received" => {
+            r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">We received your Partner Syndicate application</h2>
+  <p>Thanks for applying to the POOOL Partner Syndicate. Our team reviews new applications within 1–3 business days.</p>
+  <p>You'll receive a follow-up email as soon as a decision is made. In the meantime you can continue to use your investor account as usual.</p>
+  <p><a href="https://platform.poool.app/affiliate" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Application</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Questions? Contact us at <a href="mailto:partners@poool.app" style="color:#0000FF;">partners@poool.app</a>.</p>
+</div>"#.to_string()
+        }
+
+        "affiliate_approved" => {
+            let tier = metadata.get("tier").and_then(|v| v.as_str()).unwrap_or("Access");
+            let rate_bps = metadata.get("commission_rate_bps").and_then(|v| v.as_u64()).unwrap_or(50);
+            let rate_pct = format!("{}.{:02}%", rate_bps / 100, rate_bps % 100);
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Welcome to the POOOL Partner Syndicate 🎉</h2>
+  <p>Your application has been approved. You're starting at the <strong>{tier}</strong> tier with a commission rate of <strong>{rate}</strong>.</p>
+  <p>Your personal affiliate link is ready in your dashboard. Share it to start tracking referrals and earning commissions on qualified investments.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Open Affiliate Dashboard</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Before your first payout you'll need to upload a valid tax document and confirm your payout details.</p>
+</div>"#,
+                tier = html_escape_email(tier),
+                rate = html_escape_email(&rate_pct))
+        }
+
+        "affiliate_rejected" => {
+            let reason = metadata.get("reason").and_then(|v| v.as_str())
+                .unwrap_or("Our team reviewed your application and could not approve it at this time.");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Update on your Partner Syndicate application</h2>
+  <p>Thank you for your interest in becoming a POOOL Partner.</p>
+  <p style="background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:16px;color:#B42318;">{reason}</p>
+  <p>You're welcome to reapply after addressing the points above. Your investor account remains active and unaffected.</p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">Questions about this decision? Reply to this email or contact <a href="mailto:partners@poool.app" style="color:#0000FF;">partners@poool.app</a>.</p>
+</div>"#, reason = html_escape_email(reason))
+        }
+
+        "affiliate_suspended" => {
+            let reason = metadata.get("reason").and_then(|v| v.as_str())
+                .unwrap_or("a compliance review of recent activity");
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Urgent: your affiliate account is on hold</h2>
+  <p>Your POOOL affiliate account has been temporarily suspended pending {reason}. New referrals and payouts are paused while we complete this review.</p>
+  <p>Existing referrals, commissions earned, and any positive balance remain intact and will be released once the account is reinstated.</p>
+  <p>Please contact our partner team within 7 days to resolve this:</p>
+  <p><a href="mailto:partners@poool.app" style="display:inline-block;padding:12px 24px;background:#B42318;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Contact Partner Team</a></p>
+</div>"#, reason = html_escape_email(reason))
+        }
+
+        "affiliate_payout_released" => {
+            let amount_cents = metadata.get("amount_cents").and_then(|v| v.as_i64()).unwrap_or(0);
+            let currency = metadata.get("currency").and_then(|v| v.as_str()).unwrap_or("EUR");
+            let formatted_amount = format!("{} {}.{:02}",
+                html_escape_email(currency), amount_cents / 100, (amount_cents.abs() % 100));
+            let bank_last4 = metadata.get("bank_last4").and_then(|v| v.as_str()).unwrap_or("");
+            let dest_line = if bank_last4.is_empty() {
+                "Your POOOL wallet has been credited.".to_string()
+            } else {
+                format!("Funds are being transferred to your bank account ending in <strong>{}</strong>. Allow 1–3 business days for the SEPA transfer to settle.",
+                    html_escape_email(bank_last4))
+            };
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">Payout released: {amount}</h2>
+  <p>{dest}</p>
+  <p>A detailed statement is available in your affiliate dashboard.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Payout Statement</a></p>
+  <p style="color:#717680;font-size:13px;margin-top:32px;">For tax purposes, retain this email as confirmation of payout. Annual statements (1099 / VAT summary) are issued in January.</p>
+</div>"#,
+                amount = formatted_amount, dest = dest_line)
+        }
+
+        "affiliate_commission_earned" => {
+            let amount_cents = metadata.get("amount_cents").and_then(|v| v.as_i64()).unwrap_or(0);
+            let currency = metadata.get("currency").and_then(|v| v.as_str()).unwrap_or("EUR");
+            let formatted_amount = format!("{} {}.{:02}",
+                html_escape_email(currency), amount_cents / 100, (amount_cents.abs() % 100));
+            let referred_name = metadata.get("referred_name").and_then(|v| v.as_str()).unwrap_or("a new referral");
+            let holdback_days = metadata.get("holdback_days").and_then(|v| v.as_i64()).unwrap_or(30);
+            format!(r#"
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;">
+  <h2 style="color:#01011C;">New commission tracked: {amount}</h2>
+  <p>You've earned a commission from a qualified investment by <strong>{referred}</strong>.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr><td style="padding:8px 0;color:#717680;width:140px;">Commission</td><td style="padding:8px 0;color:#101828;font-weight:600;">{amount}</td></tr>
+    <tr><td style="padding:8px 0;color:#717680;">Status</td><td style="padding:8px 0;color:#101828;">Under holdback ({holdback}-day refund window)</td></tr>
+  </table>
+  <p>Commissions become payable once the holdback period ends and the underlying investment remains active.</p>
+  <p><a href="https://platform.poool.app/affiliate/dashboard" style="display:inline-block;padding:12px 24px;background:#0000FF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View in Dashboard</a></p>
+</div>"#,
+                amount = formatted_amount,
+                referred = html_escape_email(referred_name),
+                holdback = holdback_days)
+        }
+
         _ => format!(
             r#"<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;"><p>You have a new notification from POOOL.</p></div>"#
         ),
@@ -189,7 +417,11 @@ pub async fn trigger_transactional_email(
         "kyc_approved" => "KYC Application Approved",
         "kyc_rejected" => "KYC Action Required",
         "kyc_submitted" => "KYC Application Received",
+        "deposit_submitted" => "Deposit Submitted — Awaiting Verification",
         "deposit_confirmed" => "Deposit Received",
+        "withdraw_requested" => "Withdrawal Request Received",
+        "withdraw_approved" => "Withdrawal Sent",
+        "withdraw_rejected" => "Withdrawal Could Not Be Processed",
         "withdrawal_processed" => "Withdrawal Processed",
         "dividend_payout" => "You've Earned a Dividend!",
         "monthly_statement" => "Your Monthly POOOL Statement",
@@ -210,6 +442,7 @@ pub async fn trigger_transactional_email(
         "team_member_approved" => "You're now an active POOOL Affiliate Team member",
         "team_member_removed" => "You were removed from a POOOL Affiliate Team",
         "team_self_request_received" => "New team join request — POOOL Affiliate",
+        "team_invitation_accepted" => "Your team invitation was accepted",
 
         "support_ticket_reply" => "New reply on your support ticket",
         "support_ticket_new" => "New support ticket submitted",

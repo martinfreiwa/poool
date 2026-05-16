@@ -49,13 +49,17 @@ pub async fn api_admin_deposits(
             String,
             String,
             String,
+            bool,
+            Option<String>,
         ),
     >(
         r#"SELECT d.id::text, d.status, d.amount_cents, d.currency, d.provider_reference,
                   d.provider, d.expires_at::text, d.created_at::text, d.updated_at::text,
                   d.user_id::text,
                   COALESCE(u.email, ''),
-                  COALESCE(up.first_name, '') || ' ' || COALESCE(up.last_name, '')
+                  COALESCE(up.first_name, '') || ' ' || COALESCE(up.last_name, ''),
+                  (d.proof_gcs_path IS NOT NULL) AS has_proof,
+                  d.user_notes
            FROM deposit_requests d
            JOIN users u ON u.id = d.user_id
            LEFT JOIN user_profiles up ON up.user_id = u.id
@@ -85,7 +89,9 @@ pub async fn api_admin_deposits(
                 "updated_at": r.8,
                 "user_id": r.9,
                 "user_email": email,
-                "user_name": display_name
+                "user_name": display_name,
+                "has_proof": r.12,
+                "user_notes": r.13,
             })
         })
         .collect();
@@ -186,18 +192,28 @@ pub async fn api_admin_deposit_confirm(
             let uid_str = uid.to_string();
             let admin_id_str = admin.id.to_string();
             tokio::spawn(async move {
-                if let Ok(Some(user_id)) = sqlx::query_scalar::<_, uuid::Uuid>(
-                    "SELECT user_id FROM deposit_requests WHERE id = $1",
-                )
-                .bind(uid)
-                .fetch_optional(&db_clone)
-                .await
+                // Pull both the user id AND the amount in one round-trip so the
+                // email can include "Credited: USD 1,234.00" instead of a bare
+                // notification with no figure.
+                if let Ok(Some((user_id, amount_cents))) =
+                    sqlx::query_as::<_, (uuid::Uuid, i64)>(
+                        "SELECT user_id, amount_cents FROM deposit_requests WHERE id = $1",
+                    )
+                    .bind(uid)
+                    .fetch_optional(&db_clone)
+                    .await
                 {
+                    let amount_display =
+                        crate::common::currency::format_usd(amount_cents);
                     let _ = crate::email::trigger_transactional_email(
                         &db_clone,
                         &user_id,
                         "deposit_confirmed",
-                        serde_json::json!({"deposit_id": uid_str, "confirmed_by": admin_id_str}),
+                        serde_json::json!({
+                            "deposit_id": uid_str,
+                            "confirmed_by": admin_id_str,
+                            "amount_display": amount_display,
+                        }),
                     )
                     .await;
                 }
@@ -337,6 +353,76 @@ pub async fn api_admin_deposit_extend_expiry(
         "status": "extended",
         "extended_by_hours": 48,
         "expires_at": new_expires_at
+    }))
+    .into_response())
+}
+
+/// GET /api/admin/deposits/:tx_id/proof-url
+///
+/// Mints a short-lived (15-minute) signed URL for the deposit's
+/// proof-of-transfer file. Returns 404 if no proof is attached. The raw
+/// `gs://` path is never returned — only the signed URL the admin can open
+/// in a new tab.
+pub async fn api_admin_deposit_proof_url(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Path(tx_id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    require_deposit_permission(&jar, &state, "deposits.read").await?;
+    let uid = ApiError::parse_uuid(&tx_id)?;
+
+    let row: Option<(Option<String>, Option<chrono::DateTime<chrono::Utc>>, Option<String>)> =
+        sqlx::query_as(
+            "SELECT proof_gcs_path, proof_uploaded_at, user_notes
+               FROM deposit_requests WHERE id = $1",
+        )
+        .bind(uid)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(ApiError::from)?;
+
+    let (proof_gcs_path, proof_uploaded_at, user_notes) = match row {
+        Some(r) => r,
+        None => return Err(ApiError::NotFound("Deposit request not found".to_string())),
+    };
+
+    let gcs_path = match proof_gcs_path {
+        Some(p) => p,
+        None => return Err(ApiError::NotFound("No proof attached to this deposit".to_string())),
+    };
+
+    // Strip the gs://bucket/ prefix to get the object path
+    let (bucket, object_path) = if let Some(rest) = gcs_path.strip_prefix("gs://") {
+        let mut split = rest.splitn(2, '/');
+        let b = split.next().unwrap_or("").to_string();
+        let p = split.next().unwrap_or("").to_string();
+        (b, p)
+    } else {
+        // Local fallback path (dev only) — just return the raw path
+        return Ok(Json(serde_json::json!({
+            "signed_url": gcs_path,
+            "uploaded_at": proof_uploaded_at,
+            "user_notes": user_notes,
+            "expires_in_minutes": null,
+            "local": true,
+        }))
+        .into_response());
+    };
+
+    let signed = match crate::storage::service::generate_signed_url(&bucket, &object_path, 15).await {
+        Ok(url) => url,
+        Err(e) => {
+            tracing::error!("Failed to sign deposit proof URL for {}: {}", tx_id, e);
+            return Err(ApiError::Internal("Could not generate signed URL".to_string()));
+        }
+    };
+
+    Ok(Json(serde_json::json!({
+        "signed_url": signed,
+        "uploaded_at": proof_uploaded_at,
+        "user_notes": user_notes,
+        "expires_in_minutes": 15,
+        "local": false,
     }))
     .into_response())
 }

@@ -1,6 +1,6 @@
 /// Wallet route handlers – view balances and execute deposit/withdraw actions.
 use axum::{
-    extract::{Form, Path, Query, State},
+    extract::{Form, Multipart, Path, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect},
     Json,
@@ -14,6 +14,11 @@ use super::models::*;
 use crate::auth::middleware;
 use crate::auth::routes::AppState;
 use crate::payment_methods;
+use crate::storage::service as storage_svc;
+
+/// Hard cap on a single proof-of-transfer upload. Matches the existing KYC
+/// limit so users have a consistent mental model for "max file size".
+const MAX_DEPOSIT_PROOF_BYTES: usize = 10 * 1024 * 1024;
 
 // ─── Forms ──────────────────────────────────────────────────────
 
@@ -339,50 +344,469 @@ fn parse_dollars_to_cents(raw: &str) -> i64 {
 
 // ─── Deposit / Withdraw Handlers ────────────────────────────────
 
-/// POST /wallet/deposit
+/// POST /wallet/deposit  (multipart/form-data)
+///
+/// Expected fields:
+///   - `amount`     — decimal string ("250.00")
+///   - `proof`      — file (PDF / PNG / JPEG / WebP), MANDATORY
+///   - `notes`      — optional free-text from the user
+///
+/// On success:
+///   1. Validates amount against admin-configured min/max
+///   2. Creates a deposit_requests row (status='pending', unique provider_reference)
+///   3. Uploads the proof to GCS at `gs://BUCKET/deposits/{user_id}/{deposit_id}.{ext}`
+///   4. Persists the proof path + optional notes
+///   5. Redirects to /wallet with a success flash
 pub async fn handle_deposit(
     jar: CookieJar,
     State(state): State<AppState>,
-    Form(form): Form<DepositForm>,
+    mut multipart: Multipart,
 ) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
         None => return Redirect::to("/auth/login").into_response(),
     };
 
-    let amount_cents = parse_dollars_to_cents(&form.amount);
+    let bank = crate::payments::service::fetch_deposit_bank_settings(&state.db).await;
 
-    if amount_cents > 0 {
-        // We defer to payments service to create the deposit intent
-        match crate::payments::service::create_deposit_request(
-            &state.db,
-            user.id,
-            "USD",
-            amount_cents,
-        )
-        .await
-        {
-            Ok(deposit_res) => {
-                let ref_id = deposit_res.provider_reference.unwrap_or_default();
-                // Redirect back to wallet with success param to show instructions
-                return Redirect::to(&format!(
-                    "/wallet?deposit_created=true&ref={}&amount={}",
-                    ref_id, amount_cents
-                ))
-                .into_response();
+    // ── 1. Parse multipart fields ────────────────────────────────
+    let mut amount_raw: Option<String> = None;
+    let mut notes: Option<String> = None;
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut declared_mime = String::from("application/octet-stream");
+
+    while let Ok(Some(field)) = multipart.next_field().await {
+        let name = field.name().unwrap_or("").to_string();
+        match name.as_str() {
+            "amount" => amount_raw = field.text().await.ok(),
+            "notes" => notes = field.text().await.ok().filter(|s| !s.trim().is_empty()),
+            "proof" => {
+                if let Some(ct) = field.content_type() {
+                    declared_mime = ct.to_string();
+                }
+                let mut field = field;
+                let mut bytes: Vec<u8> = Vec::with_capacity(64 * 1024);
+                loop {
+                    match field.chunk().await {
+                        Ok(Some(chunk)) => {
+                            if bytes.len().saturating_add(chunk.len()) > MAX_DEPOSIT_PROOF_BYTES {
+                                return Redirect::to("/wallet?error=proof_too_large")
+                                    .into_response();
+                            }
+                            bytes.extend_from_slice(&chunk);
+                        }
+                        Ok(None) => break,
+                        Err(_) => {
+                            return Redirect::to("/wallet?error=proof_read_failed")
+                                .into_response();
+                        }
+                    }
+                }
+                if !bytes.is_empty() {
+                    file_bytes = Some(bytes);
+                }
             }
-            Err(e) => {
-                tracing::error!(
-                    "Failed to create deposit request for user {}: {}",
-                    user.id,
-                    e
-                );
-                return Redirect::to("/wallet?error=deposit_failed").into_response();
-            }
+            _ => {}
         }
     }
 
-    Redirect::to("/wallet").into_response()
+    let amount_cents = parse_dollars_to_cents(amount_raw.as_deref().unwrap_or(""));
+    if amount_cents <= 0 {
+        return Redirect::to("/wallet?error=invalid_amount").into_response();
+    }
+    if amount_cents < bank.min_amount_cents {
+        return Redirect::to("/wallet?error=amount_too_small").into_response();
+    }
+    if amount_cents > bank.max_amount_cents {
+        return Redirect::to("/wallet?error=amount_too_large").into_response();
+    }
+
+    let file_bytes = match file_bytes {
+        Some(b) => b,
+        None => return Redirect::to("/wallet?error=proof_missing").into_response(),
+    };
+
+    // ── 2. Validate the proof file: magic-byte sniff + allow-list ────
+    let sniffed = match storage_svc::sniff_mime(&file_bytes) {
+        Some(m) => m,
+        None => return Redirect::to("/wallet?error=proof_unsupported_format").into_response(),
+    };
+    if !storage_svc::mime_matches(&declared_mime, sniffed) {
+        return Redirect::to("/wallet?error=proof_mime_mismatch").into_response();
+    }
+    if storage_svc::validate_kyc_mime(sniffed).is_err() {
+        return Redirect::to("/wallet?error=proof_unsupported_format").into_response();
+    }
+
+    // ── 3. Create the deposit_requests row ──────────────────────────
+    let deposit_res = match crate::payments::service::create_deposit_request(
+        &state.db,
+        user.id,
+        "USD",
+        amount_cents,
+    )
+    .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!(
+                "Failed to create deposit request for user {}: {}",
+                user.id,
+                e
+            );
+            return Redirect::to("/wallet?error=deposit_failed").into_response();
+        }
+    };
+
+    let deposit_id = deposit_res.deposit_id;
+    let provider_ref = deposit_res.provider_reference.clone().unwrap_or_default();
+
+    // ── 4. Upload the proof to GCS (with local fallback for dev) ─────
+    let ext = storage_svc::extension_for_mime(sniffed);
+    let object_path = format!("deposits/{}/{}.{}", user.id, deposit_id, ext);
+    let bucket = state.config.gcs_bucket.clone();
+    let proof_path: String = if let Some(ref b) = bucket {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            storage_svc::upload_private(b, &object_path, file_bytes.clone(), sniffed),
+        )
+        .await
+        {
+            Ok(Ok(p)) => p,
+            _ => {
+                tracing::warn!("GCS deposit proof upload failed, falling back to local");
+                match storage_svc::upload_local(&object_path, file_bytes).await {
+                    Ok(p) => p,
+                    Err(_) => {
+                        return Redirect::to("/wallet?error=proof_upload_failed").into_response()
+                    }
+                }
+            }
+        }
+    } else {
+        match storage_svc::upload_local(&object_path, file_bytes).await {
+            Ok(p) => p,
+            Err(_) => return Redirect::to("/wallet?error=proof_upload_failed").into_response(),
+        }
+    };
+
+    // ── 5. Persist proof path + notes on the deposit row ────────────
+    if let Err(e) = sqlx::query(
+        "UPDATE deposit_requests
+            SET proof_gcs_path = $1, proof_uploaded_at = NOW(), user_notes = $2
+          WHERE id = $3",
+    )
+    .bind(&proof_path)
+    .bind(notes.as_deref())
+    .bind(deposit_id)
+    .execute(&state.db)
+    .await
+    {
+        tracing::error!(
+            "Failed to attach proof to deposit {}: {} (orphaned file at {})",
+            deposit_id,
+            e,
+            proof_path
+        );
+        // The deposit row exists; admin can still match the wire from the
+        // reference. We surface a soft warning rather than failing the user.
+        return Redirect::to(&format!(
+            "/wallet?deposit_created=true&ref={}&amount={}&proof_warning=1",
+            provider_ref, amount_cents
+        ))
+        .into_response();
+    }
+
+    Redirect::to(&format!(
+        "/wallet?deposit_created=true&ref={}&amount={}",
+        provider_ref, amount_cents
+    ))
+    .into_response()
+}
+
+// ─── Two-step deposit flow ─────────────────────────────────────────
+//
+// The multi-step deposit modal calls `api_deposit_init` first to get the
+// reference + bank details (creates the row), then `handle_deposit_submit`
+// after the user has wired the funds and uploaded the proof.
+
+#[derive(Debug, Deserialize)]
+pub struct DepositInitPayload {
+    pub amount: String,
+}
+
+/// POST /api/wallet/deposit/init  – step 1 of the modal flow.
+///
+/// Validates the requested amount against the admin-configured min/max
+/// limits, creates a `deposit_requests` row, and returns everything the
+/// step-2 view needs to render the wire instructions: bank details, the
+/// unique reference, the expiry, and the expected processing window.
+pub async fn api_deposit_init(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<DepositInitPayload>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Unauthorized"})),
+            )
+                .into_response();
+        }
+    };
+
+    let bank = crate::payments::service::fetch_deposit_bank_settings(&state.db).await;
+    let amount_cents = parse_dollars_to_cents(&payload.amount);
+    if amount_cents <= 0 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Enter an amount greater than zero"})),
+        )
+            .into_response();
+    }
+    if amount_cents < bank.min_amount_cents {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "error": "amount_too_small",
+                "message": format!("Minimum deposit is {}", format_usd(bank.min_amount_cents))
+            })),
+        )
+            .into_response();
+    }
+    if amount_cents > bank.max_amount_cents {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "error": "amount_too_large",
+                "message": format!("Maximum deposit is {}", format_usd(bank.max_amount_cents))
+            })),
+        )
+            .into_response();
+    }
+
+    let deposit_res = match crate::payments::service::create_deposit_request(
+        &state.db,
+        user.id,
+        "USD",
+        amount_cents,
+    )
+    .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("deposit_init create failed for user {}: {}", user.id, e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Could not create deposit request"})),
+            )
+                .into_response();
+        }
+    };
+
+    let expires_at = (Utc::now() + chrono::Duration::hours(bank.processing_hours)).to_rfc3339();
+
+    Json(serde_json::json!({
+        "deposit_id": deposit_res.deposit_id.to_string(),
+        "reference": deposit_res.provider_reference.unwrap_or_default(),
+        "amount_cents": amount_cents,
+        "amount_display": format_usd(amount_cents),
+        "currency": "USD",
+        "bank": {
+            "bank_name": bank.bank_name,
+            "account_holder": bank.account_holder,
+            "iban": bank.iban,
+            "bic": bank.bic,
+            "bank_address": bank.bank_address,
+        },
+        "processing_hours": bank.processing_hours,
+        "expires_at": expires_at,
+        "submit_url": format!("/wallet/deposit/{}/submit", deposit_res.deposit_id),
+    }))
+    .into_response()
+}
+
+/// POST /wallet/deposit/:id/submit  – step 2 of the modal flow.
+///
+/// Multipart form:
+///   - `proof`  — file (PDF / PNG / JPEG / WebP), MANDATORY
+///   - `notes`  — optional free-text from the user
+///
+/// Verifies the deposit row belongs to the caller and is still 'pending'
+/// (i.e. not yet credited or expired), uploads the proof to GCS, and
+/// attaches the GCS path + notes to the row. Redirects to /wallet with
+/// a success flash that the existing wallet.js URL-param handler picks up.
+pub async fn handle_deposit_submit(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(deposit_id): Path<Uuid>,
+    mut multipart: Multipart,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
+
+    // Confirm the deposit exists, belongs to this user, and is still open.
+    let deposit_row = sqlx::query_as::<_, (Uuid, String, i64, Option<String>, Option<String>)>(
+        "SELECT user_id, status, amount_cents, provider_reference, proof_gcs_path
+           FROM deposit_requests WHERE id = $1",
+    )
+    .bind(deposit_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    let (owner, status, amount_cents, provider_ref, existing_proof) = match deposit_row {
+        Some(row) => row,
+        None => return Redirect::to("/wallet?error=deposit_not_found").into_response(),
+    };
+
+    if owner != user.id {
+        return Redirect::to("/wallet?error=deposit_not_found").into_response();
+    }
+    if status != "pending" && status != "requested" {
+        return Redirect::to("/wallet?error=deposit_not_pending").into_response();
+    }
+    if existing_proof.is_some() {
+        return Redirect::to("/wallet?error=proof_already_uploaded").into_response();
+    }
+
+    // ── Parse multipart fields ───────────────────────────────────
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut declared_mime = String::from("application/octet-stream");
+    let mut notes: Option<String> = None;
+
+    while let Ok(Some(field)) = multipart.next_field().await {
+        let name = field.name().unwrap_or("").to_string();
+        match name.as_str() {
+            "notes" => notes = field.text().await.ok().filter(|s| !s.trim().is_empty()),
+            "proof" => {
+                if let Some(ct) = field.content_type() {
+                    declared_mime = ct.to_string();
+                }
+                let mut field = field;
+                let mut bytes: Vec<u8> = Vec::with_capacity(64 * 1024);
+                loop {
+                    match field.chunk().await {
+                        Ok(Some(chunk)) => {
+                            if bytes.len().saturating_add(chunk.len()) > MAX_DEPOSIT_PROOF_BYTES {
+                                return Redirect::to("/wallet?error=proof_too_large")
+                                    .into_response();
+                            }
+                            bytes.extend_from_slice(&chunk);
+                        }
+                        Ok(None) => break,
+                        Err(_) => {
+                            return Redirect::to("/wallet?error=proof_read_failed")
+                                .into_response();
+                        }
+                    }
+                }
+                if !bytes.is_empty() {
+                    file_bytes = Some(bytes);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let file_bytes = match file_bytes {
+        Some(b) => b,
+        None => return Redirect::to("/wallet?error=proof_missing").into_response(),
+    };
+
+    // ── Validate proof: magic-byte sniff + allow-list ────────────
+    let sniffed = match storage_svc::sniff_mime(&file_bytes) {
+        Some(m) => m,
+        None => return Redirect::to("/wallet?error=proof_unsupported_format").into_response(),
+    };
+    if !storage_svc::mime_matches(&declared_mime, sniffed) {
+        return Redirect::to("/wallet?error=proof_mime_mismatch").into_response();
+    }
+    if storage_svc::validate_kyc_mime(sniffed).is_err() {
+        return Redirect::to("/wallet?error=proof_unsupported_format").into_response();
+    }
+
+    // ── Upload to GCS (local fallback for dev) ───────────────────
+    let ext = storage_svc::extension_for_mime(sniffed);
+    let object_path = format!("deposits/{}/{}.{}", user.id, deposit_id, ext);
+    let bucket = state.config.gcs_bucket.clone();
+    let proof_path: String = if let Some(ref b) = bucket {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            storage_svc::upload_private(b, &object_path, file_bytes.clone(), sniffed),
+        )
+        .await
+        {
+            Ok(Ok(p)) => p,
+            _ => {
+                tracing::warn!("GCS deposit proof upload failed, falling back to local");
+                match storage_svc::upload_local(&object_path, file_bytes).await {
+                    Ok(p) => p,
+                    Err(_) => {
+                        return Redirect::to("/wallet?error=proof_upload_failed").into_response()
+                    }
+                }
+            }
+        }
+    } else {
+        match storage_svc::upload_local(&object_path, file_bytes).await {
+            Ok(p) => p,
+            Err(_) => return Redirect::to("/wallet?error=proof_upload_failed").into_response(),
+        }
+    };
+
+    if let Err(e) = sqlx::query(
+        "UPDATE deposit_requests
+            SET proof_gcs_path = $1, proof_uploaded_at = NOW(), user_notes = $2
+          WHERE id = $3",
+    )
+    .bind(&proof_path)
+    .bind(notes.as_deref())
+    .bind(deposit_id)
+    .execute(&state.db)
+    .await
+    {
+        tracing::error!(
+            "Failed to attach proof to deposit {}: {} (orphaned file at {})",
+            deposit_id,
+            e,
+            proof_path
+        );
+        return Redirect::to("/wallet?error=proof_save_failed").into_response();
+    }
+
+    let ref_str = provider_ref.unwrap_or_default();
+
+    // Best-effort confirmation email — outbox-backed so a failure here
+    // doesn't block the redirect.
+    let db_clone = state.db.clone();
+    let ref_clone = ref_str.clone();
+    let user_id = user.id;
+    let amount_display = format_usd(amount_cents);
+    tokio::spawn(async move {
+        let _ = crate::email::trigger_transactional_email(
+            &db_clone,
+            &user_id,
+            "deposit_submitted",
+            serde_json::json!({
+                "amount_display": amount_display,
+                "reference": ref_clone,
+                "processing_hours": 24,
+            }),
+        )
+        .await;
+    });
+
+    Redirect::to(&format!(
+        "/wallet?deposit_completed=true&ref={}&amount={}",
+        ref_str, amount_cents
+    ))
+    .into_response()
 }
 
 /// POST /wallet/withdraw
@@ -526,6 +950,42 @@ pub async fn handle_withdraw(
                             user.id,
                             amount_cents
                         );
+
+                        // Best-effort confirmation email so the user knows the
+                        // request is in the admin queue. Lookup is cheap; even
+                        // if it returns no row we just send without destination.
+                        let db_clone = state.db.clone();
+                        let user_id = user.id;
+                        let amount_display = format_usd(amount_cents);
+                        let pm_uuid_owned = pm_uuid;
+                        tokio::spawn(async move {
+                            let destination = if let Some(pmid) = pm_uuid_owned {
+                                sqlx::query_scalar::<_, Option<String>>(
+                                    "SELECT label FROM payment_methods WHERE id = $1",
+                                )
+                                .bind(pmid)
+                                .fetch_optional(&db_clone)
+                                .await
+                                .ok()
+                                .flatten()
+                                .flatten()
+                                .unwrap_or_else(|| "your bank account".to_string())
+                            } else {
+                                "your bank account".to_string()
+                            };
+
+                            let _ = crate::email::trigger_transactional_email(
+                                &db_clone,
+                                &user_id,
+                                "withdraw_requested",
+                                serde_json::json!({
+                                    "amount_display": amount_display,
+                                    "destination": destination,
+                                }),
+                            )
+                            .await;
+                        });
+
                         return Redirect::to("/wallet?withdraw_requested=true").into_response();
                     }
                     Err(e) => {
@@ -657,6 +1117,26 @@ pub async fn page_wallet(
 }
 
 // ─── JSON API Endpoints ──────────────────────────────────────────
+
+/// GET /api/wallet/deposit-settings – bank-wire details + limits used by the deposit modal.
+///
+/// Sourced from `platform_settings` so admin can change without redeploy.
+/// Requires auth: prevents anonymous reconnaissance of corporate wire details.
+pub async fn api_deposit_settings(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if middleware::get_current_user(&jar, &state.db).await.is_none() {
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "Unauthorized"})),
+        )
+            .into_response();
+    }
+
+    let bank = crate::payments::service::fetch_deposit_bank_settings(&state.db).await;
+    Json(bank).into_response()
+}
 
 /// GET /api/wallet/balance – returns the authenticated user's wallet balances as JSON.
 pub async fn api_wallet_balance(

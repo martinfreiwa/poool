@@ -451,6 +451,10 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/deposits/:tx_id/extend",
             post(api_admin_deposit_extend_expiry),
         )
+        .route(
+            "/api/admin/deposits/:tx_id/proof-url",
+            get(api_admin_deposit_proof_url),
+        )
         // Withdrawals
         .route("/api/admin/withdrawals", get(api_admin_withdrawals))
         .route(

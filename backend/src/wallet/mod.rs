@@ -18,9 +18,12 @@ pub fn router() -> Router<AppState> {
         .route("/transactions/:id", get(page_transaction_detail))
         // Form actions
         .route("/wallet/deposit", post(handle_deposit))
+        .route("/wallet/deposit/:id/submit", post(handle_deposit_submit))
+        .route("/api/wallet/deposit/init", post(api_deposit_init))
         .route("/wallet/withdraw", post(handle_withdraw))
         // JSON API
         .route("/api/wallet/balance", get(api_wallet_balance))
         .route("/api/wallet/transactions", get(api_wallet_transactions))
         .route("/api/wallet/transactions/:id", get(api_transaction_detail))
+        .route("/api/wallet/deposit-settings", get(api_deposit_settings))
 }

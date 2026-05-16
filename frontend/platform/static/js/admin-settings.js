@@ -30,6 +30,16 @@ function registerAdminSettingsComponent() {
       min_withdrawal_cents: 10.0,
       maintenance_mode: false,
       resend_api_key: "",
+      // Deposit bank wire (managed in Deposits tab)
+      deposit_bank_name: "",
+      deposit_account_holder: "",
+      deposit_iban: "",
+      deposit_bic: "",
+      deposit_bank_address: "",
+      deposit_reference_prefix: "POOOL",
+      deposit_processing_hours: 24,
+      deposit_min_amount_cents: 5000,
+      deposit_max_amount_cents: 10000000,
     },
 
     admins: [],
@@ -470,6 +480,16 @@ registerAdminSettingsComponent();
       min_withdrawal_cents: 10.0,
       maintenance_mode: false,
       resend_api_key: "",
+      // Deposit bank wire (managed in Deposits tab)
+      deposit_bank_name: "",
+      deposit_account_holder: "",
+      deposit_iban: "",
+      deposit_bic: "",
+      deposit_bank_address: "",
+      deposit_reference_prefix: "POOOL",
+      deposit_processing_hours: 24,
+      deposit_min_amount_cents: 5000,
+      deposit_max_amount_cents: 10000000,
     },
     broadcast: { title: "", message: "", type: "system" },
     legalStats: null,
@@ -493,11 +513,26 @@ registerAdminSettingsComponent();
     render();
   }
 
+  // Match both `x-model="..."` and the Alpine-modifier form `x-model.number="..."`.
+  // CSS selectors can't escape `.` inside attribute names portably, so iterate manually.
+  function findModelInputs(root) {
+    const inputs = [];
+    root.querySelectorAll("input, select, textarea").forEach((el) => {
+      for (const attr of el.attributes) {
+        if (attr.name === "x-model" || attr.name.startsWith("x-model.")) {
+          inputs.push({ el, attrName: attr.name, path: attr.value });
+          break;
+        }
+      }
+    });
+    return inputs;
+  }
+
   function attachEvents(root) {
-    root.querySelectorAll("[x-model]").forEach((input) => {
-      input.addEventListener("input", () => setPath(input.getAttribute("x-model"), getInputValue(input)));
-      input.addEventListener("change", () => {
-        setPath(input.getAttribute("x-model"), getInputValue(input));
+    findModelInputs(root).forEach(({ el, path }) => {
+      el.addEventListener("input", () => setPath(path, getInputValue(el)));
+      el.addEventListener("change", () => {
+        setPath(path, getInputValue(el));
         render();
       });
     });
@@ -559,8 +594,8 @@ registerAdminSettingsComponent();
   }
 
   function render() {
-    document.querySelectorAll("[x-model]").forEach((input) => {
-      setInputValue(input, getPath(input.getAttribute("x-model")));
+    findModelInputs(document).forEach(({ el, path }) => {
+      setInputValue(el, getPath(path));
     });
 
     document.querySelectorAll(".admin-tabs .admin-tab").forEach((button) => {

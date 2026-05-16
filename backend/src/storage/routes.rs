@@ -124,6 +124,11 @@ pub async fn upload_avatar(
             .into_response();
     }
 
+    // Evict the community user_bridge cache so feed/comment/composer surfaces
+    // pick up the new avatar immediately instead of serving the stale Redis
+    // entry for up to 5 minutes.
+    crate::community::user_bridge::invalidate_user_cache(state.redis.as_ref(), user.id).await;
+
     tracing::info!("Avatar updated for user {} → {}", user.id, avatar_url);
 
     Json(serde_json::json!({
@@ -651,67 +656,14 @@ async fn read_multipart_file(
 
 /// Sniff the MIME type from the leading bytes of a buffer. Returns None for
 /// formats we don't accept (executables, archives, office docs, etc.).
+// Canonical implementations live in [`crate::storage::service`]; these are
+// thin wrappers so the existing routes file doesn't need a wide-scale rename.
 fn sniff_mime(bytes: &[u8]) -> Option<&'static str> {
-    if bytes.len() < 4 {
-        return None;
-    }
-    // JPEG: FF D8 FF
-    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
-        return Some("image/jpeg");
-    }
-    // PNG: 89 50 4E 47 0D 0A 1A 0A
-    if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
-        return Some("image/png");
-    }
-    // GIF: "GIF87a" or "GIF89a"
-    if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
-        return Some("image/gif");
-    }
-    // WebP: "RIFF" .... "WEBP"
-    if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
-        return Some("image/webp");
-    }
-    // PDF: "%PDF-"
-    if bytes.starts_with(b"%PDF-") {
-        return Some("application/pdf");
-    }
-    // ZIP / DOCX containers: PK..
-    if bytes.starts_with(b"PK\x03\x04")
-        || bytes.starts_with(b"PK\x05\x06")
-        || bytes.starts_with(b"PK\x07\x08")
-    {
-        return Some("application/zip");
-    }
-    // Legacy Microsoft Office binary documents use OLE Compound File.
-    if bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
-        return Some("application/msword");
-    }
-    None
+    crate::storage::service::sniff_mime(bytes)
 }
 
-/// Returns true when the client-declared MIME is acceptable for the sniffed
-/// type. We allow a loose match (e.g. "image/jpg" aliasing "image/jpeg") but
-/// require the major category to agree so JSON-bodied "image/jpeg" uploads fail.
 fn mime_matches(client_mime: &str, sniffed: &str) -> bool {
-    let c = client_mime
-        .split(';')
-        .next()
-        .unwrap_or("")
-        .trim()
-        .to_ascii_lowercase();
-    if c == sniffed {
-        return true;
-    }
-    matches!(
-        (c.as_str(), sniffed),
-        ("image/jpg", "image/jpeg")
-            | ("image/pjpeg", "image/jpeg")
-            | (
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "application/zip",
-            )
-            | ("application/octet-stream", _)
-    )
+    crate::storage::service::mime_matches(client_mime, sniffed)
 }
 
 fn canonical_asset_doc_mime(client_mime: &str, sniffed: &str) -> String {

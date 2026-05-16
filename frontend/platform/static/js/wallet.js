@@ -343,16 +343,26 @@
     function handleUrlParams() {
         const params = new URLSearchParams(window.location.search);
 
-        if (params.has("deposit_created")) {
+        if (params.has("deposit_completed")) {
+            // New two-step flow: user already saw bank details in step 2 and
+            // uploaded proof. Just confirm receipt.
+            showToast(
+                "Deposit submitted",
+                "We received your proof of transfer. Your wallet will be credited within 24 hours after the wire is verified.",
+                "success"
+            );
+            window.history.replaceState({}, "", window.location.pathname);
+        } else if (params.has("deposit_created")) {
+            // Legacy single-step flow fallback. Shows the wire instructions
+            // again with copy buttons. Bank details are fetched live from the
+            // admin-configured platform_settings.
             const rawRef = params.get("ref") || "–";
-            // Escape HTML to prevent reflected XSS via the ref parameter
             const ref = rawRef.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
             const amountCents = parseInt(params.get("amount") || "0", 10);
             const amountFmt = amountCents > 0
                 ? (amountCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })
                 : "the requested amount";
             showDepositInstructionsModal(ref, amountFmt);
-            // Clean up URL without reload
             window.history.replaceState({}, "", window.location.pathname);
         } else if (params.has("withdraw_requested")) {
             showToast(
@@ -365,10 +375,22 @@
             const errMap = {
                 insufficient_funds: "Insufficient funds. Please deposit before withdrawing.",
                 deposit_failed: "Deposit failed. Please try again.",
+                deposit_not_found: "Deposit session expired. Please start a new deposit.",
+                deposit_not_pending: "This deposit has already been processed.",
                 withdraw_failed: "Withdrawal failed. Please try again or contact support.",
-                amount_too_large: "Amount is invalid. Please check the value and try again.",
+                amount_too_large: "Amount exceeds the maximum deposit limit.",
+                amount_too_small: "Amount is below the minimum deposit limit.",
+                invalid_amount: "Please enter a valid deposit amount.",
                 no_payment_method: "No payment method on file. Add a bank account or card first.",
                 kyc_required: "Identity verification required before withdrawing. Please complete KYC in Settings.",
+                proof_missing: "Proof of transfer is required.",
+                proof_too_large: "Proof file is larger than 10 MB. Please attach a smaller file.",
+                proof_unsupported_format: "Only PDF, PNG, JPG or WebP files are accepted as proof.",
+                proof_mime_mismatch: "File contents don't match the declared type. Please re-export and try again.",
+                proof_already_uploaded: "Proof was already submitted for this deposit.",
+                proof_upload_failed: "Could not upload your proof file. Please try again.",
+                proof_save_failed: "Upload succeeded but we couldn't save the record. Contact support.",
+                proof_read_failed: "Could not read the uploaded file. Please try again.",
             };
             const msg = errMap[params.get("error")] || "An error occurred. Please try again.";
             showToast("Error", msg, "error");

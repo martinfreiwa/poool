@@ -151,7 +151,79 @@ pub async fn api_admin_withdrawal_approve(
         amount_cents
     );
 
+    // Best-effort confirmation email
+    spawn_withdraw_email(
+        state.db.clone(),
+        user_id,
+        req_id,
+        amount_cents,
+        "withdraw_approved",
+        None,
+    );
+
     Ok(Json(serde_json::json!({ "status": "success" })))
+}
+
+/// Send a withdrawal status email out-of-band. Looks up the destination label
+/// from `payment_methods` so the email reads "Sent to Wise USD" rather than
+/// "your bank account". Failures are logged but never block the admin action.
+fn spawn_withdraw_email(
+    db: sqlx::PgPool,
+    user_id: Uuid,
+    req_id: Uuid,
+    amount_cents: i64,
+    event_type: &'static str,
+    reason: Option<String>,
+) {
+    tokio::spawn(async move {
+        let pm_id: Option<Uuid> = sqlx::query_scalar(
+            "SELECT payment_method_id FROM withdrawal_requests WHERE id = $1",
+        )
+        .bind(req_id)
+        .fetch_optional(&db)
+        .await
+        .ok()
+        .flatten();
+
+        let destination = if let Some(pmid) = pm_id {
+            sqlx::query_scalar::<_, Option<String>>(
+                "SELECT label FROM payment_methods WHERE id = $1",
+            )
+            .bind(pmid)
+            .fetch_optional(&db)
+            .await
+            .ok()
+            .flatten()
+            .flatten()
+            .unwrap_or_else(|| "your bank account".to_string())
+        } else {
+            "your bank account".to_string()
+        };
+
+        let abs_cents = amount_cents.unsigned_abs();
+        let dollars = abs_cents / 100;
+        let rem = abs_cents % 100;
+        let dollars_str = dollars
+            .to_string()
+            .as_bytes()
+            .rchunks(3)
+            .rev()
+            .map(std::str::from_utf8)
+            .collect::<Result<Vec<&str>, _>>()
+            .map(|chunks| chunks.join(","))
+            .unwrap_or_else(|_| dollars.to_string());
+        let amount_display = format!("USD {}.{:02}", dollars_str, rem);
+
+        let mut payload = serde_json::json!({
+            "amount_display": amount_display,
+            "destination": destination,
+        });
+        if let Some(r) = reason {
+            payload["admin_notes"] = serde_json::Value::String(r);
+        }
+
+        let _ = crate::email::trigger_transactional_email(&db, &user_id, event_type, payload).await;
+    });
 }
 
 /// POST /api/admin/withdrawals/:req_id/reject
@@ -221,6 +293,15 @@ pub async fn api_admin_withdrawal_reject(
         .map_err(|e| AppError::Internal(format!("TX commit failed: {}", e)))?;
 
     tracing::info!("Withdrawal {} rejected: {}", req_id, payload.reason);
+
+    spawn_withdraw_email(
+        state.db.clone(),
+        user_id,
+        req_id,
+        amount_cents,
+        "withdraw_rejected",
+        Some(payload.reason.clone()),
+    );
 
     Ok(Json(serde_json::json!({ "status": "success" })))
 }

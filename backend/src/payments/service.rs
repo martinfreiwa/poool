@@ -280,6 +280,17 @@ pub async fn get_usd_to_idr_rate() -> Decimal {
     default_idr_rate()
 }
 
+/// Get the FX rate rounded to a whole display rate for UI JSON/templates.
+pub async fn get_usd_to_idr_rate_i64() -> i64 {
+    use rust_decimal::prelude::ToPrimitive;
+
+    get_usd_to_idr_rate()
+        .await
+        .round()
+        .to_i64()
+        .unwrap_or(crate::config::DEFAULT_USD_TO_IDR_RATE_I64)
+}
+
 /// Get the FX rate as f64 for backward compatibility (display, non-financial use).
 #[allow(dead_code)]
 pub async fn get_usd_to_idr_rate_f64() -> f64 {
@@ -345,6 +356,58 @@ pub async fn get_wallet_balance(
 ///
 /// For USD: generates Stripe-like instructions (or manual wire).
 /// For IDR: would generate an OCBC Virtual Account (mocked for now).
+/// Bank-wire details + limits for fiat deposits, sourced from `platform_settings`.
+/// Editable by admin under Settings → Deposits. Used by both the deposit modal
+/// and the post-deposit instructions email/page.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct DepositBankSettings {
+    pub bank_name: String,
+    pub account_holder: String,
+    pub iban: String,
+    pub bic: String,
+    pub bank_address: String,
+    pub reference_prefix: String,
+    pub processing_hours: i64,
+    pub min_amount_cents: i64,
+    pub max_amount_cents: i64,
+}
+
+async fn setting_str(pool: &PgPool, key: &str, default: &str) -> String {
+    sqlx::query_scalar::<_, String>("SELECT value FROM platform_settings WHERE key = $1")
+        .bind(key)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_else(|| default.to_string())
+}
+
+async fn setting_i64(pool: &PgPool, key: &str, default: i64) -> i64 {
+    let raw: Option<String> =
+        sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = $1")
+            .bind(key)
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
+    raw.and_then(|v| v.parse::<i64>().ok()).unwrap_or(default)
+}
+
+/// Load all bank-wire settings + deposit limits in one go.
+pub async fn fetch_deposit_bank_settings(pool: &PgPool) -> DepositBankSettings {
+    DepositBankSettings {
+        bank_name: setting_str(pool, "deposit_bank_name", "Deutsche Bank AG").await,
+        account_holder: setting_str(pool, "deposit_account_holder", "POOOL GmbH").await,
+        iban: setting_str(pool, "deposit_iban", "DE89370400440532013000").await,
+        bic: setting_str(pool, "deposit_bic", "DEUTDEDB").await,
+        bank_address: setting_str(pool, "deposit_bank_address", "").await,
+        reference_prefix: setting_str(pool, "deposit_reference_prefix", "POOOL").await,
+        processing_hours: setting_i64(pool, "deposit_processing_hours", 24).await,
+        min_amount_cents: setting_i64(pool, "deposit_min_amount_cents", 5_000).await,
+        max_amount_cents: setting_i64(pool, "deposit_max_amount_cents", 10_000_000).await,
+    }
+}
+
 pub async fn create_deposit_request(
     pool: &PgPool,
     user_id: Uuid,
@@ -358,15 +421,18 @@ pub async fn create_deposit_request(
         _ => "manual",
     };
 
-    // Generate a mock provider reference (in production, call the PSP API)
+    // Load editable bank settings for USD references and instructions
+    let bank = fetch_deposit_bank_settings(pool).await;
+
+    // Generate a unique provider reference using the admin-configured prefix
     let provider_ref = format!(
         "{}-{}-{}",
-        provider.to_uppercase(),
+        bank.reference_prefix.to_uppercase(),
         Utc::now().format("%Y%m%d%H%M%S"),
         &Uuid::new_v4().to_string()[..8]
     );
 
-    // Instructions depend on currency
+    // Instructions depend on currency. USD uses live bank settings.
     let instructions = match currency {
         "IDR" => format!(
             "Transfer Rp {} to Virtual Account: {}. This VA expires in 24 hours.",
@@ -376,15 +442,15 @@ pub async fn create_deposit_request(
         "USD" => {
             let display = crate::common::currency::format_usd(amount_cents);
             format!(
-                "Wire {} to POOOL GmbH, IBAN: DE89370400440532013000, Reference: {}",
-                display, &provider_ref
+                "Wire {} to {}, IBAN: {}, Reference: {}",
+                display, bank.account_holder, bank.iban, &provider_ref
             )
         }
         _ => "Please contact support for deposit instructions.".to_string(),
     };
 
-    // Set expiry (24 hours from now)
-    let expires_at = Utc::now() + chrono::Duration::hours(24);
+    // Expiry mirrors the admin-configured processing window
+    let expires_at = Utc::now() + chrono::Duration::hours(bank.processing_hours);
 
     // Insert deposit request
     let deposit_id: Uuid = sqlx::query_scalar(

@@ -236,6 +236,64 @@ async fn build_client() -> Result<Client, AppError> {
     Ok(Client::new(config))
 }
 
+/// Magic-byte MIME sniffing. Trust file contents, not the client-declared
+/// header. Returns the canonical MIME if recognised, `None` otherwise.
+pub fn sniff_mime(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.len() < 4 {
+        return None;
+    }
+    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        return Some("image/jpeg");
+    }
+    if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+        return Some("image/png");
+    }
+    if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
+        return Some("image/gif");
+    }
+    if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        return Some("image/webp");
+    }
+    if bytes.starts_with(b"%PDF-") {
+        return Some("application/pdf");
+    }
+    if bytes.starts_with(b"PK\x03\x04")
+        || bytes.starts_with(b"PK\x05\x06")
+        || bytes.starts_with(b"PK\x07\x08")
+    {
+        return Some("application/zip");
+    }
+    if bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
+        return Some("application/msword");
+    }
+    None
+}
+
+/// Returns true when the client-declared MIME is acceptable for the sniffed
+/// bytes. Accepts common aliases (image/jpg → image/jpeg) and
+/// application/octet-stream as a fallback.
+pub fn mime_matches(client_mime: &str, sniffed: &str) -> bool {
+    let c = client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    if c == sniffed {
+        return true;
+    }
+    matches!(
+        (c.as_str(), sniffed),
+        ("image/jpg", "image/jpeg")
+            | ("image/pjpeg", "image/jpeg")
+            | (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/zip",
+            )
+            | ("application/octet-stream", _)
+    )
+}
+
 /// Derive a safe file extension from the MIME type.
 pub fn extension_for_mime(mime: &str) -> &'static str {
     match mime {

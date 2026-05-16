@@ -705,9 +705,15 @@ function renderTable() {
                 <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${d.expires_at ? formatDateTime(d.expires_at) : "—"}</td>
                 <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${formatDateTime(d.created_at)}</td>
                 <td>
-                    ${d.status === "pending"
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                        ${d.has_proof ? `
+                            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="viewDepositProof('${esc(d.id)}')" title="View proof of transfer" aria-label="View proof of transfer" style="color:var(--admin-accent);">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+                                Proof
+                            </button>
+                        ` : ""}
+                        ${d.status === "pending"
           ? `
-                        <div style="display:flex;gap:4px;">
                             <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="openConfirmModal('${esc(d.id)}')" title="Confirm deposit" aria-label="Confirm deposit">
                                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l3.5 3.5L13 4"/></svg>
                                 Confirm
@@ -718,10 +724,10 @@ function renderTable() {
                             <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="cancelDeposit('${esc(d.id)}')" title="Cancel deposit" aria-label="Cancel deposit" style="color:var(--admin-danger);">
                                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
                             </button>
-                        </div>
-                    `
-          : `<span style="font-size:12px;color:var(--admin-text-muted);">—</span>`
+                            `
+          : (d.has_proof ? "" : `<span style="font-size:12px;color:var(--admin-text-muted);">—</span>`)
         }
+                    </div>
                 </td>
             </tr>
         `;
@@ -1073,3 +1079,88 @@ function debounce(fn, ms) {
     t = setTimeout(() => fn.apply(this, args), ms);
   };
 }
+
+// ─── Proof Viewer ───────────────────────────────────────────────
+//
+// Fetches a 15-minute signed URL for the deposit's proof-of-transfer file
+// and shows it in a lightweight modal. Images render inline; PDFs render
+// in an iframe. Falls back to opening the URL in a new tab when the
+// browser blocks inline preview.
+async function viewDepositProof(depositId) {
+  try {
+    const resp = await fetch(
+      `/api/admin/deposits/${encodeURIComponent(depositId)}/proof-url`,
+      { credentials: "same-origin" },
+    );
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      alert(err.error || `Could not load proof (HTTP ${resp.status})`);
+      return;
+    }
+    const data = await resp.json();
+    const url = data.signed_url;
+    if (!url) {
+      alert("No proof URL returned");
+      return;
+    }
+
+    // Build a simple overlay modal. Reuses admin-* styles for consistency.
+    let overlay = document.getElementById("deposit-proof-overlay");
+    if (overlay) overlay.remove();
+    overlay = document.createElement("div");
+    overlay.id = "deposit-proof-overlay";
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:32px;";
+
+    const dep = allDeposits.find((d) => d.id === depositId) || {};
+    const uploaded = data.uploaded_at
+      ? new Date(data.uploaded_at).toLocaleString()
+      : "—";
+    const userNotesHtml = data.user_notes
+      ? `<div style="padding:10px 14px;background:#FFFBEB;border:1px solid #FED7AA;border-radius:6px;font-size:12px;color:#92400E;margin-bottom:12px;"><strong>User notes:</strong> ${esc(data.user_notes)}</div>`
+      : "";
+    const isPdf = /\.pdf(?:\?|$)/i.test(url) || url.includes("application%2Fpdf");
+
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:12px;max-width:900px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #EAECF0;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <div>
+            <div style="font-weight:700;font-size:15px;color:#101828;">Proof of transfer</div>
+            <div style="font-size:12px;color:#667085;margin-top:2px;">
+              ${esc(dep.user_name || dep.user_email || "Deposit")} ·
+              ${esc(dep.external_ref_id || "—")} ·
+              Uploaded ${esc(uploaded)}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm">Open in tab</a>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="deposit-proof-close">Close</button>
+          </div>
+        </div>
+        <div style="padding:16px 20px;flex:1;overflow:auto;background:#F8FAFC;">
+          ${userNotesHtml}
+          ${isPdf
+            ? `<iframe src="${esc(url)}" style="width:100%;height:70vh;border:1px solid #EAECF0;border-radius:6px;background:#fff;" title="Deposit proof"></iframe>`
+            : `<img src="${esc(url)}" alt="Deposit proof" style="max-width:100%;height:auto;border:1px solid #EAECF0;border-radius:6px;background:#fff;display:block;margin:0 auto;" />`
+          }
+          ${data.expires_in_minutes ? `<div style="margin-top:10px;font-size:11px;color:#98A2B3;text-align:center;">Signed URL expires in ${data.expires_in_minutes} minutes.</div>` : ""}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    function close() {
+      overlay.remove();
+      document.removeEventListener("keydown", onEsc);
+    }
+    function onEsc(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onEsc);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    document.getElementById("deposit-proof-close").addEventListener("click", close);
+  } catch (e) {
+    console.error("viewDepositProof failed", e);
+    alert("Network error loading proof");
+  }
+}
+
+// Make the action accessible from inline `onclick` in the table cell.
+window.viewDepositProof = viewDepositProof;
