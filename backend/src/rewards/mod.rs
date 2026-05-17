@@ -2,6 +2,7 @@ pub mod attribution;
 pub mod models;
 pub mod notifications;
 pub mod payout_connectors;
+pub mod leaderboard;
 pub mod payout_methods;
 pub mod routes;
 pub mod service;
@@ -126,6 +127,16 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/affiliate/payout-methods/:id",
             axum::routing::delete(api_affiliate_payout_method_delete),
+        )
+        // Phase-4: opt-in public affiliate leaderboard
+        .route("/leaderboard/affiliates", get(page_affiliate_leaderboard))
+        .route(
+            "/api/affiliate/leaderboard/public",
+            get(api_affiliate_leaderboard_public),
+        )
+        .route(
+            "/api/affiliate/leaderboard/opt-in",
+            axum::routing::patch(api_affiliate_leaderboard_opt_in),
         )
         // GAP-10: Tax document upload (required for payout release)
         .route(

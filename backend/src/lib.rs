@@ -560,6 +560,11 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         pool.clone(),
     ));
 
+    // Phase-4: public leaderboard matview refresh worker (15 min cadence).
+    tokio::spawn(rewards::leaderboard::run_leaderboard_refresh_worker(
+        pool.clone(),
+    ));
+
     // Affiliate rollup worker (15 min) — leader-gated so only one instance
     // does the recompute in a multi-replica deployment. See migration 159.
     {

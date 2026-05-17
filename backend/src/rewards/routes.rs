@@ -2844,6 +2844,78 @@ pub async fn api_affiliate_payout_method_delete(
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Phase-4: opt-in public affiliate leaderboard
+// ──────────────────────────────────────────────────────────────────────────
+
+#[derive(serde::Deserialize)]
+pub struct LeaderboardOptInPayload {
+    pub opt_in: bool,
+    pub display_name: Option<String>,
+    pub avatar_url: Option<String>,
+}
+
+/// GET /api/affiliate/leaderboard/public?scope=month|lifetime&limit=25
+/// PUBLIC endpoint — no auth required.
+pub async fn api_affiliate_leaderboard_public(
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    // Accept both `scope=` (canonical) and `period=` (legacy JS).
+    let scope = super::leaderboard::parse_scope(
+        params
+            .get("scope")
+            .or_else(|| params.get("period"))
+            .map(|s| s.as_str()),
+    );
+    let limit: i64 = params
+        .get("limit")
+        .and_then(|l| l.parse().ok())
+        .unwrap_or(25);
+    let rows = super::leaderboard::list_public_leaderboard(&state.db, scope, limit).await?;
+    Ok(Json(serde_json::json!({
+        "scope": scope,
+        "items": rows
+    }))
+    .into_response())
+}
+
+/// PATCH /api/affiliate/leaderboard/opt-in
+pub async fn api_affiliate_leaderboard_opt_in(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<LeaderboardOptInPayload>,
+) -> Result<axum::response::Response, crate::error::AppError> {
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let new_state = super::leaderboard::set_opt_in(
+        &state.db,
+        user_id,
+        payload.opt_in,
+        payload.display_name.as_deref().map(|s| s.trim()),
+        payload.avatar_url.as_deref().map(|s| s.trim()),
+    )
+    .await?;
+    Ok(Json(serde_json::json!({"ok": true, "opt_in": new_state})).into_response())
+}
+
+/// GET /leaderboard/affiliates — public HTML page.
+pub async fn page_affiliate_leaderboard(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "affiliate-leaderboard.html",
+        serde_json::json!({
+            "title": "Top affiliates",
+        }),
+    )
+    .await
+}
+
 #[cfg(test)]
 mod data_export_tests {
     use super::data_export_readme;
