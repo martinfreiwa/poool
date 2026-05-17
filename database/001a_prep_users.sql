@@ -3,12 +3,11 @@ BEGIN;
 
 -- 005_payments_checkout.sql adds wallets.currency; this seed runs before
 -- that migration in fresh CI applies. Make this migration self-sufficient
--- by adding the column up-front if it isn't there yet (idempotent on
--- re-apply because IF NOT EXISTS).
+-- by adding just the column up-front (idempotent via IF NOT EXISTS).
+-- 005 still owns the constraint swap — leaving the OLD unique constraint
+-- in place here lets ON CONFLICT (user_id, wallet_type) match correctly
+-- and avoids fighting 005's ADD CONSTRAINT on re-apply.
 ALTER TABLE wallets ADD COLUMN IF NOT EXISTS currency VARCHAR(3) NOT NULL DEFAULT 'USD';
-ALTER TABLE wallets DROP CONSTRAINT IF EXISTS wallets_user_id_wallet_type_key;
-ALTER TABLE wallets ADD CONSTRAINT wallets_user_id_wallet_type_currency_key
-    UNIQUE (user_id, wallet_type, currency);
 
 -- Insert roles if they don't exist
 INSERT INTO roles (name, description) VALUES 
@@ -39,11 +38,11 @@ BEGIN
     -- Ensure wallets exist (with standard currency)
     INSERT INTO wallets (user_id, wallet_type, balance_cents, currency)
     VALUES (v_user_id, 'cash', 50000000, 'USD')
-    ON CONFLICT (user_id, wallet_type, currency) DO NOTHING;
+    ON CONFLICT (user_id, wallet_type) DO NOTHING;
 
     INSERT INTO wallets (user_id, wallet_type, balance_cents, currency)
     VALUES (v_user_id, 'rewards', 100000, 'USD')
-    ON CONFLICT (user_id, wallet_type, currency) DO NOTHING;
+    ON CONFLICT (user_id, wallet_type) DO NOTHING;
     
     -- Create admin user
     INSERT INTO users (email, password_hash, email_verified, status)
