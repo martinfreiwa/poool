@@ -94,9 +94,7 @@ pub async fn set_opt_in(
     }
     if let Some(url) = avatar_url {
         if !url.is_empty() && !url.starts_with("https://") {
-            return Err(AppError::BadRequest(
-                "avatar URL must be HTTPS".into(),
-            ));
+            return Err(AppError::BadRequest("avatar URL must be HTTPS".into()));
         }
         if url.len() > 512 {
             return Err(AppError::BadRequest(

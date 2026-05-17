@@ -321,19 +321,16 @@ mod tests {
         }
 
         // usdc_wallet: 0x + 40 hex
-        let (_, plain, _, last4, _) = validate_payout_method(
-            "usdc_wallet",
-            "0x1234567890abcdef1234567890abcdef12345678",
-        )
-        .unwrap();
+        let (_, plain, _, last4, _) =
+            validate_payout_method("usdc_wallet", "0x1234567890abcdef1234567890abcdef12345678")
+                .unwrap();
         assert_eq!(plain.unwrap().len(), 42);
         assert_eq!(last4.unwrap(), "5678");
         assert!(validate_payout_method("usdc_wallet", "0x123").is_err());
-        assert!(validate_payout_method(
-            "usdc_wallet",
-            "1234567890abcdef1234567890abcdef12345678"
-        )
-        .is_err()); // no 0x
+        assert!(
+            validate_payout_method("usdc_wallet", "1234567890abcdef1234567890abcdef12345678")
+                .is_err()
+        ); // no 0x
 
         // stripe_connect: acct_xxx
         let (_, plain, _, _, _) =

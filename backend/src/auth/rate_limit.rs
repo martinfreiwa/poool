@@ -290,18 +290,17 @@ impl RateLimitBackend for RedisBackend {
         let mut conn = match self.pool.get().await {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!("Redis rate limiter unavailable, rejecting dual check: {}", e);
+                tracing::error!(
+                    "Redis rate limiter unavailable, rejecting dual check: {}",
+                    e
+                );
                 return Err(30);
             }
         };
 
         let now_ms = chrono::Utc::now().timestamp_millis();
         let cutoff_ms = now_ms - window_ms;
-        let member = format!(
-            "{}:{}",
-            now_ms,
-            uuid::Uuid::new_v4().as_u128() & 0xFFFF
-        );
+        let member = format!("{}:{}", now_ms, uuid::Uuid::new_v4().as_u128() & 0xFFFF);
 
         // Use raw EVAL (avoids the optional `script` cargo feature).
         let result: Result<i64, _> = redis::cmd("EVAL")

@@ -3156,10 +3156,9 @@ pub fn webhook_master_secret() -> String {
 /// Deterministic so verifiers can re-derive without a per-row column.
 pub fn webhook_signing_secret(subscription_id: Uuid) -> String {
     use hmac::Mac;
-    let mut mac = <hmac::Hmac<sha2::Sha256> as hmac::Mac>::new_from_slice(
-        webhook_master_secret().as_bytes(),
-    )
-    .expect("HMAC-SHA256 accepts any key length");
+    let mut mac =
+        <hmac::Hmac<sha2::Sha256> as hmac::Mac>::new_from_slice(webhook_master_secret().as_bytes())
+            .expect("HMAC-SHA256 accepts any key length");
     mac.update(format!("webhook:{}", subscription_id).as_bytes());
     let bytes = mac.finalize().into_bytes();
     bytes.iter().fold(String::with_capacity(64), |mut s, b| {
@@ -3178,14 +3177,15 @@ pub fn sign_webhook_payload_v2(secret_hex: &str, ts_unix: i64, body: &str) -> St
     let mut mac = <hmac::Hmac<sha2::Sha256> as hmac::Mac>::new_from_slice(&key_bytes)
         .expect("HMAC-SHA256 accepts any key length");
     mac.update(format!("{}.{}", ts_unix, body).as_bytes());
-    let hex = mac.finalize().into_bytes().iter().fold(
-        String::with_capacity(64),
-        |mut s, b| {
+    let hex = mac
+        .finalize()
+        .into_bytes()
+        .iter()
+        .fold(String::with_capacity(64), |mut s, b| {
             use std::fmt::Write as _;
             let _ = write!(s, "{:02x}", b);
             s
-        },
-    );
+        });
     format!("t={},v1={}", ts_unix, hex)
 }
 
@@ -3216,7 +3216,10 @@ pub fn verify_webhook_signature_v2(
         return Err(format!("timestamp out of window: {}", now_unix - ts));
     }
     let expected = sign_webhook_payload_v2(secret_hex, ts, body);
-    let expected_v1 = expected.split(',').find_map(|p| p.strip_prefix("v1=")).unwrap_or("");
+    let expected_v1 = expected
+        .split(',')
+        .find_map(|p| p.strip_prefix("v1="))
+        .unwrap_or("");
     if !constant_time_eq(v1.as_bytes(), expected_v1.as_bytes()) {
         return Err("signature mismatch".to_string());
     }
@@ -3274,11 +3277,13 @@ pub async fn create_webhook_subscription(
         use sha2::Digest;
         let mut h = sha2::Sha256::new();
         h.update(plain_secret.as_bytes());
-        h.finalize().iter().fold(String::with_capacity(64), |mut s, b| {
-            use std::fmt::Write as _;
-            let _ = write!(s, "{:02x}", b);
-            s
-        })
+        h.finalize()
+            .iter()
+            .fold(String::with_capacity(64), |mut s, b| {
+                use std::fmt::Write as _;
+                let _ = write!(s, "{:02x}", b);
+                s
+            })
     };
     sqlx::query(
         r#"INSERT INTO affiliate_webhook_subscriptions
@@ -3351,14 +3356,13 @@ pub async fn delete_webhook_subscription(
     user_id: Uuid,
     id: Uuid,
 ) -> Result<bool, AppError> {
-    let res = sqlx::query(
-        "DELETE FROM affiliate_webhook_subscriptions WHERE id = $1 AND user_id = $2",
-    )
-    .bind(id)
-    .bind(user_id)
-    .execute(pool)
-    .await
-    .map_err(|e| AppError::Internal(format!("webhook delete failed: {e}")))?;
+    let res =
+        sqlx::query("DELETE FROM affiliate_webhook_subscriptions WHERE id = $1 AND user_id = $2")
+            .bind(id)
+            .bind(user_id)
+            .execute(pool)
+            .await
+            .map_err(|e| AppError::Internal(format!("webhook delete failed: {e}")))?;
     Ok(res.rows_affected() > 0)
 }
 
@@ -3382,8 +3386,7 @@ pub async fn dispatch_webhook_event(
     let mut enqueued: u64 = 0;
     for sub in &subs {
         let evts: String = sub.try_get("event_types").unwrap_or_default();
-        let matches = evts.trim() == "*"
-            || evts.split(',').any(|e| e.trim() == event_type);
+        let matches = evts.trim() == "*" || evts.split(',').any(|e| e.trim() == event_type);
         if !matches {
             continue;
         }
@@ -3610,8 +3613,8 @@ mod tests {
         let body = "{}";
         let header = sign_webhook_payload_v2(&secret, 1_000_000_000, body);
         // now is 600s later; max_age is 300s -> rejected
-        let err = verify_webhook_signature_v2(&secret, &header, body, 300, 1_000_000_600)
-            .unwrap_err();
+        let err =
+            verify_webhook_signature_v2(&secret, &header, body, 300, 1_000_000_600).unwrap_err();
         assert!(err.contains("out of window"), "got: {}", err);
     }
 
@@ -3619,14 +3622,8 @@ mod tests {
     fn webhook_v2_rejects_tampered_body() {
         let secret = webhook_signing_secret(Uuid::new_v4());
         let header = sign_webhook_payload_v2(&secret, 1_700_000_000, r#"{"a":1}"#);
-        let err = verify_webhook_signature_v2(
-            &secret,
-            &header,
-            r#"{"a":2}"#,
-            300,
-            1_700_000_000,
-        )
-        .unwrap_err();
+        let err = verify_webhook_signature_v2(&secret, &header, r#"{"a":2}"#, 300, 1_700_000_000)
+            .unwrap_err();
         assert_eq!(err, "signature mismatch");
     }
 
@@ -3634,9 +3631,7 @@ mod tests {
     fn webhook_v2_rejects_mangled_header() {
         let secret = webhook_signing_secret(Uuid::new_v4());
         let body = "{}";
-        assert!(
-            verify_webhook_signature_v2(&secret, "garbage", body, 300, 1_700_000_000).is_err()
-        );
+        assert!(verify_webhook_signature_v2(&secret, "garbage", body, 300, 1_700_000_000).is_err());
         assert!(
             verify_webhook_signature_v2(&secret, "t=123", body, 300, 1_700_000_000).is_err(),
             "missing v1"
