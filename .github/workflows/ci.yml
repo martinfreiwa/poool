@@ -121,9 +121,19 @@ jobs:
         # Backend's `run_migrations` walks `database/*.sql` in name order;
         # we replicate that here with `psql -f` so the test DB matches prod
         # schema before any test row is inserted.
+        #
+        # Skip community-named migrations: those ALTER tables that live in
+        # the split `poool_community` DB (loaded separately), not in this
+        # affiliate test DB. They ERROR on 'relation does not exist'
+        # otherwise. The runtime migrator already partitions DBs the same
+        # way, this just mirrors that contract for CI.
         run: |
           for f in $(ls ../database/*.sql | sort); do
-            echo "applying $(basename $f)"
+            base=$(basename "$f")
+            case "$base" in
+              *community*) echo "skipping $base (community-only)"; continue ;;
+            esac
+            echo "applying $base"
             PGPASSWORD=poool psql -h localhost -U poool -d poool -v ON_ERROR_STOP=1 -f "$f"
           done
 
