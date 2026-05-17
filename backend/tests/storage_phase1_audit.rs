@@ -64,14 +64,17 @@ fn sha256_hex_handles_empty_input() {
     );
 }
 
+// Process-wide env vars (POOOL_ENV here) race when cargo runs unit tests
+// concurrently. Wrap every test that flips POOOL_ENV in this mutex so
+// the get/set/restore sequence is atomic.
+static ENV_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// Production safety: with `POOOL_ENV=production` (or unset), the local-FS
 /// fallback gate must return false. Failure here means uploads silently
 /// degrade to ephemeral container-FS on Cloud Run → data loss on restart.
 #[test]
 fn is_local_fallback_disabled_in_production() {
-    // Save and restore the env var so concurrent tests aren't affected
-    // (the test runner uses `--test-threads=1` for ignored tests but
-    // pure tests may run in parallel).
+    let _guard = ENV_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
     let prev = std::env::var("POOOL_ENV").ok();
     std::env::set_var("POOOL_ENV", "production");
     let allowed = poool_backend::storage::service::is_local_fallback_allowed();
@@ -92,6 +95,7 @@ fn is_local_fallback_disabled_in_production() {
 /// upload path when GCS credentials are absent.
 #[test]
 fn is_local_fallback_enabled_in_development() {
+    let _guard = ENV_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
     for env_val in ["development", "dev", "local"] {
         let prev = std::env::var("POOOL_ENV").ok();
         std::env::set_var("POOOL_ENV", env_val);
@@ -115,6 +119,7 @@ fn is_local_fallback_enabled_in_development() {
 /// only at the caller.
 #[tokio::test]
 async fn upload_local_refuses_in_production_env() {
+    let _guard = ENV_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
     let prev = std::env::var("POOOL_ENV").ok();
     std::env::set_var("POOOL_ENV", "production");
 
