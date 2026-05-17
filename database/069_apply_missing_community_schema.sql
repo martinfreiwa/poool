@@ -1,14 +1,32 @@
 -- Migration 069: Apply missing community schema columns
 -- Fixes runtime SQL errors caused by missing columns in community_profiles and notifications
 -- These columns were defined in database/community/*.sql migrations but never applied to main schema.
+--
+-- 2026-05-17 — production split the community schema into its own
+-- `poool_community` database. On that DB this migration runs as-written.
+-- On the legacy single-DB topology (and on the affiliate-integration CI
+-- runner which only loads `database/*.sql`) the `community_profiles`
+-- table simply isn't there, so we skip the table-touching blocks rather
+-- than ERROR. The CREATE TABLE IF NOT EXISTS blocks below still run
+-- because they're harmless when the table is already absent.
 BEGIN;
 
--- 1. Add XP + Level + Circle columns to community_profiles
-ALTER TABLE community_profiles
-  ADD COLUMN IF NOT EXISTS circle_id UUID,
-  ADD COLUMN IF NOT EXISTS xp_total INTEGER NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS level_name VARCHAR(50) NOT NULL DEFAULT 'Seedling';
+-- 1. Add XP + Level + Circle columns to community_profiles (skip on DBs
+-- that don't have the community schema — keeps single-DB CI green).
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = current_schema()
+          AND table_name = 'community_profiles'
+    ) THEN
+        ALTER TABLE community_profiles
+          ADD COLUMN IF NOT EXISTS circle_id UUID,
+          ADD COLUMN IF NOT EXISTS xp_total INTEGER NOT NULL DEFAULT 0,
+          ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 1,
+          ADD COLUMN IF NOT EXISTS level_name VARCHAR(50) NOT NULL DEFAULT 'Seedling';
+    END IF;
+END $$;
 
 -- 2. Add community-specific columns to notifications
 ALTER TABLE notifications
