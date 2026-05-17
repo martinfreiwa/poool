@@ -1,6 +1,15 @@
 -- Migration to prepare users for seed data
 BEGIN;
 
+-- 005_payments_checkout.sql adds wallets.currency; this seed runs before
+-- that migration in fresh CI applies. Make this migration self-sufficient
+-- by adding the column up-front if it isn't there yet (idempotent on
+-- re-apply because IF NOT EXISTS).
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS currency VARCHAR(3) NOT NULL DEFAULT 'USD';
+ALTER TABLE wallets DROP CONSTRAINT IF EXISTS wallets_user_id_wallet_type_key;
+ALTER TABLE wallets ADD CONSTRAINT wallets_user_id_wallet_type_currency_key
+    UNIQUE (user_id, wallet_type, currency);
+
 -- Insert roles if they don't exist
 INSERT INTO roles (name, description) VALUES 
 ('admin', 'Administrator'),
