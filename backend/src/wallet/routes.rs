@@ -654,51 +654,18 @@ pub async fn api_deposit_init(
             .into_response();
     }
 
-    // ── Source-of-funds gate (AMLD5/6 Art. 18) ───────────────────
-    let sof_required = amount_cents >= bank.sof_threshold_cents;
     let sof_doc_required = amount_cents >= bank.sof_doc_threshold_cents;
     let normalized_sof = payload
         .source_of_funds_reason
         .as_deref()
         .and_then(crate::payments::service::normalize_sof_reason)
         .map(|s| s.to_string());
-
-    if sof_required && normalized_sof.is_none() {
-        if let Some(ref k) = idem_key {
-            idempotency::release(&state.db, k).await;
-        }
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "error": "sof_reason_required",
-                "message": format!(
-                    "A source-of-funds reason is required for deposits of {} or more.",
-                    format_usd(bank.sof_threshold_cents)
-                )
-            })),
-        )
-            .into_response();
-    }
-
     let sof_detail = payload
         .source_of_funds_detail
         .as_deref()
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .map(|s| s.chars().take(500).collect::<String>());
-    if normalized_sof.as_deref() == Some("other") && sof_detail.is_none() {
-        if let Some(ref k) = idem_key {
-            idempotency::release(&state.db, k).await;
-        }
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "error": "sof_detail_required",
-                "message": "Please describe the source of these funds."
-            })),
-        )
-            .into_response();
-    }
 
     let deposit_res = match crate::payments::service::create_deposit_request(
         &state.db,
@@ -761,9 +728,7 @@ pub async fn api_deposit_init(
             "bank_address": bank.bank_address,
         },
         "processing_hours": bank.processing_hours,
-        "sof_required": sof_required,
         "sof_doc_required": sof_doc_required,
-        "sof_threshold_cents": bank.sof_threshold_cents,
         "sof_doc_threshold_cents": bank.sof_doc_threshold_cents,
         "expires_at": expires_at,
         "submit_url": format!("/wallet/deposit/{}/submit", deposit_res.deposit_id),

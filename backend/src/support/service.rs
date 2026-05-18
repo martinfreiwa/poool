@@ -149,11 +149,6 @@ pub async fn submit_ticket(
         let mime = file_type
             .as_deref()
             .ok_or_else(|| anyhow::anyhow!("Attachment content type is required"))?;
-        let bucket = state
-            .config
-            .gcs_bucket
-            .as_deref()
-            .ok_or_else(|| anyhow::anyhow!("Attachment upload is not configured"))?;
         let ext = crate::storage::service::extension_for_mime(mime);
         let fname = file_name
             .as_deref()
@@ -169,12 +164,38 @@ pub async fn submit_ticket(
             .collect::<String>();
         let object_path = format!("support/pending/{}_{}.{}", Uuid::new_v4(), fname, ext);
 
-        let file_url = crate::storage::service::upload_private(bucket, &object_path, bytes, mime)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to upload support attachment: {}", e);
-                anyhow::anyhow!("Attachment upload failed. Please try again.")
-            })?;
+        // Prefer GCS when configured; fall back to local FS in dev (matches
+        // the post-image upload path). Local-FS fallback is gated by
+        // POOOL_ENV inside upload_local itself.
+        let file_url = if let Some(bucket) = state.config.gcs_bucket.as_deref() {
+            match crate::storage::service::upload_private(bucket, &object_path, bytes.clone(), mime)
+                .await
+            {
+                Ok(url) => url,
+                Err(e) => {
+                    tracing::warn!(
+                        "GCS support-attachment upload failed, attempting local fallback: {}",
+                        e
+                    );
+                    crate::storage::service::upload_local(&object_path, bytes)
+                        .await
+                        .map_err(|err| {
+                            tracing::error!("Local fallback also failed: {}", err);
+                            anyhow::anyhow!("Attachment upload failed. Please try again.")
+                        })?
+                }
+            }
+        } else {
+            crate::storage::service::upload_local(&object_path, bytes)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "No GCS bucket configured and local fallback failed: {}",
+                        e
+                    );
+                    anyhow::anyhow!("Attachment upload failed. Please try again.")
+                })?
+        };
         uploaded_attachment = Some((file_url, mime.to_string()));
     }
 

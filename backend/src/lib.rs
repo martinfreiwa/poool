@@ -1673,6 +1673,16 @@ pub fn build_platform_router(state: AppState) -> Router {
             "/community/circle/:slug/settings",
             get(page_community_circle_settings),
         )
+        // Bare `/community/circle/:slug` lands on the settings page (the only
+        // existing slug-routed view). The settings template renders a
+        // role-aware view via `/api/community/circles/by-slug/:slug`, so
+        // non-owners get a read-only landing card instead of a 404.
+        .route(
+            "/community/circle/:slug",
+            get(|path: axum::extract::Path<String>| async move {
+                axum::response::Redirect::to(&format!("/community/circle/{}/settings", path.0))
+            }),
+        )
         .route("/community/badge/:id", get(page_community_badge))
         .route(
             "/community/partials/feed/list",
@@ -1814,12 +1824,20 @@ async fn apply_security_headers(
         })
         .unwrap_or(false);
 
+    // Locally-served upload previews (deposit proofs, KYC docs) are iframed
+    // by same-origin admin pages — DENY would block the PDF viewer.
+    let allow_same_origin_frame = req.uri().path().starts_with("/uploads/");
+
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
 
     headers.insert(
         axum::http::header::X_FRAME_OPTIONS,
-        axum::http::HeaderValue::from_static("DENY"),
+        if allow_same_origin_frame {
+            axum::http::HeaderValue::from_static("SAMEORIGIN")
+        } else {
+            axum::http::HeaderValue::from_static("DENY")
+        },
     );
     headers.insert(
         axum::http::header::X_CONTENT_TYPE_OPTIONS,
@@ -1843,10 +1861,12 @@ async fn apply_security_headers(
         // x-data/x-bind/@click string expressions. Without it Alpine loads but all
         // reactive bindings silently no-op.
         // 'unsafe-inline' remains pending a template-wide nonce rollout.
-        if is_local_request {
-            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' http: https: ws: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self';")
-        } else {
-            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;")
+        // Local-upload paths use `frame-ancestors 'self'` so admin pages can
+        // iframe deposit/KYC PDFs from the same origin.
+        match (is_local_request, allow_same_origin_frame) {
+            (true, false) => axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' http: https: ws: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self';"),
+            (false, false) => axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
+            (_, true) => axum::http::HeaderValue::from_static("default-src 'self'; img-src 'self' data: blob:; object-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"),
         },
     );
     headers.insert(

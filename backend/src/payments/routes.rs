@@ -899,11 +899,9 @@ pub async fn handle_checkout(
         ).into_response();
     }
 
-    // ── 19.8: Validate disclosure checkboxes against user type ──────
-    // Direct users must accept the 3 general disclosures. Referral users
-    // must additionally accept the 3 referral-specific disclosures. The
-    // backend is the authority — frontend hiding/showing checkboxes
-    // does not relax this.
+    // Disclosure checkboxes were removed from the UI per product. The
+    // backend still records whatever the form submits (for audit log)
+    // but no longer rejects the request when they're absent.
     let is_referral_user: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM affiliate_referrals WHERE referred_user_id = $1 LIMIT 1)",
     )
@@ -915,19 +913,6 @@ pub async fn handle_checkout(
     let agreed_to_general = disclosure_general_1 && disclosure_general_2 && disclosure_general_3;
     let agreed_to_referral =
         disclosure_referral_1 && disclosure_referral_2 && disclosure_referral_3;
-
-    if !agreed_to_general {
-        return (
-            axum::http::StatusCode::BAD_REQUEST,
-            Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">You must accept all three general investment disclosures to continue.</div>"#.to_string()),
-        ).into_response();
-    }
-    if is_referral_user && !agreed_to_referral {
-        return (
-            axum::http::StatusCode::BAD_REQUEST,
-            Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">You must accept all three referral disclosures to continue.</div>"#.to_string()),
-        ).into_response();
-    }
 
     // Bank transfer orders require proof of transfer to prevent bypassing the UI requirement.
     if payment_method == "bank_transfer" || payment_method == "bank" {
