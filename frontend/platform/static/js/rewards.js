@@ -821,7 +821,7 @@
     if (fromVal) params.set('from', fromVal);
     if (toVal) params.set('to', toVal);
 
-    tbody.innerHTML = '<tr class="data-table__row"><td class="data-table__td" colspan="5" style="text-align:center; padding:32px 0; color:#98a2b3; border-bottom:none;">Loading commissions…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="commissions-table__empty commissions-table__empty--loading">Loading commissions…</td></tr>';
 
     try {
       const resp = await fetch(`/api/rewards/commissions?${params.toString()}`, { credentials: 'include' });
@@ -842,15 +842,19 @@
 
       if (commissions.length === 0) {
         tbody.innerHTML = `
-          <tr class="data-table__row">
-            <td class="data-table__td" colspan="5" style="text-align:center; padding:64px 24px; color:#667085; border-bottom:none;">
-              <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
-                <div style="width:48px; height:48px; background:#f9fafb; border-radius:10px; display:flex; align-items:center; justify-content:center;">
-                  <img src="/static/images/icons/coins-stacked-03.svg" width="24" height="24" style="opacity:0.4" />
+          <tr>
+            <td colspan="5" class="commissions-table__empty">
+              <div class="commissions-empty">
+                <div class="commissions-empty__icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+                  </svg>
                 </div>
-                <div>
-                  <div style="font-weight:600; color:#101828; font-size:16px; margin-bottom:4px;">No commissions found</div>
-                  <div style="font-size:14px;">We couldn't find any payouts for the selected period.</div>
+                <div class="commissions-empty__copy">
+                  <p class="commissions-empty__title">No commissions yet</p>
+                  <p class="commissions-empty__desc">Payouts will appear here once you've earned commissions in the selected period.</p>
                 </div>
               </div>
             </td>
@@ -868,18 +872,17 @@
         const statusClass = `commission-status-dot--${c.status}`;
 
         const row = document.createElement('tr');
-        row.className = 'data-table__row';
         row.innerHTML = `
-          <td class="data-table__td">${periodStart} - ${periodEnd}</td>
-          <td class="data-table__td" style="text-align:right">${amount}</td>
-          <td class="data-table__td">${c.payment_method}</td>
-          <td class="data-table__td">
-            <div class="commission-status">
+          <td class="commissions-table__td">${periodStart} – ${periodEnd}</td>
+          <td class="commissions-table__td commissions-table__td--end commissions-table__td--num">$${amount}</td>
+          <td class="commissions-table__td">${escapeHtml(c.payment_method)}</td>
+          <td class="commissions-table__td">
+            <span class="commission-status">
               <span class="commission-status-dot ${statusClass}"></span>
               ${escapeHtml(statusLabel)}
-            </div>
+            </span>
           </td>
-          <td class="data-table__td" style="text-align:right">
+          <td class="commissions-table__td commissions-table__td--end">
             <button class="commission-export-btn commission-export-btn--disabled" type="button" disabled aria-disabled="true" title="PDF export is not available yet">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>

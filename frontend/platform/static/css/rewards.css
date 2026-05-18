@@ -292,21 +292,52 @@
 
 .summary-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 14px;
   margin-bottom: 20px;
 }
 
+.summary-header__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+}
+
+.summary-header__icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #03FF88;
+  fill: none;
+}
+
+.summary-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .summary-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   color: var(--label-color);
 }
 
-.summary-amount {
-  font-size: 32px;
-  font-weight: 700;
-  color: #101828;
+.summary-amount,
+body#rewards-body .summary-amount {
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: #0000FF !important;
+  line-height: 1.1 !important;
 }
 
 .summary-breakdown {
@@ -331,7 +362,22 @@
 .item-label {
   font-size: 14px;
   color: #414651;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
+
+.breakdown-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.breakdown-dot--cashback   { background: #0000FF; }
+.breakdown-dot--referrals  { background: #03FF88; }
+.breakdown-dot--promotions { background: #F59E0B; }
 
 .item-value {
   font-size: 14px;
@@ -341,13 +387,20 @@
 
 .summary-link {
   margin-top: 16px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 13px;
   font-weight: 600;
   color: var(--primary-color);
   text-decoration: none;
+  transition: gap 0.15s ease, color 0.15s ease;
+  align-self: flex-start;
+}
+
+.summary-link:hover {
+  gap: 8px;
+  color: #1338D2;
 }
 
 /* --- Top Card left sections (Balance) --- */
@@ -483,10 +536,11 @@
   transition: all 0.2s ease;
 }
 
+/* intro-style green-tinted background dropped — brand gradient bar +
+   Brand Icon Tile in the header now carries the brand signal. */
 .tier-progress-card.intro-style {
-  background: var(--accent-color);
-  /* Light green for Intro */
-  border-color: var(--accent-color);
+  background: #ffffff;
+  border-color: var(--card-border-color);
 }
 
 .tier-card-header {
@@ -496,6 +550,59 @@
   margin-bottom: 16px;
 }
 
+.tier-card-header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tier-card-header__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+}
+
+.tier-card-header__icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #03FF88;
+  fill: none;
+}
+
+.tier-card-header__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tier-card-header__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary, #667085);
+}
+
+.tier-card-header__name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #101828;
+}
+
+.tier-card-header__name.premium {
+  color: var(--primary-color);
+}
+
+/* Legacy logo+badge layout kept for back-compat; new layout uses
+   tier-card-header__icon + __meta. */
 .tier-logo-wrap {
   display: flex;
   align-items: center;
@@ -588,29 +695,60 @@
 
 /* --- Refer and Earn Card --- */
 .refer-earn-card {
+  position: relative;
+  overflow: hidden;
   background: #ffffff;
   border: 1px solid var(--card-border-color);
   border-radius: 12px;
-  padding: 24px;
+  padding: 28px 28px 24px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+/* Brand gradient bar to match wallet/portfolio cards. */
+.refer-earn-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .refer-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .refer-title-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
+}
+
+/* Brand-tinted icon tile matching the tx-detail hero icon language. */
+.refer-title-wrap > svg:first-child,
+body#rewards-body .refer-title-wrap > svg:first-child {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88 !important;
+  stroke: #03FF88 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.18);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .refer-title-wrap h3 {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: #101828;
   margin: 0;
 }
@@ -618,46 +756,133 @@
 .refer-text {
   font-size: 14px;
   color: var(--label-color);
-  margin: 0 0 16px 0;
-  line-height: 1.5;
+  margin: 0 0 20px 0;
+  line-height: 1.55;
+  max-width: 60ch;
 }
 
 .refer-separator {
   height: 1px;
   background: var(--card-border-color);
-  margin-bottom: 16px;
+  margin: 0 0 20px;
 }
 
-.refer-checklist {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 24px 0;
-  display: flex;
-  flex-direction: column;
+/* Two-up reward tiles — the USD amount is the hero. */
+.refer-reward-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin: 0 0 22px;
 }
 
-.refer-checklist li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
+@media (max-width: 540px) {
+  .refer-reward-tiles {
+    grid-template-columns: 1fr;
+  }
+}
+
+.refer-reward-tile {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0, 0, 255, 0.04) 0%, rgba(3, 255, 136, 0.06) 100%);
+  border: 1px solid rgba(0, 0, 255, 0.10);
+  position: relative;
+  overflow: hidden;
+}
+
+.refer-reward-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.refer-reward-tile__amount {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0000FF;
+  line-height: 1.1;
+}
+
+.refer-reward-tile__label {
+  font-size: 13px;
+  font-weight: 600;
   color: #101828;
+  margin-top: 6px;
 }
 
-.refer-share-form label {
+.refer-reward-tile__hint {
+  font-size: 12px;
+  color: #667085;
+  margin-top: 2px;
+}
+
+.refer-share-form {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 255, 0.025);
+  border: 1px solid rgba(0, 0, 255, 0.08);
+}
+
+.refer-share-form label,
+.refer-share-form > div:first-child {
   display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #101828;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475467;
   margin-bottom: 8px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .refer-input-group {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.refer-input-group input,
+.refer-input-group .refer-link-display {
+  flex: 1;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #101828;
+  background: #ffffff;
+  border: 1px solid #D0D5DD;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: ui-monospace, "SF Mono", "Monaco", monospace;
+  display: inline-flex;
   align-items: center;
+}
+.refer-input-group input:focus {
+  border-color: #0000FF;
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.12);
+}
+
+.refer-input-group .refer-copy-icon-btn,
+.refer-input-group button[type="button"]:not(.ds-btn--primary) {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #0000FF;
+  border: 1px solid #D0D5DD;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.refer-input-group .refer-copy-icon-btn:hover,
+.refer-input-group button[type="button"]:not(.ds-btn--primary):hover {
+  background: #F5F8FF;
+  border-color: #0000FF;
 }
 
 .refer-input-wrapper {
@@ -780,30 +1005,23 @@
 }
 
 .tier-card .glass-icon-bg {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  opacity: 0.45;
-  transform: rotate(12deg);
-  left: 4px;
-  top: -4px;
+  display: none;
 }
 
 .tier-card .glass-icon-front {
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.85), rgba(230,235,255,0.6));
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 255, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  border: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.18);
 }
 
 .tier-card .glass-icon-front span {
   font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  color: #03FF88 !important;
 }
 
 .tier-card--active {
@@ -819,11 +1037,11 @@
   opacity: 0.9;
 }
 .tier-card--locked .glass-icon-front {
-  background: rgba(240, 240, 240, 0.8) !important;
-  border-color: #E5E7EB !important;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%) !important;
+  border: 0 !important;
 }
 .tier-card--locked .glass-icon-bg {
-  background: none !important;
+  display: none !important;
 }
 .tier-card--locked .tier-reward-showcase,
 .tier-card--locked .tier-benefits-section {
@@ -870,11 +1088,11 @@
 }
 
 .tier-progress-section {
-  background: #F8F9FC;
-  border: 1px solid var(--card-border-color, #E5E7EB);
-  border-radius: 8px;
-  padding: 16px 20px;
-  margin-bottom: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 4px 0 0 0;
+  margin-bottom: 24px;
 }
 
 .progress-labels-new {
@@ -2110,16 +2328,17 @@
 .marketing-asset-card {
   background: #ffffff;
   border: 1px solid var(--card-border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .marketing-asset-card:hover {
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
-  border-color: var(--input-border-color);
+  box-shadow: 0 12px 28px -16px rgba(0, 0, 255, 0.18);
+  border-color: rgba(0, 0, 255, 0.20);
+  transform: translateY(-1px);
 }
 
 .marketing-asset-preview {
@@ -2130,29 +2349,120 @@
   justify-content: center;
   border-bottom: 1px solid var(--card-border-color);
   padding: 16px;
+  position: relative;
 }
 
 .marketing-asset-preview.template-preview {
-  height: 140px;
+  height: 160px;
   position: relative;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Soft radial highlights to add depth over the inline gradient. */
+.marketing-asset-preview.template-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(0, 0, 0, 0.18) 0%, transparent 55%);
+  pointer-events: none;
 }
 
 .marketing-asset-preview.video-preview {
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
+  height: 160px;
+  padding: 0;
+  background: linear-gradient(135deg, #0000FF 0%, #1338D2 55%, #1E40AF 100%);
+  overflow: hidden;
+}
+
+/* Soft radial highlight + subtle vignette over the gradient. */
+.marketing-asset-preview.video-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(3, 255, 136, 0.18) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+/* Hide whatever inline background the template set so all videos share the
+   new brand gradient. */
+.marketing-asset-preview.video-preview[style*="background"] {
+  background: linear-gradient(135deg, #0000FF 0%, #1338D2 55%, #1E40AF 100%) !important;
+}
+
+/* Play icon → centered circular badge with backdrop blur. */
+.marketing-asset-preview.video-preview svg {
+  position: relative;
+  z-index: 1;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.20);
+  opacity: 1 !important;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.marketing-asset-card:hover .marketing-asset-preview.video-preview svg {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .marketing-asset-preview.banner-preview {
-  height: 120px;
-  padding: 12px;
+  height: 140px;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Faint dot grid to suggest a webpage canvas behind the banner mockup. */
+.marketing-asset-preview.banner-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(0, 0, 255, 0.08) 1px, transparent 1px);
+  background-size: 14px 14px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.marketing-asset-preview.banner-preview .banner-mockup {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+  border-radius: 6px !important;
 }
 
 .template-label {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.30);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1;
 }
 
 .marketing-asset-placeholder {
@@ -2206,9 +2516,17 @@
 
 .marketing-download-btn--disabled,
 .marketing-download-btn--disabled:hover {
-  color: #98a2b3;
+  color: #0000FF;
   cursor: not-allowed;
-  background: #f8f9fc;
+  background: #90FFBB;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.marketing-download-btn--disabled svg {
+  display: none;
 }
 
 .marketing-copy-btn {
@@ -2240,13 +2558,14 @@
 
 .marketing-colors-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+  max-width: 480px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 480px) {
   .marketing-colors-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2561,6 +2880,100 @@
   background: #f9fafb;
 }
 
+/* Commissions table v2 — header (matches the bold-blue-tile section
+   header pattern used across community/rewards pages). */
+.commissions-table__th {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #667085;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+  background: linear-gradient(180deg, #FAFBFF 0%, #FFFFFF 100%);
+  text-align: left;
+  white-space: nowrap;
+}
+.commissions-table__th:first-child { border-radius: 10px 0 0 0; }
+.commissions-table__th:last-child  { border-radius: 0 10px 0 0; }
+.commissions-table__th--invoice { text-align: right; }
+.commissions-table__th-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #475467;
+}
+.commissions-table__th-inner svg {
+  color: var(--btn-primary-bg, #0000FF);
+  flex-shrink: 0;
+}
+.commissions-table__th-inner--end {
+  justify-content: flex-end;
+  width: 100%;
+}
+.commissions-table__empty {
+  padding: 48px 24px !important;
+  text-align: center;
+  border-bottom: none !important;
+  background: var(--card-bg, #fff);
+}
+.commissions-table__empty--loading {
+  font-size: 13px;
+  color: var(--text-secondary, #98A2B3);
+  font-style: italic;
+}
+
+/* Body cells for JS-rendered rows */
+.commissions-table__td {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  color: var(--body-color, #344054);
+  padding: 14px 16px;
+  border-bottom: 1px solid #F2F4F7;
+  white-space: nowrap;
+}
+.commissions-table tbody tr:last-child .commissions-table__td { border-bottom: none; }
+.commissions-table tbody tr:hover { background: #FAFBFF; }
+.commissions-table__td--end { text-align: right; }
+.commissions-table__td--num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.commissions-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 380px;
+  margin: 0 auto;
+}
+.commissions-empty__icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 6px 16px rgba(0, 0, 255, 0.18);
+}
+.commissions-empty__copy { display: flex; flex-direction: column; gap: 4px; }
+.commissions-empty__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--page-title-color, #101828);
+  letter-spacing: -0.01em;
+}
+.commissions-empty__desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #535862);
+}
+
 /* Status dots */
 .commission-status {
   display: flex;
@@ -2761,32 +3174,106 @@ body#rewards-body .tier-progress-card::before,
 body#rewards-body .rewards-summary-card::before,
 body#rewards-body .metric-card::before,
 body#rewards-body .commissions-summary-card::before,
-body#rewards-body .commissions-card::before {
+body#rewards-body .commissions-card::before,
+body#rewards-body .marketing-section::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary-color, #0000FF), var(--progress-fill-bg, #98FB96));
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
   border-radius: 12px 12px 0 0;
   pointer-events: none;
+  display: block;
 }
 
 body#rewards-body .tier-progress-card,
 body#rewards-body .rewards-summary-card,
 body#rewards-body .metric-card,
 body#rewards-body .commissions-summary-card,
-body#rewards-body .commissions-card {
+body#rewards-body .commissions-card,
+body#rewards-body .marketing-section {
   position: relative;
   overflow: hidden;
 }
 
+/* Brand Icon Tile for marketing section headers (matches Brand Icon Tile pattern in DESIGN.md) */
+body#rewards-body #marketing-tab .marketing-section-header {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+body#rewards-body #marketing-tab .marketing-section-header svg,
+body#rewards-body #commissions-tab .commissions-list-title svg {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 8px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%) !important;
+  color: #03FF88 !important;
+  stroke: #03FF88 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18) !important;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+body#rewards-body #commissions-tab .commissions-list-title {
+  gap: 12px;
+}
+body#rewards-body #commissions-tab .commissions-list-title h3 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--page-title-color, #101828);
+}
+
+/* ── Brand Assets — bigger logo preview area ──────────────────────── */
+/* Beats the catch-all rule (~line 3150) that forces every
+   .marketing-asset-preview to 44×44 via !important. */
+body#rewards-body .marketing-brand-row .marketing-asset-preview {
+  width: 100% !important;
+  height: 200px !important;
+  min-width: 0 !important;
+  padding: 24px !important;
+  background:
+    linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+body#rewards-body .marketing-brand-row .marketing-asset-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(0, 0, 255, 0.06) 1px, transparent 1px);
+  background-size: 14px 14px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+body#rewards-body .marketing-brand-row .marketing-asset-preview > * {
+  position: relative;
+  z-index: 1;
+}
+body#rewards-body .marketing-brand-row .marketing-asset-preview img {
+  height: 96px !important;
+  max-width: 80% !important;
+  object-fit: contain;
+}
+body#rewards-body .marketing-brand-row .marketing-asset-placeholder {
+  font-size: 64px !important;
+  font-weight: 800 !important;
+  color: #0000FF !important;
+}
+
 body#rewards-body .metric-card:hover,
-body#rewards-body .marketing-asset-card:hover,
 body#rewards-body .marketing-color-swatch:hover,
 body#rewards-body .tier-card:hover {
   border-color: var(--rewards-card-border) !important;
   box-shadow: var(--rewards-card-shadow) !important;
   transform: none !important;
+}
+
+/* Marketing asset cards keep their brand hover (lift + soft blue glow). */
+body#rewards-body .marketing-asset-card:hover {
+  border-color: rgba(0, 0, 255, 0.20) !important;
+  box-shadow: 0 12px 28px -16px rgba(0, 0, 255, 0.18) !important;
+  transform: translateY(-1px) !important;
 }
 
 body#rewards-body .summary-label,
@@ -2827,6 +3314,14 @@ body#rewards-body .financials-amount {
   font-size: 28px !important;
   line-height: 34px !important;
   font-weight: 700 !important;
+}
+
+/* Total Rewards hero amount — keep the brand-blue tint set on .summary-amount
+   above; the generic rewards-title override would otherwise neutralise it. */
+body#rewards-body #rewards-content-layer .summary-amount {
+  color: #0000FF !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
 }
 
 body#rewards-body .refer-title-wrap svg,
@@ -2873,7 +3368,6 @@ body#rewards-body .p-icon {
 
 body#rewards-body .glass-icon-front,
 body#rewards-body .p-front,
-body#rewards-body .marketing-asset-preview,
 body#rewards-body .icon-outer-circle {
   width: 44px !important;
   height: 44px !important;
@@ -2939,6 +3433,23 @@ body#rewards-body .chart-filter-btn:hover {
   background: #FFFFFF !important;
   color: var(--body-color, #344054) !important;
   border-color: var(--rewards-card-border) !important;
+}
+
+/* "Coming soon" badge — brand-mint pill with primary-blue text, reads
+   as a status indicator (not a real button). */
+body#rewards-body .marketing-download-btn--disabled,
+body#rewards-body .marketing-download-btn--disabled:hover {
+  background: #90FFBB !important;
+  color: #0000FF !important;
+  border-color: transparent !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
+  font-size: 12px !important;
+  cursor: not-allowed !important;
+}
+body#rewards-body .marketing-download-btn--disabled svg {
+  display: none !important;
 }
 
 body#rewards-body .chart-filter-group {
@@ -3059,24 +3570,36 @@ body#rewards-body .campaign-cvr.low {
   color: #B54708 !important;
 }
 
-body#rewards-body .marketing-asset-preview.template-preview,
-body#rewards-body .marketing-asset-preview.video-preview,
+/* Template/banner previews keep their own gradient mockups. Video previews
+   get their own brand-gradient panel (see .marketing-asset-preview.video-preview
+   above) and OPT OUT of this override. */
+body#rewards-body .marketing-asset-preview.template-preview {
+  width: 100% !important;
+  height: 160px !important;
+  border-radius: 0 !important;
+}
 body#rewards-body .marketing-asset-preview.banner-preview {
   width: 100% !important;
-  height: 120px !important;
+  height: 140px !important;
   border-radius: 0 !important;
-  background: #F5F7FF !important;
+  background: linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%) !important;
 }
 
 body#rewards-body .marketing-asset-preview.template-preview svg,
-body#rewards-body .marketing-asset-preview.video-preview svg,
 body#rewards-body .marketing-asset-preview.banner-preview svg {
   color: var(--primary-color, #0000FF) !important;
   fill: currentColor !important;
 }
 
+/* Video preview keeps brand gradient + circular play badge. */
+body#rewards-body .marketing-asset-preview.video-preview {
+  width: 100% !important;
+  height: 160px !important;
+  border-radius: 0 !important;
+  background: linear-gradient(135deg, #0000FF 0%, #1338D2 55%, #1E40AF 100%) !important;
+}
+
 body#rewards-body .template-label {
-  color: var(--body-color, #344054) !important;
   letter-spacing: 0 !important;
 }
 
@@ -3131,4 +3654,52 @@ body#rewards-body .rewards-pending-modal {
   body#rewards-body #campaign-export-btn {
     width: 100% !important;
   }
+}
+
+/* Tier card glass-icon — bold blue gradient + green text, matching
+   the refer-and-earn hero icon. Overrides the global rewards-body
+   pale glass treatment further up in this file. */
+body#rewards-body .tier-card .glass-icon-container {
+  width: 56px !important;
+  height: 56px !important;
+}
+body#rewards-body .tier-card .glass-icon-bg {
+  display: none !important;
+}
+body#rewards-body .tier-card .glass-icon-front {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%) !important;
+  border: 0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.18) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body#rewards-body .tier-card .glass-icon-front span {
+  color: #03FF88 !important;
+}
+
+/* Partner metrics tiles — same bold blue gradient + green stroke.
+   Beats the inline `style=` on .p-front and svg via !important. */
+body#rewards-body .partner-metrics-grid .metric-card .p-bg-1,
+body#rewards-body .partner-metrics-grid .metric-card .p-bg-2 {
+  display: none !important;
+}
+body#rewards-body .partner-metrics-grid .metric-card .p-front {
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.18) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body#rewards-body .partner-metrics-grid .metric-card .p-front::before,
+body#rewards-body .partner-metrics-grid .metric-card .p-front::after {
+  display: none !important;
+}
+body#rewards-body .partner-metrics-grid .metric-card .p-front svg {
+  stroke: #03FF88 !important;
+  color: #03FF88 !important;
+  filter: none !important;
 }

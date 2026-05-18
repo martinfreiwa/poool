@@ -76,15 +76,21 @@ include
               <!-- Current Tier Card -->
               <div class="tier-progress-card" :class="getTierCardClass(data.tier_name)">
                 <div class="tier-card-header">
-                  <div class="tier-logo-wrap">
-                    <img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL" class="tp-logo"
-                      :class="data.tier_name === 'Intro' ? '' : 'filter-blue'" />
-                    <span class="tp-badge" :class="getTierBadgeClass(data.tier_name)" x-text="data.tier_name"></span>
+                  <div class="tier-card-header__left">
+                    <div class="tier-card-header__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21.02 7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                    </div>
+                    <div class="tier-card-header__meta">
+                      <span class="tier-card-header__label">Your tier</span>
+                      <span class="tier-card-header__name" :class="getTierBadgeClass(data.tier_name)" x-text="data.tier_name">Intro</span>
+                    </div>
                   </div>
                 </div>
                 <div class="tier-card-body">
                   <div class="tp-invested-row">
-                    <span class="tp-amount" x-text="'USD ' + data.invested_12m.toLocaleString()"></span>
+                    <span class="tp-amount" x-text="'USD ' + data.invested_12m.toLocaleString()">USD 0</span>
                     <span class="tp-label">Invested last 12 months</span>
                   </div>
                   <div class="tp-progress-bar ds-progress">
@@ -108,20 +114,29 @@ include
               <!-- Balance Summary Card -->
               <div class="rewards-summary-card">
                 <div class="summary-header">
-                  <span class="summary-label">Total Rewards</span>
-                  <div id="rewards-total-balance" class="summary-amount">USD 0</div>
+                  <div class="summary-header__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                      <path d="M16 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+                      <path d="M1 10h22"/>
+                    </svg>
+                  </div>
+                  <div class="summary-header__text">
+                    <span class="summary-label">Total Rewards</span>
+                    <div id="rewards-total-balance" class="summary-amount">USD 0</div>
+                  </div>
                 </div>
                 <div class="summary-breakdown">
                   <div class="breakdown-item">
-                    <span class="item-label">Cashback</span>
+                    <span class="item-label"><span class="breakdown-dot breakdown-dot--cashback" aria-hidden="true"></span>Cashback</span>
                     <span class="item-value breakdown-value">USD 0</span>
                   </div>
                   <div class="breakdown-item">
-                    <span class="item-label">Referrals</span>
+                    <span class="item-label"><span class="breakdown-dot breakdown-dot--referrals" aria-hidden="true"></span>Referrals</span>
                     <span class="item-value breakdown-value">USD 0</span>
                   </div>
                   <div class="breakdown-item">
-                    <span class="item-label">Promotions</span>
+                    <span class="item-label"><span class="breakdown-dot breakdown-dot--promotions" aria-hidden="true"></span>Promotions</span>
                     <span class="item-value breakdown-value">USD 0</span>
                   </div>
                 </div>
@@ -137,40 +152,31 @@ include
             <div id="rewards-refer-card" class="refer-earn-card">
               <div class="refer-card-header">
                 <div class="refer-title-wrap">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#0000FF" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="8" width="14" height="9" rx="1" />
-                    <path
-                      d="M10 8v9M7.5 8c-1.5 0-2.5-1-2.5-2.5C5 4 7.5 4 7.5 4s1.5 1.5 2.5 4c1-2.5 2.5-4 2.5-4s2.5 0 2.5 1.5C15 7 14 8 12.5 8 11.5 8 10 8 10 8z" />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 12 20 22 4 22 4 12" />
+                    <rect x="2" y="7" width="20" height="5" />
+                    <line x1="12" y1="22" x2="12" y2="7" />
+                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
                   </svg>
                   <h3>Refer and earn</h3>
                 </div>
               </div>
               <p class="refer-text">Invite your friends and you'll both receive a rewards balance to invest in our
                 properties!</p>
-              <div class="refer-separator"></div>
-              <ul class="refer-checklist">
-                <li>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="badge-check-icon">
-                    <path
-                      d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
-                      stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="m9 12 2 2 4-4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                  </svg>
-                  Friends get USD 30 upon signing up
-                </li>
-                <li>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="badge-check-icon">
-                    <path
-                      d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
-                      stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="m9 12 2 2 4-4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                  </svg>
-                  You get USD 30 after they invest USD 1,000
-                </li>
-              </ul>
+              <div class="refer-reward-tiles">
+                <div class="refer-reward-tile">
+                  <div class="refer-reward-tile__amount">USD 30</div>
+                  <div class="refer-reward-tile__label">Your friend gets</div>
+                  <div class="refer-reward-tile__hint">on sign up</div>
+                </div>
+                <div class="refer-reward-tile">
+                  <div class="refer-reward-tile__amount">USD 30</div>
+                  <div class="refer-reward-tile__label">You get</div>
+                  <div class="refer-reward-tile__hint">when they invest USD 1,000</div>
+                </div>
+              </div>
               <div class="refer-share-form">
                 <label>Share your link</label>
                 <div class="refer-input-group">
@@ -876,16 +882,6 @@ include
                     <span class="swatch-label">Brand Green</span>
                     <span class="swatch-hex">#03FF88</span>
                   </div>
-                  <div class="marketing-color-swatch">
-                    <div class="swatch-color" style="background:#101828;"></div>
-                    <span class="swatch-label">Dark</span>
-                    <span class="swatch-hex">#101828</span>
-                  </div>
-                  <div class="marketing-color-swatch">
-                    <div class="swatch-color" style="background:#FAFAFA;"></div>
-                    <span class="swatch-label">Light</span>
-                    <span class="swatch-hex">#FAFAFA</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1090,17 +1086,16 @@ include
                       Copy Text
                     </button>
                   </div>
-                  <div class="email-block-body" id="email-template-1">Hey! 👋
+                  <div class="email-block-body" id="email-template-1"><!--
+-->Hey! 👋
 
-                    I've been investing in real estate through POOOL — it's a platform where you can invest in global
-                    properties starting from just USD 50.
+I've been investing in real estate through POOOL — it's a platform where you can invest in global properties starting from just USD 50.
 
-                    I thought you'd be interested! Here's my invite link — you'll get USD 30 as a welcome bonus when you
-                    sign up:
+I thought you'd be interested! Here's my invite link — you'll get USD 30 as a welcome bonus when you sign up:
 
-                    [Your referral link here]
+[Your referral link here]
 
-                    Let me know if you have questions!</div>
+Let me know if you have questions!</div>
                 </div>
 
                 <div class="marketing-email-block">
@@ -1115,25 +1110,24 @@ include
                       Copy Text
                     </button>
                   </div>
-                  <div class="email-block-body" id="email-template-2">Subject: Earn passive income with global real
-                    estate — here's how
+                  <div class="email-block-body" id="email-template-2"><!--
+-->Subject: Earn passive income with global real estate — here's how
 
-                    Hi there,
+Hi there,
 
-                    I wanted to share a platform I've been using called POOOL. It offers fractional property investment
-                    across Indonesia, Saudi Arabia, and more — with rental yields distributed monthly.
+I wanted to share a platform I've been using called POOOL. It offers fractional property investment across Indonesia, Saudi Arabia, and more — with rental yields distributed monthly.
 
-                    Key highlights:
-                    • Start investing from USD 50
-                    • Earn monthly rental income
-                    • Fully managed properties — no landlord duties
-                    • Cashback rewards on every investment
+Key highlights:
+• Start investing from USD 50
+• Earn monthly rental income
+• Fully managed properties — no landlord duties
+• Cashback rewards on every investment
 
-                    You can sign up using my referral link below and receive a USD 30 welcome bonus:
+You can sign up using my referral link below and receive a USD 30 welcome bonus:
 
-                    [Your referral link here]
+[Your referral link here]
 
-                    Best regards</div>
+Best regards</div>
                 </div>
 
                 <div class="marketing-email-block">
@@ -1148,9 +1142,8 @@ include
                       Copy Text
                     </button>
                   </div>
-                  <div class="email-block-body" id="email-template-3">Hey! I've been earning passive income by investing
-                    in real estate on POOOL 🏠💰 You can start from just USD 50 and get USD 30 free when you sign up
-                    with my link: [Your referral link here]</div>
+                  <div class="email-block-body" id="email-template-3"><!--
+-->Hey! I've been earning passive income by investing in real estate on POOOL 🏠💰 You can start from just USD 50 and get USD 30 free when you sign up with my link: [Your referral link here]</div>
                 </div>
               </div>
             </div>
@@ -1350,51 +1343,51 @@ include
               </div>
 
               <div class="commissions-table-wrap">
-                <table class="ds-table data-table" id="commissions-table">
-                  <thead class="data-table__header">
+                <table class="commissions-table" id="commissions-table">
+                  <thead>
                     <tr>
-                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; width: 30%;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                          <img src="/static/images/icons/calendar-check-02.svg" width="16" height="16" alt="Period">
-                          PAYMENT PERIOD
-                        </div>
+                      <th class="commissions-table__th commissions-table__th--period">
+                        <span class="commissions-table__th-inner">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          Payment period
+                        </span>
                       </th>
-                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; text-align:right;">
-                        <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-                          <img src="/static/images/icons/coins-stacked-03.svg" width="16" height="16" alt="Amount">
-                          AMOUNT
-                        </div>
+                      <th class="commissions-table__th commissions-table__th--amount">
+                        <span class="commissions-table__th-inner commissions-table__th-inner--end">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                          Amount
+                        </span>
                       </th>
-                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                          <img src="/static/images/icons/wallet-02.svg" width="16" height="16" alt="Method">
-                          METHOD
-                        </div>
+                      <th class="commissions-table__th">
+                        <span class="commissions-table__th-inner">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                          Method
+                        </span>
                       </th>
-                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                          <img src="/static/images/icons/check-verified-02.svg" width="16" height="16" alt="Status">
-                          STATUS
-                        </div>
+                      <th class="commissions-table__th">
+                        <span class="commissions-table__th-inner">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                          Status
+                        </span>
                       </th>
-                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; text-align:right;">
-                        <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-                          INVOICE
-                          <img src="/static/images/icons/arrow-down.svg" width="12" height="12" alt="Sort">
-                        </div>
+                      <th class="commissions-table__th commissions-table__th--invoice">
+                        <span class="commissions-table__th-inner commissions-table__th-inner--end">
+                          Invoice
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                        </span>
                       </th>
                     </tr>
                   </thead>
-                  <tbody class="data-table__body" id="commissions-table-body">
-                    <tr class="data-table__row">
-                      <td class="data-table__td" colspan="5" style="text-align:center; padding:64px 24px; color:#667085; border-bottom:none;">
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
-                          <div style="width:48px; height:48px; background:#f9fafb; border-radius:10px; display:flex; align-items:center; justify-content:center;">
-                            <img src="/static/images/icons/coins-stacked-03.svg" width="24" height="24" style="opacity:0.4">
+                  <tbody id="commissions-table-body">
+                    <tr>
+                      <td colspan="5" class="commissions-table__empty">
+                        <div class="commissions-empty">
+                          <div class="commissions-empty__icon" aria-hidden="true">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
                           </div>
-                          <div>
-                            <div style="font-weight:600; color:#101828; font-size:16px; margin-bottom:4px;">No commissions found</div>
-                            <div style="font-size:14px;">We couldn't find any payouts for the selected period.</div>
+                          <div class="commissions-empty__copy">
+                            <p class="commissions-empty__title">No commissions yet</p>
+                            <p class="commissions-empty__desc">Payouts will appear here once you've earned commissions in the selected period.</p>
                           </div>
                         </div>
                       </td>
@@ -1422,8 +1415,8 @@ include
 
   <!-- Scripts inside the body -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/static/js/rewards-service.js"></script>
-  <script src="/static/js/rewards.js"></script>
+  <script src="/static/js/rewards-service.js?v={{ asset_version }}"></script>
+  <script src="/static/js/rewards.js?v={{ asset_version }}"></script>
 
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
