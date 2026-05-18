@@ -199,6 +199,8 @@ pub struct ContentReport {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateContentReportRequest {
     pub reason: String,
+    #[serde(default)]
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

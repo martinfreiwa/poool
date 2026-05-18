@@ -1472,7 +1472,8 @@ async fn create_content_report(
     let c_pool = get_community_pool(&state)?;
 
     let report_id =
-        service::create_content_report(&c_pool, post_id, user.id, payload.reason).await?;
+        service::create_content_report(&c_pool, post_id, user.id, payload.reason, payload.note)
+            .await?;
 
     Ok(Json(serde_json::json!({ "id": report_id })))
 }
@@ -4955,15 +4956,35 @@ async fn create_circle(
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
+    // Super admins skip both the level gate and the one-circle-per-owner
+    // limit so they can seed/recover circles freely.
+    let is_super_admin: bool = sqlx::query_scalar(
+        r#"
+        SELECT EXISTS(
+            SELECT 1 FROM user_roles ur
+            JOIN roles r ON r.id = ur.role_id
+            WHERE ur.user_id = $1
+              AND r.name = 'super_admin'
+              AND ur.is_active = TRUE
+        )
+        "#,
+    )
+    .bind(user.id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(false);
+
     let c_pool = get_community_pool(&state)?;
 
-    // Level gate: Level 2 required to create a circle (M4-BE.10)
-    crate::community::xp::check_level_gate(
-        &c_pool,
-        user.id,
-        crate::community::xp::GatedFeature::CreateCircle,
-    )
-    .await?;
+    if !is_super_admin {
+        // Level gate: Level 2 required to create a circle (M4-BE.10)
+        crate::community::xp::check_level_gate(
+            &c_pool,
+            user.id,
+            crate::community::xp::GatedFeature::CreateCircle,
+        )
+        .await?;
+    }
 
     let circle = crate::community::circles::create_circle(
         &c_pool,
@@ -4971,6 +4992,7 @@ async fn create_circle(
         &payload.name,
         payload.description.as_deref(),
         payload.emoji.as_deref(),
+        is_super_admin,
     )
     .await?;
 
@@ -6272,6 +6294,8 @@ struct CreateAmaReq {
     expert_name: String,
     expert_title: Option<String>,
     expert_avatar_url: Option<String>,
+    #[serde(default)]
+    banner_url: Option<String>,
     scheduled_at: Option<chrono::DateTime<chrono::Utc>>,
     status: Option<String>,
 }
@@ -6296,6 +6320,7 @@ async fn admin_create_ama(
         &payload.expert_name,
         payload.expert_title.as_deref(),
         payload.expert_avatar_url.as_deref(),
+        payload.banner_url.as_deref(),
         payload.scheduled_at,
         payload.status.as_deref(),
     )
@@ -8576,7 +8601,51 @@ async fn discover_circles_handler(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
     let c_pool = get_community_pool(&state)?;
     let payload = crate::community::circles::discover_circles(&c_pool).await?;
-    Ok(Json(payload))
+
+    // Gather all circle ids surfaced in any of the three rails, then
+    // batch-hydrate member previews so each card can render face avatars
+    // without a follow-up roundtrip.
+    let mut ids: Vec<Uuid> = Vec::with_capacity(
+        payload.featured.len() + payload.trending.len() + payload.new.len(),
+    );
+    for row in payload
+        .featured
+        .iter()
+        .chain(payload.trending.iter())
+        .chain(payload.new.iter())
+    {
+        ids.push(row.id);
+    }
+    ids.sort();
+    ids.dedup();
+    let previews = crate::community::circles::get_member_previews(
+        &c_pool,
+        &state.db,
+        state.redis.as_ref(),
+        &ids,
+        5,
+    )
+    .await;
+
+    // Augment each row with its member_preview slice.
+    let attach = |rows: &Vec<crate::community::circles::CircleCardRow>| -> Vec<serde_json::Value> {
+        rows.iter()
+            .map(|c| {
+                let preview = previews.get(&c.id).cloned().unwrap_or_default();
+                let mut v = serde_json::to_value(c).unwrap_or(serde_json::json!({}));
+                if let serde_json::Value::Object(ref mut map) = v {
+                    map.insert("member_preview".into(), serde_json::json!(preview));
+                }
+                v
+            })
+            .collect()
+    };
+
+    Ok(Json(serde_json::json!({
+        "featured": attach(&payload.featured),
+        "trending": attach(&payload.trending),
+        "new":      attach(&payload.new),
+    })))
 }
 
 #[derive(Deserialize)]
@@ -8600,8 +8669,28 @@ async fn search_circles_handler(
     let per_page = q.per_page.unwrap_or(10).clamp(1, 50);
     let (rows, total) =
         crate::community::circles::search_circles(&c_pool, &query, page, per_page).await?;
+    let ids: Vec<Uuid> = rows.iter().map(|c| c.id).collect();
+    let previews = crate::community::circles::get_member_previews(
+        &c_pool,
+        &state.db,
+        state.redis.as_ref(),
+        &ids,
+        5,
+    )
+    .await;
+    let results: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|c| {
+            let preview = previews.get(&c.id).cloned().unwrap_or_default();
+            let mut v = serde_json::to_value(c).unwrap_or(serde_json::json!({}));
+            if let serde_json::Value::Object(ref mut map) = v {
+                map.insert("member_preview".into(), serde_json::json!(preview));
+            }
+            v
+        })
+        .collect();
     Ok(Json(serde_json::json!({
-        "results": rows,
+        "results": results,
         "page": page,
         "per_page": per_page,
         "total": total,

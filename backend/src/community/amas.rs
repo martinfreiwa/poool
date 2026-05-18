@@ -27,6 +27,7 @@ pub struct Ama {
     pub expert_name: String,
     pub expert_title: Option<String>,
     pub expert_avatar_url: Option<String>,
+    pub banner_url: Option<String>,
     pub status: String,
     pub scheduled_at: Option<chrono::DateTime<chrono::Utc>>,
     pub started_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -77,7 +78,7 @@ pub struct AmaQuestionWithMeta {
 /// List AMAs visible to users (scheduled, accepting_questions, live, closed, archived).
 pub async fn list_amas(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
     let amas = sqlx::query_as::<_, Ama>(
-        r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url,
+        r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
                   status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
            FROM amas
            WHERE status != 'draft'
@@ -101,7 +102,7 @@ pub async fn list_amas(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
 /// List ALL AMAs (admin view — includes drafts).
 pub async fn list_amas_admin(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
     let amas = sqlx::query_as::<_, Ama>(
-        r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url,
+        r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
                   status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
            FROM amas
            ORDER BY created_at DESC"#,
@@ -137,7 +138,7 @@ async fn get_ama_detail_with_visibility(
     include_drafts: bool,
 ) -> Result<AmaDetail, AppError> {
     let ama = sqlx::query_as::<_, Ama>(
-        r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url,
+        r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
                   status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
            FROM amas WHERE id = $1 AND ($2 OR status != 'draft')"#,
     )
@@ -285,6 +286,7 @@ pub async fn create_ama(
     expert_name: &str,
     expert_title: Option<&str>,
     expert_avatar_url: Option<&str>,
+    banner_url: Option<&str>,
     scheduled_at: Option<chrono::DateTime<chrono::Utc>>,
     status: Option<&str>,
 ) -> Result<Ama, AppError> {
@@ -293,13 +295,17 @@ pub async fn create_ama(
     let description = validate_optional_text(description, "Description", MAX_DESCRIPTION_CHARS)?;
     let expert_title =
         validate_optional_text(expert_title, "Expert title", MAX_EXPERT_TITLE_CHARS)?;
+    let banner = banner_url.and_then(|s| {
+        let trimmed = s.trim();
+        if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+    });
     let st = status.unwrap_or("scheduled");
     validate_ama_status(st)?;
 
     let ama = sqlx::query_as::<_, Ama>(
-        r#"INSERT INTO amas (title, description, expert_name, expert_title, expert_avatar_url, scheduled_at, status, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           RETURNING id, title, description, expert_name, expert_title, expert_avatar_url,
+        r#"INSERT INTO amas (title, description, expert_name, expert_title, expert_avatar_url, banner_url, scheduled_at, status, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           RETURNING id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
                      status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at"#
     )
     .bind(&title)
@@ -307,6 +313,7 @@ pub async fn create_ama(
     .bind(&expert_name)
     .bind(expert_title.as_deref())
     .bind(expert_avatar_url)
+    .bind(banner.as_deref())
     .bind(scheduled_at)
     .bind(st)
     .bind(admin_id)

@@ -53,32 +53,71 @@ pub struct CircleInvite {
 // ─── Circle CRUD ────────────────────────────────────────────────────
 
 /// Create a new circle. The creator becomes the owner.
+///
+/// `bypass_ownership_check` lets super-admins create unlimited circles
+/// (used for moderation, recovery, and seeding). Regular users hit the
+/// one-circle-per-owner limit.
 pub async fn create_circle(
     pool: &PgPool,
     user_id: Uuid,
     name: &str,
     description: Option<&str>,
     emoji: Option<&str>,
+    bypass_ownership_check: bool,
 ) -> Result<Circle, AppError> {
-    // Check: user can only own one circle
-    let existing: Option<Uuid> =
-        sqlx::query_scalar("SELECT id FROM circles WHERE owner_id = $1 LIMIT 1")
-            .bind(user_id)
-            .fetch_optional(pool)
-            .await?;
+    if !bypass_ownership_check {
+        let existing: Option<Uuid> =
+            sqlx::query_scalar("SELECT id FROM circles WHERE owner_id = $1 LIMIT 1")
+                .bind(user_id)
+                .fetch_optional(pool)
+                .await?;
 
-    if existing.is_some() {
-        return Err(AppError::BadRequest("You already own a circle".into()));
+        if existing.is_some() {
+            return Err(AppError::BadRequest("You already own a circle".into()));
+        }
+    }
+
+    // Slug: lowercase name, alphanumeric only, dash-collapsed. If the slug
+    // is already taken (or the name is purely non-alphanumeric), suffix a
+    // short random hex chunk for uniqueness.
+    let base_slug = {
+        let mut s: String = name
+            .to_lowercase()
+            .chars()
+            .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+            .collect();
+        while s.contains("--") {
+            s = s.replace("--", "-");
+        }
+        s.trim_matches('-').chars().take(54).collect::<String>()
+    };
+    let mut slug = if base_slug.is_empty() { "circle".to_string() } else { base_slug };
+    let collision: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circles WHERE LOWER(slug) = LOWER($1))",
+    )
+    .bind(&slug)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(false);
+    if collision {
+        let suffix: String = Uuid::new_v4()
+            .to_string()
+            .replace('-', "")
+            .chars()
+            .take(6)
+            .collect();
+        slug = format!("{}-{}", slug, suffix);
     }
 
     let mut tx = pool.begin().await?;
 
     let circle = sqlx::query_as::<_, Circle>(
-        r#"INSERT INTO circles (name, description, owner_id, avatar_emoji, member_count)
-           VALUES ($1, $2, $3, $4, 1)
+        r#"INSERT INTO circles (name, slug, description, owner_id, avatar_emoji, member_count)
+           VALUES ($1, $2, $3, $4, $5, 1)
            RETURNING *"#,
     )
     .bind(name)
+    .bind(&slug)
     .bind(description)
     .bind(user_id)
     .bind(emoji.unwrap_or("🟢"))
@@ -1614,6 +1653,112 @@ pub async fn discover_circles(pool: &PgPool) -> Result<DiscoverPayload, AppError
         trending,
         new: new_list,
     })
+}
+
+/// Compact member preview used to render face-avatar stacks on Discover
+/// cards. Five faces is enough to communicate "real community" without
+/// blowing up the payload.
+#[derive(Debug, serde::Serialize, Clone)]
+pub struct MemberMini {
+    pub user_id: Uuid,
+    pub display_name: String,
+    pub avatar_url: Option<String>,
+}
+
+/// Fetches up to `limit` most-recent members per circle (community DB),
+/// then hydrates display_name + avatar_url from the core DB via the
+/// existing user-bridge batch helper. Returns a map keyed by circle_id
+/// so callers can attach the slice to their card payload in O(1).
+///
+/// Silent on failure — face stacks are a nice-to-have, not load-bearing,
+/// so the caller falls back to the placeholder stack when this returns
+/// an empty map.
+pub async fn get_member_previews(
+    community_pool: &PgPool,
+    core_pool: &PgPool,
+    redis_pool: Option<&deadpool_redis::Pool>,
+    circle_ids: &[Uuid],
+    limit: i32,
+) -> std::collections::HashMap<Uuid, Vec<MemberMini>> {
+    use sqlx::Row;
+    let mut out: std::collections::HashMap<Uuid, Vec<MemberMini>> =
+        std::collections::HashMap::new();
+    if circle_ids.is_empty() {
+        return out;
+    }
+
+    // First N per circle via window function. ROW_NUMBER OVER PARTITION
+    // is the canonical "top N per group" pattern and lets us hit the
+    // (circle_id, user_id) index efficiently.
+    let rows = match sqlx::query(
+        r#"
+        SELECT circle_id, user_id
+        FROM (
+            SELECT circle_id, user_id,
+                   ROW_NUMBER() OVER (PARTITION BY circle_id ORDER BY joined_at DESC) AS rn
+            FROM circle_members
+            WHERE circle_id = ANY($1)
+        ) ranked
+        WHERE rn <= $2
+        "#,
+    )
+    .bind(circle_ids)
+    .bind(limit as i64)
+    .fetch_all(community_pool)
+    .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::warn!("get_member_previews query failed: {}", e);
+            return out;
+        }
+    };
+
+    if rows.is_empty() {
+        return out;
+    }
+
+    // Collect distinct user_ids → batch-hydrate from core db
+    let mut pairs: Vec<(Uuid, Uuid)> = Vec::with_capacity(rows.len());
+    let mut user_ids: Vec<Uuid> = Vec::with_capacity(rows.len());
+    for r in &rows {
+        let circle_id: Uuid = match r.try_get("circle_id") {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let user_id: Uuid = match r.try_get("user_id") {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        pairs.push((circle_id, user_id));
+        user_ids.push(user_id);
+    }
+    user_ids.sort();
+    user_ids.dedup();
+
+    let info_map = match crate::community::user_bridge::get_users_info_batch(
+        core_pool, redis_pool, &user_ids,
+    )
+    .await
+    {
+        Ok(m) => m,
+        Err(e) => {
+            tracing::warn!("get_member_previews bridge failed: {}", e);
+            return out;
+        }
+    };
+
+    for (circle_id, user_id) in pairs {
+        let entry = out.entry(circle_id).or_default();
+        if let Some(info) = info_map.get(&user_id) {
+            entry.push(MemberMini {
+                user_id,
+                display_name: info.display_name.clone(),
+                avatar_url: info.avatar_url.clone(),
+            });
+        }
+    }
+    out
 }
 
 /// `GET /api/community/circles/search?q=…&page=…` — paginated search over

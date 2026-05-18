@@ -633,19 +633,30 @@ pub async fn create_content_report(
     post_id: Uuid,
     reporter_id: Uuid,
     reason: String,
+    note: Option<String>,
 ) -> Result<Uuid, AppError> {
+    // Cap user-supplied note length defensively; the textarea has a 500-char
+    // maxlength but we don't trust client validation.
+    let trimmed_note = note
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.chars().take(500).collect::<String>());
+
     let report_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO content_reports (post_id, reporter_id, reason)
-        VALUES ($1, $2, $3)
+        INSERT INTO content_reports (post_id, reporter_id, reason, reporter_note)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (post_id, reporter_id) DO UPDATE
-        SET updated_at = content_reports.updated_at
+        SET reporter_note = COALESCE(EXCLUDED.reporter_note, content_reports.reporter_note),
+            updated_at = NOW()
         RETURNING id
         "#,
     )
     .bind(post_id)
     .bind(reporter_id)
     .bind(&reason)
+    .bind(trimmed_note.as_deref())
     .fetch_one(pool)
     .await?;
 
