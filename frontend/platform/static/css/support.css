@@ -212,8 +212,10 @@
     content: "";
     position: absolute;
     inset: 0 0 auto 0;
-    height: 3px;
+    height: 4px;
     background: var(--support-card-accent);
+    border-radius: 12px 12px 0 0;
+    display: block;
 }
 
 .support-card-header {
@@ -255,13 +257,30 @@
 .support-form-card h2 {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     line-height: 24px;
     color: var(--page-title-color);
     margin: 0 0 20px 0;
+}
+
+/* Brand Icon Tile for support card headings (matches community/settings). */
+.support-form-card h2 > svg,
+.support-faq-summary > svg {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 8px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+    color: #03FF88 !important;
+    stroke: #03FF88 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+    box-sizing: border-box;
+    flex-shrink: 0;
+    fill: none;
 }
 
 .developer-support-main .support-form-card {
@@ -399,8 +418,19 @@ body#support-body .ds-btn--secondary:active {
     content: "";
     position: absolute;
     inset: 0 0 auto 0;
-    height: 3px;
+    height: 4px;
     background: var(--support-card-accent);
+    border-radius: 12px 12px 0 0;
+    display: block;
+}
+
+.support-help-panel h3 {
+    color: var(--page-title-color);
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+    line-height: 22px !important;
+    margin: 0 0 6px !important;
 }
 
 body#support-body {
@@ -1302,12 +1332,13 @@ body#support-body {
 .support-faq-summary {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     padding: 20px 24px;
     color: var(--page-title-color);
     cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     line-height: 24px;
     list-style: none;
 }
@@ -1421,3 +1452,577 @@ body#support-body {
 .csat-btn:hover { background: #F4F5FF; border-color: #C8B5FF; }
 .csat-btn--selected-good { background: #ECFDF3; border-color: #12B76A; color: #027A48; }
 .csat-btn--selected-bad  { background: #FEF3F2; border-color: #F97066; color: #B42318; }
+
+/* ═══════════════════════════════════════════════
+   Support — v2 polish (2026-05-18)
+   Lifts the support page from "amateur" to the
+   "big-industry SaaS" baseline: solid primary CTA
+   with white text, brand-tinted drop zone, pill
+   tabs, search field, and consistent ticket cards.
+   ═══════════════════════════════════════════════ */
+
+/* ── Primary submit — white text, cobalt fill ─────────────────────── */
+body#support-body .support-submit-btn,
+body#support-body .support-submit-btn:hover,
+body#support-body .support-submit-btn:active {
+  background: #0000FF !important;
+  color: #FFFFFF !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  height: 44px !important;
+  padding: 0 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 255, 0.45) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+}
+body#support-body .support-submit-btn:hover {
+  background: #1F2BFF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 255, 0.55) !important;
+}
+body#support-body .support-submit-btn svg {
+  color: #FFFFFF;
+  stroke: #FFFFFF;
+}
+body#support-body .support-submit-btn:disabled {
+  background: #1F2BFF !important;
+  opacity: 0.45 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Ghost "Clear Draft" — clean outlined button ─────────────────── */
+body#support-body .support-clear-draft-btn,
+body#support-body .support-clear-draft-btn:hover {
+  background: #FFFFFF !important;
+  border: 1px solid #D5D7DA !important;
+  color: #344054 !important;
+  height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+body#support-body .support-clear-draft-btn:hover {
+  border-color: #98A2B3 !important;
+  color: #101828 !important;
+  background: #FAFAFA !important;
+}
+
+/* ── Drop zone — brand-tinted, inviting on hover ─────────────────── */
+.drop-zone {
+  border: 1.5px dashed #D0D5DD;
+  background: linear-gradient(180deg, #FAFBFF 0%, #FFFFFF 100%);
+  padding: 28px;
+  border-radius: 14px;
+}
+.drop-zone:hover {
+  border-color: #0000FF;
+  background: linear-gradient(180deg, #F5F7FF 0%, #FFFFFF 100%);
+  box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.06);
+}
+.drop-zone-content svg {
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  stroke: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+  margin-bottom: 4px;
+  box-sizing: content-box;
+  flex-shrink: 0;
+}
+.drop-zone-text {
+  font-size: 14px;
+  color: #344054;
+  font-weight: 500;
+}
+.drop-zone-text strong { color: #0000FF; }
+
+/* ── Tabs — clean pill style with active fill ────────────────────── */
+.support-tab {
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  height: 36px;
+  transition: all 0.15s ease;
+}
+.support-tab span {
+  padding: 1px 8px;
+  font-weight: 700;
+  background: #F2F4F7;
+  color: #475467;
+}
+body#support-body .support-tab.active {
+  background: #EEF1FF !important;
+  border-color: #0000FF !important;
+  color: #0000FF !important;
+  box-shadow: none !important;
+}
+body#support-body .support-tab.active span {
+  background: #0000FF !important;
+  color: #FFFFFF !important;
+}
+body#support-body .support-tab:hover:not(.active) {
+  background: #FAFBFF !important;
+  border-color: #B8BCC0 !important;
+  color: #101828 !important;
+}
+
+/* ── Search input ─────────────────────────────────────────────────── */
+.tickets-search-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+.tickets-search-wrap > svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #98A2B3;
+  pointer-events: none;
+}
+.tickets-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 40px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #FFFFFF;
+  color: #101828;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.tickets-search-input::placeholder { color: #98A2B3; }
+.tickets-search-input:focus {
+  outline: none;
+  border-color: #0000FF;
+  box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.10);
+}
+
+/* ── Ticket cards — softer, hover lift ────────────────────────────── */
+.support-ticket-card {
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 1px solid #EAECF0;
+  background: #FFFFFF;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.support-ticket-card:hover {
+  border-color: #0000FF;
+  box-shadow: 0 6px 16px rgba(0, 0, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+/* Priority left-accents — slightly more substantial */
+.ticket-priority-border--urgent  { border-left: 4px solid #EF4444; }
+.ticket-priority-border--high    { border-left: 4px solid #F59E0B; }
+.ticket-priority-border--normal  { border-left: 4px solid #0000FF; }
+.ticket-priority-border--low     { border-left: 4px solid #D1D5DB; }
+
+/* ── Response targets sidebar — refined visual hierarchy ─────────── */
+.support-help-panel {
+  border-radius: 14px;
+  padding: 22px;
+}
+.support-sla-list {
+  border-radius: 10px;
+}
+.support-sla-list div {
+  padding: 11px 14px;
+  font-size: 13px;
+}
+.support-sla-list span {
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #667085;
+}
+
+/* ═══════════════════════════════════════════════
+   Ticket conversation — chat-bubble timeline
+   Replaces the flat "message + replies" stack with
+   alternating left/right speech bubbles. User on
+   the right (brand blue), admin on the left (white).
+   ═══════════════════════════════════════════════ */
+
+/* Conversation surface that holds the bubble stack */
+.ticket-card-detail.open {
+  padding-top: 18px;
+  margin-top: 16px;
+  border-top: 1px solid var(--support-divider);
+  background: linear-gradient(180deg, #FAFBFF 0%, #FFFFFF 60%);
+  border-radius: 0 0 14px 14px;
+  margin-left: -20px;
+  margin-right: -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* Drop the section heading — bubbles are self-explanatory */
+.ticket-card-detail .ticket-replies h4 {
+  display: none;
+}
+
+/* Stack messages with vertical rhythm */
+.ticket-card-detail .ticket-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+/* The original ticket body becomes the first user bubble */
+.ticket-card-message,
+.ticket-reply.reply-user {
+  background: linear-gradient(135deg, #EEF1FF 0%, #E0E7FF 100%) !important;
+  border: 1px solid #C7D2FE !important;
+  color: #1E1B4B;
+  border-radius: 16px 16px 4px 16px !important;
+  padding: 12px 16px !important;
+  max-width: 78%;
+  margin: 0 0 14px auto !important;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+/* Stand-alone first message has no header so add a tiny "You" eyebrow */
+.ticket-card-message::before {
+  content: "You";
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4338CA;
+  margin-bottom: 4px;
+}
+
+/* Replies (in .ticket-replies) align left/right by author */
+.ticket-reply {
+  background: #FFFFFF;
+  border: 1px solid #EAECF0;
+  border-radius: 16px 16px 16px 4px;
+  padding: 12px 16px;
+  max-width: 78%;
+  margin: 0;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.ticket-reply.reply-user {
+  align-self: flex-end;
+}
+.ticket-reply.reply-admin {
+  align-self: flex-start;
+  background: #FFFFFF !important;
+  border-color: #EAECF0 !important;
+}
+
+/* Header inside each bubble — author tag + timestamp */
+.ticket-reply .reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.ticket-reply .reply-author {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ticket-reply.reply-admin .reply-author { color: #0000FF; }
+.ticket-reply.reply-user  .reply-author { color: #4338CA; }
+.ticket-reply .reply-date {
+  font-size: 11px;
+  color: #98A2B3;
+  white-space: nowrap;
+}
+.ticket-reply .reply-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1F2937;
+}
+
+/* Tiny avatar dots beside bubbles via ::before of the row.
+   The reply itself already has the bubble bg, so the dot lives
+   outside it via flex+gap on the parent. */
+.ticket-card-detail .ticket-replies > .ticket-reply {
+  position: relative;
+}
+.ticket-card-detail .ticket-replies > .ticket-reply.reply-admin::before {
+  content: "S";
+  position: absolute;
+  left: -34px;
+  top: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.2);
+}
+.ticket-card-detail .ticket-replies > .ticket-reply.reply-admin {
+  margin-left: 38px;
+}
+
+/* ── Chat composer (reply form) ────────────────────────────────────── */
+.ticket-reply-form {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ticket-reply-form:focus-within {
+  border-color: #0000FF;
+  box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.08);
+}
+.ticket-reply-input {
+  border: 0 !important;
+  padding: 8px 6px !important;
+  font-size: 14px;
+  resize: none;
+  background: transparent !important;
+  min-height: 40px;
+}
+.ticket-reply-input:focus {
+  outline: none;
+  box-shadow: none !important;
+}
+.ticket-reply-footer {
+  border-top: 1px solid #F2F4F7;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ticket-reply-btn {
+  margin-left: auto;
+  align-self: auto !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
+  background: #0000FF !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+.ticket-reply-btn:hover {
+  background: #1F2BFF !important;
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+/* Mobile — let bubbles take more width, drop avatar gutter */
+@media (max-width: 560px) {
+  .ticket-card-message,
+  .ticket-reply { max-width: 92%; }
+  .ticket-card-detail .ticket-replies > .ticket-reply.reply-admin { margin-left: 0; }
+  .ticket-card-detail .ticket-replies > .ticket-reply.reply-admin::before { display: none; }
+}
+
+/* ═══════════════════════════════════════════════
+   Card-header → body divider
+   Adds a hairline between the icon+title row and
+   the form/tabs/list below it on every support card.
+   ═══════════════════════════════════════════════ */
+
+body#support-body .support-form-card h2,
+body#support-body .support-card-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+  margin-bottom: 20px;
+}
+/* The .support-card-header wraps an inner h2 — drop the inner one's
+   redundant divider since the outer wrapper already has it. */
+body#support-body .support-card-header h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+/* Response-targets sidebar gets the same hairline under its title */
+body#support-body .support-help-panel h3 {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+  margin-bottom: 14px;
+}
+body#support-body .support-help-panel__note {
+  margin-top: 0;
+}
+/* FAQ disclosure: matching divider under the summary chevron row */
+body#support-body .support-faq-summary {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+  margin-bottom: 16px;
+}
+
+/* ═══════════════════════════════════════════════
+   Ticket card — professional polish
+   Subtle hover lift, denser meta row, refined
+   pill badges, animated chevron, expand state.
+   ═══════════════════════════════════════════════ */
+
+/* Card surface — softer border, micro-lift on hover */
+body#support-body .support-ticket-card {
+  background: #FFFFFF;
+  border: 1px solid #EAECF0;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+body#support-body .support-ticket-card:hover {
+  border-color: #C4C9D2;
+  box-shadow: 0 6px 18px -6px rgba(16, 24, 40, 0.10);
+  transform: translateY(-1px);
+}
+body#support-body .support-ticket-card:has(.ticket-card-header[aria-expanded="true"]) {
+  border-color: #0000FF;
+  box-shadow: 0 8px 22px -8px rgba(0, 0, 255, 0.18);
+  transform: none;
+}
+
+/* Header — denser, animated chevron, hover affordance */
+body#support-body .ticket-card-header {
+  align-items: center;
+  gap: 16px;
+  padding-right: 36px;
+  position: relative;
+  cursor: pointer;
+}
+body#support-body .ticket-card-header::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-right: 2px solid #98A2B3;
+  border-bottom: 2px solid #98A2B3;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease, border-color 0.15s ease;
+}
+body#support-body .ticket-card-header[aria-expanded="true"]::after {
+  transform: rotate(-135deg);
+  border-color: #0000FF;
+}
+body#support-body .ticket-card-header:hover::after {
+  border-color: #475467;
+}
+
+/* Subject — bigger, tighter, hover hint */
+body#support-body .ticket-card-subject {
+  font-size: 15px;
+  font-weight: 700;
+  color: #101828;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  margin-top: 4px;
+}
+body#support-body .ticket-card-header:hover .ticket-card-subject {
+  color: #0000FF;
+}
+
+/* Meta row — refined badges */
+body#support-body .ticket-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Priority pill — dot + label, tighter rhythm */
+body#support-body .ticket-priority {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 9px 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  gap: 5px;
+}
+body#support-body .ticket-priority svg { width: 6px !important; height: 6px !important; }
+body#support-body .ticket-priority--urgent { background: #FEE4E2; color: #B42318; border-color: #FDA29B; }
+body#support-body .ticket-priority--high   { background: #FEF0C7; color: #B54708; border-color: #FEDF89; }
+body#support-body .ticket-priority--normal { background: #EFF1FF; color: #0000FF; border-color: #C7CFFF; }
+body#support-body .ticket-priority--low    { background: #F2F4F7; color: #475467; border-color: #E4E7EC; }
+
+/* Category tag — neutral chip */
+body#support-body .ticket-category-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #F2F4F7;
+  color: #475467;
+  text-transform: uppercase;
+}
+
+/* Right column — status pill + date */
+body#support-body .ticket-card-right {
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+body#support-body .ticket-status {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  gap: 6px;
+}
+body#support-body .ticket-status svg { width: 7px !important; height: 7px !important; }
+body#support-body .ticket-status--open                 { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+body#support-body .ticket-status--in_progress          { background: #FFF4ED; color: #B93815; border-color: #FECDCA; }
+body#support-body .ticket-status--waiting_on_customer  { background: #FFFAEB; color: #B54708; border-color: #FEDF89; }
+body#support-body .ticket-status--resolved             { background: #EEF1FF; color: #0000FF; border-color: #C7CFFF; }
+body#support-body .ticket-status--closed               { background: #F2F4F7; color: #475467; border-color: #E4E7EC; }
+
+body#support-body .ticket-card-date {
+  font-size: 11px;
+  color: #98A2B3;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Priority-border left stripe — slightly thinner, matches new radius */
+body#support-body .ticket-priority-border--urgent  { border-left: 3px solid #F04438; }
+body#support-body .ticket-priority-border--high    { border-left: 3px solid #F79009; }
+body#support-body .ticket-priority-border--normal  { border-left: 3px solid #0000FF; }
+body#support-body .ticket-priority-border--low     { border-left: 3px solid #D0D5DD; }
+
+/* Mobile — stack the right column under the left so nothing crowds */
+@media (max-width: 560px) {
+  body#support-body .ticket-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  body#support-body .ticket-card-right {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+}
