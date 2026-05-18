@@ -1,0 +1,128 @@
+name: Seed Community Daily
+
+# Daily injection of synthetic community posts/comments/reactions into the
+# production database. Runs at 17:00 UTC (= 18:00 Berlin in CET / 19:00 in
+# CEST). All rows are tagged with content_tags = {'seed:auto'} so cleanup
+# is a single DELETE.
+#
+# Manual run:  gh workflow run seed-community-daily.yml
+# Disable:     gh workflow disable seed-community-daily.yml
+# Cleanup all seeded rows:
+#   DELETE FROM posts WHERE 'seed:auto' = ANY(content_tags);
+#   (reactions + comments cascade)
+
+on:
+  schedule:
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+    inputs:
+      posts:
+        description: "Number of posts to generate (blank = 1-2 random)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Print what would happen, do not write"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  CLOUDSQL_INSTANCE: my-project-35266-489713:europe-west1:poool-db
+  DB_SECRET: poool-database-url
+
+jobs:
+  seed:
+    name: Generate today's batch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/745757325286/locations/global/workloadIdentityPools/github-actions/providers/github-actions-provider'
+          service_account: 'github-actions-deployment@my-project-35266-489713.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install psycopg2
+        run: pip install --quiet 'psycopg2-binary==2.9.*'
+
+      - name: Fetch DATABASE_URL from Secret Manager
+        id: db
+        run: |
+          set -euo pipefail
+          DB_URL=$(gcloud secrets versions access latest --secret="${DB_SECRET}")
+          echo "::add-mask::$DB_URL"
+          # Swap the host:port in the URL with 127.0.0.1:5432 so the
+          # Cloud SQL Auth Proxy (listening on localhost) handles tunneling.
+          # Expected URL shape: postgres://user:pass@host[:port]/dbname[?query]
+          REWRITTEN=$(printf '%s' "$DB_URL" \
+            | sed -E 's#@[^/]+(/|$)#@127.0.0.1:5432\1#' \
+            | sed -E 's#sslmode=[a-z-]+#sslmode=disable#')
+          # Cloud SQL Auth Proxy terminates TLS upstream; loopback should not require it.
+          case "$REWRITTEN" in
+            *sslmode=*) ;;
+            *\?*)  REWRITTEN="${REWRITTEN}&sslmode=disable" ;;
+            *)     REWRITTEN="${REWRITTEN}?sslmode=disable" ;;
+          esac
+          echo "::add-mask::$REWRITTEN"
+          echo "database_url=$REWRITTEN" >> "$GITHUB_OUTPUT"
+
+      - name: Install Cloud SQL Auth Proxy
+        run: |
+          curl -sSL -o cloud-sql-proxy \
+            https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.2/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          ./cloud-sql-proxy --address 127.0.0.1 --port 5432 \
+            "${CLOUDSQL_INSTANCE}" &
+          echo $! > proxy.pid
+          # Wait until port is listening
+          for i in $(seq 1 30); do
+            if (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1; then
+              echo "Proxy ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Proxy never came up" >&2
+          exit 1
+
+      - name: Run seed script
+        env:
+          DATABASE_URL: ${{ steps.db.outputs.database_url }}
+          POSTS_INPUT: ${{ github.event.inputs.posts }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          ARGS=(--mode daily)
+          if [ -n "${POSTS_INPUT:-}" ]; then
+            ARGS+=(--posts "${POSTS_INPUT}")
+          fi
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          python3 scripts/seed_community_activity.py "${ARGS[@]}"
+
+      - name: Stop Cloud SQL Auth Proxy
+        if: always()
+        run: |
+          if [ -f proxy.pid ]; then
+            kill "$(cat proxy.pid)" 2>/dev/null || true
+          fi
