@@ -30,8 +30,6 @@
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="switchCommunityTab(this)">My Circle</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-challenges-tab" hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges" onclick="switchCommunityTab(this)">Challenges</button>
         <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-content-area" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="switchCommunityTab(this)">Expert AMAs</button>
-        <!-- 14.8.20 — direct messages tab. Client-rendered (no HTMX partial). -->
-        <button type="button" class="lb-topbar-tab community-tab-btn" role="tab" aria-selected="false" aria-controls="community-dms-tab" data-tab="community-dms-tab" data-client-tab="dms" onclick="switchCommunityTab(this)">Messages</button>
         <!-- Search + Notifications are exposed as right-side topbar utilities; these buttons are
              retained for JS lookup contract (switchCommunityTab) and deep-link URLs (?tab=…). -->
         <button type="button" class="community-tab-btn ds-sr-only" data-tab="community-search-tab" data-client-tab="search" onclick="switchCommunityTab(this)" tabindex="-1" aria-hidden="true">Search</button>
@@ -47,21 +45,6 @@
         <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab lb-tf-btn"        data-timeframe="weekly"  onclick="switchTimeframe('weekly', this)">This Week</button>
         <button type="button" role="tab" aria-selected="false" class="lb-topbar-tab lb-tf-btn"        data-timeframe="monthly" onclick="switchTimeframe('monthly', this)">This Month</button>
       </div>
-    </div>
-    {% elif investor_topbar_variant == 'wallet' %}
-    <div class="lb-topbar-right" id="wallet-header-actions">
-      <button id="deposit-btn" class="ds-btn ds-btn--primary investor-topbar-action">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span>Deposit</span>
-      </button>
-      <button id="withdraw-btn" class="ds-btn ds-btn--secondary investor-topbar-action">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span>Withdraw</span>
-      </button>
     </div>
     {% elif investor_topbar_variant == 'checkout' %}
     <div class="lb-topbar-right">
@@ -118,21 +101,5 @@
     <div class="lb-topbar-right"></div>
     {% endif %}
 
-    <!-- Phase-3 P1: in-app inbox bell. Sits to the right of the variant
-         block so it's always present. JS in inbox-bell.js wires the
-         badge poll + dropdown render. The button is hidden when the user
-         is anonymous (script removes it on a 401 response). -->
-    <div class="inbox-bell" id="inbox-bell">
-      <button type="button" id="inbox-bell-btn" class="inbox-bell__btn"
-              aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-        <span id="inbox-bell-badge" class="inbox-bell__badge" hidden>0</span>
-      </button>
-      <!-- Dropdown injected by inbox-bell.js on first open. -->
-    </div>
   </div>
 </header>

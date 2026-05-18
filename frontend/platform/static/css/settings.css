@@ -904,6 +904,76 @@
 .settings-card--spaced { margin-bottom: 32px; }
 .settings-card--spaced-bottom { margin-bottom: 48px; }
 
+/* Brand gradient top bar for every settings card. */
+.settings-card::before {
+    content: "";
+    display: block;
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+    border-radius: 12px 12px 0 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Flatten the rotated dual-bg p-icon in settings cards into a single
+   brand tile (matches the tx-detail hero icon language). The stacked
+   glass version bleeds outside the card and reads as broken. */
+.settings-card .p-icon,
+.action-grid-card .p-icon,
+.profile-completion-banner .p-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+    color: #03FF88;
+    box-shadow: 0 4px 12px rgba(0, 0, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.settings-card .p-icon .p-bg,
+.settings-card .p-icon .p-bg-1,
+.settings-card .p-icon .p-bg-2,
+.action-grid-card .p-icon .p-bg,
+.action-grid-card .p-icon .p-bg-1,
+.action-grid-card .p-icon .p-bg-2,
+.profile-completion-banner .p-icon .p-bg,
+.profile-completion-banner .p-icon .p-bg-1,
+.profile-completion-banner .p-icon .p-bg-2 {
+    display: none !important;
+}
+.settings-card .p-icon .p-front,
+.action-grid-card .p-icon .p-front,
+.profile-completion-banner .p-icon .p-front {
+    position: static;
+    width: auto;
+    height: auto;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.settings-card .p-icon .p-front svg,
+.action-grid-card .p-icon .p-front svg,
+.profile-completion-banner .p-icon .p-front svg {
+    width: 22px;
+    height: 22px;
+    filter: none;
+    fill: none !important;
+    stroke: #03FF88 !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: #03FF88;
+}
+
 /* ----- Avatar hero block -------------------------------------------------- */
 .settings-avatar-row {
     display: grid;

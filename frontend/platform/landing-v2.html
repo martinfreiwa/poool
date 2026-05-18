@@ -993,37 +993,106 @@
             <span class="step-label" style="display: inline-block; background: rgba(0,0,255,0.06); color: #0000FF; padding: 6px 16px; border-radius: 100px; font-size: 0.8125rem; font-weight: 700; margin-bottom: 20px; align-self: flex-start; text-transform: uppercase; letter-spacing: 0.06em;">Simple Process</span>
             <h3 class="step-title" style="font-size: clamp(1.75rem, 3vw, 2.25rem); margin-bottom: 28px; color: #181D27; line-height: 1.2; font-weight: 800; letter-spacing: -0.02em;">Invest. Earn. Exit. In four steps.</h3>
 
-            <!-- Four-step flow -->
-            <ol style="list-style: none; padding: 0; margin: 0 0 28px 0; display: flex; flex-direction: column; gap: 18px;">
-              <li style="display: flex; gap: 16px; align-items: flex-start;">
-                <span style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #0000FF; color: #98FB96; font-weight: 700; font-size: 0.9375rem; display: inline-flex; align-items: center; justify-content: center;">1</span>
-                <div>
-                  <h4 style="color: #181D27; font-size: 1rem; font-weight: 700; margin: 4px 0 4px 0;">Pick an asset</h4>
-                  <p style="color: #4b5563; font-size: 0.9375rem; line-height: 1.5; margin: 0;">Browse notarised Bali villas and sovereign-backed commodities. Compare yields side-by-side.</p>
+            <!-- Four-step flow — matches the community "Getting started"
+                 stepper: numbered blue/mint circles connected by a vertical
+                 line. Styles are scoped at the bottom of this section. -->
+            <ol class="how-stepper">
+              <li class="how-stepper__item">
+                <span class="how-stepper__step">1</span>
+                <div class="how-stepper__body">
+                  <h4 class="how-stepper__name">Pick an asset</h4>
+                  <p class="how-stepper__desc">Browse notarised Bali villas and sovereign-backed commodities. Compare yields side-by-side.</p>
                 </div>
               </li>
-              <li style="display: flex; gap: 16px; align-items: flex-start;">
-                <span style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #0000FF; color: #98FB96; font-weight: 700; font-size: 0.9375rem; display: inline-flex; align-items: center; justify-content: center;">2</span>
-                <div>
-                  <h4 style="color: #181D27; font-size: 1rem; font-weight: 700; margin: 4px 0 4px 0;">Buy your share — from $15</h4>
-                  <p style="color: #4b5563; font-size: 0.9375rem; line-height: 1.5; margin: 0;">Checkout in minutes with Visa, Mastercard, or bank transfer. Ownership notarised by an Indonesian Public Notary.</p>
+              <li class="how-stepper__item">
+                <span class="how-stepper__step">2</span>
+                <div class="how-stepper__body">
+                  <h4 class="how-stepper__name">Buy your share — from $15</h4>
+                  <p class="how-stepper__desc">Checkout in minutes with Visa, Mastercard, or bank transfer. Ownership notarised by an Indonesian Public Notary.</p>
                 </div>
               </li>
-              <li style="display: flex; gap: 16px; align-items: flex-start;">
-                <span style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #0000FF; color: #98FB96; font-weight: 700; font-size: 0.9375rem; display: inline-flex; align-items: center; justify-content: center;">3</span>
-                <div>
-                  <h4 style="color: #181D27; font-size: 1rem; font-weight: 700; margin: 4px 0 4px 0;">Earn monthly yield</h4>
-                  <p style="color: #4b5563; font-size: 0.9375rem; line-height: 1.5; margin: 0;">Rental income lands in your POOOL wallet every month. Track payouts in real time on the dashboard.</p>
+              <li class="how-stepper__item">
+                <span class="how-stepper__step">3</span>
+                <div class="how-stepper__body">
+                  <h4 class="how-stepper__name">Earn monthly yield</h4>
+                  <p class="how-stepper__desc">Rental income lands in your POOOL wallet every month. Track payouts in real time on the dashboard.</p>
                 </div>
               </li>
-              <li style="display: flex; gap: 16px; align-items: flex-start;">
-                <span style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #0000FF; color: #98FB96; font-weight: 700; font-size: 0.9375rem; display: inline-flex; align-items: center; justify-content: center;">4</span>
-                <div>
-                  <h4 style="color: #181D27; font-size: 1rem; font-weight: 700; margin: 4px 0 4px 0;">Exit anytime</h4>
-                  <p style="color: #4b5563; font-size: 0.9375rem; line-height: 1.5; margin: 0;">List shares on our peer-to-peer marketplace whenever you want to liquidate. No lockups.</p>
+              <li class="how-stepper__item">
+                <span class="how-stepper__step">4</span>
+                <div class="how-stepper__body">
+                  <h4 class="how-stepper__name">Exit anytime</h4>
+                  <p class="how-stepper__desc">List shares on our peer-to-peer marketplace whenever you want to liquidate. No lockups.</p>
                 </div>
               </li>
             </ol>
+            <style>
+              /* 1:1 with .community-getting-started__list — same dimensions,
+                 connector position, colors, and typography. */
+              .how-stepper {
+                list-style: none;
+                padding: 0;
+                margin: 8px 0 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+              }
+              .how-stepper__item {
+                display: grid;
+                grid-template-columns: 24px 1fr;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 6px 0;
+                position: relative;
+                font-size: 13px;
+              }
+              .how-stepper__item:not(:last-child)::before {
+                content: "";
+                position: absolute;
+                top: 30px;
+                bottom: -2px;
+                left: 11px;
+                width: 2px;
+                background: #EAECF0;
+                z-index: 0;
+              }
+              .how-stepper__step {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #0000FF;
+                color: #98FB96;
+                font-weight: 800;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-variant-numeric: tabular-nums;
+                box-shadow: 0 1px 2px rgba(0, 0, 255, 0.18);
+                position: relative;
+                z-index: 1;
+                margin-top: 1px;
+              }
+              .how-stepper__body {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                min-width: 0;
+              }
+              .how-stepper__name {
+                font-weight: 600;
+                color: #101828;
+                font-size: 13px;
+                line-height: 1.3;
+                margin: 0;
+              }
+              .how-stepper__desc {
+                color: #4b5563;
+                font-size: 12px;
+                line-height: 1.5;
+                margin: 0;
+              }
+            </style>
 
           </div>
         </div>

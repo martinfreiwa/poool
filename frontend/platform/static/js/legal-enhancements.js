@@ -147,7 +147,7 @@
     banner.id = "cookie-consent-banner";
     banner.className = "ds-card";
     banner.style.cssText = `
-            position:fixed; bottom:24px; left:24px; z-index:99999;
+            position:fixed; bottom:24px; right:24px; z-index:99999;
             max-width:440px; width:calc(100% - 48px);
             padding:20px 24px; display:flex; flex-direction:column; gap:16px;
             transform:translateY(calc(100% + 32px)); opacity:0;

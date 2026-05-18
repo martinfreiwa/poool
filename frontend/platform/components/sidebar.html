@@ -320,22 +320,6 @@
           <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
             <!-- Menu items wrapper -->
             <div id="profile-menu-wrapper" class="profile-menu-wrapper">
-              <!-- Top menu items -->
-              <div id="profile-menu-items-top" class="profile-menu-items">
-                <!-- Documentation -->
-                <div id="menu-item-documentation" class="profile-menu-item">
-                  <div class="profile-menu-content">
-                    <div class="profile-icon-text">
-                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
-                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
-                        </path>
-                      </svg>
-                      <span class="profile-menu-text">Documentation</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <!-- Switch account section -->
               <div id="profile-switch-section" class="profile-switch-section">
                 <div class="profile-switch-header">
@@ -606,22 +590,6 @@
           <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
             <!-- Menu items wrapper -->
             <div id="profile-menu-wrapper" class="profile-menu-wrapper">
-              <!-- Top menu items -->
-              <div id="profile-menu-items-top" class="profile-menu-items">
-                <!-- Documentation -->
-                <div id="menu-item-documentation" class="profile-menu-item">
-                  <div class="profile-menu-content">
-                    <div class="profile-icon-text">
-                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
-                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
-                        </path>
-                      </svg>
-                      <span class="profile-menu-text">Documentation</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <!-- Switch account section -->
               <div id="profile-switch-section" class="profile-switch-section">
                 <div class="profile-switch-header">
@@ -715,15 +683,17 @@
       }
 
       // Apply proper dropdown styles (restore original design)
-      const dropdownWidth = 264;
+      const dropdownWidth = 280;
       const rect = accountCard
         ? accountCard.getBoundingClientRect()
-        : { left: 248, top: window.innerHeight - 64 };
+        : { left: 16, top: window.innerHeight - 64 };
+      // Anchor the dropdown directly ABOVE the trigger card, aligned to its
+      // left edge. Clamp inside the viewport.
       const left = Math.min(
         Math.max(16, rect.left),
         Math.max(16, window.innerWidth - dropdownWidth - 16),
       );
-      const bottom = Math.max(20, window.innerHeight - rect.top + 8);
+      const bottom = Math.max(16, window.innerHeight - rect.top + 12);
 
       dropdown.style.display = "flex";
       dropdown.style.position = "fixed";
