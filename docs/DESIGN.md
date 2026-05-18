@@ -644,6 +644,53 @@ Icon containers:
 
 When adding new icons, prefer shared SVG/icon patterns already used by the dashboard. Do not introduce a new icon family for one page.
 
+#### Brand Icon Tile (primary pattern)
+
+The default container for any card-header / row icon across the dashboard
+is the **Brand Icon Tile**. It is the icon equivalent of the brand gradient
+top bar — every page uses it so the dashboard reads as one product.
+
+Visual recipe:
+
+- Box: 36x36px (compact tables may use 32x32 or 40x40 for hero, never larger)
+- Radius: 10-12px (10px on table rows, 12px on detail-page heroes)
+- Background: `linear-gradient(135deg, #0000FF 0%, #1E40AF 100%)`
+  - Brand Electric Blue, darkened toward the bottom-right
+- SVG stroke: `#03FF88` (Greeny Green) via `stroke` / `color: #03FF88`
+- Drop shadow: `0 2px 6px rgba(0, 0, 255, 0.18)` (small) /
+  `0 4px 12px rgba(0, 0, 255, 0.18)` (hero, 44-48px)
+- SVG itself: line icon, 1.66-2px stroke, 18-24px viewBox
+
+Where this pattern lives:
+
+- Transaction detail page hero icon (`.tx-detail-hero__icon`)
+- Wallet transaction row icon (`.featured-icon`)
+- Settings card header icon (`.settings-card .p-icon`)
+- Refer-and-earn card icon (rewards page)
+- Community announcement card icon (`.ann-icon`)
+
+What this replaces:
+
+- Pastel-tinted icon boxes (`#EEF4FF`, `#ECFDF5`, etc.) — do not introduce
+  new pastel-by-category color blocks for icons
+- "Glass" multi-layer rotated icons (`.p-icon` with `.p-bg-1`, `.p-bg-2`)
+  outside the property-detail page where the pattern originated
+- Raster icon files for product UI
+
+When category differentiation is needed (e.g. announcement type), keep the
+tile blue and tint the drop-shadow color only:
+
+```css
+.ann-icon--commodity { box-shadow: 0 2px 6px rgba(3, 255, 136, 0.22); }
+.ann-icon--dividend  { box-shadow: 0 2px 6px rgba(245, 158, 11, 0.20); }
+.ann-icon--market    { box-shadow: 0 2px 6px rgba(139, 92, 246, 0.20); }
+.ann-icon--farm      { box-shadow: 0 2px 6px rgba(225, 29, 72, 0.20); }
+```
+
+The blue tile + green stroke pair is the POOOL brand signature. Reserve
+solid color variants only when contrast against the surrounding surface
+genuinely requires it (e.g. status badges on dark backgrounds).
+
 ### Metric And Financial Cards
 
 Financial summary cards must be especially consistent.

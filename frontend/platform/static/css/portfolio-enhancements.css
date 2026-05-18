@@ -779,20 +779,27 @@
 
 .portfolio-empty__actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
     margin-top: 6px;
 }
 
-/* Primary CTA inherits --btn-primary-bg (blue) + --btn-primary-color (mint) from ds-btn.
-   We only tweak sizing + icon alignment. */
-.portfolio-empty__cta-primary {
+/* Both CTAs share equal width + height for a balanced action row. */
+.portfolio-empty__cta-primary,
+.portfolio-empty__cta-secondary {
+    flex: 1 1 0;
+    min-width: 0;
     display: inline-flex !important;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    min-height: 44px;
-    padding-inline: 22px !important;
+    height: 44px;
+    padding: 0 22px !important;
+    font-size: 14px !important;
     font-weight: 600 !important;
+}
+
+/* Primary CTA inherits --btn-primary-bg (blue) + --btn-primary-color (mint) from ds-btn. */
+.portfolio-empty__cta-primary {
     transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 .portfolio-empty__cta-primary:hover {
@@ -801,20 +808,17 @@
 }
 
 .portfolio-empty__cta-secondary {
-    display: inline-flex !important;
-    align-items: center;
-    min-height: 44px;
-    padding-inline: 20px !important;
-    background: #FFFFFF !important;
-    color: var(--page-title-color, #181D27) !important;
-    border: 1px solid #E5E7EB !important;
-    font-weight: 600 !important;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    background: var(--btn-primary-color, #98FB96) !important;
+    color: var(--btn-primary-bg, #0000FF) !important;
+    border: 1px solid var(--btn-primary-color, #98FB96) !important;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 .portfolio-empty__cta-secondary:hover {
-    background: #F9FAFB !important;
-    border-color: var(--btn-primary-bg, #0000FF) !important;
+    background: #8AF188 !important;
+    border-color: #8AF188 !important;
     color: var(--btn-primary-bg, #0000FF) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -8px rgba(3, 255, 136, 0.45);
 }
 
 .portfolio-empty__hero-art {
@@ -1207,7 +1211,6 @@
 
 #portfolio-body .portfolio-show-more-btn,
 #portfolio-body .portfolio-chart-filter,
-#portfolio-body .portfolio-empty__cta-secondary,
 #portfolio-body .mobile-portfolio-action-button {
     min-height: 40px;
     background: #FFFFFF !important;
@@ -1223,14 +1226,32 @@
 #portfolio-body .portfolio-show-more-btn:active,
 #portfolio-body .portfolio-chart-filter:hover,
 #portfolio-body .portfolio-chart-filter:active,
-#portfolio-body .portfolio-empty__cta-secondary:hover,
-#portfolio-body .portfolio-empty__cta-secondary:active,
 #portfolio-body .mobile-portfolio-action-button:hover,
 #portfolio-body .mobile-portfolio-action-button:active {
     background: #FFFFFF !important;
     border-color: #D5D7DA !important;
     color: var(--portfolio-neutral) !important;
     transform: none !important;
+}
+
+#portfolio-body .portfolio-empty__cta-secondary {
+    min-height: 40px;
+    background: #98FB96 !important;
+    border: 1px solid #98FB96 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    color: #0000FF !important;
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif) !important;
+    font-weight: 600 !important;
+}
+
+#portfolio-body .portfolio-empty__cta-secondary:hover,
+#portfolio-body .portfolio-empty__cta-secondary:active {
+    background: #8AF188 !important;
+    border-color: #8AF188 !important;
+    color: #0000FF !important;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -8px rgba(3, 255, 136, 0.45) !important;
 }
 
 #portfolio-body .portfolio-show-more-btn span,

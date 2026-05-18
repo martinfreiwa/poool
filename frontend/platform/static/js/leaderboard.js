@@ -22,6 +22,8 @@
   let currentTier = '';
   let currentPerPage = 10;
   let isFetching = false;
+  let lastRankings = [];
+  let yieldSortDir = null; // null = sort by metric (default), 'asc' | 'desc' = sort by yield
   let searchTimeout = null;
   let cachedPrefs = null;
   // Tab-switch coalescer — see scheduleTabRefetch() below. Rapid clicks on
@@ -377,13 +379,11 @@
       var tierColor = entry.tier_badge_color || tierBgColors[entry.tier_name] || '#D0D5DD';
       var assetCount = entry.metrics ? entry.metrics.asset_count : 0;
       // Tier badge styling moved to CSS data-tier attribute selectors so each
-      // known tier ships an AA-compliant bg + text pair (≥4.5:1 contrast at
-      // 10px). Inline `style="background:..."` only applied when the API
-      // explicitly returns a custom `tier_badge_color` — that override path
-      // is reserved for admin-managed bespoke tiers.
-      var badgeStyle = entry.tier_badge_color
-        ? ' style="background:' + escHtml(entry.tier_badge_color) + ';color:#181D27"'
-        : '';
+      // Tier badge color comes purely from CSS — every known tier ships an
+      // AA-compliant bg + text pair via `[data-tier=...]`. The previous
+      // inline override (entry.tier_badge_color) produced unreadable blue-on-
+      // blue badges and is intentionally ignored.
+      var badgeStyle = '';
       var card = document.createElement('div');
       card.className = 'lb-bento-card';
       card.innerHTML =
@@ -591,6 +591,14 @@
   function renderTable(rankings, append) {
     var tbody = document.getElementById('lb-rankings-body');
     if (!tbody) return;
+    lastRankings = rankings;
+    if (yieldSortDir) {
+      rankings = rankings.slice().sort(function (a, b) {
+        var ay = (a.metrics && a.metrics.portfolio_roi_bps) || 0;
+        var by = (b.metrics && b.metrics.portfolio_roi_bps) || 0;
+        return yieldSortDir === 'asc' ? ay - by : by - ay;
+      });
+    }
     if (!append) {
       tbody.innerHTML = '';
       if (rankings.length === 0) {
@@ -599,15 +607,36 @@
       }
     }
 
-    // Update header — show active sort indicator so it's visible the column
-    // is being driven by the topbar metric tab selection.
+    // Update header sort indicators. When yieldSortDir is set the yield
+    // column owns the active arrow; otherwise the metric column does.
     var headerEl = document.getElementById('lb-table-metric-header');
+    var yieldHeader = document.querySelector('#lb-rankings-table th.col-yield');
     if (headerEl) {
+      var metricArrow = yieldSortDir ? '' : '<span class="lb-th-sort" aria-hidden="true">▼</span>';
       headerEl.innerHTML =
-        '<span class="lb-th-label">' + escHtml(getMetricName(currentMetric)) + '</span>' +
-        '<span class="lb-th-sort" aria-hidden="true">▼</span>';
-      headerEl.setAttribute('aria-sort', 'descending');
-      headerEl.classList.add('is-sorted');
+        '<span class="lb-th-label">' + escHtml(getMetricName(currentMetric)) + '</span>' + metricArrow;
+      headerEl.setAttribute('aria-sort', yieldSortDir ? 'none' : 'descending');
+      headerEl.classList.toggle('is-sorted', !yieldSortDir);
+    }
+    if (yieldHeader) {
+      var yieldArrow = yieldSortDir === 'asc' ? '▲' : '▼';
+      var label = yieldHeader.querySelector('.lb-th-label');
+      // Initialise the label span on first render so re-renders can update it.
+      if (!label) {
+        yieldHeader.innerHTML = '<span class="lb-th-label">Target Yield</span><span class="lb-th-sort" aria-hidden="true"></span>';
+      }
+      var arrowEl = yieldHeader.querySelector('.lb-th-sort');
+      if (arrowEl) arrowEl.textContent = yieldSortDir ? yieldArrow : '';
+      yieldHeader.classList.toggle('is-sorted', !!yieldSortDir);
+      yieldHeader.setAttribute('aria-sort', yieldSortDir === 'asc' ? 'ascending' : yieldSortDir === 'desc' ? 'descending' : 'none');
+      yieldHeader.style.cursor = 'pointer';
+      if (!yieldHeader.dataset.sortBound) {
+        yieldHeader.dataset.sortBound = '1';
+        yieldHeader.addEventListener('click', function () {
+          yieldSortDir = yieldSortDir === 'desc' ? 'asc' : 'desc';
+          renderTable(lastRankings, false);
+        });
+      }
     }
 
     for (var idx = 0; idx < rankings.length; idx++) {
@@ -740,6 +769,7 @@
   window.switchMetricTab = function (metric, btn) {
     currentMetric = metric;
     currentPage = 1;
+    yieldSortDir = null; // switching metric resets yield-column sort
 
     // Update tab active state globally but only for metric components.
     // Also keeps the roving-tabindex in sync when mouse-clicked so the

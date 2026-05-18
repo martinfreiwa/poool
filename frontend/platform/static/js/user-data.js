@@ -179,10 +179,16 @@ if (typeof window.getCsrfToken === "undefined") {
       }
 
       // Main sidebar + mobile avatars — always replace (placeholder is an inline SVG, not a URL)
-      document.querySelectorAll(".sidebar__account-avatar img, .mobile-burger-menu__avatar img, .admin-sidebar-avatar, #my-profile-avatar-img").forEach(function(img) {
-        img.src = avatarSrc;
-        img.alt = user.name;
-      });
+      function paintAvatarSlots() {
+        document.querySelectorAll(".sidebar__account-avatar img, .mobile-burger-menu__avatar img, .admin-sidebar-avatar, #my-profile-avatar-img").forEach(function(img) {
+          img.src = avatarSrc;
+          img.alt = user.name;
+        });
+      }
+      paintAvatarSlots();
+      // Re-run after HTMX swaps — partials like community_feed inject
+      // #my-profile-avatar-img AFTER this script first runs.
+      document.body.addEventListener("htmx:afterSwap", paintAvatarSlots);
       // Profile switcher rows (Investor / Developer / Admin) — always replace.
       // The static markup in sidebar.html uses a `data:image/svg+xml,...` blue-circle
       // placeholder that does NOT match the isPlaceholder() keyword list, so

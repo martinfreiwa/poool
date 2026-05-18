@@ -1176,10 +1176,10 @@ async function viewDepositProof(depositId) {
             <button class="admin-btn admin-btn--secondary admin-btn--sm" id="deposit-proof-close">Close</button>
           </div>
         </div>
-        <div style="padding:16px 20px;flex:1;overflow:auto;background:#F8FAFC;">
+        <div style="padding:16px 20px;flex:1;overflow:auto;background:#F8FAFC;" id="deposit-proof-body">
           ${userNotesHtml}
           ${isPdf
-            ? `<iframe src="${esc(url)}" style="width:100%;height:70vh;border:1px solid #EAECF0;border-radius:6px;background:#fff;" title="Deposit proof"></iframe>`
+            ? `<div id="deposit-proof-pdf" style="display:flex;flex-direction:column;gap:12px;align-items:center;"></div>`
             : `<img src="${esc(url)}" alt="Deposit proof" style="max-width:100%;height:auto;border:1px solid #EAECF0;border-radius:6px;background:#fff;display:block;margin:0 auto;" />`
           }
           ${data.expires_in_minutes ? `<div style="margin-top:10px;font-size:11px;color:#98A2B3;text-align:center;">Signed URL expires in ${data.expires_in_minutes} minutes.</div>` : ""}
@@ -1187,6 +1187,10 @@ async function viewDepositProof(depositId) {
       </div>
     `;
     document.body.appendChild(overlay);
+
+    if (isPdf) {
+      renderPdfPreview(url, document.getElementById("deposit-proof-pdf"));
+    }
 
     function close() {
       overlay.remove();
@@ -1199,6 +1203,58 @@ async function viewDepositProof(depositId) {
   } catch (e) {
     console.error("viewDepositProof failed", e);
     alert("Network error loading proof");
+  }
+}
+
+// Lazy-load pdf.js (canvas-based PDF renderer) and render every page of `url`
+// into `container`. Iframe-based PDF preview fails in headless browsers and
+// in any environment without the built-in PDF viewer plugin.
+const PDFJS_VERSION = "3.11.174";
+let pdfjsLoadingPromise = null;
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (pdfjsLoadingPromise) return pdfjsLoadingPromise;
+  pdfjsLoadingPromise = (async () => {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Failed to load pdf.js"));
+      document.head.appendChild(s);
+    });
+    if (!window.pdfjsLib) throw new Error("pdfjsLib not exposed after script load");
+    // CSP `worker-src 'self' blob:` blocks the cross-origin cdnjs worker URL,
+    // so we fetch the worker script and wrap it in a blob URL.
+    const workerResp = await fetch(
+      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`,
+    );
+    const workerBlob = new Blob([await workerResp.text()], { type: "application/javascript" });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
+    return window.pdfjsLib;
+  })();
+  return pdfjsLoadingPromise;
+}
+
+async function renderPdfPreview(url, container) {
+  if (!container) return;
+  container.innerHTML = `<div style="padding:24px;color:#667085;font-size:13px;">Loading PDF…</div>`;
+  try {
+    const pdfjs = await loadPdfJs();
+    const pdf = await pdfjs.getDocument({ url, withCredentials: true }).promise;
+    container.innerHTML = "";
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.4 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.cssText = "max-width:100%;height:auto;border:1px solid #EAECF0;border-radius:6px;background:#fff;box-shadow:0 1px 3px rgba(16,24,40,0.06);";
+      container.appendChild(canvas);
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    }
+  } catch (e) {
+    console.error("renderPdfPreview failed", e);
+    container.innerHTML = `<div style="padding:24px;color:#B42318;font-size:13px;">Could not render PDF inline. Use "Open in tab" instead.</div>`;
   }
 }
 

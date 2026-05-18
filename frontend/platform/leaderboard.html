@@ -97,7 +97,6 @@ include
             <div class="lb-ledger-header">
               <h2 class="lb-ledger-title">Global Tier Listings</h2>
               <div class="lb-ledger-actions" style="display:flex;align-items:center;gap:12px;">
-                <span id="lb-total-participants" class="lb-ledger-title" style="opacity: 0.6;"></span>
                 <!--
                   Admin-only "Refresh now" button. Hidden by default; the
                   client toggles `hidden` off once /api/me confirms the
@@ -108,11 +107,16 @@ include
                 <button
                   id="lb-refresh-btn"
                   type="button"
-                  class="ds-btn ds-btn--secondary ds-btn--sm"
+                  class="ds-btn ds-btn--secondary ds-btn--sm lb-refresh-btn--icon"
                   hidden
                   onclick="adminRefreshLeaderboard(this)"
+                  title="Refresh now"
                   aria-label="Refresh leaderboard scores (admin only)">
-                  Refresh now
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                  </svg>
                 </button>
                 <span id="lb-refresh-status" class="lb-last-updated" role="status" aria-live="polite"></span>
               </div>
@@ -153,7 +157,7 @@ include
     </main>
   </div>
 
-  <script src="/static/js/leaderboard.js?v=14"></script>
+  <script src="/static/js/leaderboard.js?v={{ asset_version }}"></script>
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
 </body>

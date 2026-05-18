@@ -69,13 +69,24 @@
   box-sizing: border-box;
   width: 40px;
   height: 40px;
-  background: #f3f4f6;
-  border: 1px solid var(--table-border-color);
-  border-radius: 20px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  border: none;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+}
+
+.table__wrapper--wallet .featured-icon svg path,
+.table__wrapper--wallet .featured-icon svg circle,
+.table__wrapper--wallet .featured-icon svg line,
+.table__wrapper--wallet .featured-icon svg polyline,
+.table__wrapper--wallet .featured-icon svg rect,
+.table__wrapper--wallet .featured-icon svg polygon {
+  stroke: #03FF88 !important;
 }
 
 .table__wrapper--wallet .featured-icon svg {

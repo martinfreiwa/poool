@@ -525,47 +525,38 @@
     letter-spacing: 0.5px;
 }
 
-.bank-details-panel__copy {
-    display: flex;
+/* Plain icon button — no chrome, just the SVG. */
+.bank-details-panel__copy,
+.bank-details-panel__copy--ref {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 20px;
+    height: 20px;
     padding: 0;
-    background: white;
-    border: 1px solid var(--table-border-color);
-    border-radius: 8px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s;
     color: #717680;
     flex-shrink: 0;
+    transition: color 0.15s ease;
 }
 
-.bank-details-panel__copy:hover {
-    background: #f0f1f5;
-    border-color: #d5d7da;
-    color: var(--page-title-color);
+.bank-details-panel__copy:hover,
+.bank-details-panel__copy--ref:hover {
+    color: var(--page-title-color, #181D27);
+    background: transparent;
 }
 
-.bank-details-panel__copy.copied {
-    background: #f0fdf4;
-    border-color: #86efac;
+.bank-details-panel__copy.copied,
+.bank-details-panel__copy--ref.copied {
+    color: #059669;
+    background: transparent;
 }
 
 .bank-details-panel__copy--ref {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.25);
     color: #98FB96;
-}
-
-.bank-details-panel__copy--ref:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-.bank-details-panel__copy--ref.copied {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #98FB96;
 }
 
 .bank-details-panel__ref-hint {

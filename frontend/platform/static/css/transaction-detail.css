@@ -1,28 +1,58 @@
 /* ────────────────────────────────────────────────────────────
    Transaction Detail page
    Used by: /transactions/:id (transaction-detail.html)
+
+   Design idiom matches the wallet/portfolio/rewards dashboard:
+   - white ds-card panels (12px radius, subtle shadow, 1px border)
+   - 3px blue→green brand gradient bar at top of every panel
+   - tight typography, brand color accents
    ──────────────────────────────────────────────────────────── */
 
 .tx-detail-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   padding-top: 16px;
   padding-bottom: 64px;
+  max-width: 920px;
+}
+
+/* ── Shared card chrome ──────────────────────────────────────
+   Every section on the page is a ds-card with the brand
+   gradient bar at the top, matching .wallet-balance-card.       */
+.tx-detail-page .ds-card {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid var(--table-border-color, #EAECF0);
+  border-radius: 12px;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.tx-detail-page .ds-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 /* ── Back link ───────────────────────────────────────────── */
 .tx-detail-back {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   margin-bottom: 4px;
 }
 .tx-detail-back__link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 500;
   color: #475467;
   text-decoration: none;
@@ -32,93 +62,120 @@
 }
 .tx-detail-back__link:hover {
   background: #F2F4F7;
-  color: #101828;
+  color: #0000FF;
 }
 .tx-detail-back__link--muted {
   color: #98A2B3;
+  margin-left: auto;
 }
 
 /* ── Hero card ───────────────────────────────────────────── */
 .tx-detail-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 28px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "icon meta amount"
+    "icon sub  amount"
+    "desc desc desc";
+  column-gap: 16px;
+  row-gap: 4px;
+  padding: 20px 24px;
+  align-items: center;
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(3, 255, 136, 0.06) 0%, transparent 55%),
+    radial-gradient(80% 60% at 0% 0%, rgba(0, 0, 255, 0.04) 0%, transparent 60%),
+    #ffffff;
 }
 .tx-detail-hero__top {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  /* legacy wrapper kept for backwards-compat; grid bypasses it */
+  display: contents;
 }
 .tx-detail-hero__icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #F4F3FF;
+  grid-area: icon;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4F46E5;
+  color: #03FF88;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.18);
+}
+.tx-detail-hero__icon svg {
+  stroke: #03FF88;
+  width: 24px;
+  height: 24px;
 }
 .tx-detail-hero__meta {
+  grid-area: meta;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 .tx-detail-hero__type {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 700;
   color: #475467;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .tx-detail-hero__amount {
+  grid-area: amount;
   font-family: "TT Norms Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 44px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1;
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 2px;
+  color: #101828;
+  justify-self: end;
+  white-space: nowrap;
 }
-.tx-detail-hero__amount.amount-positive { color: #067647; }
+.tx-detail-hero__amount.amount-positive { color: #03FF88; }
 .tx-detail-hero__amount.amount-negative { color: #B42318; }
 .tx-detail-hero__sign {
-  font-size: 32px;
+  font-size: 22px;
   font-weight: 600;
 }
 .tx-detail-hero__sub {
+  grid-area: sub;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13px;
   color: #667085;
 }
 .tx-detail-hero__sub > span[aria-hidden] { color: #D0D5DD; }
 .tx-detail-hero__desc {
-  margin: 4px 0 0;
-  padding: 12px 14px;
-  background: #F9FAFB;
-  border-left: 3px solid #D0D5DD;
-  border-radius: 4px;
+  grid-area: desc;
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  background: #F8FAFF;
+  border-left: 3px solid #0000FF;
+  border-radius: 8px;
   color: #344054;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
-/* ── Detail / wire sections ──────────────────────────────── */
+/* ── Section panels (Overview, Deposit details, etc.) ──── */
 .tx-detail-section {
-  padding: 24px 28px;
+  padding: 24px 28px 24px;
 }
 .tx-detail-section__title {
   margin: 0 0 16px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #101828;
+  letter-spacing: -0.01em;
 }
+
+/* ── Detail rows (label / value pairs) ──────────────────── */
 .tx-detail-rows {
   margin: 0;
   display: flex;
@@ -129,67 +186,81 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #F2F4F7;
 }
 .tx-detail-row:last-child { border-bottom: none; }
+.tx-detail-row:first-child { padding-top: 4px; }
 .tx-detail-row__label {
   margin: 0;
   font-size: 14px;
   color: #667085;
+  font-weight: 500;
   flex-shrink: 0;
 }
 .tx-detail-row__value {
   margin: 0;
   font-size: 14px;
   color: #101828;
-  font-weight: 500;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   text-align: right;
   word-break: break-word;
 }
-.tx-detail-row__text {
-  display: inline-block;
-}
+.tx-detail-row__text { display: inline-block; }
 .tx-detail-row__value--mono .tx-detail-row__text {
   font-family: ui-monospace, "SF Mono", "Monaco", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   letter-spacing: 0.01em;
+  background: #F9FAFB;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #EAECF0;
+  font-weight: 500;
 }
 
 /* ── Copy button ─────────────────────────────────────────── */
 .tx-detail-copy-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #4F46E5;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #0000FF;
   background: transparent;
-  border: 1px solid #E4E7EC;
+  border: 1px solid #D0D5DD;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .tx-detail-copy-btn:hover {
-  background: #F4F3FF;
-  border-color: #C7D7FE;
+  background: #F5F8FF;
+  border-color: #0000FF;
 }
 .tx-detail-copy-btn.is-copied {
   background: #ECFDF3;
   border-color: #ABEFC6;
   color: #067647;
 }
-.tx-detail-copy-btn svg { width: 12px; height: 12px; }
+.tx-detail-copy-btn svg { width: 14px; height: 14px; }
+.tx-detail-copy-btn > span { display: none; }
 
 /* ── Wire instructions card ──────────────────────────────── */
 .tx-detail-wire {
   padding: 24px 28px;
-  border: 1px solid #FFE7C7;
-  background: linear-gradient(180deg, #FFFBF3 0%, #FFFFFF 50%);
+}
+.tx-detail-wire::after {
+  /* amber band along the top so the wire panel reads as "action needed"
+     while keeping the shared brand gradient bar */
+  content: "";
+  position: absolute;
+  inset: 3px 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #FCE7BD 0%, #FFFBF3 100%);
+  z-index: 1;
 }
 .tx-detail-wire__header {
   display: flex;
@@ -198,10 +269,10 @@
   margin-bottom: 16px;
 }
 .tx-detail-wire__logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #FFF;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #FFFBF3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -211,9 +282,9 @@
 .tx-detail-wire__logo img { width: 22px; height: 22px; }
 .tx-detail-wire__kicker {
   margin: 0 0 2px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #B45309;
 }
@@ -221,7 +292,7 @@
   margin: 0 0 16px;
   font-size: 14px;
   color: #344054;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 .tx-detail-rows--wire .tx-detail-row {
   border-bottom-color: #F4E5C7;
@@ -248,74 +319,85 @@
 
 /* ── Help footer ─────────────────────────────────────────── */
 .tx-detail-help {
-  text-align: center;
+  display: flex;
+  justify-content: center;
   margin-top: 8px;
 }
 .tx-detail-help__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
-  color: #667085;
+  font-weight: 600;
+  color: #344054;
+  background: #ffffff;
   text-decoration: none;
+  padding: 10px 18px;
+  border: 1px solid #EAECF0;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.04);
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.tx-detail-help__link::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg>") center/contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg>") center/contain no-repeat;
+  flex-shrink: 0;
 }
 .tx-detail-help__link:hover {
   color: #0000FF;
-  text-decoration: underline;
+  border-color: #0000FF;
+  background: #F5F8FF;
+  text-decoration: none;
 }
 
-/* ── Mobile ──────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .tx-detail-page { padding-top: 12px; gap: 12px; }
-  .tx-detail-hero { padding: 20px; }
-  .tx-detail-hero__amount { font-size: 34px; }
-  .tx-detail-hero__sign { font-size: 24px; }
-  .tx-detail-section,
-  .tx-detail-wire { padding: 18px 18px; }
-  .tx-detail-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  .tx-detail-row__value {
-    text-align: left;
-    flex-wrap: wrap;
-  }
-  .tx-detail-back { gap: 8px; }
-  .tx-detail-back__link { font-size: 13px; padding: 4px 8px; }
-}
+/* ── Timeline (deposit progress) ─────────────────────────── */
+.tx-detail-timeline { padding: 18px 24px 22px; }
 
-/* ─── Deposit timeline (P1-3) + cancel card (P1-4) ──────────── */
-.tx-detail-timeline { padding: 22px 24px; }
-
+/* Horizontal stepper on desktop. Each step is a column with the dot on
+   top and the label below. Connector line runs through the center of
+   each dot. */
 .tx-timeline {
   list-style: none;
   margin: 12px 0 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 0;
 }
 
 .tx-timeline__step {
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  gap: 14px;
-  padding: 10px 0;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0;
   position: relative;
 }
 
 .tx-timeline__step:not(:last-child)::before {
   content: "";
   position: absolute;
-  left: 13px;
-  top: 32px;
-  bottom: -10px;
-  width: 2px;
+  top: 10px;            /* mid-line of the 22px dot */
+  left: calc(50% + 14px);
+  right: calc(-50% + 14px);
+  height: 2px;
   background: #EAECF0;
+  z-index: 0;
 }
 
-.tx-timeline__step--done:not(:last-child)::before { background: #0000FF; }
+.tx-timeline__step--done:not(:last-child)::before {
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
 
 .tx-timeline__dot {
-  width: 26px; height: 26px;
+  width: 22px; height: 22px;
   border-radius: 50%;
   background: #F2F4F7;
   border: 2px solid #EAECF0;
@@ -324,19 +406,33 @@
   justify-content: center;
   color: #98A2B3;
   z-index: 1;
+  position: relative;
+}
+.tx-timeline__dot svg { width: 10px; height: 10px; }
+
+.tx-timeline__body {
+  margin-top: 8px;
+  padding-top: 0;
+  max-width: 100%;
 }
 
 .tx-timeline__step--done .tx-timeline__dot {
-  background: #0000FF; border-color: #0000FF; color: #FFFFFF;
+  background: #0000FF;
+  border-color: #0000FF;
+  color: #03FF88;
 }
 
 .tx-timeline__step--current .tx-timeline__dot {
-  background: #DBEAFE; border-color: #0000FF; color: #0000FF;
+  background: #DBEAFE;
+  border-color: #0000FF;
+  color: #0000FF;
   animation: tx-timeline-pulse 1.6s ease-in-out infinite;
 }
 
 .tx-timeline__step--skipped .tx-timeline__dot {
-  background: #FEE4E2; border-color: #FECDCA; color: #B42318;
+  background: #FEE4E2;
+  border-color: #FECDCA;
+  color: #B42318;
 }
 
 @keyframes tx-timeline-pulse {
@@ -344,14 +440,74 @@
   50%      { box-shadow: 0 0 0 6px rgba(0, 0, 255, 0); }
 }
 
-.tx-timeline__label { font-weight: 600; font-size: 14px; color: #101828; }
-.tx-timeline__hint  { font-size: 12px; color: #667085; margin-top: 2px; }
+.tx-timeline__label { font-weight: 600; font-size: 13px; color: #101828; line-height: 1.3; }
+.tx-timeline__hint  { font-size: 11px; color: #667085; margin-top: 2px; }
 .tx-timeline__step--current .tx-timeline__label { color: #0000FF; }
 .tx-timeline__step--skipped .tx-timeline__label { color: #B42318; }
 .tx-timeline__step--pending .tx-timeline__label { color: #475467; }
 
-/* Cancel withdrawal card */
-.tx-detail-cancel { padding: 22px 24px; }
-.tx-detail-cancel__lede { color: #475467; font-size: 13px; margin: 4px 0 16px; }
-.tx-detail-cancel__btn { color: #B42318; border-color: #FECDCA; }
-.tx-detail-cancel__btn:hover { background: #FEF3F2; }
+/* ── Cancel withdrawal card ──────────────────────────────── */
+.tx-detail-cancel { padding: 24px 28px; }
+.tx-detail-cancel__lede {
+  color: #475467;
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+.tx-detail-cancel__btn {
+  color: #B42318;
+  border-color: #FECDCA;
+}
+.tx-detail-cancel__btn:hover {
+  background: #FEF3F2;
+  border-color: #B42318;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tx-detail-page { padding-top: 12px; gap: 16px; }
+  .tx-detail-hero { padding: 20px 18px 22px; }
+  .tx-detail-hero__amount { font-size: 36px; }
+  .tx-detail-hero__sign { font-size: 24px; }
+  .tx-detail-hero__icon { width: 48px; height: 48px; border-radius: 12px; }
+  .tx-detail-section,
+  .tx-detail-wire,
+  .tx-detail-timeline,
+  .tx-detail-cancel { padding: 20px 18px; }
+  .tx-detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 0;
+  }
+  .tx-detail-row__value {
+    text-align: left;
+    flex-wrap: wrap;
+  }
+  .tx-detail-back { gap: 6px; }
+  .tx-detail-back__link { font-size: 13px; padding: 4px 8px; }
+
+  /* Timeline collapses back to a vertical stepper on mobile. */
+  .tx-timeline { flex-direction: column; gap: 0; margin-top: 6px; }
+  .tx-timeline__step {
+    flex: none;
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+    gap: 12px;
+    padding: 6px 0;
+  }
+  .tx-timeline__step:not(:last-child)::before {
+    top: 26px;
+    bottom: -2px;
+    left: 10px;
+    right: auto;
+    width: 2px;
+    height: auto;
+    background: #EAECF0;
+  }
+  .tx-timeline__step--done:not(:last-child)::before {
+    background: linear-gradient(180deg, #0000FF 0%, #03FF88 100%);
+  }
+  .tx-timeline__body { margin-top: 0; }
+}

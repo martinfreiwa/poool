@@ -37,11 +37,11 @@
                 }
                 .poool-toast-card {
                     pointer-events: auto;
-                    background: #181D27; /* Dark modern background */
-                    border: 1px solid #344054;
+                    background: #FFFFFF;
+                    border: 1px solid #E5E7EB;
                     border-radius: 12px;
                     padding: 16px 20px;
-                    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.05);
+                    box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05), 0 12px 32px rgba(10, 13, 18, 0.10);
                     font-family: var(--ds-font, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
                     animation: pooolToastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
                     position: relative;
@@ -49,62 +49,103 @@
                     display: flex;
                     align-items: flex-start;
                     gap: 12px;
-                    transition: all 0.2s ease;
+                    transition: box-shadow 0.2s ease, transform 0.2s ease;
                     cursor: pointer;
                 }
-                /* Glossy sheen overlay */
-                .poool-toast-card::after {
+                /* Brand gradient bar at the top — matches every card on the dashboard. */
+                .poool-toast-card::before {
                     content: '';
+                    display: block;
                     position: absolute;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 100%);
+                    inset: 0 0 auto 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+                    border-radius: 12px 12px 0 0;
+                    z-index: 1;
                     pointer-events: none;
-                    border-radius: 12px;
+                }
+                .poool-toast-card[data-type="error"]::before {
+                    background: linear-gradient(90deg, #B42318 0%, #F04438 100%);
+                }
+                .poool-toast-card[data-type="warning"]::before {
+                    background: linear-gradient(90deg, #B45309 0%, #F79009 100%);
                 }
                 .poool-toast-card:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.08);
+                    box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05), 0 16px 40px rgba(10, 13, 18, 0.14);
                 }
+                .poool-toast-card__title {
+                    font-weight: 700;
+                    font-size: 14px;
+                    color: #101828;
+                    margin-bottom: 2px;
+                    letter-spacing: -0.01em;
+                }
+                .poool-toast-card__message {
+                    font-size: 13px;
+                    color: #475467;
+                    line-height: 1.45;
+                    word-wrap: break-word;
+                }
+                .poool-toast-card__icon {
+                    flex-shrink: 0;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-top: 2px;
+                }
+                .poool-toast-card__close {
+                    flex-shrink: 0;
+                    margin-top: 2px;
+                    cursor: pointer;
+                    color: #98A2B3;
+                    transition: color 0.15s ease;
+                }
+                .poool-toast-card__close:hover { color: #475467; }
             `;
             document.head.appendChild(style);
         }
 
         const toast = document.createElement('div');
         toast.className = 'poool-toast-card';
-        
-        let iconHtml = '';
+
+        let iconBg, iconColor, iconSvg, normalizedType;
         if (finalType === 'success' || finalType.toLowerCase().includes('success')) {
-            toast.style.borderLeft = '4px solid #03FF88'; /* Neon Green for success */
-            iconHtml = `<div style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(3,255,136,0.1);display:flex;align-items:center;justify-content:center;color:#03FF88;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </div>`;
+            normalizedType = 'success';
+            iconBg = '#ECFDF3';
+            iconColor = '#039855';
+            iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
         } else if (finalType === 'error' || finalType.toLowerCase().includes('fail')) {
-            toast.style.borderLeft = '4px solid #F04438'; /* Red for errors */
-            iconHtml = `<div style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(240,68,56,0.1);display:flex;align-items:center;justify-content:center;color:#F04438;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </div>`;
+            normalizedType = 'error';
+            iconBg = '#FEF3F2';
+            iconColor = '#B42318';
+            iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
         } else if (finalType === 'warning') {
-            toast.style.borderLeft = '4px solid #F79009'; /* Orange for warning */
-            iconHtml = `<div style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(247,144,9,0.1);display:flex;align-items:center;justify-content:center;color:#F79009;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            </div>`;
+            normalizedType = 'warning';
+            iconBg = '#FFFAEB';
+            iconColor = '#B45309';
+            iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
         } else {
-            toast.style.borderLeft = '4px solid #0000FF'; /* Electric Blue for info */
-            iconHtml = `<div style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(0,0,255,0.1);display:flex;align-items:center;justify-content:center;color:#0000FF;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-            </div>`;
-            toast.style.boxShadow = '0 12px 32px rgba(0, 0, 255, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.05)';
+            normalizedType = 'info';
+            iconBg = '#F5F8FF';
+            iconColor = '#0000FF';
+            iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
         }
-        
+        toast.setAttribute('data-type', normalizedType);
+
+        const iconHtml = `<div class="poool-toast-card__icon" style="background:${iconBg};color:${iconColor};">${iconSvg}</div>`;
+
         let contentHtml = `<div style="flex:1;min-width:0;">`;
         if (finalTitle && finalTitle !== finalMessage) {
-            contentHtml += `<div style="font-weight:600;font-size:15px;color:#FFFFFF;margin-bottom:4px;letter-spacing:-0.01em;">${finalTitle}</div>`;
+            contentHtml += `<div class="poool-toast-card__title">${finalTitle}</div>`;
         }
-        contentHtml += `<div style="font-size:14px;color:#98A2B3;line-height:1.4;word-wrap:break-word;">${finalMessage}</div>`;
+        contentHtml += `<div class="poool-toast-card__message">${finalMessage}</div>`;
         contentHtml += `</div>`;
-        
-        // Add subtle close button
-        contentHtml += `<div style="flex-shrink:0;opacity:0.6;margin-top:2px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+
+        contentHtml += `<div class="poool-toast-card__close" aria-label="Dismiss"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
 
         toast.innerHTML = iconHtml + contentHtml;
         container.appendChild(toast);

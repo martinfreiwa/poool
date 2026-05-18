@@ -103,53 +103,6 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           <!-- Payment Method -->
           <form id="checkout-form" method="POST" action="/checkout" enctype="multipart/form-data" onsubmit="handleCheckout(event); return false;">
             <input type="hidden" name="payment_method" id="payment_method" value="bank" />
-          <!-- 19.8 — General investment disclosures (3 required for ALL users). -->
-          <div class="checkout-payment-card" style="margin-bottom: 24px; border: 1px solid var(--border-color);">
-            <div class="checkout-payment-card__title" style="display:flex; align-items:center; gap:8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Investment Disclosures
-            </div>
-            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
-              Please confirm you understand the following before continuing.
-            </p>
-            <label class="checkout-disclosure-row" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); line-height: 1.5; background: var(--bg-canvas); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px;">
-              <input type="checkbox" name="disclosure_general_1" required style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
-              <span>I understand that tokenized real-world assets carry market, liquidity, and counterparty risk, and that returns are not guaranteed.</span>
-            </label>
-            <label class="checkout-disclosure-row" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); line-height: 1.5; background: var(--bg-canvas); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px;">
-              <input type="checkbox" name="disclosure_general_2" required style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
-              <span>I am making this investment decision independently and have not been given personalised financial advice by POOOL.</span>
-            </label>
-            <label class="checkout-disclosure-row" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); line-height: 1.5; background: var(--bg-canvas); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-              <input type="checkbox" name="disclosure_general_3" required style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
-              <span>I acknowledge receipt of the Key Facts Statement (KFS) for each asset I am purchasing in this order.</span>
-            </label>
-          </div>
-
-          <!-- 19.8 — Referral disclosures (3 additional, required only for referred users). -->
-          {% if is_referral_user %}
-            <div class="checkout-payment-card" style="margin-bottom: 24px; border: 1px solid var(--border-color);">
-              <div class="checkout-payment-card__title" style="display:flex; align-items:center; gap:8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Referral Disclosures
-              </div>
-              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
-                You were directed to the POOOL Platform by an independent referring partner.
-              </p>
-              <label class="checkout-disclosure-row" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); line-height: 1.5; background: var(--bg-canvas); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px;">
-                <input type="checkbox" name="disclosure_referral_1" required style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
-                <span>I acknowledge that my referring partner may receive a commission in connection with my investments on the POOOL Platform.</span>
-              </label>
-              <label class="checkout-disclosure-row" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); line-height: 1.5; background: var(--bg-canvas); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px;">
-                <input type="checkbox" name="disclosure_referral_2" required style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
-                <span>I understand that statements or recommendations from my referring partner do not constitute regulated investment advice.</span>
-              </label>
-              <label class="checkout-disclosure-row" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); line-height: 1.5; background: var(--bg-canvas); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <input type="checkbox" name="disclosure_referral_3" required style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
-                <span>I am making this investment decision independently of any incentive offered by my referring partner.</span>
-              </label>
-            </div>
-          {% endif %}
 
           <div class="checkout-payment-card">
             <div class="checkout-payment-card__title">Payment Method</div>
@@ -187,9 +140,9 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
                 <div id="idr-bank-details" style="display: none"></div>
 
                 <!-- Confirmation Checkbox -->
-                <div class="checkout-confirmation-box" style="margin-top: 16px; margin-bottom: 20px;">
-                  <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: #344054; line-height: 1.5;">
-                    <input type="checkbox" id="bank-terms-checkbox" name="bank_transfer_ack" style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
+                <div class="checkout-confirmation-box" style="margin: 24px 0;">
+                  <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 13px; color: #344054; line-height: 1.6; margin: 0;">
+                    <input type="checkbox" id="bank-terms-checkbox" name="bank_transfer_ack" style="margin: 3px 0 0 0; width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; accent-color: #0000FF;" />
                     <span id="bank-terms-text">I confirm that I will include the <strong>Reference ID</strong> in the transfer description and that I will cover all bank transfer fees (e.g., SWIFT 'OUR' instruction).</span>
                   </label>
                 </div>

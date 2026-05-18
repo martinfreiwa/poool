@@ -51,22 +51,44 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 24px;
-  gap: 12px;
+  padding: 20px 22px 18px;
+  gap: 10px;
   position: relative;
   width: 100%;
   min-width: 0;
   min-height: 132px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
+}
+
+.metric-card:hover {
+  border-color: rgba(0, 0, 255, 0.20);
+  box-shadow: 0 12px 28px -16px rgba(0, 0, 255, 0.18);
+  transform: translateY(-1px);
 }
 
 .metric-heading {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 20px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 16px;
   color: var(--text-secondary);
   align-self: stretch;
+  margin-top: 4px;
 }
 
 .metric-content {
@@ -75,7 +97,7 @@
   align-items: flex-start;
   justify-content: flex-end;
   padding: 0;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   flex: 1;
 }
@@ -83,10 +105,12 @@
 .metric-number {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 30px;
-  line-height: 38px;
-  color: var(--page-title-color);
+  line-height: 36px;
+  letter-spacing: -0.02em;
+  color: #0000FF;
+  font-variant-numeric: tabular-nums;
 }
 
 .metric-change-wrapper {

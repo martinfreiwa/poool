@@ -308,36 +308,56 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               <div id="wallet-transactions-container" class="ds-table-flex">
                 <div id="wallet-transactions-header" class="ds-table-flex__head">
                   <div class="ds-table-th table__header-cell--type">
-                    <div class="table__header-content"><span class="table__header-text">Type</span></div>
+                    <div class="table__header-content">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                      </svg>
+                      <span class="table__header-text">Type</span>
+                    </div>
                   </div>
                   <div class="ds-table-th table__header-cell--status">
                     <div class="table__header-content">
-                      <img src="/static/images/icons/bookmark-check.svg" alt="Status" width="16" height="16" /><span
-                        class="table__header-text">Status</span>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="9 12 11 14 15 10"/>
+                      </svg>
+                      <span class="table__header-text">Status</span>
                     </div>
                   </div>
                   <div class="ds-table-th table__header-cell--date">
                     <div class="table__header-content">
-                      <img src="/static/images/icons/calendar-check-02.svg" alt="Date" width="16" height="16" /><span
-                        class="table__header-text">Date</span>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                      <span class="table__header-text">Date</span>
                     </div>
                   </div>
                   <div class="ds-table-th table__header-cell--wallet">
                     <div class="table__header-content">
-                      <img src="/static/images/icons/wallet-04.svg" alt="Wallet" width="16" height="16" /><span
-                        class="table__header-text">Wallet</span>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+                      </svg>
+                      <span class="table__header-text">Wallet</span>
                     </div>
                   </div>
                   <div class="ds-table-th table__header-cell--amount">
                     <div class="table__header-content">
-                      <img src="/static/images/icons/coins-stacked-03.svg" alt="Amount" width="16" height="16" /><span
-                        class="table__header-text">Amount</span>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      </svg>
+                      <span class="table__header-text">Amount</span>
                     </div>
                   </div>
                   <div class="ds-table-th table__header-cell--actions">
                     <div class="table__header-content">
-                      <span class="table__header-text">Actions</span><img src="/static/images/icons/arrow-down.svg" alt="Sort"
-                        width="12" height="12" />
+                      <span class="table__header-text">Actions</span>
                     </div>
                   </div>
                 </div>
@@ -722,25 +742,6 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
 
           <p id="deposit-step-1-error" class="ds-modal__error" role="alert"></p>
-
-          <!-- Source-of-funds block (AMLD5/6). Shown only when amount
-               crosses the configured threshold — keeps small deposits
-               friction-free. -->
-          <!-- Source-of-funds questionnaire removed from UI per product
-               request. Server-side AML enforcement remains; the
-               threshold check still fires in the deposit-init handler. -->
-
-          <div class="wallet-deposit-aml-note" role="note">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M10 2.5 18 16.5H2L10 2.5Z" fill="#FFFAEB" stroke="#F79009" stroke-width="1.4"/>
-              <path d="M10 7.25v4.25" stroke="#B54708" stroke-width="1.6" stroke-linecap="round"/>
-              <circle cx="10" cy="14" r="1" fill="#B54708"/>
-            </svg>
-            <div>
-              <strong>Funds must come from an account in your name.</strong>
-              <span>Third-party transfers are rejected and may delay verification.</span>
-            </div>
-          </div>
 
           <div class="ds-modal__footer-actions">
             <button type="button" class="ds-btn ds-btn--secondary" onclick="closeDepositModal()">Cancel</button>
@@ -1955,24 +1956,6 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       if (cents < s.min_amount_cents) { err.textContent = "Minimum deposit is " + formatCentsUsd(s.min_amount_cents) + "."; return; }
       if (cents > s.max_amount_cents) { err.textContent = "Maximum deposit is " + formatCentsUsd(s.max_amount_cents) + "."; return; }
 
-      // Source-of-funds client-side validation. The questionnaire was
-      // removed from the UI (per product), so the client only enforces
-      // when the markup is still present (e.g. on a build that re-adds
-      // it). The server continues to enforce the AML rule independently.
-      var sofRequired = cents >= (s.sof_threshold_cents || 300000);
-      var sofReasonEl = document.getElementById("deposit-sof-reason");
-      var sofReason = sofReasonEl ? sofReasonEl.value : "";
-      var sofDetailEl = document.getElementById("deposit-sof-detail");
-      var sofDetail = sofDetailEl ? sofDetailEl.value : "";
-      if (sofRequired && sofReasonEl && !sofReason) {
-        err.textContent = "Please select where these funds come from.";
-        return;
-      }
-      if (sofRequired && sofReasonEl && sofReason === "other" && !sofDetail.trim()) {
-        err.textContent = "Please describe the source of these funds.";
-        return;
-      }
-
       var btn = document.getElementById("deposit-continue-btn");
       btn.disabled = true;
       var origHtml = btn.innerHTML;
@@ -1989,8 +1972,6 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           },
           body: JSON.stringify({
             amount: input.value,
-            source_of_funds_reason: sofRequired ? sofReason : null,
-            source_of_funds_detail: sofRequired ? sofDetail.trim() : null,
           })
         });
         var data = await resp.json().catch(function () { return {}; });
@@ -2435,7 +2416,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
   <!-- Wallet Data Service & UI Controller -->
   <script src="/static/js/wallet-service.js"></script>
-  <script src="/static/js/wallet.js"></script>
+  <script src="/static/js/wallet.js?v={{ asset_version }}"></script>
 
 
 </body>

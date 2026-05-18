@@ -162,8 +162,9 @@
         // Escape all API-sourced values to prevent XSS
         const safeStatusCss = escHtml(tx.statusCss);
         const safeAmountCss = escHtml(tx.amountCss);
+        const txHref = `/transactions/${encodeURIComponent(tx.id)}`;
         return `
-      <div class="table__row">
+      <div class="table__row" data-tx-id="${escHtml(tx.id)}">
         <div class="table__cell table__cell--type" style="width:182px">
           <div class="wallet-transaction-type-icon">
             <div class="featured-icon">${icon}</div>
@@ -186,12 +187,12 @@
           <span class="${safeAmountCss}">${escHtml(tx.amountPrefix)} ${escHtml(tx.amountDisplay)}</span>
         </div>
         <div class="table__cell table__cell--actions" style="width:188px">
-          <button class="wallet-transaction-action-btn">
+          <a class="wallet-transaction-action-btn" href="${txHref}">
             View details
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-          </button>
+          </a>
         </div>
       </div>`;
     }
