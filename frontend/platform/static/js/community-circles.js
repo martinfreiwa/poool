@@ -3,7 +3,10 @@
  * Wires the My Circle tab to real /api/community/ endpoints
  */
 window.initCommunityCircles = function () {
-    if (!document.getElementById('xp-level-icon')) return;
+    // Bail only if the My Circle tab markup hasn't loaded yet — without the
+    // modal mount point there's nothing to wire up. (The legacy `xp-level-icon`
+    // probe was deleted with the XP card and was killing all bindings.)
+    if (!document.getElementById('create-circle-modal')) return;
 
     // Lightweight toast helper — falls back to window.alert only if toast.js
     // failed to load. Default kind is 'error' so unannotated failure paths
@@ -71,13 +74,16 @@ window.initCommunityCircles = function () {
             const data = await res.json();
             const newLevel = Number(data.level || 1);
 
-            document.getElementById('xp-level-icon').textContent = data.level_icon || '🌱';
-            document.getElementById('xp-level-name').textContent = data.level_name || 'Seedling';
-            document.getElementById('xp-level-num').textContent = 'Level ' + newLevel;
-            document.getElementById('xp-total').textContent = (data.xp_total || 0).toLocaleString();
-            document.getElementById('xp-progress-bar').style.width = (data.progress_pct || 0) + '%';
-            document.getElementById('xp-to-next').textContent = (data.xp_to_next || 0).toLocaleString() + ' XP to next level';
-            document.getElementById('xp-progress-pct').textContent = Math.round(data.progress_pct || 0) + '%';
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setWidth = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = val; };
+
+            setText('xp-level-icon', data.level_icon || '🌱');
+            setText('xp-level-name', data.level_name || 'Seedling');
+            setText('xp-level-num', 'Level ' + newLevel);
+            setText('xp-total', (data.xp_total || 0).toLocaleString());
+            setWidth('xp-progress-bar', (data.progress_pct || 0) + '%');
+            setText('xp-to-next', (data.xp_to_next || 0).toLocaleString() + ' XP to next level');
+            setText('xp-progress-pct', Math.round(data.progress_pct || 0) + '%');
 
             // Login streak
             const streakEl = document.getElementById('xp-login-streak');
@@ -450,30 +456,45 @@ window.initCommunityCircles = function () {
     // ─── Actions ─────────────────────────────────────────────────
 
     window.handleCreateCircle = async function () {
+        const btn = document.querySelector('#create-circle-modal .ds-btn--primary');
         const name = document.getElementById('circle-name-input').value.trim();
-        if (!name) return toast('Please enter a circle name');
+        if (!name) return toast('Please enter a circle name', 'warning');
 
         const desc = document.getElementById('circle-desc-input').value.trim();
-        const emoji = document.getElementById('circle-emoji-input').value.trim() || '🟢';
+        // Emoji input was removed from the UI; backend gets a sensible default.
+        const emoji = (document.getElementById('circle-emoji-input')?.value.trim()) || '🟢';
 
+        if (btn) { btn.disabled = true; btn.dataset._label = btn.textContent; btn.textContent = 'Creating…'; }
         try {
             const res = await fetch('/api/community/circles', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ name, description: desc || null, emoji })
             });
+            let payload = null;
+            try { payload = await res.json(); } catch (_) { /* non-JSON body */ }
             if (!res.ok) {
-                const err = await res.text();
-                throw new Error(err);
+                const msg = (payload && (payload.error || payload.message))
+                    || `Request failed (${res.status})`;
+                throw new Error(msg);
             }
+            toast('Circle created', 'success');
             if (typeof window.closeCommunityModal === 'function') {
                 window.closeCommunityModal('create-circle-modal');
             } else {
                 document.getElementById('create-circle-modal').style.display = 'none';
             }
+            // Reset inputs so the modal opens clean next time.
+            const nameEl = document.getElementById('circle-name-input');
+            const descEl = document.getElementById('circle-desc-input');
+            if (nameEl) nameEl.value = '';
+            if (descEl) descEl.value = '';
             loadAll();
         } catch (e) {
-            toast('Failed to create circle: ' + e.message);
+            toast(e.message || 'Failed to create circle', 'error');
+        } finally {
+            if (btn) { btn.disabled = false; if (btn.dataset._label) btn.textContent = btn.dataset._label; }
         }
     };
 

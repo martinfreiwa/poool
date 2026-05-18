@@ -153,7 +153,13 @@
       upvoteBtn.type = "button";
       upvoteBtn.className = "community-ama-question__upvote" + (q.user_has_upvoted ? " community-ama-question__upvote--active" : "");
       upvoteBtn.setAttribute("aria-pressed", q.user_has_upvoted ? "true" : "false");
-      upvoteBtn.textContent = "Upvote " + Number(q.upvote_count || 0);
+      upvoteBtn.setAttribute("aria-label", q.user_has_upvoted ? "Unlike question" : "Like question");
+      upvoteBtn.title = "Like";
+      upvoteBtn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+        '</svg>' +
+        '<span>' + Number(q.upvote_count || 0) + '</span>';
       upvoteBtn.addEventListener("click", function () {
         handleUpvote(q.id);
       });
@@ -186,16 +192,46 @@
     function renderHero(ama) {
       const status = ama.status || "scheduled";
       setText("ama-status-badge", STATUS_LABELS[status] || "UPCOMING");
+      const pill = byId("ama-status-pill");
+      if (pill) {
+        // Map backend status → pill state modifier (drives dot colour + bg).
+        const stateMap = {
+          live: "live",
+          accepting_questions: "open",
+          scheduled: "scheduled",
+          closed: "closed",
+          archived: "archived",
+        };
+        const state = stateMap[status] || "scheduled";
+        pill.classList.remove(
+          "community-ama-pill--live",
+          "community-ama-pill--open",
+          "community-ama-pill--scheduled",
+          "community-ama-pill--closed",
+          "community-ama-pill--archived"
+        );
+        pill.classList.add("community-ama-pill--" + state);
+        pill.dataset.status = status;
+      }
       setText("ama-title", ama.title);
       setText("ama-description", ama.description || "");
       setText("ama-date-time", formatDateTime(ama.scheduled_at));
       setText("ama-expert-name", ama.expert_name || "Expert");
-      setText("ama-expert-title", ama.expert_title || "Expert");
+      const titleEl = byId("ama-expert-title");
+      if (titleEl) {
+        if (ama.expert_title) {
+          titleEl.textContent = "· " + ama.expert_title;
+          titleEl.style.display = "";
+        } else {
+          titleEl.style.display = "none";
+        }
+      }
 
-      const avatar = byId("ama-expert-avatar");
-      if (avatar) {
-        const name = ama.expert_name || "Expert";
-        avatar.textContent = name.trim().charAt(0).toUpperCase() || "E";
+      const banner = byId("ama-banner-img");
+      if (banner) {
+        banner.src = ama.banner_url && ama.banner_url.trim() !== ""
+          ? ama.banner_url
+          : "/static/images/ama-default-banner.svg";
       }
 
       const acceptsQuestions = status === "accepting_questions" || status === "live";
@@ -318,10 +354,24 @@
     loadAmas();
   };
 
-  document.addEventListener("DOMContentLoaded", window.initCommunityAmas);
-  document.body.addEventListener("htmx:afterSwap", function (event) {
-    if (event.target && event.target.id === "community-content-area") {
+  // Bind both lifecycle hooks safely: the script lives in <head>, so
+  // document.body is null at parse time. Defer body-listener binding to
+  // DOMContentLoaded to avoid a TypeError that previously blocked the
+  // re-init path and left the tab stuck on "Loading…".
+  function bindAfterSwap() {
+    document.body.addEventListener("htmx:afterSwap", function (event) {
+      if (event.target && event.target.id === "community-content-area") {
+        window.initCommunityAmas();
+      }
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      bindAfterSwap();
       window.initCommunityAmas();
-    }
-  });
+    });
+  } else {
+    bindAfterSwap();
+    window.initCommunityAmas();
+  }
 })();

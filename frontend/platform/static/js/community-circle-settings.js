@@ -76,25 +76,29 @@
 
   function hydrateForm() {
     var c = STATE.circle;
-    $('#ccs-avatar').textContent = c.avatar_emoji || '🟢';
+    // Hero avatar — show the circle's name initial (consistent with the
+    // new circle-card design). Emoji is still editable below for back-compat.
+    $('#ccs-avatar').textContent = (c.name || 'C').trim().charAt(0).toUpperCase();
     $('#ccs-name').textContent = c.name || '—';
     $('#ccs-meta-members').textContent = (c.member_count || 0) + ' / ' + (c.max_members || 0) + ' members';
     $('#ccs-meta-privacy').textContent = c.is_public ? 'Public' : 'Private';
     var roleEl = $('#ccs-meta-role');
     var roleLabel = STATE.myRole ? STATE.myRole : 'visitor';
-    roleEl.textContent = roleLabel;
-    roleEl.className = 'ccs-header__role-badge ccs-header__role-badge--' + roleLabel;
+    roleEl.textContent = roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1);
     roleEl.setAttribute('role', 'img');
     roleEl.setAttribute('aria-label', 'Your role in this circle: ' + roleLabel);
 
     $('#ccs-view-feed-link').setAttribute('href', '/community?tab=circle');
 
     $('#ccs-input-name').value = c.name || '';
-    $('#ccs-input-emoji').value = c.avatar_emoji || '🟢';
+    var emojiEl = document.getElementById('ccs-input-emoji');
+    if (emojiEl) emojiEl.value = c.avatar_emoji || '🟢';
     $('#ccs-input-desc').value = c.description || '';
     $('#ccs-input-slug').value = c.slug || '';
     $('#ccs-input-public').checked = !!c.is_public;
     updateSlugPreview();
+    setBannerPreview(c.banner_url || '');
+    if (typeof updateDescCounter === 'function') updateDescCounter();
 
     STATE.saved = readForm();
     refreshFooter();
@@ -103,7 +107,7 @@
   function readForm() {
     return {
       name: ($('#ccs-input-name').value || '').trim(),
-      emoji: ($('#ccs-input-emoji').value || '').trim(),
+      emoji: ((document.getElementById('ccs-input-emoji') || {}).value || '').trim(),
       description: ($('#ccs-input-desc').value || '').trim(),
       slug: ($('#ccs-input-slug').value || '').trim().toLowerCase(),
       is_public: $('#ccs-input-public').checked,
@@ -129,15 +133,120 @@
     $('#ccs-slug-preview').textContent = '/community/circle/' + s;
   }
 
+  // ─── Banner preview + upload (immediate save on file pick) ───────
+  function setBannerPreview(url) {
+    var wrap = $('#ccs-banner-preview');
+    var img = $('#ccs-banner-preview-img');
+    var clearBtn = $('#ccs-banner-clear');
+    if (!wrap || !img) return;
+    if (url) {
+      img.src = url;
+      wrap.hidden = false;
+      if (clearBtn) clearBtn.hidden = false;
+    } else {
+      img.src = '';
+      wrap.hidden = true;
+      if (clearBtn) clearBtn.hidden = true;
+    }
+  }
+
+  async function uploadBanner(file) {
+    var fd = new FormData();
+    fd.append('file', file);
+    var res = await fetch('/api/upload/post-image', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'X-CSRF-Token': csrf() },
+      body: fd,
+    });
+    if (!res.ok) {
+      var msg = 'Upload failed';
+      try { var j = await res.json(); msg = j.error || j.message || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    var data = await res.json();
+    return data.image_url || data.url || '';
+  }
+
+  async function persistBanner(bannerUrl) {
+    if (!STATE.circle) return;
+    var res = await fetch('/api/community/circles/' + STATE.circle.id, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+      body: JSON.stringify({ banner_url: bannerUrl == null ? '' : bannerUrl }),
+    });
+    if (!res.ok) {
+      var msg = 'Save failed';
+      try { var j = await res.json(); msg = j.error || j.message || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    var updated = await res.json();
+    if (STATE.circle) STATE.circle.banner_url = updated.banner_url || '';
+    return updated.banner_url || '';
+  }
+
+  function wireBannerControls() {
+    var fileInput = $('#ccs-banner-file');
+    var clearBtn = $('#ccs-banner-clear');
+    var status = $('#ccs-status');
+    if (fileInput && !fileInput._wired) {
+      fileInput._wired = true;
+      fileInput.addEventListener('change', async function (e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          if (status) status.textContent = 'Banner must be 2 MB or smaller.';
+          fileInput.value = '';
+          return;
+        }
+        if (status) status.textContent = 'Uploading banner…';
+        try {
+          var url = await uploadBanner(file);
+          if (!url) throw new Error('No URL returned.');
+          var saved = await persistBanner(url);
+          setBannerPreview(saved || url);
+          if (status) {
+            status.textContent = 'Banner saved ✓';
+            setTimeout(function () { status.textContent = ''; }, 1800);
+          }
+        } catch (err) {
+          if (status) status.textContent = err.message || 'Upload failed';
+        } finally {
+          fileInput.value = '';
+        }
+      });
+    }
+    if (clearBtn && !clearBtn._wired) {
+      clearBtn._wired = true;
+      clearBtn.addEventListener('click', async function () {
+        if (!confirm('Remove the banner image?')) return;
+        if (status) status.textContent = 'Removing banner…';
+        try {
+          await persistBanner('');
+          setBannerPreview('');
+          if (status) {
+            status.textContent = 'Banner removed ✓';
+            setTimeout(function () { status.textContent = ''; }, 1800);
+          }
+        } catch (err) {
+          if (status) status.textContent = err.message || 'Failed to remove banner';
+        }
+      });
+    }
+  }
+
   // ─── Role gating ──────────────────────────────────────────────────
   function gateCardsByRole() {
     var isOwner = STATE.myRole === 'owner';
     var isAdminOrOwner = STATE.myRole === 'owner' || STATE.myRole === 'admin';
     var isMod = STATE.myRole === 'moderator' || isAdminOrOwner;
 
-    // Danger Zone: owner only
+    // Danger Zone: owner only — mirror visibility to the sidebar nav link.
     var danger = $('#ccs-danger-card');
     if (danger) danger.hidden = !isOwner;
+    var dangerNav = $('#ccs-nav-danger');
+    if (dangerNav) dangerNav.hidden = !isOwner;
 
     // Privacy / slug edits: admin+
     $('#ccs-input-public').disabled = !isAdminOrOwner;
@@ -215,7 +324,9 @@
   }
   async function loadJoinRequests() {
     if (!STATE.circle || STATE.circle.is_public) {
-      var card = $('#ccs-requests-card'); if (card) card.hidden = true; return;
+      var card = $('#ccs-requests-card'); if (card) card.hidden = true;
+      var navP = $('#ccs-nav-requests'); if (navP) navP.hidden = true;
+      return;
     }
     var el = $('#ccs-requests-list');
     if (!el) return;
@@ -226,6 +337,8 @@
       var reqs = data.requests || [];
       var card = $('#ccs-requests-card');
       if (card) card.hidden = reqs.length === 0;
+      var navR = $('#ccs-nav-requests');
+      if (navR) navR.hidden = reqs.length === 0;
       if (reqs.length === 0) {
         el.innerHTML = '<div class="ccs-empty">No pending requests.</div>';
       } else {
@@ -380,8 +493,15 @@
   }
 
   // ─── Boot ─────────────────────────────────────────────────────────
+  function updateDescCounter() {
+    var el = document.getElementById('ccs-input-desc');
+    var out = document.getElementById('ccs-desc-count');
+    if (el && out) out.textContent = String((el.value || '').length);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     loadCircle();
+    wireBannerControls();
     ['ccs-input-name', 'ccs-input-emoji', 'ccs-input-desc', 'ccs-input-public'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('input', refreshFooter);
@@ -389,6 +509,11 @@
     });
     var slug = $('#ccs-input-slug');
     if (slug) slug.addEventListener('input', function () { updateSlugPreview(); refreshFooter(); });
+    var desc = document.getElementById('ccs-input-desc');
+    if (desc) {
+      desc.addEventListener('input', updateDescCounter);
+      updateDescCounter();
+    }
     window.addEventListener('beforeunload', function (e) {
       if (isDirty()) { e.preventDefault(); e.returnValue = ''; }
     });

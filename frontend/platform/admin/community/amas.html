@@ -171,6 +171,15 @@
             <input type="text" id="ama-expert-title" class="admin-input" placeholder="Agricultural Economist" style="width:100%;" />
           </div>
         </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Banner Image</label>
+          <input type="file" id="ama-banner-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="admin-input" style="width:100%;padding:6px;" />
+          <input type="hidden" id="ama-banner-url" />
+          <div id="ama-banner-preview" style="margin-top:8px;display:none;">
+            <img id="ama-banner-preview-img" alt="Banner preview" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;border:1px solid #E5E7EB;" />
+          </div>
+          <p style="margin:6px 0 0;font-size:12px;color:#667085;">PNG/JPEG/WebP/SVG, max 2 MB. Leave blank to use the default POOOL banner.</p>
+        </div>
         <div data-ama-form-grid style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Scheduled Date & Time</label>
@@ -235,6 +244,28 @@
       document.getElementById('cancel-answer-modal-btn')?.addEventListener('click', closeAnswerModal);
       document.getElementById('submit-answer-btn')?.addEventListener('click', submitAnswer);
 
+      document.getElementById('ama-banner-file')?.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        const preview = document.getElementById('ama-banner-preview');
+        const previewImg = document.getElementById('ama-banner-preview-img');
+        if (!file) {
+          if (preview) preview.style.display = 'none';
+          if (previewImg) previewImg.src = '';
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          alert('Banner must be 2 MB or smaller.');
+          e.target.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          if (previewImg) previewImg.src = ev.target.result;
+          if (preview) preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      });
+
       document.getElementById('amas-table')?.addEventListener('click', (event) => {
         const questionsBtn = event.target.closest('[data-action="view-questions"]');
         if (questionsBtn) {
@@ -269,9 +300,11 @@
 
     async function apiFetch(url, options = {}) {
       const headers = new Headers(options.headers || {});
-      if (options.body && !headers.has('Content-Type')) {
+      const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+      if (options.body && !isFormData && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
       }
+      // FormData manages its own multipart boundary — never set Content-Type here.
       const method = (options.method || 'GET').toUpperCase();
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
         const token = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : getCookie('csrf_token');
@@ -440,9 +473,24 @@
       const dt = document.getElementById('ama-scheduled').value;
       const scheduled = dt ? new Date(dt).toISOString() : null;
       const submitBtn = document.getElementById('create-ama-btn');
+      const fileInput = document.getElementById('ama-banner-file');
+      const file = fileInput && fileInput.files ? fileInput.files[0] : null;
 
       try {
         setButtonLoading(submitBtn, true, 'Creating...');
+
+        let bannerUrl = document.getElementById('ama-banner-url').value || null;
+        if (file) {
+          if (file.size > 2 * 1024 * 1024) throw new Error('Banner must be 2 MB or smaller.');
+          const fd = new FormData();
+          fd.append('file', file);
+          // Reuses the post-image endpoint — same image validation + storage path.
+          const upRes = await apiFetch('/api/upload/post-image', { method: 'POST', body: fd });
+          const upJson = await upRes.json();
+          bannerUrl = upJson.image_url || upJson.url || null;
+          if (!bannerUrl) throw new Error('Upload succeeded but no URL returned.');
+        }
+
         await apiFetch('/api/admin/community/amas', {
           method: 'POST',
           body: JSON.stringify({
@@ -450,6 +498,7 @@
             description: document.getElementById('ama-description').value || null,
             expert_name: expertName,
             expert_title: document.getElementById('ama-expert-title').value || null,
+            banner_url: bannerUrl,
             scheduled_at: scheduled,
             status: document.getElementById('ama-status').value,
           })
@@ -471,6 +520,14 @@
       document.getElementById('ama-expert-title').value = '';
       document.getElementById('ama-scheduled').value = '';
       document.getElementById('ama-status').value = 'scheduled';
+      const fileInput = document.getElementById('ama-banner-file');
+      if (fileInput) fileInput.value = '';
+      const urlInput = document.getElementById('ama-banner-url');
+      if (urlInput) urlInput.value = '';
+      const preview = document.getElementById('ama-banner-preview');
+      const previewImg = document.getElementById('ama-banner-preview-img');
+      if (preview) preview.style.display = 'none';
+      if (previewImg) previewImg.src = '';
     }
 
     async function changeStatus(amaId, newStatus) {

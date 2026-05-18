@@ -1,7 +1,8 @@
 {% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones,
 and grow together.",
 extra_css=['ds-cards', 'community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed',
-'community-sync', 'community-circles', 'community-circles-discover', 'community-challenges', 'community-ban-appeal', 'community-autocomplete', 'community-mobile-tabs',
+'community-sync', 'community-circles', 'community-circles-discover', 'community-challenges', 'community-amas',
+'community-ban-appeal', 'community-autocomplete', 'community-mobile-tabs',
 'community-dms', 'pwa-install'] %}{%
 include
 "components/head.html" %}{% endwith %}
@@ -715,13 +716,6 @@ include
              ═══════════════════════════════════════════════════════════ -->
         <div id="community-dms-tab" class="community-tab-panel hidden">
           <div class="community-dms">
-            <div class="community-dms__header">
-              <h2 class="ds-text-xl community-dms__title">Messages</h2>
-              <button type="button" id="community-dm-new-btn" class="ds-btn ds-btn--primary ds-btn--sm">
-                New conversation
-              </button>
-            </div>
-
             <div class="community-dms__layout">
               <!-- Thread list -->
               <aside class="community-dms__threads" aria-label="Conversation list">
@@ -926,6 +920,11 @@ include
                   <option value="financial_advice">Unlicensed financial advice</option>
                   <option value="inappropriate">Inappropriate content</option>
                 </select>
+              </div>
+              <div class="ds-form-group" style="margin-top: 16px;">
+                <label for="report-note" class="ds-label">Additional note <span style="color:#98A2B3;font-weight:400;">(optional)</span></label>
+                <textarea id="report-note" class="ds-input" rows="4" maxlength="500" placeholder="Add any context that helps our moderators review this report." style="resize: vertical; min-height: 90px; font-family: inherit; line-height: 1.5;"></textarea>
+                <div id="report-note-counter" style="font-size: 11px; color: #98A2B3; margin-top: 4px; text-align: right;">0 / 500</div>
               </div>
             </div>
             <div class="ds-modal__footer community-page-modal__footer">

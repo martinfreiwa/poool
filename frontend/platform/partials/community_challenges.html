@@ -21,9 +21,7 @@
       <div x-show="!loading" class="community-challenges__list">
         <template x-for="ch in challenges" :key="ch.id">
           <div class="ds-card community-challenge-card" :class="ch.completed ? 'community-challenge-card--completed' : ''">
-            <div class="community-challenge-card__icon" aria-hidden="true">
-              <span x-text="challengeIcon(ch)"></span>
-            </div>
+            <div class="community-challenge-card__icon" aria-hidden="true" x-html="challengeIcon(ch)"></div>
 
             <div class="community-challenge-card__body">
               <div class="community-challenge-card__title-row">
@@ -40,7 +38,7 @@
                 <span x-text="challengeFrequencyLabel(ch)"></span>
               </div>
 
-              <div class="community-challenge-card__actions">
+              <div class="community-challenge-card__actions" x-show="ch.completed || ch.badge_reward || ch.requirement_type === 'submission'">
                 <template x-if="ch.completed">
                   <span class="ds-badge ds-badge--success community-challenge-card__done">
                     Completed
@@ -52,11 +50,6 @@
                 <template x-if="!ch.completed && ch.requirement_type === 'submission'">
                   <button type="button" class="ds-btn ds-btn--primary ds-btn--sm community-challenge-card__cta"
                           @click="openSubmitModal(ch)">Submit your entry</button>
-                </template>
-                <template x-if="!ch.completed && ch.requirement_type !== 'submission'">
-                  <a class="ds-btn ds-btn--primary ds-btn--sm community-challenge-card__cta"
-                     :href="challengeAction(ch).href"
-                     x-text="challengeAction(ch).label"></a>
                 </template>
                 <template x-if="ch.badge_reward">
                   <span class="ds-badge ds-badge--info community-challenge-card__reward" x-text="'Badge: ' + ch.badge_reward"></span>

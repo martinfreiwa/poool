@@ -1398,16 +1398,18 @@ select.settings-input {
     gap: 16px;
 }
 /* Override holo-card defaults when used as action-grid-card */
+.action-grid-card,
 .action-grid-card.holo-card {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    gap: 12px !important;
-    padding: 32px 24px !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    gap: 16px !important;
+    padding: 24px !important;
     cursor: pointer;
 }
+.action-grid-card:hover,
 .action-grid-card.holo-card:hover {
     transform: translateY(-3px) scale(1.003);
 }

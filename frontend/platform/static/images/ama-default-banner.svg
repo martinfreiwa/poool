@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" role="img" aria-label="POOOL banner">
+  <defs>
+    <linearGradient id="amaBg" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#0000FF"/>
+      <stop offset="55%" stop-color="#1336E3"/>
+      <stop offset="100%" stop-color="#3D6CFF"/>
+    </linearGradient>
+    <radialGradient id="orbA" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbB" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="360" fill="url(#amaBg)"/>
+
+  <!-- Decorative orbs -->
+  <circle cx="120" cy="320" r="240" fill="url(#orbA)" opacity="0.85"/>
+  <circle cx="1100" cy="110" r="60" fill="url(#orbB)"/>
+  <circle cx="220" cy="80" r="3" fill="#FFFFFF" opacity="0.85"/>
+  <circle cx="1080" cy="260" r="2.5" fill="#FFFFFF" opacity="0.9"/>
+
+  <!-- Flowing curves -->
+  <g fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1">
+    <path d="M-20 80 C 240 30, 540 120, 780 80 S 1180 160, 1240 110"/>
+    <path d="M-20 130 C 240 80, 540 170, 780 130 S 1180 210, 1240 160"/>
+    <path d="M-20 180 C 240 130, 540 220, 780 180 S 1180 260, 1240 210"/>
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="1.4">
+    <path d="M-40 300 C 300 240, 700 360, 1240 280"/>
+    <path d="M-40 340 C 300 280, 700 400, 1240 320"/>
+  </g>
+
+  <!-- POOOL wordmark centered -->
+  <g transform="translate(600 180)" fill="#FFFFFF" font-family="'TT Norms Pro', 'Inter', system-ui, sans-serif" font-weight="800" font-size="110" letter-spacing="-4" text-anchor="middle">
+    <text dy="0.34em">POOOL</text>
+  </g>
+</svg>

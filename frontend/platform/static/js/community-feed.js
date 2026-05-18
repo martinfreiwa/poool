@@ -117,17 +117,18 @@ window.initCommunityFeed = function() {
     function timeAgo(dateString) {
         const date = new Date(dateString);
         const seconds = Math.floor((new Date() - date) / 1000);
-        let interval = seconds / 31536000;
-        if (interval > 1) return Math.floor(interval) + " years ago";
-        interval = seconds / 2592000;
-        if (interval > 1) return Math.floor(interval) + " months ago";
-        interval = seconds / 86400;
-        if (interval > 1) return Math.floor(interval) + " days ago";
-        interval = seconds / 3600;
-        if (interval > 1) return Math.floor(interval) + " hours ago";
-        interval = seconds / 60;
-        if (interval > 1) return Math.floor(interval) + " minutes ago";
-        return Math.floor(seconds) + " seconds ago";
+        const fmt = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
+        let n = Math.floor(seconds / 31536000);
+        if (n >= 1) return fmt(n, 'year');
+        n = Math.floor(seconds / 2592000);
+        if (n >= 1) return fmt(n, 'month');
+        n = Math.floor(seconds / 86400);
+        if (n >= 1) return fmt(n, 'day');
+        n = Math.floor(seconds / 3600);
+        if (n >= 1) return fmt(n, 'hour');
+        n = Math.floor(seconds / 60);
+        if (n >= 1) return fmt(n, 'minute');
+        return fmt(Math.max(1, Math.floor(seconds)), 'second');
     }
 
     let currentFeedMode = 'all';
@@ -339,13 +340,15 @@ window.initCommunityFeed = function() {
                 const initialCount = Number.isInteger(c.reaction_count) ? c.reaction_count : 0;
                 reactBtn.setAttribute('aria-pressed', 'false');
                 reactBtn.setAttribute('aria-label', 'React to comment');
-                const fireIcon = document.createElement('span');
-                fireIcon.setAttribute('aria-hidden', 'true');
-                fireIcon.textContent = '🔥';
+                const heartIcon = document.createElement('span');
+                heartIcon.setAttribute('aria-hidden', 'true');
+                heartIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+                heartIcon.style.display = 'inline-flex';
+                heartIcon.style.alignItems = 'center';
                 const countSpan = document.createElement('span');
                 countSpan.className = 'community-comment-row__reaction-count';
                 countSpan.textContent = String(initialCount);
-                reactBtn.appendChild(fireIcon);
+                reactBtn.appendChild(heartIcon);
                 reactBtn.appendChild(countSpan);
                 reactBtn.addEventListener('click', () => toggleCommentReaction(c.id, reactBtn));
                 reactionRow.appendChild(reactBtn);
@@ -1402,6 +1405,18 @@ window.initCommunityFeed = function() {
 
     window.openReportModal = function(postId) {
         document.getElementById('report-post-id').value = postId;
+        const noteEl = document.getElementById('report-note');
+        const counterEl = document.getElementById('report-note-counter');
+        if (noteEl) {
+            noteEl.value = '';
+            if (counterEl) counterEl.textContent = '0 / 500';
+            if (!noteEl.dataset.counterBound) {
+                noteEl.dataset.counterBound = '1';
+                noteEl.addEventListener('input', () => {
+                    if (counterEl) counterEl.textContent = `${noteEl.value.length} / 500`;
+                });
+            }
+        }
         if (typeof window.openCommunityModal === 'function') {
             window.openCommunityModal('report-post-modal');
         } else {
@@ -1412,20 +1427,21 @@ window.initCommunityFeed = function() {
     window.submitReport = async function() {
         const postId = document.getElementById('report-post-id').value;
         const reason = document.getElementById('report-reason').value;
-        
+        const note = (document.getElementById('report-note')?.value || '').trim();
+
         try {
             const res = await fetch(`/api/community/posts/${postId}/report`, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ reason })
+                body: JSON.stringify({ reason, note: note || null })
             });
-            
+
             if (!res.ok) {
                 const err = await res.text();
                 throw new Error(err);
             }
-            
+
             if (typeof window.closeCommunityModal === 'function') {
                 window.closeCommunityModal('report-post-modal');
             } else {
@@ -1762,12 +1778,19 @@ window.initCommunityFeed = function() {
             post:   Number(profile.post_count) >= 1,
           };
           let done = 0;
+          const checkSvg = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8l3.5 3.5L13 4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
           gsEl.querySelectorAll('.community-getting-started__item').forEach((li) => {
             const stepKey = li.dataset.step;
             const isDone = !!steps[stepKey];
             li.classList.toggle('community-getting-started__item--done', isDone);
             const stepBadge = li.querySelector('.community-getting-started__step');
-            if (stepBadge) stepBadge.textContent = isDone ? '✓' : ({ bio: '1', follow: '2', post: '3' })[stepKey];
+            if (stepBadge) {
+              if (isDone) {
+                stepBadge.innerHTML = checkSvg;
+              } else {
+                stepBadge.textContent = ({ bio: '1', follow: '2', post: '3' })[stepKey];
+              }
+            }
             if (isDone) done++;
           });
           const progressEl = document.getElementById('community-getting-started-progress');
@@ -1977,18 +2000,28 @@ window.initCommunityFeed = function() {
 
         const body = document.createElement('div');
         body.className = 'feed-post-body';
-        renderContentWithHashtags(body, p.content || '');
+        // Content is trusted HTML from backend (sanitised at write time, same
+        // path used by {{ p.content | safe }} in the SSR partial).
+        const raw = String(p.content || '');
+        if (/<\/?[a-z][\s\S]*>/i.test(raw)) {
+            body.innerHTML = raw;
+        } else {
+            renderContentWithHashtags(body, raw);
+        }
         card.appendChild(body);
+
+        const heartSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+        const chatSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
 
         const footer = document.createElement('div');
         footer.className = 'feed-post-engagement feed-post-engagement--client';
         const likes = document.createElement('span');
-        likes.className = 'feed-post-engagement__stat';
-        likes.textContent = `\u2764\uFE0F ${p.reaction_count || 0}`;
+        likes.className = 'feed-post-engagement__stat feed-post-engagement__stat--heart';
+        likes.innerHTML = `${heartSvg}<span>${Number(p.reaction_count) || 0}</span>`;
         footer.appendChild(likes);
         const comments = document.createElement('span');
         comments.className = 'feed-post-engagement__stat';
-        comments.textContent = `\uD83D\uDCAC ${p.comment_count || 0}`;
+        comments.innerHTML = `${chatSvg}<span>${Number(p.comment_count) || 0}</span>`;
         footer.appendChild(comments);
         card.appendChild(footer);
 
@@ -2193,7 +2226,7 @@ window.initCommunityFeed = function() {
         meta.className = 'poll-meta';
 
         const votesSpan = document.createElement('span');
-        votesSpan.textContent = `📊 ${poll.total_votes} vote${poll.total_votes !== 1 ? 's' : ''}`;
+        votesSpan.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg><span>${poll.total_votes} vote${poll.total_votes !== 1 ? 's' : ''}</span>`;
         meta.appendChild(votesSpan);
 
         if (poll.is_expired) {

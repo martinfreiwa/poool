@@ -1,157 +1,137 @@
 {# ═══════════════════════════════════════════════════════════════════
-   Community → My Circle tab — 2026-05-16 rework
+   Community → My Circle tab — 2026-05-18 v3 redesign
    ═══════════════════════════════════════════════════════════════════
-   Replaces the old single-circle UI (XP Summary + Stats + Recent XP
-   Activity + member list inline) with a multi-circle Discovery + My
-   Circles experience.
+   One-screen vision:
+     • Pending invites/requests banner (top, only when populated)
+     • Single spotlight hero tile (one recommendation, not one per section)
+     • Slim action bar (search + create)
+     • My Circles horizontal pinned strip (compact pill cards)
+     • Unified Discover grid with filter chips (All / Featured / Trending / New)
+     • Search results override the discover grid when active
 
-   Sections:
-     1. Toolbar: Create button + Search input
-     2. My Circles (cards user is member of, with role badge)
-     3. Discovery: Featured + Trending + New (3 rails of up to 10)
-     4. Pending Invites
-     5. Pending Join Requests (for owned circles)
-
-   All cards use `.ds-card` primitive + new `.cc-card-compact` modifier
-   (defined in community.css) — smaller padding, smaller font, matches
-   the investor-dashboard ds-stat-card density.
-
-   Settings open as a sub-page (`/community/circle/:slug/settings`),
-   NOT a modal. Invite stays modal but is restyled in `community.css`.
+   IDs preserved for handler compat:
+     • cc-search-input · cc-my-circles-list · cc-search-results-section
+     • cc-search-results · cc-search-pagination
+     • invite-list · requests-list · requests-count-badge
+     • create-circle-modal · invite-modal
+   New IDs:
+     • cc-spotlight (hero tile container)
+     • cc-discover-list (single merged grid)
+     • cc-discover-filters (chip group)
 #}
 <div id="community-circle-tab" class="community-tab-panel">
-  <div class="cc-layout">
+  <div class="cc-layout cc-layout--v3">
 
-    <!-- ── Toolbar ─────────────────────────────────────────────── -->
-    <header class="cc-toolbar ds-card">
-      <div class="cc-toolbar__left">
-        <h2 class="cc-toolbar__title">Circles</h2>
-        <p class="cc-toolbar__hint">Discover communities, join as many as you want, or start your own.</p>
-      </div>
-      <div class="cc-toolbar__right">
-        <div class="cc-search">
-          <svg class="cc-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input type="search" id="cc-search-input" class="cc-search__input"
-            placeholder="Search circles by name or topic…"
-            autocomplete="off"
-            oninput="window.ccSearchDebounced && window.ccSearchDebounced(this.value)" />
-        </div>
-        <button type="button" class="ds-btn ds-btn--primary cc-create-btn"
-                onclick="openCommunityModal('create-circle-modal', this)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Create Circle
-        </button>
-      </div>
-    </header>
-
-    <!-- ── Search Results (hidden until user types) ────────────── -->
-    <section id="cc-search-results-section" class="cc-section" hidden>
-      <div class="cc-section__header">
-        <h3 class="cc-section__title">Search Results</h3>
-        <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="ccClearSearch()">Clear</button>
-      </div>
-      <div id="cc-search-results" class="cc-rail" aria-live="polite"></div>
-      <div id="cc-search-pagination" class="cc-pagination"></div>
-    </section>
-
-    <!-- ── My Circles ──────────────────────────────────────────── -->
-    <section id="cc-my-circles-section" class="cc-section">
-      <div class="cc-section__header">
-        <h3 class="cc-section__title">My Circles</h3>
-        <span class="cc-section__count" id="cc-my-circles-count" aria-live="polite"></span>
-      </div>
-      <div id="cc-my-circles-list" class="cc-rail">
-        <div class="cc-empty">Loading your circles…</div>
-      </div>
-    </section>
-
-    <!-- ── Featured Circles ────────────────────────────────────── -->
-    <section id="cc-featured-section" class="cc-section" hidden>
-      <div class="cc-section__header">
-        <h3 class="cc-section__title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          Featured
-        </h3>
-        <span class="cc-section__hint">Picks by the POOOL team</span>
-      </div>
-      <div id="cc-featured-list" class="cc-rail"></div>
-    </section>
-
-    <!-- ── Trending Circles ────────────────────────────────────── -->
-    <section id="cc-trending-section" class="cc-section">
-      <div class="cc-section__header">
-        <h3 class="cc-section__title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-            <polyline points="17 6 23 6 23 12"/>
-          </svg>
-          Trending
-        </h3>
-        <span class="cc-section__hint">Most active in last 7 days</span>
-      </div>
-      <div id="cc-trending-list" class="cc-rail">
-        <div class="cc-empty">Loading…</div>
-      </div>
-    </section>
-
-    <!-- ── New Circles ─────────────────────────────────────────── -->
-    <section id="cc-new-section" class="cc-section">
-      <div class="cc-section__header">
-        <h3 class="cc-section__title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="16"/>
-            <line x1="8" y1="12" x2="16" y2="12"/>
-          </svg>
-          New
-        </h3>
-        <span class="cc-section__hint">Created in last 30 days</span>
-      </div>
-      <div id="cc-new-list" class="cc-rail">
-        <div class="cc-empty">Loading…</div>
-      </div>
-    </section>
-
-    <!-- ── Pending Invites ─────────────────────────────────────── -->
-    <section id="pending-invites-section" class="cc-section" hidden>
-      <div class="cc-section__header">
-        <h3 class="cc-section__title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- ── Compact alerts row (invites + join requests) ──────────── -->
+    <div class="cc-alerts">
+      <section id="pending-invites-section" class="cc-alert cc-alert--invites" hidden>
+        <div class="cc-alert__icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
           </svg>
-          Pending Invites
-        </h3>
-      </div>
-      <div id="invite-list" class="cc-rail"></div>
-    </section>
+        </div>
+        <div class="cc-alert__body">
+          <strong class="cc-alert__title">Pending Invites</strong>
+          <div id="invite-list" class="cc-alert__list"></div>
+        </div>
+      </section>
 
-    <!-- ── Pending Join Requests (owners/admins of private circles) -->
-    <section id="pending-requests-section" class="cc-section" hidden>
-      <div class="cc-section__header">
-        <h3 class="cc-section__title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <section id="pending-requests-section" class="cc-alert cc-alert--requests" hidden>
+        <div class="cc-alert__icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
-          Join Requests
-        </h3>
-        <span id="requests-count-badge" class="ds-badge ds-badge--warning"></span>
+        </div>
+        <div class="cc-alert__body">
+          <strong class="cc-alert__title">
+            Join Requests
+            <span id="requests-count-badge" class="ds-badge ds-badge--warning"></span>
+          </strong>
+          <div id="requests-list" class="cc-alert__list"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ── Spotlight hero (single recommendation) ────────────────── -->
+    <section id="cc-spotlight-section" class="cc-spotlight-wrap" hidden>
+      <div class="cc-spotlight" id="cc-spotlight">
+        <div class="cc-empty cc-empty--loading">Loading recommendation…</div>
       </div>
-      <div id="requests-list" class="cc-rail"></div>
+    </section>
+
+    <!-- ── Action bar (search + create) ──────────────────────────── -->
+    <div class="cc-actionbar">
+      <div class="cc-actionbar__search">
+        <svg class="cc-actionbar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="search" id="cc-search-input" class="cc-actionbar__input"
+          placeholder="Search circles by name or topic…"
+          autocomplete="off"
+          oninput="window.ccSearchDebounced && window.ccSearchDebounced(this.value)" />
+      </div>
+      <button type="button" class="ds-btn ds-btn--primary cc-actionbar__create"
+              onclick="openCommunityModal('create-circle-modal', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Create Circle
+      </button>
+    </div>
+
+    <!-- ── My Circles (horizontal strip) ─────────────────────────── -->
+    <section id="cc-my-circles-section" class="cc-myrow">
+      <div class="cc-myrow__head">
+        <h3 class="cc-myrow__title">My Circles</h3>
+        <span class="cc-myrow__count" id="cc-my-circles-count" aria-live="polite"></span>
+      </div>
+      <div id="cc-my-circles-list" class="cc-myrow__rail">
+        <div class="cc-myrow__empty">Loading your circles…</div>
+      </div>
+    </section>
+
+    <!-- ── Search Results (replaces discover grid while typing) ──── -->
+    <section id="cc-search-results-section" class="cc-section cc-section--v3" hidden>
+      <div class="cc-section__head">
+        <h3 class="cc-section__title">Search Results</h3>
+        <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="ccClearSearch()">Clear</button>
+      </div>
+      <div id="cc-search-results" class="cc-grid" aria-live="polite"></div>
+      <div id="cc-search-pagination" class="cc-pagination"></div>
+    </section>
+
+    <!-- ── Discover (single unified grid with filter chips) ──────── -->
+    <section id="cc-discover-section" class="cc-section cc-section--v3">
+      <div class="cc-section__head">
+        <h3 class="cc-section__title">Discover</h3>
+        <div id="cc-discover-filters" class="cc-chips" role="group" aria-label="Discover filter">
+          <button type="button" class="cc-chip cc-chip--active" data-cc-filter="all">All</button>
+          <button type="button" class="cc-chip" data-cc-filter="featured">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Featured
+          </button>
+          <button type="button" class="cc-chip" data-cc-filter="trending">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            Trending
+          </button>
+          <button type="button" class="cc-chip" data-cc-filter="new">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            New
+          </button>
+        </div>
+      </div>
+      <div id="cc-discover-list" class="cc-grid">
+        <div class="cc-empty cc-empty--loading">Loading circles…</div>
+      </div>
     </section>
 
   </div>
 
-  <!-- ── Create Circle Modal (kept, restyled via .cc-modal in CSS) ── -->
+  <!-- ── Create Circle Modal (unchanged) ── -->
   <div id="create-circle-modal" class="cc-modal community-modal"
        role="dialog" aria-modal="true"
        aria-labelledby="create-circle-title"
@@ -179,13 +159,6 @@
           <textarea id="circle-desc-input" class="ds-input" maxlength="500" rows="3"
                     placeholder="What's your circle about?"></textarea>
         </div>
-        <div class="cc-form-row cc-form-row--inline">
-          <div style="flex:0 0 80px">
-            <label for="circle-emoji-input" class="cc-form-row__label">Emoji</label>
-            <input id="circle-emoji-input" type="text" class="ds-input" maxlength="5" value="🟢"
-                   style="text-align:center;font-size:18px" />
-          </div>
-        </div>
       </div>
       <footer class="cc-modal__footer">
         <button class="ds-btn ds-btn--ghost" onclick="closeCommunityModal('create-circle-modal')">Cancel</button>
@@ -194,7 +167,7 @@
     </div>
   </div>
 
-  <!-- ── Invite Modal (kept, restyled — search + referral link) ── -->
+  <!-- ── Invite Modal (unchanged) ── -->
   <div id="invite-modal" class="cc-modal community-modal"
        role="dialog" aria-modal="true"
        aria-labelledby="invite-circle-title"

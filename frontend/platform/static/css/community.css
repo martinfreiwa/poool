@@ -111,11 +111,25 @@ button .poool-icon-custom {
 .community-feed {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
+}
+
+/* Composer keeps a clearer separation from the post list — the post
+   list itself stays tight (16px) so the eye groups posts together. */
+.community-feed > .community-composer {
+  margin-bottom: 8px;
 }
 
 /* .community-create-post and .create-post-* removed in commit 8 —
    replaced by the .community-composer ds-card primitive (commit 2). */
+
+/* Feed post list container — the .community-feed gap doesn't reach
+   here because posts are wrapped inside #community-feed-container. */
+#community-feed-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
 /* Feed posts */
 .feed-post {
@@ -123,8 +137,10 @@ button .poool-icon-custom {
   border: 1px solid var(--card-border-color);
   border-radius: var(--card-border-radius);
   padding: 20px;
-  transition: box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  transition: box-shadow 0.2s, transform 0.2s;
 }
+.feed-post:hover { box-shadow: 0 4px 12px rgba(10, 13, 18, 0.06); }
 
 .feed-post:hover {
   box-shadow: var(--card-shadow-hover, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
@@ -226,25 +242,25 @@ button .poool-icon-custom {
 /* Feed & Sort Toggle Buttons */
 .feed-toggle-btn {
   font-family: var(--font-family);
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 500;
+  font-size: 13px;
   color: #667085;
   background: transparent;
-  /* Padding + min-height lift the tap target to the 44px recommended
-     by DESIGN.md mobile rules. Visually identical on desktop. */
-  padding: 10px 14px;
-  min-height: 36px;
-  border-radius: 8px;
+  padding: 4px 12px;
+  min-height: 28px;
+  line-height: 18px;
+  border-radius: 6px;
   border: none;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 .feed-toggle-btn.active {
-  background: #EEF4FF;
-  color: var(--btn-primary-bg);
+  background: #FFFFFF;
+  color: #101828;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
 }
 .feed-toggle-btn:hover:not(.active) {
-  background: #F2F4F7;
   color: #101828;
 }
 .feed-toggle-btn:focus-visible {
@@ -252,7 +268,7 @@ button .poool-icon-custom {
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--btn-primary-bg, #001DCA);
 }
 @media (max-width: 768px) {
-  .feed-toggle-btn { min-height: 44px; }
+  .feed-toggle-btn { min-height: 36px; padding: 6px 14px; }
 }
 
 
@@ -375,6 +391,58 @@ button .poool-icon-custom {
 
 .feed-reaction-btn svg { flex-shrink: 0; }
 
+/* Icon-only variant — used for the heart "react" button and the
+   comments-toggle button. No pill chrome, just the glyph (+ optional
+   count). Heart fills red when active. */
+.feed-reaction-btn--icon-only {
+  padding: 6px;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 50%;
+  color: #667085;
+  position: relative;
+}
+.feed-reaction-btn--icon-only:hover {
+  background: transparent !important;
+}
+.feed-reaction-btn--icon-only:not(.feed-reaction-btn--comments):hover {
+  color: #E11D48;
+}
+.feed-reaction-btn--icon-only.feed-reaction-btn--comments:hover {
+  color: var(--btn-primary-bg, #0000FF);
+}
+.feed-reaction-btn--icon-only.active {
+  color: #E11D48;
+}
+.feed-reaction-btn--icon-only.active svg {
+  fill: #E11D48;
+  stroke: #E11D48;
+}
+
+/* "+1" hover tooltip above the heart — replaces the multi-emoji picker. */
+.feed-reaction-btn--icon-only[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #181D27;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+.feed-reaction-btn--icon-only[data-tooltip]:hover::after,
+.feed-reaction-btn--icon-only[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+
 .feed-post-stats {
   display: flex;
   gap: 6px;
@@ -417,17 +485,34 @@ button .poool-icon-custom {
 
 /* Profile card */
 .community-profile-card {
+  position: relative;
+  overflow: hidden;
   background: var(--card-bg);
   border: 1px solid var(--card-border-color);
   border-radius: var(--card-border-radius);
-  padding: 16px;
+  padding: 20px 16px 16px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.community-profile-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: var(--card-border-radius) var(--card-border-radius) 0 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .profile-card-header {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 16px;
+  padding-bottom: 14px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--card-border-color);
 }
 
 .profile-card-info { flex: 1; }
@@ -662,11 +747,33 @@ button .poool-icon-custom {
 /* Announcement cards use the .ds-card base for surface (bg, border, radius,
    shadow, padding) — these rules add announcement-specific layout only. */
 .ann-card {
+  position: relative;
+  overflow: hidden;
   padding: 20px;
   gap: 12px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #EAECF0);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  transition: box-shadow 0.2s ease;
 }
+.ann-card:hover { box-shadow: 0 4px 12px rgba(10, 13, 18, 0.06); }
 
-.ann-card--pinned { border-left: 3px solid var(--btn-primary-bg); }
+/* Brand gradient top bar — matches every other community card. */
+.ann-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+/* Pinned variant gets a slightly thicker bar instead of the awkward left rail. */
+.ann-card--pinned { border-left: none; }
+.ann-card--pinned::before { height: 5px; }
 
 .ann-card-pin {
   display: flex;
@@ -689,23 +796,29 @@ button .poool-icon-custom {
   margin-bottom: 0;
 }
 
+/* Brand-blue gradient tile + mint-green icon stroke — matches the
+   tx-detail hero icon, wallet row icons, and refer-and-earn icon. */
 .ann-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #EEF4FF;
-  color: #3538CD;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
 }
+.ann-icon svg { color: #03FF88; stroke: #03FF88; }
 
-.ann-icon--platform   { background: #EEF4FF; color: #3538CD; }
-.ann-icon--commodity  { background: #ECFDF5; color: #047857; }
-.ann-icon--dividend   { background: #FEF3C7; color: #B45309; }
-.ann-icon--market     { background: #F5F3FF; color: #6D28D9; }
-.ann-icon--farm       { background: #FFF1F2; color: #BE123C; }
+/* Variant accents subtly tint the box-shadow only; the tile itself
+   stays brand blue so every announcement reads as a POOOL surface. */
+.ann-icon--platform   { box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18); }
+.ann-icon--commodity  { box-shadow: 0 2px 6px rgba(3, 255, 136, 0.22); }
+.ann-icon--dividend   { box-shadow: 0 2px 6px rgba(245, 158, 11, 0.20); }
+.ann-icon--market     { box-shadow: 0 2px 6px rgba(139, 92, 246, 0.20); }
+.ann-icon--farm       { box-shadow: 0 2px 6px rgba(225, 29, 72, 0.20); }
 
 
 
@@ -753,9 +866,40 @@ button .poool-icon-custom {
 .ann-read-more:hover { text-decoration: underline; }
 
 .ann-reactions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-size: 12px;
   color: #667085;
 }
+.ann-reactions__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #667085;
+}
+.ann-reactions__stat svg { flex-shrink: 0; }
+
+/* Interactive heart + comment buttons on announcement cards. */
+.ann-reactions__stat--btn {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #667085;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.ann-reactions__stat--btn:hover { background: #F2F4F7; }
+button.ann-reactions__stat--btn:hover { color: #E11D48; }
+button.ann-reactions__stat--btn.active { color: #E11D48; }
+button.ann-reactions__stat--btn.active svg {
+  fill: #E11D48;
+  stroke: #E11D48;
+}
+a.ann-reactions__stat--btn:hover { color: var(--btn-primary-bg, #0000FF); }
 
 /* ═══════════════════════════════════════════════════════════════════
    TAB 3: MY CIRCLE
@@ -1103,40 +1247,55 @@ button .poool-icon-custom {
    ═══════════════════════════════════════════════════════════════════ */
 
 .poll-card {
-  background: #F9FAFB;
+  position: relative;
+  overflow: hidden;
+  background: #FFFFFF;
   border: 1px solid var(--card-border-color);
   border-radius: 12px;
-  padding: 16px;
+  padding: 18px 16px 16px;
   margin-top: 12px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+}
+.poll-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .poll-question {
   font-family: var(--font-family);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--page-title-color);
   margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 
 .poll-option {
   position: relative;
   margin-bottom: 8px;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
   border: 1px solid var(--card-border-color);
   background: #fff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .poll-option:hover {
-  border-color: var(--btn-primary-bg);
-  box-shadow: 0 0 0 1px rgba(0, 0, 255, 0.15);
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: #F5F8FF;
 }
 
 .poll-option.voted {
-  border-color: var(--btn-primary-bg);
-  background: #EEF4FF;
+  border-color: var(--btn-primary-bg, #0000FF);
+  background: #F5F8FF;
 }
 
 .poll-option-bar {
@@ -1144,13 +1303,13 @@ button .poool-icon-custom {
   top: 0;
   left: 0;
   height: 100%;
-  background: rgba(0, 0, 255, 0.06);
-  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(0, 0, 255, 0.10) 0%, rgba(3, 255, 136, 0.18) 100%);
+  border-radius: 10px;
   transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .poll-option.voted .poll-option-bar {
-  background: rgba(0, 0, 255, 0.12);
+  background: linear-gradient(90deg, rgba(0, 0, 255, 0.16) 0%, rgba(3, 255, 136, 0.28) 100%);
 }
 
 .poll-option-content {
@@ -1206,14 +1365,18 @@ button .poool-icon-custom {
 .poll-meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  margin-top: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--card-border-color);
   font-size: 12px;
-  color: #667085;
+  font-weight: 500;
+  color: var(--text-secondary, #667085);
 }
 
 .poll-meta span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
 }
@@ -2218,12 +2381,31 @@ button .poool-icon-custom {
    variant just provides the bits that the server-rendered partial would
    otherwise interpolate. */
 .feed-post--client {
+  position: relative;
+  overflow: hidden;
   background: var(--card-bg, #FFFFFF);
   border: 1px solid var(--card-border-color, #EAECF0);
   border-radius: var(--card-border-radius, 14px);
-  padding: 20px;
+  padding: 24px 20px 18px;
   margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
 }
+.feed-post--client::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: var(--card-border-radius, 14px) var(--card-border-radius, 14px) 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.feed-post--client .feed-post-body { font-size: 14px; line-height: 1.55; color: #101828; }
+.feed-post--client .feed-post-body p { margin: 0 0 8px; }
+.feed-post--client .feed-post-body p:last-child { margin-bottom: 0; }
+.feed-post-engagement__stat svg { flex-shrink: 0; }
+.feed-post-engagement__stat--heart svg { color: #E11D48; fill: #E11D48; stroke: #E11D48; }
 
 .feed-post-avatar-circle__img {
   width: 40px;
@@ -2725,8 +2907,18 @@ button .poool-icon-custom {
 }
 
 .feed-post-comments__submit {
+  width: 40px;
   height: 40px;
-  padding: 0 16px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+.feed-post-comments__submit svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* ── Shared empty + loading states (commit 4) ─────────────────────── */
@@ -2779,17 +2971,33 @@ button .poool-icon-custom {
 /* First-visit onboarding card. Shown in right rail when post_count === 0,
    replacing the stacked-empty-state look of the trending widgets. */
 .community-getting-started {
+  position: relative;
+  overflow: hidden;
   background: var(--color-base-white, #ffffff);
   border: 1px solid var(--ds-border, #E5E7EB);
   border-radius: 12px;
-  padding: 16px 18px;
+  padding: 20px 18px 16px;
   margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+}
+.community-getting-started::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+  pointer-events: none;
 }
 .community-getting-started__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  padding-bottom: 14px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--ds-border, #E5E7EB);
 }
 .community-getting-started__title {
   font-weight: 600;
@@ -2804,25 +3012,42 @@ button .poool-icon-custom {
   padding: 2px 8px;
   border-radius: 999px;
 }
+/* Vertical stepper — numbered dot on the left, label + link on the
+   right, vertical connector between adjacent dots. Done segments
+   paint blue→green. Same brand language as the tx-timeline. */
 .community-getting-started__list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 8px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 .community-getting-started__item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px 1fr;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
+  padding: 6px 0;
+  position: relative;
   font-size: 13px;
 }
+.community-getting-started__item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 30px;
+  bottom: -2px;
+  left: 11px;
+  width: 2px;
+  background: #EAECF0;
+  z-index: 0;
+}
+.community-getting-started__item--done:not(:last-child)::before {
+  background: linear-gradient(180deg, #0000FF 0%, #03FF88 100%);
+}
 /* POOOL brand colors: blue background + mint green numerals, mirroring the
-   sidebar "Add Asset" CTA pattern. Previously used a soft #EEF4FF tint that
-   read as a Notion-style placeholder. */
+   sidebar "Add Asset" CTA pattern. */
 .community-getting-started__step {
-  flex-shrink: 0;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -2835,11 +3060,21 @@ button .poool-icon-custom {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   box-shadow: 0 1px 2px rgba(0, 0, 255, 0.18);
+  position: relative;
+  z-index: 1;
+  margin-top: 1px;
+}
+.community-getting-started__item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .community-getting-started__name {
   font-weight: 600;
   color: var(--page-title-color, #101828);
-  margin-bottom: 2px;
+  font-size: 13px;
+  line-height: 1.3;
 }
 .community-getting-started__link {
   color: var(--btn-primary-bg, #001DCA);
@@ -2848,11 +3083,16 @@ button .poool-icon-custom {
 }
 .community-getting-started__link:hover { text-decoration: underline; }
 
-/* Done-state — step badge becomes a green check, label is muted but
-   the link stays clickable in case the user wants to revisit. */
+/* Done-state — matches the tx-timeline done dot: solid brand blue
+   background with a mint-green check stroke. */
 .community-getting-started__item--done .community-getting-started__step {
-  background: #DCFCE7;
-  color: #15803D;
+  background: var(--btn-primary-bg, #0000FF);
+  color: #03FF88;
+  box-shadow: 0 1px 2px rgba(0, 0, 255, 0.18);
+}
+.community-getting-started__item--done .community-getting-started__step svg {
+  display: block;
+  stroke: #03FF88;
 }
 .community-getting-started__item--done .community-getting-started__name {
   text-decoration: line-through;
@@ -3047,66 +3287,164 @@ button .poool-icon-custom {
   padding-bottom: 8px;
 }
 
+/* Facebook-style comment row:
+   - Avatar on the left
+   - Name + content live INSIDE a single rounded bubble
+   - Time + actions live BELOW the bubble as small subtle text links
+   - Reaction pill anchors to the bottom-right of the bubble       */
 .community-comment-row {
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  padding: 8px 0;
   align-items: flex-start;
 }
+.community-comment-row + .community-comment-row { padding-top: 4px; }
 
 .community-comment-row__avatar {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .community-comment-row__avatar--initials {
-  background: #E4E6EB;
+  background: var(--btn-primary-bg, #0000FF);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--body-color, #344054);
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
+/* The body wraps the bubble + the meta-row underneath. Header+content
+   occupy their own full-width row (the bubble). Reactions + actions +
+   timestamp flow together inline on the meta row below. */
 .community-comment-row__body {
   flex: 1;
-  background: var(--content-bg, #F9FAFB);
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--card-border-color, #EAECF0);
-}
-
-.community-comment-row__header {
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 0;
+  column-gap: 0;
+}
+/* Header + content form the bubble — both full-width so they merge into
+   a single rounded surface. Meta items wrap onto the next row. */
+.community-comment-row__body > .community-comment-row__header,
+.community-comment-row__body > .community-comment-row__content {
+  flex-basis: 100%;
+  max-width: 100%;
 }
 
-.community-comment-row__name {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--body-color, #344054);
-}
-
-.community-comment-row__time {
-  font-size: 12px;
-  color: var(--text-secondary, #667085);
-}
-
+/* The bubble = header (name) + content. Two sibling divs styled as
+   one rounded chip via parent contents-display. Warm lavender tint
+   distinguishes user comments from the page chrome without leaning on
+   the primary brand blue or green. */
+.community-comment-row__header,
 .community-comment-row__content {
+  background: #F5F0FF;
+  padding-left: 14px;
+  padding-right: 14px;
+  max-width: 100%;
+  display: block;
+  border-left: 1px solid #EBE3FF;
+  border-right: 1px solid #EBE3FF;
+}
+.community-comment-row__header {
+  padding-top: 10px;
+  padding-bottom: 0;
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid #EBE3FF;
+  margin: 0;
+  font-size: 13px;
+  display: flex !important;
+  align-items: baseline;
+  gap: 8px;
+}
+.community-comment-row__content {
+  padding-bottom: 10px;
+  padding-top: 2px;
+  border-radius: 0 0 16px 16px;
+  border-bottom: 1px solid #EBE3FF;
   font-size: 14px;
-  color: var(--body-color, #475467);
+  line-height: 1.45;
+  color: var(--page-title-color, #050505);
   word-break: break-word;
 }
-
-/* 14.8.6 — comment reaction button */
-.community-comment-row__reactions {
-  display: flex;
+.community-comment-row__name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--page-title-color, #050505);
+  letter-spacing: -0.01em;
+}
+/* Timestamp + actions all share one meta row beneath the bubble. */
+.community-comment-row__time,
+.community-comment-row__reactions,
+.community-comment-row__own-actions,
+.community-comment-row__body > .community-comment-row__reply-btn {
   margin-top: 6px;
+}
+.community-comment-row__reactions { margin-left: 12px; }
+.community-comment-row__own-actions { margin-left: 12px; }
+.community-comment-row__body > .community-comment-row__reply-btn { margin-left: 12px; }
+.community-comment-row__time { margin-left: auto; }
+
+.community-comment-row__time {
+  font-size: 11px;
+  color: var(--text-secondary, #98A2B3);
+  font-weight: 500;
+  margin-left: auto !important;
+  margin-top: 0 !important;
+}
+
+.community-comment-row__reactions {
+  display: inline-flex;
+}
+
+/* Action links — text-only "Edit · Delete · Reply" pattern. */
+.community-comment-row__own-actions,
+.community-comment-row__body > .community-comment-row__reply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary, #65676B) !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+.community-comment-row__own-actions .community-comment-row__edit-btn,
+.community-comment-row__own-actions .community-comment-row__delete-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary, #65676B) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  letter-spacing: 0 !important;
+}
+.community-comment-row__own-actions .community-comment-row__edit-btn:hover,
+.community-comment-row__own-actions .community-comment-row__delete-btn:hover,
+.community-comment-row__body > .community-comment-row__reply-btn:hover {
+  color: var(--btn-primary-bg, #0000FF) !important;
+  text-decoration: underline;
+  background: transparent !important;
+}
+.community-comment-row__own-actions .community-comment-row__delete-btn:hover {
+  color: #B42318 !important;
 }
 
 /* WS1.1 — nested reply rows. */
@@ -3149,30 +3487,36 @@ button .poool-icon-custom {
   padding: 8px 0;
 }
 
+/* Heart-style reaction: bare icon + count, no chrome. Fills red when active. */
 .community-comment-row__reaction-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--card-border-color, #EAECF0);
-  background: var(--card-bg, #FFFFFF);
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
   font-family: var(--font-family);
   font-size: 12px;
   color: var(--text-secondary, #667085);
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .community-comment-row__reaction-btn:hover {
-  background: var(--content-bg, #F9FAFB);
+  background: transparent;
+  color: #E11D48;
 }
 
 .community-comment-row__reaction-btn[aria-pressed="true"],
 .community-comment-row__reaction-btn--active {
-  background: var(--danger-bg, #FEF3F2);
-  color: var(--btn-danger-bg, #B42318);
-  border-color: var(--danger-bg, #FECDCA);
+  background: transparent;
+  color: #E11D48;
+}
+.community-comment-row__reaction-btn[aria-pressed="true"] svg,
+.community-comment-row__reaction-btn--active svg {
+  fill: #E11D48;
+  stroke: #E11D48;
 }
 
 .community-comment-row__reaction-btn:focus-visible {
@@ -3637,35 +3981,68 @@ button .poool-icon-custom {
 }
 
 .community-challenges__list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+@media (max-width: 640px) {
+  .community-challenges__list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .community-challenge-card {
-  padding: 24px;
+  padding: 14px 16px 14px;
   display: flex;
-  gap: 24px;
+  flex-direction: row !important;
+  gap: 12px;
   align-items: flex-start;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.community-challenge-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
 }
 
 .community-challenge-card:hover {
   box-shadow: var(--card-shadow, 0 1px 3px rgba(10, 13, 18, 0.05));
 }
 
+/* Brand Icon Tile (DESIGN.md primary pattern) — compact 36px variant */
 .community-challenge-card__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: rgba(3, 255, 136, 0.1);
-  color: var(--btn-primary-bg, #0000FF);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   flex-shrink: 0;
+  margin-top: 4px;
 }
+
+.community-challenge-card__icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: #03FF88;
+  fill: none;
+}
+
+/* Completed challenges keep the same blue Brand Icon Tile — the green
+   "Completed" badge in the footer is the state signal, not the icon. */
 
 .community-challenge-card__body {
   flex: 1;
@@ -3675,43 +4052,56 @@ button .poool-icon-custom {
 .community-challenge-card__title-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 8px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
 }
 
 .community-challenge-card__title {
   margin: 0;
   font-weight: 600;
+  font-size: 14px;
+  line-height: 1.3;
 }
 
 .community-challenge-card__xp {
   white-space: nowrap;
+  font-size: 11px;
+  padding: 2px 8px;
 }
 
 .community-challenge-card__desc {
   color: var(--text-secondary, #667085);
-  margin: 0 0 16px;
-  line-height: 1.5;
+  margin: 0 0 10px;
+  line-height: 1.4;
+  font-size: 13px;
 }
 
 .community-challenge-card__progress {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   background: var(--progress-track-bg, #F2F4F7);
+  height: 6px;
 }
 
 .community-challenge-card__meta {
   display: flex;
   justify-content: space-between;
   color: var(--text-secondary, #667085);
+  font-size: 12px;
 }
 
 .community-challenge-card__actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 8px;
   flex-wrap: wrap;
+}
+
+.community-challenge-card__cta {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  min-height: 32px !important;
 }
 
 .community-challenge-card--completed {
@@ -3789,36 +4179,53 @@ button .poool-icon-custom {
 
 .community-ama-hero {
   padding: 0;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   overflow: hidden;
   display: flex;
+  flex-direction: column !important;
   align-items: stretch;
-  flex-wrap: wrap;
   gap: 0;
   position: relative;
 }
 
-/* 3px brand accent strip on AMA hero per DESIGN §2 */
+.community-ama-hero__banner {
+  width: 100%;
+  aspect-ratio: 1200 / 360;
+  max-height: 220px;
+  background: #0000FF;
+  overflow: hidden;
+  position: relative;
+}
+
+.community-ama-hero__banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 4px brand accent strip on AMA hero — matches all other community cards */
 .community-ama-hero::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--btn-primary-bg, #0000FF), #03FF88);
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
   border-top-left-radius: var(--card-border-radius, 12px);
   border-top-right-radius: var(--card-border-radius, 12px);
   z-index: 1;
+  display: block;
 }
 
 .community-ama-hero__body {
   flex: 1;
-  min-width: 300px;
-  padding: 32px;
+  min-width: 280px;
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .community-ama-hero__status {
@@ -3826,7 +4233,7 @@ button .poool-icon-custom {
 }
 
 .community-ama-hero__title {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   margin: 0;
   line-height: 1.3;
@@ -3834,56 +4241,68 @@ button .poool-icon-custom {
 }
 
 .community-ama-hero__desc {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--body-color, #344054);
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.55;
   max-width: 600px;
 }
 
 .community-ama-hero__meta {
   display: flex;
-  gap: 24px;
-  font-size: 14px;
+  gap: 18px;
+  font-size: 13px;
   flex-wrap: wrap;
-  margin-top: 12px;
-  color: var(--body-color, #344054);
+  margin-top: 8px;
+  color: var(--text-secondary, #667085);
 }
 
 .community-ama-hero__meta-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.community-ama-hero__meta-item svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--text-secondary, #667085);
+  fill: none;
+  flex-shrink: 0;
 }
 
 .community-ama-hero__expert {
   text-align: center;
-  padding: 24px;
-  min-width: 200px;
+  padding: 20px 24px;
+  min-width: 180px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--content-bg, #F9FAFB);
   border-left: 1px solid var(--card-border-color, #E5E7EB);
 }
 
+/* Brand Icon Tile avatar for the AMA expert */
 .community-ama-hero__expert-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #EEF4FF;
-  color: var(--btn-primary-bg, #0000FF);
-  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  font-size: 18px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.22);
+  letter-spacing: 0.5px;
 }
 
 .community-ama-hero__expert-title {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary, #667085);
+  line-height: 1.4;
 }
 
 .community-ama__grid {
@@ -4496,10 +4915,41 @@ button .poool-icon-custom {
 
 /* ── AMA question (commit 14 — JS-rendered) ───────────────────────── */
 .community-ama-question {
-  padding: 16px 20px;
+  padding: 14px 18px 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.community-ama-question:hover {
+  box-shadow: 0 8px 24px -12px rgba(10, 13, 18, 0.10);
+  transform: translateY(-1px);
+}
+
+.community-ama-question::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
+}
+
+.community-ama-question__top {
+  align-items: center !important;
+  padding-top: 4px;
+}
+
+.community-ama-question__text {
+  font-size: 14px !important;
+  font-weight: 500;
+  line-height: 1.5 !important;
+  color: var(--page-title-color, #181D27) !important;
 }
 
 .community-ama-question__top {
@@ -4517,15 +4967,80 @@ button .poool-icon-custom {
   word-break: break-word;
 }
 
+/* Shared AMA pill — used for both the hero status and the Featured badge.
+   Brand-blue tint + uppercase + leading status dot. Dot color varies by
+   state via the .community-ama-pill--{state} modifier. */
+.community-ama-pill,
 .community-ama-question__featured {
   white-space: nowrap;
-  font-size: 11px;
-  font-weight: 600;
-  background: #FFF9C4;
-  color: #F57F17;
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid #FFF59D;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: rgba(0, 0, 255, 0.08);
+  color: #0000FF;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 255, 0.18);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+  align-self: flex-start;
+  width: auto;
+  max-width: max-content;
+}
+
+.community-ama-pill::before,
+.community-ama-question__featured::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #03FF88;
+  box-shadow: 0 0 0 2px rgba(3, 255, 136, 0.25);
+}
+
+/* Live state — pulsing red dot */
+.community-ama-pill--live {
+  color: #B42318;
+  background: rgba(180, 35, 24, 0.08);
+  border-color: rgba(180, 35, 24, 0.20);
+}
+.community-ama-pill--live::before {
+  background: #E11D48;
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.30);
+  animation: amaPillPulse 1.6s ease-in-out infinite;
+}
+
+/* Accepting questions — brand green dot (default already) */
+.community-ama-pill--open::before {
+  background: #03FF88;
+  box-shadow: 0 0 0 2px rgba(3, 255, 136, 0.25);
+}
+
+/* Scheduled / upcoming — solid brand blue dot */
+.community-ama-pill--scheduled::before {
+  background: #0000FF;
+  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.20);
+}
+
+/* Closed / archived — muted grey */
+.community-ama-pill--closed,
+.community-ama-pill--archived {
+  color: #475467;
+  background: rgba(71, 84, 103, 0.08);
+  border-color: rgba(71, 84, 103, 0.18);
+}
+.community-ama-pill--closed::before,
+.community-ama-pill--archived::before {
+  background: #98A2B3;
+  box-shadow: 0 0 0 2px rgba(152, 162, 179, 0.25);
+}
+
+@keyframes amaPillPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.30); }
+  50%      { box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.18); }
 }
 
 .community-ama-question__answer {
@@ -4555,33 +5070,55 @@ button .poool-icon-custom {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid var(--card-border-color, #EAECF0);
 }
 
+/* Heart-style Like button — mirrors .feed-reaction-btn--icon-only (no pill chrome,
+   bare glyph; heart turns red on hover and fills red when active). */
 .community-ama-question__upvote {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--card-border-color, #EAECF0);
-  background: var(--card-bg, #fff);
-  color: var(--text-secondary, #667085);
+  padding: 6px;
+  border-radius: 50%;
+  border: none !important;
+  background: transparent !important;
+  color: #667085;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
   font-family: var(--font-family);
 }
 
+.community-ama-question__upvote svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  transition: stroke 0.15s ease, fill 0.15s ease;
+}
+
+.community-ama-question__upvote > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+}
+
 .community-ama-question__upvote:hover {
-  background: var(--content-bg, #F9FAFB);
+  color: #E11D48;
 }
 
 .community-ama-question__upvote--active,
 .community-ama-question__upvote[aria-pressed="true"] {
-  background: #EFF8FF;
-  color: #175CD3;
-  border-color: #B2DDFF;
+  color: #E11D48;
+}
+.community-ama-question__upvote--active svg,
+.community-ama-question__upvote[aria-pressed="true"] svg {
+  stroke: #E11D48;
+  fill: #E11D48;
 }
 
 .community-ama-question__upvote:focus-visible {
@@ -4844,6 +5381,144 @@ button .poool-icon-custom {
 }
 
 /* ── Community page-level ds-modal overrides (commit 16) ──────────── */
+/*
+   The community .ds-modal markup uses an outer .ds-modal wrapper
+   containing a .ds-modal__backdrop sibling and a .ds-modal__content
+   card. None of those classes were styled, so the modal rendered
+   inline as a 480px-wide box at whatever scroll position the JS
+   happened to flip display:block on. This block restores the
+   expected fixed full-screen overlay + centered card behaviour.
+*/
+.ds-modal[role="dialog"] {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: transparent;
+  border-radius: 0;
+  max-width: none;
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-shadow: none;
+  overflow: hidden;
+  animation: none;
+}
+.ds-modal[role="dialog"][style*="display: block"],
+.ds-modal[role="dialog"][style*="display:block"] {
+  /* JS sets display:block; flexbox centering needs flex. */
+  display: flex !important;
+}
+.ds-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(52, 64, 84, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: pointer;
+  z-index: 0;
+}
+.ds-modal__content {
+  position: relative;
+  z-index: 1;
+  background: #FFFFFF;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow:
+    0px 8px 8px -4px rgba(16, 24, 40, 0.03),
+    0px 20px 24px -4px rgba(16, 24, 40, 0.12);
+  animation: ds-modal-slide-in 0.22s ease-out;
+}
+/* Brand gradient bar on every overlay modal — matches dashboard cards. */
+.ds-modal__content::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 16px 16px 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+/* Visual separator between header and body. */
+.ds-modal[role="dialog"] .ds-modal__header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+.ds-modal[role="dialog"] .ds-modal__title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.ds-modal[role="dialog"] .ds-modal__body {
+  padding: 20px 24px;
+}
+
+/* Style native select boxes inside dialogs to match the platform inputs —
+   the bare select.ds-input renders as a text box with OS chevron. */
+.ds-modal[role="dialog"] select.ds-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  height: 40px;
+  padding: 0 36px 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--page-title-color, #101828);
+  background-color: #FFFFFF;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  border: 1px solid var(--card-border-color, #D0D5DD);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.ds-modal[role="dialog"] select.ds-input:hover {
+  border-color: #98A2B3;
+}
+.ds-modal[role="dialog"] select.ds-input:focus {
+  outline: none;
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.12);
+}
+
+/* Same focus treatment for the textarea so the two fields feel like a set. */
+.ds-modal[role="dialog"] textarea.ds-input {
+  border: 1px solid var(--card-border-color, #D0D5DD);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--page-title-color, #101828);
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ds-modal[role="dialog"] textarea.ds-input:focus {
+  outline: none;
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.12);
+}
+
+.ds-modal[role="dialog"] .ds-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--page-title-color, #344054);
+  margin-bottom: 6px;
+}
+
 .community-page-modal__content--sm {
   max-width: 400px;
 }
@@ -4855,9 +5530,25 @@ button .poool-icon-custom {
 .community-page-modal__footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: 10px;
+  padding: 14px 24px 18px;
   border-top: 1px solid var(--card-border-color, #EAECF0);
+  background: #FAFBFC;
+}
+
+/* Neutral Cancel/secondary button inside dialog footers — the global
+   ds-btn--secondary fills with brand mint which clashes with the
+   destructive primary in confirm dialogs. */
+.ds-modal[role="dialog"] .community-page-modal__footer .ds-btn--secondary {
+  background: #FFFFFF !important;
+  color: var(--page-title-color, #181D27) !important;
+  border: 1px solid var(--card-border-color, #D0D5DD) !important;
+  font-weight: 600 !important;
+}
+.ds-modal[role="dialog"] .community-page-modal__footer .ds-btn--secondary:hover {
+  background: #F5F8FF !important;
+  border-color: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-bg, #0000FF) !important;
 }
 
 /* ── User profile modal (commit 16) ───────────────────────────────── */
@@ -5671,7 +6362,9 @@ button .poool-icon-custom {
   border-radius: 8px;
   background: #F2F4F7;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #475467;
   flex-shrink: 0;
 }
 .cc-card-compact__info { min-width: 0; flex: 1; }
@@ -5785,23 +6478,43 @@ button .poool-icon-custom {
   padding: 16px;
 }
 .cc-modal__panel {
+  position: relative;
+  overflow: hidden;
   width: min(480px, calc(100% - 32px));
   padding: 0;
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
+  background: #FFFFFF;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 8px -4px rgba(16, 24, 40, 0.03),
+    0 20px 24px -4px rgba(16, 24, 40, 0.12);
+}
+.cc-modal__panel::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 0 auto 0 !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%) !important;
+  border-radius: 16px 16px 0 0 !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
 }
 .cc-modal__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding: 18px 24px 14px;
   border-bottom: 1px solid var(--card-border-color, #E5E7EB);
 }
 .cc-modal__title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--page-title-color, #181D27);
 }
 .cc-modal__close {
@@ -5818,28 +6531,62 @@ button .poool-icon-custom {
 }
 .cc-modal__close:hover { background: #F2F4F7; color: var(--page-title-color, #181D27); }
 .cc-modal__body {
-  padding: 18px 20px;
+  padding: 20px 24px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .cc-modal__footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 20px;
+  gap: 10px;
+  padding: 14px 24px 18px;
   border-top: 1px solid var(--card-border-color, #E5E7EB);
-  background: #FAFAFA;
-  border-radius: 0 0 12px 12px;
+  background: #FAFBFC;
+  border-radius: 0 0 16px 16px;
+}
+
+/* Neutral Cancel/ghost button inside cc-modal — matches the report dialog. */
+.cc-modal__footer .ds-btn--ghost {
+  background: #FFFFFF !important;
+  color: var(--page-title-color, #181D27) !important;
+  border: 1px solid var(--card-border-color, #D0D5DD) !important;
+  font-weight: 600 !important;
+}
+.cc-modal__footer .ds-btn--ghost:hover {
+  background: #F5F8FF !important;
+  border-color: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-bg, #0000FF) !important;
 }
 
 .cc-form-row { display: flex; flex-direction: column; gap: 6px; }
 .cc-form-row--inline { flex-direction: row; gap: 12px; }
 .cc-form-row__label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--page-title-color, #181D27);
+  color: var(--page-title-color, #344054);
+}
+
+/* Inputs inside cc-modal pick up brand-blue focus rings to feel like a set. */
+.cc-modal__panel input.ds-input,
+.cc-modal__panel textarea.ds-input {
+  width: 100%;
+  border: 1px solid var(--card-border-color, #D0D5DD);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--page-title-color, #101828);
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cc-modal__panel input.ds-input:focus,
+.cc-modal__panel textarea.ds-input:focus {
+  outline: none;
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.12);
 }
 .cc-form-row__hint {
   font-size: 11px;
@@ -5862,18 +6609,665 @@ button .poool-icon-custom {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Circle tab v3 redesign — 2026-05-18
+   One spotlight + horizontal My Circles strip + unified Discover grid
+   with filter chips. Replaces v1 rails and v2 mosaic.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cc-layout--v3 {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 20px 0 64px;
+}
+
+/* ── Alerts row (invites + join requests) ─────────────────────────── */
+.cc-alerts { display: flex; flex-direction: column; gap: 10px; }
+.cc-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  background: var(--card-bg, #fff);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.cc-alert--invites { border-left: 4px solid #6D28D9; }
+.cc-alert--requests { border-left: 4px solid #F59E0B; }
+.cc-alert__icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: #F3F0FF;
+  color: #6D28D9;
+  flex-shrink: 0;
+}
+.cc-alert--requests .cc-alert__icon { background: #FEF3C7; color: #B45309; }
+.cc-alert__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.cc-alert__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cc-alert__list { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+
+/* ── Spotlight hero (single recommendation) ───────────────────────── */
+.cc-spotlight-wrap { width: 100%; }
+.cc-spotlight {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(3, 255, 136, 0.30), transparent 55%),
+    radial-gradient(circle at 12% 90%, rgba(3, 255, 136, 0.18), transparent 50%),
+    linear-gradient(135deg, #0000FF 0%, #1E40AF 55%, #312E81 100%);
+  box-shadow: 0 14px 36px -10px rgba(0, 0, 255, 0.35);
+}
+.cc-spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.10), transparent 55%);
+  pointer-events: none;
+}
+.cc-spotlight__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 32px;
+  color: #FFFFFF;
+  min-height: 220px;
+}
+.cc-spotlight__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #03FF88;
+}
+.cc-spotlight__name {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: #FFFFFF;
+}
+.cc-spotlight__desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 60ch;
+}
+.cc-spotlight__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+}
+.cc-spotlight__dot { opacity: 0.5; }
+.cc-spotlight__actions { margin-top: auto; }
+.cc-spotlight__cta {
+  height: 44px;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: #98FB96 !important;
+  color: #0000FF !important;
+  border: 0 !important;
+  box-shadow: 0 6px 18px rgba(3, 255, 136, 0.35);
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cc-spotlight__cta:hover {
+  background: #8AF188 !important;
+  color: #0000FF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(3, 255, 136, 0.50);
+}
+@media (max-width: 560px) {
+  .cc-spotlight__card { padding: 24px; min-height: 0; }
+  .cc-spotlight__name { font-size: 22px; }
+  .cc-spotlight__desc { font-size: 14px; }
+}
+
+/* ── Action bar (reused from v2) ──────────────────────────────────── */
+.cc-actionbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cc-actionbar__search { position: relative; flex: 1 1 320px; min-width: 0; }
+.cc-actionbar__icon {
+  position: absolute;
+  left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #717680);
+  pointer-events: none;
+}
+.cc-actionbar__input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 40px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--card-bg, #fff);
+  color: var(--page-title-color, #181D27);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cc-actionbar__input::placeholder { color: #98A2B3; }
+.cc-actionbar__input:focus {
+  outline: none;
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.10);
+}
+.cc-actionbar__create {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+@media (max-width: 560px) {
+  .cc-actionbar__create { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ── My Circles strip (horizontal pinned pills) ───────────────────── */
+.cc-myrow { display: flex; flex-direction: column; gap: 10px; }
+.cc-myrow__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 2px;
+}
+.cc-myrow__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  letter-spacing: -0.01em;
+}
+.cc-myrow__count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #717680);
+  padding: 2px 8px;
+  background: #F2F4F7;
+  border-radius: 999px;
+}
+.cc-myrow__rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+}
+.cc-myrow__rail::-webkit-scrollbar { height: 6px; }
+.cc-myrow__rail::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 3px; }
+.cc-myrow__empty {
+  width: 100%;
+  padding: 16px;
+  border: 1px dashed var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #717680);
+  background: #FAFBFF;
+}
+.cc-pill {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  background: var(--card-bg, #fff);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.cc-pill:hover {
+  border-color: var(--btn-primary-bg, #0000FF);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 255, 0.08);
+}
+.cc-pill__avatar {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.cc-pill__body { display: flex; flex-direction: column; min-width: 0; }
+.cc-pill__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-pill__meta {
+  font-size: 11px;
+  color: var(--text-secondary, #717680);
+  text-transform: capitalize;
+}
+
+/* ── Section v3 (used by Discover + Search Results) ───────────────── */
+.cc-section--v3 { display: flex; flex-direction: column; gap: 14px; }
+/* Honor the HTML `hidden` attribute — class display: flex would otherwise
+   beat the user-agent [hidden] {display:none} rule. */
+.cc-layout--v3 [hidden] { display: none !important; }
+.cc-section--v3 .cc-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+  flex-wrap: wrap;
+}
+.cc-section--v3 .cc-section__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  letter-spacing: -0.01em;
+}
+
+/* ── Filter chips ─────────────────────────────────────────────────── */
+.cc-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.cc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  background: var(--card-bg, #fff);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #475467);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.cc-chip:hover { border-color: #B8BCC0; color: var(--page-title-color, #181D27); }
+.cc-chip--active {
+  background: var(--btn-primary-bg, #0000FF);
+  border-color: var(--btn-primary-bg, #0000FF);
+  color: #FFFFFF;
+}
+.cc-chip--active:hover { color: #FFFFFF; border-color: var(--btn-primary-bg, #0000FF); }
+.cc-chip svg { flex-shrink: 0; }
+
+/* ── Uniform discover/search grid + card ──────────────────────────── */
+.cc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.cc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  background: var(--card-bg, #fff);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+/* Canonical 4px brand top accent (matches profile/tier/support cards) */
+.cc-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 14px 14px 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.cc-card:hover {
+  border-color: var(--btn-primary-bg, #0000FF);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 255, 0.08);
+}
+.cc-card__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+.cc-card__avatar {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  font-size: 15px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.cc-card__title-block { flex: 1; min-width: 0; }
+.cc-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cc-card__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--page-title-color, #101828);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.cc-card__meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-secondary, #535862);
+  font-variant-numeric: tabular-nums;
+}
+.cc-card__desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary, #475467);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 38px;
+}
+.cc-card__desc--placeholder { min-height: 38px; }
+.cc-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+.cc-card__cta {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* ── Tag chips on cards (Featured / Trending / New) ───────────────── */
+.cc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.cc-tag svg { flex-shrink: 0; }
+.cc-tag--featured { background: #FEF3C7; color: #92400E; }
+.cc-tag--trending { background: #ECFDF5; color: #047857; }
+.cc-tag--new      { background: #EEF1FF; color: #0000FF; }
+
+/* ── Empty state v3 ───────────────────────────────────────────────── */
+.cc-layout--v3 .cc-empty {
+  grid-column: 1 / -1;
+  padding: 32px 20px;
+  border: 1px dashed var(--card-border-color, #E5E7EB);
+  border-radius: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #535862);
+  background: linear-gradient(180deg, #FAFBFF 0%, #FFFFFF 100%);
+}
+.cc-layout--v3 .cc-empty--loading {
+  background: var(--card-bg, #fff);
+  color: var(--text-secondary, #98A2B3);
+  font-style: italic;
+}
+
+/* ── Card meta enhancements (member stack + activity pill) ────────── */
+.cc-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cc-card__sep { opacity: 0.5; }
+.cc-card__footer {
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Member-fill stack — three dots, filled by ratio of member_count/max */
+.cc-stack {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2px;
+}
+.cc-stack__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #E4E7EC;
+  border: 1.5px solid var(--card-bg, #fff);
+  margin-left: -3px;
+  box-sizing: content-box;
+}
+.cc-stack__dot:first-child { margin-left: 0; }
+.cc-stack__dot--on { background: linear-gradient(135deg, #0000FF 0%, #03FF88 100%); }
+
+/* Face-avatar stack — up to 4 overlapping 22px circles + "+N" pill.
+   Replaces the dot fallback whenever the API ships a member_preview. */
+.cc-faces {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+}
+.cc-faces__face {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--card-bg, #fff);
+  margin-left: -6px;
+  background: #E4E7EC;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: content-box;
+}
+.cc-faces__face:first-child { margin-left: 0; }
+.cc-faces__face img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cc-faces__face--initial {
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.cc-faces__more {
+  margin-left: 2px;
+  padding: 0 6px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 999px;
+  background: #F2F4F7;
+  color: var(--text-secondary, #475467);
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Activity pill: quiet / low / active */
+.cc-activity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #F2F4F7;
+  color: var(--text-secondary, #475467);
+  white-space: nowrap;
+}
+.cc-activity__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #98A2B3;
+  flex-shrink: 0;
+}
+.cc-activity--low {
+  background: #EFF6FF;
+  color: #1D4ED8;
+}
+.cc-activity--low .cc-activity__dot { background: #1D4ED8; }
+.cc-activity--active {
+  background: #ECFDF5;
+  color: #047857;
+}
+.cc-activity--active .cc-activity__dot {
+  background: #10B981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+  animation: cc-pulse 2.2s ease-in-out infinite;
+}
+@keyframes cc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  50%      { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-activity--active .cc-activity__dot { animation: none; }
+}
+
+/* ── Skeleton loaders (matched to card shapes) ────────────────────── */
+.cc-skel {
+  pointer-events: none;
+  user-select: none;
+}
+.cc-skel .cc-skel__line,
+.cc-skel .cc-skel__avatar,
+.cc-skel .cc-skel__btn {
+  display: block;
+  background: linear-gradient(90deg, #EEF1F6 25%, #F7F9FC 50%, #EEF1F6 75%);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: cc-shimmer 1.3s infinite linear;
+}
+.cc-skel__row { display: flex; gap: 12px; align-items: center; }
+.cc-skel__col { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.cc-skel__avatar {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.cc-skel__line { height: 12px; }
+.cc-skel__line--xs { width: 35%; height: 10px; }
+.cc-skel__line--sm { width: 55%; }
+.cc-skel__line--md { width: 70%; }
+.cc-skel__line--lg { width: 90%; }
+.cc-skel__line--xl { width: 60%; height: 22px; border-radius: 8px; }
+.cc-skel__btn {
+  width: 110px;
+  height: 32px;
+  border-radius: 10px;
+}
+.cc-skel__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+/* Spotlight skeleton sits inside the cobalt gradient; tint the placeholders
+   so they read as white-on-blue rather than light-grey-on-blue. */
+.cc-spotlight__card.cc-skel { gap: 12px; }
+.cc-spotlight__card.cc-skel .cc-skel__line,
+.cc-spotlight__card.cc-skel .cc-skel__btn {
+  background: linear-gradient(90deg, rgba(255,255,255,0.20) 25%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.20) 75%);
+  background-size: 200% 100%;
+}
+@keyframes cc-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-skel .cc-skel__line,
+  .cc-skel .cc-skel__avatar,
+  .cc-skel .cc-skel__btn { animation: none; }
+}
+
+/* ── Joined / just-joined optimistic state ─────────────────────────── */
+.cc-card--joined .cc-card__cta--just-joined,
+.cc-card__cta--just-joined {
+  background: #ECFDF5 !important;
+  color: #047857 !important;
+  border: 1px solid #A7F3D0 !important;
+  animation: cc-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cc-pop {
+  0%   { transform: scale(0.92); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-card__cta--just-joined { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Circle Settings sub-page (.ccs-*) — 2026-05-16 rework
    Replaces the in-page circle-settings modal. Card density matches
    ds-cards + investor-dashboard pattern.
    ═══════════════════════════════════════════════════════════════════ */
 
 .ccs-page {
-  max-width: 880px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px 0 96px;
+  padding: 20px 0 96px;
 }
 
 .ccs-back {
@@ -5893,14 +7287,28 @@ button .poool-icon-custom {
   align-items: center;
   gap: 16px;
   padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.ccs-header-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
 }
 .ccs-header__avatar {
-  width: 56px; height: 56px;
-  border-radius: 14px;
-  background: #F2F4F7;
-  font-size: 28px;
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  font-size: 22px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.22);
 }
 .ccs-header__info { flex: 1; min-width: 0; }
 .ccs-header__name {
@@ -5935,11 +7343,24 @@ button .poool-icon-custom {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.ccs-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
 }
 .ccs-card__head {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding-top: 4px;
 }
 .ccs-card__title {
   margin: 0;
@@ -5953,8 +7374,93 @@ button .poool-icon-custom {
   color: var(--text-secondary, #717680);
 }
 
-.ccs-card--danger { border-color: #FDA29B; }
 .ccs-card--danger .ccs-card__title { color: #B42318; }
+
+/* Banner uploader (Basic Info card) ────────────────────────────── */
+.ccs-banner-uploader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ccs-banner-uploader__preview {
+  width: 100%;
+  aspect-ratio: 1200 / 360;
+  max-height: 180px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #F2F4F7;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+}
+.ccs-banner-uploader__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Styled drop-zone label — hides the native file input. */
+.ccs-banner-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 16px;
+  border-radius: 12px;
+  border: 1.5px dashed rgba(0, 0, 255, 0.25);
+  background: rgba(0, 0, 255, 0.025);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  text-align: center;
+}
+.ccs-banner-dropzone:hover {
+  background: rgba(0, 0, 255, 0.05);
+  border-color: rgba(0, 0, 255, 0.45);
+}
+.ccs-banner-dropzone__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+.ccs-banner-dropzone__icon {
+  width: 28px;
+  height: 28px;
+  color: #0000FF;
+  margin-bottom: 4px;
+}
+.ccs-banner-dropzone__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0000FF;
+}
+.ccs-banner-dropzone__hint {
+  font-size: 12px;
+  color: #667085;
+}
+
+.ccs-banner-remove {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(225, 29, 72, 0.25);
+  background: rgba(225, 29, 72, 0.06);
+  color: #B42318;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.ccs-banner-remove:hover {
+  background: rgba(225, 29, 72, 0.10);
+  border-color: rgba(225, 29, 72, 0.40);
+}
 
 .ccs-grid {
   display: grid;
@@ -6109,6 +7615,223 @@ button .poool-icon-custom {
   .ccs-header-card { flex-wrap: wrap; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Circle Settings v2 redesign — 2026-05-18
+   Bold hero tile + sticky two-column nav, matching the new Circle tab.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ccs-page--v2 {
+  max-width: 1100px;
+  padding-bottom: 120px;
+  gap: 24px;
+}
+
+/* ── Hero (bold cobalt tile, mirrors cc-spotlight) ────────────────── */
+.ccs-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 28px;
+  border-radius: 20px;
+  overflow: hidden;
+  color: #FFFFFF;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(3, 255, 136, 0.28), transparent 55%),
+    radial-gradient(circle at 8% 90%, rgba(3, 255, 136, 0.16), transparent 50%),
+    linear-gradient(135deg, #0000FF 0%, #1E40AF 55%, #312E81 100%);
+  box-shadow: 0 14px 36px -10px rgba(0, 0, 255, 0.35);
+}
+.ccs-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.10), transparent 55%);
+  pointer-events: none;
+}
+.ccs-hero > * { position: relative; z-index: 1; }
+.ccs-hero__avatar {
+  width: 60px; height: 60px;
+  border-radius: 14px;
+  background: #98FB96;
+  border: 1px solid rgba(0, 0, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0000FF;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(3, 255, 136, 0.35);
+}
+.ccs-hero__info { flex: 1; min-width: 0; }
+.ccs-hero__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #03FF88;
+  display: block;
+  margin-bottom: 4px;
+}
+.ccs-hero__name {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: #FFFFFF;
+}
+.ccs-hero__meta {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.82);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ccs-hero__dot { opacity: 0.45; }
+.ccs-hero__actions { flex-shrink: 0; }
+.ccs-hero__cta {
+  height: 40px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: #98FB96 !important;
+  color: #0000FF !important;
+  border: 0 !important;
+  box-shadow: 0 6px 16px rgba(3, 255, 136, 0.40);
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.ccs-hero__cta:hover {
+  background: #8AF188 !important;
+  color: #0000FF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(3, 255, 136, 0.55);
+}
+
+/* ── Two-column layout (sticky nav + scrolling content) ───────────── */
+.ccs-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+/* Single-column variant — sidebar removed, sections fill the row. */
+.ccs-layout--single {
+  grid-template-columns: 1fr;
+}
+.ccs-nav {
+  position: sticky;
+  top: 16px;
+  padding: 12px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border-color, #EAECF0);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.ccs-nav nav { display: flex; flex-direction: column; gap: 2px; }
+.ccs-nav__link {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #475467);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ccs-nav__link:hover {
+  background: #F5F8FF;
+  color: var(--btn-primary-bg, #0000FF);
+}
+.ccs-nav__link--danger { color: #B42318; }
+.ccs-nav__link--danger:hover { background: #FEF3F2; color: #B42318; }
+.ccs-sections { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ccs-anchor { display: block; scroll-margin-top: 16px; }
+
+/* ── Card head with icon chip (mirrors cc-section icon chips) ────── */
+.ccs-page--v2 .ccs-card__head {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding-top: 4px;
+}
+/* Brand Icon Tile (matches DESIGN.md pattern — used across community
+   cards, settings, rewards). All non-danger variants render as the same
+   blue-gradient tile with a green-stroke SVG; the variant class is kept
+   for back-compat with the template attributes. */
+.ccs-card__icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+}
+.ccs-card__icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #03FF88;
+  fill: none;
+}
+.ccs-card__icon--primary,
+.ccs-card__icon--blue,
+.ccs-card__icon--green,
+.ccs-card__icon--amber,
+.ccs-card__icon--neutral {
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+}
+/* Danger keeps its red tint as the visual cue for destructive actions. */
+.ccs-card__icon--danger {
+  background: rgba(225, 29, 72, 0.10);
+  color: #B42318;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.18);
+}
+.ccs-card__icon--danger svg {
+  stroke: #B42318;
+}
+.ccs-page--v2 .ccs-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ccs-field__counter {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-secondary, #667085);
+  margin-top: 4px;
+}
+
+/* Centered emoji input */
+.ccs-input--center { text-align: center; font-size: 18px; }
+
+/* Tablet/mobile — nav collapses to inline pills above the content */
+@media (max-width: 900px) {
+  .ccs-layout { grid-template-columns: 1fr; }
+  .ccs-nav { position: static; }
+  .ccs-nav nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .ccs-nav__link { padding: 6px 12px; font-size: 12px; }
+}
+@media (max-width: 560px) {
+  .ccs-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  .ccs-hero__name { font-size: 22px; }
+  .ccs-hero__actions { width: 100%; }
+  .ccs-hero__cta { width: 100%; justify-content: center; }
+}
+
 /* ── Invite modal — clean up the old inline-styled dropdown ─────── */
 .cc-invite-results__row {
   display: flex;
@@ -6195,21 +7918,49 @@ button .poool-icon-custom {
    ═══════════════════════════════════════════════════════════════════ */
 .community-empty-state {
   position: relative;
-  padding: 40px 24px 28px;
+  padding: 56px 32px 44px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  overflow: hidden;
 }
 .community-empty-state::before {
   content: '';
   display: block;
-  width: 88px;
-  height: 26px;
-  margin: 0 auto 6px;
+  width: 120px;
+  height: 36px;
+  margin: 0 auto 4px;
   background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
   opacity: 0.85;
+}
+.community-empty-state::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
+}
+.community-empty-state h3,
+.community-empty-state h4,
+.community-empty-state .cp-empty__title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--page-title-color, #181D27);
+  margin: 4px 0 0;
+}
+.community-empty-state p,
+.community-empty-state .cp-empty__desc {
+  font-size: 14px;
+  color: var(--text-secondary, #667085);
+  max-width: 380px;
+  margin: 0;
+  line-height: 1.5;
 }
 
 /* Apply branding to the existing follow-empty + feed-empty classes
@@ -6233,28 +7984,46 @@ button .poool-icon-custom {
    any legacy markup still tries to render. */
 .community-following-empty__icon { display: none !important; }
 
-/* Profile-card buttons: align with rest of platform's ghost+primary
-   pattern. Edit profile is the primary action; View profile becomes
-   a quiet link to reduce visual weight. */
+/* Profile-card buttons: use brand pair (blue bg + mint text) on the
+   primary action and a neutral secondary for the quieter follow-up. */
+.community-profile-card__edit-btn,
+.community-profile-card__view-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
 .community-profile-card__edit-btn {
-  background: var(--btn-primary-bg, #0000FF);
-  color: #fff;
-  border-color: var(--btn-primary-bg, #0000FF);
+  background: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-color, #03FF88) !important;
+  border: 1px solid var(--btn-primary-bg, #0000FF) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 255, 0.18);
 }
 .community-profile-card__edit-btn:hover {
-  background: #0019B0;
-  border-color: #0019B0;
-  color: #fff;
+  background: #0019B0 !important;
+  border-color: #0019B0 !important;
+  color: var(--btn-primary-color, #03FF88) !important;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 255, 0.28);
 }
+
 .community-profile-card__view-btn {
-  background: transparent;
-  color: var(--btn-primary-bg, #0000FF);
-  border: 1px solid var(--card-border-color, #E5E7EB);
-  margin-top: 6px;
+  background: #FFFFFF !important;
+  color: var(--page-title-color, #181D27) !important;
+  border: 1px solid var(--card-border-color, #E5E7EB) !important;
+  margin-top: 8px;
+  text-decoration: none !important;
 }
 .community-profile-card__view-btn:hover {
-  background: #F8F9FB;
-  border-color: var(--btn-primary-bg, #0000FF);
+  background: #F5F8FF !important;
+  border-color: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-bg, #0000FF) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
