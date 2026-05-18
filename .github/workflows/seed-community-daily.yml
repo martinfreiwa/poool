@@ -68,18 +68,9 @@ jobs:
           set -euo pipefail
           DB_URL=$(gcloud secrets versions access latest --secret="${DB_SECRET}")
           echo "::add-mask::$DB_URL"
-          # Swap the host:port in the URL with 127.0.0.1:5432 so the
-          # Cloud SQL Auth Proxy (listening on localhost) handles tunneling.
-          # Expected URL shape: postgres://user:pass@host[:port]/dbname[?query]
-          REWRITTEN=$(printf '%s' "$DB_URL" \
-            | sed -E 's#@[^/]+(/|$)#@127.0.0.1:5432\1#' \
-            | sed -E 's#sslmode=[a-z-]+#sslmode=disable#')
-          # Cloud SQL Auth Proxy terminates TLS upstream; loopback should not require it.
-          case "$REWRITTEN" in
-            *sslmode=*) ;;
-            *\?*)  REWRITTEN="${REWRITTEN}&sslmode=disable" ;;
-            *)     REWRITTEN="${REWRITTEN}?sslmode=disable" ;;
-          esac
+          # Rewrite secret to point at the local Cloud SQL Auth Proxy.
+          # Handles both TCP and unix-socket (host=/cloudsql/...) shapes.
+          REWRITTEN=$(printf '%s' "$DB_URL" | python3 scripts/_rewrite_db_url_for_proxy.py)
           echo "::add-mask::$REWRITTEN"
           echo "database_url=$REWRITTEN" >> "$GITHUB_OUTPUT"
 
