@@ -101,6 +101,7 @@ artifacts/
 
 # Cache directories
 .tmp/
+tmp/
 .pytest_cache/
 .ruff_cache/
 

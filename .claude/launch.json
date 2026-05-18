@@ -12,6 +12,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "cd backend && PORT=8889 SERVER_PORT=8889 cargo run"],
       "port": 8889
+    },
+    {
+      "name": "backend-4000",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "PORT=4000 SERVER_PORT=4000 bash start_local.sh"],
+      "port": 4000
     }
   ]
 }

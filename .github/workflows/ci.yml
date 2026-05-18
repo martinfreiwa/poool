@@ -122,19 +122,22 @@ jobs:
         # in name order and LOGS-AND-CONTINUES on per-file failure rather
         # than aborting — production migrations that ALTER tables in the
         # split `poool_community` DB are expected to error here without
-        # killing the whole boot. Mirror that contract: drop ON_ERROR_STOP
-        # so the affiliate test DB still gets the migrations it needs
-        # (orders, wallets, affiliate_*) and silently ignores the ones it
-        # doesn't.
+        # killing the whole boot. Mirror that contract: keep
+        # ON_ERROR_STOP per-file (so a single bad statement doesn't leave
+        # the file's BEGIN-block silently aborted, with subsequent
+        # ALTER/CREATEs swallowed), but `|| true` between files so one
+        # cross-DB migration doesn't kill the rest of the chain.
         run: |
           for f in $(ls ../database/*.sql | sort); do
             base=$(basename "$f")
             echo "applying $base"
-            PGPASSWORD=poool psql -h localhost -U poool -d poool -f "$f" \
-              2>&1 | grep -E "^(ERROR|FATAL)" | head -3 || true
+            PGPASSWORD=poool psql -h localhost -U poool -d poool \
+              -v ON_ERROR_STOP=1 -f "$f" 2>&1 \
+              | grep -E "ERROR|FATAL" | head -2 || true
           done
-          # Sanity: affiliate_commissions must exist for the tests to run.
-          PGPASSWORD=poool psql -h localhost -U poool -d poool -c "SELECT 1 FROM affiliate_commissions LIMIT 1" > /dev/null
+          # Sanity gates: anything below has to exist for affiliate tests.
+          PGPASSWORD=poool psql -h localhost -U poool -d poool -c \
+            "SELECT gross_amount_cents FROM affiliate_commissions LIMIT 1" > /dev/null
 
       - name: Run affiliate integration tests (live DB)
         run: |
