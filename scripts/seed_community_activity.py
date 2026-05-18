@@ -312,7 +312,7 @@ def insert(community_conn, posts, comments, reactions, wipe_marker=None):
                     SET comment_count = sub.cnt
                     FROM (
                       SELECT post_id, COUNT(*) AS cnt
-                      FROM comments WHERE post_id = ANY(%s)
+                      FROM comments WHERE post_id = ANY(%s::uuid[])
                       GROUP BY post_id
                     ) sub
                     WHERE p.id = sub.post_id
@@ -329,7 +329,7 @@ def insert(community_conn, posts, comments, reactions, wipe_marker=None):
                     SET post_count = sub.cnt
                     FROM (
                       SELECT user_id, COUNT(*) AS cnt
-                      FROM posts WHERE user_id = ANY(%s)
+                      FROM posts WHERE user_id = ANY(%s::uuid[])
                       GROUP BY user_id
                     ) sub
                     WHERE cp.user_id = sub.user_id
