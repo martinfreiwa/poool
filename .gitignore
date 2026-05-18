@@ -112,3 +112,9 @@ contracts/report.md
 
 # Embedded skill repos (cloned per-machine)
 .agent/skills/
+
+# Local user-uploaded attachments (KYC docs, deposit screenshots, support
+# tickets, community media). Stored on disk in dev; production uses S3.
+uploads/community/
+uploads/deposits/
+uploads/support/

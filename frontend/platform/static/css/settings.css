@@ -756,8 +756,12 @@
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 32px;
     align-items: start;
-    margin-top: 24px;
+    /* margin-top moved to the completion banner (margin-bottom). That way
+       dismissing the banner collapses the gap automatically — display:none
+       removes the spacing too. */
 }
+.profile-completion-banner { margin-bottom: 24px; }
+.profile-completion-banner.hidden { margin-bottom: 0; }
 .settings-sections { min-width: 0; }
 
 /* Nav rail */

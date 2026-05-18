@@ -1,33 +1,4 @@
 <div id="developer-assets-wrapper" class="table__wrapper developer-assets-table">
-  <div id="developer-assets-header" class="table__header developer-assets-table__header">
-    <div id="developer-assets-time-tabs" class="table__time-tabs">
-      <button id="developer-assets-tab-all"
-        class="table__tab {% if active_period == 'all' or (not active_period and 'all' == 'all') %}table__tab--active{% endif %}"
-        hx-get="/developer/dashboard/fragments/assets?period=all" hx-target="#developer-assets-wrapper"
-        hx-swap="outerHTML">
-        All Time
-      </button>
-      <button id="developer-assets-tab-30d"
-        class="table__tab {% if active_period == '30d' or (not active_period and '30d' == 'all') %}table__tab--active{% endif %}"
-        hx-get="/developer/dashboard/fragments/assets?period=30d" hx-target="#developer-assets-wrapper"
-        hx-swap="outerHTML">
-        30 days
-      </button>
-      <button id="developer-assets-tab-7d"
-        class="table__tab {% if active_period == '7d' or (not active_period and '7d' == 'all') %}table__tab--active{% endif %}"
-        hx-get="/developer/dashboard/fragments/assets?period=7d" hx-target="#developer-assets-wrapper"
-        hx-swap="outerHTML">
-        7 days
-      </button>
-      <button id="developer-assets-tab-24h"
-        class="table__tab {% if active_period == '24h' or (not active_period and '24h' == 'all') %}table__tab--active{% endif %}"
-        hx-get="/developer/dashboard/fragments/assets?period=24h" hx-target="#developer-assets-wrapper"
-        hx-swap="outerHTML">
-        24 hours
-      </button>
-    </div>
-  </div>
-
   <div id="developer-assets-container" class="table__container developer-assets-table__container">
     <div id="developer-assets-header-row" class="table__header-row developer-assets-table__row">
       <div id="developer-assets-th-asset" class="table__header-cell table__header-cell--asset developer-assets-table__asset">
@@ -103,7 +74,6 @@
 
         <div id="developer-assets-cell-funding-{{ loop.index }}" class="table__cell table__cell--funding developer-assets-table__funding">
           <div class="table__progress-group">
-            <span class="table__progress-text">{{ asset.funding_display }} funded</span>
             <div class="table__progress-bar ds-progress ds-progress--sm">
               <div class="table__progress-fill ds-progress__fill" style="width: {{ asset.funding_pct }}%"></div>
             </div>

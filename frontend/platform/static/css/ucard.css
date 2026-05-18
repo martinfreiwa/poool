@@ -1,0 +1,518 @@
+/* ============================================================
+   UCARD — Unified card system
+   ============================================================
+   One base class, composable elements, semantic variants.
+   Replaces ~270 ad-hoc card classes across the platform via
+   the ALIAS layer at the bottom of this file.
+
+   Tokens use the existing dashboard-tokens.css palette so any
+   theme swap there cascades to every aliased card.
+   ============================================================ */
+
+:root {
+  --ucard-bg:           var(--card-bg, #FFFFFF);
+  --ucard-border-color: var(--card-border-color, #E5E7EB);
+  --ucard-border-hover: rgba(0, 0, 0, 0.08);
+  --ucard-radius:       16px;
+  --ucard-radius-sm:    12px;
+  --ucard-padding:      24px;
+  --ucard-padding-sm:   16px;
+  --ucard-padding-lg:   32px;
+  --ucard-gap:          16px;
+
+  --ucard-shadow:        0 1px 2px rgba(10, 13, 18, 0.05);
+  --ucard-shadow-md:     0 1px 3px rgba(10, 13, 18, 0.04), 0 8px 24px rgba(10, 13, 18, 0.05);
+  --ucard-shadow-hover:  0 1px 3px rgba(10, 13, 18, 0.06), 0 8px 20px rgba(10, 13, 18, 0.06);
+
+  /* Brand-gradient top accent for active / featured cards */
+  --ucard-accent-bar: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+
+  /* Stat card typography */
+  --ucard-stat-label-fs:     11px;
+  --ucard-stat-label-weight: 700;
+  --ucard-stat-label-color:  #717680;
+  --ucard-stat-label-spacing:0.07em;
+  --ucard-stat-value-fs:     28px;
+  --ucard-stat-value-weight: 700;
+  --ucard-stat-value-color:  #0A0D12;
+  --ucard-stat-trend-fs:     12px;
+  --ucard-stat-trend-fg-up:  #027A48;
+  --ucard-stat-trend-fg-dn:  #B42318;
+}
+
+html.dark,
+[data-theme="dark"] {
+  --ucard-bg:           #131720;
+  --ucard-border-color: #1E2330;
+  --ucard-border-hover: #2D3348;
+  --ucard-shadow:        0 1px 2px rgba(0, 0, 0, 0.4);
+  --ucard-shadow-md:     0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --ucard-shadow-hover:  0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.5);
+  --ucard-stat-label-color: #8B92A5;
+  --ucard-stat-value-color: #F0F2F5;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+.ucard {
+  background: var(--ucard-bg);
+  border: 1px solid var(--ucard-border-color);
+  border-radius: var(--ucard-radius);
+  padding: var(--ucard-padding);
+  box-shadow: var(--ucard-shadow);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateZ(0);
+}
+
+/* ── Modifiers ────────────────────────────────────────────── */
+.ucard--elevated { box-shadow: var(--ucard-shadow-md); }
+.ucard--sm       { padding: var(--ucard-padding-sm); border-radius: var(--ucard-radius-sm); }
+.ucard--lg       { padding: var(--ucard-padding-lg); }
+.ucard--flush    { padding: 0; }
+
+.ucard--interactive { cursor: pointer; }
+.ucard--interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--ucard-border-hover);
+  box-shadow: var(--ucard-shadow-hover);
+}
+.ucard--interactive:active { transform: translateY(0); }
+
+/* Active / featured: gradient top accent bar */
+.ucard--accent::before,
+.ucard.active::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--ucard-accent-bar);
+  pointer-events: none;
+}
+
+/* Glass / premium surface */
+.ucard--glass {
+  background: linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.75) 100%);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid rgba(0,0,0,0.03);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow:
+    0 4px 6px -2px rgba(0,0,0,0.02),
+    0 12px 32px -4px rgba(0,0,0,0.04),
+    inset 0 1px 0 rgba(255,255,255,1);
+}
+
+/* ── Composable elements ─────────────────────────────────── */
+.ucard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.ucard__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ucard-stat-value-color);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ucard__subtitle {
+  font-size: 14px;
+  color: #475467;
+  margin: 4px 0 0;
+  font-weight: 400;
+}
+.ucard__body { flex: 1; }
+.ucard__footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ucard-border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ── Stat pattern — label / value / trend ──────────────────
+   Use as <div class="ucard ucard-stat">
+            <span class="ucard-stat__label">…</span>
+            <span class="ucard-stat__value">…</span>
+            <span class="ucard-stat__trend up|down">…</span>
+          </div>
+   Or apply .ucard-stat to a child wrapper for layout-only. */
+.ucard-stat {
+  padding: 20px 22px;
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: flex-end;
+  text-align: left;
+}
+.ucard-stat__label {
+  font-size: var(--ucard-stat-label-fs);
+  font-weight: var(--ucard-stat-label-weight);
+  color: var(--ucard-stat-label-color);
+  text-transform: uppercase;
+  letter-spacing: var(--ucard-stat-label-spacing);
+  margin-top: 10px;
+  order: 2;
+}
+.ucard-stat__value {
+  font-size: var(--ucard-stat-value-fs);
+  font-weight: var(--ucard-stat-value-weight);
+  color: var(--ucard-stat-value-color);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  order: 1;
+}
+.ucard-stat__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ucard-stat-trend-fs);
+  font-weight: 600;
+  color: var(--ucard-stat-trend-fg-up);
+  margin-top: 6px;
+  order: 3;
+  font-variant-numeric: tabular-nums;
+}
+.ucard-stat__trend.down { color: var(--ucard-stat-trend-fg-dn); }
+
+/* Larger stat (hero variant) */
+.ucard-stat--lg .ucard-stat__value { font-size: 36px; }
+.ucard-stat--xl .ucard-stat__value { font-size: 44px; }
+
+/* ============================================================
+   ALIAS LAYER — collapse legacy card classes onto .ucard tokens
+   Loaded after bundle.css + page CSS so these rules win.
+   ============================================================ */
+
+/* Generic surface alias — .ds-card already matches ucard spec, so
+   we re-declare its tokens to keep both source-of-truth & cascade safe. */
+.ds-card {
+  background: var(--ucard-bg) !important;
+  border: 1px solid var(--ucard-border-color) !important;
+  border-radius: var(--ucard-radius) !important;
+  padding: var(--ucard-padding) !important;
+  box-shadow: var(--ucard-shadow) !important;
+}
+.ds-card--elevated { box-shadow: var(--ucard-shadow-md) !important; }
+.ds-card--sm       { padding: var(--ucard-padding-sm) !important; border-radius: var(--ucard-radius-sm) !important; }
+.ds-card--flush    { padding: 0 !important; }
+.ds-card--interactive:hover {
+  border-color: var(--ucard-border-hover) !important;
+  box-shadow: var(--ucard-shadow-hover) !important;
+}
+
+/* ── Stat-card archetype aliasing ─────────────────────────────
+   Every page-specific stat card adopts the same ucard-stat shape.
+   Keep their semantic class names; just rewrite the visual layer. */
+.ds-stat-card,
+.unified-stat-card,
+.stat-card,
+.kpi-card,
+.metric-card,
+.admin-kpi-card,
+.dev-stat,
+.sub-stat,
+.circle-stat-card,
+.community-stat-card,
+.support-stat-card,
+.statistics-kpi-card,
+.cr-kpi-card,
+.rv2-stat-card {
+  background: var(--ucard-bg) !important;
+  border: 1px solid var(--ucard-border-color) !important;
+  border-radius: var(--ucard-radius) !important;
+  padding: 20px 22px !important;
+  min-height: 104px !important;
+  box-shadow: var(--ucard-shadow) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ds-stat-card:hover,
+.unified-stat-card:hover,
+.stat-card:hover,
+.kpi-card:hover,
+.metric-card:hover,
+.admin-kpi-card:hover,
+.dev-stat:hover,
+.sub-stat:hover,
+.circle-stat-card:hover,
+.community-stat-card:hover,
+.support-stat-card:hover,
+.statistics-kpi-card:hover,
+.cr-kpi-card:hover,
+.rv2-stat-card:hover {
+  border-color: var(--ucard-border-hover) !important;
+  box-shadow: var(--ucard-shadow-hover) !important;
+}
+
+/* Active state — gradient top accent bar */
+.ds-stat-card.active::before,
+.stat-card.active::before,
+.kpi-card.highlight-card::before,
+.kpi-card.active::before,
+.dev-stat.active::before,
+.sub-stat.active::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 0 auto 0 !important;
+  height: 3px !important;
+  background: var(--ucard-accent-bar) !important;
+  pointer-events: none !important;
+  display: block !important;
+}
+
+/* ── Stat typography aliasing ─────────────────────────────── */
+.ds-stat-card__label,
+.unified-stat-card__label,
+.stat-card__label,
+.kpi-card__label,
+.metric-card-title,
+.dev-stat__label,
+.sub-stat__label,
+.ops-stat__label,
+.community-stat-card__label,
+.support-stat-card__label,
+.statistics-kpi-card__label,
+.cr-kpi-card__label,
+.rv2-stat-card__label,
+.metric-heading {
+  font-size: var(--ucard-stat-label-fs) !important;
+  font-weight: var(--ucard-stat-label-weight) !important;
+  color: var(--ucard-stat-label-color) !important;
+  text-transform: uppercase !important;
+  letter-spacing: var(--ucard-stat-label-spacing) !important;
+  margin-top: 10px !important;
+}
+
+.ds-stat-card__value,
+.unified-stat-card__value,
+.stat-card__value,
+.kpi-card__value,
+.metric-card-value,
+.dev-stat__value,
+.sub-stat__value,
+.ops-stat__num,
+.community-stat-card__value,
+.support-stat-card__value,
+.statistics-kpi-card__value,
+.cr-kpi-card__value,
+.rv2-stat-card__value,
+.metric-number {
+  font-size: var(--ucard-stat-value-fs) !important;
+  font-weight: var(--ucard-stat-value-weight) !important;
+  color: var(--ucard-stat-value-color) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.02em !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.ds-stat-card__trend,
+.unified-stat-card__trend,
+.stat-card__trend,
+.kpi-card__trend,
+.metric-change,
+.dev-stat__trend,
+.sub-stat__trend,
+.ops-stat__trend {
+  font-size: var(--ucard-stat-trend-fs) !important;
+  font-weight: 600 !important;
+  color: var(--ucard-stat-trend-fg-up) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.ds-stat-card__trend.down,
+.unified-stat-card__trend.down,
+.stat-card__trend.down,
+.kpi-card__trend.down,
+.metric-change.down,
+.dev-stat__trend.down,
+.sub-stat__trend.down,
+.ops-stat__trend.down {
+  color: var(--ucard-stat-trend-fg-dn) !important;
+}
+
+/* Highlight variant (e.g. .kpi-card.highlight-card) — solid brand border */
+.kpi-card.highlight-card,
+.ds-stat-card.featured {
+  border-color: #0000FF !important;
+  box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.08) !important;
+}
+
+
+/* ============================================================
+   PRODUCTION OVERRIDES — Developer dashboard `.metric-card`
+   adopts the .u2 split layout (icon + KPI left · chart right).
+   DOM restructure done by u2-cards.js; CSS just paints it.
+   ============================================================ */
+
+body#developer-dashboard-body .metric-card,
+.metric-card.u2-applied {
+  background: #fff !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  min-height: 132px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+  box-shadow: 0 1px 2px rgba(10,13,18,0.04) !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 200ms cubic-bezier(0.2,0,0,1),
+              border-color 200ms cubic-bezier(0.2,0,0,1),
+              box-shadow 200ms cubic-bezier(0.2,0,0,1) !important;
+}
+body#developer-dashboard-body .metric-card:hover,
+.metric-card.u2-applied:hover {
+  transform: translateY(-2px);
+  border-color: #D5D7DA !important;
+  box-shadow: 0 4px 12px rgba(10,13,18,0.06), 0 1px 3px rgba(10,13,18,0.04) !important;
+}
+/* Drop the legacy ::before gradient bar — split layout doesn't use it */
+body#developer-dashboard-body .metric-card::before,
+.metric-card.u2-applied::before { display: none !important; }
+
+/* Horizontal wrapper injected by u2-cards.js: icon TOP-LEFT · text stack to the right. */
+.metric-card .u2-stat__main {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+  height: 100%;
+  width: 100%;
+}
+.metric-card .u2-stat__top { flex-shrink: 0; }
+.metric-card .u2-stat__text {
+  display: flex; flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+}
+.metric-card .u2-stat__top {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 !important;
+}
+.metric-card .u2-icon--brand {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,255,0.18);
+}
+.metric-card .u2-icon--brand svg {
+  width: 20px; height: 20px; stroke-width: 2; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Heading + number + change — stacked tightly in the right text column */
+.metric-card .metric-heading {
+  font-size: 11px !important; font-weight: 700 !important;
+  color: #717680 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  margin: 0 !important;
+}
+.metric-card .metric-content {
+  display: flex !important; flex-direction: column;
+  margin-top: 4px !important;
+}
+.metric-card .metric-number {
+  font-size: 26px !important; font-weight: 700 !important;
+  color: #0A0D12 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.02em !important;
+  font-variant-numeric: tabular-nums !important;
+  margin: 0 !important;
+}
+.metric-card .metric-change-wrapper {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 4px !important;
+}
+.metric-card .metric-change {
+  display: inline-flex !important; align-items: center; gap: 4px;
+  font-size: 12px !important; font-weight: 600 !important;
+  color: #027A48 !important;
+  font-variant-numeric: tabular-nums;
+  padding: 0 !important; background: transparent !important; border: 0 !important;
+}
+.metric-card .metric-change.down { color: #B42318 !important; }
+.metric-card .metric-change svg { width: 12px; height: 12px; flex-shrink: 0; }
+.metric-card .metric-timeframe {
+  font-size: 11px !important; color: #98A2B3 !important; font-weight: 500;
+}
+
+/* RIGHT column — sparkline injected by u2-cards.js */
+.metric-card .u2-spark {
+  width: 100%; height: 100%; min-height: 100px;
+  align-self: stretch;
+  overflow: visible;
+}
+.metric-card .u2-spark path.line {
+  fill: none;
+  stroke: url(#brandLineGradient);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.metric-card .u2-spark path.area { fill: url(#brandAreaGradient); stroke: none; }
+.metric-card .u2-spark circle.ring { r: 5; fill: #03FF88; fill-opacity: 0.18; }
+.metric-card .u2-spark circle.dot  { r: 2.5; fill: #FFFFFF; stroke: #03FF88; stroke-width: 2; }
+
+/* Push dashboard time-range tabs to the right edge of the topbar.
+   .lb-topbar-left holds title + tabs; flex:1 + margin-left:auto on tabs
+   moves them across the available width without template edits. */
+body#developer-dashboard-body .developer-lb-topbar .lb-topbar-left { flex: 1; }
+body#developer-dashboard-body .dev-period-tabs { margin-left: auto; }
+
+/* ── Flatten the nested-card look on "Top Performing Assets" ──
+   Outer card stays; the inner `.developer-assets-table__container`
+   was a second card surface (border + radius + bg + shadow) sitting
+   inside the outer card. Strip that chrome so the table flows as
+   ONE seamless surface inside the outer card. */
+body#developer-dashboard-body .developer-assets-performance-section {
+  padding: 0 !important;
+  overflow: hidden;
+}
+body#developer-dashboard-body .developer-assets-performance-section__header {
+  padding: 20px 24px !important;
+  margin-bottom: 0 !important;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0) !important;
+}
+body#developer-dashboard-body .developer-assets-table .table__header {
+  padding: 14px 24px !important;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+body#developer-dashboard-body .developer-assets-table__container {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+/* Table cells inherit their own padding; ensure the header row + body
+   align flush with the outer card edge. */
+body#developer-dashboard-body .developer-assets-table .table__row {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+body#developer-dashboard-body .developer-assets-table .table__header-row {
+  background: #FAFBFD;
+  border-top: 0 !important;
+}

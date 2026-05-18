@@ -9,6 +9,24 @@
         <a href="#faq" class="lb-topbar-tab">FAQ</a>
       </nav>
       {% endif %}
+
+      {% if dev_nav_show_period_tabs %}
+      {# Unified period selector — drives BOTH #sales-chart-card and
+         #developer-assets-wrapper via setDashboardPeriod() in dashboard.html.
+         Lives in the topbar so chart + assets table share one control. #}
+      <div class="dev-period-tabs" id="dev-period-tabs" role="tablist" aria-label="Dashboard time range">
+        <button type="button" class="dev-period-tab dev-period-tab--active" data-period="all"
+          onclick="setDashboardPeriod(this, 'all')" role="tab" aria-selected="true">All time</button>
+        <button type="button" class="dev-period-tab" data-period="1y"
+          onclick="setDashboardPeriod(this, '1y')" role="tab" aria-selected="false">1 year</button>
+        <button type="button" class="dev-period-tab" data-period="30d"
+          onclick="setDashboardPeriod(this, '30d')" role="tab" aria-selected="false">30 days</button>
+        <button type="button" class="dev-period-tab" data-period="7d"
+          onclick="setDashboardPeriod(this, '7d')" role="tab" aria-selected="false">7 days</button>
+        <button type="button" class="dev-period-tab" data-period="24h"
+          onclick="setDashboardPeriod(this, '24h')" role="tab" aria-selected="false">24 hours</button>
+      </div>
+      {% endif %}
     </div>
 
     <div class="lb-topbar-right">
@@ -56,6 +74,105 @@
           <path d="M10 4v12M4 10h12"></path>
         </svg>
         <span>Add Asset</span>
+      </a>
+      {% endif %}
+
+      {% if dev_nav_show_members_actions %}
+      <button type="button" class="developer-lb-topbar-action investor-topbar-action" id="dat-invite-btn" aria-label="Invite new team member" title="Invite a new member by email">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="8.5" cy="7" r="4"/>
+          <line x1="20" y1="8" x2="20" y2="14"/>
+          <line x1="23" y1="11" x2="17" y2="11"/>
+        </svg>
+        <span>Invite member</span>
+      </button>
+      <button type="button" class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="dat-members-export" title="Download members as CSV" aria-label="Export team members to CSV">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+      {% endif %}
+
+      {% if dev_nav_show_products_export %}
+      <button type="button" class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="dat-products-export" title="Download product sales as CSV" aria-label="Export product sales to CSV">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+      {% endif %}
+
+      {% if dev_nav_show_customers_export %}
+      <button type="button" class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="dat-customers-export" title="Download customers as CSV" aria-label="Export customers to CSV">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+      {% endif %}
+
+      {% if dev_nav_show_date_range %}
+      <div class="dat-topbar-date-range" id="dat-topbar-range">
+        <button type="button" class="dat-topbar-date-range__trigger" id="dat-topbar-range-trigger" aria-haspopup="true" aria-expanded="false" title="Change date range">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="dat-topbar-date-range__label" id="dat-topbar-range-label">Last 30 days</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="dat-topbar-date-range__popover" id="dat-topbar-range-popover" role="dialog" aria-label="Date range" hidden>
+          <div class="dat-topbar-date-range__presets" role="group" aria-label="Quick ranges">
+            <button type="button" class="dat-preset" data-preset="7d">Last 7 days</button>
+            <button type="button" class="dat-preset" data-preset="14d">Last 14 days</button>
+            <button type="button" class="dat-preset dat-preset--active" data-preset="30d">Last 30 days</button>
+            <button type="button" class="dat-preset" data-preset="90d">Last 90 days</button>
+            <button type="button" class="dat-preset" data-preset="ytd">This year</button>
+            <button type="button" class="dat-preset" data-preset="all">All time</button>
+            <button type="button" class="dat-preset dat-preset--custom" data-preset="custom" hidden>Custom</button>
+          </div>
+          <div class="dat-topbar-date-range__divider" aria-hidden="true"></div>
+          <div class="dat-topbar-date-range__custom">
+            <span class="dat-topbar-date-range__custom-label">Custom range</span>
+            <div class="dat-topbar-date-range__custom-row">
+              <input type="date" id="dat-an-from" class="dat-date-input" aria-label="From date"/>
+              <span class="dat-range-sep" aria-hidden="true">→</span>
+              <input type="date" id="dat-an-to" class="dat-date-input" aria-label="To date"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if dev_nav_show_team_actions %}
+      <button type="button" class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="dat-page-export-csv" title="Download full member breakdown as CSV" aria-label="Export full member breakdown to CSV">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+      <a href="/developer/affiliate-team/members?invite=1" class="developer-lb-topbar-action investor-topbar-action" id="dat-page-invite-cta" aria-label="Invite new team member">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <line x1="19" y1="8" x2="19" y2="14"/>
+          <line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+        <span>Invite member</span>
       </a>
       {% endif %}
 

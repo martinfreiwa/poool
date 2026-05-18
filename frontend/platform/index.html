@@ -225,67 +225,18 @@
                   </div>
                 </div>
               </div>
-              <!-- More Filters Button --><button
-                id="filter-bar-more-filters"
-                class="more-filters-btn"
-              >
-                <svg 
-                  id="filter-bar-more-filters-icon"
-                  class="more-filters-btn-icon"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                >
-                  <path
-                    d="M4 7H16M7 12H13M9 17H11"
-                    stroke="#414651"
-                    stroke-width="1.67"
-                    stroke-linecap="round"
-                  ></path>
-                </svg>
-                <span class="more-filters-btn-text">More filters</span>
-              </button>
-            </div>
-            <!-- Search Bar -->
-            <div id="filter-bar-search" class="search-bar">
-              <div
-                id="filter-bar-search-input-wrapper"
-                class="search-input-wrapper"
-              >
-                <svg 
-                  id="filter-bar-search-icon"
-                  class="search-icon"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                >
-                  <circle
-                    cx="9"
-                    cy="9"
-                    r="6"
-                    stroke="#717680"
-                    stroke-width="1.67"
-                  ></circle>
-                  <path
-                    d="M13 13L17 17"
-                    stroke="#717680"
-                    stroke-width="1.67"
-                    stroke-linecap="round"
-                  ></path>
-                </svg>
-                <input
-                  id="filter-bar-search-input"
-                  type="search"
-                  placeholder="Search"
-                  class="search-input"
-                />
+              <!-- Search — same row as dropdowns. Auto-applies on input.
+                   More filters / Clear / Search buttons removed. -->
+              <div id="filter-bar-search" class="filter-dropdown filter-dropdown--search">
+                <label id="filter-bar-search-label" class="filter-label"><span class="filter-label-text">Search</span></label>
+                <div id="filter-bar-search-input-wrapper" class="search-input-wrapper">
+                  <svg id="filter-bar-search-icon" class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.67"></circle>
+                    <path d="M13 13L17 17" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                  </svg>
+                  <input id="filter-bar-search-input" type="search" placeholder="Search" class="search-input" />
+                </div>
               </div>
-              <button id="filter-bar-clear-btn" class="clear-btn">Clear</button>
-              <button id="filter-bar-search-btn" class="search-btn">
-                Search
-              </button>
             </div>
           </div>
           <!-- Properties Grid for Infinite Scroll -->

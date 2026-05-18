@@ -70,6 +70,9 @@
   border-radius: 12px 12px 0 0;
   pointer-events: none;
   display: block;
+  transform-origin: left center;
+  transform: scaleX(var(--bar-fill, 1));
+  will-change: transform;
 }
 
 .metric-card:hover {
@@ -163,31 +166,175 @@
 }
 
 .developer-secondary-metrics {
-  padding: 24px;
+  padding: 22px 24px;
   margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.developer-secondary-metrics::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
 }
 
 .developer-secondary-metrics__header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
+  padding-top: 4px;
+}
+
+.developer-secondary-metrics__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.developer-secondary-metrics__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+}
+.developer-secondary-metrics__icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #03FF88;
+  fill: none;
 }
 
 .developer-secondary-metrics__header h2 {
   margin: 0;
-  font-size: 18px;
-  line-height: 28px;
-  font-weight: 600;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--page-title-color);
 }
 
 .developer-secondary-metrics__header span {
-  font-size: 13px;
-  line-height: 20px;
+  font-size: 12px;
+  line-height: 18px;
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+/* Customize button + popover */
+.developer-secondary-metrics__actions { position: relative; }
+
+.developer-secondary-metrics__customize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  background: #FFFFFF;
+  color: var(--text-secondary, #475467);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.developer-secondary-metrics__customize-btn:hover {
+  border-color: rgba(0, 0, 255, 0.30);
+  background: rgba(0, 0, 255, 0.03);
+  color: #0000FF;
+}
+.developer-secondary-metrics__customize-btn[aria-expanded="true"] {
+  border-color: rgba(0, 0, 255, 0.40);
+  background: rgba(0, 0, 255, 0.06);
+  color: #0000FF;
+}
+
+.activity-customize-popover {
+  position: absolute;
+  right: 24px;
+  top: 64px;
+  width: 240px;
+  background: #FFFFFF;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  box-shadow:
+    0 12px 28px -12px rgba(0, 0, 255, 0.18),
+    0 4px 12px -4px rgba(10, 13, 18, 0.08);
+  z-index: 50;
+  overflow: hidden;
+  animation: activityCustomizeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes activityCustomizeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.activity-customize-popover__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+}
+.activity-customize-popover__head strong {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #475467);
+}
+.activity-customize-popover__reset {
+  border: 0;
+  background: transparent;
+  color: #0000FF;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.activity-customize-popover__reset:hover {
+  background: rgba(0, 0, 255, 0.06);
+}
+
+.activity-customize-popover__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.activity-customize-popover__item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--page-title-color, #101828);
+  cursor: pointer;
+}
+.activity-customize-popover__item label:hover {
+  background: rgba(0, 0, 255, 0.04);
+}
+.activity-customize-popover__item input[type="checkbox"] {
+  accent-color: #0000FF;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .developer-secondary-metrics__grid {
@@ -203,21 +350,32 @@
 .developer-secondary-metric {
   min-width: 0;
   background: var(--card-bg);
-  padding: 16px;
+  padding: 16px 18px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  transition: background 0.15s ease;
+}
+.developer-secondary-metric:hover {
+  background: rgba(0, 0, 255, 0.025);
 }
 
 .developer-secondary-metric__label {
-  font-size: 13px;
-  line-height: 20px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: 16px;
   color: var(--text-secondary);
 }
 
 .developer-secondary-metric strong {
-  font-size: 24px;
-  line-height: 30px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 32px;
+  color: #0000FF;
+  font-variant-numeric: tabular-nums;
 }
 
 .developer-secondary-metric__trend {
@@ -245,44 +403,94 @@
 
 .developer-assets-performance-section__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding-bottom: 18px;
   margin-bottom: 18px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+.developer-assets-performance-section__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.developer-assets-performance-section__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.developer-assets-performance-section__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+  flex-shrink: 0;
+}
+.developer-assets-performance-section__icon svg {
+  stroke: #03FF88;
 }
 
 .developer-assets-performance-section__header h2 {
   margin: 0;
   color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  line-height: 30px;
-  letter-spacing: 0;
+  line-height: 24px;
+  letter-spacing: -0.01em;
 }
 
 .developer-assets-performance-section__header p {
   margin: 2px 0 0;
   color: var(--text-secondary);
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 20px;
+  line-height: 18px;
 }
 
+.developer-assets-performance-section__link,
 .developer-assets-performance-section__header a {
   color: var(--primary-color);
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 20px;
   text-decoration: none;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
+.developer-assets-performance-section__link svg {
+  transition: transform 0.15s ease;
+}
+
+.developer-assets-performance-section__link:hover,
 .developer-assets-performance-section__header a:hover {
-  opacity: 0.82;
+  opacity: 1;
   text-decoration: none;
+  border-color: var(--primary-color, #0000FF);
+  background: #F5F7FF;
+  color: var(--primary-color, #0000FF);
+}
+.developer-assets-performance-section__link:hover svg {
+  transform: translateX(2px);
 }
 
 .developer-assets-table .table__header {
@@ -295,45 +503,50 @@
   overflow-y: hidden;
 }
 
+#developer-assets-time-tabs,
 .developer-assets-table .table__time-tabs {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   gap: 2px;
   padding: 2px;
-  min-height: 36px;
-  background: #F9FAFB;
+  min-height: 28px;
+  background: #F2F4F7;
   border: 1px solid var(--table-border-color, #eaecf0);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
+#developer-assets-time-tabs .table__tab,
 .developer-assets-table .table__tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
-  padding: 6px 12px;
+  min-height: 24px;
+  padding: 4px 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: #717680;
   cursor: pointer;
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 18px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
   white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
+#developer-assets-time-tabs .table__tab:hover:not(.table__tab--active),
 .developer-assets-table .table__tab:hover:not(.table__tab--active) {
-  color: var(--page-title-color);
-  background: #FFFFFF;
+  color: #0000FF;
 }
 
+#developer-assets-time-tabs .table__tab--active,
 .developer-assets-table .table__tab--active {
-  color: var(--page-title-color);
+  color: #101828;
   background: #FFFFFF;
-  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.06);
 }
 
 .developer-assets-table__container {
@@ -519,14 +732,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--table-border-color);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  background: var(--card-bg);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  color: #667085;
+  background: transparent;
   text-decoration: none;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .developer-assets-table__icon-btn svg {
@@ -535,9 +748,8 @@
 }
 
 .developer-assets-table__icon-btn:hover {
-  color: var(--primary-color);
-  border-color: rgba(0, 0, 255, 0.22);
-  background: #f5f7ff;
+  color: #0000FF;
+  background: rgba(0, 0, 255, 0.08);
 }
 
 .metric-dropdown-btn {
@@ -592,6 +804,7 @@
   align-items: flex-start;
   padding: 0px;
   width: 100%;
+  gap: 24px;
   min-height: 36px;
 }
 
@@ -608,20 +821,126 @@
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 600;
-  font-size: 18px;
-  line-height: 28px;
-  color: var(--page-title-color);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #717680;
   margin: 0;
-  white-space: nowrap;
+}
+
+.chart-headline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.chart-kpi-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.chart-kpi-value {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #181D27;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-kpi-subtitle {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.2;
+  color: #717680;
 }
 
 .chart-percentage {
   font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
   font-weight: 600;
-  font-size: 18px;
-  line-height: 28px;
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(7, 148, 85, 0.10);
   color: #079455;
+}
+
+.chart-percentage.down {
+  background: rgba(217, 45, 32, 0.10);
+  color: #D92D20;
+}
+
+.chart-percentage.neutral {
+  background: rgba(102, 112, 133, 0.10);
+  color: #667085;
+}
+
+/* When the ECharts mount is present, the server-rendered axis / SVG
+   fallback markup must stay hidden — defensive override that protects
+   against any HTMX swap path that re-inserts a fresh card before
+   developer-sales-chart.js gets a chance to hide them inline. */
+.sales-chart-card:has(#sales-chart-echarts) #chart-y-axis,
+.sales-chart-card:has(#sales-chart-echarts) #chart-x-axis,
+.sales-chart-card:has(#sales-chart-echarts) .chart-area > svg {
+  display: none !important;
+}
+
+/* Unified period tabs (in the dashboard topbar — replaces the per-card
+   chart-tabs + assets-time-tabs). Same pill-segmented look as the legacy
+   chart-tabs so the design language stays consistent. */
+.dev-period-tabs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px;
+  gap: 2px;
+  min-height: 28px;
+  background: #F2F4F7;
+  border: 1px solid var(--table-border-color, #E5E7EB);
+  border-radius: 8px;
+  margin-left: 16px;
+}
+.dev-period-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  min-height: 24px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  color: #717680;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.dev-period-tab:hover:not(.dev-period-tab--active) {
+  color: #0000FF;
+}
+.dev-period-tab--active {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.06);
+  color: #101828;
+  font-weight: 600;
+}
+@media (max-width: 768px) {
+  .dev-period-tabs {
+    margin-left: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .dev-period-tabs::-webkit-scrollbar { display: none; }
 }
 
 /* Chart Tabs */
@@ -632,10 +951,10 @@
   align-items: center;
   padding: 2px;
   gap: 2px;
-  min-height: 36px;
-  background: #F9FAFB;
+  min-height: 28px;
+  background: #F2F4F7;
   border: 1px solid var(--table-border-color);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .chart-tab {
@@ -643,26 +962,31 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 6px 12px;
-  gap: 8px;
-  min-height: 32px;
-  border-radius: 8px;
+  padding: 4px 10px;
+  gap: 6px;
+  min-height: 24px;
+  border-radius: 6px;
   background: transparent;
   border: none;
   cursor: pointer;
   font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
   color: #717680;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .chart-tab.active {
   background: #ffffff;
   border: none;
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-  color: #414651;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.06);
+  color: #101828;
+  font-weight: 600;
+}
+
+.chart-tab:hover:not(.active) {
+  color: #0000FF;
 }
 
 /* Chart Container */
@@ -690,11 +1014,13 @@
 .chart-y-axis span {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 18px;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
   text-align: right;
-  color: var(--text-secondary);
+  color: #98A2B3;
+  font-variant-numeric: tabular-nums;
 }
 
 .chart-area {
@@ -733,16 +1059,37 @@
   z-index: 2;
 }
 
-.chart-area svg path[stroke="#98FB96"] {
+.chart-area svg .chart-line {
   stroke-dasharray: 3000;
   stroke-dashoffset: 3000;
-  animation: drawSalesChart 3s ease-out forwards;
-  stroke-width: 3;
+  animation: drawSalesChart 1.6s ease-out forwards;
 }
 
-.chart-area svg path[fill="url(#salesGradient)"] {
+.chart-area svg .chart-area-fill {
   opacity: 0;
-  animation: fadeInArea 2s ease-out 1s forwards;
+  animation: fadeInArea 1.2s ease-out 0.5s forwards;
+}
+
+.chart-area svg circle {
+  opacity: 0;
+  animation: fadeInArea 0.4s ease-out 1.4s forwards;
+}
+
+/* Responsive: stack header on narrow viewports so the KPI never collides
+   with the tab pill row. */
+@media (max-width: 900px) {
+  .chart-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .chart-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .chart-tabs::-webkit-scrollbar { display: none; }
+  .chart-kpi-value { font-size: 30px; }
 }
 
 .chart-x-axis {
@@ -762,11 +1109,13 @@
 .chart-x-axis span {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 18px;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
   text-align: center;
-  color: var(--text-secondary);
+  color: #98A2B3;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Hide mobile-only chart text section on desktop */
@@ -1116,76 +1465,141 @@
 .developer-performance-card {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px;
+  gap: 0;
+  padding: 22px 24px;
   min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+/* Brand-gradient top accent — same hairline used on community/rewards cards */
+.developer-performance-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
 }
 
 .developer-performance-card__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+
+.developer-performance-card__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Icon tile — matches .developer-assets-performance-section__icon style on
+   the Top Performing Assets card: bold blue→navy gradient with bright
+   green SVG stroke. */
+.developer-performance-card__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+  flex-shrink: 0;
+}
+.developer-performance-card__icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: #03FF88;
 }
 
 .developer-performance-card__title {
   margin: 0;
   color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  line-height: 26px;
+  line-height: 22px;
+  letter-spacing: -0.01em;
 }
 
 .developer-performance-card__subtitle {
   margin: 2px 0 0;
   color: var(--text-secondary);
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 18px;
 }
 
+/* Link styled as outlined ghost button with translating arrow */
 .developer-performance-card__link {
   color: var(--primary-color);
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 20px;
   text-decoration: none;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
-
+.developer-performance-card__link svg { transition: transform 0.15s ease; }
 .developer-performance-card__link:hover {
-  text-decoration: underline;
+  text-decoration: none;
+  border-color: var(--primary-color, #0000FF);
+  background: #F5F7FF;
 }
+.developer-performance-card__link:hover svg { transform: translateX(2px); }
 
 .developer-performance-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
 }
 
 .developer-performance-row {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--table-border-color, #eaecf0);
-  border-radius: 8px;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
   color: inherit;
   text-decoration: none;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.developer-performance-row + .developer-performance-row {
+  border-top: 1px solid var(--card-border-color, #F2F4F7);
+  border-radius: 0;
+  margin-top: 0;
 }
 
 .developer-performance-row:hover {
-  background: var(--table-row-hover-bg, #f8f9fc);
+  background: #FAFBFF;
+  transform: translateX(2px);
 }
 
 .developer-performance-row__image {
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   object-fit: cover;
   background: #f5f5f5;
 }

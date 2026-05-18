@@ -86,6 +86,7 @@
 
   function renderHistory(data) {
     const tbody = DAT.$('#dat-history-tbody');
+    if (!tbody) return; // History card removed from the tier page.
     DAT.clear(tbody);
     if (!data.history || data.history.length === 0) {
       tbody.appendChild(DAT.el(

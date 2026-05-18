@@ -403,6 +403,10 @@ pub async fn fetch_dashboard_stats_for_period(
         chart_line_path: chart_data.line_path,
         chart_area_path: chart_data.area_path,
         chart_has_data: chart_data.has_data,
+        chart_current_display: chart_data.current_display,
+        chart_subtitle: chart_data.subtitle,
+        chart_end_x: chart_data.end_x,
+        chart_end_y: chart_data.end_y,
     }
 }
 
@@ -415,6 +419,10 @@ struct SalesChartData {
     line_path: String,
     area_path: String,
     has_data: bool,
+    current_display: String,
+    subtitle: String,
+    end_x: f64,
+    end_y: f64,
 }
 
 struct SalesChartPoint {
@@ -538,6 +546,10 @@ fn normalize_chart_period(period: &str) -> &str {
 }
 
 fn build_sales_chart_data(period_label: &str, points: Vec<SalesChartPoint>) -> SalesChartData {
+    // Hide the headline percentage for "All time" — comparing the first bucket
+    // of a cumulative series to the last is mathematically tautological (always
+    // a huge positive number) and not a useful signal.
+    let show_percentage = period_label != "All time";
     let points = if points.is_empty() {
         vec![
             SalesChartPoint {
@@ -574,20 +586,35 @@ fn build_sales_chart_data(period_label: &str, points: Vec<SalesChartPoint>) -> S
     let area_path = format!("{line_path} L 1002 240 L 0 240 Z");
     let first = points.first().map(|point| point.value_cents).unwrap_or(0);
     let last = points.last().map(|point| point.value_cents).unwrap_or(0);
-    let change_pct = if first > 0 {
+    // The series is a windowed cumulative sum, so "first" is whatever sales
+    // happened to fall in the opening bucket. If that baseline is too small
+    // relative to the headline number, the % becomes uninformative noise
+    // (always ~+9999%). Require the baseline to be ≥50% of the final value
+    // before a meaningful percent can be reported; otherwise the percentage
+    // is dominated by ramp-from-zero rather than real growth.
+    let meaningful_baseline = first as f64 >= (last as f64) * 0.50;
+    let change_pct = if first > 0 && meaningful_baseline {
         ((last - first) as f64 / first as f64) * 100.0
-    } else if last > 0 {
-        100.0
     } else {
         0.0
     };
+    let show_percentage = show_percentage && (first > 0 && meaningful_baseline);
 
-    let percentage_display = if change_pct > 0.01 {
+    let percentage_display = if !show_percentage {
+        String::new()
+    } else if change_pct > 0.01 {
         format!("+{}", format_pct(change_pct))
     } else if change_pct < -0.01 {
         format!("-{}", format_pct(change_pct.abs()))
     } else {
         "0%".to_string()
+    };
+
+    let (end_x, end_y) = chart_end_point(&points, axis_max);
+    let current_display = format_chart_money_label(last);
+    let subtitle = match period_label {
+        "All time" => "Cumulative sales since launch".to_string(),
+        other => format!("Cumulative sales — last {other}"),
     };
 
     SalesChartData {
@@ -599,7 +626,22 @@ fn build_sales_chart_data(period_label: &str, points: Vec<SalesChartPoint>) -> S
         line_path,
         area_path,
         has_data,
+        current_display,
+        subtitle,
+        end_x,
+        end_y,
     }
+}
+
+fn chart_end_point(points: &[SalesChartPoint], axis_max_cents: i64) -> (f64, f64) {
+    let width = 1002.0;
+    let plot_height = 210.0;
+    let top_padding = 10.0;
+    let axis_max = axis_max_cents.max(1) as f64;
+    let last = points.last().map(|p| p.value_cents).unwrap_or(0);
+    let x = width;
+    let y = top_padding + (1.0 - (last.max(0) as f64 / axis_max)) * plot_height;
+    (x, y)
 }
 
 fn chart_line_path(points: &[SalesChartPoint], axis_max_cents: i64) -> String {

@@ -28,11 +28,142 @@
 }
 
 /* ── Content card (per-page content section) ─────────────────── */
+/* Brand chrome — 4px gradient bar atop every card to match the
+   community/rewards card language. */
 .dat-content-card {
-  padding: 20px 24px 24px;
+  padding: 22px 24px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.dat-content-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
+  border-color: #D0D5DD;
+}
+.dat-content-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  display: block;
+}
+
+/* ── Card-with-header variant — table sub-pages get a proper card header
+   band divided from the body by a 1px rule. Mirrors the chart-card pattern.
+   Use `.dat-content-card--with-header` on the section element. */
+.dat-content-card--with-header {
+  padding: 0;
+}
+.dat-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #F2F4F7;
+  background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
+  position: relative;
+  z-index: 2;
+  flex-wrap: wrap;
+}
+.dat-card-header__title-group {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.dat-card-header__title-text { min-width: 0; flex: 1; }
+.dat-card-header__title-group .dat-section__title { margin: 0 0 4px; }
+.dat-card-header__title-group .dat-section__hint  { margin: 0; }
+
+/* Brand Icon Tile — blue gradient bg + brand-mint stroke, same pattern used
+   for chart card headers. Gives every card a recognizable visual anchor. */
+.dat-card-header__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.15);
+}
+.dat-card-header__icon svg { width: 18px; height: 18px; }
+
+/* Pill bar inside card header — borrows .dat-toolbar__presets styling. */
+.dat-card-header__presets {
+  flex-shrink: 0;
+}
+
+.dat-card-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+/* Cap dropdown widths so they don't stretch full row width. */
+.dat-card-header__controls .dat-filter-row { gap: 6px; }
+.dat-card-header__controls .dat-select--compact {
+  max-width: 180px;
+  min-width: 120px;
+  width: auto;
+}
+/* Search slot inside the header — sits at the end of the controls strip. */
+.dat-card-header__search {
+  display: inline-flex;
+  align-items: center;
+}
+.dat-card-header__search .dat-table-toolbar__search { width: 200px; }
+.dat-card-header__search .dat-table-toolbar__search-input {
+  width: 100%;
+  height: 30px;
+  font-size: 13px;
+}
+
+/* Body sections inside the card-with-header get their own padding since
+   the parent card lost its inset. */
+.dat-content-card--with-header > .dat-table-pager-host,
+.dat-content-card--with-header > .dat-table-wrap,
+.dat-content-card--with-header > .dat-card-footer {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.dat-content-card--with-header > .dat-table-wrap {
+  padding-top: 0;
+  padding-bottom: 8px;
+}
+.dat-content-card--with-header > .dat-card-footer {
+  padding-bottom: 16px;
+}
+/* Empty top toolbar (search now lives in header) — collapse to 0 height. */
+.dat-content-card--with-header > .dat-table-pager-host:empty {
+  display: none;
+}
+
+/* Mobile — stack header rows */
+@media (max-width: 720px) {
+  .dat-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dat-card-header__controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .dat-card-header__search,
+  .dat-card-header__search .dat-table-toolbar__search { width: 100%; }
 }
 .dat-section__intro {
   margin-bottom: 16px;
+  padding-top: 4px;
 }
 .dat-section__intro--with-actions {
   display: flex;
@@ -51,8 +182,9 @@
 }
 .dat-section__title {
   margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-primary, #181D27);
 }
 .dat-section__hint {
@@ -424,7 +556,21 @@
    DESIGN.md compliance: no card-in-card (preset group has NO border),
    no Apply button (auto-apply on date-input change), placeholders
    replace "From"/"To" labels for visual density. */
-.dat-toolbar-card { padding: 10px 14px; }
+/* Toolbar — flush filter bar, NOT a content card.
+   The previous treatment wrapped the date filter in the same brand-gradient
+   card chrome used for content sections, which read as a heavy card-in-card.
+   Strip the chrome so the toolbar reads as a control surface that lives
+   between the topbar and the data. */
+.dat-toolbar-card {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  margin-bottom: 4px;
+}
+.dat-toolbar-card::before { display: none; }
 .dat-toolbar {
   display: flex;
   align-items: center;
@@ -451,25 +597,24 @@
   background: transparent;
   border: 0;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary, #717680);
-  padding: 0 10px;
-  border-radius: 5px;
+  padding: 0 12px;
+  border-radius: 6px;
   cursor: pointer;
-  /* FI1 fix: 24px → 32px so the touch target meets WCAG 2.5.5 AAA (24×24
-     was already AA pass but borderline). At 32px tall the date-range
-     presets are comfortably tappable on mobile. */
-  height: 32px;
+  height: 28px;
   line-height: 1;
   font-family: inherit;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.dat-preset:hover { color: var(--body-color, #344054); }
-.dat-preset--active {
-  background: var(--card-bg, #fff);
-  color: var(--page-title-color, #181D27);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+.dat-preset:hover { color: #0000FF; background: rgba(0, 0, 255, 0.04); }
+.dat-preset--active,
+.dat-preset--active:hover {
+  background: #FFFFFF;
+  color: #101828;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.06);
 }
 .dat-preset--custom[hidden] { display: none; }
 .dat-preset--custom {
@@ -553,21 +698,24 @@
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border-color, #E5E7EB);
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 22px 20px 18px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   position: relative;
   overflow: hidden;
   min-height: 132px;
   box-shadow: var(--card-shadow, 0 1px 2px rgba(10,13,18,0.05));
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+/* Brand chrome — 4px gradient bar atop matches metric-card / dat-content-card. */
 .dat-hero-kpi::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--card-border-color, #E5E7EB);
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
 }
 .dat-hero-kpi__head {
   display: flex;
@@ -576,23 +724,26 @@
   gap: 12px;
 }
 .dat-hero-kpi__label {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: #535862;  /* AAA contrast on white */
-  font-weight: 600;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.dat-hero-kpi__icon { color: #717680; flex-shrink: 0; }
+/* Gray label icons removed — labels stand on their own. Kept the rule
+   for the dom element (still rendered) but hidden visually. */
+.dat-hero-kpi__icon { display: none; }
 .dat-hero-kpi__value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--page-title-color, #181D27);
+  font-size: 28px;
+  font-weight: 800;
+  color: #0000FF;
   font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-  margin-top: 2px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-top: 4px;
 }
 .dat-hero-kpi__sub {
   font-size: 12px;
@@ -611,20 +762,22 @@
 .dat-hero-kpi__cta:hover { text-decoration: underline; }
 .dat-hero-kpi__cta[hidden] { display: none; }
 
-/* Delta pill (↑ +12% / ↓ -8% / · flat) */
+/* Delta pill (↑ +12% / ↓ -8% / · flat). Up uses brand mint tint to align
+   with the green half of the brand gradient; down stays red for clarity. */
 .dat-delta {
   font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
+  font-weight: 700;
+  padding: 3px 9px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
   white-space: nowrap;
+  letter-spacing: -0.005em;
 }
-.dat-delta--up   { background: #ECFDF3; color: #027A48; }
+.dat-delta--up   { background: rgba(3, 255, 136, 0.16); color: #027A48; }
 .dat-delta--down { background: #FEF3F2; color: #B42318; }
-.dat-delta--flat { background: #F4F4F5; color: #717680; }
+.dat-delta--flat { background: #F2F4F7; color: #535862; }
 
 /* Compact KPI grid — secondary metrics, denser than hero */
 .dat-kpi-grid {
@@ -643,10 +796,8 @@
   align-items: center;
   gap: 5px;
 }
-.dat-kpi__icon { color: #717680; flex-shrink: 0; }
-.dat-kpi[data-tone="success"] .dat-kpi__icon { color: #137333; }
-.dat-kpi[data-tone="warning"] .dat-kpi__icon { color: #B54708; }
-.dat-kpi[data-tone="info"]    .dat-kpi__icon { color: #2B45B5; }
+/* Gray label icons removed — labels stand on their own. */
+.dat-kpi__icon { display: none; }
 /* Reserve sub min-height so empty subs don't jitter row heights */
 .dat-kpi__sub { min-height: 16px; }
 
@@ -697,42 +848,171 @@
   background: var(--bg-default, #fff);
   border: 1px solid var(--border-subtle, #E9EAEB);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 16px 14px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   position: relative;
   overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+/* Brand chrome — 4px gradient bar atop. Tone variants converge on the same
+   brand bar; tone is still visible via the icon color to preserve scanning. */
 .dat-kpi::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--bg-subtle, #E9EAEB);
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 10px 10px 0 0;
 }
-.dat-kpi[data-tone="success"]::before { background: #137333; }
-.dat-kpi[data-tone="warning"]::before { background: #C66D18; }
-.dat-kpi[data-tone="info"]::before    { background: #2B45B5; }
-.dat-kpi[data-tone="accent"]::before  { background: var(--accent-primary, #0000FF); }
+.dat-kpi:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
+  border-color: #D0D5DD;
+}
 .dat-kpi--wide { grid-column: span 2; }
 .dat-kpi__label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary, #717680);
+  letter-spacing: 0.06em;
+  color: #535862;
+  font-weight: 700;
 }
 .dat-kpi__value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary, #181D27);
+  font-size: 22px;
+  font-weight: 800;
+  color: #0000FF;
   font-variant-numeric: tabular-nums;
-  margin-top: 2px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-top: 4px;
 }
 .dat-kpi__sub {
   font-size: 11px;
   color: var(--text-secondary, #717680);
   margin-top: 2px;
+}
+
+/* ── Payout pipeline — horizontal 3-stage strip ─────────────────
+   Replaces the cramped vertical composite KPI tile. Pending → Payable
+   → Paid Out reads as a money-flow funnel, with directional arrows
+   between stages. Lives between the period-bound hero KPIs and the
+   period-bound secondary KPIs, since payout stages are lifetime data. */
+.dat-payout-flow {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10,13,18,0.05));
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.dat-payout-flow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
+  border-color: #D0D5DD;
+}
+/* Brand chrome — 4px gradient bar atop. */
+.dat-payout-flow::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.dat-payout-stage {
+  padding: 22px 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.dat-payout-stage__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #535862;
+}
+.dat-payout-stage__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #98A2B3;
+  flex-shrink: 0;
+}
+.dat-payout-stage--pending .dat-payout-stage__dot { background: #F79009; }
+.dat-payout-stage--payable .dat-payout-stage__dot { background: #0000FF; }
+.dat-payout-stage--paid    .dat-payout-stage__dot { background: #03FF88; }
+.dat-payout-stage__value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0000FF;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-top: 4px;
+}
+.dat-payout-stage__hint {
+  font-size: 12px;
+  color: #717680;
+}
+/* Arrow between stages — single SVG-style chevron, muted color. */
+.dat-payout-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  color: #D0D5DD;
+}
+.dat-payout-arrow svg { width: 18px; height: 18px; }
+/* Mobile collapse — stack stages vertically, drop arrows. */
+@media (max-width: 720px) {
+  .dat-payout-flow {
+    grid-template-columns: 1fr;
+  }
+  .dat-payout-arrow {
+    display: none;
+  }
+  .dat-payout-stage {
+    border-top: 1px solid #F2F4F7;
+    padding: 14px 18px;
+  }
+  .dat-payout-stage:first-of-type {
+    border-top: 0;
+    padding-top: 18px;
+  }
+}
+
+/* ── 3-up secondary KPI grid (Conversion / Qualified / Members) ── */
+.dat-kpi-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 980px) {
+  .dat-kpi-grid--3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .dat-kpi-grid--3 { grid-template-columns: 1fr; }
+}
+
+/* ── Updated timestamp pinned to toolbar right side ───────────── */
+.dat-toolbar__updated {
+  margin-left: auto;
+  font-size: 11px;
+  color: #717680;
+  font-style: italic;
+  white-space: nowrap;
+  padding-right: 4px;
 }
 
 /* Hero trend chart: full width single row. Satellites below in 3-col. */
@@ -755,42 +1035,57 @@
   .dat-charts-row { grid-template-columns: 1fr; }
 }
 
-/* Header right-side controls (toggle + legend) */
+/* Header right-side controls (toggle + legend) — divider between
+   adjacent segmented controls reads as one cohesive control bar. */
 .dat-chart-header__controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.dat-chart-header__controls .dat-res-toggle + .dat-res-toggle {
+  margin-left: 4px;
 }
 
-/* Resolution toggle (Day / Week / Month) */
+/* Resolution toggle (Day / Week / Month) — matches .ds-segmented and
+   .dat-preset so all segmented controls on the page look identical. */
+/* Brand-pair segmented control:
+   - inactive pill = POOOL green tile + POOOL blue text
+   - active pill   = POOOL blue tile + POOOL green text */
 .dat-res-toggle {
   display: inline-flex;
   gap: 2px;
-  padding: 3px;
-  background: var(--bg-subtle, #F4F4F5);
-  border-radius: 7px;
+  padding: 2px;
+  background: transparent;
+  border-radius: 8px;
+  height: 28px;
+  align-items: center;
 }
 .dat-res-btn {
-  background: transparent;
+  background: #03FF88;
   border: 0;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary, #717680);
+  font-size: 12px;
+  font-weight: 600;
+  color: #0000FF;
   padding: 0 12px;
-  /* FI1 fix: 22px → 32px so the Day/Week/Month resolution toggle is
-     comfortably tappable on mobile. Old 22px failed WCAG 2.5.5 AAA. */
-  height: 32px;
+  height: 24px;
   line-height: 1;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-family: inherit;
+  transition: color 0.12s ease, background 0.12s ease;
 }
-.dat-res-btn:hover { color: var(--page-title-color, #181D27); }
-.dat-res-btn--active {
-  background: #fff;
-  color: var(--page-title-color, #181D27);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+.dat-res-btn:hover:not(.dat-res-btn--active) {
+  background: #00CC6F;
+  color: #0000FF;
+}
+.dat-res-btn--active,
+.dat-res-btn--active[data-metric="commission"],
+.dat-res-btn--active[data-metric="revenue"] {
+  background: #0000FF;
+  color: #03FF88;
+  box-shadow: none;
 }
 /* Keyboard focus-visible — accessible outline on tab navigation. */
 .dat-res-btn:focus-visible,
@@ -816,11 +1111,21 @@
   border-radius: 12px;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-.dat-hero-kpi__link:hover {
-  transform: translateY(-1px);
+/* Override the global `a:hover { filter: brightness(0.85) }` from bundle.css
+   that would otherwise dim the whole hero tile to gray on hover. Also kill
+   the filter for ANY anchor inside dat-content areas so chart/table/section
+   links don't inherit the silver wash either. */
+body#developer-affiliate-team-body a:hover,
+body#developer-affiliate-team-body a:focus,
+body#developer-affiliate-team-body a:active,
+.dat-hero-kpi__link:hover,
+.dat-hero-kpi__link:focus,
+.dat-hero-kpi__link:active {
+  filter: none !important;
 }
 .dat-hero-kpi__link:hover .dat-hero-kpi {
-  box-shadow: 0 4px 12px rgba(10,13,18,0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
   border-color: #D0D5DD;
 }
 /* Drill-down hint chevron in the head — appears on hover only. */
@@ -843,11 +1148,12 @@
   height: 18px;
 }
 
-/* Hover-hint over trend chart (shows until first hover, then hidden). */
+/* Hover-hint over trend chart (shows until first hover, then hidden).
+   Floats inside the chart body's top-right corner, below the header. */
 .dat-chart-hover-hint {
   position: absolute;
-  top: 8px;
-  right: 12px;
+  top: 22px;
+  right: 26px;
   font-size: 10px;
   color: var(--text-secondary, #717680);
   pointer-events: none;
@@ -856,8 +1162,30 @@
   gap: 4px;
   opacity: 0.6;
   transition: opacity 0.2s ease;
+  z-index: 3;
 }
-.dat-chart-card { position: relative; }
+.dat-chart-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.dat-chart-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
+  border-color: #D0D5DD;
+}
+/* Brand chrome — 4px gradient bar atop matches hero kpi / metric-card. */
+.dat-chart-card::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  z-index: 1;
+  pointer-events: none;
+}
 .dat-chart-card.dat-chart-card--touched .dat-chart-hover-hint {
   opacity: 0;
 }
@@ -891,24 +1219,58 @@
 
 /* Trend SVG: prevent text selection on hover overlay */
 .dat-trend-svg { user-select: none; -webkit-user-select: none; }
-.dat-chart-card { padding: 16px 18px; }
+
+/* Chart card structure — proper inset header section divided from the
+   chart body by a subtle rule. The header lives inside the card padding
+   so the gradient bar atop stays unbroken; the divider sits below the
+   header content and above the chart body. */
+.dat-chart-card { padding: 0; }
 .dat-chart-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 16px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #F2F4F7;
+  background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
+  position: relative;
+  z-index: 2;  /* sits above the gradient bar's stacking */
 }
+.dat-chart-header__title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+/* Leading chart-type icon — visual cue for the section. */
+.dat-chart-header__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.15);
+}
+.dat-chart-header__icon svg { width: 18px; height: 18px; }
+.dat-chart-header__text { min-width: 0; }
 .dat-chart-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-primary, #181D27);
+  line-height: 1.2;
 }
 .dat-chart-subtitle {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   font-size: 12px;
   color: var(--text-secondary, #717680);
+  font-variant-numeric: tabular-nums;
 }
 .dat-chart-legend {
   display: flex;
@@ -927,6 +1289,8 @@
 .dat-legend-dot--revenue    { background: #C7D1FF; }
 .dat-chart-body {
   min-height: 220px;
+  padding: 18px 22px 20px;
+  position: relative;
 }
 /* Empty state with subtle POOOL watermark logo.
    Allowed per DESIGN.md §8 ("light brand expression") and §15
@@ -992,38 +1356,95 @@
   max-width: 100%;
 }
 
-/* Funnel chart (3 horizontal bars) */
-.dat-funnel { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
-.dat-funnel__row {
-  display: grid;
-  grid-template-columns: 80px 1fr 80px;
-  align-items: center;
+/* Conversion funnel — SVG trapezoid stack on the left, conversion %
+   meta strip on the right. Brand blue→green gradient fills, decreasing
+   opacity per stage so depth reads naturally. */
+/* ── Conversion funnel — stacked horizontal stage cards ────────────
+   Each stage shows a label + count + bar whose width encodes the stage's
+   share of the funnel's peak. Between stages a pill ("step") shows the
+   conversion direction (↓ drop / ↑ gain / · flat) + ratio + absolute
+   delta. Layout reads as a vertical flow without forcing a tapered
+   trapezoid that breaks when later stages exceed earlier ones (late-
+   attribution case). */
+.dat-funnel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+.dat-funnel-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 12px;
+  background: #FFFFFF;
+}
+.dat-funnel-stage__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 12px;
 }
-.dat-funnel__label {
-  font-size: 12px;
+.dat-funnel-stage__label {
+  font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-secondary, #717680);
-  font-weight: 500;
 }
-.dat-funnel__bar-wrap {
-  background: var(--bg-subtle, #F4F4F5);
-  border-radius: 6px;
-  height: 22px;
+.dat-funnel-stage__value {
+  font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--page-title-color, #181D27);
+  font-variant-numeric: tabular-nums;
+}
+.dat-funnel-stage__track {
+  height: 10px;
+  width: 100%;
+  background: #F4F5F7;
+  border-radius: 999px;
   overflow: hidden;
 }
-.dat-funnel__bar {
-  display: block;
+.dat-funnel-stage__fill {
   height: 100%;
-  border-radius: 6px;
-  transition: width 0.3s ease;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  min-width: 4px; /* always show a sliver even at zero so the bar reads */
 }
-.dat-funnel__value {
-  font-size: 13px;
+.dat-funnel-stage__fill[data-stage-index="1"] { opacity: 0.82; }
+.dat-funnel-stage__fill[data-stage-index="2"] { opacity: 0.64; }
+
+/* Drop-off / gain chip — single inline pill sitting between stage cards */
+.dat-funnel-step {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary, #181D27);
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  background: #FFFFFF;
+  border: 1px solid var(--card-border-color, #E5E7EB);
 }
+.dat-funnel-step__arrow { font-size: 13px; line-height: 1; }
+.dat-funnel-step__pct   { font-weight: 700; letter-spacing: -0.01em; }
+.dat-funnel-step__delta { color: var(--text-secondary, #717680); font-size: 11px; }
+
+.dat-funnel-step--drop { color: #B42318; background: #FEF3F2; border-color: #FECDCA; }
+.dat-funnel-step--drop .dat-funnel-step__pct { color: #B42318; }
+.dat-funnel-step--gain { color: #027A48; background: #ECFDF3; border-color: #ABEFC6; }
+.dat-funnel-step--gain .dat-funnel-step__pct { color: #027A48; }
+.dat-funnel-step--flat { color: var(--text-secondary, #717680); }
+.dat-funnel-step--flat .dat-funnel-step__pct { color: var(--page-title-color, #181D27); }
 
 /* Horizontal bar chart (members / assets) */
 .dat-hbars { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
@@ -1082,14 +1503,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
-  background: var(--bg-subtle, #FAFAFA);
-  border-radius: 6px;
+  padding: 10px 12px;
+  background: #FAFAFA;
+  border: 1px solid #F2F4F7;
+  border-radius: 8px;
   font-size: 13px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.dat-rank__item:hover {
+  background: #F9FAFB;
+  border-color: #E9EAEB;
 }
 .dat-rank__item--warning {
-  background: #FFF7E6;
-  border-left: 3px solid #C66D18;
+  background: #FFFBEB;
+  border-color: #FCE7B5;
 }
 .dat-rank__name {
   font-weight: 500;
@@ -1642,14 +2069,15 @@
      preset bar horizontal-scrollable
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Sticky toolbar ──────────────────────────────────────────── */
+/* ── Sticky toolbar — translucent strip with backdrop blur. */
 .dat-toolbar-card--sticky {
   position: sticky;
   top: 0;
   z-index: 20;
+  padding: 8px 0;
   backdrop-filter: saturate(180%) blur(8px);
   -webkit-backdrop-filter: saturate(180%) blur(8px);
-  background-color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(249, 250, 251, 0.85);
 }
 
 /* When a preset is active, the date inputs are showing the *result*
@@ -1819,8 +2247,12 @@
    ───────────────────────────────────────────────────────────────────── */
 .dat-tier-page {
   padding-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
-.dat-tier-page .dat-settings-card { padding: 20px 24px; margin-bottom: 16px; }
+.dat-tier-page .dat-settings-card { padding: 20px 24px; }
+.dat-tier-page > .dat-content-card { margin: 0; }
 
 .dat-tier-hero {
   background: linear-gradient(135deg, var(--card-bg, #fff) 0%, #F8F9FF 100%);
@@ -2055,6 +2487,148 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Compact toolbar — search only, smaller search field with icon ─── */
+.dat-table-toolbar--compact {
+  padding: 0 0 12px;
+  gap: 8px;
+}
+.dat-table-toolbar--compact .dat-table-toolbar__search {
+  position: relative;
+  flex: 0 0 240px;
+  min-width: 0;
+  max-width: 280px;
+}
+.dat-table-toolbar__search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #98A2B3);
+  pointer-events: none;
+}
+.dat-table-toolbar--compact .dat-table-toolbar__search-input {
+  height: 30px;
+  padding: 0 10px 0 30px;
+  font-size: 13px;
+  border-radius: 7px;
+  background: #F9FAFB;
+  border-color: transparent;
+}
+.dat-table-toolbar--compact .dat-table-toolbar__search-input:hover {
+  background: #F2F4F7;
+}
+.dat-table-toolbar--compact .dat-table-toolbar__search-input:focus-visible {
+  background: #FFFFFF;
+  border-color: var(--brand-blue, #0000FF);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.10);
+}
+
+/* ── Filter row — compact selects living in the card header ────────── */
+.dat-filter-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dat-select--compact {
+  height: 24px;
+  padding: 0 22px 0 8px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 6px;
+  background-color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--text-primary, #181D27);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23717680' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 9px 9px;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.dat-select--compact:hover {
+  border-color: var(--text-secondary, #98A2B3);
+}
+.dat-select--compact:focus-visible {
+  border-color: var(--brand-blue, #0000FF);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.10);
+}
+
+/* Compact custom-range surface — inline date pair revealed when "Custom" picked */
+.dat-range-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 7px;
+  background: #FFFFFF;
+}
+.dat-range-custom[hidden] { display: none; }
+.dat-range-custom__input {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-primary, #181D27);
+  padding: 0;
+  outline: none;
+}
+.dat-range-custom__sep {
+  color: var(--text-secondary, #98A2B3);
+  font-size: 12px;
+}
+
+/* ── Card footer — rows-per-page · summary · pager, all compact ────── */
+.dat-table-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--card-border-color, #E9EAEB);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.dat-table-footer__pagesize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #717680);
+  white-space: nowrap;
+}
+.dat-table-footer__pagesize-label {
+  letter-spacing: 0.02em;
+}
+.dat-table-footer .dat-table-toolbar__summary {
+  margin: 0 0 0 auto;
+  font-size: 12px;
+}
+.dat-table-footer .dat-pager {
+  padding: 0;
+}
+
+/* Compact pager — 28px buttons instead of 32px, tighter gap */
+.dat-pager--compact { gap: 2px; }
+.dat-pager--compact .dat-pager__btn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.dat-pager--compact .dat-pager__ellipsis {
+  padding: 0 2px;
+  font-size: 12px;
+}
+
 /* Sortable column headers */
 .dat-th--sortable {
   cursor: pointer;
@@ -2096,6 +2670,24 @@
   font-size: 11px;
   color: var(--text-secondary, #717680);
   font-variant-numeric: tabular-nums;
+}
+
+/* Card footer host — summary on left, pager on right, divided from table. */
+.dat-card-footer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--card-border-color, #E9EAEB);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.dat-card-footer .dat-pager {
+  padding: 0;
+}
+.dat-card-footer .dat-table-toolbar__summary {
+  margin: 0 0 0 auto;
 }
 
 /* Pagination controls */
@@ -2166,10 +2758,10 @@
 }
 .dat-chip {
   background: transparent;
-  border: 1px solid var(--border-color, #E4E7EC);
+  border: 1px solid var(--card-border-color, #E4E7EC);
   color: var(--text-secondary, #717680);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 0 12px;
   height: 28px;
   line-height: 1;
@@ -2177,20 +2769,26 @@
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
-  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 .dat-chip:hover {
-  color: var(--body-color, #344054);
-  border-color: var(--text-secondary, #717680);
+  color: #0000FF;
+  border-color: rgba(0, 0, 255, 0.30);
+  background: rgba(0, 0, 255, 0.03);
 }
 .dat-chip:focus-visible {
   outline: 2px solid var(--btn-primary-bg, #0000FF);
   outline-offset: 2px;
 }
 .dat-chip--active {
-  background: var(--btn-primary-bg, #0000FF);
-  color: #fff;
-  border-color: var(--btn-primary-bg, #0000FF);
+  background: #0000FF;
+  color: #98FB96;
+  border-color: #0000FF;
+  box-shadow: 0 1px 2px rgba(0, 0, 255, 0.18);
+}
+.dat-chip--active:hover {
+  background: #0000FF;
+  color: #98FB96;
 }
 
 /* Date-range row (Customers + Products Phase-1) */
@@ -2211,8 +2809,8 @@
 .dat-date-range__presets {
   display: inline-flex;
   gap: 2px;
-  background: var(--surface-muted, #F9FAFB);
-  border: 1px solid var(--border-color, #E4E7EC);
+  background: #F2F4F7;
+  border: 1px solid var(--card-border-color, #E4E7EC);
   border-radius: 8px;
   padding: 2px;
   height: 32px;
@@ -2420,3 +3018,265 @@ table.dat-cohort tbody th {
     text-align: center;
   }
 }
+
+/* Icon-only action buttons (member-row Approve / Remove). Bare hit area,
+   color hint on hover; confirmation modal handles the destructive op. */
+.dat-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #667085;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.dat-icon-btn svg { width: 16px; height: 16px; }
+.dat-icon-btn + .dat-icon-btn { margin-left: 2px; }
+
+/* Grey default; ONLY the icon color changes on hover (no background change).
+   Matches the universal action-icon language across the platform. */
+.dat-icon-btn--approve { color: #98A2B3; }
+.dat-icon-btn--approve:hover,
+.dat-icon-btn--approve:focus-visible {
+  color: #03B86A;
+  background: transparent;
+}
+
+.dat-icon-btn--danger { color: #98A2B3; }
+.dat-icon-btn--danger:hover,
+.dat-icon-btn--danger:focus-visible {
+  color: #D92D20;
+  background: transparent;
+}
+
+/* ── Topbar date range picker ─────────────────────────────────────────
+   Lives in the developer topbar next to Export CSV / Invite member.
+   Button trigger shows the active period label; clicking opens a popover
+   with quick-range presets + an inline custom-range date pair. Replaces
+   the per-page sticky toolbar card so the analytics view has a single
+   global date filter aligned with how SaaS dashboards work. */
+.dat-topbar-date-range {
+  position: relative;
+  display: inline-flex;
+}
+.dat-topbar-date-range__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #181D27;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: -0.005em;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.dat-topbar-date-range__trigger:hover {
+  border-color: #98A2B3;
+  background: #F9FAFB;
+}
+.dat-topbar-date-range__trigger[aria-expanded="true"] {
+  border-color: #0000FF;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.10);
+}
+/* Hide the calendar leading-icon — label + caret are enough. */
+.dat-topbar-date-range__trigger > svg:first-of-type { display: none; }
+.dat-topbar-date-range__trigger svg { color: #717680; flex-shrink: 0; }
+.dat-topbar-date-range__label {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.dat-topbar-date-range__popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 300px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(10, 13, 18, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.02);
+  padding: 14px;
+  animation: dat-popover-in 0.16s ease-out;
+  overflow: hidden;
+}
+@keyframes dat-popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* 4px brand gradient bar across the popover top — visual link to cards. */
+.dat-topbar-date-range__popover::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
+.dat-topbar-date-range__presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding-top: 6px;
+}
+.dat-topbar-date-range__presets .dat-preset {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #344054;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  height: auto;
+  font-family: inherit;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+/* Hover + active follow the POOOL brand pair: green tile + blue text. */
+.dat-topbar-date-range__presets .dat-preset:hover {
+  background: rgba(3, 255, 136, 0.16);
+  color: #0000FF;
+  border-color: transparent;
+}
+.dat-topbar-date-range__presets .dat-preset.dat-preset--active,
+.dat-topbar-date-range__presets .dat-preset--active {
+  background: rgba(3, 255, 136, 0.22);
+  color: #0000FF;
+  border-color: rgba(3, 255, 136, 0.42);
+  box-shadow: none;
+}
+.dat-topbar-date-range__divider {
+  margin: 12px -14px;
+  height: 1px;
+  background: #F2F4F7;
+}
+.dat-topbar-date-range__custom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 2px 2px;
+}
+.dat-topbar-date-range__custom-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #717680;
+}
+.dat-topbar-date-range__custom-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dat-topbar-date-range__custom-row .dat-date-input {
+  flex: 1;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #D0D5DD;
+  border-radius: 7px;
+  background: #FFFFFF;
+  font-size: 13px;
+  font-family: inherit;
+  color: #181D27;
+}
+.dat-topbar-date-range__custom-row .dat-date-input:focus-visible {
+  outline: none;
+  border-color: #0000FF;
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.12);
+}
+.dat-topbar-date-range__custom-row .dat-range-sep {
+  color: #717680;
+  font-size: 14px;
+}
+
+/* Meta strip — small "Updated HH:MM" timestamp above the hero KPIs. */
+.dat-meta-strip {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 8px;
+}
+
+/* Export CSV in dev topbar — green bg + blue text. Same treatment for every
+   per-sub-page export trigger (analytics, customers, products, …) so the
+   topbar action is consistent across the entire Affiliate Team module. */
+#dat-page-export-csv.developer-lb-topbar-action,
+#dat-customers-export.developer-lb-topbar-action,
+#dat-products-export.developer-lb-topbar-action,
+#dat-members-export.developer-lb-topbar-action,
+#dat-tier-export.developer-lb-topbar-action,
+.developer-lb-topbar-action[id$="-export"],
+.developer-lb-topbar-action[id*="export-csv"] {
+  background: #98FB96 !important;
+  color: #0000FF !important;
+  border: 1px solid #98FB96 !important;
+  box-shadow: 0 4px 12px rgba(3, 255, 136, 0.30) !important;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+#dat-page-export-csv.developer-lb-topbar-action:hover,
+#dat-customers-export.developer-lb-topbar-action:hover,
+#dat-products-export.developer-lb-topbar-action:hover,
+#dat-members-export.developer-lb-topbar-action:hover,
+#dat-tier-export.developer-lb-topbar-action:hover,
+.developer-lb-topbar-action[id$="-export"]:hover,
+.developer-lb-topbar-action[id*="export-csv"]:hover {
+  background: #8AF188 !important;
+  border-color: #8AF188 !important;
+  color: #0000FF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(3, 255, 136, 0.45) !important;
+}
+#dat-page-export-csv.developer-lb-topbar-action svg,
+#dat-customers-export.developer-lb-topbar-action svg,
+#dat-products-export.developer-lb-topbar-action svg,
+#dat-members-export.developer-lb-topbar-action svg,
+#dat-tier-export.developer-lb-topbar-action svg,
+.developer-lb-topbar-action[id$="-export"] svg,
+.developer-lb-topbar-action[id*="export-csv"] svg {
+  stroke: #0000FF !important;
+  color: #0000FF !important;
+}
+
+/* ── Export CSV CTA — green/blue brand pair, matches View feed/Browse Resale.
+   Targets the per-page export buttons in dat-section actions. */
+.dat-content-card .dat-section__actions .ds-btn--secondary[id$="-export"],
+.dat-content-card .dat-section__actions .ds-btn--secondary[id*="export"] {
+  background: #98FB96 !important;
+  color: #0000FF !important;
+  border: 1px solid #98FB96 !important;
+  box-shadow: 0 4px 12px rgba(3, 255, 136, 0.30) !important;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dat-content-card .dat-section__actions .ds-btn--secondary[id$="-export"]:hover,
+.dat-content-card .dat-section__actions .ds-btn--secondary[id*="export"]:hover {
+  background: #8AF188 !important;
+  border-color: #8AF188 !important;
+  color: #0000FF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(3, 255, 136, 0.45) !important;
+}
+.dat-content-card .dat-section__actions .ds-btn--secondary[id$="-export"] svg path,
+.dat-content-card .dat-section__actions .ds-btn--secondary[id$="-export"] svg polyline,
+.dat-content-card .dat-section__actions .ds-btn--secondary[id$="-export"] svg line,
+.dat-content-card .dat-section__actions .ds-btn--secondary[id*="export"] svg path,
+.dat-content-card .dat-section__actions .ds-btn--secondary[id*="export"] svg polyline,
+.dat-content-card .dat-section__actions .ds-btn--secondary[id*="export"] svg line {
+  stroke: #0000FF !important;
+}
+
+
+/* Universal .ubadge system moved to /static/css/ubadge.css — single source of truth.
+   Loaded globally via head.html so all pages get the latest brand-aware palette. */

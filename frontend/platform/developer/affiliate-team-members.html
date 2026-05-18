@@ -13,45 +13,31 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
     </div>
 
     <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
-      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team", dev_nav_show_members_actions=true %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
       <div class="ds-main__content">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <!-- KPI tiles removed: full metrics live on the dedicated
-             /developer/affiliate-team/analytics page. -->
-
-        <section class="ds-card dat-content-card" aria-labelledby="dat-members-title">
-          <div class="dat-section__intro dat-section__intro--with-actions">
-            <div class="dat-section__intro-text">
-              <h3 class="dat-section__title" id="dat-members-title">Team Members</h3>
-              <p class="dat-section__hint" id="dat-members-hint">Employees with a business affiliate link. Commissions flow to you as the developer.</p>
+        <section class="ds-card dat-content-card dat-content-card--with-header" aria-labelledby="dat-members-title">
+          <!-- Card header: title + search slot. No status tabs — JS feeds
+               the data unfiltered now (search covers ad-hoc queries). -->
+          <div class="dat-card-header">
+            <div class="dat-card-header__title-group">
+              <span class="dat-card-header__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <div class="dat-card-header__title-text">
+                <h3 class="dat-section__title" id="dat-members-title">Team Members</h3>
+                <p class="dat-section__hint" id="dat-members-hint">Employees with a business affiliate link. Commissions flow to you as the developer.</p>
+              </div>
             </div>
-            <div class="dat-section__actions">
-              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="dat-members-export" title="Download members as CSV" aria-label="Export team members to CSV">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                <span>Export CSV</span>
-              </button>
-              <button type="button" class="ds-btn ds-btn--primary ds-btn--sm" id="dat-invite-btn" aria-label="Invite new team member" title="Invite a new member by email">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="8.5" cy="7" r="4"/>
-                  <line x1="20" y1="8" x2="20" y2="14"/>
-                  <line x1="23" y1="11" x2="17" y2="11"/>
-                </svg>
-                <span>Invite Member</span>
-              </button>
+            <div class="dat-card-header__controls">
+              <!-- Search slot — JS shell renders the search field here. -->
+              <div id="dat-members-search-host" class="dat-card-header__search"></div>
             </div>
           </div>
-          <!-- Phase-1: status chips above the toolbar. Persists state to
-               localStorage + URL so the user's last filter survives reloads. -->
-          <div id="dat-members-chips" class="dat-chip-bar-host"></div>
           <div id="dat-members-pager-host" class="dat-table-pager-host"></div>
           <div class="dat-table-wrap">
             <table class="dat-table dat-table--hoverable" aria-describedby="dat-members-hint">
@@ -71,6 +57,7 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
               <tbody id="dat-members-tbody"></tbody>
             </table>
           </div>
+          <div id="dat-members-pager-footer" class="dat-card-footer"></div>
         </section>
       </div>
 

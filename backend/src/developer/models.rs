@@ -127,6 +127,10 @@ pub struct DeveloperDashboardStats {
     pub chart_line_path: String,
     pub chart_area_path: String,
     pub chart_has_data: bool,
+    pub chart_current_display: String, // Headline KPI — last bucket cumulative
+    pub chart_subtitle: String,        // e.g. "Cumulative sales — last 30 days"
+    pub chart_end_x: f64,              // SVG x of last data point
+    pub chart_end_y: f64,              // SVG y of last data point
 }
 
 /// Form payload for updating a draft asset (Steps 3 & 4 content).

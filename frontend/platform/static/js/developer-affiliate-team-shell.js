@@ -610,17 +610,161 @@
     };
   };
 
+  /* ──────────────────────────────────────────────────────────────────────
+     DAT.topbarDateRange — shared topbar preset picker.
+     Pages opt in by passing `dev_nav_show_date_range=true` to the topbar
+     include, then call:
+
+         DAT.topbarDateRange({ onChange: (r) => _table.reload() });
+
+     The shell owns: preset → from/to translation, popover open/close,
+     trigger label, URL persistence (`?preset=…&from=…&to=…`).
+     Callers read the active window with DAT.currentRange() inside their
+     dataTable extraParams.
+     ────────────────────────────────────────────────────────────────────── */
+  function _isoOf(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  function _today() { return new Date(); }
+  function _daysAgo(n) { const d = _today(); d.setDate(d.getDate() - n); return d; }
+  function _startOfYear(d) { return new Date(d.getFullYear(), 0, 1); }
+  function _startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+
+  DAT.presetRange = function (preset) {
+    const t = _today();
+    switch (preset) {
+      case '7d':         return { from: _isoOf(_daysAgo(6)),  to: _isoOf(t) };
+      case '14d':        return { from: _isoOf(_daysAgo(13)), to: _isoOf(t) };
+      case '30d':        return { from: _isoOf(_daysAgo(29)), to: _isoOf(t) };
+      case '90d':        return { from: _isoOf(_daysAgo(89)), to: _isoOf(t) };
+      case 'this-month': return { from: _isoOf(_startOfMonth(t)), to: _isoOf(t) };
+      case 'ytd':        return { from: _isoOf(_startOfYear(t)),  to: _isoOf(t) };
+      case 'all':        return { from: '2000-01-01',              to: _isoOf(t) };
+      default:           return { from: _isoOf(_daysAgo(29)), to: _isoOf(t) };
+    }
+  };
+
+  DAT.presetLabel = function (preset) {
+    switch (preset) {
+      case '7d':         return 'Last 7 days';
+      case '14d':        return 'Last 14 days';
+      case '30d':        return 'Last 30 days';
+      case '90d':        return 'Last 90 days';
+      case 'this-month': return 'This month';
+      case 'ytd':        return 'This year';
+      case 'all':        return 'All time';
+      case 'custom':     return 'Custom range';
+      default:           return 'Last 30 days';
+    }
+  };
+
+  DAT.currentRange = function () {
+    const url = new URL(window.location.href);
+    const preset = url.searchParams.get('preset');
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
+    if (from && to) return { from, to, preset: preset || 'custom' };
+    return Object.assign({ preset: preset || '30d' }, DAT.presetRange(preset || '30d'));
+  };
+
+  DAT.persistRange = function (from, to, preset) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('from', from);
+    url.searchParams.set('to', to);
+    if (preset) url.searchParams.set('preset', preset);
+    window.history.replaceState({}, '', url);
+  };
+
+  DAT.topbarDateRange = function (opts) {
+    const trigger = DAT.$('#dat-topbar-range-trigger');
+    const popover = DAT.$('#dat-topbar-range-popover');
+    const label   = DAT.$('#dat-topbar-range-label');
+    const fromInp = DAT.$('#dat-an-from');
+    const toInp   = DAT.$('#dat-an-to');
+    const onChange = (opts && opts.onChange) || function () {};
+    if (!trigger || !popover) return null;
+
+    function paint(range) {
+      if (fromInp) fromInp.value = range.from;
+      if (toInp)   toInp.value   = range.to;
+      const customBtn = popover.querySelector('.dat-preset--custom');
+      if (customBtn) customBtn.hidden = range.preset !== 'custom';
+      popover.querySelectorAll('.dat-preset').forEach((b) => {
+        b.classList.toggle('dat-preset--active', b.dataset.preset === range.preset);
+      });
+      if (label) {
+        label.textContent = (range.preset === 'custom' && range.from && range.to)
+          ? `${range.from} → ${range.to}`
+          : DAT.presetLabel(range.preset);
+      }
+    }
+    function open()  { popover.removeAttribute('hidden'); trigger.setAttribute('aria-expanded', 'true');  }
+    function close() { popover.setAttribute('hidden', ''); trigger.setAttribute('aria-expanded', 'false'); }
+
+    // Initial paint from URL/default.
+    paint(DAT.currentRange());
+
+    // Preset clicks
+    popover.querySelectorAll('.dat-preset').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const p = btn.dataset.preset;
+        if (p === 'custom') return; // informational pill — shown only when active
+        const r = Object.assign({ preset: p }, DAT.presetRange(p));
+        DAT.persistRange(r.from, r.to, p);
+        paint(r);
+        close();
+        onChange(r);
+      });
+    });
+
+    // Custom date inputs (debounced)
+    let timer = null;
+    function customApply() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        const from = fromInp && fromInp.value;
+        const to   = toInp   && toInp.value;
+        if (!from || !to || from > to) return;
+        const r = { from, to, preset: 'custom' };
+        DAT.persistRange(from, to, 'custom');
+        paint(r);
+        onChange(r);
+      }, 350);
+    }
+    if (fromInp) fromInp.addEventListener('change', customApply);
+    if (toInp)   toInp.addEventListener('change', customApply);
+
+    // Trigger open/close + outside-click + Escape
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (popover.hasAttribute('hidden')) open(); else close();
+    });
+    document.addEventListener('click', (e) => {
+      if (popover.hasAttribute('hidden')) return;
+      if (popover.contains(e.target) || trigger.contains(e.target)) return;
+      close();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+    return { current: DAT.currentRange, paint, open, close };
+  };
+
   DAT.dataTable = function (config) {
     const {
       pageKey, endpoint, extraParams = () => ({}), tbody, theadRow,
       columns, pagerHost, onRowsLoaded, emptyText = 'No results.',
-      // Phase-4 additions:
-      // bulkActions: [{ id, label, handler(selectedIds[]) }] — when set,
-      //   we render a checkbox column + a selection action bar.
-      // rowIdKey: key on each row used as the bulk-selection identifier
-      //   (default 'id').
-      // savedViews: true to enable the per-table preset switcher in the
-      //   toolbar. Persists named view objects to localStorage.
+      // Optional separate host for the pagination nav. When provided, the
+      // <nav class="dat-pager"> renders into this element instead of the
+      // top toolbar host — used when callers want the pager at the
+      // bottom of the card (after the table).
+      pagerFooterHost = null,
+      // Optional separate host for the search input. When provided, the
+      // search field renders into this element (typically inside the card
+      // header) instead of the top toolbar host above the table.
+      searchHost = null,
       bulkActions = null,
       rowIdKey = 'id',
       savedViews = false,
@@ -667,37 +811,61 @@
       history.replaceState({}, '', u);
     }
 
-    // ── Build toolbar (search + page-size + pager) once ─────────────────
+    // ── Build toolbar (just search up top) + footer (rows + summary + pager)
     DAT.clear(pagerHost);
-    const toolbar = DAT.el('div', { class: 'dat-table-toolbar' });
+    const toolbar = DAT.el('div', { class: 'dat-table-toolbar dat-table-toolbar--compact' });
     const searchWrap = DAT.el('div', { class: 'dat-table-toolbar__search' });
+    // Inline magnifying-glass icon for the compact search field.
+    searchWrap.innerHTML = '<svg class="dat-table-toolbar__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>';
     const searchInput = DAT.el('input', {
       type: 'search',
-      class: 'ds-input dat-table-toolbar__search-input',
-      placeholder: 'Search…',
+      class: 'dat-table-toolbar__search-input',
+      placeholder: 'Search',
       'aria-label': 'Search this table',
       value: state.q,
     });
     searchWrap.appendChild(searchInput);
-    toolbar.appendChild(searchWrap);
+    // Search lives in the card header when searchHost is provided; otherwise
+    // it stays in the top toolbar above the table.
+    if (searchHost) {
+      DAT.clear(searchHost);
+      searchHost.appendChild(searchWrap);
+    } else {
+      toolbar.appendChild(searchWrap);
+    }
 
-    const sizeWrap = DAT.el('label', { class: 'dat-table-toolbar__pagesize' });
-    sizeWrap.appendChild(DAT.el('span', null, 'Rows: '));
-    const sizeSelect = DAT.el('select', { class: 'dat-select', 'aria-label': 'Rows per page' });
+    const summary = DAT.el('div', { class: 'dat-table-toolbar__summary', 'aria-live': 'polite' });
+    // Only mount the toolbar if it has something to render — when search is
+    // in the header AND pager/rows is in the footer, the top toolbar is empty.
+    if (!searchHost || !pagerFooterHost) {
+      pagerHost.appendChild(toolbar);
+    }
+
+    // Footer pieces — render into pagerFooterHost when provided, else fall back
+    // to placing them in the top host (keeps backwards compat).
+    const sizeWrap = DAT.el('label', { class: 'dat-table-footer__pagesize' });
+    sizeWrap.appendChild(DAT.el('span', { class: 'dat-table-footer__pagesize-label' }, 'Rows'));
+    const sizeSelect = DAT.el('select', { class: 'dat-select dat-select--compact', 'aria-label': 'Rows per page' });
     for (const n of PAGE_SIZES) {
       const opt = DAT.el('option', { value: String(n) }, String(n));
       if (n === state.limit) opt.selected = true;
       sizeSelect.appendChild(opt);
     }
     sizeWrap.appendChild(sizeSelect);
-    toolbar.appendChild(sizeWrap);
 
-    const summary = DAT.el('div', { class: 'dat-table-toolbar__summary', 'aria-live': 'polite' });
-    toolbar.appendChild(summary);
-    pagerHost.appendChild(toolbar);
+    const pager = DAT.el('nav', { class: 'dat-pager dat-pager--compact', 'aria-label': 'Pagination' });
 
-    const pager = DAT.el('nav', { class: 'dat-pager', 'aria-label': 'Pagination' });
-    pagerHost.appendChild(pager);
+    if (pagerFooterHost) {
+      DAT.clear(pagerFooterHost);
+      pagerFooterHost.classList.add('dat-table-footer');
+      pagerFooterHost.appendChild(sizeWrap);
+      pagerFooterHost.appendChild(summary);
+      pagerFooterHost.appendChild(pager);
+    } else {
+      toolbar.appendChild(sizeWrap);
+      toolbar.appendChild(summary);
+      pagerHost.appendChild(pager);
+    }
 
     // ── Decorate sortable column headers ────────────────────────────────
     const ths = Array.from(theadRow.querySelectorAll('th[data-col]'));

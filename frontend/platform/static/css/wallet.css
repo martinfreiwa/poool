@@ -3238,3 +3238,46 @@ body.kyc-hidden .wallet-main {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* ────────────────────────────────────────────────────────────────────
+   Wallet topbar action buttons — POOOL brand-pair pills.
+   Used on the wallet variant of investor-topbar.html.
+   - brand-blue  = POOOL blue tile + POOOL green text (Monthly statement)
+   - brand-green = POOOL green tile + POOOL blue text (Export CSV)
+   Flat, hover slightly tints the border for a soft state change.
+   ──────────────────────────────────────────────────────────────────── */
+.lb-topbar .investor-topbar-action--brand-blue {
+  background: #0000FF;
+  border: 1px solid #0000FF;
+  color: #03FF88;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  transition: background .15s ease, border-color .15s ease;
+}
+.lb-topbar .investor-topbar-action--brand-blue:hover,
+.lb-topbar .investor-topbar-action--brand-blue:focus-visible {
+  background: #1E40AF;
+  border-color: #1E40AF;
+  color: #03FF88;
+  text-decoration: none;
+}
+.lb-topbar .investor-topbar-action--brand-blue svg { color: #03FF88; }
+
+.lb-topbar .investor-topbar-action--brand-green {
+  background: #03FF88;
+  border: 1px solid #03FF88;
+  color: #0000FF;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  transition: background .15s ease, border-color .15s ease;
+}
+.lb-topbar .investor-topbar-action--brand-green:hover,
+.lb-topbar .investor-topbar-action--brand-green:focus-visible {
+  background: #00CC6F;
+  border-color: #00CC6F;
+  color: #0000FF;
+  text-decoration: none;
+}
+.lb-topbar .investor-topbar-action--brand-green svg { color: #0000FF; }

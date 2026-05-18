@@ -935,3 +935,166 @@ body#developer-operations-body .dae-empty__metrics {
   .ops-skeleton__row,
   .ops-skeleton__stat::after { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════
+   Operations — v2 polish (2026-05-18)
+   Aligns stat cards, action queue, and matrix card
+   with the community/rewards visual language:
+   brand-gradient top accents, header dividers,
+   cobalt-active filter chips, refined alerts.
+   ═══════════════════════════════════════════════ */
+
+/* ── Stat cards: match developer-assets page KPI cards ──────────
+   Clean white surface, bold black number, uppercase tracked label.
+   No top accent bar, no icon, no colored numbers, no trend text.   */
+.ops-stats-grid .dev-stat {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 22px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  background: var(--card-bg, #fff);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ops-stats-grid .dev-stat::before { display: none !important; }
+.ops-stats-grid .dev-stat:hover {
+  border-color: rgba(0, 0, 255, 0.18);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.05);
+}
+
+/* Hide icon chip + trend sub-text — KPI card carries only number + label */
+.ops-stats-grid .dev-stat .p-icon,
+.ops-stats-grid .dev-stat .ops-stat__icon,
+.ops-stats-grid .dev-stat .ops-stat__trend {
+  display: none !important;
+}
+
+.ops-stat__top {
+  display: block !important;
+  margin: 0 !important;
+}
+
+.ops-stat__num,
+.ops-stat__num--red,
+.ops-stat__num--amber,
+.ops-stat__num--blue,
+.ops-stat__num--green,
+.ops-stat__num--muted {
+  color: #0A0D12 !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1 !important;
+}
+
+.ops-stat__label {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #717680 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  margin-top: 10px !important;
+}
+
+/* ── Action queue (alert banner): amber→peach, hairline divider ── */
+.ops-action-queue {
+  border-radius: 14px;
+  border: 1px solid #FEDF89;
+  background: linear-gradient(180deg, #FFFCF5 0%, #FFFFFF 100%);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.ops-action-queue__header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #FEDF89;
+}
+.ops-action-queue__header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #F59E0B 0%, #B45309 100%);
+  color: #FFFBEB;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.22);
+}
+.ops-action-queue__header-icon svg { stroke: #FFFBEB; }
+.ops-action-queue__title {
+  color: #B54708;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.ops-action-queue__subtitle { color: #B45309; }
+
+/* ── Matrix card: brand-gradient top accent + icon-chip header ── */
+.ops-matrix-wrap {
+  border-radius: 14px;
+  border: 1px solid var(--card-border-color, #EAECF0);
+  background: var(--card-bg, #fff);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+.ops-matrix-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.ops-matrix-topbar {
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+.ops-matrix-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.ops-matrix-sub {
+  font-size: 12px;
+}
+
+/* Year tabs — same cobalt-active pill as the developer-assets-table */
+.ops-year-tab.active {
+  background: var(--btn-primary-bg, #0000FF);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.20);
+}
+
+/* Filter tabs — switch from underline to brand-cobalt pill */
+.ops-matrix-controls {
+  padding: 12px 22px;
+  background: linear-gradient(180deg, #FAFBFF 0%, #FFFFFF 100%);
+}
+.ops-filter-tabs { gap: 6px; }
+.ops-filter-tab {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #475467);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #FFFFFF;
+  margin-bottom: 0;
+  border-bottom: 1px solid transparent;
+}
+.ops-filter-tab:hover:not(.active) {
+  background: #F2F4F7;
+  color: #101828;
+  border-color: #E5E7EB;
+  border-bottom-color: #E5E7EB;
+}
+.ops-filter-tab.active {
+  background: var(--btn-primary-bg, #0000FF);
+  color: #FFFFFF;
+  border-color: var(--btn-primary-bg, #0000FF);
+  border-bottom-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.20);
+}
+.ops-filter-tab.active .ops-filter-count {
+  background: #FFFFFF !important;
+  color: var(--btn-primary-bg, #0000FF) !important;
+}

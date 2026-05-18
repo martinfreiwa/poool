@@ -57,88 +57,24 @@
     DAT.downloadCsv(`team-product-sales-${stamp}.csv`, [header, ...body]);
   }
 
-  // ── Date-range wiring ───────────────────────────────────────────────────
-  function loadRange() {
-    const url = new URL(location.href);
-    const fromUrl = url.searchParams.get('from') || '';
-    const toUrl   = url.searchParams.get('to')   || '';
-    if (fromUrl || toUrl) return { from: fromUrl, to: toUrl, preset: '' };
-    try {
-      const p = JSON.parse(localStorage.getItem(RANGE_LS) || 'null');
-      if (p && typeof p === 'object') return { from: p.from || '', to: p.to || '', preset: p.preset || '' };
-    } catch {}
-    // Default: last 30 days. Matches Analytics page default.
-    return { from: daysAgoIso(30), to: todayIso(), preset: '30d' };
-  }
-  function saveRange(state) {
-    try { localStorage.setItem(RANGE_LS, JSON.stringify(state)); } catch {}
-  }
-  function paintPresets(activePreset) {
-    DAT.$$('#dat-products-date-range .dat-preset').forEach((btn) => {
-      const on = btn.dataset.preset === activePreset;
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.classList.toggle('dat-preset--active', on);
-    });
-  }
-  function applyPreset(preset, fromInp, toInp) {
-    if (preset === 'all') {
-      // Backend defaults missing `from` to "30 days ago" — send an epoch
-      // sentinel so "All time" actually returns all-time data.
-      fromInp.value = '2000-01-01'; toInp.value = todayIso();
-    } else if (preset === '7d') {
-      fromInp.value = daysAgoIso(7);  toInp.value = todayIso();
-    } else if (preset === '30d') {
-      fromInp.value = daysAgoIso(30); toInp.value = todayIso();
-    } else if (preset === 'this-month') {
-      fromInp.value = monthStartIso(); toInp.value = todayIso();
-    } else if (preset === 'ytd') {
-      fromInp.value = yearStartIso(); toInp.value = todayIso();
-    }
-  }
-
-  let _rangeState = { from: '', to: '', preset: '' };
-
   document.addEventListener('DOMContentLoaded', () => {
     const tbody = DAT.$('#dat-products-tbody');
     const theadRow = DAT.$('#dat-products-thead-row');
     const pagerHost = DAT.$('#dat-products-pager-host');
+    const pagerFooterHost = DAT.$('#dat-products-pager-footer');
     if (!tbody || !theadRow || !pagerHost) return;
 
-    const fromInp = DAT.$('#dat-products-from');
-    const toInp   = DAT.$('#dat-products-to');
-
-    _rangeState = loadRange();
-    if (fromInp) fromInp.value = _rangeState.from;
-    if (toInp)   toInp.value   = _rangeState.to;
-    paintPresets(_rangeState.preset);
-
-    DAT.$$('#dat-products-date-range .dat-preset').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const p = btn.dataset.preset;
-        applyPreset(p, fromInp, toInp);
-        _rangeState = { from: fromInp.value, to: toInp.value, preset: p };
-        paintPresets(p);
-        saveRange(_rangeState);
-        _table?.reload();
-      });
-    });
-    const onCustom = () => {
-      _rangeState = { from: fromInp ? fromInp.value : '', to: toInp ? toInp.value : '', preset: '' };
-      paintPresets('');
-      saveRange(_rangeState);
-      _table?.reload();
-    };
-    if (fromInp) fromInp.addEventListener('change', onCustom);
-    if (toInp)   toInp.addEventListener('change', onCustom);
+    // Topbar date-range owns from/to; reload the table on each change.
+    DAT.topbarDateRange({ onChange: () => _table?.reload() });
 
     _table = DAT.dataTable({
       pageKey: 'products',
       endpoint: '/api/developer/affiliate/team/products',
-      tbody, theadRow, pagerHost,
-      extraParams: () => ({
-        from: _rangeState.from || '',
-        to:   _rangeState.to   || '',
-      }),
+      tbody, theadRow, pagerHost, pagerFooterHost,
+      extraParams: () => {
+        const r = DAT.currentRange();
+        return { from: r.from || '', to: r.to || '' };
+      },
       emptyText: 'No assets sold via your team yet. Once customers your team referred make purchases, each asset rolls up here.',
       columns: [
         { key: 'asset_name', label: 'Asset', sortable: true,

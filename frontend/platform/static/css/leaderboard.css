@@ -1621,12 +1621,16 @@
   border-left: 1px solid var(--card-border-color, #E4E7EC);
 }
 
+/* Only the LEADERBOARD topbar needs column-stack on narrow desktops —
+   that's where the metric+timeframe tab rows collide. Scope by the
+   metric-tabs class so other topbars (settings, dashboard, support,
+   wallet …) keep title-on-left + actions-on-right. */
 @media (max-width: 1280px) {
-  .lb-topbar-inner {
+  .lb-topbar-inner:has(.lb-topbar-tabs--metric) {
     flex-direction: column;
     align-items: flex-start;
   }
-  .lb-topbar-right {
+  .lb-topbar-inner:has(.lb-topbar-tabs--metric) .lb-topbar-right {
     width: 100%;
     justify-content: flex-start;
   }

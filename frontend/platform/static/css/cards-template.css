@@ -889,6 +889,40 @@
 .p-icon--xs .p-front{width:32px;height:32px;}
 .p-icon--xs .p-front svg{width:13px;height:13px;stroke-width:1.75;}
 
+/* ── Color variants — semantic halos for status icons ───────────── */
+/* Default (no variant) keeps the brand blue+green halo from the inline
+   styles used elsewhere. These classes let consumers skip the inline
+   gradient soup and just say e.g. `p-icon p-icon--xs p-icon--red`. */
+.p-icon--brand { --glow-color: rgba(0,0,255,.10); }
+.p-icon--brand .p-bg-1 { background: linear-gradient(135deg,#03FF88 0%,#00CC6F 100%); opacity: .28; box-shadow: 0 2px 8px rgba(3,255,136,.12); }
+.p-icon--brand .p-bg-2 { background: linear-gradient(135deg,#0000FF 0%,#3344FF 100%); opacity: .32; box-shadow: 0 2px 8px rgba(0,0,255,.10); }
+.p-icon--brand .p-front { background: linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%); backdrop-filter: blur(20px) saturate(1.85); -webkit-backdrop-filter: blur(20px) saturate(1.85); }
+.p-icon--brand .p-front svg { stroke: #0000FF; }
+
+.p-icon--danger { --glow-color: rgba(217,45,32,.14); }
+.p-icon--danger .p-bg-1 { background: linear-gradient(135deg,#FFCDCA 0%,#F97066 100%); opacity: .30; box-shadow: 0 2px 8px rgba(217,45,32,.12); }
+.p-icon--danger .p-bg-2 { background: linear-gradient(135deg,#D92D20 0%,#912018 100%); opacity: .34; box-shadow: 0 2px 8px rgba(217,45,32,.14); }
+.p-icon--danger .p-front { background: linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(254,243,242,.78) 40%,rgba(254,228,226,.62) 100%); backdrop-filter: blur(20px) saturate(1.85); -webkit-backdrop-filter: blur(20px) saturate(1.85); }
+.p-icon--danger .p-front svg { stroke: #B42318; }
+
+.p-icon--warning { --glow-color: rgba(181,71,8,.14); }
+.p-icon--warning .p-bg-1 { background: linear-gradient(135deg,#FEF0C7 0%,#FDB022 100%); opacity: .32; box-shadow: 0 2px 8px rgba(247,144,9,.12); }
+.p-icon--warning .p-bg-2 { background: linear-gradient(135deg,#F79009 0%,#B54708 100%); opacity: .34; box-shadow: 0 2px 8px rgba(181,71,8,.12); }
+.p-icon--warning .p-front { background: linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(255,250,235,.78) 40%,rgba(254,240,199,.62) 100%); backdrop-filter: blur(20px) saturate(1.85); -webkit-backdrop-filter: blur(20px) saturate(1.85); }
+.p-icon--warning .p-front svg { stroke: #B54708; }
+
+.p-icon--success { --glow-color: rgba(2,122,72,.14); }
+.p-icon--success .p-bg-1 { background: linear-gradient(135deg,#A6F4C5 0%,#32D583 100%); opacity: .30; box-shadow: 0 2px 8px rgba(50,213,131,.14); }
+.p-icon--success .p-bg-2 { background: linear-gradient(135deg,#03FF88 0%,#027A48 100%); opacity: .32; box-shadow: 0 2px 8px rgba(2,122,72,.12); }
+.p-icon--success .p-front { background: linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(236,253,243,.78) 40%,rgba(220,250,228,.62) 100%); backdrop-filter: blur(20px) saturate(1.85); -webkit-backdrop-filter: blur(20px) saturate(1.85); }
+.p-icon--success .p-front svg { stroke: #027A48; }
+
+.p-icon--info { --glow-color: rgba(0,0,255,.12); }
+.p-icon--info .p-bg-1 { background: linear-gradient(135deg,#B8C5FF 0%,#5B7AFF 100%); opacity: .30; box-shadow: 0 2px 8px rgba(91,122,255,.12); }
+.p-icon--info .p-bg-2 { background: linear-gradient(135deg,#0000FF 0%,#1E3A8A 100%); opacity: .34; box-shadow: 0 2px 8px rgba(0,0,255,.12); }
+.p-icon--info .p-front { background: linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(238,244,255,.78) 40%,rgba(220,231,255,.62) 100%); backdrop-filter: blur(20px) saturate(1.85); -webkit-backdrop-filter: blur(20px) saturate(1.85); }
+.p-icon--info .p-front svg { stroke: #0040DD; }
+
 /* Completion Banner */
 .profile-completion-banner {
     padding: 24px;

@@ -1546,11 +1546,15 @@ pub async fn team_customers(
     // Note: search placeholder number differs between count ($3) and rows ($5)
     // because count only binds (team_id, attr, search) while rows binds
     // (team_id, attr, limit, offset, search).
+    // Extended to also match status text (e.g. typing "qualified" filters to
+    // qualified rows) since the frontend dropdowns for member + status were
+    // removed in favour of a single search bar.
     let where_search_count = if search.is_some() {
         "AND (
             LOWER(COALESCE(rup.first_name,'') || ' ' || COALESCE(rup.last_name,'')) ILIKE $3
             OR LOWER(ru.email::text) ILIKE $3
             OR LOWER(COALESCE(aup.first_name,'') || ' ' || COALESCE(aup.last_name,'')) ILIKE $3
+            OR LOWER(REPLACE(ar.status::text, '_', ' ')) ILIKE $3
         )"
     } else {
         ""
@@ -1560,6 +1564,7 @@ pub async fn team_customers(
             LOWER(COALESCE(rup.first_name,'') || ' ' || COALESCE(rup.last_name,'')) ILIKE $5
             OR LOWER(ru.email::text) ILIKE $5
             OR LOWER(COALESCE(aup.first_name,'') || ' ' || COALESCE(aup.last_name,'')) ILIKE $5
+            OR LOWER(REPLACE(ar.status::text, '_', ' ')) ILIKE $5
         )"
     } else {
         ""

@@ -263,179 +263,179 @@
   }
 
   // ─── Render Chart ───────────────────────────────────────────
+  //
+  // Previously: hand-rolled DIV bars + absolute-positioned SVG trend line
+  // overlay + bespoke tooltip listeners. Now: single ECharts dual-axis chart
+  // (bar series + smooth-line SMA overlay), brand-tinted to match the metric
+  // mix from `getActiveMetrics()`. The legacy DOM (chart-grid / chart-bars /
+  // chart-trend-line / chart-x-axis) is hidden once on first render — kept
+  // in the template so other code that reads it (CSS hooks, mobile fallback)
+  // still finds the elements.
+
+  var _echartsInstance = null;
+  var _echartsMount = null;
+
+  function ensureEchartsMount() {
+    var container = document.getElementById("portfolio-chart-container");
+    if (!container) return null;
+
+    if (_echartsMount && container.contains(_echartsMount)) return _echartsMount;
+
+    // Hide the legacy children — bars, trend-line, grid, x-axis labels.
+    Array.prototype.forEach.call(container.children, function (child) {
+      if (child.id !== "portfolio-chart-echarts") child.style.display = "none";
+    });
+
+    _echartsMount = container.querySelector("#portfolio-chart-echarts");
+    if (!_echartsMount) {
+      _echartsMount = document.createElement("div");
+      _echartsMount.id = "portfolio-chart-echarts";
+      _echartsMount.style.cssText = "width:100%;height:280px;";
+      container.appendChild(_echartsMount);
+    }
+    return _echartsMount;
+  }
+
+  function formatUsdCompact(dollars) {
+    var abs = Math.abs(dollars);
+    if (abs >= 1e6) return "$" + (dollars / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+    if (abs >= 1e3) return "$" + (dollars / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+    return "$" + Math.round(dollars).toLocaleString("en-US");
+  }
+
+  function computeSma(values) {
+    var n = values.length;
+    if (n === 0) return [];
+    var w = Math.max(3, Math.floor(n * 0.1));
+    var out = [];
+    for (var i = 0; i < n; i++) {
+      var start = Math.max(0, i - Math.floor(w / 2));
+      var end = Math.min(n, i + Math.ceil(w / 2));
+      var sum = 0;
+      for (var j = start; j < end; j++) sum += values[j];
+      out.push(sum / (end - start));
+    }
+    return out;
+  }
+
+  function getBarFlatColor() {
+    var metrics = getActiveMetrics();
+    if (metrics.length === 1) {
+      return { portfolio: "#12B76A", rental: "#444CE7", appreciation: "#DC6803" }[metrics[0]];
+    }
+    return "#12B76A"; // mixed: brand green
+  }
 
   function renderChart(periodKey) {
-    var chartData = getCombinedData(periodKey);
-    var periodReturn = calcPeriodReturn(chartData);
+    var chartDataCents = getCombinedData(periodKey);
     var xLabels = generateXLabels(periodKey);
-    var barGradient = getBarGradient();
-    var trendColor = getTrendColor();
 
-    // 1. Update period header text
+    // 1. Update period header text + percentage (uses real backend totals
+    //    since no per-period time-series exists)
     var titleText = document.querySelector(".chart-title-text");
     var titlePct  = document.querySelector(".chart-title-percentage");
     if (titleText) titleText.textContent = getPeriodDisplayName(periodKey);
     if (titlePct) {
-      // Use real total appreciation from backend data — no real time-series exists
-      // so period-specific returns cannot be computed accurately.
       var realLabel = "—";
       if (portfolioData && portfolioData.total_purchase_cents > 0) {
         var realPct = ((portfolioData.total_appreciation_cents || 0) / portfolioData.total_purchase_cents) * 100;
         var sign = realPct >= 0 ? "+" : "";
         realLabel = sign + realPct.toFixed(1) + "%";
-        if (realPct < 0) {
-          titlePct.classList.add("chart-title-negative");
-        } else {
-          titlePct.classList.remove("chart-title-negative");
-        }
+        titlePct.classList.toggle("chart-title-negative", realPct < 0);
       }
       titlePct.textContent = realLabel;
     }
 
-    // 2. Render bars
-    var barsContainer = document.querySelector(".chart-bars");
-    if (!barsContainer) return;
+    // 2. ECharts render
+    var mount = ensureEchartsMount();
+    if (!mount || typeof window.echarts === "undefined") return;
 
-    var maxVal = Math.max.apply(null, chartData);
-    var minVal = Math.min.apply(null, chartData);
-    var range = maxVal - minVal || 1;
-
-    var barsHtml = "";
-    for (var idx = 0; idx < chartData.length; idx++) {
-      var value = chartData[idx];
-      var normalizedHeight = ((value - minVal) / range) * (MAX_BAR_HEIGHT - MIN_BAR_HEIGHT) + MIN_BAR_HEIGHT;
-      var height = Math.round(normalizedHeight);
-      var delay = Math.round((idx / chartData.length) * 800);
-      var displayValue = "$" + new Intl.NumberFormat("en-US").format(Math.round(value / 100));
-
-      barsHtml += '<div class="chart-bar-week" '
-        + 'data-week="' + (idx + 1) + '" '
-        + 'data-height="' + height + '" '
-        + 'data-value="' + displayValue + '" '
-        + 'style="animation-delay: ' + delay + 'ms; height: ' + height + 'px; background: ' + barGradient + ';" '
-        + 'title="' + displayValue + '"></div>';
-    }
-
-    barsContainer.innerHTML = barsHtml;
-
-    // Re-trigger animation
-    barsContainer.style.display = "none";
-    void barsContainer.offsetHeight; // force reflow
-    barsContainer.style.display = "";
-
-    // 3. Render trend line
-    renderTrendLine(chartData, trendColor);
-
-    // 4. Update X-Axis labels
-    var xAxisContainer = document.querySelector(".chart-x-axis");
-    if (xAxisContainer) {
-      xAxisContainer.innerHTML = xLabels.map(function (label) { return "<span>" + label + "</span>"; }).join("");
-    }
-
-    // 4.5. Update Y-Axis labels
-    var gridLines = document.querySelectorAll(".grid-line");
-    if (gridLines.length > 0) {
-      var numLines = gridLines.length;
-      for (var yIdx = 0; yIdx < numLines; yIdx++) {
-        var pct = (numLines - 1 - yIdx) / (numLines - 1);
-        var valCents = minVal + (range * pct);
-        var valDollars = valCents / 100;
-        
-        var formatted = "";
-        if (Math.abs(valDollars) >= 1000000) {
-          formatted = "$" + (valDollars / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
-        } else if (Math.abs(valDollars) >= 1000) {
-          formatted = "$" + (valDollars / 1000).toFixed(1).replace(/\.0$/, "") + "K";
-        } else {
-          formatted = "$" + Math.round(valDollars);
-        }
-        
-        var labelEl = gridLines[yIdx].querySelector(".chart-y-axis-label");
-        if (!labelEl) {
-          labelEl = document.createElement("span");
-          labelEl.className = "chart-y-axis-label";
-          gridLines[yIdx].insertBefore(labelEl, gridLines[yIdx].firstChild);
-        }
-        labelEl.textContent = formatted;
+    // Pad x-labels out to match data length — generateXLabels returns sparse
+    // labels (e.g. 12 month names for 52 weeks).
+    var paddedLabels = new Array(chartDataCents.length).fill("");
+    if (xLabels.length > 0) {
+      for (var i = 0; i < xLabels.length; i++) {
+        var idx = Math.round((i / Math.max(1, xLabels.length - 1)) * (chartDataCents.length - 1));
+        paddedLabels[idx] = xLabels[i];
       }
     }
 
-    // 5. Add bar hover tooltip behavior
-    setupBarTooltips();
-  }
+    var barValuesDollars   = chartDataCents.map(function (c) { return c / 100; });
+    var trendValuesDollars = computeSma(barValuesDollars);
+    var barColor   = getBarFlatColor();
+    var trendColor = getTrendColor();
 
-  // ─── Render Trend Line ──────────────────────────────────────
-
-  function renderTrendLine(chartData, color) {
-    var trendSvg = document.querySelector(".chart-trend-line");
-    if (!trendSvg) return;
-
-    var viewBoxWidth = 1048;
-    var viewBoxHeight = 213;
-    var padding = 20;
-    var numPoints = chartData.length;
-
-    var maxVal = Math.max.apply(null, chartData);
-    var minVal = Math.min.apply(null, chartData);
-    var range = maxVal - minVal || 1;
-
-    // Simple moving average (window = ~10% of data)
-    var w = Math.max(3, Math.floor(numPoints * 0.1));
-    var smaData = [];
-    for (var i = 0; i < numPoints; i++) {
-      var start = Math.max(0, i - Math.floor(w / 2));
-      var end = Math.min(numPoints, i + Math.ceil(w / 2));
-      var sum = 0;
-      for (var j = start; j < end; j++) sum += chartData[j];
-      smaData.push(sum / (end - start));
+    if (_echartsInstance) {
+      try { _echartsInstance.dispose(); } catch (_) { /* noop */ }
+      _echartsInstance = null;
     }
+    _echartsInstance = echarts.init(mount, null, { renderer: "svg" });
 
-    // Build SVG path
-    var pathParts = [];
-    for (var k = 0; k < smaData.length; k++) {
-      var x = padding + (k / (numPoints - 1)) * (viewBoxWidth - 2 * padding);
-      var y = viewBoxHeight - padding - ((smaData[k] - minVal) / range) * (viewBoxHeight - 2 * padding);
-      pathParts.push((k === 0 ? "M " : "L ") + x.toFixed(0) + " " + y.toFixed(0));
-    }
-
-    var pathEl = trendSvg.querySelector("path");
-    if (pathEl) {
-      pathEl.setAttribute("d", pathParts.join(" "));
-      pathEl.setAttribute("stroke", color || "#5555FF");
-    }
-  }
-
-  // ─── Bar Tooltips ───────────────────────────────────────────
-
-  function setupBarTooltips() {
-    var existingTooltip = document.getElementById("chart-bar-tooltip");
-    if (existingTooltip) existingTooltip.remove();
-
-    var tooltip = document.createElement("div");
-    tooltip.id = "chart-bar-tooltip";
-    tooltip.className = "chart-bar-tooltip";
-    tooltip.style.display = "none";
-    var container = document.querySelector(".portfolio-chart-container");
-    if (container) container.appendChild(tooltip);
-
-    var bars = document.querySelectorAll(".chart-bar-week");
-    bars.forEach(function (bar) {
-      bar.addEventListener("mouseenter", function () {
-        var val = this.getAttribute("data-value");
-        tooltip.textContent = val;
-        tooltip.style.display = "block";
-
-        var rect = this.getBoundingClientRect();
-        var containerRect = this.closest(".portfolio-chart-container").getBoundingClientRect();
-        tooltip.style.left = (rect.left - containerRect.left + rect.width / 2) + "px";
-        tooltip.style.top = (rect.top - containerRect.top - 30) + "px";
-      });
-
-      bar.addEventListener("mouseleave", function () {
-        tooltip.style.display = "none";
-      });
+    _echartsInstance.setOption({
+      backgroundColor: "transparent",
+      textStyle: { fontFamily: "'TT Norms Pro', sans-serif", color: "#717680" },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        backgroundColor: "rgba(24, 29, 39, 0.95)",
+        borderWidth: 0,
+        padding: [8, 12],
+        textStyle: { color: "#fff", fontSize: 12 },
+        formatter: function (params) {
+          if (!params || !params.length) return "";
+          var bar = params.find(function (p) { return p.seriesType === "bar"; });
+          if (!bar) bar = params[0];
+          return (
+            '<div style="font-weight:600;margin-bottom:2px;">' + (bar.name || "") + "</div>" +
+            formatUsdCompact(bar.value)
+          );
+        },
+      },
+      grid: { left: 56, right: 12, top: 12, bottom: 28 },
+      xAxis: {
+        type: "category",
+        data: paddedLabels,
+        boundaryGap: true,
+        axisLine: { lineStyle: { color: "#F2F4F7" } },
+        axisTick: { show: false },
+        axisLabel: { color: "#717680", fontSize: 11, margin: 12, interval: 0 },
+      },
+      yAxis: {
+        type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: "#F2F4F7" } },
+        axisLabel: { color: "#717680", fontSize: 11, formatter: formatUsdCompact },
+      },
+      series: [
+        {
+          name: "Value",
+          type: "bar",
+          data: barValuesDollars,
+          itemStyle: { color: barColor, borderRadius: [3, 3, 0, 0] },
+          barWidth: "65%",
+          emphasis: { itemStyle: { color: barColor, opacity: 0.85 } },
+        },
+        {
+          name: "Trend",
+          type: "line",
+          smooth: true,
+          symbol: "none",
+          showSymbol: false,
+          lineStyle: { color: trendColor, width: 2, type: [5, 5] },
+          tooltip: { show: false },
+          data: trendValuesDollars,
+        },
+      ],
+      animationDuration: 800,
+      animationEasing: "cubicOut",
     });
   }
+
+  // Trend line + bar tooltip are now handled natively by ECharts in
+  // renderChart() above (smooth line series + axisPointer + tooltip
+  // formatter). The previously-hand-rolled `renderTrendLine` and
+  // `setupBarTooltips` were removed in the migration.
 
   // ─── Show More / Less Toggle ────────────────────────────────
 

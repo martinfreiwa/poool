@@ -17,7 +17,6 @@
 
   let _lastRows = [];
   let _table = null;
-  let _chipBar = null;
 
   // ── Persistence keys ────────────────────────────────────────────────────
   const RANGE_LS = 'dat:dateRange:customers';
@@ -98,23 +97,6 @@
     );
   }
 
-  // ── Member dropdown (via-member filter) ─────────────────────────────────
-  async function populateMemberFilter() {
-    const filter = DAT.$('#dat-cust-filter');
-    if (!filter) return;
-    try {
-      const data = await DAT.apiGet('/api/developer/affiliate/team/members?limit=500&status=active');
-      const members = (data.members || []).filter((m) => m.status === 'active');
-      DAT.clear(filter);
-      filter.appendChild(DAT.el('option', { value: '' }, `All members (${members.length})`));
-      for (const m of members) {
-        filter.appendChild(DAT.el('option', { value: m.user_id }, m.full_name || m.email || m.user_id));
-      }
-    } catch (e) {
-      console.error('member filter populate failed:', e);
-    }
-  }
-
   // ── CSV export ──────────────────────────────────────────────────────────
   function exportCsv() {
     if (!_lastRows.length) {
@@ -155,103 +137,27 @@
   function saveRange(state) {
     try { localStorage.setItem(RANGE_LS, JSON.stringify(state)); } catch {}
   }
-  function paintPresets(activePreset) {
-    DAT.$$('#dat-customers-date-range .dat-preset').forEach((btn) => {
-      const on = btn.dataset.preset === activePreset;
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.classList.toggle('dat-preset--active', on);
-    });
-  }
-
-  function applyPreset(preset, fromInp, toInp) {
-    if (preset === 'all') {
-      fromInp.value = ''; toInp.value = '';
-    } else if (preset === '7d') {
-      fromInp.value = daysAgoIso(7);  toInp.value = todayIso();
-    } else if (preset === '30d') {
-      fromInp.value = daysAgoIso(30); toInp.value = todayIso();
-    } else if (preset === 'this-month') {
-      fromInp.value = monthStartIso(); toInp.value = todayIso();
-    } else if (preset === 'ytd') {
-      fromInp.value = yearStartIso(); toInp.value = todayIso();
-    }
-  }
-
-  let _rangeState = { from: '', to: '', preset: '' };
-  function wireDateRange() {
-    const fromInp = DAT.$('#dat-customers-from');
-    const toInp   = DAT.$('#dat-customers-to');
-    if (!fromInp || !toInp) return;
-
-    _rangeState = loadRange();
-    if (_rangeState.from) fromInp.value = _rangeState.from;
-    if (_rangeState.to)   toInp.value   = _rangeState.to;
-    paintPresets(_rangeState.preset);
-
-    DAT.$$('#dat-customers-date-range .dat-preset').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const p = btn.dataset.preset;
-        applyPreset(p, fromInp, toInp);
-        _rangeState = { from: fromInp.value, to: toInp.value, preset: p };
-        paintPresets(p);
-        saveRange(_rangeState);
-        _table?.reload();
-      });
-    });
-    const onCustom = () => {
-      _rangeState = { from: fromInp.value, to: toInp.value, preset: '' };
-      paintPresets('');
-      saveRange(_rangeState);
-      _table?.reload();
-    };
-    fromInp.addEventListener('change', onCustom);
-    toInp.addEventListener('change', onCustom);
-  }
 
   // ── Boot ────────────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', async () => {
-    await populateMemberFilter();
-
+  document.addEventListener('DOMContentLoaded', () => {
     const tbody     = DAT.$('#dat-customers-tbody');
     const theadRow  = DAT.$('#dat-customers-thead-row');
     const pagerHost = DAT.$('#dat-customers-pager-host');
-    const chipsHost = DAT.$('#dat-customers-chips');
-    const filter    = DAT.$('#dat-cust-filter');
+    const pagerFooterHost = DAT.$('#dat-customers-pager-footer');
     if (!tbody || !theadRow || !pagerHost) return;
 
-    // Status chips — referral statuses the backend allows.
-    if (chipsHost) {
-      _chipBar = DAT.chipBar({
-        host: chipsHost,
-        pageKey: 'customers',
-        chips: [
-          { value: 'qualified',     label: 'Qualified' },
-          { value: 'paid',          label: 'Paid' },
-          { value: 'under_holdback',label: 'Under holdback' },
-          { value: 'registered',    label: 'Registered' },
-          { value: 'attributed',    label: 'Attributed' },
-          { value: 'kyc_approved',  label: 'KYC approved' },
-          { value: 'first_investment_done', label: 'First investment' },
-          { value: 'expired',       label: 'Expired' },
-          { value: 'disqualified',  label: 'Disqualified' },
-        ],
-        onChange: () => _table?.reload(),
-      });
-    }
-
-    wireDateRange();
+    // Topbar date-range owns from/to; reload the table on each change.
+    DAT.topbarDateRange({ onChange: () => _table?.reload() });
 
     _table = DAT.dataTable({
       pageKey: 'customers',
       endpoint: '/api/developer/affiliate/team/customers',
-      tbody, theadRow, pagerHost,
-      extraParams: () => ({
-        attribution_user_id: filter?.value || '',
-        status: _chipBar ? _chipBar.value() : '',
-        from:   _rangeState.from || '',
-        to:     _rangeState.to   || '',
-      }),
-      emptyText: 'No customers match your filter. As your team converts more leads, they show up here.',
+      tbody, theadRow, pagerHost, pagerFooterHost,
+      extraParams: () => {
+        const r = DAT.currentRange();
+        return { from: r.from || '', to: r.to || '' };
+      },
+      emptyText: 'No customers match your search. Try a different keyword or date range.',
       columns: [
         { key: 'full_name', label: 'Customer', sortable: true, render: customerCell },
         { key: 'via_member', label: 'Via member', sortable: true,
@@ -273,7 +179,6 @@
       onRowsLoaded: (rows) => { _lastRows = rows; },
     });
 
-    if (filter) filter.addEventListener('change', () => _table.reload());
     const exp = DAT.$('#dat-customers-export');
     if (exp) exp.addEventListener('click', exportCsv);
   });

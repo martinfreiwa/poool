@@ -244,6 +244,17 @@
     <link rel="stylesheet" href="/static/css/{{ css }}.css?v={{ asset_version }}" />
     {% endfor %}
     {% endif %}
+
+    <!-- Unified badge system. Loaded last so alias rules win over legacy
+         badge CSS (.submission-status, .sub-chip, .dev-assets-tab, etc). -->
+    <link rel="stylesheet" href="/static/css/ubadge.css?v={{ asset_version }}" />
+
+    <!-- Unified card system. Aliases legacy card classes (ds-stat-card,
+         kpi-card, metric-card, dev-stat, sub-stat, etc) onto one base. -->
+    <link rel="stylesheet" href="/static/css/ucard.css?v={{ asset_version }}" />
+    <!-- u2-cards.js — restructures legacy .metric-card to split layout
+         (icon + KPI left · sparkline right). Idempotent, no-op if none. -->
+    <script defer src="/static/js/u2-cards.js?v={{ asset_version }}"></script>
     {% if extra_js %}
     {% for js in extra_js %}
     <script src="/static/js/{{ js }}.js?v={{ asset_version }}"></script>

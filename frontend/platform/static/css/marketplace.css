@@ -350,18 +350,21 @@
   flex-grow: 0;
 }
 
-/* Dropdowns Container */
+/* Dropdowns Container — search is now an in-row sibling of the 3 dropdowns,
+   so the container needs to grow to fill the parent and let the search field
+   take the remaining horizontal space. */
 .filter-dropdowns {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   padding: 0px;
   gap: 12px;
-  width: 592px;
+  width: 100%;
+  max-width: 100%;
   height: 70px;
-  flex: none;
+  flex: 1 1 100%;
   order: 0;
-  flex-grow: 0;
+  flex-grow: 1;
 }
 
 /* Filter Dropdown */
@@ -390,6 +393,19 @@
 .filter-dropdown:nth-child(3) {
   width: 168px;
   order: 2;
+}
+
+/* Search field — same row as the 3 dropdowns, takes remaining width. */
+.filter-dropdown--search {
+  flex: 1 1 0;
+  min-width: 220px;
+  order: 3;
+}
+.filter-dropdown--search .search-input-wrapper {
+  width: 100% !important;
+  height: 44px;
+  align-self: stretch;
+  flex: 1 1 auto;
 }
 
 /* Label Wrapper */

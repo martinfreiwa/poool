@@ -11,10 +11,23 @@
 
   let _lastRows = [];
 
+  // Universal badge system (.ubadge) — map domain statuses to semantic variants.
+  const UBADGE_BY_STATUS = {
+    active: 'success',
+    invited: 'info',
+    pending_developer_approval: 'warning',
+    removed: 'danger',
+    qualified: 'success',
+    paid: 'success',
+    under_holdback: 'info',
+    disqualified: 'danger',
+    expired: 'neutral',
+  };
   function statusPill(status) {
+    const variant = UBADGE_BY_STATUS[status] || 'neutral';
     return DAT.el(
       'span',
-      { class: `dat-status dat-status--${status}`, title: DAT.humanize(status) },
+      { class: `ubadge ubadge--sm ubadge--${variant}`, title: DAT.humanize(status) },
       DAT.humanize(status),
     );
   }
@@ -28,17 +41,34 @@
     return wrap;
   }
 
+  // Inline SVG factory — keeps JS self-contained.
+  function svg(paths, attrs) {
+    const a = Object.assign({
+      width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none',
+      stroke: 'currentColor', 'stroke-width': '2',
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+      'aria-hidden': 'true',
+    }, attrs || {});
+    const xmlns = 'http://www.w3.org/2000/svg';
+    const el = document.createElementNS(xmlns, 'svg');
+    Object.entries(a).forEach(([k, v]) => el.setAttribute(k, v));
+    el.innerHTML = paths;
+    return el;
+  }
+
   function actionsCell(row) {
     const wrap = DAT.el('div', { class: 'dat-actions' });
     const label = row.full_name || row.email || 'this member';
     if (row.status === 'pending_developer_approval') {
-      wrap.appendChild(DAT.el('button', {
+      const btn = DAT.el('button', {
         type: 'button',
-        class: 'ds-btn ds-btn--sm ds-btn--primary',
+        class: 'dat-icon-btn dat-icon-btn--approve',
         'aria-label': `Approve ${label}`,
         title: `Approve ${label}`,
         onclick: () => approve(row.membership_id, label),
-      }, 'Approve'));
+      });
+      btn.appendChild(svg('<polyline points="20 6 9 17 4 12"/>'));
+      wrap.appendChild(btn);
     }
     // Phase-1: resend-invitation button on invited rows.
     if (row.status === 'invited') {
@@ -51,13 +81,21 @@
       }, 'Resend'));
     }
     if (row.status !== 'removed') {
-      wrap.appendChild(DAT.el('button', {
+      const btn = DAT.el('button', {
         type: 'button',
-        class: 'ds-btn ds-btn--sm ds-btn--danger',
+        class: 'dat-icon-btn dat-icon-btn--danger',
         'aria-label': `Remove ${label}`,
         title: `Remove ${label}`,
         onclick: () => remove(row.membership_id, label),
-      }, 'Remove'));
+      });
+      btn.appendChild(svg(
+        '<polyline points="3 6 5 6 21 6"/>' +
+        '<path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>' +
+        '<path d="M10 11v6"/>' +
+        '<path d="M14 11v6"/>' +
+        '<path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'
+      ));
+      wrap.appendChild(btn);
     }
     return wrap;
   }
@@ -73,6 +111,13 @@
   }
 
   async function approve(id, label) {
+    const ok = await DAT.confirm({
+      title: `Approve ${label}?`,
+      message: 'They will get an active business affiliate link and can start earning commissions immediately.',
+      confirmText: 'Approve member',
+      cancelText: 'Keep pending',
+    });
+    if (!ok) return;
     try {
       await DAT.apiPost(`/api/developer/affiliate/team/members/${id}/approve`);
       await DAT.loadTeamInfo();
@@ -128,29 +173,15 @@
     const tbody = DAT.$('#dat-members-tbody');
     const theadRow = DAT.$('#dat-members-thead-row');
     const pagerHost = DAT.$('#dat-members-pager-host');
-    const chipsHost = DAT.$('#dat-members-chips');
+    const pagerFooterHost = DAT.$('#dat-members-pager-footer');
+    const searchHost = DAT.$('#dat-members-search-host');
     if (!tbody || !theadRow || !pagerHost) return;
-
-    let chipBar = null;
-    if (chipsHost) {
-      chipBar = DAT.chipBar({
-        host: chipsHost,
-        pageKey: 'members',
-        chips: [
-          { value: 'active', label: 'Active' },
-          { value: 'invited', label: 'Invited' },
-          { value: 'pending_developer_approval', label: 'Pending approval' },
-          { value: 'removed', label: 'Removed' },
-        ],
-        onChange: () => _table?.reload(),
-      });
-    }
 
     _table = DAT.dataTable({
       pageKey: 'members',
       endpoint: '/api/developer/affiliate/team/members',
-      tbody, theadRow, pagerHost,
-      extraParams: () => ({ status: chipBar ? chipBar.value() : '' }),
+      tbody, theadRow, pagerHost, pagerFooterHost, searchHost,
+      extraParams: () => ({}),
       emptyText: 'No team members match your filter. Invite someone via the button above.',
       columns: [
         { key: 'full_name', label: 'Member', sortable: true, render: memberCell },

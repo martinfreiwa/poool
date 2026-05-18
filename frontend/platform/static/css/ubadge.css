@@ -1,0 +1,683 @@
+/* ============================================================
+   UBADGE — Unified badge system
+   ============================================================
+   One base class, one palette, three sizes, optional dot.
+   Replaces ad-hoc badge classes across the platform.
+
+   Brand-aware palette:
+     success = green tile + brand-blue text (brand pair, celebratory)
+     info    = clean indigo tile + indigo text (informational, distinct from success)
+     accent  = solid brand-blue + brand-green (high emphasis)
+     warning/danger/neutral stay semantic.
+   ============================================================ */
+
+:root {
+  --ubadge-font-size: 12px;
+  --ubadge-font-size-sm: 10px;
+  --ubadge-font-size-lg: 13px;
+  --ubadge-font-weight: 600;
+  --ubadge-padding: 3px 10px;
+  --ubadge-padding-sm: 2px 7px;
+  --ubadge-padding-lg: 5px 14px;
+  --ubadge-radius: 999px;
+  --ubadge-gap: 6px;
+  --ubadge-line-height: 1.4;
+
+  --ubadge-success-bg: rgba(3, 255, 136, 0.18);
+  --ubadge-success-fg: #0000FF;
+  --ubadge-success-bd: rgba(3, 255, 136, 0.42);
+
+  --ubadge-warning-bg: #FFFAEB;
+  --ubadge-warning-fg: #B54708;
+  --ubadge-warning-bd: #FEDF89;
+
+  --ubadge-danger-bg:  #FEF3F2;
+  --ubadge-danger-fg:  #B42318;
+  --ubadge-danger-bd:  #FECDCA;
+
+  /* info = clean indigo, no green — distinct from success brand-pair */
+  --ubadge-info-bg:    #EEF4FF;
+  --ubadge-info-fg:    #3538CD;
+  --ubadge-info-bd:    #C7D7FE;
+
+  --ubadge-neutral-bg: #F2F4F7;
+  --ubadge-neutral-fg: #344054;
+  --ubadge-neutral-bd: #D0D5DD;
+
+  --ubadge-accent-bg:  #0000FF;
+  --ubadge-accent-fg:  #03FF88;
+  --ubadge-accent-bd:  #0000FF;
+}
+
+html.dark,
+[data-theme="dark"] {
+  --ubadge-success-bg: rgba(3, 255, 136, 0.20);
+  --ubadge-success-fg: #6EA8FF;
+  --ubadge-success-bd: rgba(3, 255, 136, 0.40);
+  --ubadge-warning-bg: rgba(217,119,6,0.16);
+  --ubadge-warning-fg: #fcd34d;
+  --ubadge-warning-bd: rgba(217,119,6,0.30);
+  --ubadge-danger-bg:  rgba(220,38,38,0.16);
+  --ubadge-danger-fg:  #fca5a5;
+  --ubadge-danger-bd:  rgba(220,38,38,0.30);
+  --ubadge-info-bg:    rgba(99, 102, 241, 0.20);
+  --ubadge-info-fg:    #A5B4FC;
+  --ubadge-info-bd:    rgba(99, 102, 241, 0.40);
+  --ubadge-neutral-bg: rgba(255,255,255,0.06);
+  --ubadge-neutral-fg: #c9cfdb;
+  --ubadge-neutral-bd: rgba(255,255,255,0.12);
+  --ubadge-accent-bg:  #0000FF;
+  --ubadge-accent-fg:  #03FF88;
+  --ubadge-accent-bd:  #0000FF;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+.ubadge {
+  --ubadge-fg: inherit;
+  --ubadge-bg: transparent;
+  --ubadge-bd: transparent;
+  --ubadge-bd-hover: var(--ubadge-bd);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ubadge-gap);
+  padding: var(--ubadge-padding);
+  font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--ubadge-font-size);
+  font-weight: var(--ubadge-font-weight);
+  line-height: var(--ubadge-line-height);
+  letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--ubadge-radius);
+  border: 1px solid var(--ubadge-bd);
+  color: var(--ubadge-fg);
+  background: var(--ubadge-bg);
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  vertical-align: middle;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.ubadge:hover { border-color: var(--ubadge-bd-hover); }
+
+/* sizes */
+.ubadge--sm { font-size: var(--ubadge-font-size-sm); padding: var(--ubadge-padding-sm); gap: 4px; }
+.ubadge--lg { font-size: var(--ubadge-font-size-lg); padding: var(--ubadge-padding-lg); letter-spacing: -0.01em; }
+
+/* ── Soft variants ─────────────────────────────────────────── */
+.ubadge--success { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.ubadge--warning { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.ubadge--danger  { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+.ubadge--info    { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+.ubadge--neutral { --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd); }
+.ubadge--accent  { --ubadge-bg: var(--ubadge-accent-bg);  --ubadge-fg: var(--ubadge-accent-fg);  --ubadge-bd: var(--ubadge-accent-bd); }
+
+/* ── Solid variants ────────────────────────────────────────── */
+.ubadge--solid-success {
+  --ubadge-bg: #03FF88; --ubadge-fg: #0000FF; --ubadge-bd: #03FF88;
+  --ubadge-bd-hover: #00CC6F;
+}
+.ubadge--solid-info,
+.ubadge--accent {
+  --ubadge-bg: #0000FF; --ubadge-fg: #03FF88; --ubadge-bd: #0000FF;
+  --ubadge-bd-hover: #1E40AF;
+}
+.ubadge--solid-danger {
+  --ubadge-bg: var(--ubadge-danger-fg); --ubadge-fg: #fff; --ubadge-bd: var(--ubadge-danger-fg);
+  --ubadge-bd-hover: #912018;
+}
+
+/* ── Ghost ─────────────────────────────────────────────────── */
+.ubadge--ghost {
+  --ubadge-bg: transparent;
+  --ubadge-bd: var(--ubadge-neutral-bd);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd-hover: var(--ubadge-neutral-fg);
+}
+
+/* ── Dot indicator ─────────────────────────────────────────── */
+.ubadge__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+.ubadge--pulse .ubadge__dot {
+  animation: ubadge-pulse 1.6s ease-out infinite;
+}
+@keyframes ubadge-pulse {
+  0%   { box-shadow: 0 0 0 0 currentColor; }
+  70%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ── Count badge (notification) ────────────────────────────── */
+.ubadge--count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Environment badge ─────────────────────────────────────── */
+.ubadge--env {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+
+/* ============================================================
+   ALIAS LAYER — make existing badge classes adopt ubadge.
+   Keeps old class names in HTML/JS, just rewrites their look.
+   Scope these so the alias only fires on pages we've migrated.
+   Loaded after bundle.css + page CSS so these rules win.
+   ============================================================ */
+
+/* ── Shared alias mixin (declared via attribute selector trick) ── */
+.submission-status,
+body#developer-submissions-body .sub-chip,
+body#developer-submissions-body .submission-type-badge,
+body#developer-submissions-body .sub-result-count,
+body#developer-submissions-body .submission-app-number,
+body#developer-assets-body .dev-assets-tab {
+  --ubadge-fg: inherit;
+  --ubadge-bg: transparent;
+  --ubadge-bd: transparent;
+  --ubadge-bd-hover: var(--ubadge-bd);
+
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: var(--ubadge-gap) !important;
+  padding: var(--ubadge-padding) !important;
+  font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif !important;
+  font-size: var(--ubadge-font-size) !important;
+  font-weight: var(--ubadge-font-weight) !important;
+  line-height: var(--ubadge-line-height) !important;
+  letter-spacing: -0.005em !important;
+  font-variant-numeric: tabular-nums !important;
+  border-radius: var(--ubadge-radius) !important;
+  border: 1px solid var(--ubadge-bd) !important;
+  color: var(--ubadge-fg) !important;
+  background: var(--ubadge-bg) !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  transition: border-color .15s ease, background-color .15s ease !important;
+  text-transform: none !important;
+}
+
+/* ── Submissions page: status pills in table ─────────────────
+   .submission-status--<state>  →  ubadge variants */
+.submission-status--draft,
+.submission-status--archived,
+.submission-status--closed {
+  --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd);
+}
+.submission-status--submitted,
+.submission-status--accepting,
+.submission-status--scheduled {
+  --ubadge-bg: var(--ubadge-info-bg); --ubadge-fg: var(--ubadge-info-fg); --ubadge-bd: var(--ubadge-info-bd);
+}
+.submission-status--in_review,
+.submission-status--revision_requested {
+  --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd);
+}
+.submission-status--approved,
+.submission-status--live {
+  --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd);
+}
+.submission-status--rejected {
+  --ubadge-bg: var(--ubadge-danger-bg); --ubadge-fg: var(--ubadge-danger-fg); --ubadge-bd: var(--ubadge-danger-bd);
+}
+
+/* Existing status-dot child → ubadge__dot semantics */
+.submission-status-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+  background: currentColor !important;
+  display: inline-block !important;
+}
+
+/* ── Submissions page: type badge (small neutral) ──────────── */
+body#developer-submissions-body .submission-type-badge {
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: var(--ubadge-neutral-bd);
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  font-weight: 700 !important;
+  height: auto !important;
+}
+
+/* App number stays mono — but adopt pill shape + ubadge sizing */
+body#developer-submissions-body .submission-app-number {
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: #717680;
+  --ubadge-bd: var(--ubadge-neutral-bd);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace !important;
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  height: auto !important;
+}
+
+/* Result count chip → neutral ubadge */
+body#developer-submissions-body .sub-result-count {
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: var(--ubadge-neutral-bd);
+  height: auto !important;
+}
+
+/* ── Submissions page: pipeline filter chips (.sub-chip) ──── */
+body#developer-submissions-body .sub-chip {
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: transparent;
+  --ubadge-bd-hover: var(--ubadge-neutral-bd);
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+body#developer-submissions-body .sub-chip:hover {
+  --ubadge-bg: #E9ECF2;
+}
+body#developer-submissions-body .sub-chip.active {
+  --ubadge-bg: var(--ubadge-success-bg);
+  --ubadge-fg: var(--ubadge-success-fg);
+  --ubadge-bd: var(--ubadge-success-bd);
+}
+
+/* sub-chip child elements stay (count pill stays as inner pill) */
+body#developer-submissions-body .sub-chip__count {
+  background: rgba(10, 13, 18, 0.08) !important;
+  color: inherit !important;
+}
+body#developer-submissions-body .sub-chip.active .sub-chip__count {
+  background: rgba(0, 0, 255, 0.12) !important;
+  color: var(--ubadge-success-fg) !important;
+}
+
+/* ── Assets page: segmented tabs (.dev-assets-tab) ─────────── */
+body#developer-assets-body .dev-assets-tab {
+  --ubadge-bg: transparent;
+  --ubadge-fg: #717680;
+  --ubadge-bd: transparent;
+  --ubadge-bd-hover: transparent;
+  font-weight: 500 !important;
+  padding: 2px 10px !important;
+  cursor: pointer;
+}
+body#developer-assets-body .dev-assets-tab:hover:not(.active) {
+  --ubadge-fg: #0000FF;
+}
+body#developer-assets-body .dev-assets-tab.active {
+  --ubadge-bg: #fff;
+  --ubadge-fg: #101828;
+  --ubadge-bd: transparent;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.06);
+}
+body#developer-assets-body .dev-assets-tab span {
+  background: rgba(10, 13, 18, 0.08) !important;
+  color: inherit !important;
+  opacity: 0.75;
+}
+body#developer-assets-body .dev-assets-tab.active span {
+  background: rgba(0, 0, 255, 0.12) !important;
+  color: #0000FF !important;
+  opacity: 1;
+}
+
+
+/* ============================================================
+   PHASE-2 ALIAS LAYER — platform-wide badge families.
+   These class names are globally namespaced (admin-, mp-, tv2-,
+   cp-, lb-, ad-, ds-, cr-, tier-) so no body# scoping needed.
+   ============================================================ */
+
+/* ── Shared base for every legacy badge family ──────────────── */
+.ds-badge,
+.admin-badge,
+.ad-badge,
+.mp-kyc-badge,
+.mp-live-badge,
+.tv2-badge,
+.tv3-yield-badge,
+.cp-hero__badge,
+.lb-bento-tier-badge,
+.tier-badge,
+.cr-sla-pill,
+.admin-sla-pill,
+.admin-age-badge,
+.admin-env-badge,
+.admin-sidebar-logo-badge,
+.admin-notification-badge,
+.mp-chip {
+  --ubadge-fg: inherit;
+  --ubadge-bg: transparent;
+  --ubadge-bd: transparent;
+  --ubadge-bd-hover: var(--ubadge-bd);
+
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: var(--ubadge-gap) !important;
+  padding: var(--ubadge-padding) !important;
+  font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif !important;
+  font-size: var(--ubadge-font-size) !important;
+  font-weight: var(--ubadge-font-weight) !important;
+  line-height: var(--ubadge-line-height) !important;
+  letter-spacing: -0.005em !important;
+  font-variant-numeric: tabular-nums !important;
+  border-radius: var(--ubadge-radius) !important;
+  border: 1px solid var(--ubadge-bd) !important;
+  color: var(--ubadge-fg) !important;
+  background: var(--ubadge-bg) !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  transition: border-color .15s ease, background-color .15s ease !important;
+  text-transform: none !important;
+  height: auto !important;
+  min-height: auto !important;
+  margin-left: 0 !important;
+}
+
+/* ─────────────────────── .ds-badge ─────────────────────── */
+.ds-badge--success { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.ds-badge--warning { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.ds-badge--danger  { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+.ds-badge--info    { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+.ds-badge--neutral { --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd); }
+
+/* Property-type variants keep semantic meaning */
+.ds-badge--leasehold,
+.ds-badge--commodity,
+.ds-badge--offplan    { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+.ds-badge--freehold   { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.ds-badge--commercial { --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd); }
+.ds-badge--funding,
+.ds-badge--shortterm  { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.ds-badge--flipping   { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+
+.ds-badge__dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: currentColor !important;
+  flex-shrink: 0 !important;
+}
+
+/* Overlay modifier keeps its absolute positioning */
+.ds-badge--overlay {
+  position: absolute;
+  left: 16px; top: 16px;
+  font-size: 13px !important;
+  padding: 5px 12px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #0A0D12 !important;
+  border-color: transparent !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+}
+
+/* ─────────────────────── .admin-badge ────────────────────── */
+.admin-badge--success,
+.admin-badge--success-outline,
+.admin-badge--status-approved,
+.admin-badge--status-live    { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.admin-badge--warning,
+.admin-badge--status-pending { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.admin-badge--danger,
+.admin-badge--status-rejected{ --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+.admin-badge--info,
+.admin-badge--status-accepting,
+.admin-badge--status-scheduled { --ubadge-bg: var(--ubadge-info-bg); --ubadge-fg: var(--ubadge-info-fg); --ubadge-bd: var(--ubadge-info-bd); }
+.admin-badge--neutral,
+.admin-badge--status-draft,
+.admin-badge--status-archived,
+.admin-badge--status-closed  { --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd); }
+
+/* Live = solid accent (high emphasis) */
+.admin-badge--live {
+  --ubadge-bg: #03FF88 !important;
+  --ubadge-fg: #0000FF !important;
+  --ubadge-bd: #03FF88 !important;
+}
+
+/* Tag = small uppercase neutral */
+.admin-badge--tag {
+  --ubadge-bg: var(--ubadge-warning-bg);
+  --ubadge-fg: var(--ubadge-warning-fg);
+  --ubadge-bd: var(--ubadge-warning-bd);
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+}
+
+.admin-badge-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: currentColor !important;
+  flex-shrink: 0 !important;
+}
+
+/* ─────────────────────── .ad-badge ───────────────────────── */
+.ad-badge--success { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.ad-badge--warning { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.ad-badge--danger  { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+.ad-badge--info    { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+.ad-badge--neutral { --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd); }
+
+/* ─────────────────────── .mp-kyc-badge ───────────────────── */
+.mp-kyc-badge {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+}
+.mp-kyc-badge--approved { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.mp-kyc-badge--pending,
+.mp-kyc-badge--in_review { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.mp-kyc-badge--rejected,
+.mp-kyc-badge--expired   { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+.mp-kyc-badge--unknown   { --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd); }
+
+/* ─────────────────────── .mp-chip (filter chips) ─────────── */
+.mp-chip {
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: transparent;
+  --ubadge-bd-hover: var(--ubadge-neutral-bd);
+  cursor: pointer;
+  font-weight: 500 !important;
+}
+.mp-chip:hover { --ubadge-bg: #E9ECF2; }
+.mp-chip[aria-pressed="true"] {
+  --ubadge-bg: var(--ubadge-success-bg);
+  --ubadge-fg: var(--ubadge-success-fg);
+  --ubadge-bd: var(--ubadge-success-bd);
+}
+.mp-chip--ghost { --ubadge-bg: transparent; }
+
+/* ─────────────────────── .mp-live-badge ──────────────────── */
+.mp-live-badge {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  font-weight: 700 !important;
+}
+.mp-live-badge[data-state="live"] {
+  --ubadge-bg: var(--ubadge-success-bg);
+  --ubadge-fg: var(--ubadge-success-fg);
+  --ubadge-bd: var(--ubadge-success-bd);
+}
+.mp-live-badge[data-state="poll"] {
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: var(--ubadge-neutral-bd);
+}
+
+/* ─────────────────────── .tv2-badge ──────────────────────── */
+.tv2-badge--type   { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+.tv2-badge--status { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+
+/* ─────────────────────── .tv3-yield-badge ────────────────── */
+.tv3-yield-badge {
+  --ubadge-bg: #03FF88 !important;
+  --ubadge-fg: #0000FF !important;
+  --ubadge-bd: #03FF88 !important;
+  font-weight: 700 !important;
+}
+
+/* ─────────────────────── .cp-hero__badge ─────────────────── */
+.cp-hero__badge {
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: var(--ubadge-neutral-bd);
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+}
+.cp-hero__badge--verified {
+  --ubadge-bg: var(--ubadge-info-bg);
+  --ubadge-fg: var(--ubadge-info-fg);
+  --ubadge-bd: var(--ubadge-info-bd);
+}
+
+/* Level/tier hierarchy — semantic color stays */
+.cp-hero__badge--level {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: 3px 10px !important;
+}
+.cp-hero__badge--level-legend     { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.cp-hero__badge--level-mogul      { --ubadge-bg: #F3E8FF; --ubadge-fg: #5B21B6; --ubadge-bd: #E9D5FF; }
+.cp-hero__badge--level-strategist,
+.cp-hero__badge--level-expert     { --ubadge-bg: var(--ubadge-info-bg); --ubadge-fg: var(--ubadge-info-fg); --ubadge-bd: var(--ubadge-info-bd); }
+.cp-hero__badge--level-cultivator,
+.cp-hero__badge--level-harvester  { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+
+.cp-hero__badge--level::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.65;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* ─────────────────────── .lb-bento-tier-badge ────────────── */
+.lb-bento-tier-badge {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  font-weight: 700 !important;
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: var(--ubadge-neutral-bd);
+}
+.lb-bento-tier-badge[data-tier="Premium"] { --ubadge-bg: #F3E8FF; --ubadge-fg: #5B21B6; --ubadge-bd: #E9D5FF; }
+.lb-bento-tier-badge[data-tier="Elite"]   { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+.lb-bento-tier-badge[data-tier="Pro"]     { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.lb-bento-tier-badge[data-tier="Plus"]    { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+
+/* ─────────────────────── .tier-badge (affiliate) ─────────── */
+.tier-badge {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  font-weight: 700 !important;
+  --ubadge-bg: var(--ubadge-neutral-bg);
+  --ubadge-fg: var(--ubadge-neutral-fg);
+  --ubadge-bd: var(--ubadge-neutral-bd);
+}
+.tier-badge--elite { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+
+/* ─────────────────────── .cr-sla-pill ────────────────────── */
+.cr-sla-pill {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+}
+.cr-sla-pill--ok   { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.cr-sla-pill--warn { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.cr-sla-pill--crit { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+
+/* ─────────────────────── .admin-sla-pill ─────────────────── */
+.admin-sla-pill {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+}
+.admin-sla-pill--ok   { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.admin-sla-pill--warn { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.admin-sla-pill--crit { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+
+/* ─────────────────────── .admin-age-badge ────────────────── */
+.admin-age-badge {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  font-weight: 600 !important;
+}
+.admin-age-badge--ok     { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+.admin-age-badge--warn   { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+.admin-age-badge--danger { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+
+/* ─────────────────────── .admin-env-badge ────────────────── */
+.admin-env-badge {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.6px !important;
+  font-weight: 700 !important;
+  --ubadge-bg: var(--ubadge-warning-bg);
+  --ubadge-fg: var(--ubadge-warning-fg);
+  --ubadge-bd: var(--ubadge-warning-bd);
+}
+.admin-env-badge--local   { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+.admin-env-badge--staging { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+
+/* ─────────────────────── .admin-sidebar-logo-badge ───────── */
+.admin-sidebar-logo-badge {
+  font-size: var(--ubadge-font-size-sm) !important;
+  padding: var(--ubadge-padding-sm) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.6px !important;
+  font-weight: 700 !important;
+  --ubadge-bg: var(--ubadge-info-bg);
+  --ubadge-fg: var(--ubadge-info-fg);
+  --ubadge-bd: var(--ubadge-info-bd);
+}
+
+/* ─────────────────────── .admin-notification-badge ───────── */
+.admin-notification-badge {
+  min-width: 18px !important;
+  height: 18px !important;
+  padding: 0 6px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  justify-content: center !important;
+  --ubadge-bg: var(--ubadge-danger-fg);
+  --ubadge-fg: #fff;
+  --ubadge-bd: var(--ubadge-danger-fg);
+}

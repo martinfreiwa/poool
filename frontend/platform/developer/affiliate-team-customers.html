@@ -13,50 +13,25 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
     </div>
 
     <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
-      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team", dev_nav_show_customers_export=true, dev_nav_show_date_range=true %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
       <div class="ds-main__content">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <section class="ds-card dat-content-card" aria-labelledby="dat-cust-title">
-          <div class="dat-section__intro dat-section__intro--with-actions">
-            <div class="dat-section__intro-text">
-              <h3 class="dat-section__title" id="dat-cust-title">Customers</h3>
-              <p class="dat-section__hint" id="dat-cust-hint">Customers acquired via your team's business affiliate links.</p>
-            </div>
-            <div class="dat-section__actions">
-              <div class="dat-section__controls">
-                <label class="dat-filter-label" for="dat-cust-filter">Member</label>
-                <select id="dat-cust-filter" class="dat-select" aria-label="Filter customers by team member">
-                  <option value="">All members</option>
-                </select>
+        <section class="ds-card dat-content-card dat-content-card--with-header" aria-labelledby="dat-cust-title">
+          <!-- Card header band — divided from table body by a 1px rule. -->
+          <div class="dat-card-header">
+            <div class="dat-card-header__title-group">
+              <span class="dat-card-header__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <div class="dat-card-header__title-text">
+                <h3 class="dat-section__title" id="dat-cust-title">Customers</h3>
+                <p class="dat-section__hint" id="dat-cust-hint">Customers acquired via your team's business affiliate links. Search by name, email, status or member.</p>
               </div>
-              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="dat-customers-export" title="Download customers as CSV" aria-label="Export customers to CSV">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                <span>Export CSV</span>
-              </button>
             </div>
-          </div>
-          <!-- Phase-1: status chips + date-range filter above the table. -->
-          <div id="dat-customers-chips" class="dat-chip-bar-host"></div>
-          <div class="dat-date-range" id="dat-customers-date-range">
-            <span class="dat-date-range__label" id="dat-customers-date-label">Acquired:</span>
-            <div class="dat-date-range__presets" role="group" aria-labelledby="dat-customers-date-label">
-              <button type="button" class="dat-preset" data-preset="all">All time</button>
-              <button type="button" class="dat-preset" data-preset="7d">Last 7d</button>
-              <button type="button" class="dat-preset" data-preset="30d">Last 30d</button>
-              <button type="button" class="dat-preset" data-preset="this-month">This month</button>
-              <button type="button" class="dat-preset" data-preset="ytd">YTD</button>
-            </div>
-            <input type="date" id="dat-customers-from" class="ds-input" aria-label="From date"/>
-            <span>—</span>
-            <input type="date" id="dat-customers-to" class="ds-input" aria-label="To date"/>
           </div>
           <div id="dat-customers-pager-host" class="dat-table-pager-host"></div>
           <div class="dat-table-wrap">
@@ -79,6 +54,7 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
               <tbody id="dat-customers-tbody"></tbody>
             </table>
           </div>
+          <div id="dat-customers-pager-footer" class="dat-card-footer"></div>
         </section>
       </div>
 

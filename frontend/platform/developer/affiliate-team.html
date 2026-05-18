@@ -1,7 +1,8 @@
 {% with title="Affiliate Team Analytics – POOOL", no_index=True,
 extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
 'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
-extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-analytics'] %}{% include
+extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'poool-line-chart', 'developer-affiliate-team-analytics'],
+external_scripts=['https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js'] %}{% include
 "components/head.html" %}{% endwith %}
 
 <body id="developer-affiliate-team-body" class="fouc-guard">
@@ -13,49 +14,17 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
     </div>
 
     <main id="developer-affiliate-team-main" class="ds-main developer-dashboard-main">
-      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team" %}
+      {% with dev_nav_title="Affiliate Team", dev_nav_active="affiliate-team", dev_nav_show_team_actions=true, dev_nav_show_date_range=true %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
       <div class="ds-main__content" id="dat-analytics-root">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <!-- ── Filter toolbar (sticky, auto-apply on change) ───────── -->
-        <section class="ds-card dat-content-card dat-toolbar-card dat-toolbar-card--sticky">
-          <div class="dat-toolbar">
-            <div class="dat-toolbar__presets" role="group" aria-label="Quick date range">
-              <button type="button" class="dat-preset" data-preset="7d">7d</button>
-              <button type="button" class="dat-preset" data-preset="30d">30d</button>
-              <button type="button" class="dat-preset dat-preset--active" data-preset="this-month">This month</button>
-              <button type="button" class="dat-preset" data-preset="last-month">Last month</button>
-              <button type="button" class="dat-preset" data-preset="ytd">YTD</button>
-              <button type="button" class="dat-preset" data-preset="all">All time</button>
-              <button type="button" class="dat-preset dat-preset--custom" data-preset="custom" hidden>Custom</button>
-            </div>
-            <div class="dat-toolbar__range">
-              <input type="date" id="dat-an-from" class="dat-date-input" aria-label="From date" placeholder="From"/>
-              <span class="dat-range-sep" aria-hidden="true">→</span>
-              <input type="date" id="dat-an-to" class="dat-date-input" aria-label="To date" placeholder="To"/>
-            </div>
-            <!-- FM1 fix: use ds-btn design-system primitive instead of the
-                 parallel .dat-action-btn class. Same visual output, one less
-                 button system to maintain. -->
-            <div class="dat-toolbar__actions">
-              <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="dat-page-export-csv" title="Download full member breakdown as CSV" aria-label="Export full member breakdown to CSV">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Export CSV
-              </button>
-              <a href="/developer/affiliate-team/members?invite=1" class="ds-btn ds-btn--primary ds-btn--sm" id="dat-page-invite-cta" aria-label="Invite new team member">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                Invite member
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <!-- ── "Last refreshed" indicator ──────────────────────────── -->
-        <div class="dat-meta-row">
-          <span class="dat-last-updated" id="dat-last-updated" aria-live="polite">Loading…</span>
+        <!-- "Updated" timestamp — small inline freshness signal aligned right.
+             Date range filter lives in the topbar. -->
+        <div class="dat-meta-strip">
+          <span class="dat-toolbar__updated" id="dat-last-updated" aria-live="polite">Loading…</span>
         </div>
 
         <!-- ── Hero KPI row — 3 primary actionable metrics (clickable) ── -->
@@ -94,12 +63,41 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
           </a>
         </section>
 
-        <!-- ── Secondary metrics row — 4 cards.
-             Payouts is a composite (Pending / Payable / Paid out) so the
-             3 payout-lifecycle metrics read as one concept instead of
-             three scan-targets. Audit task: consolidate 6 sub-KPIs. ─── -->
-        <section class="dat-kpi-grid dat-kpi-grid--4" aria-label="Secondary metrics">
-          <article class="dat-kpi" data-tone="info">
+        <!-- ── Payout pipeline — horizontal 3-stage flow strip.
+             Pending → Payable → Paid Out are *stages of the same money*,
+             not three independent metrics. The directional layout reads as
+             a funnel and frees the secondary KPI row from a composite tile
+             that didn't match the single-value scan pattern. -->
+        <section class="dat-payout-flow" id="dat-payout-pipeline" aria-label="Payouts pipeline">
+          <div class="dat-payout-stage dat-payout-stage--pending">
+            <span class="dat-payout-stage__label"><span class="dat-payout-stage__dot" aria-hidden="true"></span>Pending</span>
+            <strong class="dat-payout-stage__value" id="dat-k-pay-pending"><span class="dat-skeleton"></span></strong>
+            <span class="dat-payout-stage__hint">In holdback</span>
+          </div>
+          <div class="dat-payout-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="dat-payout-stage dat-payout-stage--payable">
+            <span class="dat-payout-stage__label"><span class="dat-payout-stage__dot" aria-hidden="true"></span>Payable</span>
+            <strong class="dat-payout-stage__value" id="dat-k-pay-payable"><span class="dat-skeleton"></span></strong>
+            <span class="dat-payout-stage__hint">Ready to claim</span>
+          </div>
+          <div class="dat-payout-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="dat-payout-stage dat-payout-stage--paid">
+            <span class="dat-payout-stage__label"><span class="dat-payout-stage__dot" aria-hidden="true"></span>Paid out</span>
+            <strong class="dat-payout-stage__value" id="dat-k-pay-paid"><span class="dat-skeleton"></span></strong>
+            <span class="dat-payout-stage__hint">Lifetime</span>
+          </div>
+        </section>
+
+        <!-- ── Secondary metrics row — 3 cards.
+             Payouts was extracted into the dedicated pipeline strip above;
+             remaining cards are all single-value period-bound metrics that
+             share one scan pattern. -->
+        <section class="dat-kpi-grid dat-kpi-grid--3" aria-label="Secondary metrics">
+          <article class="dat-kpi">
             <header class="dat-kpi__head">
               <span class="dat-kpi__label">
                 <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -111,7 +109,7 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
             </strong>
             <span class="dat-kpi__sub" id="dat-k-conv-sub">&nbsp;</span>
           </article>
-          <article class="dat-kpi" data-tone="neutral">
+          <article class="dat-kpi">
             <header class="dat-kpi__head">
               <span class="dat-kpi__label">
                 <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -123,33 +121,7 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
             </strong>
             <span class="dat-kpi__sub" id="dat-k-qualified-sub">&nbsp;</span>
           </article>
-          <!-- Payouts — composite card with 3 inline rows -->
-          <article class="dat-kpi dat-kpi--composite" data-tone="info" id="dat-tile-payouts" aria-label="Payouts lifecycle">
-            <header class="dat-kpi__head">
-              <span class="dat-kpi__label">
-                <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
-                Payouts
-              </span>
-            </header>
-            <ul class="dat-payouts-list">
-              <li class="dat-payouts-row dat-payouts-row--pending">
-                <span class="dat-payouts-row__label">Pending</span>
-                <strong class="dat-payouts-row__value" id="dat-k-pay-pending"><span class="dat-skeleton dat-skeleton--sm"></span></strong>
-                <span class="dat-payouts-row__hint">In holdback</span>
-              </li>
-              <li class="dat-payouts-row dat-payouts-row--payable">
-                <span class="dat-payouts-row__label">Payable</span>
-                <strong class="dat-payouts-row__value" id="dat-k-pay-payable"><span class="dat-skeleton dat-skeleton--sm"></span></strong>
-                <span class="dat-payouts-row__hint">Ready to claim</span>
-              </li>
-              <li class="dat-payouts-row dat-payouts-row--paid">
-                <span class="dat-payouts-row__label">Paid out</span>
-                <strong class="dat-payouts-row__value" id="dat-k-pay-paid"><span class="dat-skeleton dat-skeleton--sm"></span></strong>
-                <span class="dat-payouts-row__hint">Lifetime</span>
-              </li>
-            </ul>
-          </article>
-          <article class="dat-kpi" data-tone="info">
+          <article class="dat-kpi">
             <header class="dat-kpi__head">
               <span class="dat-kpi__label">
                 <svg class="dat-kpi__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -165,32 +137,31 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
 
         <!-- ── Charts: hero trend (full row) + 3-col satellite row ──── -->
         <section class="ds-card dat-chart-card dat-chart-card--hero" id="dat-trend-card">
-          <span class="dat-chart-hover-hint" id="dat-trend-hint" aria-hidden="true">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
-            Hover for daily values
-          </span>
           <header class="dat-chart-header">
-            <div>
-              <h3 class="dat-chart-title" id="dat-chart-trend-title">Commission trend</h3>
-              <p class="dat-chart-subtitle" id="dat-chart-trend-sub">Daily totals in selected period</p>
+            <div class="dat-chart-header__title-group">
+              <span class="dat-chart-header__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+              </span>
+              <div class="dat-chart-header__text">
+                <h3 class="dat-chart-title" id="dat-chart-trend-title">Commission trend</h3>
+                <p class="dat-chart-subtitle" id="dat-chart-trend-sub">Daily totals in selected period</p>
+              </div>
             </div>
             <div class="dat-chart-header__controls">
-              <!-- Metric toggle — Commission and Revenue shown one at a time so
-                   each chart has a single axis, single line, and a simple
-                   tooltip. Replaces the dual-axis "both" view that broke the
-                   layout when squeezed by the sidebar. -->
+              <!-- Metric toggle — Commission and Revenue shown one at a time.
+                   Time resolution (Day/Week/Month) was removed; the topbar
+                   date range now drives the bucket-size implicitly. -->
               <div class="dat-res-toggle" role="group" aria-label="Metric">
                 <button type="button" class="dat-res-btn dat-res-btn--active" data-metric="commission">Commission</button>
                 <button type="button" class="dat-res-btn" data-metric="revenue">Revenue</button>
               </div>
-              <div class="dat-res-toggle" role="group" aria-label="Time resolution">
-                <button type="button" class="dat-res-btn dat-res-btn--active" data-res="day">Day</button>
-                <button type="button" class="dat-res-btn" data-res="week">Week</button>
-                <button type="button" class="dat-res-btn" data-res="month">Month</button>
-              </div>
             </div>
           </header>
           <div class="dat-chart-body dat-chart-body--hero" id="dat-chart-trend">
+            <span class="dat-chart-hover-hint" id="dat-trend-hint" aria-hidden="true">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+              Hover for daily values
+            </span>
             <div class="dat-chart-empty">Loading…</div>
           </div>
         </section>
@@ -198,9 +169,14 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
         <div class="dat-charts-row">
           <section class="ds-card dat-chart-card">
             <header class="dat-chart-header">
-              <div>
-                <h3 class="dat-chart-title">Conversion funnel</h3>
-                <p class="dat-chart-subtitle">Clicks → Signups → Qualified</p>
+              <div class="dat-chart-header__title-group">
+                <span class="dat-chart-header__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 4 21 4 14 12 14 19 10 21 10 12 3 4"/></svg>
+                </span>
+                <div class="dat-chart-header__text">
+                  <h3 class="dat-chart-title">Conversion funnel</h3>
+                  <p class="dat-chart-subtitle">Clicks → Signups → Qualified</p>
+                </div>
               </div>
             </header>
             <div class="dat-chart-body" id="dat-chart-funnel">
@@ -210,9 +186,14 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
 
           <section class="ds-card dat-chart-card">
             <header class="dat-chart-header">
-              <div>
-                <h3 class="dat-chart-title">Top members by commission</h3>
-                <p class="dat-chart-subtitle">Top 10 in selected period</p>
+              <div class="dat-chart-header__title-group">
+                <span class="dat-chart-header__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                <div class="dat-chart-header__text">
+                  <h3 class="dat-chart-title">Top members by commission</h3>
+                  <p class="dat-chart-subtitle">Top 10 in selected period</p>
+                </div>
               </div>
             </header>
             <div class="dat-chart-body" id="dat-chart-members">
@@ -222,9 +203,14 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
 
           <section class="ds-card dat-chart-card">
             <header class="dat-chart-header">
-              <div>
-                <h3 class="dat-chart-title">Top assets sold</h3>
-                <p class="dat-chart-subtitle">Top 10 by revenue in selected period</p>
+              <div class="dat-chart-header__title-group">
+                <span class="dat-chart-header__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </span>
+                <div class="dat-chart-header__text">
+                  <h3 class="dat-chart-title">Top assets sold</h3>
+                  <p class="dat-chart-subtitle">Top 10 by revenue in selected period</p>
+                </div>
               </div>
             </header>
             <div class="dat-chart-body" id="dat-chart-assets">

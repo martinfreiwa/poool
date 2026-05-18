@@ -98,61 +98,46 @@
     }
   }
 
-  function renderNavChart(svg, metaEl, points) {
+  function renderNavChart(svgOrContainer, metaEl, points) {
     const idr = displayCurrency === "IDR";
+
+    // The legacy template still ships <svg id="lp-nav-chart">; ECharts needs
+    // a block-level DIV to mount into. On first call we replace the SVG with
+    // a sibling DIV that keeps the same id so subsequent lookups still find it.
+    let host = svgOrContainer;
+    if (host && host.tagName && host.tagName.toLowerCase() === "svg") {
+      const div = document.createElement("div");
+      div.id = host.id;
+      div.style.width = "100%";
+      div.style.height = "200px";
+      host.parentNode.replaceChild(div, host);
+      host = div;
+    }
+    if (!host) return;
+
     if (!points.length) {
-      svg.innerHTML = `<text x="300" y="90" text-anchor="middle" font-size="12" fill="#6b7280">No valuation history yet</text>`;
+      host.innerHTML = `<div style="height:200px;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:12px;">No valuation history yet</div>`;
       if (metaEl) metaEl.textContent = "";
       return;
     }
-    const values = points.map((p) => Number(idr ? p.value_idr_cents : p.value_usd_cents));
-    const maxV = Math.max(...values, 1);
-    const minV = Math.min(...values);
-    const padTop = 12, padBot = 24, padL = 56, padR = 12;
-    const W = 600, H = 180;
-    const innerW = W - padL - padR;
-    const innerH = H - padTop - padBot;
 
-    // X positions: spread points evenly across the inner width.
-    const xs = points.map((_, i) => padL + (points.length === 1 ? innerW / 2 : (i * innerW) / (points.length - 1)));
-    const yFor = (v) => {
-      if (maxV === minV) return padTop + innerH / 2;
-      return padTop + innerH - ((v - minV) / (maxV - minV)) * innerH;
-    };
+    const values = points.map((p) => Number(idr ? p.value_idr_cents : p.value_usd_cents) / 100);
+    const labels = points.map((p) => p.date);
 
-    // Step-function path: NAV is constant between publishes.
-    let d = "";
-    points.forEach((p, i) => {
-      const x = xs[i];
-      const y = yFor(Number(idr ? p.value_idr_cents : p.value_usd_cents));
-      if (i === 0) d += `M ${x} ${y}`;
-      else d += ` H ${x} V ${y}`;
+    if (typeof window.PooolLineChart === "undefined") {
+      // Library not loaded — surface a readable fallback rather than blanking.
+      host.innerHTML = `<div style="height:200px;display:flex;align-items:center;justify-content:center;color:#dc2626;font-size:12px;">Chart library unavailable</div>`;
+      return;
+    }
+
+    window.PooolLineChart.render(host, {
+      labels,
+      values,
+      step: "end",                   // NAV constant between publishes
+      formatter: (v) => formatValue(v * 100, idr),
+      height: 200,
     });
 
-    const axis = `
-      <line x1="${padL}" y1="${padTop}" x2="${padL}" y2="${padTop + innerH}" stroke="#e5e7eb" />
-      <line x1="${padL}" y1="${padTop + innerH}" x2="${W - padR}" y2="${padTop + innerH}" stroke="#e5e7eb" />
-    `;
-    const yLabelMax = `<text x="${padL - 6}" y="${padTop + 4}" text-anchor="end" font-size="10" fill="#6b7280">${formatValue(maxV, idr)}</text>`;
-    const yLabelMin = `<text x="${padL - 6}" y="${padTop + innerH}" text-anchor="end" font-size="10" fill="#6b7280">${formatValue(minV, idr)}</text>`;
-    const dots = points
-      .map((p, i) => `<circle cx="${xs[i]}" cy="${yFor(Number(idr ? p.value_idr_cents : p.value_usd_cents))}" r="3" fill="#2563eb"><title>${escapeText(p.date)} — ${formatValue(Number(idr ? p.value_idr_cents : p.value_usd_cents), idr)}</title></circle>`)
-      .join("");
-    const xLabels = points
-      .map((p, i) => {
-        if (points.length > 6 && i % Math.ceil(points.length / 6) !== 0 && i !== points.length - 1) return "";
-        return `<text x="${xs[i]}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#6b7280">${escapeText(p.date)}</text>`;
-      })
-      .join("");
-
-    svg.innerHTML = `
-      ${axis}
-      ${yLabelMax}
-      ${yLabelMin}
-      <path d="${d}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-      ${dots}
-      ${xLabels}
-    `;
     if (metaEl) {
       metaEl.textContent = `${points.length} valuation${points.length === 1 ? "" : "s"} · ${idr ? "IDR" : "USD"} · NAV per token`;
     }

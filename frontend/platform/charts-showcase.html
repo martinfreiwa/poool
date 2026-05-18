@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POOOL Charts Showcase — Temporary</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  TEMPORARY PAGE — DELETE AFTER CHART-STYLE DECISION.
+  Inventory of every chart currently used in the platform + side-by-side
+  alternative libraries (ECharts, Chart.js variants, GSAP, D3, Frappe).
+  Serve via launch config "badges-showcase" → http://localhost:7777/charts-showcase.html
+-->
+
+<link rel="stylesheet" href="static/css/dashboard-tokens.css">
+<link rel="stylesheet" href="static/css/portfolio-chart.css">
+
+<!-- Chart libraries -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/frappe-charts/dist/frappe-charts.min.iife.js"></script>
+
+<style>
+  :root {
+    --cs-bg: #f6f7fb;
+    --cs-card: #ffffff;
+    --cs-card-2: #fafbfd;
+    --cs-border: #e5e7eb;
+    --cs-text: #111827;
+    --cs-muted: #6b7280;
+    --cs-accent: #0000ff;
+    --cs-success: #03ff88;
+    --cs-tag-bg: #eef4ff;
+    --cs-tag-text: #1b2559;
+    --cs-warn-bg: #fff7ed;
+    --cs-warn-text: #9a3412;
+  }
+  html.dark {
+    --cs-bg: #0b0d12;
+    --cs-card: #131720;
+    --cs-card-2: #181c27;
+    --cs-border: #1e2330;
+    --cs-text: #f0f2f5;
+    --cs-muted: #8b92a5;
+    --cs-accent: #6172f3;
+    --cs-tag-bg: #1e2540;
+    --cs-tag-text: #b4bcd6;
+    --cs-warn-bg: #2a1d12;
+    --cs-warn-text: #fbbf77;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--cs-bg);
+    color: var(--cs-text);
+    line-height: 1.5;
+  }
+
+  /* ─── Header ──────────────────────────────────────────── */
+  .cs-header {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--cs-card);
+    border-bottom: 1px solid var(--cs-border);
+    padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    backdrop-filter: blur(8px);
+  }
+  .cs-header h1 {
+    margin: 0; font-size: 18px; font-weight: 700;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .cs-header h1 .cs-pill {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    color: var(--cs-warn-text); background: var(--cs-warn-bg);
+    padding: 3px 8px; border-radius: 999px; letter-spacing: 0.4px;
+  }
+  .cs-header .cs-sub { font-size: 12px; color: var(--cs-muted); }
+  .cs-actions { display: flex; gap: 8px; align-items: center; }
+  .cs-btn {
+    background: var(--cs-bg);
+    border: 1px solid var(--cs-border);
+    color: var(--cs-text);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .cs-btn:hover { border-color: var(--cs-muted); }
+
+  /* ─── Layout ──────────────────────────────────────────── */
+  main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+
+  .cs-toc {
+    background: var(--cs-card);
+    border: 1px solid var(--cs-border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    font-size: 13px;
+  }
+  .cs-toc h2 { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--cs-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .cs-toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  .cs-toc li { padding: 2px 0; }
+  .cs-toc a { color: var(--cs-text); text-decoration: none; }
+  .cs-toc a:hover { color: var(--cs-accent); text-decoration: underline; }
+
+  .cs-section {
+    background: var(--cs-card);
+    border: 1px solid var(--cs-border);
+    border-radius: 12px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .cs-section__head {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--cs-border);
+    background: var(--cs-card-2);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .cs-section__head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+  .cs-section__head .cs-section-desc { font-size: 13px; color: var(--cs-muted); }
+  .cs-grid { display: grid; gap: 20px; padding: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .cs-grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1300px) { .cs-grid--3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+  /* ─── Chart card ──────────────────────────────────────── */
+  .cs-chart-card {
+    background: var(--cs-card);
+    border: 1px solid var(--cs-border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .cs-chart-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .cs-chart-card__title { margin: 0; font-size: 15px; font-weight: 700; }
+  .cs-chart-card__meta { display: flex; flex-direction: column; gap: 4px; }
+  .cs-tag {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 3px 7px; border-radius: 4px;
+    background: var(--cs-tag-bg); color: var(--cs-tag-text);
+    align-self: flex-end;
+    white-space: nowrap;
+  }
+  .cs-tag--new { background: #ecfdf3; color: #027a48; }
+  html.dark .cs-tag--new { background: #053421; color: #6bd49b; }
+  .cs-chart-card__path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--cs-muted); word-break: break-all; }
+  .cs-chart-card__notes { font-size: 12px; color: var(--cs-muted); line-height: 1.5; }
+  .cs-chart-card__body { min-height: 240px; }
+
+  /* ─── Existing chart: Custom SVG line (developer-chart) ─── */
+  .cs-svg-line-wrap { background: var(--cs-card); border-radius: 8px; padding: 8px 4px; }
+  .cs-svg-line-wrap .gridline { stroke: var(--cs-border); }
+  html.dark .cs-svg-line-wrap .gridline { stroke: rgba(255,255,255,0.06); }
+
+  /* ─── Existing chart: Custom DIV bars (portfolio-chart) ── */
+  .cs-bars { display: flex; align-items: flex-end; gap: 4px; height: 200px; padding: 8px 0; }
+  .cs-bar {
+    flex: 1; min-width: 6px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, #12B76A 0%, #079455 100%);
+    transition: filter 0.2s, transform 0.15s;
+  }
+  .cs-bar:hover { filter: brightness(1.15); transform: scaleY(1.04); transform-origin: bottom; }
+
+  /* ─── Existing chart: tv3 calculator bars ──────────────── */
+  .cs-tv3-bars { display: flex; align-items: flex-end; gap: 10px; height: 200px; padding: 8px 0; }
+  .cs-tv3-bar {
+    flex: 1; border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, #03FF88 0%, #00C896 100%);
+    position: relative;
+  }
+  .cs-tv3-bar__label {
+    position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; font-weight: 600; color: var(--cs-muted);
+  }
+  .cs-tv3-bar__year {
+    position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: var(--cs-muted);
+  }
+
+  /* ─── Existing chart: Sparkline ─────────────────────────── */
+  .cs-sparkline { display: block; }
+
+  /* ─── Existing chart: Progress bars ─────────────────────── */
+  .cs-progress { display: flex; flex-direction: column; gap: 12px; }
+  .cs-progress-row { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+  .cs-progress-row__label { width: 80px; color: var(--cs-muted); }
+  .cs-progress-row__bar { flex: 1; height: 8px; background: var(--cs-bg); border-radius: 999px; overflow: hidden; }
+  .cs-progress-row__fill { height: 100%; background: linear-gradient(90deg, #12B76A, #03FF88); border-radius: 999px; transition: width 0.6s ease; }
+  .cs-progress-row__pct { width: 40px; text-align: right; font-weight: 600; }
+
+  /* ─── ApexCharts dark theme tweaks ──────────────────────── */
+  html.dark .apexcharts-canvas .apexcharts-text { fill: var(--cs-muted) !important; }
+  html.dark .apexcharts-canvas .apexcharts-gridline { stroke: rgba(255,255,255,0.06) !important; }
+
+  /* ─── Section dividers ─────────────────────────────────── */
+  .cs-divider {
+    text-align: center;
+    margin: 40px 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cs-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    position: relative;
+  }
+  .cs-divider::before, .cs-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 35%;
+    height: 1px;
+    background: var(--cs-border);
+  }
+  .cs-divider::before { left: 0; }
+  .cs-divider::after { right: 0; }
+
+  /* ─── Footer ──────────────────────────────────────────── */
+  footer {
+    text-align: center; padding: 24px;
+    font-size: 12px; color: var(--cs-muted);
+  }
+</style>
+</head>
+<body>
+
+<header class="cs-header">
+  <h1>POOOL Charts Showcase <span class="cs-pill">TEMP — DELETE LATER</span></h1>
+  <div class="cs-actions">
+    <span class="cs-sub">Light/dark</span>
+    <button class="cs-btn" id="cs-theme-toggle">Toggle theme</button>
+  </div>
+</header>
+
+<main>
+
+<div class="cs-toc">
+  <h2>Section overview</h2>
+  <ol>
+    <li><a href="#sec-existing">Existing in production (in use today)</a></li>
+    <li><a href="#sec-echarts">Apache ECharts (alternative)</a></li>
+    <li><a href="#sec-chartjs-alt">Chart.js variants (alternative)</a></li>
+    <li><a href="#sec-gsap">GSAP-animated SVG (alternative)</a></li>
+    <li><a href="#sec-d3">D3.js raw (alternative)</a></li>
+    <li><a href="#sec-frappe">Frappe Charts (alternative)</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 1 — EXISTING                                            -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="cs-section" id="sec-existing">
+  <div class="cs-section__head">
+    <div>
+      <h2>1 · Existing charts in production</h2>
+      <div class="cs-section-desc">Everything currently live in the platform. Each card labels the library and the source file.</div>
+    </div>
+  </div>
+
+  <div class="cs-grid cs-grid--3">
+
+    <!-- 1.1 Custom SVG line + area (developer-chart) -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#1 · Sales over time</h3>
+          <div class="cs-chart-card__path">frontend/platform/components/developer-chart.html</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Custom SVG</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Hand-rolled SVG with linear gradient stroke (blue→green) + area fill. Server-side path computed in Rust (developer/service.rs).</div>
+      <div class="cs-chart-card__body cs-svg-line-wrap">
+        <svg id="cs-svg-line" width="100%" height="220" viewBox="0 0 1000 220" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="cs-line-grad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#0000FF"/>
+              <stop offset="100%" stop-color="#03FF88"/>
+            </linearGradient>
+            <linearGradient id="cs-area-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0000FF" stop-opacity="0.14"/>
+              <stop offset="60%" stop-color="#03FF88" stop-opacity="0.06"/>
+              <stop offset="100%" stop-color="#03FF88" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line class="gridline" x1="0" y1="0"   x2="1000" y2="0"  ></line>
+          <line class="gridline" x1="0" y1="55"  x2="1000" y2="55" ></line>
+          <line class="gridline" x1="0" y1="110" x2="1000" y2="110"></line>
+          <line class="gridline" x1="0" y1="165" x2="1000" y2="165"></line>
+          <line class="gridline" x1="0" y1="220" x2="1000" y2="220"></line>
+          <path id="cs-svg-area" fill="url(#cs-area-grad)"></path>
+          <path id="cs-svg-line-path" stroke="url(#cs-line-grad)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+          <circle id="cs-svg-marker-outer" r="8" fill="#03FF88" fill-opacity="0.18"></circle>
+          <circle id="cs-svg-marker-inner" r="4" fill="#FFFFFF" stroke="#03FF88" stroke-width="2.5"></circle>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1.2 Custom DIV bars + SMA trend (portfolio-chart) -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#2 · Portfolio value bars</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/portfolio-chart.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Custom DIV+SVG</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">DIV bars with gradient + overlaid SMA trend SVG. 4 time periods, filter dropdown for metric stacking.</div>
+      <div class="cs-chart-card__body" style="position: relative;">
+        <div class="cs-bars" id="cs-bars-portfolio"></div>
+        <svg style="position: absolute; inset: 8px 0 8px 0; pointer-events: none;" viewBox="0 0 1000 200" preserveAspectRatio="none">
+          <path id="cs-bars-trend" stroke="#5555FF" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1.3 ApexCharts Candlestick -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#3 · OHLC candlestick</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/marketplace-chart.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">ApexCharts</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Marketplace trading chart. Up=POOOL green, down=red. 7 interval buttons, MarketBus live updates.</div>
+      <div class="cs-chart-card__body" id="cs-apex-candle"></div>
+    </div>
+
+    <!-- 1.4 ApexCharts Donut -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#4 · Financials donut</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/pie-chart.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">ApexCharts</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Operator vs POOOL AGRO split. Used on property/commodity pages.</div>
+      <div class="cs-chart-card__body" id="cs-apex-donut"></div>
+    </div>
+
+    <!-- 1.5 ApexCharts Volume dual-axis -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#5 · Volume + fees (dual-axis)</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/mp-analytics.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">ApexCharts</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Admin marketplace analytics. Bars=volume, line=fees, separate y-axes.</div>
+      <div class="cs-chart-card__body" id="cs-apex-volume"></div>
+    </div>
+
+    <!-- 1.6 ApexCharts Top assets bars -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#6 · Top assets ranked bars</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/mp-analytics.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">ApexCharts</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Horizontal bars sorted by trading volume. Edge case: &lt;3 assets → ranked list.</div>
+      <div class="cs-chart-card__body" id="cs-apex-assets"></div>
+    </div>
+
+    <!-- 1.7 Chart.js portfolio line -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#7 · Portfolio history line</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/statistics-template.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Chart.js</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Statistics template hero chart. HTMX-aware re-init.</div>
+      <div class="cs-chart-card__body"><canvas id="cs-cjs-portfolio" style="max-height: 240px;"></canvas></div>
+    </div>
+
+    <!-- 1.8 Chart.js allocation doughnut -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#8 · Allocation doughnut</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/statistics-template.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Chart.js</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Asset class allocation. Custom center-text plugin.</div>
+      <div class="cs-chart-card__body" style="display: flex; align-items: center; justify-content: center;"><canvas id="cs-cjs-allocation" style="max-height: 240px; max-width: 240px;"></canvas></div>
+    </div>
+
+    <!-- 1.9 Chart.js dividends bars -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#9 · Dividend payouts bars</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/statistics-template.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Chart.js</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Per-month dividend column chart.</div>
+      <div class="cs-chart-card__body"><canvas id="cs-cjs-dividends" style="max-height: 240px;"></canvas></div>
+    </div>
+
+    <!-- 1.10 Chart.js campaign (rewards) -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#10 · Campaign performance</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/js/rewards.js</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Chart.js</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Rewards campaign breakdown with date-range picker.</div>
+      <div class="cs-chart-card__body"><canvas id="cs-cjs-campaign" style="max-height: 240px;"></canvas></div>
+    </div>
+
+    <!-- 1.11 tv3 calculator bars -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#11 · Marketplace v3 calculator</h3>
+          <div class="cs-chart-card__path">frontend/platform/marketplace-trading-v3.html</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Pure CSS</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Investment return projection. 5 hard-coded bars, no JS.</div>
+      <div class="cs-chart-card__body">
+        <div class="cs-tv3-bars">
+          <div class="cs-tv3-bar" style="height: 18%"><span class="cs-tv3-bar__label">$1.0K</span><span class="cs-tv3-bar__year">Y1</span></div>
+          <div class="cs-tv3-bar" style="height: 32%"><span class="cs-tv3-bar__label">$1.8K</span><span class="cs-tv3-bar__year">Y2</span></div>
+          <div class="cs-tv3-bar" style="height: 50%"><span class="cs-tv3-bar__label">$2.8K</span><span class="cs-tv3-bar__year">Y3</span></div>
+          <div class="cs-tv3-bar" style="height: 70%"><span class="cs-tv3-bar__label">$4.0K</span><span class="cs-tv3-bar__year">Y4</span></div>
+          <div class="cs-tv3-bar" style="height: 95%"><span class="cs-tv3-bar__label">$5.5K</span><span class="cs-tv3-bar__year">Y5</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.12 Sparkline -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#12 · DB latency sparkline</h3>
+          <div class="cs-chart-card__path">frontend/platform/static/css/mp-index.css</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">Custom SVG</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Admin health sparkline (24h DB latency). Inline SVG, polyline only.</div>
+      <div class="cs-chart-card__body" style="display: flex; align-items: center; gap: 16px;">
+        <span style="font-size: 12px; color: var(--cs-muted);">DB</span>
+        <svg id="cs-sparkline" class="cs-sparkline" width="240" height="40" viewBox="0 0 240 40">
+          <polyline id="cs-sparkline-poly" fill="none" stroke="#12B76A" stroke-width="1.5" points=""/>
+          <circle id="cs-sparkline-dot" r="3" fill="#12B76A"/>
+        </svg>
+        <span style="font-size: 13px; font-weight: 600;">12 ms</span>
+      </div>
+    </div>
+
+    <!-- 1.13 Progress bars -->
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div>
+          <h3 class="cs-chart-card__title">#13 · Progress bars</h3>
+          <div class="cs-chart-card__path">submissions, kyc, dashboard, login</div>
+        </div>
+        <div class="cs-chart-card__meta">
+          <span class="cs-tag">CSS</span>
+        </div>
+      </div>
+      <div class="cs-chart-card__notes">Universal progress bar pattern. 8 distinct files implement variations.</div>
+      <div class="cs-chart-card__body">
+        <div class="cs-progress">
+          <div class="cs-progress-row"><span class="cs-progress-row__label">KYC</span><div class="cs-progress-row__bar"><div class="cs-progress-row__fill" style="width: 90%"></div></div><span class="cs-progress-row__pct">90%</span></div>
+          <div class="cs-progress-row"><span class="cs-progress-row__label">Funded</span><div class="cs-progress-row__bar"><div class="cs-progress-row__fill" style="width: 64%"></div></div><span class="cs-progress-row__pct">64%</span></div>
+          <div class="cs-progress-row"><span class="cs-progress-row__label">Onboard</span><div class="cs-progress-row__bar"><div class="cs-progress-row__fill" style="width: 42%"></div></div><span class="cs-progress-row__pct">42%</span></div>
+          <div class="cs-progress-row"><span class="cs-progress-row__label">Reviewed</span><div class="cs-progress-row__bar"><div class="cs-progress-row__fill" style="width: 18%"></div></div><span class="cs-progress-row__pct">18%</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="cs-divider">alternative libraries below</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 2 — ECHARTS                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="cs-section" id="sec-echarts">
+  <div class="cs-section__head">
+    <div>
+      <h2>2 · Apache ECharts</h2>
+      <div class="cs-section-desc">Mature finance/trading library. Used by Binance, AliExpress, Baidu. ~1MB gzipped.</div>
+    </div>
+  </div>
+  <div class="cs-grid cs-grid--3">
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#14 · Smooth area line</h3><div class="cs-chart-card__path">echarts.line.smooth</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">ECharts</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Same data as #1. ECharts has built-in tooltip, dataZoom, smoother animations.</div>
+      <div class="cs-chart-card__body" id="cs-ec-line" style="height: 240px;"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#15 · Candlestick</h3><div class="cs-chart-card__path">echarts.candlestick</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">ECharts</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Same OHLCV as #3. ECharts has volume sub-chart, MA overlays, crosshair built-in.</div>
+      <div class="cs-chart-card__body" id="cs-ec-candle" style="height: 280px;"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#16 · Doughnut + label</h3><div class="cs-chart-card__path">echarts.pie</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">ECharts</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Donut with hover scale effect.</div>
+      <div class="cs-chart-card__body" id="cs-ec-donut" style="height: 240px;"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#17 · Stacked area</h3><div class="cs-chart-card__path">echarts.line.stacked</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">ECharts</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Multi-metric stacking — could replace portfolio filter dropdown.</div>
+      <div class="cs-chart-card__body" id="cs-ec-stacked" style="height: 240px;"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#18 · Gauge / radial</h3><div class="cs-chart-card__path">echarts.gauge</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">ECharts</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Funding progress or KYC score. We don't have anything like this today.</div>
+      <div class="cs-chart-card__body" id="cs-ec-gauge" style="height: 240px;"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#19 · Heatmap</h3><div class="cs-chart-card__path">echarts.heatmap</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">ECharts</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Trading activity by hour × weekday. New chart type.</div>
+      <div class="cs-chart-card__body" id="cs-ec-heatmap" style="height: 240px;"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 3 — CHART.JS variants                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="cs-section" id="sec-chartjs-alt">
+  <div class="cs-section__head">
+    <div>
+      <h2>3 · Chart.js variants (different look)</h2>
+      <div class="cs-section-desc">Already in codebase but only used 3 ways. These show alternate styles.</div>
+    </div>
+  </div>
+  <div class="cs-grid cs-grid--3">
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#20 · Filled area + dashed grid</h3><div class="cs-chart-card__path">chartjs.line.filled</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">Chart.js</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Cleaner Material-style line. Smooth tension + filled gradient.</div>
+      <div class="cs-chart-card__body"><canvas id="cs-cjs-alt-line" style="max-height: 240px;"></canvas></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#21 · Radar</h3><div class="cs-chart-card__path">chartjs.radar</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">Chart.js</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Asset risk profile (yield/liquidity/diversification/etc). New use case.</div>
+      <div class="cs-chart-card__body"><canvas id="cs-cjs-radar" style="max-height: 240px;"></canvas></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#22 · Polar area</h3><div class="cs-chart-card__path">chartjs.polarArea</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">Chart.js</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Alternative to pie. More visual weight for differences.</div>
+      <div class="cs-chart-card__body" style="display: flex; align-items: center; justify-content: center;"><canvas id="cs-cjs-polar" style="max-height: 240px; max-width: 240px;"></canvas></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 4 — GSAP animated                                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="cs-section" id="sec-gsap">
+  <div class="cs-section__head">
+    <div>
+      <h2>4 · GSAP-animated SVG</h2>
+      <div class="cs-section-desc">No charting library. Pure SVG + GSAP timeline. Maximum control, premium feel, but you build everything.</div>
+    </div>
+  </div>
+  <div class="cs-grid cs-grid--3">
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#23 · GSAP draw-line animation</h3><div class="cs-chart-card__path">gsap.from(path, drawSVG)</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">GSAP</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Stroke-dasharray reveal. Replay button below. Smooth, custom-tuned timing.</div>
+      <div class="cs-chart-card__body">
+        <svg id="cs-gsap-line" width="100%" height="220" viewBox="0 0 600 220">
+          <line x1="0" y1="50"  x2="600" y2="50"  stroke="var(--cs-border)"/>
+          <line x1="0" y1="110" x2="600" y2="110" stroke="var(--cs-border)"/>
+          <line x1="0" y1="170" x2="600" y2="170" stroke="var(--cs-border)"/>
+          <path id="cs-gsap-line-path" d="M0,180 C60,160 120,40 180,80 S300,140 360,60 S480,40 540,90 L600,70"
+                fill="none" stroke="#0000FF" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <button class="cs-btn" id="cs-gsap-line-replay" style="margin-top: 8px;">Replay animation</button>
+      </div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#24 · GSAP staggered bars</h3><div class="cs-chart-card__path">gsap.to(bars, stagger)</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">GSAP</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Each bar grows in sequence with elastic easing. Premium animated landing-style chart.</div>
+      <div class="cs-chart-card__body">
+        <svg id="cs-gsap-bars" width="100%" height="220" viewBox="0 0 600 220">
+          <g id="cs-gsap-bar-group"></g>
+        </svg>
+        <button class="cs-btn" id="cs-gsap-bars-replay" style="margin-top: 8px;">Replay animation</button>
+      </div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#25 · GSAP counter + bar</h3><div class="cs-chart-card__path">gsap.to({val}, onUpdate)</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">GSAP</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Animated KPI number + matching bar fill. Good for hero KPI tiles.</div>
+      <div class="cs-chart-card__body">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 36px; font-weight: 700; color: var(--cs-text);">$<span id="cs-gsap-counter">0</span></div>
+          <div style="font-size: 12px; color: var(--cs-muted);">Total volume traded · 30d</div>
+          <div style="height: 12px; background: var(--cs-bg); border-radius: 999px; overflow: hidden; margin-top: 8px;">
+            <div id="cs-gsap-counter-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0000FF, #03FF88); border-radius: 999px;"></div>
+          </div>
+        </div>
+        <button class="cs-btn" id="cs-gsap-counter-replay" style="margin-top: 16px;">Replay animation</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 5 — D3                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="cs-section" id="sec-d3">
+  <div class="cs-section__head">
+    <div>
+      <h2>5 · D3.js raw</h2>
+      <div class="cs-section-desc">No abstraction. Verbose but unmatched flexibility — use only for unique custom viz that nothing else can do.</div>
+    </div>
+  </div>
+  <div class="cs-grid cs-grid--3">
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#26 · D3 area chart</h3><div class="cs-chart-card__path">d3.area + d3.curveMonotoneX</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">D3</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Hand-coded area with axes. Smoothed via d3.curveMonotoneX.</div>
+      <div class="cs-chart-card__body" id="cs-d3-area"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#27 · D3 sunburst</h3><div class="cs-chart-card__path">d3.partition + arc</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">D3</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Hierarchical asset allocation. No alternative library does this naturally.</div>
+      <div class="cs-chart-card__body" id="cs-d3-sunburst" style="display: flex; align-items: center; justify-content: center;"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#28 · D3 force network</h3><div class="cs-chart-card__path">d3.forceSimulation</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">D3</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Affiliate referral network or developer-team graph.</div>
+      <div class="cs-chart-card__body" id="cs-d3-force"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 6 — FRAPPE                                               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="cs-section" id="sec-frappe">
+  <div class="cs-section__head">
+    <div>
+      <h2>6 · Frappe Charts</h2>
+      <div class="cs-section-desc">Tiny (~30 KB). Simple GitHub-contribution-style aesthetic.</div>
+    </div>
+  </div>
+  <div class="cs-grid cs-grid--3">
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#29 · Frappe line</h3><div class="cs-chart-card__path">frappe.Chart.line</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">Frappe</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Minimal API. Built-in trend overlay.</div>
+      <div class="cs-chart-card__body" id="cs-frappe-line"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#30 · Frappe heatmap</h3><div class="cs-chart-card__path">frappe.Chart.heatmap</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">Frappe</span></div>
+      </div>
+      <div class="cs-chart-card__notes">GitHub-style contributions. Daily trading activity calendar.</div>
+      <div class="cs-chart-card__body" id="cs-frappe-heatmap"></div>
+    </div>
+
+    <div class="cs-chart-card">
+      <div class="cs-chart-card__head">
+        <div><h3 class="cs-chart-card__title">#31 · Frappe percentage</h3><div class="cs-chart-card__path">frappe.Chart.percentage</div></div>
+        <div class="cs-chart-card__meta"><span class="cs-tag cs-tag--new">Frappe</span></div>
+      </div>
+      <div class="cs-chart-card__notes">Single segmented bar. Portfolio split summary.</div>
+      <div class="cs-chart-card__body" id="cs-frappe-pct"></div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  POOOL Charts Showcase · temporary · <code>frontend/platform/charts-showcase.html</code> · delete when style decided.
+</footer>
+
+</main>
+
+<script>
+// ─── Theme toggle ──────────────────────────────────────────────
+const __theme = {
+  apply(mode) {
+    document.documentElement.classList.toggle('dark', mode === 'dark');
+    localStorage.setItem('cs-theme', mode);
+    if (typeof redrawAll === 'function') redrawAll();
+  },
+};
+document.getElementById('cs-theme-toggle').addEventListener('click', () => {
+  __theme.apply(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+});
+// Apply stored class only — defer chart render until script + DOM ready
+document.documentElement.classList.toggle('dark', (localStorage.getItem('cs-theme') || 'light') === 'dark');
+
+// ─── Sample data ───────────────────────────────────────────────
+const SAMPLE = {
+  months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+  line: [120, 180, 160, 220, 200, 280, 260, 340, 310, 400, 380, 460],
+  bars: [82, 92, 78, 110, 96, 122, 108, 145, 132, 168, 155, 195],
+  candle: (function () {
+    const out = [];
+    let price = 105;
+    const start = Date.now() - 60 * 60 * 60 * 1000;
+    for (let i = 0; i < 60; i++) {
+      const v = (Math.random() - 0.48) * 4;
+      const open = price;
+      const close = Math.max(50, price + v);
+      const high = Math.max(open, close) + Math.random() * 2;
+      const low = Math.min(open, close) - Math.random() * 2;
+      out.push({ t: start + i * 60 * 60 * 1000, o: open, h: high, l: low, c: close, v: Math.floor(Math.random() * 50) + 5 });
+      price = close;
+    }
+    return out;
+  })(),
+};
+
+// ─── Chart instances (so we can destroy + redraw on theme toggle) ─
+const _instances = { apex: [], chartjs: [], echarts: [], frappe: [] };
+
+function destroyAll() {
+  _instances.apex.forEach(c => { try { c.destroy(); } catch (_) {} });
+  _instances.chartjs.forEach(c => { try { c.destroy(); } catch (_) {} });
+  _instances.echarts.forEach(c => { try { c.dispose(); } catch (_) {} });
+  _instances.apex.length = 0;
+  _instances.chartjs.length = 0;
+  _instances.echarts.length = 0;
+  _instances.frappe.length = 0;
+  // Clear containers that Frappe pollutes with appended DOM
+  ['cs-frappe-line','cs-frappe-heatmap','cs-frappe-pct'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = '';
+  });
+}
+
+function isDark() { return document.documentElement.classList.contains('dark'); }
+function muted() { return isDark() ? '#8b92a5' : '#6b7280'; }
+function gridColor() { return isDark() ? 'rgba(255,255,255,0.06)' : '#f2f4f7'; }
+
+function redrawAll() {
+  destroyAll();
+  drawSvgLine();
+  drawBars();
+  drawApexCandle();
+  drawApexDonut();
+  drawApexVolume();
+  drawApexAssets();
+  drawCjsPortfolio();
+  drawCjsAllocation();
+  drawCjsDividends();
+  drawCjsCampaign();
+  drawSparkline();
+  drawEcLine();
+  drawEcCandle();
+  drawEcDonut();
+  drawEcStacked();
+  drawEcGauge();
+  drawEcHeatmap();
+  drawCjsAltLine();
+  drawCjsRadar();
+  drawCjsPolar();
+  drawGsapBars();
+  runGsapAnimations();
+  drawD3Area();
+  drawD3Sunburst();
+  drawD3Force();
+  drawFrappeLine();
+  drawFrappeHeatmap();
+  drawFrappePct();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── EXISTING #1: Custom SVG line + area ─────────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawSvgLine() {
+  const data = SAMPLE.line;
+  const w = 1000, h = 220, pad = 10;
+  const max = Math.max(...data), min = Math.min(...data) - 20;
+  const range = max - min;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - pad - ((v - min) / range) * (h - 2 * pad);
+    return [x, y];
+  });
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L ${w} ${h} L 0 ${h} Z`;
+  document.getElementById('cs-svg-line-path').setAttribute('d', linePath);
+  document.getElementById('cs-svg-area').setAttribute('d', areaPath);
+  const last = points[points.length - 1];
+  document.getElementById('cs-svg-marker-outer').setAttribute('cx', last[0]);
+  document.getElementById('cs-svg-marker-outer').setAttribute('cy', last[1]);
+  document.getElementById('cs-svg-marker-inner').setAttribute('cx', last[0]);
+  document.getElementById('cs-svg-marker-inner').setAttribute('cy', last[1]);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── EXISTING #2: Custom DIV bars + SMA trend ────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawBars() {
+  const data = SAMPLE.bars;
+  const container = document.getElementById('cs-bars-portfolio');
+  container.innerHTML = '';
+  const max = Math.max(...data);
+  data.forEach((v, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'cs-bar';
+    bar.style.height = ((v / max) * 100) + '%';
+    bar.style.animationDelay = (i * 40) + 'ms';
+    bar.title = v;
+    container.appendChild(bar);
+  });
+  // SMA trend
+  const w = 1000, h = 200;
+  const window = 3;
+  const sma = data.map((_, i) => {
+    const start = Math.max(0, i - 1), end = Math.min(data.length, i + 2);
+    let sum = 0;
+    for (let j = start; j < end; j++) sum += data[j];
+    return sum / (end - start);
+  });
+  const max2 = Math.max(...sma), min2 = Math.min(...sma);
+  const range = max2 - min2 || 1;
+  const path = sma.map((v, i) => {
+    const x = (i / (sma.length - 1)) * w;
+    const y = h - 10 - ((v - min2) / range) * (h - 30);
+    return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(' ');
+  document.getElementById('cs-bars-trend').setAttribute('d', path);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── EXISTING #3-#6: ApexCharts ──────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawApexCandle() {
+  const data = SAMPLE.candle.map(c => ({ x: new Date(c.t), y: [c.o, c.h, c.l, c.c] }));
+  const chart = new ApexCharts(document.getElementById('cs-apex-candle'), {
+    chart: { type: 'candlestick', height: 240, background: 'transparent', foreColor: muted(), toolbar: { show: false } },
+    series: [{ data }],
+    plotOptions: { candlestick: { colors: { upward: '#00c896', downward: '#ef4444' } } },
+    xaxis: { type: 'datetime', labels: { style: { fontSize: '10px' } } },
+    yaxis: { tooltip: { enabled: true }, labels: { formatter: v => '$' + v.toFixed(0) } },
+    grid: { borderColor: gridColor() },
+    tooltip: { theme: isDark() ? 'dark' : 'light' },
+  });
+  chart.render(); _instances.apex.push(chart);
+}
+
+function drawApexDonut() {
+  const chart = new ApexCharts(document.getElementById('cs-apex-donut'), {
+    chart: { type: 'donut', height: 240, background: 'transparent' },
+    series: [55, 45],
+    labels: ['Operator', 'POOOL'],
+    colors: ['#98FB96', '#0000FF'],
+    stroke: { show: false },
+    dataLabels: { enabled: true, formatter: v => v.toFixed(0) + '%' },
+    plotOptions: { pie: { donut: { size: '50%', background: 'transparent' }, expandOnClick: true } },
+    legend: { position: 'bottom', labels: { colors: muted() } },
+  });
+  chart.render(); _instances.apex.push(chart);
+}
+
+function drawApexVolume() {
+  const chart = new ApexCharts(document.getElementById('cs-apex-volume'), {
+    chart: { type: 'bar', height: 240, background: 'transparent', foreColor: muted(), toolbar: { show: false } },
+    series: [
+      { name: 'Volume', type: 'column', data: SAMPLE.bars },
+      { name: 'Fees',   type: 'line',   data: SAMPLE.line.map(v => v * 0.012) },
+    ],
+    stroke: { width: [0, 2.5], curve: 'smooth' },
+    colors: ['#0000FF', '#03FF88'],
+    xaxis: { categories: SAMPLE.months },
+    yaxis: [
+      { title: { text: 'Volume ($)', style: { color: muted() } }, labels: { style: { colors: muted() } } },
+      { opposite: true, title: { text: 'Fees ($)', style: { color: muted() } }, labels: { style: { colors: muted() } } },
+    ],
+    grid: { borderColor: gridColor() },
+    tooltip: { theme: isDark() ? 'dark' : 'light' },
+    legend: { labels: { colors: muted() } },
+  });
+  chart.render(); _instances.apex.push(chart);
+}
+
+function drawApexAssets() {
+  const chart = new ApexCharts(document.getElementById('cs-apex-assets'), {
+    chart: { type: 'bar', height: 240, background: 'transparent', foreColor: muted(), toolbar: { show: false } },
+    series: [{ name: 'Volume', data: [320, 280, 240, 195, 160, 140, 120] }],
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, distributed: true } },
+    colors: ['#0000FF', '#1f3aff', '#3f5cff', '#6172f3', '#8a96f8', '#a8b3fa', '#c5cefb'],
+    xaxis: { categories: ['NEO AGRO', 'AVOCADO', 'MANGO', 'POOOL HQ', 'COCOA', 'COFFEE', 'TEA'], labels: { style: { colors: muted() } } },
+    yaxis: { labels: { style: { colors: muted() } } },
+    dataLabels: { enabled: false },
+    grid: { borderColor: gridColor() },
+    legend: { show: false },
+    tooltip: { theme: isDark() ? 'dark' : 'light' },
+  });
+  chart.render(); _instances.apex.push(chart);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── EXISTING #7-#10: Chart.js ───────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function cjsCommon() {
+  Chart.defaults.color = muted();
+  Chart.defaults.borderColor = gridColor();
+  Chart.defaults.font.family = "'TT Norms Pro', sans-serif";
+}
+
+function drawCjsPortfolio() {
+  cjsCommon();
+  const ctx = document.getElementById('cs-cjs-portfolio').getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+  gradient.addColorStop(0, 'rgba(0,0,255,0.25)');
+  gradient.addColorStop(1, 'rgba(3,255,136,0)');
+  _instances.chartjs.push(new Chart(ctx, {
+    type: 'line',
+    data: { labels: SAMPLE.months, datasets: [{ label: 'Portfolio value', data: SAMPLE.line, borderColor: '#0000FF', backgroundColor: gradient, tension: 0.35, fill: true, pointRadius: 0, borderWidth: 2.5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  }));
+}
+
+function drawCjsAllocation() {
+  cjsCommon();
+  _instances.chartjs.push(new Chart(document.getElementById('cs-cjs-allocation'), {
+    type: 'doughnut',
+    data: { labels: ['Real estate', 'Agro', 'Other'], datasets: [{ data: [45, 38, 17], backgroundColor: ['#0000FF', '#03FF88', '#98FB96'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom' } } },
+  }));
+}
+
+function drawCjsDividends() {
+  cjsCommon();
+  _instances.chartjs.push(new Chart(document.getElementById('cs-cjs-dividends'), {
+    type: 'bar',
+    data: { labels: SAMPLE.months, datasets: [{ data: SAMPLE.bars, backgroundColor: '#0000FF', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  }));
+}
+
+function drawCjsCampaign() {
+  cjsCommon();
+  _instances.chartjs.push(new Chart(document.getElementById('cs-cjs-campaign'), {
+    type: 'line',
+    data: {
+      labels: SAMPLE.months,
+      datasets: [
+        { label: 'Clicks', data: SAMPLE.line.map(v => v * 1.2), borderColor: '#0000FF', backgroundColor: 'rgba(0,0,255,0.08)', tension: 0.3, fill: true },
+        { label: 'Signups', data: SAMPLE.line.map(v => v * 0.4), borderColor: '#03FF88', backgroundColor: 'rgba(3,255,136,0.08)', tension: 0.3, fill: true },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── EXISTING #12: Sparkline ─────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawSparkline() {
+  const data = [14, 12, 15, 13, 11, 12, 14, 10, 9, 12, 13, 12];
+  const w = 240, h = 40;
+  const max = Math.max(...data), min = Math.min(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  document.getElementById('cs-sparkline-poly').setAttribute('points', pts.join(' '));
+  const last = pts[pts.length - 1].split(',');
+  document.getElementById('cs-sparkline-dot').setAttribute('cx', last[0]);
+  document.getElementById('cs-sparkline-dot').setAttribute('cy', last[1]);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── ECHARTS #14-#19 ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function ecCommon() {
+  return {
+    backgroundColor: 'transparent',
+    textStyle: { color: muted(), fontFamily: "'TT Norms Pro', sans-serif" },
+  };
+}
+
+function drawEcLine() {
+  const chart = echarts.init(document.getElementById('cs-ec-line'), null, { renderer: 'svg' });
+  chart.setOption({
+    ...ecCommon(),
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: SAMPLE.months, axisLine: { lineStyle: { color: gridColor() } } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: gridColor() } } },
+    series: [{
+      data: SAMPLE.line, type: 'line', smooth: true, symbol: 'none',
+      lineStyle: { width: 3, color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+        colorStops: [{ offset: 0, color: '#0000FF' }, { offset: 1, color: '#03FF88' }] } },
+      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+        colorStops: [{ offset: 0, color: 'rgba(0,0,255,0.25)' }, { offset: 1, color: 'rgba(3,255,136,0)' }] } },
+    }],
+  });
+  _instances.echarts.push(chart);
+}
+
+function drawEcCandle() {
+  const chart = echarts.init(document.getElementById('cs-ec-candle'), null, { renderer: 'svg' });
+  const ohlc = SAMPLE.candle.map(c => [c.o, c.c, c.l, c.h]);
+  const cats = SAMPLE.candle.map(c => new Date(c.t).toLocaleString('en', { hour: 'numeric', day: 'numeric' }));
+  chart.setOption({
+    ...ecCommon(),
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: cats, axisLine: { lineStyle: { color: gridColor() } } },
+    yAxis: { type: 'value', scale: true, splitLine: { lineStyle: { color: gridColor() } } },
+    series: [{ type: 'candlestick', data: ohlc, itemStyle: { color: '#00c896', color0: '#ef4444', borderColor: '#00c896', borderColor0: '#ef4444' } }],
+  });
+  _instances.echarts.push(chart);
+}
+
+function drawEcDonut() {
+  const chart = echarts.init(document.getElementById('cs-ec-donut'), null, { renderer: 'svg' });
+  chart.setOption({
+    ...ecCommon(),
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0, textStyle: { color: muted() } },
+    series: [{
+      type: 'pie', radius: ['45%', '70%'], avoidLabelOverlap: false,
+      label: { show: true, formatter: '{d}%', color: isDark() ? '#fff' : '#111' },
+      data: [
+        { value: 55, name: 'Operator', itemStyle: { color: '#98FB96' } },
+        { value: 45, name: 'POOOL', itemStyle: { color: '#0000FF' } },
+      ],
+    }],
+  });
+  _instances.echarts.push(chart);
+}
+
+function drawEcStacked() {
+  const chart = echarts.init(document.getElementById('cs-ec-stacked'), null, { renderer: 'svg' });
+  chart.setOption({
+    ...ecCommon(),
+    tooltip: { trigger: 'axis' },
+    legend: { textStyle: { color: muted() } },
+    xAxis: { type: 'category', data: SAMPLE.months, axisLine: { lineStyle: { color: gridColor() } } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: gridColor() } } },
+    series: [
+      { name: 'Portfolio', type: 'line', stack: 'all', areaStyle: { color: '#0000FF', opacity: 0.4 }, smooth: true, symbol: 'none', data: SAMPLE.line.map(v => v * 0.5) },
+      { name: 'Rental',    type: 'line', stack: 'all', areaStyle: { color: '#6172F3', opacity: 0.4 }, smooth: true, symbol: 'none', data: SAMPLE.line.map(v => v * 0.3) },
+      { name: 'Appreciation', type: 'line', stack: 'all', areaStyle: { color: '#03FF88', opacity: 0.4 }, smooth: true, symbol: 'none', data: SAMPLE.line.map(v => v * 0.2) },
+    ],
+  });
+  _instances.echarts.push(chart);
+}
+
+function drawEcGauge() {
+  const chart = echarts.init(document.getElementById('cs-ec-gauge'), null, { renderer: 'svg' });
+  chart.setOption({
+    ...ecCommon(),
+    series: [{
+      type: 'gauge', startAngle: 200, endAngle: -20, min: 0, max: 100,
+      progress: { show: true, width: 14, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#0000FF' }, { offset: 1, color: '#03FF88' }] } } },
+      axisLine: { lineStyle: { width: 14, color: [[1, gridColor()]] } },
+      pointer: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
+      anchor: { show: false },
+      detail: { valueAnimation: true, fontSize: 32, color: muted(), formatter: '{value}%', offsetCenter: [0, '0'] },
+      data: [{ value: 72 }],
+    }],
+  });
+  _instances.echarts.push(chart);
+}
+
+function drawEcHeatmap() {
+  const chart = echarts.init(document.getElementById('cs-ec-heatmap'), null, { renderer: 'svg' });
+  const hours = ['00','03','06','09','12','15','18','21'];
+  const days  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const data = [];
+  for (let d = 0; d < 7; d++) for (let h = 0; h < 8; h++) data.push([h, d, Math.floor(Math.random() * 50)]);
+  chart.setOption({
+    ...ecCommon(),
+    tooltip: { position: 'top' },
+    grid: { left: 50, right: 10, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: hours, axisLine: { lineStyle: { color: gridColor() } } },
+    yAxis: { type: 'category', data: days,  axisLine: { lineStyle: { color: gridColor() } } },
+    visualMap: { min: 0, max: 50, calculable: false, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: ['#eef4ff', '#0000FF'] }, textStyle: { color: muted() } },
+    series: [{ name: 'Trades', type: 'heatmap', data, label: { show: false } }],
+  });
+  _instances.echarts.push(chart);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── CHART.JS ALT #20-#22 ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawCjsAltLine() {
+  cjsCommon();
+  const ctx = document.getElementById('cs-cjs-alt-line').getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, 240);
+  g.addColorStop(0, 'rgba(3,255,136,0.35)');
+  g.addColorStop(1, 'rgba(3,255,136,0)');
+  _instances.chartjs.push(new Chart(ctx, {
+    type: 'line',
+    data: { labels: SAMPLE.months, datasets: [{ label: 'Revenue', data: SAMPLE.line, borderColor: '#03FF88', backgroundColor: g, tension: 0.4, fill: true, pointRadius: 0, borderWidth: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: gridColor(), borderDash: [4, 4] } }, x: { grid: { display: false } } } },
+  }));
+}
+
+function drawCjsRadar() {
+  cjsCommon();
+  _instances.chartjs.push(new Chart(document.getElementById('cs-cjs-radar'), {
+    type: 'radar',
+    data: {
+      labels: ['Yield','Liquidity','Diversification','Stability','Growth','Demand'],
+      datasets: [{ label: 'NEO AGRO', data: [85, 65, 70, 80, 75, 90], backgroundColor: 'rgba(0,0,255,0.18)', borderColor: '#0000FF', pointBackgroundColor: '#0000FF' }],
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: gridColor() }, grid: { color: gridColor() }, pointLabels: { color: muted() }, ticks: { display: false } } } },
+  }));
+}
+
+function drawCjsPolar() {
+  cjsCommon();
+  _instances.chartjs.push(new Chart(document.getElementById('cs-cjs-polar'), {
+    type: 'polarArea',
+    data: { labels: ['Q1','Q2','Q3','Q4'], datasets: [{ data: [11, 16, 7, 14], backgroundColor: ['rgba(0,0,255,0.6)','rgba(3,255,136,0.6)','rgba(97,114,243,0.6)','rgba(152,251,150,0.6)'] }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: gridColor() }, ticks: { display: false } } } },
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── GSAP #23-#25 ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawGsapBars() {
+  const g = document.getElementById('cs-gsap-bar-group');
+  g.innerHTML = '';
+  const data = SAMPLE.bars;
+  const max = Math.max(...data);
+  const w = 600, h = 220, gap = 6;
+  const barW = (w - gap * (data.length - 1)) / data.length;
+  data.forEach((v, i) => {
+    const barH = (v / max) * (h - 10);
+    const x = i * (barW + gap);
+    const y = h - barH;
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('x', x);
+    r.setAttribute('y', y);
+    r.setAttribute('width', barW);
+    r.setAttribute('height', barH);
+    r.setAttribute('rx', 4);
+    r.setAttribute('fill', '#0000FF');
+    r.setAttribute('class', 'cs-gsap-bar-rect');
+    r.dataset.targetH = barH;
+    r.dataset.targetY = y;
+    g.appendChild(r);
+  });
+}
+
+function runGsapAnimations() {
+  if (typeof gsap === 'undefined') return;
+  // #23 Line draw
+  const linePath = document.getElementById('cs-gsap-line-path');
+  if (linePath) {
+    const len = linePath.getTotalLength();
+    linePath.style.strokeDasharray = len;
+    linePath.style.strokeDashoffset = len;
+    gsap.to(linePath, { strokeDashoffset: 0, duration: 2.4, ease: 'power2.inOut' });
+  }
+  // #24 Staggered bars
+  const bars = document.querySelectorAll('.cs-gsap-bar-rect');
+  bars.forEach(b => {
+    const targetH = parseFloat(b.dataset.targetH);
+    const targetY = parseFloat(b.dataset.targetY);
+    b.setAttribute('y', targetY + targetH);
+    b.setAttribute('height', 0);
+  });
+  gsap.to('.cs-gsap-bar-rect', {
+    attr: (i, el) => ({ y: el.dataset.targetY, height: el.dataset.targetH }),
+    duration: 1.0, stagger: 0.06, ease: 'back.out(1.4)',
+  });
+  // #25 Counter + fill
+  const counter = document.getElementById('cs-gsap-counter');
+  const fill = document.getElementById('cs-gsap-counter-fill');
+  if (counter && fill) {
+    counter.textContent = '0';
+    fill.style.width = '0%';
+    const obj = { v: 0 };
+    gsap.to(obj, { v: 487320, duration: 2.0, ease: 'power2.out', onUpdate: () => {
+      counter.textContent = Math.round(obj.v).toLocaleString();
+    }});
+    gsap.to(fill, { width: '72%', duration: 2.0, ease: 'power2.out' });
+  }
+}
+
+['cs-gsap-line-replay','cs-gsap-bars-replay','cs-gsap-counter-replay'].forEach(id => {
+  document.addEventListener('click', e => {
+    if (e.target && e.target.id === id) runGsapAnimations();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ── D3 #26-#28 ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawD3Area() {
+  const container = d3.select('#cs-d3-area');
+  container.selectAll('*').remove();
+  const w = container.node().clientWidth || 360, h = 240, m = { t: 10, r: 10, b: 24, l: 36 };
+  const data = SAMPLE.line.map((v, i) => ({ i, v }));
+  const x = d3.scaleLinear().domain([0, data.length - 1]).range([m.l, w - m.r]);
+  const y = d3.scaleLinear().domain([d3.min(data, d => d.v) * 0.9, d3.max(data, d => d.v)]).range([h - m.b, m.t]);
+  const svg = container.append('svg').attr('width', w).attr('height', h);
+  // grid
+  svg.append('g').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(x).ticks(6).tickFormat(i => SAMPLE.months[i] || '')).selectAll('text').attr('fill', muted());
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', muted());
+  svg.selectAll('.domain, .tick line').attr('stroke', gridColor());
+  // area + line
+  const area = d3.area().x(d => x(d.i)).y0(h - m.b).y1(d => y(d.v)).curve(d3.curveMonotoneX);
+  const line = d3.line().x(d => x(d.i)).y(d => y(d.v)).curve(d3.curveMonotoneX);
+  const grad = svg.append('defs').append('linearGradient').attr('id', 'cs-d3-grad').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+  grad.append('stop').attr('offset', '0%').attr('stop-color', '#0000FF').attr('stop-opacity', 0.4);
+  grad.append('stop').attr('offset', '100%').attr('stop-color', '#03FF88').attr('stop-opacity', 0);
+  svg.append('path').datum(data).attr('fill', 'url(#cs-d3-grad)').attr('d', area);
+  svg.append('path').datum(data).attr('fill', 'none').attr('stroke', '#0000FF').attr('stroke-width', 2.5).attr('d', line);
+}
+
+function drawD3Sunburst() {
+  const container = d3.select('#cs-d3-sunburst');
+  container.selectAll('*').remove();
+  const w = 240, h = 240, r = w / 2;
+  const svg = container.append('svg').attr('width', w).attr('height', h).append('g').attr('transform', `translate(${r},${r})`);
+  const data = {
+    name: 'Portfolio',
+    children: [
+      { name: 'Real estate', children: [{ name: 'Berlin', value: 30 }, { name: 'Munich', value: 15 }] },
+      { name: 'Agro', children: [{ name: 'NEO AGRO', value: 20 }, { name: 'Avocado', value: 12 }, { name: 'Mango', value: 6 }] },
+      { name: 'Other', children: [{ name: 'Cash', value: 12 }, { name: 'Bonds', value: 5 }] },
+    ],
+  };
+  const root = d3.hierarchy(data).sum(d => d.value);
+  d3.partition().size([2 * Math.PI, r])(root);
+  const arc = d3.arc().startAngle(d => d.x0).endAngle(d => d.x1).innerRadius(d => d.y0).outerRadius(d => d.y1);
+  const colors = ['#0000FF','#03FF88','#98FB96','#6172F3','#1f3aff','#3f5cff','#8a96f8','#a8b3fa'];
+  svg.selectAll('path').data(root.descendants().filter(d => d.depth)).enter().append('path')
+    .attr('d', arc).attr('fill', (_, i) => colors[i % colors.length]).attr('opacity', 0.88)
+    .attr('stroke', isDark() ? '#0b0d12' : '#fff').attr('stroke-width', 1.5);
+}
+
+function drawD3Force() {
+  const container = d3.select('#cs-d3-force');
+  container.selectAll('*').remove();
+  const w = container.node().clientWidth || 360, h = 240;
+  const svg = container.append('svg').attr('width', w).attr('height', h);
+  const nodes = [
+    { id: 'You', group: 0, r: 14 },
+    ...Array.from({ length: 6 }, (_, i) => ({ id: `R${i + 1}`, group: 1, r: 8 })),
+    ...Array.from({ length: 8 }, (_, i) => ({ id: `L${i + 1}`, group: 2, r: 5 })),
+  ];
+  const links = [];
+  for (let i = 1; i <= 6; i++) links.push({ source: 'You', target: `R${i}` });
+  for (let i = 1; i <= 8; i++) links.push({ source: `R${(i % 6) + 1}`, target: `L${i}` });
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(35))
+    .force('charge', d3.forceManyBody().strength(-90))
+    .force('center', d3.forceCenter(w / 2, h / 2));
+  const link = svg.append('g').attr('stroke', gridColor()).attr('stroke-width', 1).selectAll('line').data(links).enter().append('line');
+  const colors = ['#0000FF','#03FF88','#6172F3'];
+  const node = svg.append('g').selectAll('circle').data(nodes).enter().append('circle')
+    .attr('r', d => d.r).attr('fill', d => colors[d.group]);
+  sim.on('tick', () => {
+    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    node.attr('cx', d => d.x).attr('cy', d => d.y);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── FRAPPE #29-#31 ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function drawFrappeLine() {
+  const el = document.getElementById('cs-frappe-line');
+  el.innerHTML = '';
+  new frappe.Chart(el, {
+    type: 'line', height: 240,
+    data: { labels: SAMPLE.months, datasets: [{ name: 'Volume', values: SAMPLE.line }] },
+    colors: ['#0000FF'],
+    lineOptions: { hideDots: 1, regionFill: 1 },
+  });
+}
+
+function drawFrappeHeatmap() {
+  const el = document.getElementById('cs-frappe-heatmap');
+  el.innerHTML = '';
+  const dataPoints = {};
+  const today = Math.floor(Date.now() / 1000);
+  for (let i = 0; i < 365; i++) {
+    const t = today - i * 86400;
+    dataPoints[t] = Math.floor(Math.random() * 5);
+  }
+  new frappe.Chart(el, {
+    type: 'heatmap', height: 200,
+    data: { dataPoints, start: new Date(Date.now() - 365 * 86400 * 1000), end: new Date() },
+    countLabel: 'trades',
+    discreteDomains: 0,
+  });
+}
+
+function drawFrappePct() {
+  const el = document.getElementById('cs-frappe-pct');
+  el.innerHTML = '';
+  new frappe.Chart(el, {
+    type: 'percentage', height: 240,
+    data: { labels: ['Real estate', 'Agro', 'Other'], datasets: [{ values: [45, 38, 17] }] },
+    colors: ['#0000FF', '#03FF88', '#98FB96'],
+  });
+}
+
+// ─── Boot ─────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  redrawAll();
+});
+</script>
+
+</body>
+</html>

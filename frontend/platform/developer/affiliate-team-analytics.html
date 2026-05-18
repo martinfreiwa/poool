@@ -1,7 +1,8 @@
 {% with title="Affiliate Team Analytics – POOOL", no_index=True,
 extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
 'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
-extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-analytics'] %}{% include
+extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'poool-line-chart', 'developer-affiliate-team-analytics'],
+external_scripts=['https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js'] %}{% include
 "components/head.html" %}{% endwith %}
 
 <body id="developer-affiliate-team-body" class="fouc-guard">

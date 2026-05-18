@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POOOL Card Showcase</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Token + base + every card-bearing CSS file -->
+<link rel="stylesheet" href="static/css/dashboard-tokens.css">
+<link rel="stylesheet" href="static/css/ds-cards.css">
+<link rel="stylesheet" href="static/css/unified-cards.css">
+<link rel="stylesheet" href="static/css/cards-template.css">
+<link rel="stylesheet" href="static/css/dashboard.css">
+<link rel="stylesheet" href="static/css/rewards.css">
+<link rel="stylesheet" href="static/css/affiliate-dashboard.css">
+<link rel="stylesheet" href="static/css/developer-submissions.css">
+<link rel="stylesheet" href="static/css/developer-assets.css">
+<link rel="stylesheet" href="static/css/property-card.css">
+<link rel="stylesheet" href="static/css/portfolio-value-card.css">
+<link rel="stylesheet" href="static/css/wallet.css">
+<link rel="stylesheet" href="static/css/statistics-template.css">
+<link rel="stylesheet" href="static/css/developer-operations.css">
+<link rel="stylesheet" href="static/css/developer-ui.css">
+<link rel="stylesheet" href="static/css/community.css">
+<link rel="stylesheet" href="static/css/ds-modals.css">
+<link rel="stylesheet" href="static/css/ubadge.css">
+<link rel="stylesheet" href="static/css/ucard.css">
+
+<style>
+  :root {
+    --pg-bg: #f6f7fb;
+    --pg-card: #ffffff;
+    --pg-border: #e5e7eb;
+    --pg-text: #111827;
+    --pg-muted: #6b7280;
+  }
+  html.dark {
+    --pg-bg: #0b0d12;
+    --pg-card: #131720;
+    --pg-border: #1e2330;
+    --pg-text: #f0f2f5;
+    --pg-muted: #8b92a5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--pg-bg);
+    color: var(--pg-text);
+    line-height: 1.5;
+  }
+  .pg-header {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--pg-card);
+    border-bottom: 1px solid var(--pg-border);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    backdrop-filter: blur(8px);
+  }
+  .pg-header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+  .pg-header .pg-sub { font-size: 12px; color: var(--pg-muted); margin-left: 12px; }
+  .pg-toggle {
+    background: var(--pg-bg);
+    border: 1px solid var(--pg-border);
+    color: var(--pg-text);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pg-toggle:hover { border-color: var(--pg-muted); }
+  main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+
+  .pg-section {
+    background: var(--pg-card);
+    border: 1px solid var(--pg-border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .pg-section__head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--pg-border);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .pg-section__head h2 { margin: 0; font-size: 16px; font-weight: 700; }
+  .pg-section__head .pg-file { font-size: 11px; color: var(--pg-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .pg-section__body { padding: 24px; background: #FAFBFD; }
+
+  .pg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .pg-grid--2col { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
+  .pg-grid--3col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pg-grid--narrow { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+  .pg-tile {
+    position: relative;
+  }
+  .pg-tile__label {
+    font-size: 11px;
+    color: var(--pg-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-all;
+    margin-top: 8px;
+    display: block;
+  }
+  .pg-h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 16px;
+  }
+  .pg-h3:not(:first-child) { margin-top: 32px; }
+
+  .pg-footer {
+    text-align: center;
+    color: var(--pg-muted);
+    font-size: 12px;
+    padding: 24px;
+  }
+
+  /* Make sample cards always visible (override body-scoped !important rules) */
+  .pg-section__body .ds-card,
+  .pg-section__body .ds-stat-card,
+  .pg-section__body .metric-card,
+  .pg-section__body .kpi-card,
+  .pg-section__body .sub-stat,
+  .pg-section__body .unified-stat-card,
+  .pg-section__body .holo-card,
+  .pg-section__body .settings-card,
+  .pg-section__body .property-card,
+  .pg-section__body .stat-card {
+    display: flex !important;
+  }
+
+  /* Force flex/visible for sample cards (body scopes override base) */
+  .ds-stat-card { display: flex; flex-direction: column; gap: 8px; }
+  .ds-stat-card__label { font-size: 12px; font-weight: 600; color: #717680; text-transform: uppercase; letter-spacing: 0.06em; }
+  .ds-stat-card__value { font-size: 32px; font-weight: 700; color: #0A0D12; letter-spacing: -0.02em; }
+  .ds-stat-card__trend { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #027A48; }
+  .ds-stat-card__trend.down { color: #B42318; }
+
+  /* Sample stat card (dashboard.css legacy) */
+  .demo-stat-card {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .demo-stat-card__label { font-size: 12px; color: #717680; font-weight: 500; }
+  .demo-stat-card__value { font-size: 28px; font-weight: 700; color: #0A0D12; line-height: 1; }
+  .demo-stat-card__sub { font-size: 11px; color: #98A2B3; }
+
+  /* p-icon demo (rewards card icon family) */
+  .demo-p-icon {
+    position: relative; width: 44px; height: 44px;
+    flex-shrink: 0;
+  }
+  .demo-p-icon .p-bg-1, .demo-p-icon .p-bg-2 {
+    position: absolute; border-radius: 22%;
+  }
+  .demo-p-icon .p-bg-1 { width: 37px; height: 37px; opacity: 0.3; transform: rotate(18deg); left: 7px; top: -4px; background: linear-gradient(135deg, #03FF88, #0000FF); }
+  .demo-p-icon .p-bg-2 { width: 40px; height: 40px; opacity: 0.38; transform: rotate(10deg); left: 3px; top: -2px; background: linear-gradient(135deg, #03FF88, #0000FF); }
+  .demo-p-icon .p-front {
+    position: absolute; inset: 0; border-radius: 22%;
+    background: linear-gradient(135deg, #0000FF 0%, #03FF88 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+  }
+
+  .pg-key {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #EEF4FF; color: #1B4ED8;
+    padding: 2px 7px; border-radius: 4px;
+    font-size: 10px; font-weight: 700;
+    font-family: ui-monospace, monospace;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  /* ============================================================
+     ★ PROPOSED UNIFIED CARD SYSTEM — .ucard2
+     ============================================================
+     Universal web-design rules applied:
+       SPACING — 4/8/16/24/32 grid only (no random values)
+       RADIUS  — ONE value 16px (sm 12px)
+       BORDER  — 1px neutral-200, hover neutral-400
+       SHADOW  — sm at rest, md on hover (no random shadows)
+       MOTION  — cubic-bezier(0.2, 0, 0, 1) · 200ms ALWAYS
+       HOVER   — translateY(-2px) + shadow upgrade
+       ICONS   — 24×24 viewBox · 1.5 stroke · rounded caps
+       TYPE    — Title 16/600 · Label 11/700 ALLCAPS · Value 28/700
+       COLOR   — semantic tint = 8% bg, 100% fg
+       ACTIVE  — 3px gradient top accent, same everywhere
+       FOCUS   — 3px ring rgba(0,0,255,0.18), offset 2px
+     ============================================================ */
+  :root {
+    --u2-radius:    16px;
+    --u2-radius-sm: 12px;
+    --u2-pad:       24px;
+    --u2-pad-sm:    16px;
+    --u2-pad-lg:    32px;
+    --u2-gap:       16px;
+
+    --u2-bg:        #ffffff;
+    --u2-border:    #E5E7EB;
+    --u2-border-h:  #D5D7DA;
+    --u2-text:      #0A0D12;
+    --u2-muted:     #717680;
+    --u2-label:     #6B7280;
+
+    --u2-shadow-sm: 0 1px 2px rgba(10,13,18,0.04);
+    --u2-shadow-md: 0 4px 12px rgba(10,13,18,0.06), 0 1px 3px rgba(10,13,18,0.04);
+    --u2-shadow-lg: 0 12px 28px rgba(10,13,18,0.08), 0 4px 8px rgba(10,13,18,0.04);
+
+    --u2-ease:      cubic-bezier(0.2, 0, 0, 1);
+    --u2-dur:       200ms;
+
+    --u2-accent:    linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+    --u2-focus:     0 0 0 3px rgba(0,0,255,0.18);
+  }
+
+  .u2 {
+    background: var(--u2-bg);
+    border: 1px solid var(--u2-border);
+    border-radius: var(--u2-radius);
+    padding: var(--u2-pad);
+    box-shadow: var(--u2-shadow-sm);
+    transition: transform var(--u2-dur) var(--u2-ease),
+                border-color var(--u2-dur) var(--u2-ease),
+                box-shadow var(--u2-dur) var(--u2-ease);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: var(--u2-gap);
+  }
+  .u2--sm { padding: var(--u2-pad-sm); border-radius: var(--u2-radius-sm); gap: 12px; }
+  .u2--lg { padding: var(--u2-pad-lg); }
+  .u2--flush { padding: 0; }
+
+  .u2--interactive { cursor: pointer; }
+  .u2--interactive:hover {
+    transform: translateY(-2px);
+    border-color: var(--u2-border-h);
+    box-shadow: var(--u2-shadow-md);
+  }
+  .u2--interactive:active { transform: translateY(0); transition-duration: 80ms; }
+  .u2--interactive:focus-visible { outline: 0; box-shadow: var(--u2-shadow-md), var(--u2-focus); }
+
+  .u2--active::before,
+  .u2.active::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+    background: var(--u2-accent); pointer-events: none;
+  }
+
+  .u2__header {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin: 0;
+  }
+  .u2__title {
+    margin: 0; font-size: 16px; font-weight: 600; color: var(--u2-text);
+    letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .u2__subtitle { margin: 4px 0 0; font-size: 13px; color: var(--u2-muted); font-weight: 400; }
+
+  .u2__body { display: flex; flex-direction: column; gap: var(--u2-gap); }
+
+  .u2__footer {
+    display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--u2-border);
+  }
+
+  /* Stat pattern — split layout from reference: KPI stack LEFT · chart fills RIGHT.
+     ONE row, two columns. Chart spans full card height. */
+  .u2-stat {
+    padding: 20px;
+    min-height: 156px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-rows: 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+  /* LEFT column — icon + value + label + trend stacked vertically */
+  .u2-stat__main {
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .u2-stat__top { /* icon at top of left column */
+    display: flex; align-items: center; gap: 10px;
+  }
+  .u2-stat__value {
+    font-size: 26px; font-weight: 700; line-height: 1; color: var(--u2-text);
+    letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+    margin: 0;
+  }
+  .u2-stat__label {
+    font-size: 11px; font-weight: 700; color: var(--u2-label);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    margin: 6px 0 0;
+  }
+  .u2-stat__trend {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600; color: #027A48; font-variant-numeric: tabular-nums;
+    margin-top: 6px;
+  }
+  .u2-stat__trend.down { color: #B42318; }
+
+  /* Icon — semantic tinted chip · ONE shape, ONE stroke (2px) · rounded caps.
+     Stroke-width 2 matches the .developer-secondary-metrics__icon reference. */
+  .u2-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .u2-icon svg { width: 20px; height: 20px; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .u2-icon--neutral { background: #F2F4F7; color: #344054; }
+  .u2-icon--success { background: rgba(3,255,136,0.18); color: #027A48; }
+  .u2-icon--info    { background: #EEF4FF; color: #3538CD; }
+  .u2-icon--warning { background: #FFFAEB; color: #B54708; }
+  .u2-icon--danger  { background: #FEF3F2; color: #B42318; }
+
+  /* Brand variant — matches .developer-secondary-metrics__icon:
+     blue gradient tile + brand-green stroke + soft brand shadow.
+     Use for hero / featured card headers, NOT for every stat. */
+  .u2-icon--brand {
+    background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+    color: #03FF88;
+    box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+  }
+
+  /* Compact variant — for dense stat grids (5+ cards in a row) */
+  .u2-icon--sm { width: 32px; height: 32px; border-radius: 8px; }
+  .u2-icon--sm svg { width: 16px; height: 16px; }
+
+  /* Sparkline — fills the right column of split stat tile, full card height */
+  .u2-spark {
+    width: 100%;
+    height: 100%;
+    min-height: 100px;
+    align-self: stretch;
+    overflow: visible;
+  }
+  .u2-spark path.line {
+    fill: none;
+    stroke: url(#brandLineGradient);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .u2-spark path.area { fill: url(#brandAreaGradient); stroke: none; }
+  .u2-spark circle.ring { r: 5; fill: #03FF88; fill-opacity: 0.18; }
+  .u2-spark circle.dot  { r: 2.5; fill: #FFFFFF; stroke: #03FF88; stroke-width: 2; }
+
+  /* ── TABLE-AS-CARD (refined) — header + filters + table + pagination + chip footer,
+        all ONE seamless surface. No nested-card look. */
+  .u2-table-card {
+    background: var(--u2-bg);
+    border: 1px solid var(--u2-border);
+    border-radius: var(--u2-radius);
+    overflow: hidden;
+    box-shadow: var(--u2-shadow-sm);
+    display: flex; flex-direction: column;
+    transition: box-shadow var(--u2-dur) var(--u2-ease);
+  }
+  .u2-table-card:hover { box-shadow: var(--u2-shadow-md); }
+
+  /* Header — title left, controls right, no border to table */
+  .u2-table-card__head {
+    padding: 20px 24px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .u2-table-card__title-wrap { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .u2-table-card__title { margin: 0; font-size: 16px; font-weight: 700; color: var(--u2-text); letter-spacing: -0.01em; line-height: 1.2; }
+  .u2-table-card__sub { margin: 2px 0 0; font-size: 12px; color: var(--u2-muted); font-weight: 400; }
+  .u2-table-card__controls { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* Filter / chip row — sits between header and table, no border weirdness */
+  .u2-table-card__filters {
+    padding: 0 24px 14px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+
+  /* Search input + sort button — match height to chart-tabs spec (28px) */
+  .u2-input {
+    height: 32px; padding: 0 10px 0 32px;
+    background: #F9FAFB; border: 1px solid var(--u2-border); border-radius: 8px;
+    font-size: 12px; color: var(--u2-text);
+    width: 220px;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' width='14' height='14' fill='none' stroke='%23717680' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    transition: border-color var(--u2-dur) var(--u2-ease), box-shadow var(--u2-dur) var(--u2-ease);
+    outline: none;
+  }
+  .u2-input:focus { border-color: #0000FF; box-shadow: 0 0 0 3px rgba(0,0,255,0.08); }
+
+  .u2-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 12px;
+    background: #fff; border: 1px solid var(--u2-border); border-radius: 8px;
+    font-size: 12px; font-weight: 600; color: var(--u2-text);
+    cursor: pointer;
+    transition: all var(--u2-dur) var(--u2-ease);
+    font-family: inherit;
+  }
+  .u2-btn:hover { border-color: var(--u2-border-h); background: #FAFBFD; }
+  .u2-btn--primary { background: #0000FF; border-color: #0000FF; color: #03FF88; }
+  .u2-btn--primary:hover { background: #1414FF; border-color: #1414FF; }
+  .u2-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; }
+
+  /* Table */
+  .u2-table-card table { width: 100%; border-collapse: collapse; }
+  .u2-table-card thead {
+    background: #FAFBFD;
+    position: sticky; top: 0; z-index: 1;
+  }
+  .u2-table-card th {
+    text-align: left; padding: 12px 24px;
+    font-size: 11px; color: var(--u2-label); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    border-top: 1px solid var(--u2-border);
+    border-bottom: 1px solid var(--u2-border);
+    user-select: none;
+    white-space: nowrap;
+  }
+  .u2-table-card th.sortable { cursor: pointer; transition: color var(--u2-dur) var(--u2-ease); }
+  .u2-table-card th.sortable:hover { color: var(--u2-text); }
+  .u2-table-card th.sort-active { color: #0000FF; }
+  .u2-table-card th .sort-ico {
+    display: inline-block; width: 0; height: 0; margin-left: 4px;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 4px solid currentColor; opacity: 0.4; vertical-align: middle;
+    transition: transform var(--u2-dur) var(--u2-ease), opacity var(--u2-dur) var(--u2-ease);
+  }
+  .u2-table-card th.sortable:hover .sort-ico { opacity: 0.7; }
+  .u2-table-card th.sort-active .sort-ico { opacity: 1; }
+  .u2-table-card th.sort-asc .sort-ico { transform: rotate(180deg); }
+
+  .u2-table-card td {
+    padding: 14px 24px;
+    font-size: 13px; color: var(--u2-text);
+    border-bottom: 1px solid #F2F4F7;
+    vertical-align: middle;
+  }
+  .u2-table-card td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .u2-table-card tbody tr:last-child td { border-bottom: 0; }
+  .u2-table-card tbody tr { transition: background var(--u2-dur) var(--u2-ease); position: relative; }
+  .u2-table-card tbody tr:hover { background: #FAFBFD; }
+  .u2-table-card tbody tr.selected { background: #F5F5FF; }
+  .u2-table-card tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 #0000FF; }
+
+  /* Checkbox column */
+  .u2-table-card th.col-check, .u2-table-card td.col-check { width: 44px; padding-right: 0; }
+  .u2-table-card .u2-check {
+    width: 16px; height: 16px; border: 1.5px solid #D5D7DA; border-radius: 4px;
+    cursor: pointer; transition: all var(--u2-dur) var(--u2-ease);
+    display: inline-block; vertical-align: middle; position: relative;
+  }
+  .u2-table-card .u2-check:hover { border-color: #0000FF; }
+  .u2-table-card .u2-check.checked { background: #0000FF; border-color: #0000FF; }
+  .u2-table-card .u2-check.checked::after {
+    content: ''; position: absolute; left: 4px; top: 1px;
+    width: 4px; height: 8px; border: 2px solid #fff; border-top: 0; border-left: 0;
+    transform: rotate(45deg);
+  }
+
+  /* Asset cell — real image thumbnail + name */
+  .u2-asset { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .u2-asset__img {
+    width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
+    object-fit: cover;
+    border: 1px solid rgba(0,0,0,0.05);
+    background: #F2F4F7;
+  }
+  .u2-asset__name { font-weight: 600; color: var(--u2-text); }
+
+  /* Progress cell */
+  .u2-progress { display: flex; align-items: center; gap: 8px; }
+  .u2-progress__bar { flex: 1; height: 4px; background: #F2F4F7; border-radius: 2px; overflow: hidden; min-width: 60px; }
+  .u2-progress__fill { height: 100%; background: linear-gradient(90deg, #0000FF, #03FF88); border-radius: 2px; }
+  .u2-progress__val { font-size: 11px; color: var(--u2-muted); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* Row actions — fade in on hover */
+  .u2-row-actions {
+    display: inline-flex; gap: 2px; opacity: 0;
+    transition: opacity var(--u2-dur) var(--u2-ease);
+  }
+  .u2-table-card tbody tr:hover .u2-row-actions { opacity: 1; }
+  .u2-table-card tbody tr.selected .u2-row-actions { opacity: 1; }
+  .u2-row-actions__btn {
+    width: 28px; height: 28px; border-radius: 6px; border: 0; background: transparent;
+    color: var(--u2-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    transition: all var(--u2-dur) var(--u2-ease);
+  }
+  .u2-row-actions__btn:hover { background: #F2F4F7; color: var(--u2-text); }
+  .u2-row-actions__btn--danger:hover { background: #FEF3F2; color: #B42318; }
+  .u2-row-actions__btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Pagination */
+  .u2-table-card__page {
+    padding: 12px 24px;
+    border-top: 1px solid var(--u2-border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 12px; color: var(--u2-muted);
+  }
+  .u2-page-nav { display: inline-flex; gap: 4px; }
+  .u2-page-btn {
+    min-width: 28px; height: 28px; padding: 0 8px;
+    border: 1px solid transparent; background: transparent; color: var(--u2-text);
+    font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px;
+    transition: all var(--u2-dur) var(--u2-ease); font-variant-numeric: tabular-nums;
+  }
+  .u2-page-btn:hover:not(.active):not(:disabled) { background: #F2F4F7; }
+  .u2-page-btn.active { background: #0000FF; color: #03FF88; }
+  .u2-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Chip footer */
+  .u2-table-card__foot {
+    padding: 12px 24px;
+    background: #FAFBFD;
+    border-top: 1px solid var(--u2-border);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+
+  /* Empty state — same radius, dashed border, neutral text */
+  .u2--empty {
+    border-style: dashed;
+    background: transparent;
+    box-shadow: none;
+    text-align: center;
+    align-items: center;
+    padding: 48px 24px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Shared SVG gradient defs — referenced by sparklines + brand chart card.
+     Hidden 0×0 SVG so the linearGradient ids are available from page load. -->
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true">
+  <defs>
+    <linearGradient id="brandLineGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#0000FF"/>
+      <stop offset="100%" stop-color="#03FF88"/>
+    </linearGradient>
+    <linearGradient id="brandAreaGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#0000FF" stop-opacity="0.14"/>
+      <stop offset="60%"  stop-color="#03FF88" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#03FF88" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header class="pg-header">
+  <div>
+    <h1>POOOL Card & Modal Showcase</h1>
+    <span class="pg-sub">19 card families + 8 modal patterns · investor + developer · pick one to unify</span>
+  </div>
+  <button class="pg-toggle" onclick="document.documentElement.classList.toggle('dark')">Toggle dark</button>
+</header>
+
+<main>
+
+<!-- ============================================================
+     ★ PROPOSED UNIFIED SYSTEM — .u2
+     ============================================================ -->
+<section class="pg-section" style="border:2px solid #4F3FB8;">
+  <div class="pg-section__head" style="background:linear-gradient(90deg,#F4F0FF,#EEF4FF);">
+    <h2>★ Proposed unified card system — <code>.u2</code></h2>
+    <span class="pg-file">universal rules · one radius · one shadow scale · one easing · one icon size</span>
+  </div>
+  <div class="pg-section__body">
+
+    <p style="margin:0 0 16px;color:var(--pg-muted);font-size:13px;">
+      Single source of truth. Same hover, same shadow lift, same focus ring,
+      same icon shape across every card. No more "this card has hover, that one doesn't".
+      Fixes the broken table-as-card (no more two-cards-inside-one look).
+    </p>
+
+    <h3 class="pg-h3">Universal rules applied</h3>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:12px;color:#475467;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <div><strong>Spacing</strong> · 4/8/16/24/32 grid only</div>
+      <div><strong>Radius</strong> · 16px (sm 12px) — ONE value</div>
+      <div><strong>Border</strong> · 1px #E5E7EB → #D5D7DA on hover</div>
+      <div><strong>Shadow</strong> · sm rest → md hover → lg dialog</div>
+      <div><strong>Motion</strong> · cubic-bezier(0.2,0,0,1) · 200ms ALWAYS</div>
+      <div><strong>Hover</strong> · translateY(-2px) + shadow upgrade</div>
+      <div><strong>Icons</strong> · 40px chip · 20px SVG · stroke 2 · rounded caps</div>
+      <div><strong>Type</strong> · Title 16/600 · Label 11/700 ALLCAPS · Value 28/700</div>
+      <div><strong>Color tint</strong> · 8% bg + 100% fg (semantic)</div>
+      <div><strong>Active</strong> · 3px gradient top accent</div>
+      <div><strong>Focus</strong> · 3px ring rgba(0,0,255,0.18) offset 2px</div>
+      <div><strong>Table-as-card</strong> · ONE wrapper, no nested look</div>
+    </div>
+
+    <h3 class="pg-h3">Default · Interactive · Active · Empty</h3>
+    <div class="pg-grid">
+      <div>
+        <div class="u2">
+          <div class="u2__header"><h3 class="u2__title">Default card</h3></div>
+          <div class="u2__body"><span style="font-size:13px;color:#475467;">Static surface. No hover. Use for content panels.</span></div>
+        </div>
+        <span class="pg-tile__label">.u2</span>
+      </div>
+      <div>
+        <div class="u2 u2--interactive" tabindex="0">
+          <div class="u2__header"><h3 class="u2__title">Interactive card</h3></div>
+          <div class="u2__body"><span style="font-size:13px;color:#475467;">Hover or focus me. Lift -2px + shadow + focus ring.</span></div>
+        </div>
+        <span class="pg-tile__label">.u2.u2--interactive</span>
+      </div>
+      <div>
+        <div class="u2 u2--interactive u2--active">
+          <div class="u2__header"><h3 class="u2__title">Active card</h3></div>
+          <div class="u2__body"><span style="font-size:13px;color:#475467;">Selected state — gradient accent on top.</span></div>
+        </div>
+        <span class="pg-tile__label">.u2.u2--active</span>
+      </div>
+      <div>
+        <div class="u2 u2--empty">
+          <div class="u2-icon u2-icon--neutral"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+          <h3 class="u2__title" style="margin-top:12px;">No results yet</h3>
+          <p class="u2__subtitle">Same radius, dashed border, neutral text.</p>
+        </div>
+        <span class="pg-tile__label">.u2.u2--empty</span>
+      </div>
+    </div>
+
+    <h3 class="pg-h3">Stat cards — semantically correct icons, same shape + stroke</h3>
+    <p style="margin:0 0 16px;font-size:12px;color:var(--pg-muted);">All icons drawn in lucide style: 24×24 viewBox · <strong>stroke-width 2</strong> · rounded caps · matched to content meaning. 40×40 tinted chip · 20×20 SVG (matches <code>.developer-secondary-metrics__icon</code> reference).</p>
+
+    <h3 class="pg-h3" style="margin-top:0;">Brand variant — for hero / featured headers</h3>
+    <div class="pg-grid pg-grid--3col">
+      <div>
+        <div class="u2">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            <div><h3 class="u2__title" style="margin:0;">Activity snapshot</h3><p class="u2__subtitle">Operational signals</p></div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.u2-icon--brand (blue gradient + green stroke)</span>
+      </div>
+      <div>
+        <div class="u2">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+            <div><h3 class="u2__title" style="margin:0;">Portfolio</h3><p class="u2__subtitle">Investments & yield</p></div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.u2-icon--brand (wallet)</span>
+      </div>
+      <div>
+        <div class="u2">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></div>
+            <div><h3 class="u2__title" style="margin:0;">My assets</h3><p class="u2__subtitle">14 active properties</p></div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.u2-icon--brand (building)</span>
+      </div>
+    </div>
+
+    <h3 class="pg-h3">Stat tiles — same brand icon chip + sparkline</h3>
+    <p style="margin:0 0 16px;font-size:12px;color:var(--pg-muted);">All cards use the <strong>brand chip</strong> (blue gradient + green stroke). Each tile gets a <strong>60×24 sparkline</strong> showing trend at a glance. Color: green for up, red for down, neutral for flat. ONE chart size, ONE stroke (1.5).</p>
+    <div class="pg-grid pg-grid--3col">
+
+      <div>
+        <div class="u2 u2-stat">
+          <div class="u2-stat__main">
+            <div class="u2-stat__top">
+              <div class="u2-icon u2-icon--brand" title="Wallet"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+            </div>
+            <div>
+              <div class="u2-stat__value">$48,210</div>
+              <div class="u2-stat__label">Portfolio value</div>
+              <div class="u2-stat__trend">▲ 3.0% vs last month</div>
+            </div>
+          </div>
+          <svg class="u2-spark u2-spark--up" viewBox="0 0 120 100" preserveAspectRatio="none">
+            <path class="area" d="M0 80 L20 70 L40 55 L60 60 L80 35 L100 25 L120 12 L120 100 L0 100 Z"/>
+            <path class="line" d="M0 80 L20 70 L40 55 L60 60 L80 35 L100 25 L120 12"/>
+            <circle class="ring" cx="120" cy="12"/>
+            <circle class="dot" cx="120" cy="12"/>
+          </svg>
+        </div>
+        <span class="pg-tile__label">wallet · split layout · chart fills right</span>
+      </div>
+
+      <div>
+        <div class="u2 u2-stat">
+          <div class="u2-stat__main">
+            <div class="u2-stat__top">
+              <div class="u2-icon u2-icon--brand" title="Building"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></div>
+            </div>
+            <div>
+              <div class="u2-stat__value">14</div>
+              <div class="u2-stat__label">Active assets</div>
+              <div class="u2-stat__trend">▲ 2 this week</div>
+            </div>
+          </div>
+          <svg class="u2-spark u2-spark--up" viewBox="0 0 120 100" preserveAspectRatio="none">
+            <path class="area" d="M0 72 L20 70 L40 62 L60 55 L80 48 L100 40 L120 32 L120 100 L0 100 Z"/>
+            <path class="line" d="M0 72 L20 70 L40 62 L60 55 L80 48 L100 40 L120 32"/>
+            <circle class="ring" cx="120" cy="32"/>
+            <circle class="dot" cx="120" cy="32"/>
+          </svg>
+        </div>
+        <span class="pg-tile__label">building · gentle up trend</span>
+      </div>
+
+      <div>
+        <div class="u2 u2-stat">
+          <div class="u2-stat__main">
+            <div class="u2-stat__top">
+              <div class="u2-icon u2-icon--brand" title="Clock"><svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            </div>
+            <div>
+              <div class="u2-stat__value">2</div>
+              <div class="u2-stat__label">Pending reviews</div>
+              <div class="u2-stat__trend down">▼ requires action</div>
+            </div>
+          </div>
+          <svg class="u2-spark u2-spark--down" viewBox="0 0 120 100" preserveAspectRatio="none">
+            <path class="area" d="M0 45 L20 38 L40 55 L60 50 L80 65 L100 78 L120 72 L120 100 L0 100 Z"/>
+            <path class="line" d="M0 45 L20 38 L40 55 L60 50 L80 65 L100 78 L120 72"/>
+            <circle class="ring" cx="120" cy="72"/>
+            <circle class="dot" cx="120" cy="72"/>
+          </svg>
+        </div>
+        <span class="pg-tile__label">clock · declining trend</span>
+      </div>
+
+      <div>
+        <div class="u2 u2-stat">
+          <div class="u2-stat__main">
+            <div class="u2-stat__top">
+              <div class="u2-icon u2-icon--brand" title="Trending up"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+            </div>
+            <div>
+              <div class="u2-stat__value">+12.4%</div>
+              <div class="u2-stat__label">Avg yield</div>
+              <div class="u2-stat__trend">▲ outperforming index</div>
+            </div>
+          </div>
+          <svg class="u2-spark u2-spark--up" viewBox="0 0 120 100" preserveAspectRatio="none">
+            <path class="area" d="M0 90 L20 78 L40 65 L60 50 L80 35 L100 22 L120 10 L120 100 L0 100 Z"/>
+            <path class="line" d="M0 90 L20 78 L40 65 L60 50 L80 35 L100 22 L120 10"/>
+            <circle class="ring" cx="120" cy="10"/>
+            <circle class="dot" cx="120" cy="10"/>
+          </svg>
+        </div>
+        <span class="pg-tile__label">trending-up · strong up</span>
+      </div>
+
+      <div>
+        <div class="u2 u2-stat">
+          <div class="u2-stat__main">
+            <div class="u2-stat__top">
+              <div class="u2-icon u2-icon--brand" title="Users"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            </div>
+            <div>
+              <div class="u2-stat__value">1,284</div>
+              <div class="u2-stat__label">Active investors</div>
+              <div class="u2-stat__trend">▲ 18.4%</div>
+            </div>
+          </div>
+          <svg class="u2-spark u2-spark--up" viewBox="0 0 120 100" preserveAspectRatio="none">
+            <path class="area" d="M0 62 L20 55 L40 72 L60 40 L80 28 L100 32 L120 15 L120 100 L0 100 Z"/>
+            <path class="line" d="M0 62 L20 55 L40 72 L60 40 L80 28 L100 32 L120 15"/>
+            <circle class="ring" cx="120" cy="15"/>
+            <circle class="dot" cx="120" cy="15"/>
+          </svg>
+        </div>
+        <span class="pg-tile__label">users · volatile up trend</span>
+      </div>
+
+      <div>
+        <div class="u2 u2-stat">
+          <div class="u2-stat__main">
+            <div class="u2-stat__top">
+              <div class="u2-icon u2-icon--brand" title="Alert"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+            </div>
+            <div>
+              <div class="u2-stat__value">3</div>
+              <div class="u2-stat__label">Docs missing</div>
+              <div class="u2-stat__trend down">▼ action required</div>
+            </div>
+          </div>
+          <svg class="u2-spark u2-spark--flat" viewBox="0 0 120 100" preserveAspectRatio="none">
+            <path class="area" d="M0 50 L20 55 L40 50 L60 55 L80 50 L100 55 L120 50 L120 100 L0 100 Z"/>
+            <path class="line" d="M0 50 L20 55 L40 50 L60 55 L80 50 L100 55 L120 50"/>
+            <circle class="ring" cx="120" cy="50"/>
+            <circle class="dot" cx="120" cy="50"/>
+          </svg>
+        </div>
+        <span class="pg-tile__label">alert · flat trend</span>
+      </div>
+
+    </div>
+
+    <h3 class="pg-h3" style="margin-top:32px;">Icon palette — ONE library, ONE stroke (2px), ONE size (20px), ONE chip (brand)</h3>
+    <p style="margin:0 0 16px;font-size:12px;color:var(--pg-muted);">Every icon uses the brand chip. Map metric type → icon. Pick from this set, don't invent new ones.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div><span style="font-size:11px;color:#475467;">wallet · money</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></div><span style="font-size:11px;color:#475467;">building · asset</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div><span style="font-size:11px;color:#475467;">trending-up · yield</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 7l6 6 4-4 8 8"/><path d="M14 17h7v-7"/></svg></div><span style="font-size:11px;color:#475467;">trending-down · loss</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span style="font-size:11px;color:#475467;">users · people</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><span style="font-size:11px;color:#475467;">clock · pending</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg></div><span style="font-size:11px;color:#475467;">check · success</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><span style="font-size:11px;color:#475467;">alert · danger</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span style="font-size:11px;color:#475467;">file · doc</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div><span style="font-size:11px;color:#475467;">search · find</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3"/></svg></div><span style="font-size:11px;color:#475467;">eye · views</span></div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;"><div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div><span style="font-size:11px;color:#475467;">bookmark · saved</span></div>
+    </div>
+
+    <h3 class="pg-h3" style="margin-top:32px;">Table-as-card — BEFORE vs AFTER</h3>
+    <div class="pg-grid pg-grid--2col">
+
+      <!-- BEFORE: looks like 2 cards (toolbar visually separated from table) -->
+      <div>
+        <span style="display:inline-block;font-size:10px;font-weight:700;background:#FEF3F2;color:#B42318;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">BEFORE — broken</span>
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px;border:1px solid #E5E7EB;margin:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;background:#fff;">
+            <input placeholder="Search…" style="border:1px solid #D5D7DA;border-radius:6px;padding:6px 10px;font-size:12px;">
+            <span style="font-size:12px;color:#717680;">3 total</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead style="background:#F9FAFB;"><tr><th style="text-align:left;padding:10px 16px;font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Asset</th><th style="text-align:left;padding:10px 16px;font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Status</th></tr></thead>
+            <tbody>
+              <tr style="border-top:1px solid #E5E7EB;"><td style="padding:14px 16px;font-size:13px;">Villa Sukawati</td><td style="padding:14px 16px;"><span class="ubadge ubadge--success ubadge--sm">Approved</span></td></tr>
+            </tbody>
+          </table>
+          <div style="padding:12px 16px;border:1px solid #E5E7EB;border-radius:8px;margin:12px;background:#FAFBFC;display:flex;gap:6px;">
+            <span class="ubadge ubadge--neutral ubadge--sm">Drafts 0</span>
+            <span class="ubadge ubadge--neutral ubadge--sm">Rejected 1</span>
+          </div>
+        </div>
+        <span class="pg-tile__label">Toolbar + chip strip look like nested cards inside the table card.</span>
+      </div>
+
+      <!-- AFTER: single seamless card with full pattern (header + filters + table + pagination + chip footer) -->
+      <div>
+        <span style="display:inline-block;font-size:10px;font-weight:700;background:rgba(3,255,136,0.18);color:#0000FF;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">AFTER — .u2-table-card</span>
+        <div class="u2-table-card">
+
+          <!-- Header: brand icon + title + subtitle + primary CTA + search/sort -->
+          <div class="u2-table-card__head">
+            <div class="u2-table-card__title-wrap">
+              <div class="u2-icon u2-icon--brand" title="Building"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></div>
+              <div style="min-width:0;">
+                <h3 class="u2-table-card__title">Submissions</h3>
+                <p class="u2-table-card__sub">3 assets · updated 2 min ago</p>
+              </div>
+            </div>
+            <div class="u2-table-card__controls">
+              <input class="u2-input" placeholder="Search asset, type, ID…">
+              <button class="u2-btn"><svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M9 18h6"/></svg>Newest</button>
+              <button class="u2-btn u2-btn--primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add asset</button>
+            </div>
+          </div>
+
+          <!-- Filter chips row -->
+          <div class="u2-table-card__filters">
+            <span class="ubadge ubadge--accent ubadge--sm">All · 3</span>
+            <span class="ubadge ubadge--neutral ubadge--sm">Approved · 1</span>
+            <span class="ubadge ubadge--neutral ubadge--sm">In Review · 1</span>
+            <span class="ubadge ubadge--neutral ubadge--sm">Rejected · 1</span>
+          </div>
+
+          <!-- Table with sortable columns, checkbox, asset cell, progress, status, actions -->
+          <table>
+            <thead>
+              <tr>
+                <th class="col-check"><span class="u2-check"></span></th>
+                <th class="sortable sort-active sort-asc">Asset <span class="sort-ico"></span></th>
+                <th class="sortable">Status <span class="sort-ico"></span></th>
+                <th class="sortable">Progress <span class="sort-ico"></span></th>
+                <th class="sortable" style="text-align:right;">Funding <span class="sort-ico"></span></th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="selected">
+                <td class="col-check"><span class="u2-check checked"></span></td>
+                <td><div class="u2-asset"><img class="u2-asset__img" src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=120&h=120&fit=crop" alt="Villa Sukawati"><div class="u2-asset__name">Villa Sukawati</div></div></td>
+                <td><span class="ubadge ubadge--success ubadge--sm">●  Approved</span></td>
+                <td><div class="u2-progress"><div class="u2-progress__bar"><div class="u2-progress__fill" style="width:100%;"></div></div><span class="u2-progress__val">5/5</span></div></td>
+                <td class="num">$2.40M</td>
+                <td style="text-align:right;"><div class="u2-row-actions">
+                  <button class="u2-row-actions__btn" title="View"><svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="u2-row-actions__btn" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
+                  <button class="u2-row-actions__btn u2-row-actions__btn--danger" title="Delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="col-check"><span class="u2-check"></span></td>
+                <td><div class="u2-asset"><img class="u2-asset__img" src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=120&h=120&fit=crop" alt="Villa Canggu"><div class="u2-asset__name">Villa Canggu Beachfront</div></div></td>
+                <td><span class="ubadge ubadge--warning ubadge--sm">●  In Review</span></td>
+                <td><div class="u2-progress"><div class="u2-progress__bar"><div class="u2-progress__fill" style="width:60%;"></div></div><span class="u2-progress__val">3/5</span></div></td>
+                <td class="num">$1.80M</td>
+                <td style="text-align:right;"><div class="u2-row-actions">
+                  <button class="u2-row-actions__btn" title="View"><svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="u2-row-actions__btn" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
+                  <button class="u2-row-actions__btn u2-row-actions__btn--danger" title="Delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="col-check"><span class="u2-check"></span></td>
+                <td><div class="u2-asset"><img class="u2-asset__img" src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=120&h=120&fit=crop" alt="Villa Wuppertal"><div class="u2-asset__name">Villa Wuppertal Heights</div></div></td>
+                <td><span class="ubadge ubadge--danger ubadge--sm">●  Rejected</span></td>
+                <td><div class="u2-progress"><div class="u2-progress__bar"><div class="u2-progress__fill" style="width:40%;background:#FECDCA;"></div></div><span class="u2-progress__val">2/5</span></div></td>
+                <td class="num">$0</td>
+                <td style="text-align:right;"><div class="u2-row-actions">
+                  <button class="u2-row-actions__btn" title="View"><svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="u2-row-actions__btn" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
+                  <button class="u2-row-actions__btn u2-row-actions__btn--danger" title="Delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                </div></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div class="u2-table-card__page">
+            <span>Showing <strong style="color:var(--u2-text);">1–3</strong> of <strong style="color:var(--u2-text);">3</strong></span>
+            <div class="u2-page-nav">
+              <button class="u2-page-btn" disabled>←</button>
+              <button class="u2-page-btn active">1</button>
+              <button class="u2-page-btn" disabled>→</button>
+            </div>
+          </div>
+
+          <!-- Chip footer (minor states pipeline) -->
+          <div class="u2-table-card__foot">
+            <span class="ubadge ubadge--neutral ubadge--sm">●  Drafts 0</span>
+            <span class="ubadge ubadge--neutral ubadge--sm">●  In Review 1</span>
+            <span class="ubadge ubadge--neutral ubadge--sm">●  Revision 0</span>
+            <span class="ubadge ubadge--neutral ubadge--sm">●  Rejected 1</span>
+          </div>
+        </div>
+        <span class="pg-tile__label">ONE wrapper · brand icon header · primary CTA · filter chips · sortable columns · checkbox selection · asset thumb + meta · inline progress · hover actions · pagination · chip-strip footer.</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>1. Design-system base — <code>.ds-card</code></h2>
+    <span class="pg-file">static/css/ds-cards.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <h3 class="pg-h3">Default · Elevated · Small · Flush</h3>
+    <div class="pg-grid">
+      <div class="pg-tile">
+        <div class="ds-card">
+          <h3 class="ds-card__title">Default card</h3>
+          <p class="ds-card__subtitle">16px radius · 24px padding · 1px border · subtle shadow.</p>
+        </div>
+        <span class="pg-tile__label">.ds-card</span>
+      </div>
+      <div class="pg-tile">
+        <div class="ds-card ds-card--elevated">
+          <h3 class="ds-card__title">Elevated card</h3>
+          <p class="ds-card__subtitle">Adds 8px 24px drop shadow for primary panels.</p>
+        </div>
+        <span class="pg-tile__label">.ds-card--elevated</span>
+      </div>
+      <div class="pg-tile">
+        <div class="ds-card ds-card--sm">
+          <h3 class="ds-card__title">Small card</h3>
+          <p class="ds-card__subtitle">16px padding — tight layouts.</p>
+        </div>
+        <span class="pg-tile__label">.ds-card--sm</span>
+      </div>
+      <div class="pg-tile">
+        <div class="ds-card ds-card--flush" style="overflow:hidden;">
+          <div style="height:80px;background:linear-gradient(135deg,#0000FF,#03FF88);"></div>
+          <div style="padding:16px;"><strong>Flush card</strong><p style="margin:4px 0 0;color:#475467;font-size:13px;">Zero padding — bleed images/tables to edge.</p></div>
+        </div>
+        <span class="pg-tile__label">.ds-card--flush</span>
+      </div>
+    </div>
+
+    <h3 class="pg-h3">Glass / Holo · Interactive</h3>
+    <div class="pg-grid">
+      <div class="pg-tile" style="background:linear-gradient(135deg,#dbeafe,#e0e7ff);padding:24px;border-radius:12px;">
+        <div class="ds-card ds-card--glass">
+          <h3 class="ds-card__title">Glass card</h3>
+          <p class="ds-card__subtitle">24px radius · blur 20 + saturate 1.8 · 28px padding. Premium surfaces.</p>
+        </div>
+        <span class="pg-tile__label" style="color:#1e1b4b;">.ds-card--glass / .holo-card</span>
+      </div>
+      <div class="pg-tile">
+        <div class="ds-card ds-card--interactive" style="cursor:pointer;">
+          <h3 class="ds-card__title">Interactive card</h3>
+          <p class="ds-card__subtitle">Hover: lift -2px + larger shadow. Hover me.</p>
+        </div>
+        <span class="pg-tile__label">.ds-card--interactive</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>2. Stat / KPI cards</h2>
+    <span class="pg-file">unified-cards.css · dashboard.css · cards-template.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <h3 class="pg-h3">ds-stat-card — design system standard (used on dashboard top KPIs)</h3>
+    <div class="pg-grid pg-grid--3col">
+      <div class="pg-tile">
+        <div class="ds-card ds-stat-card">
+          <div class="ds-stat-card__label">Funding Target</div>
+          <div class="ds-stat-card__value">$100.0k</div>
+          <div class="ds-stat-card__trend">▲ 12.4% <span style="color:#717680;font-weight:500;">vs last month</span></div>
+        </div>
+        <span class="pg-tile__label">.ds-card.ds-stat-card</span>
+      </div>
+      <div class="pg-tile">
+        <div class="ds-card ds-stat-card">
+          <div class="ds-stat-card__label">Total Assets</div>
+          <div class="ds-stat-card__value">14</div>
+          <div class="ds-stat-card__trend down">▼ 2.1% <span style="color:#717680;font-weight:500;">vs last month</span></div>
+        </div>
+        <span class="pg-tile__label">.ds-stat-card (down trend)</span>
+      </div>
+      <div class="pg-tile">
+        <div class="ds-card ds-stat-card">
+          <div class="ds-stat-card__label">Amount Raised</div>
+          <div class="ds-stat-card__value">$21.0M</div>
+          <div style="font-size:11px;color:#717680;">No change yet</div>
+        </div>
+        <span class="pg-tile__label">.ds-stat-card (empty trend)</span>
+      </div>
+    </div>
+
+    <h3 class="pg-h3">unified-stat-card — horizontal w/ icon (newer dashboards)</h3>
+    <div class="pg-grid pg-grid--3col">
+      <div class="pg-tile">
+        <div class="unified-stat-card" style="display:flex;align-items:center;gap:16px;padding:20px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">
+          <div class="demo-p-icon"><div class="p-bg-1"></div><div class="p-bg-2"></div><div class="p-front">$</div></div>
+          <div style="min-width:0;">
+            <div style="font-size:11px;font-weight:600;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Sales</div>
+            <div style="font-size:24px;font-weight:700;color:#0A0D12;line-height:1.1;">$12,840</div>
+            <div style="font-size:11px;color:#027A48;font-weight:600;margin-top:2px;">▲ 8.3%</div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.unified-stat-card (icon + value + trend)</span>
+      </div>
+      <div class="pg-tile">
+        <div class="unified-stat-card" style="display:flex;align-items:center;gap:16px;padding:20px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">
+          <div class="demo-p-icon"><div class="p-bg-1" style="background:linear-gradient(135deg,#FBBF24,#F59E0B);"></div><div class="p-bg-2" style="background:linear-gradient(135deg,#FBBF24,#F59E0B);"></div><div class="p-front" style="background:linear-gradient(135deg,#F59E0B,#FBBF24);">⭐</div></div>
+          <div style="min-width:0;">
+            <div style="font-size:11px;font-weight:600;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Views</div>
+            <div style="font-size:24px;font-weight:700;color:#0A0D12;line-height:1.1;">3,210</div>
+            <div style="font-size:11px;color:#027A48;font-weight:600;margin-top:2px;">▲ 21.0%</div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.unified-stat-card (warning icon)</span>
+      </div>
+      <div class="pg-tile">
+        <div class="unified-stat-card" style="display:flex;align-items:center;gap:16px;padding:20px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">
+          <div class="demo-p-icon"><div class="p-bg-1" style="background:linear-gradient(135deg,#FCA5A5,#DC2626);"></div><div class="p-bg-2" style="background:linear-gradient(135deg,#FCA5A5,#DC2626);"></div><div class="p-front" style="background:linear-gradient(135deg,#DC2626,#EF4444);">!</div></div>
+          <div style="min-width:0;">
+            <div style="font-size:11px;font-weight:600;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Issues</div>
+            <div style="font-size:24px;font-weight:700;color:#0A0D12;line-height:1.1;">5</div>
+            <div style="font-size:11px;color:#B42318;font-weight:600;margin-top:2px;">▼ 2 since yesterday</div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.unified-stat-card (danger icon)</span>
+      </div>
+    </div>
+
+    <h3 class="pg-h3">Legacy dashboard stat-card (vertical, no icon)</h3>
+    <div class="pg-grid pg-grid--3col">
+      <div class="pg-tile">
+        <div class="demo-stat-card">
+          <span class="demo-stat-card__label">Pending Reviews</span>
+          <span class="demo-stat-card__value">7</span>
+          <span class="demo-stat-card__sub">Across 3 assets</span>
+        </div>
+        <span class="pg-tile__label">.stat-card (legacy)</span>
+      </div>
+      <div class="pg-tile">
+        <div class="demo-stat-card">
+          <span class="demo-stat-card__label">Funding Velocity</span>
+          <span class="demo-stat-card__value">$4.2k/d</span>
+          <span class="demo-stat-card__sub">7-day moving avg</span>
+        </div>
+        <span class="pg-tile__label">.stat-card</span>
+      </div>
+      <div class="pg-tile">
+        <div class="demo-stat-card">
+          <span class="demo-stat-card__label">Conversion</span>
+          <span class="demo-stat-card__value">3.8%</span>
+          <span class="demo-stat-card__sub">Last 30 days</span>
+        </div>
+        <span class="pg-tile__label">.stat-card</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>3. Rewards-style metric cards (icon-heavy + gradient top bar)</h2>
+    <span class="pg-file">static/css/rewards.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--3col">
+      <div class="pg-tile">
+        <div style="position:relative;background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:20px;overflow:hidden;display:flex;flex-direction:column;gap:12px;">
+          <div style="position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#0000FF,#03FF88);"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="demo-p-icon"><div class="p-bg-1"></div><div class="p-bg-2"></div><div class="p-front">💎</div></div>
+            <span class="pg-key">+12%</span>
+          </div>
+          <div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Total Earned</div>
+          <div style="font-size:24px;font-weight:700;color:#0A0D12;letter-spacing:-0.02em;">$1,250.00</div>
+        </div>
+        <span class="pg-tile__label">.metric-card (gradient bar + p-icon)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="position:relative;background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:20px;overflow:hidden;display:flex;flex-direction:column;gap:12px;">
+          <div style="position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#0000FF,#03FF88);"></div>
+          <div class="demo-p-icon"><div class="p-bg-1" style="background:linear-gradient(135deg,#6EE7B7,#10B981);"></div><div class="p-bg-2" style="background:linear-gradient(135deg,#6EE7B7,#10B981);"></div><div class="p-front" style="background:linear-gradient(135deg,#10B981,#34D399);">✓</div></div>
+          <div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Active Referrals</div>
+          <div style="font-size:24px;font-weight:700;color:#0A0D12;letter-spacing:-0.02em;">24</div>
+        </div>
+        <span class="pg-tile__label">.metric-card (success icon)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="position:relative;background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:20px;overflow:hidden;display:flex;flex-direction:column;gap:12px;">
+          <div style="position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#0000FF,#03FF88);"></div>
+          <div class="demo-p-icon"><div class="p-bg-1" style="background:linear-gradient(135deg,#FBBF24,#F59E0B);"></div><div class="p-bg-2" style="background:linear-gradient(135deg,#FBBF24,#F59E0B);"></div><div class="p-front" style="background:linear-gradient(135deg,#F59E0B,#FBBF24);">⏱</div></div>
+          <div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Pending</div>
+          <div style="font-size:24px;font-weight:700;color:#0A0D12;letter-spacing:-0.02em;">$320.00</div>
+        </div>
+        <span class="pg-tile__label">.metric-card (warning icon)</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>4. Bento layout — hero + medium + chip strip</h2>
+    <span class="pg-file">static/css/developer-submissions.css · .sub-stats--bento</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;">
+      <button type="button" class="sub-stat sub-stat--hero active" style="appearance:none;border:1px solid #E5E7EB;background:#fff;border-radius:14px;padding:16px 20px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;position:relative;overflow:hidden;min-height:104px;">
+        <span style="content:'';position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#0000FF,#03FF88);display:block;width:100%;"></span>
+        <span class="sub-stat__eyebrow" style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#717680;margin-bottom:auto;">Pipeline Overview</span>
+        <span style="font-size:32px;font-weight:700;color:#181D27;line-height:1;letter-spacing:-0.02em;">3</span>
+        <span style="font-size:13px;font-weight:600;color:#414651;">All Submissions</span>
+        <span style="font-size:11px;color:#717680;margin-top:2px;">Click any tile to filter</span>
+      </button>
+      <button type="button" class="sub-stat sub-stat--md" style="appearance:none;border:1px solid #E5E7EB;background:#fff;border-radius:14px;padding:16px 20px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-height:104px;">
+        <span style="font-size:28px;font-weight:700;color:#181D27;line-height:1;">1</span>
+        <span style="font-size:13px;font-weight:600;color:#414651;">Submitted</span>
+        <span style="font-size:11px;color:#717680;">Awaiting review</span>
+      </button>
+      <button type="button" class="sub-stat sub-stat--md" style="appearance:none;border:1px solid #E5E7EB;background:#fff;border-radius:14px;padding:16px 20px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-height:104px;">
+        <span style="font-size:28px;font-weight:700;color:#181D27;line-height:1;">1</span>
+        <span style="font-size:13px;font-weight:600;color:#414651;">Approved</span>
+        <span style="font-size:11px;color:#717680;">Live on marketplace</span>
+      </button>
+    </div>
+    <span class="pg-tile__label">.sub-stats--bento (hero + 2 medium · brand-gradient top accent on active)</span>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>5. KPI cards (affiliate dashboard)</h2>
+    <span class="pg-file">static/css/affiliate-dashboard.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--3col">
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+          <span style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Clicks (30d)</span>
+          <span style="font-size:28px;font-weight:700;color:#0A0D12;">1,284</span>
+          <span style="font-size:12px;color:#027A48;">▲ 18.4%</span>
+        </div>
+        <span class="pg-tile__label">.kpi-card (default)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:2px solid #0000FF;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 0 4px rgba(0,0,255,0.08);">
+          <span style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Conversions</span>
+          <span style="font-size:28px;font-weight:700;color:#0000FF;">42</span>
+          <span style="font-size:12px;color:#027A48;">▲ 5 new this week</span>
+        </div>
+        <span class="pg-tile__label">.kpi-card.highlight-card</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+          <span style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Earnings (30d)</span>
+          <span style="font-size:28px;font-weight:700;color:#0A0D12;">$420.00</span>
+          <span style="font-size:12px;color:#B42318;">▼ 4.2%</span>
+        </div>
+        <span class="pg-tile__label">.kpi-card</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>6. Operations / Dev-stat compact cards</h2>
+    <span class="pg-file">static/css/developer-operations.css · .dev-stat (after recent redesign)</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--3col">
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:32px;font-weight:700;color:#0A0D12;letter-spacing:-0.02em;line-height:1;">0</div>
+          <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Missing submissions</div>
+        </div>
+        <span class="pg-tile__label">.dev-stat (operations, post-redesign)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:32px;font-weight:700;color:#0A0D12;letter-spacing:-0.02em;line-height:1;">2</div>
+          <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Drafts in progress</div>
+        </div>
+        <span class="pg-tile__label">.dev-stat</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:32px;font-weight:700;color:#0A0D12;letter-spacing:-0.02em;line-height:1;">1</div>
+          <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Awaiting review</div>
+        </div>
+        <span class="pg-tile__label">.dev-stat</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>7. Property / Asset cards (marketplace, dev assets)</h2>
+    <span class="pg-file">static/css/property-card.css · dashboard.css · cards-template.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--2col">
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="position:relative;height:180px;background:linear-gradient(135deg,#6366f1,#a855f7);">
+            <span style="position:absolute;left:16px;top:16px;background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);padding:5px 12px;border-radius:20px;font-size:13px;font-weight:600;color:#0A0D12;">Funding In Progress</span>
+          </div>
+          <div style="padding:16px;">
+            <div style="font-size:15px;font-weight:700;color:#0A0D12;margin-bottom:4px;">Villa Wuppertal Heights</div>
+            <div style="font-size:12px;color:#717680;margin-bottom:12px;">Bali · Real Estate</div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.04em;">
+              <span>Yield</span><span style="color:#027A48;font-weight:700;text-transform:none;font-size:14px;">+12.4%</span>
+            </div>
+            <div style="height:4px;background:#E5E7EB;border-radius:2px;margin-top:12px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,#0000FF,#03FF88);width:65%;"></div></div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.property-card (image + overlay + meta + progress)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="position:relative;height:180px;background:linear-gradient(135deg,#10B981,#06D6A0);">
+            <span style="position:absolute;left:16px;top:16px;background:rgba(255,255,255,0.92);padding:5px 12px;border-radius:20px;font-size:13px;font-weight:600;color:#0A0D12;">Live</span>
+            <div style="position:absolute;bottom:12px;right:12px;display:flex;gap:4px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:#fff;opacity:1;"></span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#fff;opacity:0.5;"></span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#fff;opacity:0.5;"></span>
+            </div>
+          </div>
+          <div style="padding:16px;">
+            <div style="font-size:15px;font-weight:700;color:#0A0D12;">Villa Canggu Beachfront</div>
+            <div style="font-size:12px;color:#717680;margin-bottom:12px;">Bali · Real Estate</div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;">
+              <span style="color:#717680;">Target</span><span style="font-weight:700;color:#0A0D12;">$2.4M</span>
+            </div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.property-card (carousel dots + active overlay badge)</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>8. Settings / Holo cards (forms, identity)</h2>
+    <span class="pg-file">static/css/cards-template.css · .holo-card / .settings-card</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--2col">
+      <div class="pg-tile" style="background:linear-gradient(135deg,#dbeafe,#e0e7ff);padding:24px;border-radius:14px;">
+        <div style="background:linear-gradient(160deg,rgba(255,255,255,0.95),rgba(255,255,255,0.75));backdrop-filter:blur(20px);border:1px solid rgba(0,0,0,0.03);border-radius:24px;padding:28px;box-shadow:0 12px 32px rgba(0,0,0,0.04);">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+            <div class="demo-p-icon"><div class="p-bg-1"></div><div class="p-bg-2"></div><div class="p-front">👤</div></div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#0A0D12;">Profile Settings</div>
+              <div style="font-size:12px;color:#717680;">Update your account details.</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <input style="border:1px solid #D5D7DA;border-radius:8px;padding:8px 12px;font-size:13px;" placeholder="Display name">
+            <input style="border:1px solid #D5D7DA;border-radius:8px;padding:8px 12px;font-size:13px;" placeholder="Email">
+          </div>
+        </div>
+        <span class="pg-tile__label" style="color:#1e1b4b;">.holo-card / .settings-card</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:24px;">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+            <div class="demo-p-icon"><div class="p-bg-1" style="background:linear-gradient(135deg,#FCA5A5,#DC2626);"></div><div class="p-bg-2" style="background:linear-gradient(135deg,#FCA5A5,#DC2626);"></div><div class="p-front" style="background:linear-gradient(135deg,#DC2626,#EF4444);">🔒</div></div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#0A0D12;">Security</div>
+              <div style="font-size:12px;color:#717680;">2FA · password · sessions.</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button style="text-align:left;padding:10px 12px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Change password →</button>
+            <button style="text-align:left;padding:10px 12px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Manage 2FA →</button>
+          </div>
+        </div>
+        <span class="pg-tile__label">.settings-card (non-glass)</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>9. Portfolio / Wallet cards (large value displays)</h2>
+    <span class="pg-file">portfolio-value-card.css · wallet.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--2col">
+      <div class="pg-tile">
+        <div style="background:linear-gradient(135deg,#0000FF 0%,#1414FF 100%);border-radius:16px;padding:28px;color:#fff;display:flex;flex-direction:column;gap:8px;">
+          <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;opacity:0.8;">Total Portfolio Value</span>
+          <span style="font-size:36px;font-weight:700;letter-spacing:-0.02em;">$48,210.55</span>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+            <span style="color:#03FF88;font-weight:700;">▲ $1,420.20 (+3.0%)</span>
+            <span style="opacity:0.7;">vs last month</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <button style="flex:1;background:#03FF88;color:#0000FF;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;">Deposit</button>
+            <button style="flex:1;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:10px;border-radius:8px;font-weight:700;cursor:pointer;">Withdraw</button>
+          </div>
+        </div>
+        <span class="pg-tile__label">.portfolio-value-card (brand bg hero)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Available Balance</div>
+              <div style="font-size:28px;font-weight:700;color:#0A0D12;line-height:1;margin-top:6px;">$3,240.00</div>
+            </div>
+            <span class="ubadge ubadge--success">●  Active</span>
+          </div>
+          <div style="border-top:1px solid #E5E7EB;padding-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div><div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Pending</div><div style="font-size:16px;font-weight:700;color:#0A0D12;margin-top:4px;">$120.00</div></div>
+            <div><div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Locked</div><div style="font-size:16px;font-weight:700;color:#0A0D12;margin-top:4px;">$80.00</div></div>
+          </div>
+        </div>
+        <span class="pg-tile__label">.wallet-card (clean balance hero)</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>10. Empty-state cards</h2>
+    <span class="pg-file">developer-submissions.css · ds-table-empty</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--2col">
+      <div class="pg-tile">
+        <div style="background:linear-gradient(135deg,#FAFBFF,#F5FFF8);border:1px solid #E5E7EB;border-radius:14px;padding:36px;text-align:center;">
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#0000FF,#3344FF);color:#03FF88;font-size:24px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">📦</div>
+          <h3 style="font-size:20px;font-weight:700;color:#0A0D12;margin:0 0 8px;">No submissions yet</h3>
+          <p style="font-size:14px;color:#535862;margin:0 0 20px;">Start your first one — submit asset details, save progress, and track review.</p>
+          <button style="background:#0000FF;color:#03FF88;border:0;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;">+ Add your first asset</button>
+        </div>
+        <span class="pg-tile__label">.dae-empty / empty-state card (gradient bg)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px dashed #D5D7DA;border-radius:14px;padding:56px 24px;text-align:center;">
+          <div style="font-size:36px;opacity:0.4;margin-bottom:12px;">📭</div>
+          <p style="font-size:14px;color:#717680;margin:0;">No results match this filter.</p>
+        </div>
+        <span class="pg-tile__label">.ds-table-empty (subtle, dashed border)</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>11. Table-as-card (wrapper)</h2>
+    <span class="pg-file">developer-submissions.css · .submissions-table-container</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(10,13,18,0.04);">
+      <div style="padding:10px 16px;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;color:#0A0D12;font-weight:600;">3 assets</span>
+        <div style="display:flex;gap:8px;">
+          <span class="ubadge ubadge--neutral ubadge--sm">Sort: Newest</span>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead style="background:#F9FAFB;">
+          <tr><th style="text-align:left;padding:10px 16px;font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Asset</th><th style="text-align:left;padding:10px 16px;font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Status</th><th style="text-align:right;padding:10px 16px;font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;">Funding</th></tr>
+        </thead>
+        <tbody>
+          <tr style="border-top:1px solid #E5E7EB;"><td style="padding:14px 16px;font-size:13px;">Villa Sukawati</td><td style="padding:14px 16px;"><span class="ubadge ubadge--success">Approved</span></td><td style="padding:14px 16px;text-align:right;font-weight:600;">$2.4M</td></tr>
+          <tr style="border-top:1px solid #E5E7EB;"><td style="padding:14px 16px;font-size:13px;">Villa Canggu</td><td style="padding:14px 16px;"><span class="ubadge ubadge--warning">In Review</span></td><td style="padding:14px 16px;text-align:right;font-weight:600;">$1.8M</td></tr>
+        </tbody>
+      </table>
+      <div style="padding:10px 16px;background:#FAFBFC;border-top:1px solid #E5E7EB;display:flex;gap:6px;">
+        <span class="ubadge ubadge--neutral ubadge--sm">Drafts 0</span>
+        <span class="ubadge ubadge--neutral ubadge--sm">In Review 1</span>
+        <span class="ubadge ubadge--neutral ubadge--sm">Rejected 0</span>
+      </div>
+    </div>
+    <span class="pg-tile__label">.submissions-table-container (toolbar + table + chip footer)</span>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>12. Profile / Community hero card</h2>
+    <span class="pg-file">community.css · .cp-hero</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div style="background:linear-gradient(135deg,#F4F0FF,#EEF4FF);border:1px solid #E5E7EB;border-radius:16px;padding:24px;display:flex;gap:20px;align-items:center;">
+      <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#0000FF,#03FF88);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:32px;flex-shrink:0;">M</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+          <h3 style="font-size:18px;font-weight:700;color:#0A0D12;margin:0;">Martin Freiwald</h3>
+          <span class="ubadge ubadge--info ubadge--sm">✓ VERIFIED</span>
+          <span class="cp-hero__badge cp-hero__badge--level cp-hero__badge--level-mogul">L5 · MOGUL</span>
+        </div>
+        <p style="font-size:13px;color:#475467;margin:0 0 12px;">Developer · 14 assets · 3,210 followers</p>
+        <div style="display:flex;gap:8px;">
+          <button style="background:#0000FF;color:#03FF88;border:0;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Follow</button>
+          <button style="background:#fff;border:1px solid #D5D7DA;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Message</button>
+        </div>
+      </div>
+    </div>
+    <span class="pg-tile__label">.cp-hero (gradient bg + avatar + level badges + actions)</span>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>13. Plan / Pricing card (tier comparison)</h2>
+    <span class="pg-file">cards-template.css · .plan-card</span>
+  </div>
+  <div class="pg-section__body">
+
+    <div class="pg-grid pg-grid--3col">
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <span class="ubadge ubadge--neutral" style="align-self:flex-start;">Intro</span>
+          <div><span style="font-size:28px;font-weight:700;">$0</span><span style="font-size:13px;color:#717680;">/mo</span></div>
+          <ul style="margin:0;padding:0;list-style:none;font-size:13px;color:#475467;display:flex;flex-direction:column;gap:8px;">
+            <li>✓ Browse marketplace</li><li>✓ Save up to 5 assets</li><li>✓ Standard support</li>
+          </ul>
+          <button style="background:#F2F4F7;color:#0A0D12;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;">Current plan</button>
+        </div>
+        <span class="pg-tile__label">.plan-card (Intro · neutral)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:2px solid #0000FF;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 0 0 4px rgba(0,0,255,0.08);">
+          <span class="ubadge ubadge--accent" style="align-self:flex-start;">Pro · Popular</span>
+          <div><span style="font-size:28px;font-weight:700;">$49</span><span style="font-size:13px;color:#717680;">/mo</span></div>
+          <ul style="margin:0;padding:0;list-style:none;font-size:13px;color:#475467;display:flex;flex-direction:column;gap:8px;">
+            <li>✓ Everything in Intro</li><li>✓ Unlimited saves</li><li>✓ Priority support</li><li>✓ Tier rewards</li>
+          </ul>
+          <button style="background:#0000FF;color:#03FF88;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;">Upgrade to Pro →</button>
+        </div>
+        <span class="pg-tile__label">.plan-card.highlight (brand border + accent badge)</span>
+      </div>
+      <div class="pg-tile">
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <span style="background:#F3E8FF;color:#5B21B6;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;align-self:flex-start;letter-spacing:0.04em;">PREMIUM</span>
+          <div><span style="font-size:28px;font-weight:700;">$149</span><span style="font-size:13px;color:#717680;">/mo</span></div>
+          <ul style="margin:0;padding:0;list-style:none;font-size:13px;color:#475467;display:flex;flex-direction:column;gap:8px;">
+            <li>✓ Everything in Pro</li><li>✓ White-glove onboarding</li><li>✓ Dedicated success manager</li>
+          </ul>
+          <button style="background:#fff;border:1px solid #D5D7DA;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;">Contact sales</button>
+        </div>
+        <span class="pg-tile__label">.plan-card (Premium · tier-color)</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>14. Chart card — split layout (KPI left · chart right)</h2>
+    <span class="pg-file">.ds-chart-card · 2-column hero layout · keeps white bg + brand chart DNA</span>
+  </div>
+  <div class="pg-section__body">
+
+    <!-- HERO chart card — 2-column split layout from reference -->
+    <div class="u2" style="padding:28px 32px;">
+      <div style="display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:32px;align-items:stretch;min-height:220px;">
+
+        <!-- LEFT: icon + eyebrow + value + trend pill -->
+        <div style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="u2-icon u2-icon--brand"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+            <span style="font-size:12px;color:#717680;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Total revenue</span>
+          </div>
+          <div>
+            <div style="font-size:52px;font-weight:800;color:#0A0D12;letter-spacing:-0.025em;font-variant-numeric:tabular-nums;line-height:1;margin:0 0 14px;">$482,120</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(3,255,136,0.18);color:#027A48;font-size:13px;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid rgba(3,255,136,0.4);">↗ 12.4%</span>
+              <span style="font-size:13px;color:#717680;">vs. last month</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: full-height chart filling the right column -->
+        <div style="position:relative;min-width:0;">
+          <svg width="100%" height="100%" viewBox="0 0 600 220" preserveAspectRatio="none" style="display:block;">
+            <!-- Decorative radial glow behind the line, brand-tinted -->
+            <defs>
+              <radialGradient id="brandGlowGradient" cx="80%" cy="40%" r="55%">
+                <stop offset="0%"  stop-color="#03FF88" stop-opacity="0.10"/>
+                <stop offset="60%" stop-color="#0000FF" stop-opacity="0.04"/>
+                <stop offset="100%" stop-color="#0000FF" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <rect x="0" y="0" width="600" height="220" fill="url(#brandGlowGradient)"/>
+            <!-- Area + line — brand gradient · upward trend matching reference -->
+            <path d="M0 180 L60 175 L120 170 L180 160 L240 150 L300 130 L360 110 L420 85 L480 60 L540 45 L600 30 L600 220 L0 220 Z"
+                  fill="url(#brandAreaGradient)"/>
+            <path d="M0 180 L60 175 L120 170 L180 160 L240 150 L300 130 L360 110 L420 85 L480 60 L540 45 L600 30"
+                  stroke="url(#brandLineGradient)" stroke-width="2.5" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Endpoint marker — green halo + white center + green stroke -->
+            <circle cx="600" cy="30" r="8" fill="#03FF88" fill-opacity="0.18"/>
+            <circle cx="600" cy="30" r="4" fill="#FFFFFF" stroke="#03FF88" stroke-width="2.5"/>
+          </svg>
+        </div>
+
+      </div>
+    </div>
+    <span class="pg-tile__label">.ds-chart-card · split layout from reference — icon + eyebrow + 52px KPI + trend pill on LEFT · full-height chart on RIGHT with subtle radial glow + brand gradient line + ring+dot endpoint. White bg, brand chart DNA preserved.</span>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>15. Operations ops-stat (5-col compact KPI grid)</h2>
+    <span class="pg-file">.ops-stats-grid .dev-stat (operations-dashboard.html)</span>
+  </div>
+  <div class="pg-section__body">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+      <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:32px;font-weight:700;color:#0A0D12;line-height:1;letter-spacing:-0.02em;">0</div>
+        <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Missing</div>
+      </div>
+      <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:32px;font-weight:700;color:#0A0D12;line-height:1;letter-spacing:-0.02em;">2</div>
+        <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Drafts</div>
+      </div>
+      <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:32px;font-weight:700;color:#0A0D12;line-height:1;letter-spacing:-0.02em;">1</div>
+        <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Review</div>
+      </div>
+      <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:32px;font-weight:700;color:#0A0D12;line-height:1;letter-spacing:-0.02em;">0</div>
+        <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Published</div>
+      </div>
+      <div style="background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:32px;font-weight:700;color:#0A0D12;line-height:1;letter-spacing:-0.02em;">1</div>
+        <div style="font-size:11px;font-weight:700;color:#717680;text-transform:uppercase;letter-spacing:0.07em;margin-top:10px;">Docs missing</div>
+      </div>
+    </div>
+    <span class="pg-tile__label">.ops-stats-grid .dev-stat (post-redesign — matches asset-page KPI style)</span>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>16. Link widget card — referral code + QR</h2>
+    <span class="pg-file">.link-widget-card (affiliate-dashboard.html)</span>
+  </div>
+  <div class="pg-section__body">
+    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:24px;display:grid;grid-template-columns:1fr 100px;gap:20px;align-items:center;">
+      <div>
+        <div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Your referral link</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input value="https://poool.app/r/martin-2026" readonly style="flex:1;background:#F9FAFB;border:1px solid #D5D7DA;border-radius:8px;padding:8px 12px;font-family:'SF Mono',monospace;font-size:13px;color:#0A0D12;">
+          <button style="background:#0000FF;color:#03FF88;border:0;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Copy</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          <span class="ubadge ubadge--neutral ubadge--sm">Twitter</span>
+          <span class="ubadge ubadge--neutral ubadge--sm">Email</span>
+          <span class="ubadge ubadge--neutral ubadge--sm">WhatsApp</span>
+        </div>
+      </div>
+      <div style="width:100px;height:100px;background:#fff;border:1px solid #D5D7DA;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 50 50" width="80" height="80"><rect x="2" y="2" width="14" height="14" fill="#0A0D12"/><rect x="34" y="2" width="14" height="14" fill="#0A0D12"/><rect x="2" y="34" width="14" height="14" fill="#0A0D12"/><rect x="20" y="20" width="3" height="3" fill="#0A0D12"/><rect x="26" y="20" width="3" height="3" fill="#0A0D12"/><rect x="20" y="26" width="3" height="3" fill="#0A0D12"/></svg>
+      </div>
+    </div>
+    <span class="pg-tile__label">.link-widget-card (referral link + QR side-by-side)</span>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>17. Tier progress card — stepper with milestones</h2>
+    <span class="pg-file">.tier-progress-card (affiliate-promo.html)</span>
+  </div>
+  <div class="pg-section__body">
+    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+        <div>
+          <span style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Current tier</span>
+          <h3 style="font-size:18px;font-weight:700;margin:4px 0 0;">Strategist</h3>
+        </div>
+        <span class="ubadge ubadge--accent">Level 4</span>
+      </div>
+      <div style="position:relative;height:8px;background:#F2F4F7;border-radius:4px;overflow:hidden;margin-bottom:16px;">
+        <div style="height:100%;width:62%;background:linear-gradient(90deg,#0000FF,#03FF88);border-radius:4px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#717680;">
+        <span>● Cultivator</span><span>● Strategist</span><span style="color:#0A0D12;font-weight:700;">○ Mogul ($800 to go)</span><span>○ Legend</span>
+      </div>
+    </div>
+    <span class="pg-tile__label">.tier-progress-card (progress bar + milestone stepper)</span>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>18. Activity / timeline card — paginated action log</h2>
+    <span class="pg-file">.activity-card (affiliate-dashboard.html)</span>
+  </div>
+  <div class="pg-section__body">
+    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;">
+      <div style="padding:16px 20px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="font-size:14px;font-weight:700;margin:0;">Recent activity</h3>
+        <span style="font-size:11px;color:#717680;">Last 24h</span>
+      </div>
+      <div style="padding:8px 20px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F2F4F7;">
+          <span class="ubadge ubadge--success ubadge--sm">✓</span>
+          <div style="flex:1;"><div style="font-size:13px;color:#0A0D12;font-weight:600;">Sarah K. signed up via your link</div><div style="font-size:11px;color:#717680;">2 hours ago</div></div>
+          <span style="font-size:13px;font-weight:700;color:#027A48;">+$25</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F2F4F7;">
+          <span class="ubadge ubadge--info ubadge--sm">→</span>
+          <div style="flex:1;"><div style="font-size:13px;color:#0A0D12;font-weight:600;">Link clicked from Twitter</div><div style="font-size:11px;color:#717680;">4 hours ago</div></div>
+          <span style="font-size:13px;color:#717680;">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;">
+          <span class="ubadge ubadge--warning ubadge--sm">⏱</span>
+          <div style="flex:1;"><div style="font-size:13px;color:#0A0D12;font-weight:600;">Pending payout review</div><div style="font-size:11px;color:#717680;">Yesterday</div></div>
+          <span style="font-size:13px;font-weight:700;color:#B54708;">$120</span>
+        </div>
+      </div>
+    </div>
+    <span class="pg-tile__label">.activity-card (header + paginated row list with badge + meta + amount)</span>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>19. Action queue / alert banner card</h2>
+    <span class="pg-file">.ops-action-queue (developer/operations-dashboard.html)</span>
+  </div>
+  <div class="pg-section__body">
+    <div style="background:linear-gradient(180deg,#FFFCF5 0%,#FFFFFF 100%);border:1px solid #FEDF89;border-radius:14px;overflow:hidden;">
+      <div style="padding:14px 18px;border-bottom:1px solid #FEDF89;display:flex;align-items:center;gap:12px;">
+        <span style="width:32px;height:32px;border-radius:8px;background:#FEF3C7;display:inline-flex;align-items:center;justify-content:center;color:#B54708;font-size:18px;">⚠</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;color:#B54708;">2 submissions required · due Jun 28 · 41 days left</div>
+          <div style="font-size:12px;color:#717680;margin-top:2px;">Click a row to open the submission form</div>
+        </div>
+        <button style="background:none;border:0;color:#B54708;cursor:pointer;font-size:18px;">×</button>
+      </div>
+    </div>
+    <span class="pg-tile__label">.ops-action-queue (amber alert banner with action prompt)</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!--   MODALS                                                      -->
+<!-- ============================================================ -->
+
+<section class="pg-section" style="border-top:3px solid #0000FF;margin-top:48px;">
+  <div class="pg-section__head" style="background:linear-gradient(90deg,#EEF4FF,#F4F0FF);">
+    <h2>MODALS · 12 patterns across investor + developer</h2>
+    <span class="pg-file">ds-modals.css · community.css · wallet.css · developer-submissions.css</span>
+  </div>
+  <div class="pg-section__body">
+    <p style="margin:0;color:#475467;font-size:13px;">
+      Modals follow same fragmentation as cards — every surface reinvents the wheel.
+      Below: representative example of each modal family.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M1. Standard modal — <code>.ds-modal</code></h2>
+    <span class="pg-file">static/css/ds-modals.css</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(52,64,84,0.5);min-height:420px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+    <div style="background:#fff;border-radius:16px;width:480px;max-width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:24px 24px 16px;border-bottom:1px solid #E5E7EB;">
+        <div>
+          <h3 style="font-size:18px;font-weight:700;margin:0;color:#101828;">Confirm purchase</h3>
+          <p style="font-size:14px;color:#475467;margin:4px 0 0;">Review your investment details before submitting.</p>
+        </div>
+        <button style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;cursor:pointer;font-size:16px;color:#667085;">×</button>
+      </div>
+      <div style="padding:24px;">
+        <div style="background:#F9FAFB;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#717680;">Asset</span><span style="font-weight:600;">Villa Wuppertal Heights</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#717680;">Tokens</span><span style="font-weight:600;">42 (€2,100)</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#717680;">Est. yield</span><span style="font-weight:600;color:#027A48;">+12.4% / yr</span></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:12px;padding:16px 24px;border-top:1px solid #E5E7EB;">
+        <button style="background:#fff;border:1px solid #D5D7DA;color:#0A0D12;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button style="background:#0000FF;color:#03FF88;border:0;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Confirm</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M2. Confirmation dialog — <code>.sub-modal / .dat-confirm-dialog</code></h2>
+    <span class="pg-file">developer-submissions.css · destructive confirm</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(52,64,84,0.5);min-height:360px;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;width:400px;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.2);">
+      <div style="width:44px;height:44px;border-radius:10px;background:#FEF3F2;display:flex;align-items:center;justify-content:center;color:#B42318;font-size:22px;margin-bottom:16px;">⚠</div>
+      <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;color:#101828;letter-spacing:-0.01em;">Delete this submission?</h3>
+      <p style="font-size:14px;color:#475467;line-height:1.5;margin:0 0 24px;">This action cannot be undone. The draft will be permanently removed.</p>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button style="background:#fff;border:1.5px solid #D5D7DA;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button style="background:#dc2626;color:#fff;border:0;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Delete</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M3. Wallet / payment modal — <code>.wallet-bank-modal</code></h2>
+    <span class="pg-file">wallet.css · deposit / withdraw / bank</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(52,64,84,0.5);min-height:480px;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;width:480px;box-shadow:0 24px 64px rgba(0,0,0,0.2);overflow:hidden;">
+      <div style="padding:24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #E5E7EB;">
+        <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#0000FF,#1414FF);display:flex;align-items:center;justify-content:center;color:#03FF88;font-size:24px;font-weight:700;">€</div>
+        <div>
+          <div style="font-size:11px;color:#717680;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Deposit</div>
+          <h3 style="font-size:18px;font-weight:700;margin:4px 0 0;">Add funds via bank transfer</h3>
+        </div>
+      </div>
+      <div style="padding:24px;display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <label style="font-size:13px;color:#475467;font-weight:600;margin-bottom:6px;display:block;">Amount</label>
+          <div style="display:flex;align-items:center;border:1px solid #D5D7DA;border-radius:8px;padding:10px 14px;">
+            <span style="color:#717680;margin-right:8px;">€</span>
+            <input style="border:0;outline:0;flex:1;font-size:16px;font-weight:600;" placeholder="500.00">
+          </div>
+        </div>
+        <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">🛡</span>
+          <span style="font-size:12px;color:#717680;">SEPA transfer · arrives in 1-2 business days</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:16px 24px;border-top:1px solid #E5E7EB;">
+        <button style="background:transparent;border:0;color:#717680;font-size:13px;cursor:pointer;">← Back</button>
+        <button style="background:#0000FF;color:#03FF88;border:0;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Continue →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M4. Community modal — DM / report / appeal</h2>
+    <span class="pg-file">community.css · .community-modal</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(52,64,84,0.5);min-height:480px;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;width:520px;box-shadow:0 24px 64px rgba(0,0,0,0.2);">
+      <div style="padding:20px 24px;background:#F9FAFB;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;">
+        <div>
+          <h3 style="font-size:16px;font-weight:700;margin:0;">Send direct message</h3>
+          <p style="font-size:13px;color:#475467;margin:2px 0 0;">to @sarah-k</p>
+        </div>
+        <button style="background:transparent;border:0;font-size:18px;color:#717680;cursor:pointer;">×</button>
+      </div>
+      <div style="padding:20px 24px;">
+        <label style="font-size:13px;color:#475467;font-weight:600;display:block;margin-bottom:6px;">Message</label>
+        <textarea style="width:100%;min-height:100px;border:1px solid #D5D7DA;border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;" placeholder="Say hi…"></textarea>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:12px;color:#717680;">
+          <span style="position:relative;display:inline-block;width:36px;height:20px;background:#03FF88;border-radius:10px;"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;"></span></span>
+          Notify me when they reply
+        </div>
+      </div>
+      <div style="padding:14px 24px;background:#F9FAFB;display:flex;justify-content:flex-end;gap:10px;border-radius:0 0 12px 12px;">
+        <button style="background:#fff;border:1px solid #D5D7DA;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button style="background:#0000FF;color:#03FF88;border:0;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Send →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M5. Marketplace buy-interest modal — <code>.mp-modal</code></h2>
+    <span class="pg-file">mp-compliance.css · compliance gate</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(52,64,84,0.5);min-height:520px;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;width:540px;box-shadow:0 24px 64px rgba(0,0,0,0.2);overflow:hidden;">
+      <div style="padding:20px 24px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="font-size:17px;font-weight:700;margin:0;">Express interest</h3>
+        <button style="background:transparent;border:0;font-size:18px;color:#717680;cursor:pointer;">×</button>
+      </div>
+      <div style="padding:24px;">
+        <div style="background:#FFFAEB;border:1px solid #FEDF89;border-radius:8px;padding:14px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px;">
+          <span style="color:#B54708;font-size:16px;">⚠</span>
+          <span style="font-size:12px;color:#7C2D12;">By proceeding, you confirm you've read the asset risk disclosure and KYC is complete.</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;"><span>Asset</span><strong>Villa Sukawati</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;"><span>Min commitment</span><strong>€500</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;"><span>Funding window</span><span class="ubadge ubadge--success ubadge--sm">14 days left</span></div>
+      </div>
+      <div style="padding:16px 24px;border-top:1px solid #E5E7EB;display:flex;justify-content:flex-end;gap:10px;">
+        <button style="background:#fff;border:1px solid #D5D7DA;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button style="background:#0000FF;color:#03FF88;border:0;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">I'm interested</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M6. Document / KYC modal — <code>.documents-modal</code></h2>
+    <span class="pg-file">document viewer / upload</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(52,64,84,0.5);min-height:480px;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;width:560px;box-shadow:0 24px 64px rgba(0,0,0,0.2);">
+      <div style="padding:20px 24px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0;">Upload proof of address</h3>
+          <p style="font-size:12px;color:#475467;margin:2px 0 0;">PDF, JPG or PNG · max 10MB</p>
+        </div>
+        <button style="background:transparent;border:0;font-size:18px;color:#717680;cursor:pointer;">×</button>
+      </div>
+      <div style="padding:24px;">
+        <div style="border:2px dashed #D5D7DA;border-radius:12px;padding:36px;text-align:center;cursor:pointer;">
+          <div style="font-size:32px;margin-bottom:8px;">⬆</div>
+          <div style="font-size:13px;font-weight:600;color:#0A0D12;">Drop file here or click to browse</div>
+          <div style="font-size:11px;color:#717680;margin-top:4px;">Utility bill or bank statement (less than 3 months old)</div>
+        </div>
+      </div>
+      <div style="padding:14px 24px;border-top:1px solid #E5E7EB;display:flex;justify-content:flex-end;gap:10px;">
+        <button style="background:#fff;border:1px solid #D5D7DA;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button style="background:#0000FF;color:#03FF88;border:0;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;" disabled>Upload</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M7. Lightbox / image viewer — <code>.lightbox-modal</code></h2>
+    <span class="pg-file">property gallery full-screen</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(0,0,0,0.92);min-height:420px;display:flex;align-items:center;justify-content:center;position:relative;">
+    <button style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);color:#fff;border:0;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;">×</button>
+    <div style="display:flex;align-items:center;gap:20px;">
+      <button style="background:rgba(255,255,255,0.1);color:#fff;border:0;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;">‹</button>
+      <div style="width:480px;height:320px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;">Villa Wuppertal Heights · Photo 3 of 12</div>
+      <button style="background:rgba(255,255,255,0.1);color:#fff;border:0;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;">›</button>
+    </div>
+    <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.1);padding:6px 14px;border-radius:999px;color:#fff;font-size:12px;">3 / 12</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>M8. Mobile drawer — slide-in nav / cart</h2>
+    <span class="pg-file">.lp-mobile-drawer · slide-from-right</span>
+  </div>
+  <div class="pg-section__body" style="background:rgba(52,64,84,0.4);min-height:480px;position:relative;overflow:hidden;">
+    <div style="position:absolute;right:0;top:0;bottom:0;width:320px;background:#fff;box-shadow:-8px 0 32px rgba(0,0,0,0.16);display:flex;flex-direction:column;">
+      <div style="padding:18px 20px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;">
+        <strong style="font-size:15px;">Menu</strong>
+        <button style="background:transparent;border:0;font-size:20px;color:#717680;cursor:pointer;">×</button>
+      </div>
+      <div style="padding:8px 0;flex:1;">
+        <a style="display:block;padding:12px 20px;font-size:14px;color:#0A0D12;text-decoration:none;border-bottom:1px solid #F2F4F7;">Dashboard</a>
+        <a style="display:block;padding:12px 20px;font-size:14px;color:#0A0D12;text-decoration:none;border-bottom:1px solid #F2F4F7;">Marketplace</a>
+        <a style="display:block;padding:12px 20px;font-size:14px;color:#0A0D12;text-decoration:none;border-bottom:1px solid #F2F4F7;">Portfolio</a>
+        <a style="display:block;padding:12px 20px;font-size:14px;color:#0A0D12;text-decoration:none;">Settings</a>
+      </div>
+      <div style="padding:16px 20px;border-top:1px solid #E5E7EB;display:flex;flex-direction:column;gap:8px;">
+        <button style="background:#0000FF;color:#03FF88;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;">Add asset</button>
+        <button style="background:#fff;border:1px solid #D5D7DA;padding:10px;border-radius:8px;font-weight:600;cursor:pointer;">Sign out</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<section class="pg-section" style="border:2px solid #4F3FB8;">
+  <div class="pg-section__head" style="background:linear-gradient(90deg,#F4F0FF,#EEF4FF);">
+    <h2>★ Recommendation — pick ONE family to unify</h2>
+    <span class="pg-file">my pick: .ds-card as base + .ds-stat-card pattern for KPIs</span>
+  </div>
+  <div class="pg-section__body">
+    <p style="margin:0 0 16px;color:#475467;font-size:14px;">
+      Across all 14 families, the cleanest cross-platform fit is the
+      <strong>.ds-card</strong> base + <strong>.ds-stat-card</strong> stat pattern (already used on
+      developer dashboard, recently applied to operations). It has:
+    </p>
+    <ul style="margin:0 0 20px;font-size:13px;color:#475467;line-height:1.8;">
+      <li>One <code>.ds-card</code> base (16px radius, 24px padding, 1px border, subtle shadow)</li>
+      <li>Modifiers for size (--sm), elevation (--elevated), flush (--flush), interactive (--interactive)</li>
+      <li>Composable elements: <code>.ds-card__header</code>, <code>__title</code>, <code>__subtitle</code>, <code>__body</code>, <code>__footer</code></li>
+      <li>One stat pattern: <code>.ds-stat-card</code> with <code>__label / __value / __trend</code></li>
+      <li>Glass / holo variant only for premium surfaces</li>
+    </ul>
+    <p style="margin:0;color:#475467;font-size:14px;">
+      Outside of those: rewards icon-heavy <code>.metric-card</code> stays as opt-in for marketing
+      / referral pages, property cards stay specialized (image-led). Everything else (KPI cards,
+      stat cards, dev-stat, sub-stat, kpi-card, unified-stat-card) can collapse into ds-card +
+      ds-stat-card with body-scoped padding overrides.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="pg-footer">
+  14 families scanned · pick one to unify, then I'll port the rest the same way we did badges (ALIAS strategy = keep old class names, rewrite CSS to inherit chosen tokens).
+</footer>
+
+</body>
+</html>

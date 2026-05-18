@@ -51,10 +51,8 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                 <thead>
                   <tr>
                     <th>Asset</th>
-                    <th>Status</th>
                     <th>Funding</th>
                     <th>Value</th>
-                    <th>Duration</th>
                     <th>Raised</th>
                     <th class="dev-assets-table__actions">Actions</th>
                   </tr>
@@ -96,7 +94,6 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                         </div>
                       </div>
                     </td>
-                    <td><span class="dev-assets-status dev-assets-status--{{ asset.status }}">{{ funding_status_label }}</span></td>
                     <td>
                       <div class="dev-assets-funding">
                         <div class="dev-assets-funding__top"><span>{{ (funded_percentage | round(1)) }}%</span><span>{{ asset.amount_remaining_display }} left</span></div>
@@ -104,7 +101,6 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                       </div>
                     </td>
                     <td class="dev-assets-value">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</td>
-                    <td>{% if asset.lease_term_years %}{{ asset.lease_term_years }} yrs{% else %}N/A{% endif %}</td>
                     <td>{{ asset.total_sales_display }}</td>
                     <td class="dev-assets-table__actions">
                       <a class="dev-assets-action dev-assets-action--primary" href="/developer/asset-detail?id={{ asset.id }}" aria-label="View {{ asset.title }}" title="View asset">
@@ -123,7 +119,7 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                   </tr>
                   {% endfor %}
                   <tr id="dev-assets-empty-row" class="dev-assets-empty-row" hidden>
-                    <td colspan="7">
+                    <td colspan="5">
                       <div class="dev-assets-empty-row__content">
                         <strong>No assets match your filters</strong>
                         <span>Adjust the search or switch status tabs.</span>

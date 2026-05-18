@@ -1,26 +1,18 @@
 <div id="sales-chart-card" class="ds-card ds-card--elevated ds-chart-card sales-chart-card">
             <div id="chart-header" class="ds-chart-card__header chart-header">
               <div id="chart-title-section" class="chart-title-section">
-                <h3 id="chart-title" class="ds-chart-card__title chart-title">Sales over time</h3>
-                <span id="chart-percentage" class="chart-percentage {{ stats.chart_trend }}">{{ stats.chart_percentage_display }}</span>
+                <div class="chart-headline">
+                  <h3 id="chart-title" class="ds-chart-card__title chart-title">Sales over time</h3>
+                  <div class="chart-kpi-row">
+                    <span class="chart-kpi-value">{{ stats.chart_current_display }}</span>
+                    {% if stats.chart_percentage_display %}<span id="chart-percentage" class="chart-percentage {{ stats.chart_trend }}">{{ stats.chart_percentage_display }}</span>{% endif %}
+                  </div>
+                  <span class="chart-kpi-subtitle">{{ stats.chart_subtitle }}</span>
+                </div>
               </div>
-              <!-- Time frame tabs -->
-              <div id="chart-tabs" class="ds-chart-tabs chart-tabs">
-                <button id="chart-tab-All time" class="ds-chart-tab chart-tab {% if active_period == 'all' or (not active_period and 'all' == 'all') %}active{% endif %}" hx-get="/developer/dashboard/fragments/chart?period=all" hx-target="#sales-chart-card" hx-swap="outerHTML">
-                  All time</button><button id="chart-tab-1 year" class="ds-chart-tab chart-tab {% if active_period == '1y' or (not active_period and '1y' == 'all') %}active{% endif %}" hx-get="/developer/dashboard/fragments/chart?period=1y" hx-target="#sales-chart-card" hx-swap="outerHTML">
-                  1 year</button><button id="chart-tab-30 days" class="ds-chart-tab chart-tab {% if active_period == '30d' or (not active_period and '30d' == 'all') %}active{% endif %}" hx-get="/developer/dashboard/fragments/chart?period=30d" hx-target="#sales-chart-card" hx-swap="outerHTML">
-                  30 days</button><button id="chart-tab-7 days" class="ds-chart-tab chart-tab {% if active_period == '7d' or (not active_period and '7d' == 'all') %}active{% endif %}" hx-get="/developer/dashboard/fragments/chart?period=7d" hx-target="#sales-chart-card" hx-swap="outerHTML">
-                  7 days</button><button id="chart-tab-24 hours" class="ds-chart-tab chart-tab {% if active_period == '24h' or (not active_period and '24h' == 'all') %}active{% endif %}" hx-get="/developer/dashboard/fragments/chart?period=24h" hx-target="#sales-chart-card" hx-swap="outerHTML">
-                  24 hours
-                </button>
-              </div>
-            </div>
-            <!-- Text and percentage section (mobile only) -->
-            <div class="chart-text-section">
-              <div class="chart-text-and-percentage">
-                <span class="chart-text-label">{{ stats.chart_period_label }}</span>
-                <span class="chart-text-percentage {{ stats.chart_trend }}">{{ stats.chart_percentage_display }}</span>
-              </div>
+              {# Period tabs live in the developer topbar
+                 (.dev-period-tabs). One unified selector drives both this
+                 chart and the assets table. #}
             </div>
             <!-- Chart container -->
             <div id="chart-container" class="chart-container">
@@ -30,23 +22,33 @@
                 {% endfor %}
               </div>
               <div id="chart-area" class="chart-area">
-                <!-- Chart SVG --><svg width="100%" height="240" viewBox="0 0 1002 240" preserveAspectRatio="none">
+                <!-- Chart SVG -->
+                <svg width="100%" height="240" viewBox="0 0 1002 240" preserveAspectRatio="none">
                   <defs>
-                    <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" style="stop-color: #98fb96; stop-opacity: 0.15"></stop>
-                      <stop offset="100%" style="stop-color: #98fb96; stop-opacity: 0.01"></stop>
+                    <linearGradient id="salesLineGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%"  stop-color="#0000FF"></stop>
+                      <stop offset="100%" stop-color="#03FF88"></stop>
+                    </linearGradient>
+                    <linearGradient id="salesAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stop-color="#0000FF" stop-opacity="0.14"></stop>
+                      <stop offset="60%"  stop-color="#03FF88" stop-opacity="0.06"></stop>
+                      <stop offset="100%" stop-color="#03FF88" stop-opacity="0"></stop>
                     </linearGradient>
                   </defs>
                   <!-- Grid lines -->
-                  <line x1="0" y1="0" x2="1002" y2="0" stroke="#F5F5F5" stroke-width="1"></line>
-                  <line x1="0" y1="40" x2="1002" y2="40" stroke="#F5F5F5" stroke-width="1"></line>
-                  <line x1="0" y1="80" x2="1002" y2="80" stroke="#F5F5F5" stroke-width="1"></line>
-                  <line x1="0" y1="120" x2="1002" y2="120" stroke="#F5F5F5" stroke-width="1"></line>
-                  <line x1="0" y1="160" x2="1002" y2="160" stroke="#F5F5F5" stroke-width="1"></line>
-                  <line x1="0" y1="200" x2="1002" y2="200" stroke="#F5F5F5" stroke-width="1"></line>
-                  <path d="{{ stats.chart_area_path }}" fill="url(#salesGradient)" class="chart-area-fill"></path>
-                  <path d="{{ stats.chart_line_path }}" stroke="#98FB96" stroke-width="3" fill="none" class="chart-line" stroke-linecap="round"
-                    stroke-linejoin="round"></path>
+                  <line x1="0" y1="0"   x2="1002" y2="0"   stroke="#F2F4F7" stroke-width="1"></line>
+                  <line x1="0" y1="40"  x2="1002" y2="40"  stroke="#F2F4F7" stroke-width="1"></line>
+                  <line x1="0" y1="80"  x2="1002" y2="80"  stroke="#F2F4F7" stroke-width="1"></line>
+                  <line x1="0" y1="120" x2="1002" y2="120" stroke="#F2F4F7" stroke-width="1"></line>
+                  <line x1="0" y1="160" x2="1002" y2="160" stroke="#F2F4F7" stroke-width="1"></line>
+                  <line x1="0" y1="200" x2="1002" y2="200" stroke="#F2F4F7" stroke-width="1"></line>
+                  <path d="{{ stats.chart_area_path }}" fill="url(#salesAreaGradient)" class="chart-area-fill"></path>
+                  <path d="{{ stats.chart_line_path }}" stroke="url(#salesLineGradient)" stroke-width="2.5" fill="none" class="chart-line" stroke-linecap="round" stroke-linejoin="round"></path>
+                  {% if stats.chart_has_data %}
+                  <!-- Endpoint marker -->
+                  <circle cx="{{ stats.chart_end_x }}" cy="{{ stats.chart_end_y }}" r="8" fill="#03FF88" fill-opacity="0.18"></circle>
+                  <circle cx="{{ stats.chart_end_x }}" cy="{{ stats.chart_end_y }}" r="4" fill="#FFFFFF" stroke="#03FF88" stroke-width="2.5"></circle>
+                  {% endif %}
                 </svg><!-- X-axis labels -->
                 <div id="chart-x-axis" class="chart-x-axis">
                   {% for label in stats.chart_x_axis_labels %}

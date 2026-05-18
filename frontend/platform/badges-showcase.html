@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POOOL Badge Showcase</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Token + base + every badge-bearing CSS file -->
+<link rel="stylesheet" href="static/css/dashboard-tokens.css">
+<link rel="stylesheet" href="static/css/admin.css">
+<link rel="stylesheet" href="static/css/admin-dashboard-extras.css">
+<link rel="stylesheet" href="static/css/admin-marketplace.css">
+<link rel="stylesheet" href="static/css/admin-change-requests.css">
+<link rel="stylesheet" href="static/css/ds-badges.css">
+<link rel="stylesheet" href="static/css/community.css">
+<link rel="stylesheet" href="static/css/leaderboard.css">
+<link rel="stylesheet" href="static/css/marketplace-trading-v2.css">
+<link rel="stylesheet" href="static/css/marketplace-trading-v3.css">
+<link rel="stylesheet" href="static/css/developer-asset-detail.css">
+<link rel="stylesheet" href="static/css/affiliate-promo.css">
+
+<style>
+  :root {
+    --pg-bg: #f6f7fb;
+    --pg-card: #ffffff;
+    --pg-border: #e5e7eb;
+    --pg-text: #111827;
+    --pg-muted: #6b7280;
+  }
+  html.dark {
+    --pg-bg: #0b0d12;
+    --pg-card: #131720;
+    --pg-border: #1e2330;
+    --pg-text: #f0f2f5;
+    --pg-muted: #8b92a5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--pg-bg);
+    color: var(--pg-text);
+    line-height: 1.5;
+  }
+  .pg-header {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--pg-card);
+    border-bottom: 1px solid var(--pg-border);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    backdrop-filter: blur(8px);
+  }
+  .pg-header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+  .pg-header .pg-sub { font-size: 12px; color: var(--pg-muted); margin-left: 12px; }
+  .pg-toggle {
+    background: var(--pg-bg);
+    border: 1px solid var(--pg-border);
+    color: var(--pg-text);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pg-toggle:hover { border-color: var(--pg-muted); }
+
+  main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+
+  .pg-section {
+    background: var(--pg-card);
+    border: 1px solid var(--pg-border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .pg-section__head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--pg-border);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  }
+  .pg-section__head h2 { margin: 0; font-size: 16px; font-weight: 700; }
+  .pg-section__head .pg-file { font-size: 11px; color: var(--pg-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .pg-section__body { padding: 20px; }
+
+  .pg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .pg-tile {
+    background: var(--pg-bg);
+    border: 1px dashed var(--pg-border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 90px;
+  }
+  .pg-tile__label {
+    font-size: 11px;
+    color: var(--pg-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-all;
+  }
+  .pg-tile__demo {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    min-height: 32px;
+  }
+
+  /* affiliate-promo tier-badge fallback (variant styling unknown) */
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: #F2F4F7; color: #475467;
+  }
+  .tier-badge--elite { background: #FEF3C7; color: #92400E; }
+
+  /* admin-health-dot fallback for showcase */
+  .admin-health-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #10b981; }
+  .admin-health-label { font-weight: 600; }
+
+  .pg-footer {
+    text-align: center;
+    color: var(--pg-muted);
+    font-size: 12px;
+    padding: 24px;
+  }
+
+  /* ============================================================
+     PROPOSED UNIFIED BADGE SYSTEM — .ubadge
+     ============================================================ */
+  :root {
+    --ubadge-font-size: 12px;
+    --ubadge-font-size-sm: 10px;
+    --ubadge-font-size-lg: 13px;
+    --ubadge-font-weight: 600;
+    --ubadge-padding: 3px 10px;
+    --ubadge-padding-sm: 2px 7px;
+    --ubadge-padding-lg: 5px 14px;
+    --ubadge-radius: 999px;
+    --ubadge-gap: 6px;
+    --ubadge-line-height: 1.4;
+
+    /* Semantic palette — POOOL brand-aware
+       success = green tile + brand-blue text (brand pair A)
+       info    = brand-blue tile + green text  (brand pair B, mirror of A)
+       accent  = solid brand-blue + brand-green (high emphasis brand chip)
+       warning/danger/neutral stay semantic so meaning is preserved. */
+    --ubadge-success-bg: #03FF88;
+    --ubadge-success-fg: #0000FF;
+    --ubadge-success-bd: #03FF88;
+
+    --ubadge-warning-bg: #FFFAEB;
+    --ubadge-warning-fg: #B54708;
+    --ubadge-warning-bd: #FEDF89;
+
+    --ubadge-danger-bg:  #FEF3F2;
+    --ubadge-danger-fg:  #B42318;
+    --ubadge-danger-bd:  #FECDCA;
+
+    /* info = clean indigo, no green — distinct from success brand-pair */
+    --ubadge-info-bg:    #EEF4FF;
+    --ubadge-info-fg:    #3538CD;
+    --ubadge-info-bd:    #C7D7FE;
+
+    --ubadge-neutral-bg: #F2F4F7;
+    --ubadge-neutral-fg: #344054;
+    --ubadge-neutral-bd: #D0D5DD;
+
+    /* Accent = full brand chip: POOOL blue tile + POOOL green text */
+    --ubadge-accent-bg:  #0000FF;
+    --ubadge-accent-fg:  #03FF88;
+    --ubadge-accent-bd:  #0000FF;
+  }
+  html.dark {
+    /* success = green tile + brand-blue text (brand pair A) */
+    --ubadge-success-bg: #03FF88;
+    --ubadge-success-fg: #6EA8FF;
+    --ubadge-success-bd: #03FF88;
+    --ubadge-warning-bg: rgba(217,119,6,0.16);
+    --ubadge-warning-fg: #fcd34d;
+    --ubadge-warning-bd: rgba(217,119,6,0.30);
+    --ubadge-danger-bg:  rgba(220,38,38,0.16);
+    --ubadge-danger-fg:  #fca5a5;
+    --ubadge-danger-bd:  rgba(220,38,38,0.30);
+    /* info = indigo (distinct from success brand-pair) */
+    --ubadge-info-bg:    rgba(99, 102, 241, 0.20);
+    --ubadge-info-fg:    #A5B4FC;
+    --ubadge-info-bd:    rgba(99, 102, 241, 0.40);
+    --ubadge-neutral-bg: rgba(255,255,255,0.06);
+    --ubadge-neutral-fg: #c9cfdb;
+    --ubadge-neutral-bd: rgba(255,255,255,0.12);
+    /* accent = solid brand chip */
+    --ubadge-accent-bg:  #0000FF;
+    --ubadge-accent-fg:  #03FF88;
+    --ubadge-accent-bd:  #0000FF;
+  }
+
+  /* ── Base — flat, refined, on-brand ───────────────────────────
+     No vertical gradient, no glow halos. Just a crisp tinted tile
+     with a hairline border, refined typography, and a faint border
+     transition on hover. Matches the rest of the platform. */
+  .ubadge {
+    --ubadge-fg: inherit;
+    --ubadge-bg: transparent;
+    --ubadge-bd: transparent;
+    --ubadge-bd-hover: var(--ubadge-bd);
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ubadge-gap);
+    padding: var(--ubadge-padding);
+    font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+    font-size: var(--ubadge-font-size);
+    font-weight: var(--ubadge-font-weight);
+    line-height: var(--ubadge-line-height);
+    letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'ss01', 'cv11';
+    border-radius: var(--ubadge-radius);
+    border: 1px solid var(--ubadge-bd);
+    color: var(--ubadge-fg);
+    background: var(--ubadge-bg);
+    white-space: nowrap;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    vertical-align: middle;
+    transition: border-color .15s ease, background-color .15s ease;
+  }
+  .ubadge:hover { border-color: var(--ubadge-bd-hover); }
+
+  /* sizes */
+  .ubadge--sm { font-size: var(--ubadge-font-size-sm); padding: var(--ubadge-padding-sm); gap: 4px; }
+  .ubadge--lg { font-size: var(--ubadge-font-size-lg); padding: var(--ubadge-padding-lg); letter-spacing: -0.01em; }
+
+  /* ── Soft variants — tinted glass tile + matching rim ───────── */
+  .ubadge--success { --ubadge-bg: var(--ubadge-success-bg); --ubadge-fg: var(--ubadge-success-fg); --ubadge-bd: var(--ubadge-success-bd); }
+  .ubadge--warning { --ubadge-bg: var(--ubadge-warning-bg); --ubadge-fg: var(--ubadge-warning-fg); --ubadge-bd: var(--ubadge-warning-bd); }
+  .ubadge--danger  { --ubadge-bg: var(--ubadge-danger-bg);  --ubadge-fg: var(--ubadge-danger-fg);  --ubadge-bd: var(--ubadge-danger-bd); }
+  .ubadge--info    { --ubadge-bg: var(--ubadge-info-bg);    --ubadge-fg: var(--ubadge-info-fg);    --ubadge-bd: var(--ubadge-info-bd); }
+  .ubadge--neutral { --ubadge-bg: var(--ubadge-neutral-bg); --ubadge-fg: var(--ubadge-neutral-fg); --ubadge-bd: var(--ubadge-neutral-bd); }
+  .ubadge--accent  { --ubadge-bg: var(--ubadge-accent-bg);  --ubadge-fg: var(--ubadge-accent-fg);  --ubadge-bd: var(--ubadge-accent-bd); }
+
+  /* ── Solid variants — flat brand tiles ─────────────────────── */
+  .ubadge--solid-success {
+    --ubadge-bg: #03FF88; --ubadge-fg: #0000FF; --ubadge-bd: #03FF88;
+    --ubadge-bd-hover: #00CC6F;
+  }
+  .ubadge--solid-info,
+  .ubadge--accent {
+    --ubadge-bg: #0000FF; --ubadge-fg: #03FF88; --ubadge-bd: #0000FF;
+    --ubadge-bd-hover: #1E40AF;
+  }
+  .ubadge--solid-danger {
+    --ubadge-bg: var(--ubadge-danger-fg); --ubadge-fg: #fff; --ubadge-bd: var(--ubadge-danger-fg);
+    --ubadge-bd-hover: #912018;
+  }
+
+  /* ghost (low emphasis, no fill) */
+  .ubadge--ghost {
+    --ubadge-bg: transparent;
+    --ubadge-bd: var(--ubadge-neutral-bd);
+    --ubadge-fg: var(--ubadge-neutral-fg);
+    --ubadge-bd-hover: var(--ubadge-neutral-fg);
+  }
+
+  /* dot indicator — flat solid dot */
+  .ubadge__dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: currentColor;
+  }
+  .ubadge--pulse .ubadge__dot {
+    animation: ubadge-pulse 1.6s ease-out infinite;
+  }
+  @keyframes ubadge-pulse {
+    0%   { box-shadow: 0 0 0 0 currentColor; }
+    70%  { box-shadow: 0 0 0 6px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+
+  /* count badge (notification) — square-ish pill */
+  .ubadge--count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 700;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* environment badge — uppercase, tight letter-spacing */
+  .ubadge--env {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  /* =====================================================
+     UNIFIED MODE — when html.unified is set, force all
+     existing badge classes to inherit ubadge base styling
+     ===================================================== */
+  html.unified .ds-badge,
+  html.unified .admin-badge,
+  html.unified .ad-badge,
+  html.unified .mp-kyc-badge,
+  html.unified .mp-live-badge,
+  html.unified .tv2-badge,
+  html.unified .tv3-yield-badge,
+  html.unified .cp-hero__badge,
+  html.unified .lb-bento-tier-badge,
+  html.unified .tier-badge,
+  html.unified .cr-sla-pill,
+  html.unified .admin-sla-pill,
+  html.unified .admin-age-badge,
+  html.unified .admin-env-badge,
+  html.unified .admin-sidebar-logo-badge,
+  html.unified .admin-notification-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--ubadge-gap) !important;
+    padding: var(--ubadge-padding) !important;
+    font-family: 'TT Norms Pro', -apple-system, sans-serif !important;
+    font-size: var(--ubadge-font-size) !important;
+    font-weight: var(--ubadge-font-weight) !important;
+    line-height: var(--ubadge-line-height) !important;
+    border-radius: var(--ubadge-radius) !important;
+    border: 1px solid transparent !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    margin-left: 0 !important;
+  }
+  /* uppercase rectangles stay uppercase but adopt size */
+  html.unified .admin-env-badge,
+  html.unified .admin-sidebar-logo-badge {
+    font-size: var(--ubadge-font-size-sm) !important;
+    padding: var(--ubadge-padding-sm) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+    font-weight: 700 !important;
+  }
+  /* count badge stays compact */
+  html.unified .admin-notification-badge {
+    min-width: 18px !important;
+    height: 18px !important;
+    padding: 0 6px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    justify-content: center !important;
+  }
+</style>
+</head>
+<body>
+
+<header class="pg-header">
+  <div>
+    <h1>POOOL Badge Showcase</h1>
+    <span class="pg-sub">Every badge / chip / pill in the codebase, rendered once</span>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="pg-toggle" onclick="document.documentElement.classList.toggle('unified')" id="unifyBtn">
+      Apply unified style to ALL ↓
+    </button>
+    <button class="pg-toggle" onclick="document.documentElement.classList.toggle('dark')">Toggle dark</button>
+  </div>
+</header>
+
+<script>
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'unifyBtn') {
+      const isUnified = document.documentElement.classList.contains('unified');
+      e.target.textContent = isUnified ? 'Revert to original styles' : 'Apply unified style to ALL ↓';
+    }
+  });
+</script>
+
+<main>
+
+<!-- ============================================================ -->
+<!--   PROPOSED UNIFIED SYSTEM — .ubadge                          -->
+<!-- ============================================================ -->
+<section class="pg-section" style="border:2px solid #4F3FB8;">
+  <div class="pg-section__head" style="background:linear-gradient(90deg,#F4F0FF,#EEF4FF);">
+    <h2>★ Proposed unified system — <code>.ubadge</code></h2>
+    <span class="pg-file">shared base · semantic palette · pill radius 999px</span>
+  </div>
+  <div class="pg-section__body">
+
+    <p style="margin:0 0 16px;color:var(--pg-muted);font-size:13px;">
+      One base class, one palette, three sizes, optional dot. Hit
+      <strong>"Apply unified style to ALL ↓"</strong> in the header to morph every
+      existing badge on this page into the unified style — toggle off to compare.
+    </p>
+
+    <h3 style="font-size:13px;margin:0 0 12px;color:var(--pg-muted);">Soft (default) — tinted bg + 1px border</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--success">Success</span></div><div class="pg-tile__label">.ubadge--success</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--warning">Warning</span></div><div class="pg-tile__label">.ubadge--warning</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--danger">Danger</span></div><div class="pg-tile__label">.ubadge--danger</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--info">Info</span></div><div class="pg-tile__label">.ubadge--info</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--neutral">Neutral</span></div><div class="pg-tile__label">.ubadge--neutral</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--accent">Accent</span></div><div class="pg-tile__label">.ubadge--accent</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">With dot indicator</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--success"><span class="ubadge__dot"></span>Active</span></div><div class="pg-tile__label">+ .ubadge__dot</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--warning"><span class="ubadge__dot"></span>Pending</span></div><div class="pg-tile__label">+ .ubadge__dot</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--danger ubadge--pulse"><span class="ubadge__dot"></span>Live</span></div><div class="pg-tile__label">+ .ubadge--pulse</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--info"><span class="ubadge__dot"></span>Processing</span></div><div class="pg-tile__label">+ .ubadge__dot</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Solid (high emphasis)</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--solid-success">Funded</span></div><div class="pg-tile__label">.ubadge--solid-success</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--solid-danger">Closed</span></div><div class="pg-tile__label">.ubadge--solid-danger</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--solid-info">New</span></div><div class="pg-tile__label">.ubadge--solid-info</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ubadge ubadge--ghost">Ghost</span></div><div class="pg-tile__label">.ubadge--ghost</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Sizes</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo">
+        <span class="ubadge ubadge--sm ubadge--success">SM</span>
+        <span class="ubadge ubadge--success">MD (default)</span>
+        <span class="ubadge ubadge--lg ubadge--success">LG</span>
+      </div><div class="pg-tile__label">.ubadge--sm / (md) / .ubadge--lg</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Specialty: count + env</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo">
+        <span class="ubadge ubadge--count ubadge--solid-danger">3</span>
+        <span class="ubadge ubadge--count ubadge--solid-danger">12</span>
+        <span class="ubadge ubadge--count ubadge--solid-danger">99+</span>
+      </div><div class="pg-tile__label">.ubadge--count</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">
+        <span class="ubadge ubadge--env ubadge--info">LOCAL</span>
+        <span class="ubadge ubadge--env ubadge--warning">STAGING</span>
+        <span class="ubadge ubadge--env ubadge--danger">PROD</span>
+      </div><div class="pg-tile__label">.ubadge--env (uppercase)</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Real-world combos</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo">
+        Asset <span class="ubadge ubadge--success"><span class="ubadge__dot"></span>Live</span>
+      </div><div class="pg-tile__label">Status line in a table</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">
+        Investor <span class="ubadge ubadge--sm ubadge--success">KYC ✓</span>
+      </div><div class="pg-tile__label">KYC suffix</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">
+        <span class="ubadge ubadge--accent">L5 · Mogul</span>
+      </div><div class="pg-tile__label">Tier / level</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">
+        Yield <span class="ubadge ubadge--solid-success">+12.4%</span>
+      </div><div class="pg-tile__label">Yield highlight</div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>1. Design-system badges — <code>.ds-badge</code></h2>
+    <span class="pg-file">static/css/ds-badges.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <h3 style="font-size:13px;margin:0 0 12px;color:var(--pg-muted);">Status variants</h3>
+    <div class="pg-grid">
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--success">Completed</span></div>
+        <div class="pg-tile__label">.ds-badge--success</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--warning">Pending</span></div>
+        <div class="pg-tile__label">.ds-badge--warning</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--danger">Declined</span></div>
+        <div class="pg-tile__label">.ds-badge--danger</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--info">New</span></div>
+        <div class="pg-tile__label">.ds-badge--info</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--neutral">Draft</span></div>
+        <div class="pg-tile__label">.ds-badge--neutral</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--success"><span class="ds-badge__dot"></span>Active</span></div>
+        <div class="pg-tile__label">.ds-badge--success + __dot</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--danger"><span class="ds-badge__dot"></span>Live</span></div>
+        <div class="pg-tile__label">.ds-badge--danger + __dot</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Property-type variants</h3>
+    <div class="pg-grid">
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--leasehold">Leasehold</span></div>
+        <div class="pg-tile__label">.ds-badge--leasehold</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--freehold">Freehold</span></div>
+        <div class="pg-tile__label">.ds-badge--freehold</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--commercial">Commercial</span></div>
+        <div class="pg-tile__label">.ds-badge--commercial</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--commodity">Commodity</span></div>
+        <div class="pg-tile__label">.ds-badge--commodity</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--funding">Funding</span></div>
+        <div class="pg-tile__label">.ds-badge--funding</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--shortterm">Short-term</span></div>
+        <div class="pg-tile__label">.ds-badge--shortterm</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--flipping">Flipping</span></div>
+        <div class="pg-tile__label">.ds-badge--flipping</div>
+      </div>
+      <div class="pg-tile">
+        <div class="pg-tile__demo"><span class="ds-badge ds-badge--offplan">Off-plan</span></div>
+        <div class="pg-tile__label">.ds-badge--offplan</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Overlay modifier (positioned absolute over image)</h3>
+    <div class="pg-grid">
+      <div class="pg-tile" style="position:relative;min-height:140px;background:linear-gradient(135deg,#6366f1,#a855f7);">
+        <span class="ds-badge ds-badge--overlay ds-badge--funding">Funding In Progress</span>
+        <div class="pg-tile__label" style="color:#fff;margin-top:auto;">.ds-badge--overlay</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>2. Admin badges — <code>.admin-badge</code></h2>
+    <span class="pg-file">static/css/admin.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <h3 style="font-size:13px;margin:0 0 12px;color:var(--pg-muted);">Status</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--success">Success</span></div><div class="pg-tile__label">.admin-badge--success</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--success-outline">Success Outline</span></div><div class="pg-tile__label">.admin-badge--success-outline</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--live"><span class="admin-badge-dot"></span>Live</span></div><div class="pg-tile__label">.admin-badge--live</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--warning">Warning</span></div><div class="pg-tile__label">.admin-badge--warning</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--danger">Danger</span></div><div class="pg-tile__label">.admin-badge--danger</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--info">Info</span></div><div class="pg-tile__label">.admin-badge--info</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--neutral">Neutral</span></div><div class="pg-tile__label">.admin-badge--neutral</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Status-specific (lifecycle)</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-pending">Pending</span></div><div class="pg-tile__label">.admin-badge--status-pending</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-approved">Approved</span></div><div class="pg-tile__label">.admin-badge--status-approved</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-rejected">Rejected</span></div><div class="pg-tile__label">.admin-badge--status-rejected</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-live">Live</span></div><div class="pg-tile__label">.admin-badge--status-live</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-draft">Draft</span></div><div class="pg-tile__label">.admin-badge--status-draft</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-archived">Archived</span></div><div class="pg-tile__label">.admin-badge--status-archived</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-closed">Closed</span></div><div class="pg-tile__label">.admin-badge--status-closed</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-accepting">Accepting</span></div><div class="pg-tile__label">.admin-badge--status-accepting</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--status-scheduled">Scheduled</span></div><div class="pg-tile__label">.admin-badge--status-scheduled</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Tag</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-badge admin-badge--tag">Tag</span></div><div class="pg-tile__label">.admin-badge--tag</div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>3. Admin dashboard extras — pills, env, age, notification</h2>
+    <span class="pg-file">static/css/admin-dashboard-extras.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <h3 style="font-size:13px;margin:0 0 12px;color:var(--pg-muted);">Environment badges</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-env-badge">PROD</span></div><div class="pg-tile__label">.admin-env-badge (default)</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-env-badge admin-env-badge--local">LOCAL</span></div><div class="pg-tile__label">.admin-env-badge--local</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-env-badge admin-env-badge--staging">STAGING</span></div><div class="pg-tile__label">.admin-env-badge--staging</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Age badges</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-age-badge admin-age-badge--ok">2m ago</span></div><div class="pg-tile__label">.admin-age-badge--ok</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-age-badge admin-age-badge--warn">2h ago</span></div><div class="pg-tile__label">.admin-age-badge--warn</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-age-badge admin-age-badge--danger">3d ago</span></div><div class="pg-tile__label">.admin-age-badge--danger</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Health pills</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-health-pill admin-health-pill--ok"><span class="admin-health-dot"></span><span class="admin-health-label">Healthy</span></span></div><div class="pg-tile__label">.admin-health-pill--ok</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-health-pill admin-health-pill--degraded"><span class="admin-health-dot"></span><span class="admin-health-label">Degraded</span></span></div><div class="pg-tile__label">.admin-health-pill--degraded</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-health-pill admin-health-pill--down"><span class="admin-health-dot"></span><span class="admin-health-label">Down</span></span></div><div class="pg-tile__label">.admin-health-pill--down</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-health-pill admin-health-pill--unknown"><span class="admin-health-dot"></span><span class="admin-health-label">Unknown</span></span></div><div class="pg-tile__label">.admin-health-pill--unknown</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">SLA pills</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-sla-pill admin-sla-pill--ok">SLA OK</span></div><div class="pg-tile__label">.admin-sla-pill--ok</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-sla-pill admin-sla-pill--warn">SLA WARN</span></div><div class="pg-tile__label">.admin-sla-pill--warn</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-sla-pill admin-sla-pill--crit">SLA CRIT</span></div><div class="pg-tile__label">.admin-sla-pill--crit (pulse)</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Notification + sidebar</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-notification-badge" style="background:#dc2626;color:#fff;">3</span><span class="admin-notification-badge" style="background:#dc2626;color:#fff;">12</span><span class="admin-notification-badge" style="background:#dc2626;color:#fff;">99+</span></div><div class="pg-tile__label">.admin-notification-badge</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="admin-sidebar-logo-badge">ADMIN</span><span class="admin-sidebar-logo-badge">BETA</span></div><div class="pg-tile__label">.admin-sidebar-logo-badge</div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>4. Marketplace — KYC, chips, live</h2>
+    <span class="pg-file">static/css/admin-marketplace.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <h3 style="font-size:13px;margin:0 0 12px;color:var(--pg-muted);">KYC badges</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo">User <span class="mp-kyc-badge mp-kyc-badge--approved">Approved</span></div><div class="pg-tile__label">.mp-kyc-badge--approved</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">User <span class="mp-kyc-badge mp-kyc-badge--pending">Pending</span></div><div class="pg-tile__label">.mp-kyc-badge--pending</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">User <span class="mp-kyc-badge mp-kyc-badge--in_review">In Review</span></div><div class="pg-tile__label">.mp-kyc-badge--in_review</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">User <span class="mp-kyc-badge mp-kyc-badge--rejected">Rejected</span></div><div class="pg-tile__label">.mp-kyc-badge--rejected</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">User <span class="mp-kyc-badge mp-kyc-badge--expired">Expired</span></div><div class="pg-tile__label">.mp-kyc-badge--expired</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">User <span class="mp-kyc-badge mp-kyc-badge--unknown">Unknown</span></div><div class="pg-tile__label">.mp-kyc-badge--unknown</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Filter chips</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><button class="mp-chip">All</button><button class="mp-chip" aria-pressed="true">Active</button><button class="mp-chip mp-chip--ghost">Ghost</button></div><div class="pg-tile__label">.mp-chip / aria-pressed / --ghost</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Live indicator badge</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="mp-live-badge" data-state="live">LIVE</span><span class="mp-live-badge" data-state="poll">POLL</span></div><div class="pg-tile__label">.mp-live-badge[data-state]</div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>5. Trading badges (v2 / v3)</h2>
+    <span class="pg-file">static/css/marketplace-trading-v2.css + v3.css</span>
+  </div>
+  <div class="pg-section__body">
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="tv2-badge tv2-badge--type">Villa</span></div><div class="pg-tile__label">.tv2-badge--type</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="tv2-badge tv2-badge--status">Active</span></div><div class="pg-tile__label">.tv2-badge--status</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo">Yield <span class="tv3-yield-badge">+12.4%</span></div><div class="pg-tile__label">.tv3-yield-badge</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>6. Community profile hero badges</h2>
+    <span class="pg-file">static/css/community.css</span>
+  </div>
+  <div class="pg-section__body">
+
+    <h3 style="font-size:13px;margin:0 0 12px;color:var(--pg-muted);">Base + verified</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge">Member</span></div><div class="pg-tile__label">.cp-hero__badge</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge cp-hero__badge--verified">✓ Verified</span></div><div class="pg-tile__label">.cp-hero__badge--verified</div></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:24px 0 12px;color:var(--pg-muted);">Level badges (tier)</h3>
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge cp-hero__badge--level cp-hero__badge--level-legend">L6 · Legend</span></div><div class="pg-tile__label">--level-legend</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge cp-hero__badge--level cp-hero__badge--level-mogul">L5 · Mogul</span></div><div class="pg-tile__label">--level-mogul</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge cp-hero__badge--level cp-hero__badge--level-strategist">L4 · Strategist</span></div><div class="pg-tile__label">--level-strategist</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge cp-hero__badge--level cp-hero__badge--level-expert">L3 · Expert</span></div><div class="pg-tile__label">--level-expert</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge cp-hero__badge--level cp-hero__badge--level-cultivator">L2 · Cultivator</span></div><div class="pg-tile__label">--level-cultivator</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cp-hero__badge cp-hero__badge--level cp-hero__badge--level-harvester">L1 · Harvester</span></div><div class="pg-tile__label">--level-harvester</div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>7. Leaderboard tier badges</h2>
+    <span class="pg-file">static/css/leaderboard.css</span>
+  </div>
+  <div class="pg-section__body">
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="lb-bento-tier-badge" data-tier="Premium">Premium</span></div><div class="pg-tile__label">[data-tier="Premium"]</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="lb-bento-tier-badge" data-tier="Elite">Elite</span></div><div class="pg-tile__label">[data-tier="Elite"]</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="lb-bento-tier-badge" data-tier="Pro">Pro</span></div><div class="pg-tile__label">[data-tier="Pro"]</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="lb-bento-tier-badge" data-tier="Plus">Plus</span></div><div class="pg-tile__label">[data-tier="Plus"]</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="lb-bento-tier-badge" data-tier="Intro">Intro</span></div><div class="pg-tile__label">[data-tier="Intro"]</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>8. Developer asset-detail badges — <code>.ad-badge</code></h2>
+    <span class="pg-file">static/css/developer-asset-detail.css</span>
+  </div>
+  <div class="pg-section__body">
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ad-badge ad-badge--neutral">Neutral</span></div><div class="pg-tile__label">.ad-badge--neutral</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ad-badge ad-badge--success">Success</span></div><div class="pg-tile__label">.ad-badge--success</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ad-badge ad-badge--warning">Warning</span></div><div class="pg-tile__label">.ad-badge--warning</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ad-badge ad-badge--info">Info</span></div><div class="pg-tile__label">.ad-badge--info</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="ad-badge ad-badge--danger">Danger</span></div><div class="pg-tile__label">.ad-badge--danger</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>9. Affiliate tier badges</h2>
+    <span class="pg-file">static/css/affiliate-promo.css</span>
+  </div>
+  <div class="pg-section__body">
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="tier-badge tier-badge--default">Default</span></div><div class="pg-tile__label">.tier-badge--default</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="tier-badge tier-badge--elite">Elite</span></div><div class="pg-tile__label">.tier-badge--elite</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="pg-section">
+  <div class="pg-section__head">
+    <h2>10. Change-request SLA pills</h2>
+    <span class="pg-file">static/css/admin-change-requests.css</span>
+  </div>
+  <div class="pg-section__body">
+    <div class="pg-grid">
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cr-sla-pill cr-sla-pill--ok">SLA OK</span></div><div class="pg-tile__label">.cr-sla-pill--ok</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cr-sla-pill cr-sla-pill--warn">SLA WARN</span></div><div class="pg-tile__label">.cr-sla-pill--warn</div></div>
+      <div class="pg-tile"><div class="pg-tile__demo"><span class="cr-sla-pill cr-sla-pill--crit">SLA CRIT</span></div><div class="pg-tile__label">.cr-sla-pill--crit (pulse)</div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="pg-footer">
+  Generated from CSS scan — 10 families, ~70 variants. Toggle dark to see admin-token theme swap.
+</footer>
+
+</body>
+</html>

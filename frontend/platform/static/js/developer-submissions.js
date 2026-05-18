@@ -148,6 +148,12 @@ function updateStats(items) {
   Object.keys(counts).forEach((key) => {
     const el = document.getElementById("stat-" + key);
     if (el) animateCount(el, counts[key]);
+    // Dim chip when count is zero so the strip de-emphasises empty states.
+    const chip = document.querySelector(`.sub-chip[data-filter="${key}"]`);
+    if (chip) {
+      if (counts[key] === 0) chip.setAttribute("data-empty", "true");
+      else chip.removeAttribute("data-empty");
+    }
   });
 }
 
@@ -472,9 +478,11 @@ function getRelativeTime(dateStr) {
 // ─── Filtering ────────────────────────────────────────────
 
 function initStatCardFilters() {
-  document.querySelectorAll(".sub-stat").forEach((card) => {
-    card.setAttribute("role", "button");
-    card.setAttribute("tabindex", "0");
+  document.querySelectorAll(".sub-stat, .sub-chip").forEach((card) => {
+    if (card.tagName !== "BUTTON") {
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+    }
     card.setAttribute("aria-pressed", card.classList.contains("active") ? "true" : "false");
     card.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
@@ -485,7 +493,7 @@ function initStatCardFilters() {
 }
 
 function filterByCard(status, el) {
-  document.querySelectorAll(".sub-stat").forEach((c) => {
+  document.querySelectorAll(".sub-stat, .sub-chip").forEach((c) => {
     c.classList.remove("active");
     c.setAttribute("aria-pressed", "false");
   });

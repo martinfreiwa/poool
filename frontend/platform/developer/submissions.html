@@ -13,99 +13,30 @@
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
-      <!-- Summary Stat Cards -->
-      <div id="sub-stats-row" class="sub-stats" style="display: none;">
-        <div class="sub-stat active" data-filter="all" onclick="filterByCard('all', this)">
-          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
-            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
-            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
-            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            </div>
-          </div>
-          <div class="sub-stat__content">
-            <span class="sub-stat__count" id="stat-all">—</span>
-            <span class="sub-stat__label">All Submissions</span>
-          </div>
-        </div>
-        <div class="sub-stat" data-filter="draft" onclick="filterByCard('draft', this)">
-          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
-            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
-            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
-            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </div>
-          </div>
-          <div class="sub-stat__content">
-            <span class="sub-stat__count" id="stat-draft">—</span>
-            <span class="sub-stat__label">Drafts</span>
-          </div>
-        </div>
-        <div class="sub-stat" data-filter="submitted" onclick="filterByCard('submitted', this)">
-          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
-            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
-            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
-            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-            </div>
-          </div>
-          <div class="sub-stat__content">
-            <span class="sub-stat__count" id="stat-submitted">—</span>
-            <span class="sub-stat__label">Submitted</span>
-          </div>
-        </div>
-        <div class="sub-stat" data-filter="in_review" onclick="filterByCard('in_review', this)">
-          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
-            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
-            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
-            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-          </div>
-          <div class="sub-stat__content">
-            <span class="sub-stat__count" id="stat-in_review">—</span>
-            <span class="sub-stat__label">In Review</span>
-          </div>
-        </div>
-        <div class="sub-stat" data-filter="revision_requested" onclick="filterByCard('revision_requested', this)">
-          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
-            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
-            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
-            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-            </div>
-          </div>
-          <div class="sub-stat__content">
-            <span class="sub-stat__count" id="stat-revision_requested">—</span>
-            <span class="sub-stat__label">Revision</span>
-          </div>
-        </div>
-        <div class="sub-stat" data-filter="approved" onclick="filterByCard('approved', this)">
-          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
-            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
-            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
-            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            </div>
-          </div>
-          <div class="sub-stat__content">
-            <span class="sub-stat__count" id="stat-approved">—</span>
-            <span class="sub-stat__label">Approved</span>
-          </div>
-        </div>
-        <div class="sub-stat" data-filter="rejected" onclick="filterByCard('rejected', this)">
-          <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
-            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
-            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
-            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            </div>
-          </div>
-          <div class="sub-stat__content">
-            <span class="sub-stat__count" id="stat-rejected">—</span>
-            <span class="sub-stat__label">Rejected</span>
-          </div>
-        </div>
+      <!-- Summary Stat Cards — bento layout: hero + 2 medium + pipeline chips -->
+      <div id="sub-stats-row" class="sub-stats sub-stats--bento" style="display: none;">
+
+        <!-- Hero card: All Submissions -->
+        <button type="button" class="sub-stat sub-stat--hero active" data-filter="all" onclick="filterByCard('all', this)" aria-pressed="true">
+          <span class="sub-stat__eyebrow">Pipeline overview</span>
+          <span class="sub-stat__count sub-stat__count--xl" id="stat-all">—</span>
+          <span class="sub-stat__label">All Submissions</span>
+          <span class="sub-stat__hint">Click any tile to filter the table</span>
+        </button>
+
+        <!-- Medium cards: Submitted (awaiting POOOL) -->
+        <button type="button" class="sub-stat sub-stat--md sub-stat--submitted" data-filter="submitted" onclick="filterByCard('submitted', this)" aria-pressed="false">
+          <span class="sub-stat__count sub-stat__count--lg" id="stat-submitted">—</span>
+          <span class="sub-stat__label">Submitted</span>
+          <span class="sub-stat__sublabel">Awaiting review</span>
+        </button>
+
+        <!-- Medium cards: Approved (positive outcome) -->
+        <button type="button" class="sub-stat sub-stat--md sub-stat--approved" data-filter="approved" onclick="filterByCard('approved', this)" aria-pressed="false">
+          <span class="sub-stat__count sub-stat__count--lg" id="stat-approved">—</span>
+          <span class="sub-stat__label">Approved</span>
+          <span class="sub-stat__sublabel">Live on marketplace</span>
+        </button>
       </div>
 
       <!-- Submissions Table -->
@@ -201,6 +132,33 @@
         </table>
         <!-- Pagination -->
         <div id="sub-pagination" class="sub-pagination"></div>
+
+        <!-- Card footer: minor-status filter chips (Drafts / In Review / Revision / Rejected) -->
+        <div class="sub-pipeline sub-pipeline--footer" role="group" aria-label="Other statuses">
+          <button type="button" class="sub-chip" data-filter="draft" onclick="filterByCard('draft', this)" aria-pressed="false">
+            <span class="sub-chip__dot sub-chip__dot--neutral"></span>
+            <span class="sub-chip__label">Drafts</span>
+            <span class="sub-chip__count" id="stat-draft">—</span>
+          </button>
+          <span class="sub-pipeline__sep" aria-hidden="true">›</span>
+          <button type="button" class="sub-chip" data-filter="in_review" onclick="filterByCard('in_review', this)" aria-pressed="false">
+            <span class="sub-chip__dot sub-chip__dot--info"></span>
+            <span class="sub-chip__label">In Review</span>
+            <span class="sub-chip__count" id="stat-in_review">—</span>
+          </button>
+          <span class="sub-pipeline__sep" aria-hidden="true">›</span>
+          <button type="button" class="sub-chip" data-filter="revision_requested" onclick="filterByCard('revision_requested', this)" aria-pressed="false">
+            <span class="sub-chip__dot sub-chip__dot--warn"></span>
+            <span class="sub-chip__label">Revision</span>
+            <span class="sub-chip__count" id="stat-revision_requested">—</span>
+          </button>
+          <span class="sub-pipeline__sep" aria-hidden="true">›</span>
+          <button type="button" class="sub-chip" data-filter="rejected" onclick="filterByCard('rejected', this)" aria-pressed="false">
+            <span class="sub-chip__dot sub-chip__dot--danger"></span>
+            <span class="sub-chip__label">Rejected</span>
+            <span class="sub-chip__count" id="stat-rejected">—</span>
+          </button>
+        </div>
       </div>
 
       <!-- Empty State -->

@@ -18,6 +18,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "PORT=4000 SERVER_PORT=4000 bash start_local.sh"],
       "port": 4000
+    },
+    {
+      "name": "badges-showcase",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "7777", "--directory", "frontend/platform"],
+      "port": 7777
     }
   ]
 }

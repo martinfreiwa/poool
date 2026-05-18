@@ -1,6 +1,7 @@
 {% with title="Developer Dashboard – POOOL", no_index=True, extra_css=['developer-dashboard',
-'unified-styles', 'unified-cards', 'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-onboarding'],
-extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% include
+'unified-styles', 'unified-cards', 'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-onboarding', 'cards-template'],
+extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation', 'metric-card-animations', 'poool-line-chart', 'developer-sales-chart'],
+external_scripts=['https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js', 'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js'] %}{% include
 "components/head.html" %}{% endwith %}
 
   <!-- Custom POOOL Icon Styles -->
@@ -36,7 +37,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
 
     <!-- Main Content Area -->
     <main id="developer-dashboard-main" class="ds-main developer-dashboard-main">
-      {% with dev_nav_title="Dashboard", dev_nav_active="dashboard" %}
+      {% with dev_nav_title="Dashboard", dev_nav_active="dashboard", dev_nav_show_period_tabs=true %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
@@ -104,15 +105,56 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
           {% include 'components/developer-chart.html' %}
         </div>
 
-        <section class="ds-card developer-secondary-metrics" aria-label="Secondary developer metrics">
+        <section class="ds-card developer-secondary-metrics" aria-label="Secondary developer metrics" id="activity-snapshot-section">
           <div class="developer-secondary-metrics__header">
-            <h2>Activity snapshot</h2>
-            <span>Operational signals</span>
+            <div class="developer-secondary-metrics__title-wrap">
+              <div class="developer-secondary-metrics__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+              </div>
+              <div>
+                <h2>Activity snapshot</h2>
+                <span>Operational signals</span>
+              </div>
+            </div>
+            <div class="developer-secondary-metrics__actions">
+              <button type="button" id="activity-customize-btn" class="developer-secondary-metrics__customize-btn" aria-haspopup="true" aria-expanded="false" aria-controls="activity-customize-popover">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Customize
+              </button>
+            </div>
           </div>
-          <div class="developer-secondary-metrics__grid">
+
+          <!-- Customize popover -->
+          <div id="activity-customize-popover" class="activity-customize-popover" role="dialog" aria-label="Customize Activity snapshot tiles" hidden>
+            <div class="activity-customize-popover__head">
+              <strong>Show tiles</strong>
+              <button type="button" id="activity-customize-reset" class="activity-customize-popover__reset">Reset</button>
+            </div>
+            <ul class="activity-customize-popover__list">
+              {% for metric in stats.metrics %}
+              {% if metric.label != 'Amount Raised' and metric.label != 'Amount Remaining' and metric.label != 'Funding Target' and metric.label != 'Total Assets' %}
+              <li class="activity-customize-popover__item">
+                <label>
+                  <input type="checkbox" class="activity-customize-checkbox" data-metric="{{ metric.label }}" checked />
+                  <span>{{ metric.label }}</span>
+                </label>
+              </li>
+              {% endif %}
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="developer-secondary-metrics__grid" id="activity-snapshot-grid">
             {% for metric in stats.metrics %}
             {% if metric.label != 'Amount Raised' and metric.label != 'Amount Remaining' and metric.label != 'Funding Target' and metric.label != 'Total Assets' %}
-            <div class="developer-secondary-metric">
+            <div class="developer-secondary-metric" data-metric="{{ metric.label }}">
               <span class="developer-secondary-metric__label">{{ metric.label }}</span>
               <strong class="metric-number" data-final-value="{{ metric.value }}">{{ metric.value }}</strong>
               {% if metric.trend == 'up' or metric.trend == 'down' %}
@@ -126,25 +168,121 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
           </div>
         </section>
 
+        <script>
+        (function () {
+          'use strict';
+          var STORAGE_KEY = 'dev_dashboard_activity_tiles_v1';
+          var grid = document.getElementById('activity-snapshot-grid');
+          var btn = document.getElementById('activity-customize-btn');
+          var pop = document.getElementById('activity-customize-popover');
+          var resetBtn = document.getElementById('activity-customize-reset');
+          if (!grid || !btn || !pop) return;
+
+          var tiles = Array.from(grid.querySelectorAll('[data-metric]'));
+          var checkboxes = Array.from(pop.querySelectorAll('.activity-customize-checkbox'));
+          var allLabels = tiles.map(function (t) { return t.dataset.metric; });
+
+          function readPrefs() {
+            try {
+              var raw = localStorage.getItem(STORAGE_KEY);
+              if (!raw) return null;
+              var parsed = JSON.parse(raw);
+              if (!Array.isArray(parsed)) return null;
+              return parsed;
+            } catch (_) { return null; }
+          }
+
+          function writePrefs(list) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (_) {}
+          }
+
+          function applyPrefs(visibleList) {
+            var visibleSet = new Set(visibleList);
+            tiles.forEach(function (t) {
+              t.style.display = visibleSet.has(t.dataset.metric) ? '' : 'none';
+            });
+            checkboxes.forEach(function (cb) {
+              cb.checked = visibleSet.has(cb.dataset.metric);
+            });
+          }
+
+          function currentVisible() {
+            return checkboxes.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.dataset.metric; });
+          }
+
+          var stored = readPrefs();
+          applyPrefs(stored || allLabels);
+
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = !pop.hasAttribute('hidden');
+            if (open) { pop.setAttribute('hidden', ''); btn.setAttribute('aria-expanded', 'false'); }
+            else      { pop.removeAttribute('hidden');  btn.setAttribute('aria-expanded', 'true'); }
+          });
+
+          document.addEventListener('click', function (e) {
+            if (pop.hasAttribute('hidden')) return;
+            if (e.target.closest('#activity-customize-popover') || e.target.closest('#activity-customize-btn')) return;
+            pop.setAttribute('hidden', '');
+            btn.setAttribute('aria-expanded', 'false');
+          });
+
+          checkboxes.forEach(function (cb) {
+            cb.addEventListener('change', function () {
+              var visible = currentVisible();
+              // Always keep at least one tile visible.
+              if (visible.length === 0) { cb.checked = true; return; }
+              applyPrefs(visible);
+              writePrefs(visible);
+            });
+          });
+
+          if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+              applyPrefs(allLabels);
+              writePrefs(allLabels);
+            });
+          }
+        })();
+        </script>
+
         <section class="ds-card developer-assets-performance-section" aria-labelledby="developer-assets-performance-title">
           <div class="developer-assets-performance-section__header">
-            <div>
-              <h2 id="developer-assets-performance-title">Top Performing Assets</h2>
-              <p>Sales, views, saved demand, conversion and funding progress.</p>
+            <div class="developer-assets-performance-section__title-wrap">
+              <span class="developer-assets-performance-section__icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6"  y1="20" x2="6"  y2="14"/>
+                </svg>
+              </span>
+              <div>
+                <h2 id="developer-assets-performance-title">Top Performing Assets</h2>
+                <p>Sales, views, saved demand, conversion and funding progress.</p>
+              </div>
             </div>
-            <a href="/developer/assets">Manage assets</a>
+            {# Period tabs moved to topbar (.dev-period-tabs) — one
+               unified selector now drives both this assets table and the
+               sales chart above. See setDashboardPeriod() below. #}
           </div>
           {% include 'components/developer-assets.html' %}
         </section>
 
         <div class="developer-performance-grid" aria-label="Property performance">
-          <section class="ds-card developer-performance-card">
+          <section class="ds-card developer-performance-card developer-performance-card--top">
             <div class="developer-performance-card__header">
-              <div>
-                <h2 class="developer-performance-card__title">Top properties</h2>
-                <p class="developer-performance-card__subtitle">By capital raised</p>
+              <div class="developer-performance-card__title-wrap">
+                <span class="developer-performance-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                    <polyline points="17 6 23 6 23 12"/>
+                  </svg>
+                </span>
+                <div>
+                  <h2 class="developer-performance-card__title">Top properties</h2>
+                  <p class="developer-performance-card__subtitle">Highest capital raised this cycle</p>
+                </div>
               </div>
-              <a class="developer-performance-card__link" href="/developer/assets">View assets</a>
             </div>
 
             {% if stats.top_assets | length > 0 %}
@@ -155,7 +293,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
                 <div class="developer-performance-row__main">
                   <div class="developer-performance-row__title">{{ asset.title }}</div>
                   <div class="developer-performance-row__meta">
-                    {{ asset.views }} views · {{ asset.checkout_starts }} checkout starts · {{ asset.add_to_cart_count }} carts
+                    {{ asset.views }} views · {{ asset.funding_display }} funded
                   </div>
                   <div class="developer-performance-progress" aria-label="{{ asset.funding_display }} funded">
                     <span style="width: {{ asset.funding_pct }}%;"></span>
@@ -163,7 +301,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
                 </div>
                 <div class="developer-performance-row__stats">
                   <strong>{{ asset.total_sales_display }}</strong>
-                  <span>{{ asset.funding_display }} funded</span>
+                  <span>raised</span>
                 </div>
               </a>
               {% endfor %}
@@ -173,11 +311,20 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
             {% endif %}
           </section>
 
-          <section class="ds-card developer-performance-card">
+          <section class="ds-card developer-performance-card developer-performance-card--attention">
             <div class="developer-performance-card__header">
-              <div>
-                <h2 class="developer-performance-card__title">Needs attention</h2>
-                <p class="developer-performance-card__subtitle">Low funding progress with demand signals</p>
+              <div class="developer-performance-card__title-wrap">
+                <span class="developer-performance-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </span>
+                <div>
+                  <h2 class="developer-performance-card__title">Needs attention</h2>
+                  <p class="developer-performance-card__subtitle">Lagging funding despite demand</p>
+                </div>
               </div>
             </div>
 
@@ -189,21 +336,21 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
                 <div class="developer-performance-row__main">
                   <div class="developer-performance-row__title">{{ asset.title }}</div>
                   <div class="developer-performance-row__meta">
-                    {{ asset.views }} views · {{ asset.conversion_display }} conversion · {{ asset.amount_remaining_display }} left
+                    {{ asset.views }} views · {{ asset.conversion_display }} conversion
                   </div>
                   <div class="developer-performance-progress developer-performance-progress--attention" aria-label="{{ asset.funding_display }} funded">
                     <span style="width: {{ asset.funding_pct }}%;"></span>
                   </div>
                 </div>
                 <div class="developer-performance-row__stats">
-                  <strong>{{ asset.total_sales_display }}</strong>
-                  <span>{{ asset.funding_display }} funded</span>
+                  <strong>{{ asset.amount_remaining_display }}</strong>
+                  <span>left</span>
                 </div>
               </a>
               {% endfor %}
             </div>
             {% else %}
-            <div class="developer-performance-empty">No underperforming live properties yet.</div>
+            <div class="developer-performance-empty">All live properties are on track.</div>
             {% endif %}
           </section>
         </div>
@@ -215,6 +362,47 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
   </div>
 
 <script>
+// Unified period selector (lives in the topbar). One click fires two HTMX
+// swaps: the sales chart card and the assets table fragment. Assets endpoint
+// does not understand "1y" — fall back to "all" for that case so the table
+// stays sensible without a backend change.
+window.setDashboardPeriod = function (btn, period) {
+  var tabs = document.querySelectorAll('#dev-period-tabs .dev-period-tab');
+  tabs.forEach(function (t) {
+    var on = t === btn;
+    t.classList.toggle('dev-period-tab--active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+
+  if (typeof window.htmx === 'undefined') return;
+
+  var chartTarget  = document.getElementById('sales-chart-card');
+  var assetsTarget = document.getElementById('developer-assets-wrapper');
+
+  if (chartTarget) {
+    var chartReq = window.htmx.ajax('GET',
+      '/developer/dashboard/fragments/chart?period=' + encodeURIComponent(period),
+      { target: '#sales-chart-card', swap: 'outerHTML' }
+    );
+    // htmx.ajax returns a promise → re-mount ECharts after the swap settles.
+    // The IIFE-internal htmx:afterSwap listener sometimes misses programmatic
+    // ajax calls, so explicit re-mount here is the reliable path.
+    if (chartReq && typeof chartReq.then === 'function') {
+      chartReq.then(function () {
+        if (window.DeveloperSalesChart && typeof window.DeveloperSalesChart.mount === 'function') {
+          window.DeveloperSalesChart.mount();
+        }
+      });
+    }
+  }
+  // Assets fragment supports all / 30d / 7d / 24h. Map 1y → all.
+  var assetsPeriod = period === '1y' ? 'all' : period;
+  if (assetsTarget) {
+    window.htmx.ajax('GET', '/developer/dashboard/fragments/assets?period=' + encodeURIComponent(assetsPeriod), {
+      target: '#developer-assets-wrapper', swap: 'outerHTML',
+    });
+  }
+};
 (function () {
   var BANNER_KEY = 'dev_application_review';
   var banner = document.getElementById('dev-review-banner');

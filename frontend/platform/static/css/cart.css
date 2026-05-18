@@ -1655,10 +1655,15 @@
   border-left: none;
 }
 
-.quantity-btn:hover {
-  background: #f9fafb;
-  color: var(--body-color);
+/* Cart quantity buttons stay visually static on hover — bundle.css ships a
+   global `.quantity-btn:hover` (cart-unrelated context) that would otherwise
+   tint the background + border. Override with the default values. */
+.cart-item-card__quantity .quantity-btn:hover {
+  background: #ffffff;
+  color: #717680;
+  border-color: var(--table-border-color);
 }
+
 
 .quantity-input {
   width: 48px;

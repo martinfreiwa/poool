@@ -395,11 +395,13 @@
   }
 
   function buildVolumeChart(container, trades, days) {
+    // ECharts replaces the prior ApexCharts dual-axis bars+line, matching
+    // POOOL's smooth-area-line aesthetic (charts-showcase #14 sibling style).
     if (state.charts.volume) {
-      try { state.charts.volume.destroy(); } catch (_) { /* noop */ }
+      try { state.charts.volume.dispose(); } catch (_) { /* noop */ }
       state.charts.volume = null;
     }
-    if (typeof ApexCharts === 'undefined') return renderMessage(container, 'Chart library unavailable', true);
+    if (typeof echarts === 'undefined') return renderMessage(container, 'Chart library unavailable', true);
     const filtered = filterByDays(trades, days);
     if (!filtered.length) return renderMessage(container, `No trades in last ${days} days`);
 
@@ -417,67 +419,94 @@
     });
 
     const sortedDays = Object.keys(dayMap).sort();
-    const volumeData = sortedDays.map(d => ({ x: d, y: +(dayMap[d].volume / 100).toFixed(2) }));
-    const feeData    = sortedDays.map(d => ({ x: d, y: +(dayMap[d].fees   / 100).toFixed(2) }));
+    const volumeData = sortedDays.map(d => +(dayMap[d].volume / 100).toFixed(2));
+    const feeData    = sortedDays.map(d => +(dayMap[d].fees   / 100).toFixed(2));
 
     container.replaceChildren();
-    const chart = new ApexCharts(container, {
-      chart: {
-        type: 'line',
-        height: 280,
-        fontFamily: "'TT Norms Pro', sans-serif",
-        toolbar: { show: true, tools: { download: true, selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } },
-        background: 'transparent',
-        animations: { enabled: true, speed: 300 },
-        events: {
-          dataPointSelection: (_evt, _ctx, opts) => {
-            const day = sortedDays[opts.dataPointIndex];
-            if (day) window.location.href = `/admin/marketplace/trades.html?date=${encodeURIComponent(day)}`;
-          },
-        },
-      },
-      series: [
-        { name: 'Volume', type: 'column', data: volumeData },
-        { name: 'Fees',   type: 'line',   data: feeData },
-      ],
-      states: { hover: { filter: { type: 'lighten', value: 0.1 } } },
-      stroke: { width: [0, 3], curve: 'smooth' },
-      plotOptions: { bar: { columnWidth: '55%', borderRadius: 4 } },
-      colors: ['#0000FF', '#16a34a'],
-      xaxis: {
-        type: 'category',
-        labels: {
-          style: { fontSize: '11px', colors: '#7a7f87' },
-          rotate: -45,
-          rotateAlways: sortedDays.length > 7,
-        },
-      },
-      yaxis: [
-        {
-          title: { text: 'Volume ($)', style: { fontSize: '11px', color: '#7a7f87' } },
-          labels: {
-            style: { fontSize: '11px', colors: '#7a7f87' },
-            formatter: v => '$' + Number(v).toLocaleString(),
-          },
-        },
-        {
-          opposite: true,
-          title: { text: 'Fees ($)', style: { fontSize: '11px', color: '#16a34a' } },
-          labels: {
-            style: { fontSize: '11px', colors: '#16a34a' },
-            formatter: v => '$' + Number(v).toLocaleString(),
-          },
-        },
-      ],
-      grid: { borderColor: '#e5e7eb', strokeDashArray: 3 },
-      legend: { position: 'top', horizontalAlign: 'right', fontSize: '12px' },
+    container.style.height = '280px';
+
+    const chart = echarts.init(container, null, { renderer: 'svg' });
+    chart.setOption({
+      backgroundColor: 'transparent',
+      textStyle: { fontFamily: "'TT Norms Pro', sans-serif", color: '#7a7f87' },
       tooltip: {
-        shared: true,
-        y: { formatter: v => '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2 }) },
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        backgroundColor: 'rgba(24, 29, 39, 0.95)',
+        borderWidth: 0,
+        textStyle: { color: '#fff', fontSize: 12 },
+        formatter: (params) => {
+          if (!params || !params.length) return '';
+          const head = `<div style="font-weight:600;margin-bottom:4px;">${params[0].name}</div>`;
+          const rows = params.map(p =>
+            `<div><span style="color:${p.color};">●</span> ${p.seriesName}: $${Number(p.value).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>`
+          ).join('');
+          return head + rows;
+        },
       },
-      dataLabels: { enabled: false },
+      legend: { top: 0, right: 0, textStyle: { color: '#7a7f87', fontSize: 12 } },
+      grid: { left: 64, right: 64, top: 32, bottom: 56 },
+      xAxis: {
+        type: 'category',
+        data: sortedDays,
+        axisLine: { lineStyle: { color: '#e5e7eb' } },
+        axisTick: { show: false },
+        axisLabel: { color: '#7a7f87', fontSize: 11, rotate: sortedDays.length > 7 ? -45 : 0 },
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: 'Volume ($)',
+          nameTextStyle: { color: '#7a7f87', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: '#e5e7eb', type: [4, 4] } },
+          axisLabel: { color: '#7a7f87', fontSize: 11, formatter: v => '$' + Number(v).toLocaleString() },
+        },
+        {
+          type: 'value',
+          name: 'Fees ($)',
+          nameTextStyle: { color: '#16a34a', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: { color: '#16a34a', fontSize: 11, formatter: v => '$' + Number(v).toLocaleString() },
+        },
+      ],
+      series: [
+        {
+          name: 'Volume',
+          type: 'bar',
+          yAxisIndex: 0,
+          itemStyle: {
+            color: '#0000FF',
+            borderRadius: [4, 4, 0, 0],
+          },
+          barWidth: '55%',
+          data: volumeData,
+        },
+        {
+          name: 'Fees',
+          type: 'line',
+          yAxisIndex: 1,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { width: 3, color: '#16a34a' },
+          itemStyle: { color: '#16a34a' },
+          data: feeData,
+        },
+      ],
+      animationDuration: 800,
+      animationEasing: 'cubicOut',
     });
-    chart.render();
+
+    chart.on('click', (params) => {
+      if (typeof params.dataIndex !== 'number') return;
+      const day = sortedDays[params.dataIndex];
+      if (day) window.location.href = `/admin/marketplace/trades.html?date=${encodeURIComponent(day)}`;
+    });
+
     state.charts.volume = chart;
   }
 

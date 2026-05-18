@@ -297,6 +297,13 @@ function renderYearTabs() {
 
   const container = document.getElementById('ops-year-tabs');
   container.innerHTML = '';
+  // Only render year switcher once user has 2+ years of submission history.
+  // Single-year users get a cleaner topbar.
+  if (years.length < 2) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = '';
   years.forEach(y => {
     const btn = document.createElement('button');
     btn.className = 'ops-year-tab' + (y === state.year ? ' active' : '');

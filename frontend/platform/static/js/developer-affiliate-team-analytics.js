@@ -28,15 +28,26 @@
     const t = today();
     switch (preset) {
       case '7d':   return { from: isoOf(daysAgo(6)), to: isoOf(t) };
+      case '14d':  return { from: isoOf(daysAgo(13)), to: isoOf(t) };
       case '30d':  return { from: isoOf(daysAgo(29)), to: isoOf(t) };
-      case 'this-month':  return { from: isoOf(startOfMonth(t)), to: isoOf(t) };
-      case 'last-month': {
-        const lm = new Date(t.getFullYear(), t.getMonth() - 1, 1);
-        return { from: isoOf(lm), to: isoOf(endOfMonth(lm)) };
-      }
-      case 'ytd': return { from: isoOf(startOfYear(t)), to: isoOf(t) };
-      case 'all': return { from: '2024-01-01', to: isoOf(t) }; // far enough back
-      default: return { from: isoOf(daysAgo(29)), to: isoOf(t) };
+      case '90d':  return { from: isoOf(daysAgo(89)), to: isoOf(t) };
+      case 'ytd':  return { from: isoOf(startOfYear(t)), to: isoOf(t) };
+      case 'all':  return { from: '2024-01-01', to: isoOf(t) }; // far enough back
+      default:     return { from: isoOf(daysAgo(29)), to: isoOf(t) };
+    }
+  }
+
+  // Human-readable label for a preset — shown in the topbar trigger button.
+  function presetLabel(preset) {
+    switch (preset) {
+      case '7d':  return 'Last 7 days';
+      case '14d': return 'Last 14 days';
+      case '30d': return 'Last 30 days';
+      case '90d': return 'Last 90 days';
+      case 'ytd': return 'This year';
+      case 'all': return 'All time';
+      case 'custom': return 'Custom range';
+      default: return 'Last 30 days';
     }
   }
 
@@ -46,7 +57,7 @@
     const from = url.searchParams.get('from');
     const to = url.searchParams.get('to');
     if (from && to) return { from, to, preset: preset || 'custom' };
-    return Object.assign({ preset: preset || 'this-month' }, presetRange(preset || 'this-month'));
+    return Object.assign({ preset: preset || '30d' }, presetRange(preset || '30d'));
   }
 
   function persistRange(from, to, preset) {
@@ -298,209 +309,68 @@
       return;
     }
 
-    // Single Y-axis (left). No more right-side labels that clipped under a
-    // narrow viewport. padR shrunk from 64 → 16 so the chart uses the full
-    // available width.
-    const W = 800, H = 280, padL = 64, padR = 16, padT = 16, padB = 32;
-    const innerW = W - padL - padR;
-    const innerH = H - padT - padB;
-
-    const maxV = Math.max(1, ...series.map((s) => s[valueKey] || 0));
-    const x = (i) => padL + (innerW * i) / Math.max(1, series.length - 1);
-    const y = (v) => padT + innerH - (innerH * v) / maxV;
-
-    const root = svg('svg', {
-      viewBox: `0 0 ${W} ${H}`,
-      width: '100%',
-      height: H,
-      role: 'img',
-      'aria-label':
-        `Daily ${metricLabel.toLowerCase()} trend. Peak ${fmtCentsSmart(maxV)} ` +
-        `over ${series.length} data points.`,
-      class: 'dat-trend-svg',
-    });
-
-    function axisLabelCents(cents) {
+    // ── ECharts migration (was: hand-rolled SVG line + dashed 7d MA overlay) ──
+    // Per-axis formatter — euros, smart suffix.
+    const eurFormatter = (cents) => {
       const eur = cents / 100;
       if (eur === 0) return '€0';
-      if (eur >= 1_000_000) return '€' + (eur / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-      if (eur >= 1_000)     return '€' + (eur / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+      if (Math.abs(eur) >= 1_000_000) return '€' + (eur / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (Math.abs(eur) >= 1_000)     return '€' + (eur / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
       return '€' + Math.round(eur).toLocaleString();
-    }
+    };
 
-    // 4 horizontal grid lines + single left-axis label per row.
-    for (let i = 0; i <= 4; i++) {
-      const yi = padT + (innerH * i) / 4;
-      const v = (maxV * (4 - i)) / 4;
-      root.appendChild(svg('line', {
-        x1: padL, x2: W - padR, y1: yi, y2: yi,
-        stroke: '#E9EAEB', 'stroke-width': 1,
-      }));
-      const tx = document.createElementNS(SVG_NS, 'text');
-      tx.setAttribute('x', padL - 8);
-      tx.setAttribute('y', yi + 4);
-      tx.setAttribute('text-anchor', 'end');
-      tx.setAttribute('font-size', 10);
-      tx.setAttribute('fill', '#535862');
-      tx.textContent = axisLabelCents(v);
-      root.appendChild(tx);
-    }
+    const labels = series.map((s) => (s.bucket_date || '').slice(5));
+    const values = series.map((s) => (s[valueKey] || 0) / 100); // to euros for axis math
 
-    // X-axis: ~5 evenly-spaced date labels.
-    const ticks = Math.min(5, series.length);
-    for (let i = 0; i < ticks; i++) {
-      const idx = Math.round(((series.length - 1) * i) / Math.max(1, ticks - 1));
-      const tx = document.createElementNS(SVG_NS, 'text');
-      tx.setAttribute('x', x(idx));
-      tx.setAttribute('y', H - padB + 18);
-      tx.setAttribute('text-anchor', 'middle');
-      tx.setAttribute('font-size', 10);
-      tx.setAttribute('fill', '#717680');
-      tx.textContent = (series[idx].bucket_date || '').slice(5);
-      root.appendChild(tx);
-    }
-
-    function pathOf() {
-      let d = '';
-      series.forEach((s, i) => {
-        const xi = x(i).toFixed(1), yi = y(s[valueKey] || 0).toFixed(1);
-        d += (i === 0 ? 'M' : 'L') + xi + ',' + yi + ' ';
-      });
-      return d;
-    }
-
-    // Phase-7: 7-day moving average overlay. Smooths the noisy daily
-    // line so weekly trends pop. Only render when the resolution is
-    // 'day' (weekly/monthly buckets are already smoothed) AND we have
-    // ≥7 data points to compute over.
-    function movingAveragePath(windowSize) {
-      if (series.length < windowSize) return null;
-      let d = '';
+    // 7-day moving average overlay — only at daily resolution, ≥7 points.
+    let maValues = null;
+    if (_trendResolution === 'day' && series.length >= 7) {
+      maValues = [];
+      const w = 7;
       for (let i = 0; i < series.length; i++) {
-        const lo = Math.max(0, i - windowSize + 1);
-        let sum = 0;
-        let n = 0;
-        for (let j = lo; j <= i; j++) {
-          sum += (series[j][valueKey] || 0);
-          n += 1;
-        }
-        const avg = n > 0 ? sum / n : 0;
-        const xi = x(i).toFixed(1);
-        const yi = y(avg).toFixed(1);
-        d += (i === 0 ? 'M' : 'L') + xi + ',' + yi + ' ';
-      }
-      return d;
-    }
-
-    // Render the MA line BELOW the primary line so the daily data
-    // stays in front. Dashed pattern + lighter opacity reads as
-    // "smoothing overlay" without competing with the headline series.
-    if (_trendResolution === 'day') {
-      const maD = movingAveragePath(7);
-      if (maD) {
-        root.appendChild(svg('path', {
-          d: maD,
-          fill: 'none',
-          stroke: '#0000FF',
-          'stroke-width': 1.5,
-          'stroke-dasharray': '4 3',
-          opacity: 0.55,
-          class: 'dat-trend-ma',
-        }));
-        // Small legend chip top-right.
-        const legend = document.createElementNS(SVG_NS, 'text');
-        legend.setAttribute('x', W - padR - 4);
-        legend.setAttribute('y', padT + 12);
-        legend.setAttribute('text-anchor', 'end');
-        legend.setAttribute('font-size', 10);
-        legend.setAttribute('fill', '#475467');
-        legend.textContent = '— — 7-day avg';
-        root.appendChild(legend);
+        const lo = Math.max(0, i - w + 1);
+        let sum = 0, n = 0;
+        for (let j = lo; j <= i; j++) { sum += (series[j][valueKey] || 0); n++; }
+        maValues.push(n > 0 ? (sum / n) / 100 : 0);
       }
     }
 
-    // Single line — brand blue solid, no dashed counterpart.
-    root.appendChild(svg('path', {
-      d: pathOf(),
-      fill: 'none', stroke: '#0000FF', 'stroke-width': 2.5,
-    }));
-
-    // Crosshair + dot + tooltip — single metric, single dot.
-    const overlay = svg('rect', {
-      x: padL, y: padT, width: innerW, height: innerH,
-      fill: 'transparent',
-      style: 'cursor:crosshair',
-    });
-    const guide = svg('line', {
-      x1: 0, x2: 0, y1: padT, y2: padT + innerH,
-      stroke: '#0000FF', 'stroke-width': 1,
-      'stroke-dasharray': '2 2',
-      style: 'opacity:0',
-    });
-    const dot = svg('circle', { r: 4, fill: '#fff', stroke: '#0000FF', 'stroke-width': 2, style: 'opacity:0' });
-
-    const tt = DAT.el('div', { class: 'dat-trend-tooltip' });
-    tt.style.cssText = 'position:absolute;pointer-events:none;opacity:0;background:#181D27;color:#fff;font-size:11px;padding:8px 10px;border-radius:6px;white-space:nowrap;line-height:1.5;transform:translate(-50%,-100%);transition:opacity 0.08s;';
-
-    function handleMove(e) {
-      const rect = root.getBoundingClientRect();
-      const scaleX = W / rect.width;
-      const mx = (e.clientX - rect.left) * scaleX;
-      const ratio = Math.max(0, Math.min(1, (mx - padL) / innerW));
-      const idx = Math.round(ratio * (series.length - 1));
-      const s = series[idx];
-      if (!s) return;
-      const px = x(idx);
-      guide.setAttribute('x1', px);
-      guide.setAttribute('x2', px);
-      guide.style.opacity = 1;
-      dot.setAttribute('cx', px);
-      dot.setAttribute('cy', y(s[valueKey] || 0));
-      dot.style.opacity = 1;
-      // FE-P0-1 fix: build tooltip via DOM API + textContent, NOT innerHTML.
-      // Previously this template-literal-interpolated `s.bucket_date` and
-      // `metricLabel` straight into innerHTML — a single future field
-      // containing user-controlled or attacker-supplied data turns this into
-      // XSS. The DOM-builder path renders safe text under all inputs.
-      while (tt.firstChild) tt.removeChild(tt.firstChild);
-      const dateRow = document.createElement('div');
-      dateRow.style.fontWeight = '600';
-      dateRow.style.marginBottom = '4px';
-      dateRow.textContent = s.bucket_date || '';
-      const valueRow = document.createElement('div');
-      const dotSpan = document.createElement('span');
-      dotSpan.style.color = '#0000FF';
-      dotSpan.textContent = '● ';
-      valueRow.appendChild(dotSpan);
-      valueRow.appendChild(document.createTextNode(
-        (metricLabel ? metricLabel + ' ' : '') + DAT.fmtCents(s[valueKey])
-      ));
-      tt.appendChild(dateRow);
-      tt.appendChild(valueRow);
-      tt.style.opacity = 1;
-      const ttx = (px / scaleX) + rect.left;
-      const tty = rect.top + ((padT + 8) / scaleX);
-      tt.style.left = ttx + 'px';
-      tt.style.top = tty + 'px';
+    if (typeof window.PooolLineChart === "undefined") {
+      host.innerHTML = `<div style="height:280px;display:flex;align-items:center;justify-content:center;color:#dc2626;font-size:12px;">Chart library unavailable</div>`;
+      return;
     }
-    function handleLeave() {
-      guide.style.opacity = 0;
-      dot.style.opacity = 0;
-      tt.style.opacity = 0;
-    }
-    overlay.addEventListener('mousemove', handleMove);
-    overlay.addEventListener('mouseleave', handleLeave);
-    overlay.addEventListener('mouseenter', () => {
-      DAT.$('#dat-trend-card')?.classList.add('dat-chart-card--touched');
-    }, { once: true });
 
-    root.appendChild(guide);
-    root.appendChild(dot);
-    root.appendChild(overlay);
-    host.appendChild(root);
-    document.body.appendChild(tt);
-    host._tooltipEl && host._tooltipEl.remove();
-    host._tooltipEl = tt;
+    // Create a fresh DIV mount inside host (host is the `#dat-chart-trend`
+    // container; DAT.clear() emptied it just above).
+    const mount = document.createElement('div');
+    mount.style.width = '100%';
+    mount.style.height = '280px';
+    mount.setAttribute('role', 'img');
+    mount.setAttribute('aria-label',
+      `Daily ${metricLabel.toLowerCase()} trend. Peak ${fmtCentsSmart(Math.max(1, ...series.map((s) => s[valueKey] || 0)))} ` +
+      `over ${series.length} data points.`);
+    host.appendChild(mount);
+
+    const chartSeries = [
+      { name: metricLabel, values, area: true },
+    ];
+    if (maValues) {
+      chartSeries.push({
+        name: '7-day avg',
+        values: maValues,
+        dashed: true,
+        color: '#0000FF',
+        opacity: 0.55,
+        markEnd: false,
+      });
+    }
+
+    window.PooolLineChart.render(mount, {
+      labels,
+      series: chartSeries,
+      formatter: (v) => eurFormatter(v * 100),
+      height: 280,
+    });
   }
 
   /// Re-render trend chart at the requested time-resolution.
@@ -532,36 +402,69 @@
     renderTrendChart(_trendDaily);
   }
 
-  /** Funnel: 3 horizontal bars (Clicks / Signups / Qualified). Always
-   *  rendered — even at zero, the funnel structure tells the story. */
+  /** Funnel: stacked horizontal stage cards. Each stage row gets a label,
+   *  a count, and a brand-tinted bar whose width encodes its value as a
+   *  fraction of the funnel's peak count. Between rows a compact pill shows
+   *  the conversion direction + rate + absolute delta, so anomalies like
+   *  "qualified > signups" from late attribution read as a clear gain
+   *  rather than a broken funnel shape. */
   function renderFunnelChart(period) {
     const host = DAT.$('#dat-chart-funnel');
     DAT.clear(host);
     const c = period.clicks_count || 0;
     const s = period.signups_count || 0;
     const q = period.qualified_count || 0;
-    const max = Math.max(c, s, q, 1);
-    // Uniform brand color across all 3 stages — length encodes the data,
-    // not color. Previous mix (blue/mid-blue/green) implied a semantic
-    // hierarchy the values didn't support.
-    const rows = [
+
+    const stages = [
       { label: 'Clicks',    value: c },
       { label: 'Signups',   value: s },
       { label: 'Qualified', value: q },
     ];
-    const wrap = DAT.el('div', { class: 'dat-funnel' });
-    rows.forEach((r) => {
-      const row = DAT.el('div', { class: 'dat-funnel__row' });
-      row.appendChild(DAT.el('span', { class: 'dat-funnel__label' }, r.label));
-      const bar = DAT.el('div', { class: 'dat-funnel__bar-wrap' });
-      const fill = DAT.el('span', { class: 'dat-funnel__bar' });
-      fill.style.width = (max ? (r.value / max) * 100 : 0) + '%';
-      // No inline backgroundColor — `.dat-funnel__bar` CSS picks brand blue.
-      bar.appendChild(fill);
-      row.appendChild(bar);
-      row.appendChild(DAT.el('span', { class: 'dat-funnel__value' }, fmtInt(r.value)));
-      wrap.appendChild(row);
+    const max = Math.max(c, s, q, 1);
+
+    const wrap = DAT.el('div', {
+      class: 'dat-funnel-wrap',
+      role: 'img',
+      'aria-label':
+        `Conversion funnel: ${stages.map((st) => `${st.label} ${fmtInt(st.value)}`).join(', ')}`,
     });
+
+    stages.forEach((stg, i) => {
+      const pct  = (stg.value / max) * 100;
+      const stage = DAT.el('div', { class: 'dat-funnel-stage' });
+      const head  = DAT.el('div', { class: 'dat-funnel-stage__head' });
+      head.appendChild(DAT.el('span', { class: 'dat-funnel-stage__label' }, stg.label));
+      head.appendChild(DAT.el('span', { class: 'dat-funnel-stage__value' }, fmtInt(stg.value)));
+      stage.appendChild(head);
+      const track = DAT.el('div', { class: 'dat-funnel-stage__track' });
+      const fill  = DAT.el('div', { class: 'dat-funnel-stage__fill', 'data-stage-index': String(i) });
+      // CSS uses --w (% width). The custom property lets us animate via
+      // transition without writing inline width churn on re-renders.
+      fill.style.width = pct.toFixed(2) + '%';
+      track.appendChild(fill);
+      stage.appendChild(track);
+      wrap.appendChild(stage);
+
+      // Drop-off / gain chip between this stage and the next
+      if (i < stages.length - 1) {
+        const next     = stages[i + 1].value;
+        const prev     = stg.value;
+        const ratio    = prev > 0 ? next / prev : 0;
+        const delta    = next - prev;
+        const isGain   = delta > 0;
+        const isFlat   = delta === 0;
+        const sign     = isGain ? '↑' : (isFlat ? '·' : '↓');
+        const ratioPct = (ratio * 100).toFixed(1) + '%';
+        const tone     = isGain ? 'gain' : (isFlat ? 'flat' : 'drop');
+        const chip = DAT.el('div', { class: `dat-funnel-step dat-funnel-step--${tone}` });
+        chip.appendChild(DAT.el('span', { class: 'dat-funnel-step__arrow' }, sign));
+        chip.appendChild(DAT.el('span', { class: 'dat-funnel-step__pct' }, ratioPct));
+        chip.appendChild(DAT.el('span', { class: 'dat-funnel-step__delta' },
+          (delta > 0 ? '+' : '') + fmtInt(delta)));
+        wrap.appendChild(chip);
+      }
+    });
+
     host.appendChild(wrap);
   }
 
@@ -805,13 +708,25 @@
 
   // ─── Preset / filter wiring ────────────────────────────────────────────
   function applyRangeUi(range) {
-    DAT.$('#dat-an-from').value = range.from;
-    DAT.$('#dat-an-to').value = range.to;
+    const fromEl = DAT.$('#dat-an-from');
+    const toEl   = DAT.$('#dat-an-to');
+    if (fromEl) fromEl.value = range.from;
+    if (toEl)   toEl.value   = range.to;
     const customBtn = DAT.$('.dat-preset--custom');
     if (customBtn) customBtn.hidden = range.preset !== 'custom';
     document.querySelectorAll('.dat-preset').forEach((b) => {
       b.classList.toggle('dat-preset--active', b.dataset.preset === range.preset);
     });
+    // Paint the topbar trigger button label so the active period is visible
+    // even with the popover closed.
+    const label = DAT.$('#dat-topbar-range-label');
+    if (label) {
+      if (range.preset === 'custom' && range.from && range.to) {
+        label.textContent = `${range.from} → ${range.to}`;
+      } else {
+        label.textContent = presetLabel(range.preset);
+      }
+    }
   }
 
   /** Debounce timer for date-input auto-apply (avoid hammering during typing). */
@@ -830,6 +745,21 @@
     }, 350);
   }
 
+  function openTopbarRange() {
+    const popover = DAT.$('#dat-topbar-range-popover');
+    const trigger = DAT.$('#dat-topbar-range-trigger');
+    if (!popover) return;
+    popover.removeAttribute('hidden');
+    if (trigger) trigger.setAttribute('aria-expanded', 'true');
+  }
+  function closeTopbarRange() {
+    const popover = DAT.$('#dat-topbar-range-popover');
+    const trigger = DAT.$('#dat-topbar-range-trigger');
+    if (!popover) return;
+    popover.setAttribute('hidden', '');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  }
+
   function wireToolbar() {
     document.querySelectorAll('.dat-preset').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -839,8 +769,29 @@
         applyRangeUi(r);
         persistRange(r.from, r.to, preset);
         loadAll(r);
+        closeTopbarRange();
       });
     });
+
+    // Topbar date-range popover — click trigger toggles the panel; clicking
+    // outside or pressing Escape closes it.
+    const trigger = DAT.$('#dat-topbar-range-trigger');
+    const popover = DAT.$('#dat-topbar-range-popover');
+    if (trigger && popover) {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const open = popover.hasAttribute('hidden');
+        if (open) openTopbarRange(); else closeTopbarRange();
+      });
+      document.addEventListener('click', (e) => {
+        if (popover.hasAttribute('hidden')) return;
+        if (popover.contains(e.target) || trigger.contains(e.target)) return;
+        closeTopbarRange();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTopbarRange();
+      });
+    }
 
     // Auto-apply when user picks a custom date (debounced 350ms).
     ['#dat-an-from', '#dat-an-to'].forEach((sel) => {
