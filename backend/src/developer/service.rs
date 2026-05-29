@@ -210,10 +210,6 @@ pub async fn fetch_dashboard_stats_for_period(
     .await
     .unwrap_or(0);
 
-    // There is currently no investor saved-property table. Keep this explicit
-    // so the API contract is ready when saved properties are implemented.
-    let saved_properties: i64 = 0;
-
     // ── 7. Sold Out Ratio (approved/live assets only) ───────────────
     let funded_assets: i64 = sqlx::query_scalar(
         r#"
@@ -351,7 +347,6 @@ pub async fn fetch_dashboard_stats_for_period(
         make_metric("Total Views", format!("{}", total_views), 0.0),
         make_metric("Checkout Starts", checkout_starts.to_string(), 0.0),
         make_metric("Add to Cart", add_to_cart_count.to_string(), 0.0),
-        make_metric("Saved Properties", saved_properties.to_string(), 0.0),
         make_metric("New Investors", new_investors.to_string(), inv_pct),
         make_metric("Avg. Conversion Rate", format_pct(avg_conversion_rate), 0.0),
         make_metric("Sold Out Ratio", format_pct(sold_out_ratio), 0.0),
@@ -369,7 +364,6 @@ pub async fn fetch_dashboard_stats_for_period(
 
     // ── Top Assets table ──────────────────────────────────────────────
     let top_assets = fetch_top_assets(pool, developer_id).await;
-    let attention_assets = fetch_attention_assets(pool, developer_id).await;
 
     // ── Chart percentage (all-time sales change vs prior period) ────────
     let chart_data = fetch_sales_chart_data(pool, developer_id, chart_period).await;
@@ -386,7 +380,6 @@ pub async fn fetch_dashboard_stats_for_period(
         total_views,
         checkout_starts,
         add_to_cart_count,
-        saved_properties,
         new_investors,
         avg_conversion_rate,
         sold_out_ratio,
@@ -394,7 +387,6 @@ pub async fn fetch_dashboard_stats_for_period(
         avg_investment_display: format_usd_compact(avg_investment_cents),
         metrics,
         top_assets,
-        attention_assets,
         chart_percentage_display: chart_data.percentage_display,
         chart_trend: chart_data.trend,
         chart_period_label: chart_data.period_label,
@@ -758,17 +750,6 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
     .await
 }
 
-/// Fetch assets with weak funding momentum or low capital raised.
-async fn fetch_attention_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTopAsset> {
-    fetch_assets_for_dashboard(
-        pool,
-        developer_id,
-        None,
-        "ORDER BY CASE WHEN a.tokens_total > 0 THEN ((a.tokens_total - a.tokens_available)::double precision / a.tokens_total::double precision) ELSE 0 END ASC, views DESC, add_to_cart_count DESC, a.created_at DESC LIMIT 5",
-    )
-    .await
-}
-
 /// Shared asset aggregation for dashboard tables.
 async fn fetch_assets_for_dashboard(
     pool: &PgPool,
@@ -855,19 +836,32 @@ async fn fetch_assets_for_dashboard(
     rows.into_iter()
         .enumerate()
         .map(|(idx, row)| {
-            let funding_pct = if row.tokens_total > 0 {
+            // Prefer dollar-based funding progress over token-based — the two
+            // can drift out of sync in seeded data (tokens_available never
+            // decremented while investments accrue). When dollars exceed
+            // total_value, cap at 100% so the UI never shows >100% funded.
+            let token_pct = if row.tokens_total > 0 {
                 ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
             } else {
                 0.0
             };
-
-            let conversion_rate = if row.views > 0 {
-                (row.investor_count as f64 / row.views as f64) * 100.0
+            let money_pct = if row.total_value_cents > 0 {
+                (row.total_sales_cents as f64 / row.total_value_cents as f64) * 100.0
             } else {
                 0.0
             };
-            let amount_remaining_cents =
-                row.total_value_cents.saturating_sub(row.total_sales_cents);
+            let funding_pct = token_pct.max(money_pct).clamp(0.0, 100.0);
+
+            // Conversion = investors / views. Cap at 100% — anything higher
+            // is a seeded-data artefact (more investors than logged sessions).
+            let conversion_rate = if row.views > 0 {
+                ((row.investor_count as f64 / row.views as f64) * 100.0).clamp(0.0, 100.0)
+            } else {
+                0.0
+            };
+            // Remaining capital never goes below zero — over-funded assets
+            // show "$0 left", not a negative number.
+            let amount_remaining_cents = (row.total_value_cents - row.total_sales_cents).max(0);
 
             DeveloperTopAsset {
                 index: idx + 1,
@@ -884,7 +878,6 @@ async fn fetch_assets_for_dashboard(
                 views: row.views,
                 add_to_cart_count: row.add_to_cart_count,
                 checkout_starts: row.checkout_starts,
-                saved_count: 0,
                 conversion_rate,
                 conversion_display: format_pct(conversion_rate),
                 funding_pct,

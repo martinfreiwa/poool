@@ -1,0 +1,348 @@
+/* Mobile Developer — Operations Submit (monthly form)
+ *
+ * Page: /developer/operations/submit  (body#developer-operations-submit-body)
+ * Pattern: long form with 4 numbered sections + custom expense rows +
+ *          shared file dropzone. The desktop sheet already collapses the
+ *          right summary aside (.dops-summary-col) under 860px and drops
+ *          the period badge — this sheet adds touch tap targets, full-
+ *          width add-expense button, file inputs at 100%, scrollable
+ *          topbar, and tightens spacing for phones.
+ */
+
+@media (max-width: 1024px) {
+  /* Topbar mods at tablet portrait */
+  #developer-operations-submit-body .dops-topbar {
+    padding: 0 16px !important;
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #developer-operations-submit-body .dops-shell {
+    /* Already stacks at 860 in desktop sheet — make sure full width here */
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Hide cart icon (this page is bare body — no mobile-menu, but be safe) */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-operations-submit-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-operations-submit-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ── Page shell ──────────────────────────────────── */
+  #developer-operations-submit-body {
+    background: var(--content-bg, #F9FAFB);
+  }
+
+  #developer-operations-submit-body .dops-shell {
+    grid-template-columns: 1fr !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  #developer-operations-submit-body .dops-summary-col {
+    display: none !important;
+  }
+
+  /* ── Topbar: stack into 2 rows (left meta, right actions) ── */
+  #developer-operations-submit-body .dops-topbar {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    padding: 10px 14px !important;
+    gap: 8px !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  #developer-operations-submit-body .dops-topbar__left {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  #developer-operations-submit-body .dops-topbar__right {
+    flex: 1 1 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  #developer-operations-submit-body .dops-back {
+    font-size: 12px !important;
+  }
+
+  #developer-operations-submit-body .dops-title {
+    font-size: 14px !important;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #developer-operations-submit-body .dops-sep {
+    display: none !important;
+  }
+
+  #developer-operations-submit-body .dops-period-badge {
+    display: inline-flex !important;
+    font-size: 11px !important;
+  }
+
+  #developer-operations-submit-body .dops-error-bar {
+    flex-basis: 100%;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  /* Topbar Save / Submit buttons: full row */
+  #developer-operations-submit-body .dops-topbar__right .ds-btn {
+    flex: 1 1 50%;
+    min-height: 40px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    justify-content: center;
+  }
+
+  /* ── Form column ─────────────────────────────────── */
+  #developer-operations-submit-body .dops-form-col {
+    padding: 16px 14px 96px !important;
+    overflow-y: visible !important;
+  }
+
+  #developer-operations-submit-body #dop-form {
+    gap: 14px !important;
+  }
+
+  /* ── Section card ────────────────────────────────── */
+  #developer-operations-submit-body .dops-section {
+    border-radius: 12px !important;
+  }
+
+  #developer-operations-submit-body .dops-section-head {
+    padding: 12px 14px !important;
+    gap: 10px !important;
+  }
+
+  #developer-operations-submit-body .dops-section-title {
+    font-size: 14px !important;
+  }
+
+  #developer-operations-submit-body .dops-section-sub {
+    font-size: 11px !important;
+  }
+
+  #developer-operations-submit-body .dops-section-body {
+    padding: 14px 14px 18px !important;
+    gap: 12px !important;
+  }
+
+  /* ── 2-col grid → single column on phones ─────── */
+  #developer-operations-submit-body .dops-grid-2,
+  #developer-operations-submit-body .dops-grid-3 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* ── Inputs: 44px tap height, 16px font (no iOS zoom) ── */
+  #developer-operations-submit-body .ds-input,
+  #developer-operations-submit-body .ds-select,
+  #developer-operations-submit-body .ds-textarea,
+  #developer-operations-submit-body input[type="text"],
+  #developer-operations-submit-body input[type="number"],
+  #developer-operations-submit-body input[type="date"],
+  #developer-operations-submit-body input[type="file"],
+  #developer-operations-submit-body select,
+  #developer-operations-submit-body textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important;
+    line-height: 22px !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+  }
+
+  #developer-operations-submit-body .ds-form-label {
+    font-size: 13px !important;
+    line-height: 18px !important;
+    font-weight: 600 !important;
+  }
+
+  #developer-operations-submit-body .ds-form-hint {
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  /* ── Custom expense rows: input + delete button stay inline ── */
+  #developer-operations-submit-body .dops-custom-expense-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  #developer-operations-submit-body .dops-custom-expense-row .ds-form-group {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* "Description" + "Amount" appear as flex children — stack them, keep
+     remove button at the bottom right */
+  #developer-operations-submit-body .dops-custom-expense-row > input,
+  #developer-operations-submit-body .dops-custom-expense-row > .ds-input {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+  #developer-operations-submit-body .dops-custom-expense-remove {
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    align-self: flex-end;
+    margin-bottom: 0;
+  }
+
+  /* ── Add custom expense button: full width ──────── */
+  #developer-operations-submit-body .dops-add-expense-btn {
+    width: 100% !important;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── CapEx highlighted row: tighten inner padding ── */
+  #developer-operations-submit-body .ds-form-group[style*="background"] {
+    padding: 12px !important;
+  }
+
+  /* ── Label row (label + tag) ─────────────────── */
+  #developer-operations-submit-body .dops-label-row {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  #developer-operations-submit-body .dops-label-opt {
+    font-size: 10px !important;
+  }
+
+  /* ── Supporting documents section ────────────── */
+  #developer-operations-submit-body .dops-docs-locked {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 16px !important;
+    gap: 10px;
+  }
+
+  #developer-operations-submit-body .dops-docs-locked p {
+    font-size: 13px;
+  }
+
+  #developer-operations-submit-body .dops-docs-locked .ds-btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  /* Compact dropzone full width */
+  #developer-operations-submit-body .dops-dropzone {
+    width: 100% !important;
+    min-height: 96px;
+    padding: 16px 14px !important;
+    border-radius: 10px;
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+    font-size: 13px;
+  }
+
+  #developer-operations-submit-body .dops-dropzone__hint {
+    font-size: 11px !important;
+  }
+
+  /* Upload queue rows */
+  #developer-operations-submit-body .dops-upload-queue {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #developer-operations-submit-body .dops-queue-item {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  #developer-operations-submit-body .dops-queue-item__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  #developer-operations-submit-body .dops-queue-item__size {
+    font-size: 11px;
+  }
+
+  #developer-operations-submit-body .dops-type-select {
+    flex: 1 1 100%;
+    min-height: 36px;
+    font-size: 13px;
+  }
+
+  #developer-operations-submit-body .dops-queue-item__remove {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  /* Upload all button full width */
+  #developer-operations-submit-body .dops-upload-actions {
+    margin-top: 12px;
+  }
+
+  #developer-operations-submit-body .dops-upload-actions .ds-btn {
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center;
+  }
+
+  /* ── Attached docs list ──────────────────────── */
+  #developer-operations-submit-body .dops-docs-list {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  #developer-operations-submit-body .dops-form-col {
+    padding: 14px 12px 96px !important;
+  }
+
+  #developer-operations-submit-body .dops-section-head {
+    padding: 12px !important;
+  }
+
+  #developer-operations-submit-body .dops-section-body {
+    padding: 12px !important;
+  }
+
+  /* Topbar buttons stack on very narrow screens */
+  #developer-operations-submit-body .dops-topbar__right .ds-btn {
+    flex: 1 1 100%;
+  }
+}

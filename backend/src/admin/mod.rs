@@ -24,6 +24,9 @@ pub mod blockchain;
 pub mod dashboard;
 /// Module
 pub mod deposits;
+/// "Become a Developer" application review surface (C-1/C-2/C-3 fix, 2026-05-19 audit).
+#[allow(missing_docs)]
+pub mod developer_applications;
 /// Module
 pub mod developer_projects;
 /// Module
@@ -517,6 +520,20 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/submissions/:asset_id/detail",
             get(api_admin_submission_detail),
+        )
+        // Developer applications (C-1/C-2/C-3 fix, 2026-05-19 audit) —
+        // admin review surface that replaces the old self-promotion side-effect.
+        .route(
+            "/api/admin/developer-applications",
+            get(developer_applications::api_admin_list_developer_applications),
+        )
+        .route(
+            "/api/admin/developer-applications/:id/approve",
+            post(developer_applications::api_admin_approve_developer_application),
+        )
+        .route(
+            "/api/admin/developer-applications/:id/reject",
+            post(developer_applications::api_admin_reject_developer_application),
         )
         // Developer projects
         .route(

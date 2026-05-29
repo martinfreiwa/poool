@@ -41,7 +41,14 @@
 }
 
 /* ── Select ─────────────────────────────────────────────────────────── */
-.ds-select {
+:root {
+  --select-chevron-icon: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23667085' stroke-width='1.67' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --select-chevron-position: right 14px center;
+  --select-chevron-size: 12px 8px;
+}
+
+select:where(.ds-select, .ds-input, .settings-input, .form-select, .dropdown-select, .support-select, .ad-select, .commissions-select, .mp-sec__sort-select, .mp-filter-select):not([multiple]),
+body:not(.admin-body) :where(select:not([multiple]):not(.admin-select):not(.admin-input):not(.dat-select):not(.dat-select--compact):not(.lb-select-mini):not(.dops-type-select):not([data-native-select])) {
   width: 100%;
   height: var(--input-height, 44px);
   padding: var(--input-padding, 10px 14px);
@@ -54,21 +61,26 @@
   border-radius: var(--input-border-radius, 8px);
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23667085' stroke-width='1.67' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  -moz-appearance: none;
+  background-image: var(--select-chevron-icon);
   background-repeat: no-repeat;
-  background-position: right 14px center;
+  background-position: var(--select-chevron-position);
+  background-size: var(--select-chevron-size);
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   box-sizing: border-box;
   outline: none;
+  line-height: 20px;
 }
 
-.ds-select:focus {
+select:where(.ds-select, .ds-input, .settings-input, .form-select, .dropdown-select, .support-select, .ad-select, .commissions-select, .mp-sec__sort-select, .mp-filter-select):not([multiple]):focus,
+body:not(.admin-body) :where(select:not([multiple]):not(.admin-select):not(.admin-input):not(.dat-select):not(.dat-select--compact):not(.lb-select-mini):not(.dops-type-select):not([data-native-select])):focus {
   border-color: var(--input-border-focus, #0000FF);
   box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
 }
 
-.ds-select:disabled {
+select:where(.ds-select, .ds-input, .settings-input, .form-select, .dropdown-select, .support-select, .ad-select, .commissions-select, .mp-sec__sort-select, .mp-filter-select):not([multiple]):disabled,
+body:not(.admin-body) :where(select:not([multiple]):not(.admin-select):not(.admin-input):not(.dat-select):not(.dat-select--compact):not(.lb-select-mini):not(.dops-type-select):not([data-native-select])):disabled {
   background-color: #F9FAFB;
   color: #667085;
   cursor: not-allowed;
@@ -194,4 +206,79 @@
   font-size: 14px;
   color: var(--body-color);
   user-select: none;
+}
+
+/* ── Radio (shared custom indicator) ───────────────────────────────── */
+.ds-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ds-radio-group--inline {
+  flex-direction: row;
+  gap: 24px;
+}
+
+.ds-radio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.ds-radio-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ds-radio-custom {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 2px solid var(--input-border-color, #D0D5DD);
+  border-radius: 50%;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ds-radio-custom::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--radio-selected-dot-color, #03FF88);
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+
+.ds-radio-label:hover .ds-radio-input:not(:disabled) ~ .ds-radio-custom {
+  border-color: var(--radio-selected-border, var(--input-border-focus, #0000FF));
+}
+
+.ds-radio-input:checked ~ .ds-radio-custom {
+  border-color: var(--radio-selected-border, var(--input-border-focus, #0000FF));
+  background: var(--radio-selected-bg, var(--input-border-focus, #0000FF));
+}
+
+.ds-radio-input:checked ~ .ds-radio-custom::after {
+  transform: scale(1);
+}
+
+.ds-radio-input:focus-visible ~ .ds-radio-custom {
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08), 0 0 0 6px rgba(3, 255, 136, 0.12);
+}
+
+.ds-radio-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body-color, #344054);
+  line-height: 20px;
+  margin-top: 2px;
 }

@@ -192,7 +192,14 @@ pub async fn api_admin_dividends_calculate(
         return Ok(Json(serde_json::json!({"splits":[], "total_tokens":0})).into_response());
     }
 
-    // Get all investors
+    // Get all investors.
+    //
+    // CDDRP §3.5 (B6): intentionally *unbounded*. Dividend calculations must
+    // include every active investor — capping would silently under-distribute
+    // to whoever falls past the cap. If this list ever grows beyond ~10k, the
+    // call needs paginated chunking (and reconciliation of partial-batch
+    // rounding) before being recapped. Until then we emit an ops warning so
+    // someone notices before it actually OOMs.
     let rows: Vec<(String, String, i32)> = sqlx::query_as(
         "SELECT u.email, u.id::text, i.tokens_owned FROM investments i JOIN users u ON u.id = i.user_id WHERE i.asset_id = $1 AND i.status = 'active' AND i.tokens_owned > 0"
     )
@@ -200,6 +207,14 @@ pub async fn api_admin_dividends_calculate(
     .fetch_all(&state.db)
     .await
     .map_err(ApiError::from)?;
+
+    if rows.len() > 10_000 {
+        tracing::warn!(
+            asset_id = %aid,
+            investor_count = rows.len(),
+            "dividends/calculate loaded >10k investors unbounded; needs paginated rework (CDDRP B6)"
+        );
+    }
 
     let mut cumulative_allocated: i64 = 0;
     let mut cumulative_exact: u128 = 0;

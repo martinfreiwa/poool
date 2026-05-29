@@ -363,7 +363,7 @@ const MarketP2P = (function () {
           <div class="p2p-form-row">
             <div class="p2p-form-group">
               <label>Side</label>
-              <select id="p2p-side">
+              <select id="p2p-side" class="ds-select">
                 <option value="sell">Sell</option>
                 <option value="buy">Buy</option>
               </select>
@@ -793,9 +793,17 @@ const MarketP2P = (function () {
       }
       .p2p-form-group input, .p2p-form-group textarea, .p2p-form-group select {
         width: 100%; padding: 10px 14px; border-radius: 8px; height: 44px;
-        border: 1px solid var(--input-border-color, #D0D5DD); background: var(--input-bg, #FFFFFF);
+        border: 1px solid var(--input-border-color, #D0D5DD); background-color: var(--input-bg, #FFFFFF);
         color: var(--input-text-color, #101828); font-size: 14px; font-family: inherit;
         transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box;
+      }
+      .p2p-form-group select {
+        appearance: none; -webkit-appearance: none; -moz-appearance: none;
+        padding-right: 36px;
+        background-image: var(--select-chevron-icon);
+        background-repeat: no-repeat;
+        background-position: var(--select-chevron-position);
+        background-size: var(--select-chevron-size);
       }
       .p2p-form-group textarea { height: auto; min-height: 80px; resize: vertical; }
       .p2p-form-group input:focus, .p2p-form-group textarea:focus, .p2p-form-group select:focus {

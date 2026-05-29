@@ -455,7 +455,7 @@ function renderCapTable(a) {
     const warn = document.createElement("div");
     warn.id = "concentration-warning";
     warn.style.cssText = "background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px;";
-    warn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2" style="flex-shrink:0;"><path d="M8 1l7 14H1L8 1z"/><path d="M8 6v4"/><circle cx="8" cy="12" r=".5" fill="#ef4444"/></svg><span style="font-size:13px;color:#991b1b;font-weight:500;">Concentration risk: <strong>${topHolder.name}</strong> holds <strong>${topPct.toFixed(1)}%</strong> of total supply.</span>`;
+    warn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2" style="flex-shrink:0;"><path d="M8 1l7 14H1L8 1z"/><path d="M8 6v4"/><circle cx="8" cy="12" r=".5" fill="#ef4444"/></svg><span style="font-size:13px;color:#991b1b;font-weight:500;">Concentration risk: <strong>${esc(topHolder.name)}</strong> holds <strong>${topPct.toFixed(1)}%</strong> of total supply.</span>`;
     document.getElementById("panel-captable").insertBefore(warn, document.getElementById("panel-captable").firstChild);
   }
 

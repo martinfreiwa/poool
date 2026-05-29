@@ -758,6 +758,55 @@ Rules:
 - Tables must have a reusable empty state, loading state, and error state.
 - Mobile table behavior must be standardized: either responsive horizontal scroll or stacked row cards, chosen per table type and documented in the table component CSS.
 
+#### Card With Table — Reference Pattern (STANDARD)
+
+The canonical "card containing a table" layout on POOOL is the
+**`.developer-assets-performance-section`** on the developer dashboard
+("Top Performing Assets"). Every new or refactored card-with-table on
+the platform MUST match its visual and structural rules unless there is
+an explicit, documented exception.
+
+Shared implementation lives in
+`frontend/platform/static/css/card-table-standard.css`, loaded globally
+after `ucard.css`. Do not duplicate this chrome in page-specific CSS;
+page files may only add column widths, responsive behavior, and
+data-specific cell content.
+
+Structural rules:
+
+- Wrap the section with `<section class="ds-card developer-assets-performance-section">` (or a copy of the same pattern with a per-page name).
+- Card header lives in `.developer-assets-performance-section__header` — flex row with title-group on the left and an optional action link/button on the right.
+- The title-group has THREE parts in order: brand icon tile (`.developer-assets-performance-section__icon`, 36×36 blue→navy gradient + green stroke), `<h2>` title, `<p>` subtitle.
+- The table sits directly inside the card, no inner wrapper card.
+- The table uses the `.table__wrapper` → `.table__container` → `.table__header-row` / `.table__row` BEM primitives with the page-scope modifier (`.developer-assets-table` here).
+- Legacy/native `<table>` implementations that cannot yet use the BEM table primitives must add a page-specific modifier such as `.dat-table-card` and match the same chrome: no nested bordered table wrapper, white header row, green row hover, right-aligned numeric columns, and the same icon/title/subtitle header.
+
+Spacing rules:
+
+- Rows have `padding: 16px` left/right (the outer gutter). Cell first-child + last-child KEEP their default 12px padding — combined ≈28px of breathing room from the card edges, matching the section header gutter.
+- Cells use `padding: 14px 12px`. Do NOT introduce per-column padding overrides.
+- Numeric columns are right-aligned (`text-align: right` + `justify-content: flex-end`) on BOTH header and data cells. The first column (asset) stays left-aligned.
+- Row hover tint is the brand-green wash `rgba(3, 255, 136, 0.08)` — never blue or grey.
+
+Visual rules:
+
+- Header row background: `#FFFFFF` (NOT `#FAFBFD` or any tint). Header text is uppercase 12px tracked grey.
+- Brand-gradient 4px top strip (`linear-gradient(90deg, #0000FF 0%, #03FF88 100%)`) inherited from `.ds-card`.
+- Asset cell: 40–44px rounded thumbnail + bold name. Optional muted secondary line (city, type).
+- Funding cell renders the formatted percentage (`{{ asset.funding_display }}`) as plain text — NO inline progress bar inside row cells.
+- Status pills use the universal `.ubadge` system with semantic variants.
+- Action icon buttons (`.developer-assets-table__icon-btn`) are grey by default (`#98A2B3`) and ONLY change the icon color on hover (POOOL blue) — never add a background tint.
+
+Reference selectors anyone copying this pattern must touch:
+
+- `.developer-assets-performance-section` + `__header` / `__icon` / `__title-wrap` / `__link`
+- `.developer-assets-table__row` (grid template), `.table__header-row` (white bg, uppercase headers)
+- `.developer-assets-table__icon-btn` (icon-only action buttons)
+- Native-table adapter: `.dat-table-card` + `.dat-card-header` / `.dat-card-header__icon` / `.dat-table-wrap` / `.dat-table`
+- Shared CSS source of truth: `static/css/card-table-standard.css`
+
+When in doubt, open `developer/dashboard.html` ("Top Performing Assets" section) and mirror the implementation 1:1 through `static/css/card-table-standard.css`.
+
 ### Modals
 
 Use:

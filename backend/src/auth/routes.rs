@@ -104,6 +104,7 @@ pub fn router(state: AppState) -> Router<AppState> {
             get(reset_password_page).post(reset_password_submit),
         )
         .route("/verify-email", get(verify_email_page))
+        .route("/verify-email/confirm", post(verify_email_confirm_handler))
         .route("/resend-verification", post(resend_verification_submit))
         .with_state(state)
 }
@@ -167,18 +168,35 @@ pub async fn reset_password_page(State(state): State<AppState>) -> impl IntoResp
 }
 
 /// GET /auth/verify-email – Render the email verification page.
+///
+/// Audit B7 (Medium): this endpoint must NEVER mutate state on GET.
+/// Email-link prefetchers (Slack unfurl, Apple Messages preview,
+/// Outlook Safe Links, virus scanners) auto-fetch any URL in an email
+/// before the human clicks. If we consumed the token here, the real
+/// click would always land on "invalid token". Instead we render a
+/// tiny HTML page that POSTs the token to `/auth/verify-email/confirm`.
+/// JS auto-submits for normal users; the `<noscript>` button covers
+/// the no-JS edge case. Either way, the state change happens on POST,
+/// which prefetchers do not perform.
 pub async fn verify_email_page(
     State(state): State<AppState>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
     if let Some(token) = params.get("token").filter(|value| !value.trim().is_empty()) {
-        return match service::verify_email(&state.db, token).await {
-            Ok(()) => Redirect::to("/auth/verify-email?verified=1").into_response(),
-            Err(err) => {
-                tracing::warn!("Email verification failed: {}", err);
-                Redirect::to("/auth/verify-email?error=invalid_token").into_response()
-            }
-        };
+        let escaped = html_escape_attr(token);
+        let html = format!(
+            r#"<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Verifying your email…</title><meta name="robots" content="noindex,nofollow"></head>
+<body style="font-family:sans-serif;text-align:center;padding:48px 16px;color:#01011C;">
+<h1 style="font-size:20px;font-weight:600;">Verifying your email…</h1>
+<form method="POST" action="/auth/verify-email/confirm" id="vf">
+  <input type="hidden" name="token" value="{escaped}" />
+  <noscript><p>JavaScript is disabled. Click the button below to finish verifying your email.</p><button type="submit" style="display:inline-block;padding:12px 24px;background:#3D00F5;color:#fff;border:0;border-radius:8px;font-weight:600;cursor:pointer;">Click to verify your email</button></noscript>
+</form>
+<script>document.getElementById('vf').submit();</script>
+</body></html>"#
+        );
+        return Html(html).into_response();
     }
 
     let (status, title, message) = if params.get("verified").is_some_and(|v| v == "1") {
@@ -204,6 +222,44 @@ pub async fn verify_email_page(
     };
 
     render_verify_email(&state, status, title, message)
+}
+
+/// POST /auth/verify-email/confirm – Actually verify the email.
+///
+/// Receives the token in a form body (submitted by the page rendered
+/// at GET /auth/verify-email?token=...). Email prefetchers don't POST,
+/// so the token survives until the human clicks (or JS auto-submits).
+#[derive(serde::Deserialize)]
+pub struct VerifyEmailConfirmForm {
+    pub token: String,
+}
+
+pub async fn verify_email_confirm_handler(
+    State(state): State<AppState>,
+    Form(form): Form<VerifyEmailConfirmForm>,
+) -> impl IntoResponse {
+    let token = form.token.trim();
+    if token.is_empty() {
+        return Redirect::to("/auth/verify-email?error=invalid_token").into_response();
+    }
+
+    match service::verify_email(&state.db, token).await {
+        Ok(()) => Redirect::to("/auth/verify-email?verified=1").into_response(),
+        Err(err) => {
+            tracing::warn!("Email verification failed: {}", err);
+            Redirect::to("/auth/verify-email?error=invalid_token").into_response()
+        }
+    }
+}
+
+/// HTML-escape a string for safe interpolation into an attribute value
+/// (surrounded by double quotes). Covers the OWASP-recommended set.
+fn html_escape_attr(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
 
 // ─── Form Handlers (HTMX) ─────────────────────────────────────

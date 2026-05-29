@@ -1009,23 +1009,19 @@ pub async fn upload_asset_document(
                 if title.is_empty() {
                     title = fname;
                 }
-                let bytes: Vec<u8> = match field.bytes().await {
-                    Ok(b) => b.to_vec(),
-                    Err(_) => {
-                        return (
-                            StatusCode::BAD_REQUEST,
-                            Json(serde_json::json!({"error": "Failed to read file"})),
-                        )
-                            .into_response();
-                    }
+                // Chunked read with hard cap — prevents `field.bytes()`
+                // from buffering the full payload before the size check.
+                let mut field = field;
+                let bytes = match super::upload_helpers::read_field_capped(
+                    &mut field,
+                    MAX_ASSET_DOC_BYTES,
+                    "document",
+                )
+                .await
+                {
+                    Ok(b) => b,
+                    Err(e) => return e.into_response(),
                 };
-                if bytes.len() > MAX_ASSET_DOC_BYTES {
-                    return (
-                        StatusCode::PAYLOAD_TOO_LARGE,
-                        Json(serde_json::json!({"error": "File must be ≤ 20 MB"})),
-                    )
-                        .into_response();
-                }
                 file_bytes = Some(bytes);
             }
             _ => {}
@@ -1294,23 +1290,19 @@ pub async fn upload_asset_image(
                 if let Some(ct) = field.content_type() {
                     mime_type = ct.to_string();
                 }
-                let bytes: Vec<u8> = match field.bytes().await {
-                    Ok(b) => b.to_vec(),
-                    Err(_) => {
-                        return (
-                            StatusCode::BAD_REQUEST,
-                            Json(serde_json::json!({"error": "Failed to read file"})),
-                        )
-                            .into_response();
-                    }
+                // Chunked read with hard cap — prevents `field.bytes()`
+                // from buffering the full payload before the size check.
+                let mut field = field;
+                let bytes = match super::upload_helpers::read_field_capped(
+                    &mut field,
+                    MAX_ASSET_IMAGE_BYTES,
+                    "image",
+                )
+                .await
+                {
+                    Ok(b) => b,
+                    Err(e) => return e.into_response(),
                 };
-                if bytes.len() > MAX_ASSET_IMAGE_BYTES {
-                    return (
-                        StatusCode::PAYLOAD_TOO_LARGE,
-                        Json(serde_json::json!({"error": "Image must be ≤ 10 MB"})),
-                    )
-                        .into_response();
-                }
                 file_bytes = Some(bytes);
             }
             _ => {}

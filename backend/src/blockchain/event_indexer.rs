@@ -380,6 +380,15 @@ fn parse_transfer_batch(log: &EthLog) -> Option<Vec<BalanceChange>> {
     let ids_count =
         parse_hex_u64(&format!("0x{}", &data[ids_offset..ids_offset + 64])).unwrap_or(0) as usize;
 
+    // Sanity cap on attacker-controlled length field to prevent OOM via giant preallocation.
+    const MAX_TRANSFER_BATCH_IDS: usize = 10_000;
+    if ids_count > MAX_TRANSFER_BATCH_IDS {
+        tracing::warn!(
+            ids_count = ids_count,
+            "TransferBatch event ids_count exceeds cap; skipping"
+        );
+        return None;
+    }
     let mut ids = Vec::with_capacity(ids_count);
     let ids_start = ids_offset + 64;
     for i in 0..ids_count {
@@ -399,6 +408,13 @@ fn parse_transfer_batch(log: &EthLog) -> Option<Vec<BalanceChange>> {
     let values_count = parse_hex_u64(&format!("0x{}", &data[values_start..values_start + 64]))
         .unwrap_or(0) as usize;
 
+    if values_count > MAX_TRANSFER_BATCH_IDS {
+        tracing::warn!(
+            values_count = values_count,
+            "TransferBatch event values_count exceeds cap; skipping"
+        );
+        return None;
+    }
     let mut values = Vec::with_capacity(values_count);
     let vals_start = values_start + 64;
     for i in 0..values_count {

@@ -36,7 +36,6 @@ END $$;
 
 COMMIT;
 
-\echo '── Team tier state after re-backfill ──'
 SELECT current_team_tier, COUNT(*) AS n,
        SUM(team_volume_12m_cents)/100.0 AS sum_eur_volume
   FROM developer_teams

@@ -486,33 +486,221 @@ body#developer-dashboard-body .dev-period-tabs { margin-left: auto; }
    was a second card surface (border + radius + bg + shadow) sitting
    inside the outer card. Strip that chrome so the table flows as
    ONE seamless surface inside the outer card. */
-body#developer-dashboard-body .developer-assets-performance-section {
+/* STANDARD — card-with-table chrome (applies wherever the class set is
+   used: developer dashboard, /developer/assets, anywhere else that mirrors
+   the pattern). Reference spec: docs/DESIGN.md → Tables → Card With Table. */
+.developer-assets-performance-section {
+  position: relative;
   padding: 0 !important;
   overflow: hidden;
 }
-body#developer-dashboard-body .developer-assets-performance-section__header {
+/* 4px brand-gradient strip on top of the card. Explicit `display: block`
+   so it wins over `.ds-card::before { display: none }` in bundle.css. */
+.developer-assets-performance-section::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Header band — flex row, white below the gradient strip, border on bottom. */
+.developer-assets-performance-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 20px 24px !important;
   margin-bottom: 0 !important;
+  background: #FFFFFF;
   border-bottom: 1px solid var(--card-border-color, #EAECF0) !important;
 }
-body#developer-dashboard-body .developer-assets-table .table__header {
+.developer-assets-performance-section__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.developer-assets-performance-section__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Icon tile — 36×36 blue gradient with green-stroke SVG. */
+.developer-assets-performance-section__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+  flex-shrink: 0;
+}
+.developer-assets-performance-section__icon svg {
+  stroke: #03FF88;
+}
+
+/* Title + subtitle typography. */
+.developer-assets-performance-section__header h2 {
+  margin: 0;
+  color: var(--page-title-color, #0A0D12);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.01em;
+}
+.developer-assets-performance-section__header p {
+  margin: 2px 0 0;
+  color: var(--text-secondary, #717680);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+/* Inner table chrome — no second card surface, flush table edges, white
+   header row, 16px outer gutter. */
+.developer-assets-table .table__header {
   padding: 14px 24px !important;
   border-bottom: 1px solid var(--card-border-color, #EAECF0);
 }
-body#developer-dashboard-body .developer-assets-table__container {
+.developer-assets-table__container {
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
 }
-/* Table cells inherit their own padding; ensure the header row + body
-   align flush with the outer card edge. */
-body#developer-dashboard-body .developer-assets-table .table__row {
-  padding-left: 24px !important;
-  padding-right: 24px !important;
+.developer-assets-table .table__row,
+.developer-assets-table .table__header-row {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
-body#developer-dashboard-body .developer-assets-table .table__header-row {
-  background: #FAFBFD;
+.developer-assets-table .table__header-row {
+  background: #FFFFFF;
   border-top: 0 !important;
+}
+
+/* ============================================================
+   Asset Detail page (`body#developer-asset-detail-body`)
+   1. KPI icons → unified brand chip (matches dashboard u2 style)
+   2. Empty states (.ad-empty) → branded icon + label + helper text
+   ============================================================ */
+
+/* 1. KPI icons — restore brand chip (legacy CSS had stripped them) */
+body#developer-asset-detail-body .ad-kpi__icon,
+body#developer-asset-detail-body .ad-kpi__icon--blue,
+body#developer-asset-detail-body .ad-kpi__icon--purple,
+body#developer-asset-detail-body .ad-kpi__icon--green,
+body#developer-asset-detail-body .ad-kpi__icon--amber {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%) !important;
+  color: #03FF88 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,255,0.18);
+  border: 0 !important;
+}
+body#developer-asset-detail-body .ad-kpi__icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: #03FF88 !important;
+  stroke-width: 2 !important;
+  fill: none !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* KPI row layout: icon LEFT-TOP, label + value stacked RIGHT */
+body#developer-asset-detail-body .ad-kpi {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  padding: 18px 20px !important;
+  min-height: 88px;
+}
+body#developer-asset-detail-body .ad-kpi__label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: #717680 !important;
+  margin: 0 0 4px !important;
+  display: block;
+}
+body#developer-asset-detail-body .ad-kpi__value {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #0A0D12 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* 2. Empty states — branded icon + label + helper text via ::before */
+body#developer-asset-detail-body .ad-empty {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 180px;
+  padding: 36px 24px !important;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(0,0,255,0.025), rgba(3,255,136,0.04));
+  border: 1px dashed #D5D7DA;
+  border-radius: 12px;
+  margin: 8px 0 !important;
+  font-size: 14px !important;
+  color: #717680 !important;
+  font-weight: 500;
+}
+body#developer-asset-detail-body .ad-empty::before {
+  content: "";
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  box-shadow: 0 2px 8px rgba(0,0,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+  background-image:
+    linear-gradient(135deg, #0000FF 0%, #1E40AF 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' width='24' height='24' fill='none' stroke='%2303FF88' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='3' y1='9' x2='21' y2='9'/%3E%3Cline x1='9' y1='21' x2='9' y2='9'/%3E%3C/svg%3E");
+  background-blend-mode: normal;
+  background-size: cover, 24px 24px;
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, center;
+}
+
+/* Inside table cells (financials / cap-table / orders), unwrap dashed look */
+body#developer-asset-detail-body td.ad-empty {
+  background: linear-gradient(180deg, rgba(0,0,255,0.02), rgba(3,255,136,0.03)) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+/* Fix "card-in-card" on this page: many .ad-card wrap tables/lists.
+   If an .ad-card contains another bordered surface, strip the inner chrome. */
+body#developer-asset-detail-body .ad-card .ad-table-wrap,
+body#developer-asset-detail-body .ad-card .ad-list-wrap {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }

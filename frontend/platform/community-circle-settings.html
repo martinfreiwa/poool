@@ -15,7 +15,7 @@
     <main class="ds-main lb-main">
       {# Reuse the community topbar so this settings sub-page sits visually
          inside the same navigation chrome as the rest of /community. The
-         "My Circle" tab will keep the user oriented. #}
+         "My Circles" surface keeps the user oriented. #}
       {% with investor_topbar_variant='community',
               investor_topbar_title='Circle Settings',
               investor_topbar_subtitle='Manage members, moderators, privacy, and access' %}
@@ -26,7 +26,7 @@
         <div class="ccs-page ccs-page--v2" id="ccs-root">
 
           <!-- Back link -->
-          <a class="ccs-back" href="/community?tab=circle">
+          <a class="ccs-back" href="/community/circles">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="19" y1="12" x2="5" y2="12"/>
               <polyline points="12 19 5 12 12 5"/>
@@ -42,7 +42,7 @@
               <h1 class="ccs-hero__name" id="ccs-name">—</h1>
               <p class="ccs-hero__meta">
                 <span id="ccs-meta-members">— members</span>
-                <span class="ccs-hero__dot">·</span>
+                <span class="ccs-hero__dot">-</span>
                 <span id="ccs-meta-privacy">—</span>
               </p>
             </div>
@@ -103,10 +103,6 @@
                         <span class="ccs-banner-dropzone__hint">PNG, JPEG, WebP or SVG · max 2 MB</span>
                         <input type="file" id="ccs-banner-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="ccs-banner-dropzone__input" />
                       </label>
-                      <button type="button" class="ccs-banner-remove" id="ccs-banner-clear" hidden>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
-                        Remove banner
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -133,13 +129,265 @@
                     <p class="ccs-toggle-row__desc">Anyone can join without approval.</p>
                   </div>
                   <label class="ccs-switch">
-                    <input type="checkbox" id="ccs-input-public" />
+                    <input type="checkbox" id="ccs-input-public" aria-label="Public circle" />
                     <span class="ccs-switch__track"><span class="ccs-switch__knob"></span></span>
                   </label>
                 </div>
               </section>
 
-              <!-- CARD 3: Members -->
+              <!-- CARD 3: Content Settings -->
+              <span id="ccs-sec-content" class="ccs-anchor" aria-hidden="true"></span>
+              <section class="ds-card ccs-card" id="ccs-content-card" aria-labelledby="ccs-content-title">
+                <header class="ccs-card__head">
+                  <div class="ccs-card__icon ccs-card__icon--blue" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 6h16M4 12h16M4 18h10"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="ccs-card__title" id="ccs-content-title">Content Settings</h2>
+                    <p class="ccs-card__hint">Control required tags and member publishing capabilities.</p>
+                  </div>
+                </header>
+                <div class="ccs-grid">
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Category</span>
+                    <input type="text" id="ccs-input-category" class="ds-input" maxlength="80" placeholder="Real Estate, Cocoa, Founder" />
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Language</span>
+                    <input type="text" id="ccs-input-language" class="ds-input" maxlength="16" placeholder="en" />
+                  </label>
+                  <label class="ccs-field ccs-field--full">
+                    <span class="ccs-field__label">Location / Topic</span>
+                    <input type="text" id="ccs-input-location" class="ds-input" maxlength="120" placeholder="Bali, Cocoa, Tokenized Assets" />
+                  </label>
+                  <label class="ccs-field ccs-field--full">
+                    <span class="ccs-field__label">Required tags</span>
+                    <input type="text" id="ccs-input-required-tags" class="ds-input" placeholder="due_diligence, risk" />
+                    <small class="ccs-field__hint">Comma-separated; checked server-side against the allowed Community tag taxonomy.</small>
+                  </label>
+                  <div class="ccs-field ccs-field--full ccs-toggle-stack">
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-media" /> Media uploads</label>
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-polls" /> Polls</label>
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-links" /> Link posts</label>
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-anonymous" /> Anonymous posting</label>
+                  </div>
+                </div>
+              </section>
+
+              <!-- CARD 4: Moderation -->
+              <span id="ccs-sec-moderation" class="ccs-anchor" aria-hidden="true"></span>
+              <section class="ds-card ccs-card" id="ccs-moderation-card" aria-labelledby="ccs-moderation-title">
+                <header class="ccs-card__head">
+                  <div class="ccs-card__icon ccs-card__icon--amber" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="ccs-card__title" id="ccs-moderation-title">Moderation</h2>
+                    <p class="ccs-card__hint">Investment communities need slower, auditable controls than generic social groups.</p>
+                  </div>
+                </header>
+                <div class="ccs-grid">
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Slow mode seconds</span>
+                    <input type="number" id="ccs-input-slow-mode" class="ds-input" min="0" max="86400" step="1" />
+                  </label>
+                  <div class="ccs-field ccs-field--full ccs-toggle-stack">
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-first-post-approval" /> Require approval for first post</label>
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-join-approval" /> Join approval required</label>
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-auto-approve-verified" /> Auto-approve verified investors</label>
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-announcement-comments" /> Allow comments on announcements</label>
+                    <label class="ccs-inline-toggle"><input type="checkbox" id="ccs-input-onboarding" /> Enable new-member onboarding</label>
+                  </div>
+                  <label class="ccs-field ccs-field--full">
+                    <span class="ccs-field__label">Blocked words</span>
+                    <textarea id="ccs-input-blocked-words" class="ds-input" rows="2" placeholder="One word or phrase per line"></textarea>
+                  </label>
+                  <label class="ccs-field ccs-field--full">
+                    <span class="ccs-field__label">Investment-risk keywords</span>
+                    <textarea id="ccs-input-risk-keywords" class="ds-input" rows="2" placeholder="guaranteed return&#10;risk-free"></textarea>
+                  </label>
+                </div>
+              </section>
+
+              <!-- CARD 5: Rules -->
+              <span id="ccs-sec-rules" class="ccs-anchor" aria-hidden="true"></span>
+              <section class="ds-card ccs-card" id="ccs-rules-card" aria-labelledby="ccs-rules-title">
+                <header class="ccs-card__head">
+                  <div class="ccs-card__icon ccs-card__icon--green" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 11l3 3L22 4"/>
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="ccs-card__title" id="ccs-rules-title">Rules & Disclaimer</h2>
+                    <p class="ccs-card__hint">Separate community behavior rules from investment-risk disclaimers.</p>
+                  </div>
+                </header>
+                <div class="ccs-grid">
+                  <label class="ccs-field ccs-field--full">
+                    <span class="ccs-field__label">Circle rules</span>
+                    <textarea id="ccs-input-rules" class="ds-input" maxlength="5000" rows="5"></textarea>
+                  </label>
+                  <label class="ccs-field ccs-field--full">
+                    <span class="ccs-field__label">Investment disclaimer</span>
+                    <textarea id="ccs-input-disclaimer" class="ds-input" maxlength="2000" rows="3"></textarea>
+                  </label>
+                </div>
+              </section>
+
+              <!-- CARD 6: Analytics -->
+              <span id="ccs-sec-analytics" class="ccs-anchor" aria-hidden="true"></span>
+              <section class="ds-card ccs-card" id="ccs-analytics-card" aria-labelledby="ccs-analytics-title">
+                <header class="ccs-card__head">
+                  <div class="ccs-card__icon ccs-card__icon--neutral" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 3v18h18"/>
+                      <path d="M7 16l4-4 3 3 5-7"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="ccs-card__title" id="ccs-analytics-title">Analytics & Ops</h2>
+                    <p class="ccs-card__hint">Bounded operational signals for report backlog, activity, and audit visibility.</p>
+                  </div>
+                </header>
+                <div class="ccs-analytics-grid" id="ccs-analytics-grid">
+                  <div><span>Posts 7d</span><strong id="ccs-analytics-posts">—</strong></div>
+                  <div><span>Comments 7d</span><strong id="ccs-analytics-comments">—</strong></div>
+                  <div><span>Active members 7d</span><strong id="ccs-analytics-active">—</strong></div>
+                  <div><span>Pending reports</span><strong id="ccs-analytics-reports">—</strong></div>
+                </div>
+                <div class="ccs-ops-alerts" id="ccs-ops-alerts"></div>
+                <div class="ccs-audit-log" id="ccs-audit-log"></div>
+              </section>
+
+              <!-- CARD 7: Report Queue -->
+              <span id="ccs-sec-reports" class="ccs-anchor" aria-hidden="true"></span>
+              <section class="ds-card ccs-card" id="ccs-reports-card" aria-labelledby="ccs-reports-title">
+                <header class="ccs-card__head">
+                  <div class="ccs-card__icon ccs-card__icon--blue" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="ccs-card__title" id="ccs-reports-title">Report Queue</h2>
+                    <p class="ccs-card__hint">Review pending reports scoped to this Circle. Global bans remain platform-admin only.</p>
+                  </div>
+                </header>
+                <div id="ccs-reports-list" class="ccs-report-list"></div>
+              </section>
+
+              <!-- CARD 8: Resource Library -->
+              <span id="ccs-sec-resources" class="ccs-anchor" aria-hidden="true"></span>
+              <section class="ds-card ccs-card" id="ccs-resources-card" aria-labelledby="ccs-resources-title">
+                <header class="ccs-card__head">
+                  <div class="ccs-card__icon ccs-card__icon--blue" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="ccs-card__title" id="ccs-resources-title">Resource Library</h2>
+                    <p class="ccs-card__hint">Manage Circle documents, reports, links, and version history. Storage paths stay server-side.</p>
+                  </div>
+                </header>
+
+                <form id="ccs-resource-form" class="ccs-resource-form">
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Title</span>
+                    <input type="text" id="ccs-resource-title" class="ds-input" maxlength="240" placeholder="Monthly yield report" />
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">External URL</span>
+                    <input type="url" id="ccs-resource-url" class="ds-input" maxlength="2000" placeholder="https://..." />
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Upload file</span>
+                    <input type="file" id="ccs-resource-file" class="ds-input" accept=".pdf,.doc,.docx,.zip,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip" />
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Private object path</span>
+                    <input type="text" id="ccs-resource-storage-path" class="ds-input" maxlength="1024" placeholder="circle-resources/report.pdf" />
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Type</span>
+                    <select id="ccs-resource-type" class="ds-input">
+                      <option value="official_document">Official document</option>
+                      <option value="report">Report</option>
+                      <option value="yield_report">Yield report</option>
+                      <option value="guide">Guide</option>
+                      <option value="link">Link</option>
+                      <option value="photo_update">Photo update</option>
+                      <option value="community_resource">Community resource</option>
+                    </select>
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Access</span>
+                    <select id="ccs-resource-access" class="ds-input">
+                      <option value="member">Members</option>
+                      <option value="holder_only">Holders only</option>
+                      <option value="admin_only">Admins only</option>
+                      <option value="public">Public</option>
+                    </select>
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Version</span>
+                    <input type="text" id="ccs-resource-version-label" class="ds-input" maxlength="80" placeholder="v1" />
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Upload status</span>
+                    <select id="ccs-resource-upload-status" class="ds-input">
+                      <option value="">Auto</option>
+                      <option value="external">External</option>
+                      <option value="pending_upload">Pending upload</option>
+                      <option value="uploaded">Uploaded</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Retention policy</span>
+                    <select id="ccs-resource-retention-policy" class="ds-input">
+                      <option value="standard">Standard</option>
+                      <option value="delete_after_expiry">Delete after expiry</option>
+                      <option value="legal_hold">Legal hold</option>
+                    </select>
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Retention until</span>
+                    <input type="datetime-local" id="ccs-resource-retention-until" class="ds-input" />
+                  </label>
+                  <label class="ccs-field">
+                    <span class="ccs-field__label">Review required</span>
+                    <input type="datetime-local" id="ccs-resource-review-required-at" class="ds-input" />
+                  </label>
+                  <label class="ccs-field ccs-field--full">
+                    <span class="ccs-field__label">Lifecycle notes</span>
+                    <textarea id="ccs-resource-lifecycle-notes" class="ds-input" maxlength="2000" rows="2" placeholder="Upload, review, retention, or deletion context"></textarea>
+                  </label>
+                  <label class="ccs-inline-toggle ccs-resource-form__official">
+                    <input type="checkbox" id="ccs-resource-official" />
+                    Official
+                  </label>
+                  <div class="ccs-resource-form__actions">
+                    <button type="submit" class="ds-btn ds-btn--primary ds-btn--sm">Add Resource</button>
+                  </div>
+                </form>
+
+                <div id="ccs-resources-manage-list" class="ccs-resource-list"></div>
+              </section>
+
+              <!-- CARD 9: Members -->
               <span id="ccs-sec-members" class="ccs-anchor" aria-hidden="true"></span>
               <section class="ds-card ccs-card" aria-labelledby="ccs-members-title">
                 <header class="ccs-card__head">
@@ -171,10 +419,12 @@
                   </div>
                   <div>
                     <h2 class="ccs-card__title" id="ccs-requests-title">Join Requests</h2>
-                    <p class="ccs-card__hint">Pending requests to join this private circle.</p>
+                    <p class="ccs-card__hint">Pending requests to join this Circle.</p>
                   </div>
                 </header>
-                <div id="ccs-requests-list" class="ccs-members"></div>
+                <div id="ccs-requests-list" class="ccs-members">
+                  <div class="ccs-empty" role="status">No pending join requests.</div>
+                </div>
               </section>
 
               <!-- CARD 5: Bans -->
@@ -199,7 +449,7 @@
               <span id="ccs-sec-danger" class="ccs-anchor" aria-hidden="true"></span>
               <section class="ds-card ccs-card ccs-card--danger" id="ccs-danger-card" hidden aria-labelledby="ccs-danger-title">
                 <header class="ccs-card__head">
-                  <div class="ccs-card__icon ccs-card__icon--danger" aria-hidden="true">
+                  <div class="ccs-card__icon ccs-card__icon--blue" aria-hidden="true">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                       <line x1="12" y1="9" x2="12" y2="13"/>
@@ -212,11 +462,50 @@
                   </div>
                 </header>
                 <div class="ccs-danger-actions">
-                  <button type="button" class="ds-btn ds-btn--secondary" id="ccs-transfer-btn">Transfer ownership…</button>
+                  <button type="button" class="ds-btn ds-btn--secondary ccs-btn-brand" id="ccs-transfer-btn">Transfer ownership…</button>
                   <button type="button" class="ds-btn ds-btn--danger" id="ccs-delete-btn">Delete circle</button>
                 </div>
               </section>
 
+            </div>
+          </div>
+
+          <div id="ccs-delete-confirm-modal"
+               class="cc-modal community-modal"
+               role="dialog"
+               aria-modal="true"
+               aria-labelledby="ccs-delete-confirm-title"
+               aria-describedby="ccs-delete-confirm-desc"
+               aria-hidden="true"
+               style="display:none;"
+               data-ccs-delete-modal>
+            <div class="ds-card cc-modal__panel ccs-confirm-modal__panel">
+              <header class="cc-modal__header">
+                <h3 id="ccs-delete-confirm-title" class="cc-modal__title">Delete circle</h3>
+                <button type="button"
+                        class="cc-modal__close"
+                        id="ccs-delete-confirm-close"
+                        aria-label="Close delete confirmation">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </header>
+              <div class="cc-modal__body">
+                <p id="ccs-delete-confirm-desc" class="ccs-confirm-modal__copy">
+                  This permanently deletes the circle and removes all members from it. This action cannot be undone.
+                </p>
+                <div class="ccs-confirm-modal__target" aria-live="polite">
+                  <span class="ccs-confirm-modal__label">Circle</span>
+                  <strong id="ccs-delete-confirm-name"></strong>
+                </div>
+                <p class="ccs-confirm-modal__error" id="ccs-delete-confirm-error" hidden></p>
+              </div>
+              <footer class="cc-modal__footer">
+                <button type="button" class="ds-btn ds-btn--ghost" id="ccs-delete-confirm-cancel">Cancel</button>
+                <button type="button" class="ds-btn ds-btn--danger" id="ccs-delete-confirm-submit">Delete circle</button>
+              </footer>
             </div>
           </div>
 

@@ -36,10 +36,10 @@
   overflow: hidden;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+/* STANDARD card-with-table: no hover lift. Stay flat. */
 .dat-content-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
-  border-color: #D0D5DD;
+  transform: none;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
 }
 .dat-content-card::before {
   content: "";
@@ -53,19 +53,20 @@
 }
 
 /* ── Card-with-header variant — table sub-pages get a proper card header
-   band divided from the body by a 1px rule. Mirrors the chart-card pattern.
-   Use `.dat-content-card--with-header` on the section element. */
-.dat-content-card--with-header {
-  padding: 0;
+   band divided from the body by a 1px rule. Use this with
+   `.dat-table-card` when the card contains a table. */
+.dat-content-card.dat-content-card--with-header,
+section.dat-content-card--with-header {
+  padding: 0 !important;
 }
 .dat-card-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid #F2F4F7;
-  background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+  background: #FFFFFF;
   position: relative;
   z-index: 2;
   flex-wrap: wrap;
@@ -127,18 +128,21 @@
   height: 30px;
   font-size: 13px;
 }
+.dat-card-header__search .dat-table-toolbar__search-icon {
+  display: none;
+}
 
 /* Body sections inside the card-with-header get their own padding since
    the parent card lost its inset. */
 .dat-content-card--with-header > .dat-table-pager-host,
-.dat-content-card--with-header > .dat-table-wrap,
 .dat-content-card--with-header > .dat-card-footer {
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
+/* STANDARD: table flows flush with card edges, 16px inner gutter handled
+   on first/last cell via .dat-table th/td:first-child / :last-child. */
 .dat-content-card--with-header > .dat-table-wrap {
-  padding-top: 0;
-  padding-bottom: 8px;
+  padding: 0;
 }
 .dat-content-card--with-header > .dat-card-footer {
   padding-bottom: 16px;
@@ -147,6 +151,174 @@
 .dat-content-card--with-header > .dat-table-pager-host:empty {
   display: none;
 }
+
+/* STANDARD — card with table
+   Mirrors the developer dashboard "Top Performing Assets" reference:
+   gradient strip, icon/title/subtitle header, white header row, no inner
+   card around the table, right-aligned numbers, green row hover. */
+.dat-table-card {
+  padding: 0;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #EAECF0);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  overflow: hidden;
+}
+.dat-table-card::before {
+  z-index: 3;
+}
+.dat-content-card.dat-table-card:hover {
+  transform: none;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  border-color: var(--card-border-color, #EAECF0);
+}
+.dat-table-card .dat-card-header {
+  align-items: center;
+  padding: 20px 24px;
+  margin: 0;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+.dat-table-card .dat-card-header__title-group {
+  align-items: center;
+  gap: 14px;
+}
+.dat-table-card .dat-card-header__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%);
+  color: #03FF88;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+}
+.dat-table-card .dat-card-header__icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: #03FF88;
+}
+.dat-table-card .dat-section__title {
+  margin: 0;
+  color: var(--page-title-color, #0A0D12);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
+}
+.dat-table-card .dat-section__hint {
+  margin: 2px 0 0;
+  color: var(--text-secondary, #717680);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+.dat-table-card > .dat-table-pager-host {
+  padding: 12px 24px 0;
+  margin: 0;
+}
+.dat-table-card > .dat-table-pager-host:empty {
+  display: none;
+}
+.dat-table-card > .dat-table-wrap {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow-x: auto;
+}
+.dat-table-card > .dat-card-footer {
+  margin: 0;
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--card-border-color, #EAECF0);
+}
+.dat-table-card .dat-table {
+  border-collapse: collapse;
+}
+.dat-table-card .dat-table th {
+  padding: 14px 12px;
+  background: #FFFFFF;
+  color: var(--text-secondary, #717680);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+  white-space: nowrap;
+}
+.dat-table-card .dat-table td {
+  padding: 14px 12px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary, #535862);
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+.dat-table-card .dat-table th:first-child,
+.dat-table-card .dat-table td:first-child {
+  padding-left: 16px;
+}
+.dat-table-card .dat-table th:last-child,
+.dat-table-card .dat-table td:last-child {
+  padding-right: 16px;
+}
+.dat-table-card .dat-table__num,
+.dat-table-card .dat-th--num,
+.dat-table-card .dat-td--num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+.dat-table-card .dat-table--hoverable tbody tr:nth-child(even) td {
+  background: #FFFFFF;
+}
+.dat-table-card .dat-table--hoverable tbody tr:hover td {
+  background: #FFFFFF;
+  cursor: default;
+}
+.dat-table-card .dat-th--sortable[aria-sort="ascending"],
+.dat-table-card .dat-th--sortable[aria-sort="descending"] {
+  background: #FFFFFF;
+}
+.dat-table-card .dat-sort-icon,
+.dat-table-card .dat-sort-arrow {
+  color: var(--primary-color, #0000FF);
+}
+.dat-table-card .dat-icon-btn {
+  color: #98A2B3;
+}
+.dat-table-card .dat-icon-btn:hover,
+.dat-table-card .dat-icon-btn:focus-visible {
+  background: transparent;
+}
+
+/* Wide JS-backed affiliate tables should keep the analytics-card header
+   rhythm: one-line labels, same 47px header row, horizontal scroll when
+   the column count exceeds the card width. */
+#dat-customers-thead-row th:nth-child(1) { min-width: 220px; }
+#dat-customers-thead-row th:nth-child(2) { min-width: 150px; }
+#dat-customers-thead-row th:nth-child(3) { min-width: 120px; }
+#dat-customers-thead-row th:nth-child(4) { min-width: 120px; }
+#dat-customers-thead-row th:nth-child(5) { min-width: 130px; }
+#dat-customers-thead-row th:nth-child(6) { min-width: 90px; }
+#dat-customers-thead-row th:nth-child(7) { min-width: 110px; }
+#dat-customers-thead-row th:nth-child(8) { min-width: 130px; }
+#dat-customers-thead-row th:nth-child(9) { min-width: 110px; }
+#dat-customers-thead-row th:nth-child(10) { min-width: 110px; }
+
+#dat-products-thead-row th:nth-child(1) { min-width: 240px; }
+#dat-products-thead-row th:nth-child(2) { min-width: 120px; }
+#dat-products-thead-row th:nth-child(3) { min-width: 140px; }
+#dat-products-thead-row th:nth-child(4) { min-width: 145px; }
+#dat-products-thead-row th:nth-child(5) { min-width: 110px; }
+#dat-products-thead-row th:nth-child(6) { min-width: 130px; }
+#dat-products-thead-row th:nth-child(7) { min-width: 120px; }
+
+#dat-members-thead-row th:nth-child(1) { min-width: 220px; }
+#dat-members-thead-row th:nth-child(2) { min-width: 150px; }
+#dat-members-thead-row th:nth-child(3) { min-width: 120px; }
+#dat-members-thead-row th:nth-child(4) { min-width: 110px; }
+#dat-members-thead-row th:nth-child(5) { min-width: 130px; }
+#dat-members-thead-row th:nth-child(6) { min-width: 120px; }
+#dat-members-thead-row th:nth-child(7) { min-width: 150px; }
+#dat-members-thead-row th:nth-child(8) { min-width: 96px; }
 
 /* Mobile — stack header rows */
 @media (max-width: 720px) {
@@ -220,45 +392,109 @@
   line-height: 30px;
   background: var(--bg-default, #fff);
   color: var(--text-primary, #181D27);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: var(--select-chevron-icon);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 7px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.dat-select:hover {
+  border-color: #D5D7DA;
+  background-color: #FFFFFF;
+}
+.dat-select:focus-visible {
+  outline: none;
+  border-color: var(--brand-blue, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.10);
 }
 
 /* ── Tables ──────────────────────────────────────────────────── */
+/* STANDARD card-with-table chrome — table flows seamlessly inside card,
+   no inner border/radius, white header row, white rows (no zebra/hover). */
 .dat-table-wrap {
-  border: 1px solid var(--border-subtle, #E9EAEB);
-  border-radius: 10px;
-  overflow-x: auto;
-  background: var(--bg-default, #fff);
+  border: 0;
+  border-radius: 0;
+  overflow-x: visible;
+  background: transparent;
 }
 .dat-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 .dat-table th,
 .dat-table td {
-  padding: 12px 16px;
+  padding: 14px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--border-subtle, #F1F2F4);
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
   vertical-align: middle;
-  color: var(--text-primary, #181D27);
+  color: var(--text-secondary, #535862);
+  font-family: 'TT Norms Pro', sans-serif;
+  line-height: 20px;
+}
+.dat-table th:first-child,
+.dat-table td:first-child {
+  padding-left: 16px;
+}
+.dat-table th:last-child,
+.dat-table td:last-child {
+  padding-right: 16px;
 }
 .dat-table th {
-  background: var(--bg-subtle, #FAFAFA);
+  background: #FFFFFF;
   color: var(--text-secondary, #717680);
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-weight: 700;
 }
 .dat-table tbody tr:last-child td {
   border-bottom: 0;
 }
-/* Zebra rows on opt-in tables only — keeps default tables flat. */
-.dat-table--hoverable tbody tr:nth-child(even) td {
-  background: var(--bg-subtle, #FAFBFC);
+
+/* STANDARD: every column header gets a grey ▼ sort triangle, like the
+   dashboard/assets cards. Sorted column shows brand-blue triangle. */
+.dat-table thead th[scope="col"]::after {
+  content: "";
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: middle;
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid #A4A7AE;
+  opacity: 0.65;
 }
+.dat-table thead th[aria-sort="descending"]::after {
+  border-top-color: var(--primary-color, #0000FF);
+  opacity: 1;
+}
+.dat-table thead th[aria-sort="ascending"]::after {
+  border-top: 0;
+  border-bottom: 4px solid var(--primary-color, #0000FF);
+  opacity: 1;
+}
+/* Hide inline sort glyphs — the single visible indicator is the ::after
+   triangle above. DAT.dataTable appends `.dat-sort-arrow`; older tables used
+   `.dat-sort-icon`. */
+.dat-table thead th .dat-sort-icon,
+.dat-table thead th .dat-sort-arrow {
+  display: none;
+}
+/* STANDARD: no zebra, no hover wash. White rows always. */
+.dat-table--hoverable tbody tr,
+.dat-table--hoverable tbody tr:nth-child(even),
+.dat-table--hoverable tbody tr:hover {
+  background: #FFFFFF;
+}
+.dat-table--hoverable tbody tr:nth-child(even) td,
 .dat-table--hoverable tbody tr:hover td {
-  background: #EEF1FF;
+  background: transparent;
   cursor: default;
 }
 /* Sort indicator on column header */
@@ -856,15 +1092,10 @@
   overflow: hidden;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
-/* Brand chrome — 4px gradient bar atop. Tone variants converge on the same
-   brand bar; tone is still visible via the icon color to preserve scanning. */
-.dat-kpi::before {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
-  border-radius: 10px 10px 0 0;
+/* Secondary KPI cards are flat metric tiles; no top accent strip. */
+.dat-kpi-grid--3 .dat-kpi::before {
+  content: none !important;
+  display: none !important;
 }
 .dat-kpi:hover {
   transform: translateY(-1px);
@@ -916,16 +1147,10 @@
   box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
   border-color: #D0D5DD;
 }
-/* Brand chrome — 4px gradient bar atop. */
+/* Pipeline is a flow strip, not a table/card header surface; keep it flat
+   without the standard top accent. */
 .dat-payout-flow::before {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
-  border-radius: 12px 12px 0 0;
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 .dat-payout-stage {
   padding: 22px 24px 18px;
@@ -1168,14 +1393,17 @@ body#developer-affiliate-team-body a:active,
   position: relative;
   overflow: hidden;
   border-radius: 12px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border-color, #EAECF0);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .dat-chart-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.08);
-  border-color: #D0D5DD;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  border-color: var(--card-border-color, #EAECF0);
 }
-/* Brand chrome — 4px gradient bar atop matches hero kpi / metric-card. */
+/* Brand chrome — 4px gradient bar atop matches hero kpi / metric-card.
+   Z-index 3 sits ABOVE the header so the strip is never covered. */
 .dat-chart-card::before {
   content: '';
   position: absolute;
@@ -1183,7 +1411,7 @@ body#developer-affiliate-team-body a:active,
   height: 4px;
   background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
   border-radius: 12px 12px 0 0;
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
 }
 .dat-chart-card.dat-chart-card--touched .dat-chart-hover-hint {
@@ -1220,19 +1448,20 @@ body#developer-affiliate-team-body a:active,
 /* Trend SVG: prevent text selection on hover overlay */
 .dat-trend-svg { user-select: none; -webkit-user-select: none; }
 
-/* Chart card structure — proper inset header section divided from the
-   chart body by a subtle rule. The header lives inside the card padding
-   so the gradient bar atop stays unbroken; the divider sits below the
-   header content and above the chart body. */
-.dat-chart-card { padding: 0; }
+/* Chart card structure — same flush card chrome as the standard card-table
+   pattern, with the chart-specific body retained underneath. */
+body#developer-affiliate-team-body .dat-chart-card {
+  padding: 0 !important;
+  border-radius: 12px !important;
+}
 .dat-chart-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  padding: 20px 22px 16px;
-  border-bottom: 1px solid #F2F4F7;
-  background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
+  padding: 20px 24px;
+  border-bottom: 1px solid #EAECF0;
+  background: #FFFFFF;
   position: relative;
   z-index: 2;  /* sits above the gradient bar's stacking */
 }
@@ -1289,7 +1518,7 @@ body#developer-affiliate-team-body a:active,
 .dat-legend-dot--revenue    { background: #C7D1FF; }
 .dat-chart-body {
   min-height: 220px;
-  padding: 18px 22px 20px;
+  padding: 16px 24px 18px;
   position: relative;
 }
 /* Empty state with subtle POOOL watermark logo.
@@ -1345,15 +1574,33 @@ body#developer-affiliate-team-body a:active,
   background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
   opacity: 1;
 }
-/* Table empty cell: no orphaned logo (looks misplaced in a row). Just
-   tighter padding + max-width on the message for readability. */
+/* Table empty cells use the same logo-first empty-state language as the
+   chart and rank-list cards so analytics cards do not drift visually. */
 .dat-table tbody tr td.dat-empty {
   padding: 40px 24px;
   text-align: center;
   color: var(--text-secondary, #717680);
-  font-style: italic;
+  font-style: normal;
   line-height: 1.5;
   max-width: 100%;
+}
+.dat-table-empty-state {
+  display: flex;
+  min-height: 92px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+.dat-table-empty-state__logo {
+  display: block;
+  width: 96px;
+  height: 28px;
+  background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
+}
+.dat-table-empty-state__msg {
+  display: block;
+  max-width: 720px;
 }
 
 /* Conversion funnel — SVG trapezoid stack on the left, conversion %
@@ -1366,20 +1613,22 @@ body#developer-affiliate-team-body a:active,
    delta. Layout reads as a vertical flow without forcing a tapered
    trapezoid that breaks when later stages exceed earlier ones (late-
    attribution case). */
+/* Conversion funnel — frameless stages with full-width brand-gradient
+   tracks; drop/gain pills between stages stay borderless. */
 .dat-funnel-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding: 4px 0;
 }
 .dat-funnel-stage {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 16px;
-  border: 1px solid var(--card-border-color, #E5E7EB);
-  border-radius: 12px;
-  background: #FFFFFF;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .dat-funnel-stage__head {
   display: flex;
@@ -1406,7 +1655,7 @@ body#developer-affiliate-team-body a:active,
 .dat-funnel-stage__track {
   height: 10px;
   width: 100%;
-  background: #F4F5F7;
+  background: #F2F4F7;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1415,71 +1664,93 @@ body#developer-affiliate-team-body a:active,
   border-radius: 999px;
   background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
   transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  min-width: 4px; /* always show a sliver even at zero so the bar reads */
+  min-width: 4px;
 }
-.dat-funnel-stage__fill[data-stage-index="1"] { opacity: 0.82; }
-.dat-funnel-stage__fill[data-stage-index="2"] { opacity: 0.64; }
+.dat-funnel-stage__fill[data-stage-index="1"] { opacity: 0.85; }
+.dat-funnel-stage__fill[data-stage-index="2"] { opacity: 0.70; }
 
-/* Drop-off / gain chip — single inline pill sitting between stage cards */
+/* Drop-off / gain chip — borderless, just text + arrow + delta */
 .dat-funnel-step {
   align-self: center;
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  border-radius: 999px;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  background: #FFFFFF;
-  border: 1px solid var(--card-border-color, #E5E7EB);
+  background: transparent;
+  border: 0;
 }
 .dat-funnel-step__arrow { font-size: 13px; line-height: 1; }
 .dat-funnel-step__pct   { font-weight: 700; letter-spacing: -0.01em; }
-.dat-funnel-step__delta { color: var(--text-secondary, #717680); font-size: 11px; }
+.dat-funnel-step__delta { color: var(--text-secondary, #98A2B3); font-size: 11px; }
 
-.dat-funnel-step--drop { color: #B42318; background: #FEF3F2; border-color: #FECDCA; }
+.dat-funnel-step--drop { color: #B42318; }
 .dat-funnel-step--drop .dat-funnel-step__pct { color: #B42318; }
-.dat-funnel-step--gain { color: #027A48; background: #ECFDF3; border-color: #ABEFC6; }
+.dat-funnel-step--gain { color: #027A48; }
 .dat-funnel-step--gain .dat-funnel-step__pct { color: #027A48; }
 .dat-funnel-step--flat { color: var(--text-secondary, #717680); }
 .dat-funnel-step--flat .dat-funnel-step__pct { color: var(--page-title-color, #181D27); }
 
-/* Horizontal bar chart (members / assets) */
-.dat-hbars { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+/* Horizontal bar chart (members / assets) — compact ranking rows so the
+   Top-10 list does not stretch the whole charts row out of proportion. */
+.dat-hbars {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
 .dat-hbar__row {
   display: grid;
-  grid-template-columns: 140px 1fr 90px;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 3px;
+  padding: 6px 0;
+  border-bottom: 1px solid #EAECF0;
 }
+.dat-hbar__row:last-child { border-bottom: 0; }
 .dat-hbar__label {
+  grid-column: 1;
+  grid-row: 1;
   font-size: 12px;
+  font-weight: 600;
+  line-height: 14px;
   color: var(--text-primary, #181D27);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0;
+}
+.dat-hbar__value {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 14px;
+  color: var(--text-primary, #181D27);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  letter-spacing: 0;
 }
 .dat-hbar__wrap {
-  background: var(--bg-subtle, #F4F4F5);
-  border-radius: 4px;
-  height: 14px;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  background: #F2F4F7;
+  border-radius: 999px;
+  height: 4px;
   overflow: hidden;
 }
 .dat-hbar__fill {
   display: block;
   height: 100%;
-  background: #0000FF;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-.dat-hbar__value {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary, #181D27);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  min-width: 4px;
 }
 
 /* Insights grid (top performers + at-risk) */
@@ -1628,6 +1899,13 @@ body#developer-affiliate-team-body a:active,
 .dat-empty--cta {
   padding: 36px 16px;
   font-style: normal;
+}
+.dat-empty--cta .dat-empty__logo {
+  display: block;
+  width: 96px;
+  height: 28px;
+  margin: 0 auto 12px;
+  background: url('/static/images/logos/Logo%20Pool.svg') no-repeat center / contain;
 }
 .dat-empty--cta .dat-empty__title {
   display: block;
@@ -1802,11 +2080,15 @@ body#developer-affiliate-team-body a:active,
   /* Stack the cards with consistent vertical rhythm + leave room for
      the sticky action footer at the bottom (max-height worst-case 88px). */
   padding-bottom: 96px;
+  width: 100%;
+  max-width: none;
 }
 .dat-settings-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  max-width: none;
 }
 
 /* Each card: header (title + pill) on top, content below. */
@@ -1824,6 +2106,8 @@ body#developer-affiliate-team-body a:active,
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
 }
 .dat-settings-card__header > div {
   flex: 1 1 auto;
@@ -1880,6 +2164,10 @@ body#developer-affiliate-team-body a:active,
   color: var(--text-primary, #181D27);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+.dat-settings-form .ds-input::placeholder {
+  color: var(--text-tertiary, #717680);
+  font-weight: 500;
+}
 .dat-settings-form .ds-input:focus-visible {
   outline: none;
   border-color: var(--brand-blue, #0000FF);
@@ -1888,6 +2176,61 @@ body#developer-affiliate-team-body a:active,
 .dat-settings-form .ds-input[aria-invalid="true"] {
   border-color: #B42318;
   box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.10);
+}
+.dat-settings-form .ds-form-group {
+  gap: 6px;
+}
+.dat-settings-form .ds-form-label {
+  margin: 0;
+  color: var(--text-primary, #181D27);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+.dat-settings-form .ds-btn,
+.dat-settings-page .ds-btn {
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.dat-settings-form .ds-btn--sm,
+.dat-settings-page .ds-btn--sm {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 12px;
+}
+.dat-settings-form .ds-btn--primary,
+.dat-settings-page .ds-btn--primary {
+  background: var(--brand-blue, #0000FF);
+  color: #FFFFFF;
+  border: 1px solid var(--brand-blue, #0000FF);
+}
+.dat-settings-form .ds-btn--primary:hover,
+.dat-settings-page .ds-btn--primary:hover {
+  background: #0000CC;
+  border-color: #0000CC;
+}
+.dat-settings-form .ds-btn--secondary,
+.dat-settings-page .ds-btn--secondary {
+  background: #FFFFFF;
+  color: var(--brand-blue, #0000FF);
+  border: 1px solid var(--border-subtle, #E9EAEB);
+}
+.dat-settings-form .ds-btn--secondary:hover,
+.dat-settings-page .ds-btn--secondary:hover {
+  background: #F8F9FF;
+  border-color: rgba(0, 0, 255, 0.28);
+  color: var(--brand-blue, #0000FF);
+}
+.dat-settings-form .ds-btn svg,
+.dat-settings-page .ds-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.dat-country-input {
+  text-transform: uppercase;
 }
 
 /* Status pill --muted variant for "Not published". */
@@ -2255,14 +2598,17 @@ body#developer-affiliate-team-body a:active,
 .dat-tier-page > .dat-content-card { margin: 0; }
 
 .dat-tier-hero {
-  background: linear-gradient(135deg, var(--card-bg, #fff) 0%, #F8F9FF 100%);
+  background: var(--card-bg, #fff);
 }
 
 .dat-tier-hero__grid {
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr;
-  gap: 16px;
+  gap: 0;
   margin-top: 16px;
+  padding: 2px 0 0;
+  border-top: 1px solid var(--border-subtle, #E9EAEB);
+  border-bottom: 1px solid var(--border-subtle, #E9EAEB);
 }
 @media (max-width: 820px) {
   .dat-tier-hero__grid { grid-template-columns: 1fr; }
@@ -2274,14 +2620,21 @@ body#developer-affiliate-team-body a:active,
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 16px 18px;
-  border: 1px solid var(--border-subtle, #E9EAEB);
-  border-radius: 12px;
-  background: var(--card-bg, #fff);
+  min-height: 106px;
+  padding: 16px 18px 18px;
+  border: 0;
+  border-right: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 0;
+  background: transparent;
 }
 .dat-tier-hero__cur {
-  background: linear-gradient(135deg, #EEF1FF 0%, #F8F9FF 100%);
-  border-color: #C7CFFF;
+  background: transparent;
+  border-left: 3px solid var(--brand-blue, #0000FF);
+  padding-left: 16px;
+}
+
+.dat-tier-hero__next {
+  border-right: 0;
 }
 
 .dat-tier-hero__label {
@@ -2363,23 +2716,65 @@ body#developer-affiliate-team-body a:active,
 /* Personal vs Team compare */
 .dat-compare-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 24px;
+  margin-top: 18px;
+  position: relative;
 }
 @media (max-width: 720px) {
   .dat-compare-grid { grid-template-columns: 1fr; }
 }
-.dat-compare-card {
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid var(--border-subtle, #E9EAEB);
+.dat-compare-panel {
+  min-height: 168px;
+  padding: 4px 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--card-bg, #fff);
+  background: transparent;
 }
-.dat-compare-card--personal { border-left: 3px solid #137333; }
-.dat-compare-card--team     { border-left: 3px solid var(--brand-blue, #0000FF); }
+.dat-compare-panel--personal {
+  align-items: flex-end;
+  text-align: right;
+}
+.dat-compare-panel--team {
+  align-items: flex-start;
+  text-align: left;
+}
+.dat-compare-vs {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 168px;
+}
+.dat-compare-vs::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--border-subtle, #E9EAEB);
+  transform: translateX(-50%);
+}
+.dat-compare-vs span {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  background: #FFFFFF;
+  color: var(--brand-blue, #0000FF);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.04);
+}
 .dat-compare-card__label {
   font-size: 11px;
   font-weight: 600;
@@ -2392,8 +2787,10 @@ body#developer-affiliate-team-body a:active,
   font-weight: 700;
   color: var(--text-primary, #181D27);
 }
-.dat-compare-card--personal .dat-compare-card__tier { color: #137333; }
-.dat-compare-card--team .dat-compare-card__tier { color: var(--brand-blue, #0000FF); }
+.dat-compare-panel--personal .dat-compare-card__tier {
+  color: var(--brand-blue, #0000FF);
+}
+.dat-compare-panel--team .dat-compare-card__tier { color: var(--brand-blue, #0000FF); }
 .dat-compare-card__rate {
   font-size: 15px;
   font-weight: 600;
@@ -2405,6 +2802,41 @@ body#developer-affiliate-team-body a:active,
   font-size: 13px;
   color: var(--text-secondary, #535862);
   line-height: 1.5;
+  max-width: 420px;
+}
+.dat-compare-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  gap: 8px 14px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.dat-compare-panel--personal .dat-compare-facts {
+  justify-content: end;
+}
+.dat-compare-panel--team .dat-compare-facts {
+  justify-content: start;
+}
+.dat-compare-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dat-compare-facts dt {
+  margin: 0;
+  color: var(--text-secondary, #717680);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.dat-compare-facts dd {
+  margin: 0;
+  color: var(--text-primary, #181D27);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 .dat-compare-card__msg em {
   font-style: normal;
@@ -2543,11 +2975,11 @@ body#developer-affiliate-team-body a:active,
   color: var(--text-primary, #181D27);
   appearance: none;
   -webkit-appearance: none;
-  background-image:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23717680' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  -moz-appearance: none;
+  background-image: var(--select-chevron-icon);
   background-repeat: no-repeat;
   background-position: right 8px center;
-  background-size: 9px 9px;
+  background-size: 9px 6px;
   cursor: pointer;
   transition: border-color .15s ease, background-color .15s ease;
 }
@@ -2658,6 +3090,9 @@ body#developer-affiliate-team-body a:active,
 .dat-th--sortable[aria-sort="descending"] .dat-sort-arrow {
   opacity: 1;
   color: var(--brand-blue, #0000FF);
+}
+.dat-table thead th .dat-sort-arrow {
+  display: none !important;
 }
 
 /* Cell stack (primary + secondary line inside one cell) */
@@ -2908,11 +3343,40 @@ body#developer-affiliate-team-body a:active,
 }
 
 /* Phase-5: branding preview card on team-settings page. */
+.dat-brand-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: end;
+}
+.dat-color-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dat-color-picker {
+  width: 42px;
+  height: 40px;
+  flex: 0 0 42px;
+  padding: 0;
+  border: 1px solid var(--border-subtle, #E9EAEB);
+  border-radius: 8px;
+  background: #FFFFFF;
+  cursor: pointer;
+}
+.dat-color-picker:focus-visible {
+  outline: none;
+  border-color: var(--brand-blue, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.10);
+}
+#dat-branding-accent {
+  font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+}
 .dat-branding-preview {
   margin-top: 16px;
   padding: 12px 14px;
-  background: var(--surface-muted, #F9FAFB);
-  border: 1px dashed var(--border-color, #E5E7EB);
+  background: var(--bg-subtle, #FAFAFA);
+  border: 1px solid var(--border-subtle, #E9EAEB);
   border-radius: 10px;
 }
 .dat-branding-preview__label {
@@ -2935,6 +3399,12 @@ body#developer-affiliate-team-body a:active,
   font-size: 12px;
   color: var(--text-secondary, #667085);
   margin-top: 4px;
+}
+@media (max-width: 720px) {
+  .dat-brand-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
 }
 
 /* Phase-5: cohort retention heatmap. Table-based so it remains
@@ -3277,6 +3747,35 @@ table.dat-cohort tbody th {
   stroke: #0000FF !important;
 }
 
+/* Final guard: the secondary KPI row is intentionally flat. Keep all three
+   cards (Conversion, Qualified, Members) free of top accent pseudo-strips. */
+body#developer-affiliate-team-body #dat-analytics-root .dat-kpi-grid--3 > article.dat-kpi::before,
+body#developer-affiliate-team-body #dat-analytics-root .dat-kpi-grid--3 > article.dat-kpi::after {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
+}
+body#developer-affiliate-team-body #dat-analytics-root .dat-kpi-grid--3 > article.dat-kpi {
+  border-top-color: var(--border-subtle, #E9EAEB) !important;
+}
+
+/* By-member analytics table is a plain breakdown card on this page; remove
+   the shared table-card top accent while keeping the table/header chrome. */
+body#developer-affiliate-team-body #dat-analytics-root section[aria-labelledby="dat-bymember-title"].dat-table-card::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
+}
+
+/* Assets-sold analytics table uses the same plain breakdown treatment. */
+body#developer-affiliate-team-body #dat-analytics-root section[aria-labelledby="dat-byasset-title"].dat-table-card::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
+}
 
 /* Universal .ubadge system moved to /static/css/ubadge.css — single source of truth.
    Loaded globally via head.html so all pages get the latest brand-aware palette. */

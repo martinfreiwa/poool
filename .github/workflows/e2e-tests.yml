@@ -8,6 +8,7 @@
 name: E2E Tests
 
 on:
+  workflow_call:
   pull_request:
     branches: [main]
     paths:
@@ -38,8 +39,13 @@ concurrency:
 env:
   BASE_URL: ${{ github.event.inputs.base_url || 'http://localhost:8888' }}
   DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_test
+  COMMUNITY_DATABASE_URL: postgres://postgres:postgres@localhost:5432/poool_community_test
+  REDIS_URL: redis://localhost:6379
   ADMIN_EMAIL: admin@poool.app
   ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+  SESSION_SECRET: e2e-session-secret-not-for-production
+  JWT_SECRET: e2e-session-secret-not-for-production
+  TOTP_SECRET_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
   POOOL_ENV: development
   RUST_LOG: warn
 
@@ -61,6 +67,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-bookworm
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -99,24 +114,27 @@ jobs:
         env:
           SQLX_OFFLINE: true
 
-      # ── Database Setup ────────────────────────────────────────
-      - name: 🗄️ Apply database migrations
+      - name: 🗄️ Create community test database
         run: |
-          for f in database/*.sql; do
-            echo "Applying $f..."
-            PGPASSWORD=postgres psql -h localhost -U postgres -d poool_test -f "$f" || true
-          done
+          PGPASSWORD=postgres psql -h localhost -U postgres -d postgres \
+            -c "CREATE DATABASE poool_community_test"
 
       # ── Start Backend ─────────────────────────────────────────
       - name: 🚀 Start backend server
         working-directory: backend
         run: |
-          ./target/release/poool-backend &
+          ./target/release/poool-backend > ../backend-e2e.log 2>&1 &
           echo "Waiting for server..."
           for i in $(seq 1 30); do
-            curl -s http://localhost:8888/health && break || sleep 1
+            if curl -fsS http://localhost:8888/ready; then
+              echo "Server is ready!"
+              exit 0
+            fi
+            sleep 1
           done
-          echo "Server is ready!"
+          echo "::error::Backend did not become ready"
+          tail -200 ../backend-e2e.log
+          exit 1
         env:
           SERVER_PORT: "8888"
           BASE_URL: "http://localhost:8888"
@@ -151,8 +169,7 @@ jobs:
             --self-contained-html \
             --numprocesses=auto \
             --dist=loadscope \
-            $MARKER_ARG \
-            || true  # Don't fail the step — we want artifacts
+            $MARKER_ARG
 
       # ── Upload Test Artifacts ─────────────────────────────────
       - name: 📸 Upload screenshots

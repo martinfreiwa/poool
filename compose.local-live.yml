@@ -1,0 +1,114 @@
+name: poool-local-live
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: poool
+      POSTGRES_PASSWORD: poool_local_live
+      POSTGRES_DB: poool
+    ports:
+      - "5432:5432"
+    volumes:
+      - poool-local-live-postgres:/var/lib/postgresql/data
+      - ./scripts/local-live/init-postgres.sql:/docker-entrypoint-initdb.d/010-init-postgres.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poool -d poool"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-bookworm
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --port
+      - "0"
+      - --unixsocket
+      - /var/run/redis/redis.sock
+      - --unixsocketperm
+      - "777"
+    volumes:
+      - poool-local-live-redis:/data
+      - poool-local-live-redis-run:/var/run/redis
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -s /var/run/redis/redis.sock PING | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - poool-local-live-redis-run:/var/run/redis
+      - ${HOME}/.config/gcloud:/home/poool/.config/gcloud:ro
+    environment:
+      APP_ENV: staging
+      POOOL_ENV: staging
+      POOOL_LOCAL_LIVE_STRICT: "true"
+      PGBOUNCER_ENABLED: "true"
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8080"
+      PORT: "8080"
+      BASE_URL: ${BASE_URL:-https://platform.local.poool.test}
+      DATABASE_URL: postgres://poool:poool_local_live@postgres:5432/poool
+      COMMUNITY_DATABASE_NAME: poool_community
+      REDIS_URL: unix:///var/run/redis/redis.sock
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      TOTP_SECRET_ENCRYPTION_KEY: ${TOTP_SECRET_ENCRYPTION_KEY:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME:-}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      DIDIT_API_KEY: ${DIDIT_API_KEY:-}
+      DIDIT_WORKFLOW_ID: ${DIDIT_WORKFLOW_ID:-}
+      DIDIT_WEBHOOK_SECRET: ${DIDIT_WEBHOOK_SECRET:-}
+      SANITY_PROJECT_ID: ${SANITY_PROJECT_ID:-}
+      SANITY_DATASET: ${SANITY_DATASET:-staging}
+      SANITY_API_VERSION: ${SANITY_API_VERSION:-2026-04-24}
+      SANITY_READ_TOKEN: ${SANITY_READ_TOKEN:-}
+      SANITY_WRITE_TOKEN: ${SANITY_WRITE_TOKEN:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      CHAIN_NETWORK: ${CHAIN_NETWORK:-polygon_amoy}
+      CHAIN_ID: ${CHAIN_ID:-80002}
+      CHAIN_RPC_URL: ${CHAIN_RPC_URL:-}
+      CHAIN_CONTRACT_ADDRESS: ${CHAIN_CONTRACT_ADDRESS:-}
+      CHAIN_IDENTITY_REGISTRY_ADDRESS: ${CHAIN_IDENTITY_REGISTRY_ADDRESS:-}
+      CHAIN_SETTLEMENT_ADDRESS: ${CHAIN_SETTLEMENT_ADDRESS:-}
+      CHAIN_SETTLEMENT_ENABLED: ${CHAIN_SETTLEMENT_ENABLED:-false}
+      CHAIN_SETTLEMENT_PRIVATE_KEY: ${CHAIN_SETTLEMENT_PRIVATE_KEY:-}
+      CHAIN_KMS_KEY: ${CHAIN_KMS_KEY:-}
+      PINATA_JWT: ${PINATA_JWT:-}
+      PINATA_API_URL: ${PINATA_API_URL:-}
+      PINATA_GATEWAY_URL: ${PINATA_GATEWAY_URL:-}
+      POOOL_CIRCLE_OPS_SLACK_WEBHOOK_URL: ${POOOL_CIRCLE_OPS_SLACK_WEBHOOK_URL:-}
+      POOOL_CIRCLE_OPS_PAGERDUTY_ROUTING_KEY: ${POOOL_CIRCLE_OPS_PAGERDUTY_ROUTING_KEY:-}
+      POOOL_CIRCLE_OPS_PAGERDUTY_EVENTS_URL: ${POOOL_CIRCLE_OPS_PAGERDUTY_EVENTS_URL:-}
+      POOOL_CIRCLE_OPS_SNAPSHOT_SECS: ${POOOL_CIRCLE_OPS_SNAPSHOT_SECS:-}
+      POOOL_CIRCLE_OPS_ALERT_FANOUT_SECS: ${POOOL_CIRCLE_OPS_ALERT_FANOUT_SECS:-}
+      POOOL_CIRCLE_OPS_ALERT_DELIVERY_MONITOR_SECS: ${POOOL_CIRCLE_OPS_ALERT_DELIVERY_MONITOR_SECS:-}
+      POOOL_CIRCLE_OPS_AUTO_CRITICAL_COOLDOWN_HOURS: ${POOOL_CIRCLE_OPS_AUTO_CRITICAL_COOLDOWN_HOURS:-}
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  poool-local-live-postgres:
+  poool-local-live-redis:
+  poool-local-live-redis-run:

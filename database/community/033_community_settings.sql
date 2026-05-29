@@ -4,7 +4,7 @@
 -- Values are JSON-encoded strings so the same table holds booleans, ints, and
 -- short strings without per-type columns. Validation lives in the Rust handler.
 
-CREATE TABLE community_settings (
+CREATE TABLE IF NOT EXISTS community_settings (
     key        VARCHAR(80) PRIMARY KEY,
     value      TEXT NOT NULL,
     description TEXT,

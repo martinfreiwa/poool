@@ -33,6 +33,12 @@ pub struct Ama {
     pub started_at: Option<chrono::DateTime<chrono::Utc>>,
     pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
     pub max_questions: i32,
+    #[sqlx(default)]
+    pub circle_id: Option<Uuid>,
+    #[sqlx(default)]
+    pub asset_id: Option<Uuid>,
+    #[sqlx(default)]
+    pub rsvp_enabled: bool,
     pub created_by: Uuid,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -79,9 +85,11 @@ pub struct AmaQuestionWithMeta {
 pub async fn list_amas(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
     let amas = sqlx::query_as::<_, Ama>(
         r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
-                  status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
+                  status, scheduled_at, started_at, ended_at, max_questions,
+                  circle_id, asset_id, rsvp_enabled, created_by, created_at
            FROM amas
            WHERE status != 'draft'
+             AND circle_id IS NULL
            ORDER BY
                CASE status
                    WHEN 'live' THEN 1
@@ -99,11 +107,40 @@ pub async fn list_amas(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
     Ok(amas)
 }
 
+/// List AMAs/events scoped to one Circle. Used by the Circle Events tab and
+/// sidebar so global AMAs do not appear as Circle events by accident.
+pub async fn list_circle_amas(pool: &PgPool, circle_id: Uuid) -> Result<Vec<Ama>, AppError> {
+    let amas = sqlx::query_as::<_, Ama>(
+        r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
+                  status, scheduled_at, started_at, ended_at, max_questions,
+                  circle_id, asset_id, rsvp_enabled, created_by, created_at
+           FROM amas
+           WHERE status != 'draft'
+             AND circle_id = $1
+           ORDER BY
+               CASE status
+                   WHEN 'live' THEN 1
+                   WHEN 'accepting_questions' THEN 2
+                   WHEN 'scheduled' THEN 3
+                   WHEN 'closed' THEN 4
+                   WHEN 'archived' THEN 5
+                   ELSE 6
+               END,
+               scheduled_at DESC NULLS LAST"#,
+    )
+    .bind(circle_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(amas)
+}
+
 /// List ALL AMAs (admin view — includes drafts).
 pub async fn list_amas_admin(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
     let amas = sqlx::query_as::<_, Ama>(
         r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
-                  status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
+                  status, scheduled_at, started_at, ended_at, max_questions,
+                  circle_id, asset_id, rsvp_enabled, created_by, created_at
            FROM amas
            ORDER BY created_at DESC"#,
     )
@@ -139,7 +176,8 @@ async fn get_ama_detail_with_visibility(
 ) -> Result<AmaDetail, AppError> {
     let ama = sqlx::query_as::<_, Ama>(
         r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
-                  status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
+                  status, scheduled_at, started_at, ended_at, max_questions,
+                  circle_id, asset_id, rsvp_enabled, created_by, created_at
            FROM amas WHERE id = $1 AND ($2 OR status != 'draft')"#,
     )
     .bind(ama_id)
@@ -289,6 +327,9 @@ pub async fn create_ama(
     banner_url: Option<&str>,
     scheduled_at: Option<chrono::DateTime<chrono::Utc>>,
     status: Option<&str>,
+    circle_id: Option<Uuid>,
+    asset_id: Option<Uuid>,
+    rsvp_enabled: bool,
 ) -> Result<Ama, AppError> {
     let title = validate_required_text(title, "Title", MAX_TITLE_CHARS)?;
     let expert_name = validate_required_text(expert_name, "Expert name", MAX_EXPERT_NAME_CHARS)?;
@@ -297,16 +338,21 @@ pub async fn create_ama(
         validate_optional_text(expert_title, "Expert title", MAX_EXPERT_TITLE_CHARS)?;
     let banner = banner_url.and_then(|s| {
         let trimmed = s.trim();
-        if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
     });
     let st = status.unwrap_or("scheduled");
     validate_ama_status(st)?;
 
     let ama = sqlx::query_as::<_, Ama>(
-        r#"INSERT INTO amas (title, description, expert_name, expert_title, expert_avatar_url, banner_url, scheduled_at, status, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        r#"INSERT INTO amas (title, description, expert_name, expert_title, expert_avatar_url, banner_url, scheduled_at, status, created_by, circle_id, asset_id, rsvp_enabled)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
            RETURNING id, title, description, expert_name, expert_title, expert_avatar_url, banner_url,
-                     status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at"#
+                     status, scheduled_at, started_at, ended_at, max_questions,
+                     circle_id, asset_id, rsvp_enabled, created_by, created_at"#
     )
     .bind(&title)
     .bind(description.as_deref())
@@ -317,6 +363,9 @@ pub async fn create_ama(
     .bind(scheduled_at)
     .bind(st)
     .bind(admin_id)
+    .bind(circle_id)
+    .bind(asset_id)
+    .bind(rsvp_enabled)
     .fetch_one(pool)
     .await?;
 

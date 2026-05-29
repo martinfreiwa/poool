@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POOOL Trading Card Options Preview</title>
+  <link rel="stylesheet" href="/frontend/platform/static/css/marketplace-card-options-preview.css">
+</head>
+<body>
+  <aside class="preview-sidebar" aria-label="Preview navigation">
+    <img src="/frontend/platform/static/images/icons/logo-pool.svg" alt="POOOL" width="148" height="40">
+    <div class="preview-search">Search</div>
+    <nav>
+      <a href="#">Marketplace</a>
+      <a href="#" class="is-muted">Properties</a>
+      <a href="#" class="is-active">Resale Market</a>
+      <a href="#">Wallet</a>
+      <a href="#">Portfolio</a>
+      <a href="#">Rewards</a>
+    </nav>
+  </aside>
+
+  <main class="preview-main">
+    <header class="preview-header">
+      <div>
+        <p class="preview-eyebrow">Trading page component direction</p>
+        <h1>Main content card options</h1>
+        <p>Three alternatives for the property summary and overview area. The right trading widget and page chrome stay visible so the density can be judged in context.</p>
+      </div>
+      <a href="http://localhost:8888/marketplace-trading-v3?asset=modern-surf-villa-canggu">Back to current page</a>
+    </header>
+
+    <nav class="preview-tabs" aria-label="Preview options">
+      <a href="#option-1">Option 1: Snapshot cards</a>
+      <a href="#option-2">Option 2: Editorial brief</a>
+      <a href="#option-3">Option 3: Investment thesis</a>
+    </nav>
+
+    <section class="trading-shell" id="option-1">
+      <div class="mock-hero">
+        <img src="/frontend/platform/static/images/properties/canggu_pool/canggu_pool_hero.webp" alt="Modern Surf Villa exterior with pool">
+        <div class="mock-hero-copy">
+          <h2>Modern Surf Villa near Echo Beach in Canggu</h2>
+          <p>Bali, ID</p>
+        </div>
+        <div class="mock-price">
+          <strong>$115.00</strong>
+          <span>/ share</span>
+          <em>+12%</em>
+        </div>
+      </div>
+
+      <div class="mock-performance">
+        <span><b>Share Price</b>$115.00</span>
+        <span><b>Annual Yield</b>12%</span>
+        <span><b>3 Months</b>0%</span>
+        <span><b>6 Months</b>0%</span>
+        <span><b>12 Months</b>0%</span>
+      </div>
+
+      <div class="preview-grid">
+        <article class="option-card option-card--snapshot">
+          <div class="option-header">
+            <span>Option 1</span>
+            <h2>Snapshot cards</h2>
+            <p>Closest to the current page. It keeps the same product-UI density, but turns the long icon list into controlled summary cards.</p>
+          </div>
+
+          <div class="option-fit">
+            <span>Recommended if</span>
+            <strong>You want the smallest redesign with the clearest visual upgrade.</strong>
+          </div>
+
+          <div class="section-title-row">
+            <div>
+              <span>At a glance</span>
+              <h3>Core asset signals</h3>
+            </div>
+            <a href="#">View documents</a>
+          </div>
+
+          <div class="snapshot-grid">
+            <div class="snapshot-item">
+              <div class="snapshot-icon"><img src="/frontend/platform/static/images/prop-details/ID.webp" alt=""></div>
+              <span>Market</span>
+              <strong>ID, Bali</strong>
+              <p>Mature tourist market with strong demand around Canggu.</p>
+            </div>
+            <div class="snapshot-item">
+              <div class="snapshot-icon"><img src="/frontend/platform/static/images/prop-details/house.webp" alt=""></div>
+              <span>Status</span>
+              <strong>Funding in progress</strong>
+              <p>Professionally managed and prepared for shared ownership.</p>
+            </div>
+            <div class="snapshot-item">
+              <div class="snapshot-icon"><img src="/frontend/platform/static/images/prop-details/coins-stacked-02.webp" alt=""></div>
+              <span>Income</span>
+              <strong>12% annual rental yield</strong>
+              <p>Rental income distributed after standard charges and fees.</p>
+            </div>
+            <div class="snapshot-item">
+              <div class="snapshot-icon"><img src="/frontend/platform/static/images/prop-details/line-chart-up-02.webp" alt=""></div>
+              <span>Price context</span>
+              <strong>12% gross yield</strong>
+              <p>Net yield unavailable. Price per sqm: USD 1,917.</p>
+            </div>
+          </div>
+
+          <section class="overview-panel">
+            <div class="section-title-row section-title-row--inside">
+              <div>
+                <span>Property overview</span>
+                <h3>Four-bedroom freehold villa in Canggu, 200m from Echo Beach.</h3>
+              </div>
+            </div>
+            <p>Features open-concept living, a 12m pool, rooftop terrace with sunset views, and dedicated surf board storage. Positioned in one of Bali's fastest-growing tourist areas with year-round high occupancy rates.</p>
+          </section>
+        </article>
+
+        <aside class="trade-widget">
+          <div class="trade-toggle"><button>Buy</button><button class="is-sell">Sell</button></div>
+          <div class="trade-tabs"><span>Price</span><span>Market Price</span><strong>Custom Price</strong></div>
+          <p>Set your price</p>
+          <strong class="trade-price">0.00</strong>
+          <div class="trade-note">No bids in book - your ask will rest until a buyer matches.</div>
+          <p>Number of shares</p>
+          <strong class="trade-price">0</strong>
+          <small>You don't own any shares of this asset.</small>
+        </aside>
+      </div>
+    </section>
+
+    <section class="trading-shell" id="option-2">
+      <div class="mock-hero mock-hero--compact">
+        <img src="/frontend/platform/static/images/properties/canggu_pool/canggu_pool_patio.webp" alt="Modern Surf Villa patio">
+        <div class="mock-hero-copy">
+          <h2>Modern Surf Villa near Echo Beach in Canggu</h2>
+          <p>Bali, ID · $115.00 per share</p>
+        </div>
+      </div>
+
+      <div class="preview-grid">
+        <article class="option-card option-card--editorial">
+          <div class="option-header">
+            <span>Option 2</span>
+            <h2>Editorial brief</h2>
+            <p>More guided than the current page. It explains the asset first, then supports the story with compact data points.</p>
+          </div>
+
+          <div class="option-fit">
+            <span>Recommended if</span>
+            <strong>You want a more premium investor-read without losing the trading widget.</strong>
+          </div>
+
+          <div class="brief-layout">
+            <section class="brief-story">
+              <span>Why this asset</span>
+              <h3>A Canggu villa positioned for short-stay demand and long-term ownership clarity.</h3>
+              <p>Modern Surf Villa sits close to Echo Beach, one of Bali's most active lifestyle and tourism corridors. The asset combines freehold ownership, practical amenities, and a rental profile designed for year-round demand.</p>
+            </section>
+            <div class="brief-facts">
+              <div><span>Market</span><strong>ID, Bali</strong></div>
+              <div><span>Status</span><strong>Funding in progress</strong></div>
+              <div><span>Annual yield</span><strong>12%</strong></div>
+              <div><span>Price per sqm</span><strong>USD 1,917</strong></div>
+            </div>
+          </div>
+
+          <div class="brief-callout">
+            <img src="/frontend/platform/static/images/prop-details/house.webp" alt="">
+            <strong>Management note</strong>
+            <p>Currently occupied and professionally managed by the POOOL team, with income distributed monthly after standard charges and fees.</p>
+          </div>
+
+          <div class="brief-checklist">
+            <div><span></span>Freehold ownership structure</div>
+            <div><span></span>Rental-income focused positioning</div>
+            <div><span></span>Operationally managed asset</div>
+          </div>
+        </article>
+
+        <aside class="trade-widget trade-widget--quiet">
+          <div class="trade-toggle"><button>Buy</button><button class="is-sell">Sell</button></div>
+          <div class="trade-note">Current market depth is limited. Custom orders stay open until matched.</div>
+          <strong class="trade-price">0.00</strong>
+          <small>You don't own any shares of this asset.</small>
+        </aside>
+      </div>
+    </section>
+
+    <section class="trading-shell" id="option-3">
+      <div class="mock-performance mock-performance--top">
+        <span><b>Share Price</b>$115.00</span>
+        <span><b>Property Value</b>USD 1,150,000</span>
+        <span><b>Annual Yield</b>12%</span>
+        <span><b>Available</b>10,000 / 10,000</span>
+      </div>
+
+      <div class="preview-grid">
+        <article class="option-card option-card--thesis">
+          <div class="option-header">
+            <span>Option 3</span>
+            <h2>Investment thesis</h2>
+            <p>The most analytical option. It treats the card as a compact investment memo with thesis, evidence, and constraints.</p>
+          </div>
+
+          <div class="option-fit">
+            <span>Recommended if</span>
+            <strong>You want the trading page to feel more like a diligence workflow.</strong>
+          </div>
+
+          <div class="thesis-hero">
+            <div>
+              <span>Asset thesis</span>
+              <h3>Freehold Canggu villa with rental income potential and clear operational status.</h3>
+            </div>
+            <div class="thesis-yield">
+              <img src="/frontend/platform/static/images/prop-details/coins-stacked-02.webp" alt="">
+              <strong>12%</strong>
+              <span>annual rental yield</span>
+            </div>
+          </div>
+
+          <div class="thesis-steps">
+            <div>
+              <span>01</span>
+              <strong>Location demand</strong>
+              <p>Echo Beach proximity supports lifestyle and tourism demand.</p>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>Operational setup</strong>
+              <p>Professionally managed and prepared for investor reporting.</p>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>Income profile</strong>
+              <p>Rental yield is distributed after standard charges and fees.</p>
+            </div>
+          </div>
+
+          <section class="thesis-overview">
+            <h3>Property overview</h3>
+            <p>Modern four-bedroom villa with open living, 12m pool, rooftop terrace, and surf storage. Positioned in one of Bali's fastest-growing tourist areas with year-round high occupancy rates.</p>
+          </section>
+
+          <div class="thesis-table" aria-label="Investment thesis details">
+            <div><span>Market signal</span><strong>Canggu short-stay demand</strong></div>
+            <div><span>Operational status</span><strong>Funding in progress</strong></div>
+            <div><span>Income note</span><strong>Distributed monthly after charges</strong></div>
+            <div><span>Constraint</span><strong>Net yield currently unavailable</strong></div>
+          </div>
+        </article>
+
+        <aside class="trade-widget trade-widget--strong">
+          <div class="trade-toggle"><button>Buy</button><button class="is-sell">Sell</button></div>
+          <p>Custom price</p>
+          <strong class="trade-price">0.00</strong>
+          <div class="trade-note">No bids in book - your ask will rest until a buyer matches.</div>
+          <small>You don't own any shares of this asset.</small>
+        </aside>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

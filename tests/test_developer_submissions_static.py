@@ -118,3 +118,22 @@ def test_developer_submissions_empty_state_cards_have_room_to_breathe():
     assert "margin-bottom: 24px;" in css
     assert "body#developer-submissions-body .dae-empty__metrics {\n  margin: 0 0 24px;" in css
     assert "body#developer-submissions-body .dae-empty__steps {\n    grid-template-columns: 1fr;\n    gap: 16px;" in css
+
+
+def test_developer_submissions_empty_state_uses_branded_art():
+    template = read("frontend/platform/developer/submissions.html")
+    css = read("frontend/platform/static/css/developer-submissions.css")
+
+    assert 'class="dae-empty__submission-art"' in template
+    assert 'class="dae-empty__submission-lockup"' in template
+    assert 'src="/static/images/icons/logo-pool.svg"' in template
+    assert "IN REVIEW" not in template
+    assert "PROGRESS" not in template
+    assert "70%" not in template
+    assert 'id="dae-bg-sub"' not in template
+
+    assert "body#developer-submissions-body .dae-empty__submission-art {" in css
+    assert "body#developer-submissions-body .dae-empty__submission-lockup {" in css
+    assert "background: #03FF88;" in css
+    assert "linear-gradient(135deg, #0000FF 0%, #001DCA 62%, #07107C 100%)" in css
+    assert "body#developer-submissions-body .dae-empty__submission-progress span" in css

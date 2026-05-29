@@ -85,7 +85,7 @@ pub async fn page_portfolio(jar: CookieJar, State(state): State<AppState>) -> im
     };
 
     let portfolio_json = match service::get_portfolio(&state.db, user.id).await {
-        Ok(p) => serde_json::to_string(&p).unwrap_or_else(|_| "null".to_string()),
+        Ok(p) => crate::common::json_safe::to_safe_json_script(&p),
         Err(e) => {
             tracing::error!("Failed to fetch portfolio data for SSR: {}", e);
             "null".to_string()
@@ -98,11 +98,17 @@ pub async fn page_portfolio(jar: CookieJar, State(state): State<AppState>) -> im
                 .render(minijinja::context! { user => user, portfolio_json => portfolio_json })
             {
                 Ok(content) => axum::response::Html(content).into_response(),
-                Err(e) => axum::response::Html(format!("<h1>Internal Server Error: {}</h1>", e))
-                    .into_response(),
+                Err(e) => {
+                    tracing::error!("Portfolio template rendering error: {}", e);
+                    axum::response::Html("<h1>Internal Server Error</h1>".to_string())
+                        .into_response()
+                }
             }
         }
-        Err(_) => axum::response::Html("<h1>Page not found</h1>".to_string()).into_response(),
+        Err(e) => {
+            tracing::error!("Portfolio template not found: {}", e);
+            axum::response::Html("<h1>Page not found</h1>".to_string()).into_response()
+        }
     }
 }
 

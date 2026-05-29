@@ -48,8 +48,11 @@ images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend:latest'
 
 options:
+  # Use a supported Cloud Build worker shape for release builds. The backend
+  # release build can exceed the default worker timeout on cold dependency
+  # layers, so keep this explicit for manual deploys.
   machineType: 'E2_HIGHCPU_8'
   diskSizeGb: 50
   logging: CLOUD_LOGGING_ONLY
 
-timeout: '1800s'
+timeout: '3600s'

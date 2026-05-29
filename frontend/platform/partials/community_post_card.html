@@ -13,14 +13,21 @@
             <div class="feed-post-meta">
                 <span class="feed-post-name">
                     {{ p.author_name }}
-                    {% if 'POOOL' in p.author_name %}
-                        <span class="feed-post-verified-badge">Official</span>
-                    {% endif %}
+                    {% for flair in p.author_reputation_flairs %}
+                        {% if flair.code == 'official_poool' %}
+                            <span class="feed-post-verified-badge">Official</span>
+                        {% else %}
+                            <span class="feed-post-badge feed-post-badge--reputation">{{ flair.label }}</span>
+                        {% endif %}
+                    {% endfor %}
                     {% if p.verified_owner %}
                         <span class="feed-post-badge feed-post-badge--neutral">Verified Owner</span>
                     {% endif %}
                 </span>
                 <span class="feed-post-time">{{ p.created_at_display }}</span>
+                {% if p.circle_name %}
+                    <span class="feed-post-circle-name">· {{ p.circle_name }}</span>
+                {% endif %}
                 {% if p.read_time_minutes %}
                     <span class="feed-post-readtime ds-text-caption" aria-label="Estimated reading time">· {{ p.read_time_minutes }} min read</span>
                 {% endif %}
@@ -33,8 +40,24 @@
 
         {% if p.post_type == 'announcement' %}
             <span class="feed-post-badge feed-post-badge--announcement">Announcement</span>
+        {% elif p.post_type == 'official_update' %}
+            <span class="feed-post-badge feed-post-badge--announcement">Official Update</span>
         {% elif p.post_type == 'market_insight' %}
-            <span class="feed-post-badge feed-post-badge--neutral">Market Insight</span>
+            <span class="feed-post-badge feed-post-badge--insight">Market Insight</span>
+        {% elif p.post_type == 'question' %}
+            <span class="feed-post-badge feed-post-badge--question">Question</span>
+        {% elif p.post_type == 'property_update' %}
+            <span class="feed-post-badge feed-post-badge--update">Property Update</span>
+        {% elif p.post_type == 'due_diligence' %}
+            <span class="feed-post-badge feed-post-badge--diligence">Due Diligence</span>
+        {% elif p.post_type == 'poll' %}
+            <span class="feed-post-badge feed-post-badge--neutral">Poll</span>
+        {% elif p.post_type == 'ama_question' %}
+            <span class="feed-post-badge feed-post-badge--question">AMA Question</span>
+        {% elif p.post_type == 'resource' %}
+            <span class="feed-post-badge feed-post-badge--resource">Resource</span>
+        {% elif p.post_type == 'risk_discussion' %}
+            <span class="feed-post-badge feed-post-badge--risk">Risk Discussion</span>
         {% elif p.post_type == 'review' %}
             <span class="feed-post-badge feed-post-badge--neutral">Review</span>
         {% endif %}
@@ -45,6 +68,44 @@
         <p>
             {{ p.rendered_content | safe }}
         </p>
+
+        {% if p.content_tags and p.content_tags | length > 0 %}
+            <div class="feed-post-tags" role="group" aria-label="Post tags">
+                {% for tag in p.content_tags %}
+                    <button type="button" class="feed-post-tag" onclick="setPostTagFilter('{{ tag }}')">{{ tag }}</button>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if p.post_type == 'question' or p.post_type == 'due_diligence' %}
+            <div class="feed-post-qa" data-qa-status="{{ p.qa_status }}">
+                <span class="feed-post-qa__status feed-post-qa__status--{{ p.qa_status }}">
+                    {% if p.qa_status == 'official_answer' %}
+                        Official Answer
+                    {% elif p.qa_status == 'answered' %}
+                        Answered
+                    {% elif p.qa_status == 'needs_clarification' %}
+                        Needs Clarification
+                    {% elif p.qa_status == 'archived' %}
+                        Archived
+                    {% else %}
+                        Open
+                    {% endif %}
+                </span>
+                {% if p.official_answer_comment_id %}
+                    <button type="button" class="feed-post-qa__answer-link" onclick="toggleComments('{{ p.id }}', this)">View official answer</button>
+                {% endif %}
+                {% if p.featured_question %}
+                    <span class="feed-post-qa__meta">Featured Question</span>
+                {% endif %}
+                {% if p.faq_candidate %}
+                    <span class="feed-post-qa__meta">FAQ Candidate</span>
+                {% endif %}
+                {% if p.related_resource_url %}
+                    <a class="feed-post-qa__resource" href="{{ p.related_resource_url }}" target="_blank" rel="noopener noreferrer">Related resource</a>
+                {% endif %}
+            </div>
+        {% endif %}
 
         {% if p.image_urls and p.image_urls | length > 0 %}
             <div class="feed-post-image-grid feed-post-image-grid--{{ p.image_urls | length }}">
@@ -113,7 +174,7 @@
 
         {% if p.disclaimer_shown %}
             <div class="feed-post-disclaimer">
-                ⚠️ Disclaimer: This post contains community generated investment discussion. Do your own research, past performance does not guarantee future results.
+                User opinion, not financial advice. Community investment discussion is not a recommendation; do your own research and review official POOOL disclosures.
             </div>
         {% endif %}
     </div>

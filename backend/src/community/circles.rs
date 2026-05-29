@@ -21,6 +21,21 @@ pub struct Circle {
     pub level: i32,
     pub level_name: String,
     pub is_public: bool,
+    pub circle_type: String,
+    pub visibility: String,
+    pub join_policy: String,
+    pub is_official: bool,
+    pub kyc_required: bool,
+    pub private_investor_club: bool,
+    pub allow_cross_post: bool,
+    #[sqlx(default)]
+    pub related_asset_id: Option<Uuid>,
+    #[sqlx(default)]
+    pub is_primary_asset_circle: bool,
+    #[sqlx(default)]
+    pub holder_only_documents: bool,
+    #[sqlx(default)]
+    pub asset_circle_tabs: Vec<String>,
     pub max_members: i32,
     // W3.1: Token-Gated Circles
     pub token_gate_asset_id: Option<Uuid>,
@@ -37,6 +52,38 @@ pub struct CircleMember {
     pub user_id: Uuid,
     pub role: String,
     pub joined_at: chrono::DateTime<chrono::Utc>,
+}
+
+const CIRCLE_TYPES: &[&str] = &[
+    "social",
+    "asset",
+    "topic",
+    "expert",
+    "private_investor",
+    "official",
+];
+const CIRCLE_VISIBILITIES: &[&str] = &["public", "private", "hidden"];
+const CIRCLE_JOIN_POLICIES: &[&str] = &[
+    "open",
+    "request",
+    "invite_only",
+    "holder_only",
+    "kyc_required",
+];
+
+fn ensure_allowed(value: Option<&str>, allowed: &[&str], label: &str) -> Result<(), AppError> {
+    if let Some(value) = value {
+        if !allowed.contains(&value) {
+            return Err(AppError::BadRequest(format!("Invalid {label}.")));
+        }
+    }
+    Ok(())
+}
+
+fn format_cents(cents: i64) -> String {
+    let sign = if cents < 0 { "-" } else { "" };
+    let abs = cents.saturating_abs();
+    format!("{}${}.{:02}", sign, abs / 100, abs % 100)
 }
 
 #[derive(Debug, serde::Serialize, sqlx::FromRow)]
@@ -91,14 +138,17 @@ pub async fn create_circle(
         }
         s.trim_matches('-').chars().take(54).collect::<String>()
     };
-    let mut slug = if base_slug.is_empty() { "circle".to_string() } else { base_slug };
-    let collision: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM circles WHERE LOWER(slug) = LOWER($1))",
-    )
-    .bind(&slug)
-    .fetch_one(pool)
-    .await
-    .unwrap_or(false);
+    let mut slug = if base_slug.is_empty() {
+        "circle".to_string()
+    } else {
+        base_slug
+    };
+    let collision: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM circles WHERE LOWER(slug) = LOWER($1))")
+            .bind(&slug)
+            .fetch_one(pool)
+            .await
+            .unwrap_or(false);
     if collision {
         let suffix: String = Uuid::new_v4()
             .to_string()
@@ -222,7 +272,18 @@ pub async fn admin_force_update_circle(
     description: Option<&str>,
     emoji: Option<&str>,
     is_public: Option<bool>,
+    circle_type: Option<&str>,
+    visibility: Option<&str>,
+    join_policy: Option<&str>,
+    is_official: Option<bool>,
+    kyc_required: Option<bool>,
+    private_investor_club: Option<bool>,
+    allow_cross_post: Option<bool>,
 ) -> Result<Circle, AppError> {
+    ensure_allowed(circle_type, CIRCLE_TYPES, "circle type")?;
+    ensure_allowed(visibility, CIRCLE_VISIBILITIES, "visibility")?;
+    ensure_allowed(join_policy, CIRCLE_JOIN_POLICIES, "join policy")?;
+
     if let Some(name) = name {
         let name = name.trim();
         if name.is_empty() {
@@ -257,6 +318,17 @@ pub async fn admin_force_update_circle(
             description = COALESCE($3, description),
             avatar_emoji = COALESCE($4, avatar_emoji),
             is_public = COALESCE($5, is_public),
+            circle_type = COALESCE($6, circle_type),
+            visibility = CASE
+                WHEN $7::TEXT IS NOT NULL THEN $7
+                WHEN $5::BOOL IS NOT NULL THEN CASE WHEN $5 THEN 'public' ELSE 'private' END
+                ELSE visibility
+            END,
+            join_policy = COALESCE($8, join_policy),
+            is_official = COALESCE($9, is_official),
+            kyc_required = COALESCE($10, kyc_required),
+            private_investor_club = COALESCE($11, private_investor_club),
+            allow_cross_post = COALESCE($12, allow_cross_post),
             updated_at = NOW()
            WHERE id = $1 RETURNING *"#,
     )
@@ -265,6 +337,13 @@ pub async fn admin_force_update_circle(
     .bind(description)
     .bind(emoji)
     .bind(is_public)
+    .bind(circle_type)
+    .bind(visibility)
+    .bind(join_policy)
+    .bind(is_official)
+    .bind(kyc_required)
+    .bind(private_investor_club)
+    .bind(allow_cross_post)
     .fetch_one(pool)
     .await?;
 
@@ -392,18 +471,46 @@ pub async fn admin_force_transfer_circle(
     Ok(())
 }
 
-/// Get all members of a circle.
+/// Get members of a circle (bounded).
+///
+/// B6 (CDDRP Phase 3.3): hard cap of 100 rows to prevent unbounded response
+/// growth on popular circles. Pagination plumbing is intentionally deferred
+/// to avoid touching the 5 disparate call sites in `routes.rs`; if a
+/// caller needs the full member list it must page via a future API.
 pub async fn get_circle_members(
     pool: &PgPool,
     circle_id: Uuid,
 ) -> Result<Vec<CircleMember>, AppError> {
+    const MEMBER_PAGE_LIMIT: i64 = 100;
     let members = sqlx::query_as::<_, CircleMember>(
-        "SELECT user_id, role, joined_at FROM circle_members WHERE circle_id = $1 ORDER BY joined_at ASC"
+        "SELECT user_id, role, joined_at FROM circle_members WHERE circle_id = $1 ORDER BY joined_at ASC LIMIT $2"
     )
     .bind(circle_id)
+    .bind(MEMBER_PAGE_LIMIT)
     .fetch_all(pool)
     .await?;
     Ok(members)
+}
+
+pub async fn has_pending_invite(
+    pool: &PgPool,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<bool, AppError> {
+    let has_invite = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(
+            SELECT 1 FROM circle_invites
+            WHERE circle_id = $1
+              AND invitee_id = $2
+              AND status = 'pending'
+              AND expires_at > NOW()
+        )",
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+    Ok(has_invite)
 }
 
 // ─── Join / Leave ───────────────────────────────────────────────────
@@ -441,22 +548,41 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
         ));
     }
 
-    // Check circle exists and is public
-    let (is_public, member_count, max_members): (bool, i32, i32) =
-        sqlx::query_as("SELECT is_public, member_count, max_members FROM circles WHERE id = $1")
-            .bind(circle_id)
-            .fetch_optional(pool)
-            .await?
-            .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+    // Check circle exists and that direct membership is allowed by visibility
+    // and join policy. Invite acceptance also flows through this function, so
+    // a pending invite is sufficient for private/hidden circles while hidden
+    // circles still return NotFound to non-invitees.
+    let (is_public, visibility, join_policy): (bool, String, String) = sqlx::query_as(
+        "SELECT is_public, visibility, join_policy
+         FROM circles WHERE id = $1",
+    )
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
 
-    if !is_public {
+    let has_invite = has_pending_invite(pool, circle_id, user_id).await?;
+
+    if visibility == "hidden" && !has_invite {
+        return Err(AppError::NotFound("Circle not found".into()));
+    }
+
+    if join_policy == "invite_only" && !has_invite {
         return Err(AppError::BadRequest(
             "This circle is private. You need an invite.".into(),
         ));
     }
 
-    if member_count >= max_members {
-        return Err(AppError::BadRequest("This circle is full.".into()));
+    if join_policy == "request" && !has_invite {
+        return Err(AppError::BadRequest(
+            "Request access before joining this Circle.".into(),
+        ));
+    }
+
+    if (!is_public || visibility != "public") && !has_invite {
+        return Err(AppError::BadRequest(
+            "This Circle requires approved access before joining.".into(),
+        ));
     }
 
     let mut tx = pool.begin().await?;
@@ -808,7 +934,8 @@ pub async fn kick_member(
 
 // ─── Circle Roles & Settings (M4-BE.11, M4-BE.12, M4-BE.13) ──────────────────
 
-/// Promote or demote a member. Owner can promote to admin or demote to member.
+/// Promote or demote a member. Owner can promote to admin or verified expert,
+/// or demote back to member.
 pub async fn update_member_role(
     pool: &PgPool,
     owner_id: Uuid,
@@ -816,9 +943,9 @@ pub async fn update_member_role(
     circle_id: Uuid,
     new_role: &str,
 ) -> Result<(), AppError> {
-    if new_role != "admin" && new_role != "member" {
+    if !matches!(new_role, "admin" | "verified_expert" | "member") {
         return Err(AppError::BadRequest(
-            "Role must be 'admin' or 'member'.".into(),
+            "Role must be 'admin', 'verified_expert', or 'member'.".into(),
         ));
     }
 
@@ -949,11 +1076,23 @@ pub async fn update_circle_privacy(
         }
     }
 
-    sqlx::query("UPDATE circles SET is_public = $1, updated_at = NOW() WHERE id = $2")
-        .bind(is_public)
-        .bind(circle_id)
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        "UPDATE circles
+         SET is_public = $1,
+             visibility = CASE WHEN $1 THEN 'public' ELSE 'private' END,
+             join_policy = CASE
+                WHEN token_gate_asset_id IS NOT NULL THEN 'holder_only'
+                WHEN kyc_required THEN 'kyc_required'
+                WHEN $1 THEN 'open'
+                ELSE 'request'
+             END,
+             updated_at = NOW()
+         WHERE id = $2",
+    )
+    .bind(is_public)
+    .bind(circle_id)
+    .execute(pool)
+    .await?;
 
     Ok(())
 }
@@ -990,22 +1129,29 @@ pub async fn request_to_join(
         ));
     }
 
-    // Get circle – must exist and be private
-    let (is_public, member_count, max_members): (bool, i32, i32) =
-        sqlx::query_as("SELECT is_public, member_count, max_members FROM circles WHERE id = $1")
-            .bind(circle_id)
-            .fetch_optional(pool)
-            .await?
-            .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+    // Get circle – must exist and allow access requests. Hidden circles return
+    // NotFound here to avoid leaking existence to users without an invite.
+    let (is_public, visibility, join_policy): (bool, String, String) = sqlx::query_as(
+        "SELECT is_public, visibility, join_policy
+         FROM circles WHERE id = $1",
+    )
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
 
-    if is_public {
+    if visibility == "hidden" {
+        return Err(AppError::NotFound("Circle not found".into()));
+    }
+
+    if is_public && visibility == "public" && join_policy != "request" {
         return Err(AppError::BadRequest(
             "This circle is public — just join directly.".into(),
         ));
     }
 
-    if member_count >= max_members {
-        return Err(AppError::BadRequest("This circle is full.".into()));
+    if join_policy == "invite_only" {
+        return Err(AppError::BadRequest("This Circle is invite-only.".into()));
     }
 
     // Check for existing pending request (the unique index on pending prevents duplicates via DB constraint)
@@ -1136,19 +1282,6 @@ pub async fn approve_join_request(
                 "Only circle owner/admin can approve requests.".into(),
             ))
         }
-    }
-
-    // Check circle not now full
-    let (member_count, max_members): (i32, i32) =
-        sqlx::query_as("SELECT member_count, max_members FROM circles WHERE id = $1")
-            .bind(req.circle_id)
-            .fetch_one(pool)
-            .await?;
-
-    if member_count >= max_members {
-        return Err(AppError::BadRequest(
-            "Cannot approve: circle is now full.".into(),
-        ));
     }
 
     let mut tx = pool.begin().await?;
@@ -1296,7 +1429,7 @@ pub async fn delete_own_circle(
 pub async fn admin_get_circles(
     pool: &PgPool,
     search: Option<&str>,
-    visibility: Option<bool>,
+    visibility: Option<&str>,
     limit: i64,
     offset: i64,
 ) -> Result<(Vec<Circle>, i64, i64, i64), AppError> {
@@ -1304,7 +1437,7 @@ pub async fn admin_get_circles(
         r#"
         SELECT * FROM circles
         WHERE ($1::text IS NULL OR name ILIKE '%' || $1 || '%' OR id::text ILIKE '%' || $1 || '%')
-          AND ($2::bool IS NULL OR is_public = $2)
+          AND ($2::text IS NULL OR visibility = $2)
         ORDER BY created_at DESC
         LIMIT $3 OFFSET $4
         "#,
@@ -1324,7 +1457,7 @@ pub async fn admin_get_circles(
             COALESCE(SUM(total_xp), 0)::BIGINT
         FROM circles
         WHERE ($1::text IS NULL OR name ILIKE '%' || $1 || '%' OR id::text ILIKE '%' || $1 || '%')
-          AND ($2::bool IS NULL OR is_public = $2)
+          AND ($2::text IS NULL OR visibility = $2)
         "#,
     )
     .bind(search)
@@ -1475,27 +1608,27 @@ pub async fn check_token_gate(
         .ok()
         .flatten();
 
-    // No gate configured → everyone can join
+    // No gate configured -> everyone can join
     let asset_id = match gate_asset_id {
         Some(id) => id,
         None => return Ok(()),
     };
 
-    let min_cents = gate_min_cents.unwrap_or(0);
-    if min_cents <= 0 {
-        return Ok(());
-    }
+    // A configured asset gate always requires the user to hold the asset.
+    // When no explicit minimum is set, require any positive value.
+    let min_cents = gate_min_cents.unwrap_or(0).max(1);
 
     // Read from core DB: user's holdings of this specific asset
-    // current_value = tokens_owned × asset.token_price_cents
+    // current_value = tokens_owned * asset.token_price_cents
     let holding_value: Option<i64> = sqlx::query_scalar(
         r#"
-        SELECT (i.tokens_owned * a.token_price_cents)::BIGINT
+        SELECT COALESCE(SUM(i.tokens_owned::BIGINT * a.token_price_cents), 0)::BIGINT
         FROM investments i
         JOIN assets a ON a.id = i.asset_id
-        WHERE i.user_id = $1 AND i.asset_id = $2 AND i.status != 'refunded'
-        ORDER BY (i.tokens_owned * a.token_price_cents) DESC
-        LIMIT 1
+        WHERE i.user_id = $1
+          AND i.asset_id = $2
+          AND i.tokens_owned > 0
+          AND i.status NOT IN ('refunded', 'exited')
         "#,
     )
     .bind(user_id)
@@ -1506,8 +1639,8 @@ pub async fn check_token_gate(
     let actual_value = holding_value.unwrap_or(0);
 
     if actual_value < min_cents {
-        let required_formatted = format!("${:.2}", min_cents as f64 / 100.0);
-        let held_formatted = format!("${:.2}", actual_value as f64 / 100.0);
+        let required_formatted = format_cents(min_cents);
+        let held_formatted = format_cents(actual_value);
         return Err(AppError::BadRequest(format!(
             "Token gate requirement not met. You need at least {} of this asset to join. You currently hold {}.",
             required_formatted, held_formatted
@@ -1515,6 +1648,49 @@ pub async fn check_token_gate(
     }
 
     Ok(())
+}
+
+/// Check if a user meets a Circle's KYC gate.
+pub async fn check_kyc_gate(
+    community_pool: &PgPool,
+    core_pool: &PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+) -> Result<(), AppError> {
+    use sqlx::Row;
+
+    let row = sqlx::query("SELECT kyc_required, join_policy FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(community_pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+
+    let kyc_required: bool = row.try_get("kyc_required").unwrap_or(false);
+    let join_policy: String = row
+        .try_get("join_policy")
+        .unwrap_or_else(|_| "open".to_string());
+    if !kyc_required && join_policy != "kyc_required" {
+        return Ok(());
+    }
+
+    let approved: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1 FROM kyc_records
+            WHERE user_id = $1
+              AND status = 'approved'
+        )",
+    )
+    .bind(user_id)
+    .fetch_one(core_pool)
+    .await?;
+
+    if approved {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden(
+            "KYC verification is required to access this Circle.".into(),
+        ))
+    }
 }
 
 /// Set or clear the token gate on a circle. Only the circle owner can do this.
@@ -1567,6 +1743,13 @@ pub async fn update_token_gate(
         SET token_gate_asset_id = $1,
             token_gate_min_value_cents = $2,
             token_gate_asset_name = $3,
+            circle_type = CASE WHEN $1::uuid IS NULL THEN circle_type ELSE 'asset' END,
+            join_policy = CASE
+                WHEN $1::uuid IS NOT NULL THEN 'holder_only'
+                WHEN kyc_required THEN 'kyc_required'
+                WHEN is_public THEN 'open'
+                ELSE 'request'
+            END,
             updated_at = NOW()
         WHERE id = $4
         RETURNING *
@@ -1601,28 +1784,50 @@ pub struct CircleCardRow {
     pub is_public: bool,
     pub is_featured: bool,
     pub recent_post_count: i32,
+    pub token_gate_asset_id: Option<Uuid>,
+    pub token_gate_asset_name: Option<String>,
+    pub circle_type: String,
+    pub visibility: String,
+    pub join_policy: String,
+    pub is_official: bool,
+    pub kyc_required: bool,
+    pub private_investor_club: bool,
+    pub allow_cross_post: bool,
 }
 
-/// Discover endpoint payload: 3 curated lists.
+/// Discover endpoint payload: curated lists plus Phase 2 category filters.
 #[derive(Debug, serde::Serialize)]
 pub struct DiscoverPayload {
     pub featured: Vec<CircleCardRow>,
     pub trending: Vec<CircleCardRow>,
     pub new: Vec<CircleCardRow>,
+    pub public: Vec<CircleCardRow>,
+    pub private: Vec<CircleCardRow>,
+    pub asset: Vec<CircleCardRow>,
+    pub holder_only: Vec<CircleCardRow>,
+    pub official: Vec<CircleCardRow>,
+    pub kyc_gated: Vec<CircleCardRow>,
 }
 
-/// `GET /api/community/circles/discover` data: 3 sections × up to 10 each.
+/// `GET /api/community/circles/discover` data: curated sections plus Phase 2
+/// category filters. Private circles are returned as previews only; content
+/// access remains guarded by the Circle feed authorization checks.
 /// - `featured` = `is_featured = TRUE`, sorted by `featured_at DESC`.
 /// - `trending` = sorted by `recent_post_count DESC` (refreshed by background
 ///   job; fallback to member_count DESC on cold start).
 /// - `new`      = sorted by `created_at DESC`, last 30 days only.
 pub async fn discover_circles(pool: &PgPool) -> Result<DiscoverPayload, AppError> {
     const COLS: &str = "id, slug, name, description, avatar_emoji, banner_url, \
-                        member_count, max_members, is_public, is_featured, recent_post_count";
+                        member_count, max_members, is_public, is_featured, recent_post_count, \
+                        token_gate_asset_id, token_gate_asset_name, circle_type, visibility, \
+                        join_policy, is_official, kyc_required, private_investor_club, \
+                        allow_cross_post";
 
     let featured: Vec<CircleCardRow> = sqlx::query_as(&format!(
         "SELECT {COLS} FROM circles
-         WHERE is_featured = TRUE AND is_public = TRUE
+         WHERE is_featured = TRUE
+           AND is_public = TRUE
+           AND visibility <> 'hidden'
          ORDER BY featured_at DESC NULLS LAST, member_count DESC
          LIMIT 10",
     ))
@@ -1631,7 +1836,9 @@ pub async fn discover_circles(pool: &PgPool) -> Result<DiscoverPayload, AppError
 
     let trending: Vec<CircleCardRow> = sqlx::query_as(&format!(
         "SELECT {COLS} FROM circles
-         WHERE is_public = TRUE AND is_featured = FALSE
+         WHERE is_public = TRUE
+           AND is_featured = FALSE
+           AND visibility <> 'hidden'
          ORDER BY recent_post_count DESC, member_count DESC, created_at DESC
          LIMIT 10",
     ))
@@ -1642,8 +1849,69 @@ pub async fn discover_circles(pool: &PgPool) -> Result<DiscoverPayload, AppError
         "SELECT {COLS} FROM circles
          WHERE is_public = TRUE AND is_featured = FALSE
            AND created_at >= NOW() - INTERVAL '30 days'
+           AND visibility <> 'hidden'
          ORDER BY created_at DESC
          LIMIT 10",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let public: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE is_public = TRUE
+           AND visibility = 'public'
+         ORDER BY is_featured DESC, recent_post_count DESC, member_count DESC, created_at DESC
+         LIMIT 20",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let private: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE (is_public = FALSE OR visibility = 'private')
+           AND visibility <> 'hidden'
+         ORDER BY member_count DESC, created_at DESC
+         LIMIT 20",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let asset: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE (token_gate_asset_id IS NOT NULL OR circle_type = 'asset')
+           AND visibility <> 'hidden'
+         ORDER BY recent_post_count DESC, member_count DESC, created_at DESC
+         LIMIT 20",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let holder_only: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE (token_gate_asset_id IS NOT NULL OR join_policy = 'holder_only')
+           AND visibility <> 'hidden'
+         ORDER BY recent_post_count DESC, member_count DESC, created_at DESC
+         LIMIT 20",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let official: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE (is_official = TRUE OR circle_type = 'official')
+           AND visibility <> 'hidden'
+         ORDER BY is_featured DESC, featured_at DESC NULLS LAST, created_at DESC
+         LIMIT 20",
+    ))
+    .fetch_all(pool)
+    .await?;
+
+    let kyc_gated: Vec<CircleCardRow> = sqlx::query_as(&format!(
+        "SELECT {COLS} FROM circles
+         WHERE (kyc_required = TRUE OR join_policy = 'kyc_required')
+           AND visibility <> 'hidden'
+         ORDER BY is_featured DESC, member_count DESC, created_at DESC
+         LIMIT 20",
     ))
     .fetch_all(pool)
     .await?;
@@ -1652,6 +1920,12 @@ pub async fn discover_circles(pool: &PgPool) -> Result<DiscoverPayload, AppError
         featured,
         trending,
         new: new_list,
+        public,
+        private,
+        asset,
+        holder_only,
+        official,
+        kyc_gated,
     })
 }
 
@@ -1736,17 +2010,16 @@ pub async fn get_member_previews(
     user_ids.sort();
     user_ids.dedup();
 
-    let info_map = match crate::community::user_bridge::get_users_info_batch(
-        core_pool, redis_pool, &user_ids,
-    )
-    .await
-    {
-        Ok(m) => m,
-        Err(e) => {
-            tracing::warn!("get_member_previews bridge failed: {}", e);
-            return out;
-        }
-    };
+    let info_map =
+        match crate::community::user_bridge::get_users_info_batch(core_pool, redis_pool, &user_ids)
+            .await
+        {
+            Ok(m) => m,
+            Err(e) => {
+                tracing::warn!("get_member_previews bridge failed: {}", e);
+                return out;
+            }
+        };
 
     for (circle_id, user_id) in pairs {
         let entry = out.entry(circle_id).or_default();
@@ -1775,13 +2048,21 @@ pub async fn search_circles(
         return Ok((Vec::new(), 0));
     }
     let offset = (page.max(1) - 1) * per_page;
-    let needle = format!("%{}%", q.to_lowercase());
+    let escaped = q
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_");
+    let needle = format!("%{}%", escaped.to_lowercase());
 
     let rows: Vec<CircleCardRow> = sqlx::query_as(
         r#"SELECT id, slug, name, description, avatar_emoji, banner_url,
-                  member_count, max_members, is_public, is_featured, recent_post_count
+                  member_count, max_members, is_public, is_featured, recent_post_count,
+                  token_gate_asset_id, token_gate_asset_name, circle_type, visibility,
+                  join_policy, is_official, kyc_required, private_investor_club,
+                  allow_cross_post
            FROM circles
            WHERE is_public = TRUE
+             AND visibility = 'public'
              AND (LOWER(name) LIKE $1 OR LOWER(COALESCE(description, '')) LIKE $1)
            ORDER BY
                -- exact-prefix match first, then by member count
@@ -1790,7 +2071,7 @@ pub async fn search_circles(
            LIMIT $3 OFFSET $4"#,
     )
     .bind(&needle)
-    .bind(q)
+    .bind(&escaped)
     .bind(per_page)
     .bind(offset)
     .fetch_all(pool)
@@ -1799,6 +2080,7 @@ pub async fn search_circles(
     let total: i64 = sqlx::query_scalar(
         r#"SELECT COUNT(*)::BIGINT FROM circles
            WHERE is_public = TRUE
+             AND visibility = 'public'
              AND (LOWER(name) LIKE $1 OR LOWER(COALESCE(description, '')) LIKE $1)"#,
     )
     .bind(&needle)
@@ -1831,6 +2113,19 @@ pub async fn get_circle_by_slug(
         None
     };
 
+    let invited = if role.is_none() {
+        match viewer_id {
+            Some(uid) => has_pending_invite(pool, circle.id, uid).await?,
+            None => false,
+        }
+    } else {
+        false
+    };
+
+    if circle.visibility == "hidden" && role.is_none() && !invited {
+        return Err(AppError::NotFound("Circle not found".into()));
+    }
+
     Ok((circle, role))
 }
 
@@ -1843,7 +2138,9 @@ pub async fn list_my_circles(
     let rows = sqlx::query(
         r#"SELECT c.id, c.slug, c.name, c.description, c.avatar_emoji, c.banner_url,
                   c.member_count, c.max_members, c.is_public, c.is_featured,
-                  c.recent_post_count, cm.role
+                  c.recent_post_count, c.token_gate_asset_id, c.token_gate_asset_name,
+                  c.circle_type, c.visibility, c.join_policy, c.is_official, c.kyc_required,
+                  c.private_investor_club, c.allow_cross_post, cm.role
            FROM circles c
            JOIN circle_members cm ON cm.circle_id = c.id
            WHERE cm.user_id = $1
@@ -1868,6 +2165,25 @@ pub async fn list_my_circles(
             is_public: r.try_get("is_public")?,
             is_featured: r.try_get("is_featured")?,
             recent_post_count: r.try_get("recent_post_count")?,
+            token_gate_asset_id: r.try_get("token_gate_asset_id").ok(),
+            token_gate_asset_name: r.try_get("token_gate_asset_name").ok(),
+            circle_type: r
+                .try_get("circle_type")
+                .unwrap_or_else(|_| "social".to_string()),
+            visibility: r.try_get("visibility").unwrap_or_else(|_| {
+                if r.try_get("is_public").unwrap_or(true) {
+                    "public".to_string()
+                } else {
+                    "private".to_string()
+                }
+            }),
+            join_policy: r
+                .try_get("join_policy")
+                .unwrap_or_else(|_| "open".to_string()),
+            is_official: r.try_get("is_official").unwrap_or(false),
+            kyc_required: r.try_get("kyc_required").unwrap_or(false),
+            private_investor_club: r.try_get("private_investor_club").unwrap_or(false),
+            allow_cross_post: r.try_get("allow_cross_post").unwrap_or(true),
         };
         let role: String = r.try_get("role")?;
         out.push((card, role));
@@ -2082,6 +2398,7 @@ fn role_rank(role: &str) -> i32 {
         "owner" => 4,
         "admin" => 3,
         "moderator" => 2,
+        "verified_expert" => 1,
         "member" => 1,
         _ => 0,
     }

@@ -338,3 +338,26 @@ body#property-content-body .cart-page-main > :not(.developer-lb-topbar):first-of
     margin-right: 0 !important;
   }
 }
+
+/* Topbar icon-only button — bare icon, color-only hover (no background). */
+.topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #98A2B3;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color .15s ease;
+}
+.topbar-icon-btn:hover,
+.topbar-icon-btn:focus-visible {
+  color: var(--btn-primary-bg, #0000FF);
+  background: transparent;
+  outline: none;
+}
+.topbar-icon-btn svg { width: 18px; height: 18px; }

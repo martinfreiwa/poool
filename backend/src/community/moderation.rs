@@ -1,6 +1,27 @@
 use ammonia::Builder;
 use regex::Regex;
 
+const COMPLIANCE_POST_TYPES: &[&str] = &[
+    "market_insight",
+    "property_update",
+    "due_diligence",
+    "risk_discussion",
+    "official_update",
+];
+
+const COMPLIANCE_TAGS: &[&str] = &[
+    "risk",
+    "yield",
+    "real_estate",
+    "commodity",
+    "tokenization",
+    "property_update",
+    "due_diligence",
+    "legal",
+    "tax",
+    "liquidity",
+];
+
 /// Result of a moderation check
 pub struct ModerationResult {
     /// True if the content should be flagged for manual review
@@ -11,6 +32,14 @@ pub struct ModerationResult {
     pub needs_disclaimer: bool,
     /// The sanitized HTML content
     pub sanitized_content: String,
+}
+
+pub fn post_requires_compliance_disclaimer(post_type: &str, tags: &[String]) -> bool {
+    COMPLIANCE_POST_TYPES.contains(&post_type)
+        || tags.iter().any(|tag| {
+            let tag = tag.as_str();
+            COMPLIANCE_TAGS.contains(&tag)
+        })
 }
 
 /// Validates and sanitizes user-generated content for community posts and comments

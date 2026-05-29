@@ -1,9 +1,23 @@
 {% if posts | length == 0 %}
-    {% if current_feed_mode == 'following' %}
+    {% if current_circle_id %}
+        <div class="ds-card community-feed-empty">
+            <div class="community-feed-empty__hero">
+                <svg class="community-feed-empty__icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+                </svg>
+                <h3 class="community-feed-empty__title">New Circle · Be the first to post</h3>
+                <p class="community-feed-empty__desc">Start the first discussion in this Circle.</p>
+            </div>
+            <div class="community-feed-empty__actions">
+                <button type="button" class="ds-btn ds-btn--primary"
+                        onclick="document.getElementById('post-content-input')?.focus();">Write a post</button>
+            </div>
+        </div>
+    {% elif current_feed_mode == 'following' %}
         <div class="ds-card community-following-empty community-empty-state">
             <h3 class="community-following-empty__title">Nothing to see here yet</h3>
             <p class="community-following-empty__desc">You aren't following anyone yet, or the people you follow haven't posted.</p>
-            <button class="ds-btn ds-btn--primary community-following-empty__cta" hx-get="/community/partials/feed/list?feed_mode=all" hx-target="#community-feed-container">View All Posts</button>
+            <button class="ds-btn ds-btn--primary community-following-empty__cta" hx-get="/community/partials/feed/list?feed_mode=all" hx-disinherit="hx-include" hx-target="#community-feed-container">View All Posts</button>
         </div>
     {% else %}
         <!-- All-posts feed is empty (brand-new community or filter clears everything).
@@ -33,8 +47,9 @@
        endpoint. Append rather than replace so older posts stay rendered. #}
     {% if posts | length >= page_size | default(20) %}
         <div class="community-feed-sentinel"
-             hx-get="/community/partials/feed/list?page={{ next_page }}{% if current_feed_mode %}&feed_mode={{ current_feed_mode }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}"
+             hx-get="/community/partials/feed/list?page={{ next_page }}{% if current_feed_mode %}&feed_mode={{ current_feed_mode }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_circle_id %}&circle_id={{ current_circle_id }}{% endif %}"
              hx-trigger="revealed"
+             hx-disinherit="hx-include"
              hx-swap="outerHTML">
             <div class="community-feed-sentinel__hint ds-helper-text">Loading more...</div>
         </div>

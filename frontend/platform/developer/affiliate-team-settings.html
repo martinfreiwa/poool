@@ -1,6 +1,6 @@
 {% with title="Affiliate Team Settings – POOOL", no_index=True,
 extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
-'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team', 'mobile-developer-affiliate-team'],
 extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-settings'] %}{% include
 "components/head.html" %}{% endwith %}
 
@@ -133,21 +133,21 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
               <small class="dat-input-hint">PNG or SVG, ideally 240×64. Shown at the top of invite emails + public join page.</small>
             </div>
 
-            <div class="ds-form-row" style="display:flex;gap:16px;align-items:flex-end;">
-              <div class="ds-form-group" style="flex:0 0 200px;">
+            <div class="ds-form-row dat-brand-row">
+              <div class="ds-form-group dat-brand-accent-group">
                 <label class="ds-form-label" for="dat-branding-accent">Accent color</label>
-                <div style="display:flex;gap:8px;align-items:center;">
+                <div class="dat-color-control">
                   <input id="dat-branding-accent-picker" type="color" value="#0000FF"
-                         style="width:42px;height:38px;padding:0;border:1px solid var(--border-color,#E5E7EB);border-radius:6px;cursor:pointer;"
+                         class="dat-color-picker"
                          aria-label="Accent color picker"/>
                   <input id="dat-branding-accent" type="text" class="ds-input"
                          placeholder="#0000FF" pattern="^#[0-9A-Fa-f]{6}$"
-                         maxlength="7" style="font-family:ui-monospace,monospace;"/>
+                         maxlength="7"/>
                 </div>
                 <small class="dat-input-hint">Used for email CTA buttons.</small>
               </div>
 
-              <div class="ds-form-group" style="flex:1;">
+              <div class="ds-form-group dat-brand-sender-group">
                 <label class="ds-form-label" for="dat-branding-from-display">Email sender name</label>
                 <input id="dat-branding-from-display" type="text" class="ds-input"
                        placeholder="e.g. Acme Property" maxlength="80" autocomplete="off"/>
@@ -242,9 +242,9 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
                   Country
                   <span class="dat-form-row__optional">(2-letter)</span>
                 </label>
-                <input type="text" id="dat-bank-country" class="ds-input"
+                <input type="text" id="dat-bank-country" class="ds-input dat-country-input"
                        maxlength="2" autocomplete="off"
-                       placeholder="DE" style="text-transform:uppercase" />
+                       placeholder="DE" />
                 <small class="dat-form-row__hint">ISO-3166-1 alpha-2 (DE, AT, US, GB, …).</small>
               </div>
             </div>

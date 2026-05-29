@@ -5,17 +5,17 @@
 
 :root {
   /* Design Tokens */
-  --pd-primary: var(--primary-color);
-  --pd-accent: #98FB96;
-  --pd-text-main: var(--page-title-color);
-  --pd-text-medium: #414651;
-  --pd-text-light: #717680;
-  --pd-text-muted: #a4a7ae;
-  --pd-border: #d5d7da;
-  --pd-border-light: var(--table-border-color);
-  --pd-bg: #ffffff;
-  --pd-bg-hover: #f5f5ff;
-  --pd-bg-subtle: #f9fafb;
+  --pd-primary: var(--input-border-focus, var(--primary-color, #0000FF));
+  --pd-accent: var(--brand-green, #03FF88);
+  --pd-text-main: var(--input-text-color, var(--page-title-color, #101828));
+  --pd-text-medium: var(--body-color, #414651);
+  --pd-text-light: var(--input-placeholder-color, #667085);
+  --pd-text-muted: #98A2B3;
+  --pd-border: var(--input-border-color, #D0D5DD);
+  --pd-border-light: var(--table-border-color, #EAECF0);
+  --pd-bg: var(--input-bg, #FFFFFF);
+  --pd-bg-hover: #F5F5FF;
+  --pd-bg-subtle: #F9FAFB;
   --pd-shadow:
     0px 4px 6px -2px rgba(16, 24, 40, 0.03),
     0px 12px 16px -4px rgba(16, 24, 40, 0.08);
@@ -107,7 +107,7 @@
 .poool-dropdown__trigger:focus,
 .poool-dropdown__trigger--active {
   border-color: var(--pd-primary);
-  box-shadow: 0 0 0 3px rgba(46, 46, 249, 0.08);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
 }
 
 .poool-dropdown__trigger--error {

@@ -12,7 +12,7 @@
 -- Both tables are user-controlled (self-service), distinct from the
 -- existing admin/moderation tables in 013_moderation.sql / 014_shadowban.sql.
 
-CREATE TABLE block_relationships (
+CREATE TABLE IF NOT EXISTS block_relationships (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     actor_user_id UUID NOT NULL,
     target_user_id UUID NOT NULL,
@@ -21,10 +21,10 @@ CREATE TABLE block_relationships (
     CONSTRAINT block_relationships_unique UNIQUE (actor_user_id, target_user_id)
 );
 
-CREATE INDEX idx_block_relationships_actor ON block_relationships (actor_user_id);
-CREATE INDEX idx_block_relationships_target ON block_relationships (target_user_id);
+CREATE INDEX IF NOT EXISTS idx_block_relationships_actor ON block_relationships (actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_block_relationships_target ON block_relationships (target_user_id);
 
-CREATE TABLE mute_relationships (
+CREATE TABLE IF NOT EXISTS mute_relationships (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     actor_user_id UUID NOT NULL,
     target_user_id UUID NOT NULL,
@@ -33,4 +33,4 @@ CREATE TABLE mute_relationships (
     CONSTRAINT mute_relationships_unique UNIQUE (actor_user_id, target_user_id)
 );
 
-CREATE INDEX idx_mute_relationships_actor ON mute_relationships (actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_mute_relationships_actor ON mute_relationships (actor_user_id);

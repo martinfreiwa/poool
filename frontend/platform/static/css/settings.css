@@ -680,11 +680,6 @@
     padding: 20px 0 0;
 }
 
-.developer-settings-main .settings-dev-description-grid {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 20px;
-}
-
 .developer-settings-main .settings-field-heading__title {
     color: var(--page-title-color, #181D27);
     font-size: 14px;
@@ -694,32 +689,6 @@
 .developer-settings-main .settings-field-heading__hint,
 .developer-settings-main .settings-char-counter {
     color: var(--color-text-subtle, #717680);
-}
-
-.developer-settings-main .settings-dev-preview {
-    background: var(--badge-neutral-bg, #F2F4F7);
-    border: 1px solid var(--card-border-color, #E5E7EB);
-    border-radius: var(--card-border-radius, 12px);
-    padding: 16px;
-}
-
-.developer-settings-main .settings-dev-preview__label {
-    color: var(--color-text-subtle, #717680);
-    letter-spacing: 0;
-}
-
-.developer-settings-main .settings-dev-preview__logo {
-    background: var(--card-bg, #FFFFFF);
-    border: 1px solid var(--card-border-color, #E5E7EB);
-    box-shadow: none;
-}
-
-.developer-settings-main .settings-dev-preview__company {
-    color: var(--page-title-color, #181D27);
-}
-
-.developer-settings-main .settings-dev-preview__description {
-    color: var(--color-text-muted, #414651);
 }
 
 .developer-settings-main #form-developer-links {
@@ -1160,7 +1129,11 @@
     cursor: not-allowed;
 }
 .settings-input--narrow { max-width: 220px; }
-.settings-select { appearance: auto; }
+.settings-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
 
 /* ----- Dividers ----------------------------------------------------------- */
 .settings-divider {
@@ -1357,66 +1330,8 @@
 .settings-dev-description-block {
     padding: 24px 0 0;
 }
-.settings-dev-description-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 24px;
-    align-items: stretch;
-}
 .settings-dev-description-editor {
     min-width: 0;
-}
-.settings-dev-preview {
-    border: 1px solid #EAECF0;
-    border-radius: 12px;
-    background: #FCFCFD;
-    padding: 16px;
-}
-.settings-dev-preview__label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #667085;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 12px;
-}
-.settings-dev-preview__card {
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    gap: 12px;
-    align-items: start;
-}
-.settings-dev-preview__logo {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #F0F2FF 0%, #E8ECFF 100%);
-    border: 1px solid #FFFFFF;
-    box-shadow: 0 2px 8px rgba(0, 0, 255, 0.06);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-.settings-dev-preview__logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.settings-dev-preview__body { min-width: 0; }
-.settings-dev-preview__company {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--page-title-color);
-    margin-bottom: 6px;
-    overflow-wrap: anywhere;
-}
-.settings-dev-preview__description {
-    margin: 0;
-    color: #475467;
-    font-size: 13px;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
 }
 
 /* ----- Divider bleeds ----------------------------------------------------- */
@@ -1633,6 +1548,25 @@
 
 .settings-oauth-row__provider { font-weight: 600; color: var(--page-title-color); }
 .settings-oauth-row__status { color: #475467; font-size: 13px; }
+.settings-oauth-row__action.ds-btn {
+    justify-self: end;
+    min-width: 86px;
+    height: 36px;
+    padding: 0 14px;
+    line-height: 1;
+}
+.settings-oauth-row__action.ds-btn--secondary {
+    background: #FFFFFF;
+    color: #414651;
+    border: 1px solid #D5D7DA;
+    box-shadow: none;
+}
+.settings-oauth-row__action.ds-btn--secondary:hover,
+.settings-oauth-row__action.ds-btn--secondary:active {
+    background: #FFFFFF;
+    color: #414651;
+    border-color: #D5D7DA;
+}
 
 .settings-empty-row {
     padding: 14px 0;
@@ -1690,7 +1624,6 @@ body.modal-open { overflow: hidden; }
     .settings-privacy-row { flex-direction: column; }
     .settings-edit-footer--flush { flex-wrap: wrap; }
     .settings-logo-upload { flex-direction: column; align-items: flex-start; }
-    .settings-dev-description-grid { grid-template-columns: 1fr; }
     .settings-form-row--list > .settings-input,
     .settings-form-row--list > .poool-dropdown { max-width: none; }
 }

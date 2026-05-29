@@ -8,7 +8,7 @@
 -- threads or posting messages — these tables don't reference
 -- block_relationships directly.
 
-CREATE TABLE dm_threads (
+CREATE TABLE IF NOT EXISTS dm_threads (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     participant_a_id  UUID NOT NULL,
     participant_b_id  UUID NOT NULL,
@@ -20,10 +20,10 @@ CREATE TABLE dm_threads (
     CONSTRAINT dm_threads_unique_pair UNIQUE (participant_a_id, participant_b_id)
 );
 
-CREATE INDEX idx_dm_threads_a ON dm_threads (participant_a_id, last_message_at DESC);
-CREATE INDEX idx_dm_threads_b ON dm_threads (participant_b_id, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_dm_threads_a ON dm_threads (participant_a_id, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_dm_threads_b ON dm_threads (participant_b_id, last_message_at DESC);
 
-CREATE TABLE dm_messages (
+CREATE TABLE IF NOT EXISTS dm_messages (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     thread_id           UUID NOT NULL REFERENCES dm_threads(id) ON DELETE CASCADE,
     sender_id           UUID NOT NULL,
@@ -32,4 +32,4 @@ CREATE TABLE dm_messages (
     read_at_recipient   TIMESTAMPTZ
 );
 
-CREATE INDEX idx_dm_messages_thread ON dm_messages (thread_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_dm_messages_thread ON dm_messages (thread_id, created_at);

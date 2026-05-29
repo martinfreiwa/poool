@@ -1,0 +1,402 @@
+/* Mobile Developer — Submissions
+ *
+ * Page: /developer/submissions  (body#developer-submissions-body)
+ * Pattern: stat cards (3-up bento) collapse to 1-up, table rows collapse
+ * to card layout (title + status + date stacked vertically). Inherits some
+ * column-hide rules from developer-submissions.css's existing 768/1180
+ * blocks — we then override the remaining cells to render block-level.
+ */
+
+@media (max-width: 1024px) {
+  /* Sidebar collapse */
+  #developer-submissions-body #developer-submissions-sidebar {
+    display: none !important;
+  }
+
+  #developer-submissions-body #developer-submissions-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Hide cart icon on developer pages */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-submissions-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-submissions-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ── Page shell ──────────────────────────────────── */
+  #developer-submissions-body {
+    background: #fafafa;
+  }
+
+  #developer-submissions-body #developer-submissions-main,
+  #developer-submissions-body .ds-main {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 16px !important;
+    padding-top: 80px !important; /* clear mobile header */
+    margin: 0 !important;
+    box-sizing: border-box;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* Loosen max-width caps from desktop sheet */
+  #developer-submissions-main .sub-stats,
+  #developer-submissions-main .sub-toolbar,
+  #developer-submissions-main .submissions-table-container,
+  body#developer-submissions-body .sub-stats,
+  body#developer-submissions-body .submissions-table-container {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* ── Stat bento → single column ──────────────────── */
+  #developer-submissions-body .sub-stats,
+  #developer-submissions-body .sub-stats--bento {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  #developer-submissions-body .sub-stat,
+  #developer-submissions-body .sub-stat--hero,
+  #developer-submissions-body .sub-stat--md {
+    width: 100% !important;
+    padding: 16px !important;
+    min-height: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  #developer-submissions-body .sub-stat__count--xl {
+    font-size: 32px !important;
+  }
+
+  #developer-submissions-body .sub-stat__count--lg {
+    font-size: 26px !important;
+  }
+
+  #developer-submissions-body .sub-stat__eyebrow {
+    font-size: 11px !important;
+  }
+
+  #developer-submissions-body .sub-stat__label {
+    font-size: 13px !important;
+  }
+
+  #developer-submissions-body .sub-stat__sublabel,
+  #developer-submissions-body .sub-stat__hint {
+    font-size: 11px !important;
+  }
+
+  /* ── Card chrome ─────────────────────────────────── */
+  #developer-submissions-body .submissions-table-container {
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+
+  #developer-submissions-body .developer-assets-performance-section__header {
+    padding: 14px 16px !important;
+  }
+
+  #developer-submissions-body .developer-assets-performance-section__title-wrap h2 {
+    font-size: 16px !important;
+  }
+
+  #developer-submissions-body .developer-assets-performance-section__title-wrap p {
+    font-size: 12px !important;
+  }
+
+  /* ── Toolbar (search + sort): already stacks via desktop sheet, polish ── */
+  #developer-submissions-body .sub-toolbar {
+    padding: 10px 14px !important;
+  }
+
+  #developer-submissions-body .sub-search {
+    height: 40px !important;
+    border-radius: 8px !important;
+  }
+
+  #developer-submissions-body .sub-search input {
+    font-size: 14px !important;
+  }
+
+  #developer-submissions-body .sub-sort-btn {
+    height: 40px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── Bulk action bar ─────────────────────────────── */
+  #developer-submissions-body .sub-bulk-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+
+  #developer-submissions-body .sub-bulk-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  #developer-submissions-body .sub-bulk-actions button {
+    flex: 1;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  /* ── Convert table rows into cards ───────────────── */
+  /* Hide thead but preserve a11y */
+  #developer-submissions-body .submissions-table thead {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  #developer-submissions-body .submissions-table,
+  #developer-submissions-body .submissions-table tbody,
+  #developer-submissions-body .submissions-table tr,
+  #developer-submissions-body .submissions-table td {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #developer-submissions-body .submissions-table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  /* Each row = a card */
+  #developer-submissions-body .submissions-table tbody tr {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid var(--table-border-color, #E9EAEB);
+    border-radius: 12px !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.04);
+    margin: 0 14px 12px;
+    padding: 14px 14px 14px 48px; /* leave room for absolute checkbox */
+    width: calc(100% - 28px) !important;
+  }
+
+  #developer-submissions-body .submissions-table tbody tr:hover {
+    background: #ffffff;
+  }
+
+  /* Reset border-bottom on cells now that rows are cards */
+  #developer-submissions-body .submissions-table tbody tr td {
+    border: 0 !important;
+    padding: 4px 0 !important;
+    background: transparent !important;
+  }
+
+  /* Checkbox col: absolutely-positioned top-left of the card */
+  #developer-submissions-body .submissions-table .col-checkbox {
+    position: absolute !important;
+    top: 14px;
+    left: 14px;
+    width: 24px !important;
+    padding: 0 !important;
+  }
+
+  /* Asset cell: title + cover thumb */
+  #developer-submissions-body .submissions-table .submission-asset-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #developer-submissions-body .submissions-table .submission-cover-thumb,
+  #developer-submissions-body .submissions-table .submission-cover-placeholder {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  #developer-submissions-body .submissions-table .submission-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 18px !important;
+    color: var(--page-title-color);
+    max-width: 100% !important;
+    word-break: break-word;
+  }
+
+  /* Re-show progress/created/updated (desktop @ 768 hides them) as inline meta */
+  #developer-submissions-body .submissions-table .col-progress,
+  #developer-submissions-body .submissions-table .col-created,
+  #developer-submissions-body .submissions-table .col-updated,
+  #developer-submissions-body .submissions-table th.col-created,
+  #developer-submissions-body .submissions-table th.col-updated {
+    display: block !important;
+  }
+
+  /* But progress bar can be hidden — status pill conveys the gist */
+  #developer-submissions-body .submissions-table .col-progress {
+    margin-top: 8px;
+  }
+
+  #developer-submissions-body .submissions-table .submission-progress-label {
+    font-size: 11px !important;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  /* Status + dates row */
+  #developer-submissions-body .submissions-table .col-created,
+  #developer-submissions-body .submissions-table .col-updated {
+    font-size: 11px !important;
+    color: var(--label-color);
+  }
+
+  #developer-submissions-body .submissions-table .submission-date {
+    font-size: 11px !important;
+  }
+
+  #developer-submissions-body .submissions-table .submission-status {
+    display: inline-flex !important;
+    margin-top: 4px;
+  }
+
+  /* Actions: row of buttons aligned right */
+  #developer-submissions-body .submissions-table .col-actions {
+    margin-top: 10px;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--table-border-color, #F0F1F2) !important;
+    text-align: right !important;
+  }
+
+  #developer-submissions-body .submissions-table .submission-actions {
+    display: flex !important;
+    gap: 6px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  #developer-submissions-body .submissions-table .sub-icon-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  #developer-submissions-body .submissions-table .sub-edit-btn,
+  #developer-submissions-body .submissions-table .sub-resubmit-btn {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  /* ── Footer chip pipeline (Drafts › In Review › ...) ── */
+  #developer-submissions-body .sub-pipeline,
+  #developer-submissions-body .sub-pipeline--footer {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 10px 14px !important;
+    justify-content: flex-start !important;
+  }
+
+  #developer-submissions-body .sub-pipeline__sep {
+    display: none !important;
+  }
+
+  #developer-submissions-body .sub-chip {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 999px;
+  }
+
+  /* ── Pagination ──────────────────────────────────── */
+  #developer-submissions-body .sub-pagination {
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  #developer-submissions-body .sub-page-controls,
+  #developer-submissions-body .sub-page-numbers {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── Empty state hero (dae-empty) ───────────────── */
+  #developer-submissions-body .dae-empty__hero {
+    flex-direction: column !important;
+    padding: 20px !important;
+    gap: 16px !important;
+  }
+
+  #developer-submissions-body .dae-empty__hero-art {
+    width: 100% !important;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  #developer-submissions-body .dae-empty__title {
+    font-size: 22px !important;
+    line-height: 28px !important;
+  }
+
+  #developer-submissions-body .dae-empty__lede {
+    font-size: 14px !important;
+  }
+
+  #developer-submissions-body .dae-empty__actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  #developer-submissions-body .dae-empty__actions .ds-btn {
+    width: 100% !important;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  #developer-submissions-body .dae-empty__metrics,
+  #developer-submissions-body .dae-empty__steps {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #developer-submissions-body #developer-submissions-main,
+  #developer-submissions-body .ds-main {
+    padding: 12px !important;
+    padding-top: 80px !important;
+  }
+
+  #developer-submissions-body .submissions-table tbody tr {
+    margin: 0 0 10px;
+    width: 100% !important;
+  }
+
+  #developer-submissions-body .sub-toolbar {
+    padding: 10px 12px !important;
+  }
+
+  #developer-submissions-body .sub-pipeline,
+  #developer-submissions-body .sub-pipeline--footer {
+    padding: 10px 12px !important;
+  }
+}

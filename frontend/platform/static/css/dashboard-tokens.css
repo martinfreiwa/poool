@@ -171,6 +171,12 @@
     --input-bg: #FFFFFF;
     --input-placeholder-color: #667085;
     --input-text-color: #101828;
+    --radio-selected-bg: #0000FF;
+    --radio-selected-border: #0000FF;
+    --radio-selected-dot-color: #03FF88;
+    --checkbox-selected-bg: #0000FF;
+    --checkbox-selected-border: #0000FF;
+    --checkbox-selected-check-color: #03FF88;
 
     /* ── 15. Table System ────────────────────────────────────────── */
     --table-header-bg: #FAFAFA;

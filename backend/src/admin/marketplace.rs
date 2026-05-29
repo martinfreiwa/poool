@@ -2258,6 +2258,9 @@ pub async fn api_admin_marketplace_toggle_trading(
     State(state): State<AppState>,
     Json(body): Json<ToggleTradingRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
     let redis = state
         .redis
         .as_ref()
@@ -2370,9 +2373,12 @@ pub async fn api_admin_marketplace_health(
 
 /// GET /api/admin/marketplace/reconciliation — Cash, fee, and token integrity checks.
 pub async fn api_admin_marketplace_reconciliation(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<ReconciliationReport>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let db = &state.db;
 
     // Cash balance check
@@ -3433,9 +3439,12 @@ pub struct MarketplaceAlert {
 
 /// GET /api/admin/marketplace/alerts — List marketplace alerts.
 pub async fn api_admin_marketplace_alerts(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<MarketplaceAlert>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
 
     let alerts: Vec<MarketplaceAlert> = sqlx::query_as(
@@ -3467,6 +3476,9 @@ pub async fn api_admin_marketplace_alert_action(
     State(state): State<AppState>,
     Json(body): Json<AlertActionRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
     let alert_uuid =
         Uuid::parse_str(&alert_id).map_err(|_| ApiError::BadRequest("Invalid alert ID".into()))?;
@@ -3513,9 +3525,12 @@ pub struct WatchlistEntry {
 
 /// GET /api/admin/marketplace/watchlist — List watchlisted users.
 pub async fn api_admin_marketplace_watchlist(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<WatchlistEntry>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
 
     let entries: Vec<WatchlistEntry> = sqlx::query_as(
@@ -3546,6 +3561,9 @@ pub async fn api_admin_marketplace_add_watchlist(
     State(state): State<AppState>,
     Json(body): Json<AddWatchlistRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
 
     let id: Uuid = sqlx::query_scalar(
@@ -6287,6 +6305,9 @@ pub async fn api_admin_marketplace_claim_alert(
     Path(alert_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
     let alert_uuid =
         Uuid::parse_str(&alert_id).map_err(|_| ApiError::BadRequest("Invalid alert ID".into()))?;
@@ -6320,6 +6341,9 @@ pub async fn api_admin_marketplace_snooze_alert(
     State(state): State<AppState>,
     Json(body): Json<AlertSnoozeRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
     let alert_uuid =
         Uuid::parse_str(&alert_id).map_err(|_| ApiError::BadRequest("Invalid alert ID".into()))?;
@@ -6379,6 +6403,9 @@ pub async fn api_admin_marketplace_alerts_bulk(
     State(state): State<AppState>,
     Json(body): Json<AlertBulkRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
     if body.ids.is_empty() {
         return Err(ApiError::BadRequest("ids must be non-empty".into()));
@@ -6442,10 +6469,13 @@ pub struct AlertAuditEntry {
 
 /// GET /api/admin/marketplace/alerts/:alert_id/audit
 pub async fn api_admin_marketplace_alert_audit(
-    _admin: AdminUser,
+    admin: AdminUser,
     Path(alert_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AlertAuditEntry>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
     let alert_uuid =
         Uuid::parse_str(&alert_id).map_err(|_| ApiError::BadRequest("Invalid alert ID".into()))?;
@@ -6520,9 +6550,12 @@ fn validate_rule(r: &AlertRuleUpsert) -> Result<(), ApiError> {
 
 /// GET /api/admin/marketplace/alert-rules
 pub async fn api_admin_marketplace_list_rules(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AlertRule>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let rows: Vec<AlertRule> = sqlx::query_as(
         "SELECT id, name, category, severity, threshold_text, escalate_after_min, channel, enabled, mute_schedule, created_at, updated_at
            FROM marketplace_alert_rules
@@ -6540,6 +6573,9 @@ pub async fn api_admin_marketplace_create_rule(
     State(state): State<AppState>,
     Json(body): Json<AlertRuleUpsert>,
 ) -> Result<Json<AlertRule>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     validate_rule(&body)?;
     let row: AlertRule = sqlx::query_as(
         "INSERT INTO marketplace_alert_rules
@@ -6564,11 +6600,14 @@ pub async fn api_admin_marketplace_create_rule(
 
 /// PUT /api/admin/marketplace/alert-rules/:id
 pub async fn api_admin_marketplace_update_rule(
-    _admin: AdminUser,
+    admin: AdminUser,
     Path(rule_id): Path<String>,
     State(state): State<AppState>,
     Json(body): Json<AlertRuleUpsert>,
 ) -> Result<Json<AlertRule>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     validate_rule(&body)?;
     let id = Uuid::parse_str(&rule_id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
     let row: AlertRule = sqlx::query_as(
@@ -6595,10 +6634,13 @@ pub async fn api_admin_marketplace_update_rule(
 
 /// DELETE /api/admin/marketplace/alert-rules/:id
 pub async fn api_admin_marketplace_delete_rule(
-    _admin: AdminUser,
+    admin: AdminUser,
     Path(rule_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let id = Uuid::parse_str(&rule_id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
     let res = sqlx::query("DELETE FROM marketplace_alert_rules WHERE id = $1")
         .bind(id)
@@ -6615,6 +6657,9 @@ pub async fn api_admin_marketplace_test_rule(
     Path(rule_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let db = &state.db;
     let id = Uuid::parse_str(&rule_id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
 
@@ -6677,9 +6722,12 @@ pub struct WatchlistEntryV2 {
 
 /// GET /api/admin/marketplace/watchlist/v2 — Generic entity watchlist.
 pub async fn api_admin_marketplace_watchlist_v2(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<WatchlistEntryV2>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let rows: Vec<WatchlistEntryV2> = sqlx::query_as(
         r#"SELECT w.id, w.entity_type, w.entity_identifier, w.user_id,
                   u.email AS user_email, w.reason, w.added_by, w.is_active, w.created_at
@@ -6708,6 +6756,9 @@ pub async fn api_admin_marketplace_add_watchlist_v2(
     State(state): State<AppState>,
     Json(body): Json<AddWatchlistV2Request>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     if !["user", "wallet", "asset", "ip"].contains(&body.entity_type.as_str()) {
         return Err(ApiError::BadRequest("invalid entity_type".into()));
     }
@@ -6748,10 +6799,13 @@ pub async fn api_admin_marketplace_add_watchlist_v2(
 
 /// DELETE /api/admin/marketplace/watchlist/v2/:id — Soft-delete (is_active = false).
 pub async fn api_admin_marketplace_delete_watchlist_v2(
-    _admin: AdminUser,
+    admin: AdminUser,
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let uuid = Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
     let res = sqlx::query("UPDATE marketplace_watchlist SET is_active = false WHERE id = $1")
         .bind(uuid)
@@ -6918,8 +6972,12 @@ pub struct PushSubBody {
 /// GET /api/admin/marketplace/push-vapid-key — Returns server VAPID public
 /// key (or 404-ish empty payload if not configured).
 pub async fn api_admin_marketplace_push_vapid_key(
-    _admin: AdminUser,
+    admin: AdminUser,
+    State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let key = std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default();
     if key.is_empty() {
         return Err(ApiError::BadRequest(
@@ -6937,6 +6995,9 @@ pub async fn api_admin_marketplace_register_push_subscription(
     headers: axum::http::HeaderMap,
     Json(body): Json<PushSubBody>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let ua = headers
         .get("user-agent")
         .and_then(|v| v.to_str().ok())
@@ -6984,9 +7045,12 @@ pub struct WatchlistEntryEnriched {
 /// GET /api/admin/marketplace/watchlist/v2/enriched — Adds per-entity
 /// linked-alerts count and "added by" email.
 pub async fn api_admin_marketplace_watchlist_enriched(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<WatchlistEntryEnriched>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let rows: Vec<WatchlistEntryEnriched> = sqlx::query_as(
         r#"SELECT
               w.id, w.entity_type, w.entity_identifier,
@@ -7033,11 +7097,14 @@ pub struct RuleBacktestResult {
 /// window. Cheap, naive — pattern match on `alert_type`. Good enough as
 /// a sanity check before enabling a rule.
 pub async fn api_admin_marketplace_backtest_rule(
-    _admin: AdminUser,
+    admin: AdminUser,
     Path(rule_id): Path<String>,
     State(state): State<AppState>,
     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<RuleBacktestResult>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.compliance")
+        .await?;
     let id = Uuid::parse_str(&rule_id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
     let days: i32 = q
         .get("days")
@@ -7114,6 +7181,9 @@ pub async fn api_admin_marketplace_list_views(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AlertView>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let rows: Vec<AlertView> = sqlx::query_as(
         "SELECT id, name, state, created_at
            FROM marketplace_alert_views
@@ -7140,6 +7210,9 @@ pub async fn api_admin_marketplace_save_view(
     State(state): State<AppState>,
     Json(body): Json<SaveViewRequest>,
 ) -> Result<Json<AlertView>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     if body.name.trim().is_empty() || body.name.len() > 80 {
         return Err(ApiError::BadRequest("name 1..80 chars".into()));
     }
@@ -7163,6 +7236,9 @@ pub async fn api_admin_marketplace_delete_view(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let uuid = Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid id".into()))?;
     let res = sqlx::query("DELETE FROM marketplace_alert_views WHERE id = $1 AND user_id = $2")
         .bind(uuid)
@@ -7183,10 +7259,13 @@ pub struct AlertHistoryBucket {
 
 /// GET /api/admin/marketplace/alerts/history?days=7
 pub async fn api_admin_marketplace_alert_history(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<Vec<AlertHistoryBucket>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let days: i32 = q
         .get("days")
         .and_then(|s| s.parse().ok())

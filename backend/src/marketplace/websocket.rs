@@ -44,6 +44,12 @@ use crate::error::AppError;
 /// Shared across all connections on this Cloud Run instance.
 type ChannelMap = Arc<RwLock<HashMap<Uuid, broadcast::Sender<String>>>>;
 
+/// Hard cap on the per-instance channel map. Each entry holds a 256-message
+/// broadcast ring buffer, so unbounded growth would leak memory as assets
+/// accumulate over time. Refuse new subscriptions past this cap to bound
+/// worst-case memory.
+const MAX_CHANNELS: usize = 100_000;
+
 /// Global channel map — initialized once, shared across all handlers.
 fn global_channels() -> &'static ChannelMap {
     static CHANNELS: std::sync::OnceLock<ChannelMap> = std::sync::OnceLock::new();
@@ -51,28 +57,69 @@ fn global_channels() -> &'static ChannelMap {
 }
 
 /// Get or create the broadcast channel for a specific asset.
-async fn get_or_create_channel(asset_id: Uuid) -> broadcast::Sender<String> {
+///
+/// Returns `None` if the channel map is at the hard cap and no entry yet
+/// exists for `asset_id` (the caller should drop the subscription).
+async fn get_or_create_channel(asset_id: Uuid) -> Option<broadcast::Sender<String>> {
     let channels = global_channels();
 
     // Fast path: check if channel exists with read lock
     {
         let read = channels.read().await;
         if let Some(tx) = read.get(&asset_id) {
-            return tx.clone();
+            return Some(tx.clone());
         }
     }
 
     // Slow path: create channel with write lock
     let mut write = channels.write().await;
-    // Double-check after acquiring write lock
-    write
-        .entry(asset_id)
-        .or_insert_with(|| {
-            let (tx, _rx) = broadcast::channel(256);
-            tracing::debug!("Created WS broadcast channel for asset {}", asset_id);
-            tx
-        })
-        .clone()
+    // Double-check after acquiring write lock — another task may have
+    // raced ahead and inserted the entry already.
+    if let Some(tx) = write.get(&asset_id) {
+        return Some(tx.clone());
+    }
+    // Enforce the hard cap before allocating a fresh 256-msg ring buffer.
+    if write.len() >= MAX_CHANNELS {
+        tracing::warn!(
+            channel_count = write.len(),
+            asset_id = %asset_id,
+            "WS channel cap reached; refusing new subscription"
+        );
+        return None;
+    }
+    let (tx, _rx) = broadcast::channel(256);
+    tracing::debug!("Created WS broadcast channel for asset {}", asset_id);
+    write.insert(asset_id, tx.clone());
+    Some(tx)
+}
+
+/// Evict the per-asset broadcast channel if no subscribers remain.
+///
+/// Called after a WS client disconnects. Without this, `CHANNELS` would grow
+/// monotonically with the number of distinct assets ever subscribed to,
+/// holding ~256 messages worth of memory per dead entry.
+async fn evict_if_empty(asset_id: Uuid) {
+    let channels = global_channels();
+
+    // Fast path: cheap read-lock check first to avoid serializing on the
+    // write lock when there are still subscribers (the common case).
+    {
+        let read = channels.read().await;
+        match read.get(&asset_id) {
+            Some(tx) if tx.receiver_count() == 0 => {}
+            _ => return,
+        }
+    }
+
+    // Slow path: re-acquire under write lock and double-check the count
+    // (TOCTOU-safe: a new subscriber may have arrived between locks).
+    let mut write = channels.write().await;
+    if let Some(tx) = write.get(&asset_id) {
+        if tx.receiver_count() == 0 {
+            write.remove(&asset_id);
+            tracing::debug!("Evicted WS broadcast channel for asset {}", asset_id);
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -100,8 +147,20 @@ pub async fn ws_market_handler(
 async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppState) {
     tracing::debug!("WS connected: asset {}", asset_id);
 
-    // Subscribe to the broadcast channel for this asset
-    let tx = get_or_create_channel(asset_id).await;
+    // Subscribe to the broadcast channel for this asset. If we're at the
+    // hard cap, refuse the subscription and close the socket cleanly.
+    let tx = match get_or_create_channel(asset_id).await {
+        Some(tx) => tx,
+        None => {
+            let _ = socket
+                .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                    code: 1013, // "Try Again Later"
+                    reason: "channel capacity exceeded".into(),
+                })))
+                .await;
+            return;
+        }
+    };
     let mut rx = tx.subscribe();
 
     // Helper to get orderbook snapshot handling Redis fallback
@@ -200,6 +259,11 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
     }
 
     tracing::debug!("WS disconnected: asset {}", asset_id);
+
+    // Drop our subscriber receiver before checking the count, so the channel
+    // can be evicted if we were the last listener for this asset.
+    drop(rx);
+    evict_if_empty(asset_id).await;
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -192,7 +192,6 @@ COMMENT ON FUNCTION cascade_terminate_team_links IS
 
 COMMIT;
 
-\echo '── lifetime_revenue_cents backfill ──'
 SELECT u.email, lc.lifetime_revenue_cents/100.0 AS revenue_eur,
        lc.lifetime_commission_cents/100.0 AS commission_eur
   FROM affiliate_live_counters lc

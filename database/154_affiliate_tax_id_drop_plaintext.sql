@@ -27,6 +27,12 @@
 
 BEGIN;
 
+-- Compatibility guard for legacy affiliates tables that still lack audit
+-- timestamps. This migration and adjacent affiliate migrations write
+-- `updated_at`, so create it once when missing.
+ALTER TABLE affiliates
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
 -- 1. Add version column with a safe default for existing rows.
 ALTER TABLE affiliates
     ADD COLUMN IF NOT EXISTS tax_id_key_version SMALLINT NOT NULL DEFAULT 1;

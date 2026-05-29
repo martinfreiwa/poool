@@ -1,0 +1,404 @@
+/* Mobile Developer — Asset Detail (7-tab detail view)
+ *
+ * Page: /developer/assets/:id  (body#developer-asset-detail-body)
+ * Loaded AFTER mobile-developer-assets.css, which covers the listing page
+ * shell + tap-highlight reset. This sheet owns the detail-specific
+ * .ad-hero / .ad-tabs / .ad-kpi-row / .ad-card / .ad-table classes.
+ *
+ * Pattern:
+ *   - Tab strip stays horizontal but scrolls with -webkit-overflow-scrolling
+ *   - Two-column ad-grid-2-1 / ad-detail-grid collapses to single column
+ *   - Tables wrap in horizontal-scroll containers (no card-collapse:
+ *     financials, captable, orders are dense matrix-style tables)
+ */
+
+@media (max-width: 1024px) {
+  /* Hide sidebar at tablet portrait */
+  #developer-asset-detail-body #developer-assets-sidebar,
+  #developer-asset-detail-body .marketplace-sidebar {
+    display: none !important;
+  }
+
+  #developer-asset-detail-body .marketplace-page,
+  #developer-asset-detail-body #developer-assets-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Hide cart icon on developer pages */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-asset-detail-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-asset-detail-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* Override the `user-select:none` blanket from mobile-developer-assets.css
+     so users can still copy details / addresses / IDs on this read view. */
+  #developer-asset-detail-body * {
+    -webkit-user-select: auto !important;
+    -khtml-user-select: auto !important;
+    -moz-user-select: auto !important;
+    -ms-user-select: auto !important;
+    user-select: auto !important;
+  }
+
+  /* ── Page shell ────────────────────────────────────── */
+  #developer-asset-detail-body {
+    background: #fafafa;
+  }
+
+  #developer-asset-detail-body .ds-main,
+  #developer-asset-detail-body .marketplace-main {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: calc(100vh - 64px);
+  }
+
+  #developer-asset-detail-body .admin-content {
+    padding: 16px !important;
+    box-sizing: border-box;
+  }
+
+  /* Breadcrumbs */
+  #developer-asset-detail-body .admin-breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px !important;
+    margin: 24px 0 12px !important;
+  }
+
+  #developer-asset-detail-body .admin-breadcrumbs a,
+  #developer-asset-detail-body .admin-breadcrumbs .current {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 12px !important;
+    line-height: 18px;
+  }
+
+  /* ── Pending changes banner ────────────────────────── */
+  #developer-asset-detail-body .pending-changes-banner {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  #developer-asset-detail-body .pending-changes-banner .banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+  }
+
+  /* ── Hero (image + title + funding) ────────────────── */
+  #developer-asset-detail-body .ad-hero {
+    flex-direction: column !important;
+    gap: 14px !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  #developer-asset-detail-body .ad-hero__image-wrap {
+    width: 100% !important;
+    height: 180px !important;
+    flex-shrink: 0;
+  }
+
+  #developer-asset-detail-body .ad-hero__title {
+    font-size: 18px !important;
+    line-height: 24px !important;
+    font-weight: 800 !important;
+    color: var(--page-title-color) !important;
+  }
+
+  #developer-asset-detail-body .ad-hero__title-row {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  #developer-asset-detail-body .ad-hero__location {
+    font-size: 13px !important;
+    margin-bottom: 12px !important;
+  }
+
+  #developer-asset-detail-body .ad-hero__funding-meta {
+    font-size: 12px !important;
+  }
+
+  /* ── KPI row: 4 → 2 cols on tablet, 1-col on phone ── */
+  #developer-asset-detail-body .ad-kpi-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  #developer-asset-detail-body .ad-kpi {
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+
+  #developer-asset-detail-body .ad-kpi__icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  #developer-asset-detail-body .ad-kpi__icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  #developer-asset-detail-body .ad-kpi__label {
+    font-size: 10px !important;
+  }
+
+  #developer-asset-detail-body .ad-kpi__value {
+    font-size: 14px !important;
+    max-width: none !important;
+  }
+
+  /* ── Horizontally scrollable tab strip ─────────────── */
+  #developer-asset-detail-body .ad-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -16px 16px !important; /* edge bleed for affordance */
+    padding: 0 16px !important;
+    border-bottom: 2px solid var(--card-border-color);
+    /* visible scroll cue on the right edge */
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+            mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  #developer-asset-detail-body .ad-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  #developer-asset-detail-body .ad-tabs__item {
+    flex: none !important;
+    flex-shrink: 0 !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    min-height: 44px;
+  }
+
+  #developer-asset-detail-body .ad-tabs__item svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  #developer-asset-detail-body .ad-tabs__badge {
+    margin-left: 4px;
+    font-size: 9px;
+    min-width: 16px;
+    height: 16px;
+  }
+
+  /* ── 2-col layout grids → single column ────────────── */
+  #developer-asset-detail-body .ad-grid-2-1,
+  #developer-asset-detail-body .ad-grid-1-1 {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  #developer-asset-detail-body .ad-stack {
+    gap: 14px !important;
+  }
+
+  /* ── Card chrome ──────────────────────────────────── */
+  #developer-asset-detail-body .ad-card {
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+
+  #developer-asset-detail-body .ad-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 16px !important;
+  }
+
+  #developer-asset-detail-body .ad-card__title {
+    font-size: 14px !important;
+  }
+
+  #developer-asset-detail-body .ad-card__body {
+    padding: 16px !important;
+  }
+
+  #developer-asset-detail-body .ad-card--flush .ad-card__body {
+    padding: 0 !important;
+  }
+
+  /* ── ad-detail-grid (Property Details): 2 → 1 column ── */
+  #developer-asset-detail-body .ad-detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* ── Summary lists (Financials, Quick Stats): stack key + value ── */
+  #developer-asset-detail-body .ad-summary-list .summary-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px 12px;
+    padding: 10px 0;
+  }
+
+  #developer-asset-detail-body .ad-summary-list .summary-label {
+    font-size: 12px;
+    color: var(--label-color);
+    flex: 1 1 50%;
+    min-width: 0;
+  }
+
+  #developer-asset-detail-body .ad-summary-list .summary-value {
+    font-size: 13px;
+    text-align: right;
+    flex: 0 0 auto;
+  }
+
+  /* ── Description text ─────────────────────────────── */
+  #developer-asset-detail-body .ad-description {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  /* ── Table-card header (Monthly Performance etc) ─── */
+  #developer-asset-detail-body .ad-table-card__header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+  }
+
+  #developer-asset-detail-body .ad-table-card__actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #developer-asset-detail-body .ad-table-card__actions .ad-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+
+  #developer-asset-detail-body .ad-table-card__hint {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  /* ── Tables: horizontal-scroll container ──────────── */
+  /* The .ad-card--flush body holds the table at full bleed; we wrap with
+     overflow-x:auto and sticky first column for context. Use a min-width
+     so cells don't squish to unreadable widths. */
+  #developer-asset-detail-body .ad-card--flush .ad-card__body {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #developer-asset-detail-body .ad-table {
+    min-width: 560px;
+    width: 100%;
+  }
+
+  #developer-asset-detail-body .ad-table thead th,
+  #developer-asset-detail-body .ad-table tbody td {
+    padding: 10px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Sticky first column for matrix tables (financials/captable/orders) */
+  #developer-asset-detail-body .ad-table thead th:first-child,
+  #developer-asset-detail-body .ad-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--card-bg, #fff);
+    box-shadow: 1px 0 0 0 var(--table-border-color, #E5E7EB);
+  }
+
+  #developer-asset-detail-body .ad-table thead th:first-child {
+    background: var(--table-header-bg, #F9FAFB);
+  }
+
+  /* Empty rows inside scrolled tables: keep their padding sane */
+  #developer-asset-detail-body .ad-table .ad-empty {
+    padding: 32px 16px !important;
+    font-size: 13px !important;
+    white-space: normal;
+  }
+
+  /* ── Media grid: 2-up at narrow widths ────────────── */
+  #developer-asset-detail-body .media-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* ── Video embed full width ───────────────────────── */
+  #developer-asset-detail-body .ad-video-embed {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* ── Document items: stack meta + actions on phone ── */
+  #developer-asset-detail-body .document-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  /* ── Buttons inside cards full-width ──────────────── */
+  #developer-asset-detail-body .ad-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  #developer-asset-detail-body .admin-content {
+    padding: 12px !important;
+  }
+
+  /* KPI row: stack to single column on small phones */
+  #developer-asset-detail-body .ad-kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Smaller hero image on tight viewports */
+  #developer-asset-detail-body .ad-hero__image-wrap {
+    height: 160px !important;
+  }
+
+  #developer-asset-detail-body .ad-hero__title {
+    font-size: 17px !important;
+  }
+
+  /* Media grid: single column on small phones */
+  #developer-asset-detail-body .media-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

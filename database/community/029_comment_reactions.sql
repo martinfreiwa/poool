@@ -9,7 +9,7 @@
 ALTER TABLE comments
     ADD COLUMN IF NOT EXISTS reaction_count INTEGER NOT NULL DEFAULT 0;
 
-CREATE TABLE comment_reactions (
+CREATE TABLE IF NOT EXISTS comment_reactions (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     comment_id      UUID NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
     user_id         UUID NOT NULL,
@@ -19,8 +19,8 @@ CREATE TABLE comment_reactions (
     UNIQUE (comment_id, user_id, reaction_type)
 );
 
-CREATE INDEX idx_comment_reactions_comment ON comment_reactions (comment_id);
-CREATE INDEX idx_comment_reactions_user ON comment_reactions (user_id);
+CREATE INDEX IF NOT EXISTS idx_comment_reactions_comment ON comment_reactions (comment_id);
+CREATE INDEX IF NOT EXISTS idx_comment_reactions_user ON comment_reactions (user_id);
 
 CREATE OR REPLACE FUNCTION update_comment_reaction_count() RETURNS TRIGGER AS $$
 BEGIN
@@ -32,6 +32,8 @@ BEGIN
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_comment_reaction_count ON comment_reactions;
 
 CREATE TRIGGER trg_comment_reaction_count
 AFTER INSERT OR DELETE ON comment_reactions

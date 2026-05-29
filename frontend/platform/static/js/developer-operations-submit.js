@@ -16,10 +16,13 @@ let assetId = null;
 let year = null;
 let month = null;
 let logId = null;
+let existingLogId = null; // edit mode marker (URL contains /operations/<log_id> instead of /new)
 let currentRow = null;
 let assetConfig = { reserve_pct_bps: 500, platform_pct: 0, withholding_tax_bps: 0 };
 let customExpenseCount = 0;
 let maxDaysInMonth = 31;
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 document.addEventListener("DOMContentLoaded", () => {
   parseUrl();
@@ -28,28 +31,38 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function parseUrl() {
-  // /developer/villas/<asset_id>/operations/new
+  // /developer/villas/<asset_id>/operations/new   (create mode)
+  // /developer/villas/<asset_id>/operations/<log_id>  (edit mode)
   const parts = window.location.pathname.split("/").filter(Boolean);
   assetId = parts[2];
+  const trailing = parts[3];
+  if (trailing && trailing !== "new") {
+    existingLogId = trailing;
+  }
   const qs = new URLSearchParams(window.location.search);
   year = parseInt(qs.get("year") || "0", 10);
   month = parseInt(qs.get("month") || "0", 10);
 
-  // Legacy breadcrumb (hidden element kept for compatibility)
+  updatePeriodHeader();
+}
+
+// Refresh the topbar period badge + breadcrumb + nights clamp from the
+// current year/month. Called once on URL parse and again after the edit-mode
+// GET returns the persisted period_year / period_month for an existing log.
+function updatePeriodHeader() {
   const bc = document.getElementById("dop-breadcrumb");
-  if (bc) bc.textContent = `Asset ${assetId.slice(0, 8)}… · Period ${year}-${String(month).padStart(2, "0")}`;
-
-  // V2 topbar: period badge
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const monthName = (month >= 1 && month <= 12) ? MONTHS[month - 1] : String(month);
+  if (bc && assetId) {
+    bc.textContent = `Asset ${assetId.slice(0, 8)}… · Period ${year}-${String(month).padStart(2, "0")}`;
+  }
+  const monthName = (month >= 1 && month <= 12) ? MONTHS[month - 1] : String(month || "—");
   const periodEl = document.getElementById("dops-period-text");
-  if (periodEl) periodEl.textContent = `${monthName} ${year}`;
+  if (periodEl) periodEl.textContent = year > 0 ? `${monthName} ${year}` : "— / —";
 
-  // V2 topbar: asset name placeholder (updated in hydrate once config loads)
   const nameEl = document.getElementById("dops-asset-name");
-  if (nameEl) nameEl.textContent = `Villa ${assetId.slice(0, 8)}…`;
+  if (nameEl && nameEl.textContent === "Loading…" && assetId) {
+    nameEl.textContent = `Villa ${assetId.slice(0, 8)}…`;
+  }
 
-  // Days in the selected month: new Date(year, month, 0) = last day of that month
   if (year > 0 && month > 0) maxDaysInMonth = new Date(year, month, 0).getDate();
 }
 
@@ -125,14 +138,30 @@ async function hydrate() {
       }
     }
 
-    const listResp = await fetch(`/api/developer/villas/${encodeURIComponent(assetId)}/operations?year=${year}&month=${month}`);
-    if (!listResp.ok) throw new Error(await responseError(listResp));
-    const rows = await listResp.json();
-    if (rows.length > 0) {
-      currentRow = rows[0];
+    if (existingLogId) {
+      // Edit mode — fetch the single log row, then derive year/month from it.
+      const singleResp = await fetch(
+        `/api/developer/villas/${encodeURIComponent(assetId)}/operations/${encodeURIComponent(existingLogId)}`
+      );
+      if (!singleResp.ok) throw new Error(await responseError(singleResp));
+      currentRow = await singleResp.json();
       logId = currentRow.id;
+      year = currentRow.period_year;
+      month = currentRow.period_month;
+      updatePeriodHeader();
       fillFormFromRow(currentRow);
       reflectStatus(currentRow.status);
+    } else {
+      // Create mode — list by year/month from query string, take first match.
+      const listResp = await fetch(`/api/developer/villas/${encodeURIComponent(assetId)}/operations?year=${year}&month=${month}`);
+      if (!listResp.ok) throw new Error(await responseError(listResp));
+      const rows = await listResp.json();
+      if (rows.length > 0) {
+        currentRow = rows[0];
+        logId = currentRow.id;
+        fillFormFromRow(currentRow);
+        reflectStatus(currentRow.status);
+      }
     }
     recompute();
     reflectDocsSection();
@@ -156,7 +185,36 @@ function fillFormFromRow(row) {
     const el = form.elements[name];
     // Only fill if value is non-null and non-zero — zero means not entered yet
     if (el && row[name] != null && row[name] !== 0) {
+      // Use the same fmtNum() the live attachFormatter listener applies on
+      // user input, so thousands separators (and the `Rp ` prefix for
+      // currency fields) render identically to the post-typing state.
       el.value = fmtNum(row[name], !el.hasAttribute("data-nocurrency"));
+    }
+  }
+
+  // C-5 hydrate: rebuild the named "other" expense rows from the JSONB
+  // breakdown the server persisted. Subtract their total from the catch-all
+  // "Other (miscellaneous)" field so the visible amounts add up correctly —
+  // the persisted `expense_other_idr_cents` is the sum of (catch-all + custom).
+  const notes = Array.isArray(row.expense_other_notes) ? row.expense_other_notes : null;
+  if (notes && notes.length) {
+    // Clear any pre-existing rows (defensive — hydrate runs once on load).
+    const list = document.getElementById("dops-custom-expenses-list");
+    if (list) list.replaceChildren();
+    let customSum = 0;
+    for (const entry of notes) {
+      const amount = parseInt(entry && entry.amount_idr_cents, 10);
+      if (!isFinite(amount)) continue;
+      customSum += amount;
+      addCustomExpense({
+        name: (entry && entry.name) ? String(entry.name) : "",
+        amount,
+      });
+    }
+    const otherEl = form.elements["expense_other_idr_cents"];
+    if (otherEl && row.expense_other_idr_cents != null) {
+      const residual = Math.max(0, row.expense_other_idr_cents - customSum);
+      otherEl.value = residual > 0 ? fmtNum(residual, !otherEl.hasAttribute("data-nocurrency")) : "";
     }
   }
 }
@@ -204,18 +262,31 @@ function reflectStatus(status) {
   }
 }
 
-function gatherCustomExpenseTotal() {
-  let total = 0;
-  document.querySelectorAll('#dops-custom-expenses-list [data-role="expense-amount"]').forEach(el => {
-    total += parseInt(stripNum(el.value), 10) || 0;
+function gatherCustomExpenses() {
+  // C-5: preserve the per-row name + amount alongside the rolled-up total so
+  // the server can persist the breakdown into villa_operations_log.expense_other_notes.
+  // Rows where both name and amount are blank are skipped to avoid noise.
+  const out = [];
+  document.querySelectorAll("#dops-custom-expenses-list .dops-custom-expense-row").forEach(row => {
+    const nameEl = row.querySelector('[data-role="expense-name"]');
+    const amtEl  = row.querySelector('[data-role="expense-amount"]');
+    const name   = nameEl ? String(nameEl.value || "").trim() : "";
+    const amount = amtEl ? (parseInt(stripNum(amtEl.value), 10) || 0) : 0;
+    if (!name && amount === 0) return;
+    out.push({ name, amount_idr_cents: amount });
   });
-  return total;
+  return out;
+}
+
+function gatherCustomExpenseTotal() {
+  return gatherCustomExpenses().reduce((s, e) => s + (e.amount_idr_cents || 0), 0);
 }
 
 function gatherPayload() {
   const f = document.getElementById("dop-form").elements;
   const num = (n) => parseInt(stripNum(f[n].value), 10) || 0;
-  const customTotal = gatherCustomExpenseTotal();
+  const customExpenses = gatherCustomExpenses();
+  const customTotal = customExpenses.reduce((s, e) => s + (e.amount_idr_cents || 0), 0);
   return {
     period_year: year,
     period_month: month,
@@ -229,7 +300,8 @@ function gatherPayload() {
     expense_staff_idr_cents:         num("expense_staff_idr_cents"),
     expense_pool_garden_idr_cents:   num("expense_pool_garden_idr_cents"),
     expense_pest_idr_cents:          num("expense_pest_idr_cents"),
-    // Custom named expenses are folded into expense_other_idr_cents for storage
+    // expense_other_idr_cents is the authoritative subtotal that feeds
+    // recompute()/compute_totals(): catch-all "Other" field + sum(custom rows).
     expense_other_idr_cents:         num("expense_other_idr_cents") + customTotal,
     expense_property_tax_idr_cents:  num("expense_property_tax_idr_cents"),
     expense_insurance_idr_cents:     num("expense_insurance_idr_cents"),
@@ -245,6 +317,9 @@ function gatherPayload() {
       const n = stripNum(v);
       return n === "" ? null : parseInt(n, 10);
     })(),
+    // C-5: send the per-row breakdown so investors/admins can see what the
+    // user typed; persisted to JSONB column villa_operations_log.expense_other_notes.
+    expense_other_notes: customExpenses.length ? customExpenses : null,
   };
 }
 
@@ -341,7 +416,7 @@ function showError(msg) { document.getElementById("dop-error").textContent = msg
 
 /* ── Custom expense rows ─────────────────────────────────────────────── */
 
-function addCustomExpense() {
+function addCustomExpense(prefill) {
   customExpenseCount++;
   const row = document.createElement("div");
   row.className = "dops-custom-expense-row";
@@ -361,7 +436,8 @@ function addCustomExpense() {
       </svg>
     </button>
   `;
-  const amtEl = row.querySelector('[data-role="expense-amount"]');
+  const nameEl = row.querySelector('[data-role="expense-name"]');
+  const amtEl  = row.querySelector('[data-role="expense-amount"]');
   attachFormatter(amtEl, true);
   amtEl.addEventListener("input", recompute);
   row.querySelector(".dops-custom-expense-remove").addEventListener("click", () => {
@@ -369,8 +445,17 @@ function addCustomExpense() {
     recompute();
   });
   document.getElementById("dops-custom-expenses-list").appendChild(row);
-  // Focus the name input
-  row.querySelector('[data-role="expense-name"]').focus();
+
+  // Hydrate (edit-mode) path: prefill name + amount with the persisted entry.
+  if (prefill && typeof prefill === "object") {
+    if (prefill.name) nameEl.value = prefill.name;
+    if (typeof prefill.amount === "number" && prefill.amount > 0) {
+      amtEl.value = fmtNum(prefill.amount, true);
+    }
+  } else {
+    // Fresh user-initiated row: focus the name input.
+    nameEl.focus();
+  }
 }
 
 /* ── Document upload queue ───────────────────────────────────────────── */
@@ -416,7 +501,7 @@ function createQueueItem(file) {
     <span class="dops-queue-item__icon">${fileIcon(file.name)}</span>
     <span class="dops-queue-item__name" title="${esc(file.name)}">${esc(file.name)}</span>
     <span class="dops-queue-item__size">${formatSize(file.size)}</span>
-    <select class="dops-type-select">${typeOptions}</select>
+    <select class="dops-type-select" aria-label="Document type">${typeOptions}</select>
     <button type="button" class="dops-queue-item__remove" title="Remove">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>

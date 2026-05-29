@@ -1051,7 +1051,7 @@ function renderOrderDetail(data, titleEl, subtitleEl, bodyEl) {
     html += `
     <div style="margin-bottom:20px;padding:12px 16px;border-radius:var(--admin-radius-sm);border:1px solid var(--admin-border);background:var(--admin-hover-overlay);">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:6px;">Proof of Transfer</div>
-      <a href="${esc(o.proof_of_transfer_url)}" target="_blank" class="admin-link" style="font-size:13px;word-break:break-all;">View uploaded proof →</a>
+      <a href="${esc(o.proof_of_transfer_url)}" target="_blank" rel="noopener noreferrer" class="admin-link" style="font-size:13px;word-break:break-all;">View uploaded proof →</a>
     </div>`;
   }
 
@@ -1113,7 +1113,7 @@ function renderOrderDetail(data, titleEl, subtitleEl, bodyEl) {
             <div style="font-weight:700;font-variant-numeric:tabular-nums;">${formatUSD(invoice.total_cents)}</div>
           </div>
         </div>
-        ${invoice.pdf_url ? `<div style="margin-top:10px;"><a href="${esc(invoice.pdf_url)}" target="_blank" class="admin-link" style="font-size:13px;">📄 Download PDF</a></div>` : ''}
+        ${invoice.pdf_url ? `<div style="margin-top:10px;"><a href="${esc(invoice.pdf_url)}" target="_blank" rel="noopener noreferrer" class="admin-link" style="font-size:13px;">📄 Download PDF</a></div>` : ''}
       </div>
     </div>`;
   }

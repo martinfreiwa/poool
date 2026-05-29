@@ -76,10 +76,10 @@
   }
 
   function renderCompare(data) {
-    DAT.$('#dat-cmp-personal-tier').textContent = data.developer_personal_tier || '—';
+    DAT.$('#dat-cmp-personal-tier').textContent = 'Personal';
     DAT.$('#dat-cmp-personal-rate').textContent =
       fmtBps(data.developer_personal_rate_bps) + ' · ' + fmtBpsRaw(data.developer_personal_rate_bps);
-    DAT.$('#dat-cmp-team-tier').textContent = data.current_tier || '—';
+    DAT.$('#dat-cmp-team-tier').textContent = 'Team';
     DAT.$('#dat-cmp-team-rate').textContent =
       fmtBps(data.current_rate_bps) + ' · ' + fmtBpsRaw(data.current_rate_bps);
   }

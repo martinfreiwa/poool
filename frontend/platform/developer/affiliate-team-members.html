@@ -1,6 +1,6 @@
 {% with title="Affiliate Team Members – POOOL", no_index=True,
 extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
-'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team', 'mobile-developer-affiliate-team'],
 extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-members'] %}{% include
 "components/head.html" %}{% endwith %}
 
@@ -20,7 +20,7 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
       <div class="ds-main__content">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <section class="ds-card dat-content-card dat-content-card--with-header" aria-labelledby="dat-members-title">
+        <section class="ds-card dat-content-card dat-content-card--with-header dat-table-card" aria-labelledby="dat-members-title">
           <!-- Card header: title + search slot. No status tabs — JS feeds
                the data unfiltered now (search covers ad-hoc queries). -->
           <div class="dat-card-header">

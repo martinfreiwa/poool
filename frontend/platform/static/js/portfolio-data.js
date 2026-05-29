@@ -326,6 +326,32 @@
     </a>`;
   }
 
+  function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === "function") {
+      return window.CSS.escape(String(value));
+    }
+    return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+  }
+
+  async function hydratePortfolioAssetCircles(investments) {
+    if (!window.PooolAssetCircleCta) return;
+    var assetIds = Array.from(new Set((investments || []).map(function (inv) {
+      return inv.assetId;
+    }).filter(Boolean)));
+
+    await Promise.all(assetIds.map(async function (assetId) {
+      var data = await window.PooolAssetCircleCta.fetchAssetCircle(assetId);
+      if (!data || !data.circle) return;
+
+      document.querySelectorAll('.portfolio-asset-circle-slot[data-asset-circle-id="' + cssEscape(assetId) + '"]').forEach(function (slot) {
+        slot.innerHTML = window.PooolAssetCircleCta.renderActionButton(data, { variant: "desktop" });
+      });
+      document.querySelectorAll('.mobile-asset-circle-slot[data-asset-circle-id="' + cssEscape(assetId) + '"]').forEach(function (slot) {
+        slot.innerHTML = window.PooolAssetCircleCta.renderActionButton(data, { variant: "mobile" });
+      });
+    }));
+  }
+
   function updateAssetsTable(investments) {
     const body = document.getElementById("portfolio-assets-body");
     if (!body) return;
@@ -348,9 +374,10 @@
       const cover = escHtml(inv.coverImage);
       const statusCss = escHtml(inv.statusCss);
       const statusLabel = escHtml(inv.statusLabel);
+      const assetId = escHtml(inv.assetId || "");
       
       return `
-      <div class="portfolio-assets-row" onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
+      <div class="portfolio-assets-row" data-asset-id="${assetId}" onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
         <div class="portfolio-assets-cell property-col">
           <div style="display:flex; align-items:center; gap:16px;">
             <img src="${cover}" alt="${title}" style="width: 56px; height: 40px; border-radius: 6px; object-fit: cover;" onerror="this.outerHTML='<div class=\'property-image-placeholder\'><svg width=\'20\' height=\'20\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'></rect><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'></circle><polyline points=\'21 15 16 10 5 21\'></polyline></svg></div>'">
@@ -375,6 +402,7 @@
           ${buildStatusBadgeHtml(statusCss, statusLabel)}
         </div>
         <div class="portfolio-assets-cell actions-col" onclick="event.stopPropagation();">
+          <span class="portfolio-asset-circle-slot" data-asset-circle-id="${assetId}"></span>
           ${inv.chainContractAddress ? `
           <button class="portfolio-assets-detail-btn"
             type="button"
@@ -440,9 +468,10 @@
       const cover = escHtml(inv.coverImage);
       const statusCss = escHtml(inv.statusCss);
       const statusLabel = escHtml(inv.statusLabel);
+      const assetId = escHtml(inv.assetId || "");
       return `
       <tr class="mobile-assets-row"
-        onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
+        data-asset-id="${assetId}" onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
         <td class="mobile-assets-cell-property">
           <div class="mobile-assets-property-content">
             <img loading="lazy" src="${cover}" alt="Property"
@@ -476,6 +505,7 @@
             <span class="portfolio-assets-status-icon"></span>
             <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60px;">${statusLabel}</span>
           </div>
+          <span class="mobile-asset-circle-slot" data-asset-circle-id="${assetId}"></span>
           ${inv.chainContractAddress ? `
           <button type="button"
             aria-label="Add ${title} to MetaMask"
@@ -552,6 +582,7 @@
       updateInsights(data);
       updateAssetsTable(data.investments);
       updateMobileAssetsTable(data.investments);
+      hydratePortfolioAssetCircles(data.investments);
       updatePieChart(data.pieChartData);
 
       // Update the interactive chart with real data

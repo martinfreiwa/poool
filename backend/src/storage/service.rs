@@ -17,6 +17,7 @@ use google_cloud_storage::sign::SignedURLOptions;
 
 use crate::error::AppError;
 use sqlx::PgPool;
+use std::path::{Component, Path, PathBuf};
 use uuid::Uuid;
 
 // ─── Upload ────────────────────────────────────────────────────
@@ -286,7 +287,6 @@ pub async fn generate_signed_url_with_disposition(
 }
 
 /// Delete a GCS object by its path (e.g. when a user replaces their avatar).
-#[allow(dead_code)]
 pub async fn delete_object(bucket: &str, object_path: &str) -> Result<(), AppError> {
     let client = build_client().await?;
 
@@ -314,6 +314,10 @@ pub async fn download_object(
     bucket: &str,
     object_path: &str,
 ) -> Result<(String, Vec<u8>), AppError> {
+    if let Some(fake_root) = fake_gcs_download_root()? {
+        return download_fake_gcs_object(&fake_root, bucket, object_path).await;
+    }
+
     let client = build_client().await?;
 
     // Fetch object metadata first to get content_type
@@ -342,6 +346,52 @@ pub async fn download_object(
         )
         .await
         .map_err(|e| AppError::Internal(format!("GCS download failed: {}", e)))?;
+
+    Ok((content_type, data))
+}
+
+fn fake_gcs_download_root() -> Result<Option<PathBuf>, AppError> {
+    let Ok(raw_root) = std::env::var("POOOL_GCS_DOWNLOAD_FAKE_ROOT") else {
+        return Ok(None);
+    };
+    let raw_root = raw_root.trim();
+    if raw_root.is_empty() {
+        return Ok(None);
+    }
+    if !is_local_fallback_allowed() {
+        return Err(AppError::Internal(
+            "POOOL_GCS_DOWNLOAD_FAKE_ROOT is only allowed in development/dev/local environments."
+                .into(),
+        ));
+    }
+    Ok(Some(PathBuf::from(raw_root)))
+}
+
+async fn download_fake_gcs_object(
+    root: &Path,
+    bucket: &str,
+    object_path: &str,
+) -> Result<(String, Vec<u8>), AppError> {
+    if bucket.is_empty()
+        || object_path.is_empty()
+        || object_path.starts_with('/')
+        || object_path.contains('\\')
+        || object_path.contains("//")
+        || object_path.chars().any(char::is_control)
+        || Path::new(object_path)
+            .components()
+            .any(|component| matches!(component, Component::ParentDir | Component::RootDir))
+    {
+        return Err(AppError::BadRequest("GCS object path is invalid.".into()));
+    }
+
+    let full_path = root.join(bucket).join(object_path);
+    let data = tokio::fs::read(&full_path)
+        .await
+        .map_err(|e| AppError::NotFound(format!("Fake GCS object not found: {}", e)))?;
+    let content_type = sniff_mime(&data)
+        .unwrap_or("application/octet-stream")
+        .to_string();
 
     Ok((content_type, data))
 }

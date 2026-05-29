@@ -21,6 +21,53 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
+// ─── C-5: custom-expense breakdown ───────────────────────────────────────────
+//
+// Migration 202 added `villa_operations_log.expense_other_notes` (JSONB NULL)
+// to capture the named "other" expense rows the developer types into the
+// submit form. Prior to this fix, those user-typed names were dropped on the
+// client before the request left the browser and only the summed amount was
+// stored in `expense_other_idr_cents`. The new column is additive — the
+// existing `expense_other_idr_cents` keeps its semantics (sum of catch-all +
+// custom rows) and continues to feed `compute_totals()`.
+//
+// Wrappers below let us reuse the shared admin DTOs without touching the
+// admin module: `DeveloperOpsInput` extends `VillaOperationsInput` with the
+// new write-side field, `DeveloperOpsRow` extends `VillaOperationsRow` with
+// the read-side field. Both use `#[serde(flatten)]` so the JSON shape on the
+// wire is identical to the prior contract plus the one new key.
+
+#[derive(Debug, Deserialize, Default)]
+pub struct DeveloperOpsInput {
+    #[serde(flatten)]
+    pub base: VillaOperationsInput,
+    /// `[{"name": "Garbage collection", "amount_idr_cents": 250000}, …]`.
+    /// Null/empty array = no custom rows for this period.
+    pub expense_other_notes: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeveloperOpsRow {
+    #[serde(flatten)]
+    pub base: VillaOperationsRow,
+    pub expense_other_notes: Option<serde_json::Value>,
+}
+
+/// Read the JSONB breakdown for a given log id. Used to assemble
+/// `DeveloperOpsRow` responses after INSERT/UPDATE and on the GET paths.
+async fn load_other_notes(
+    pool: &sqlx::PgPool,
+    log_id: i64,
+) -> Result<Option<serde_json::Value>, ApiError> {
+    let (notes,): (Option<serde_json::Value>,) =
+        sqlx::query_as("SELECT expense_other_notes FROM villa_operations_log WHERE id = $1")
+            .bind(log_id)
+            .fetch_one(pool)
+            .await
+            .map_err(ApiError::Database)?;
+    Ok(notes)
+}
+
 /// Period documents (receipts / invoices / statements) cap at 20 MB,
 /// matching the admin asset-document limit.
 const MAX_PERIOD_DOC_BYTES: usize = 20 * 1024 * 1024;
@@ -217,9 +264,14 @@ pub async fn api_developer_villa_operations_create(
     dev: DeveloperUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
-    Json(mut input): Json<VillaOperationsInput>,
-) -> Result<Json<VillaOperationsRow>, ApiError> {
+    Json(payload): Json<DeveloperOpsInput>,
+) -> Result<Json<DeveloperOpsRow>, ApiError> {
     dev.require_asset_link(&state.db, asset_id).await?;
+    let DeveloperOpsInput {
+        mut base,
+        expense_other_notes,
+    } = payload;
+    let input = &mut base;
     // Developer cannot set the reserve override — strip it server-side.
     input.reserve_override_idr_cents = None;
 
@@ -229,7 +281,7 @@ pub async fn api_developer_villa_operations_create(
 
     let (reserve_pct, platform_pct, withholding_bps) =
         load_asset_config(&state.db, asset_id).await?;
-    let totals = compute_totals(&input, reserve_pct, platform_pct, withholding_bps, None);
+    let totals = compute_totals(input, reserve_pct, platform_pct, withholding_bps, None);
 
     let row: VillaOperationsRow = sqlx::query_as(
         r#"
@@ -249,13 +301,15 @@ pub async fn api_developer_villa_operations_create(
             reserve_applied_idr_cents, platform_fee_idr_cents,
             withholding_idr_cents, distributable_idr_cents,
             mgmt_reported_distributable_idr_cents,
+            expense_other_notes,
             status, supersedes_id, correction_reason, submitted_by
         ) VALUES (
             $1,  $2,  $3,  $4,  $5,  $6,  $7,  $8,  $9,  $10, $11, $12, $13, $14,
             $15, $16, $17, $18, $19,
             $20, $21, $22, $23,
             $24, $25, $26, $27, $28, $29, $30,
-            'draft', $31, $32, $33
+            $31,
+            'draft', $32, $33, $34
         )
         RETURNING *
         "#,
@@ -264,7 +318,12 @@ pub async fn api_developer_villa_operations_create(
     .bind(input.period_year) // $2
     .bind(input.period_month) // $3
     .bind(input.gross_rental_idr_cents) // $4
-    .bind(input.currency_code.unwrap_or_else(|| "IDR".to_string())) // $5
+    .bind(
+        input
+            .currency_code
+            .clone()
+            .unwrap_or_else(|| "IDR".to_string()),
+    ) // $5
     .bind(input.nights_available) // $6
     .bind(input.nights_booked) // $7
     .bind(input.expense_cleaning_idr_cents) // $8
@@ -290,14 +349,18 @@ pub async fn api_developer_villa_operations_create(
     .bind(totals.withholding_idr_cents) // $28
     .bind(totals.distributable_idr_cents) // $29
     .bind(input.mgmt_reported_distributable_idr_cents) // $30
-    .bind(input.supersedes_id) // $31
-    .bind(input.correction_reason) // $32
-    .bind(dev.user.id) // $33
+    .bind(expense_other_notes.clone()) // $31
+    .bind(input.supersedes_id) // $32
+    .bind(input.correction_reason.clone()) // $33
+    .bind(dev.user.id) // $34
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
 
-    Ok(Json(row))
+    Ok(Json(DeveloperOpsRow {
+        base: row,
+        expense_other_notes,
+    }))
 }
 
 /// PUT /api/developer/villas/:asset_id/operations/:log_id — edit own draft.
@@ -305,9 +368,14 @@ pub async fn api_developer_villa_operations_update(
     dev: DeveloperUser,
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
-    Json(mut input): Json<VillaOperationsInput>,
-) -> Result<Json<VillaOperationsRow>, ApiError> {
+    Json(payload): Json<DeveloperOpsInput>,
+) -> Result<Json<DeveloperOpsRow>, ApiError> {
     dev.require_asset_link(&state.db, asset_id).await?;
+    let DeveloperOpsInput {
+        mut base,
+        expense_other_notes,
+    } = payload;
+    let input = &mut base;
     input.reserve_override_idr_cents = None;
 
     let existing: VillaOperationsRow =
@@ -333,7 +401,7 @@ pub async fn api_developer_villa_operations_update(
 
     let (reserve_pct, platform_pct, withholding_bps) =
         load_asset_config(&state.db, asset_id).await?;
-    let totals = compute_totals(&input, reserve_pct, platform_pct, withholding_bps, None);
+    let totals = compute_totals(input, reserve_pct, platform_pct, withholding_bps, None);
 
     let row: VillaOperationsRow = sqlx::query_as(
         r#"
@@ -363,7 +431,8 @@ pub async fn api_developer_villa_operations_update(
             platform_fee_idr_cents                   = $24,
             withholding_idr_cents                    = $25,
             distributable_idr_cents                  = $26,
-            mgmt_reported_distributable_idr_cents    = $27
+            mgmt_reported_distributable_idr_cents    = $27,
+            expense_other_notes                      = $28
         WHERE id = $1 AND status = 'draft'
         RETURNING *
         "#,
@@ -395,11 +464,15 @@ pub async fn api_developer_villa_operations_update(
     .bind(totals.withholding_idr_cents) // $25
     .bind(totals.distributable_idr_cents) // $26
     .bind(input.mgmt_reported_distributable_idr_cents) // $27
+    .bind(expense_other_notes.clone()) // $28
     .fetch_one(&state.db)
     .await
     .map_err(ApiError::Database)?;
 
-    Ok(Json(row))
+    Ok(Json(DeveloperOpsRow {
+        base: row,
+        expense_other_notes,
+    }))
 }
 
 /// PUT /api/developer/villas/:asset_id/operations/:log_id/submit — submit own draft.
@@ -483,7 +556,7 @@ pub async fn api_developer_villa_operations_list(
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
     Query(q): Query<OperationsQuery>,
-) -> Result<Json<Vec<VillaOperationsRow>>, ApiError> {
+) -> Result<Json<Vec<DeveloperOpsRow>>, ApiError> {
     dev.require_asset_link(&state.db, asset_id).await?;
 
     let rows: Vec<VillaOperationsRow> = sqlx::query_as(
@@ -501,7 +574,53 @@ pub async fn api_developer_villa_operations_list(
     .fetch_all(&state.db)
     .await
     .map_err(ApiError::Database)?;
-    Ok(Json(rows))
+
+    // Side-fetch `expense_other_notes` for each row. `VillaOperationsRow`
+    // lives in the admin module and we cannot widen it from here; the
+    // wrapper merges the JSONB column into the wire shape.
+    let mut out: Vec<DeveloperOpsRow> = Vec::with_capacity(rows.len());
+    for base in rows {
+        let log_id = base.id;
+        let notes = load_other_notes(&state.db, log_id).await?;
+        out.push(DeveloperOpsRow {
+            base,
+            expense_other_notes: notes,
+        });
+    }
+    Ok(Json(out))
+}
+
+/// GET /api/developer/villas/:asset_id/operations/:log_id — single-log read.
+///
+/// C-4 fix: the operations dashboard links draft/in-review/rejected matrix
+/// cells to `/developer/villas/:asset_id/operations/:log_id`. The edit page
+/// uses this endpoint to populate the form. Same auth model and per-villa
+/// gate as the list endpoint.
+pub async fn api_developer_villa_operations_get(
+    dev: DeveloperUser,
+    State(state): State<AppState>,
+    Path((asset_id, log_id)): Path<(Uuid, i64)>,
+) -> Result<Json<DeveloperOpsRow>, ApiError> {
+    dev.require_asset_link(&state.db, asset_id).await?;
+
+    let base: VillaOperationsRow = sqlx::query_as(
+        r#"
+        SELECT * FROM villa_operations_log
+        WHERE id = $1 AND asset_id = $2
+        "#,
+    )
+    .bind(log_id)
+    .bind(asset_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Operations row not found".to_string()))?;
+
+    let expense_other_notes = load_other_notes(&state.db, base.id).await?;
+    Ok(Json(DeveloperOpsRow {
+        base,
+        expense_other_notes,
+    }))
 }
 
 /// GET /api/developer/villas/:asset_id/asset-config

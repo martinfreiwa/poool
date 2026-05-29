@@ -133,6 +133,10 @@ pub fn router() -> Router<AppState> {
             get(routes::page_developer_operations_submit),
         )
         .route(
+            "/developer/villas/:asset_id/operations/:log_id",
+            get(routes::page_developer_operations_log_edit),
+        )
+        .route(
             "/api/developer/operations/dashboard",
             get(villa_operations::api_developer_operations_dashboard),
         )
@@ -143,7 +147,8 @@ pub fn router() -> Router<AppState> {
         )
         .route(
             "/api/developer/villas/:asset_id/operations/:log_id",
-            put(villa_operations::api_developer_villa_operations_update),
+            get(villa_operations::api_developer_villa_operations_get)
+                .put(villa_operations::api_developer_villa_operations_update),
         )
         .route(
             "/api/developer/villas/:asset_id/operations/:log_id/submit",

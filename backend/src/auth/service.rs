@@ -110,7 +110,7 @@ pub async fn register_user(
     // Commit everything atomically
     tx.commit().await?;
 
-    tracing::info!("New user registered: {} ({})", user.id, email);
+    tracing::info!("New user registered: {}", user.id);
 
     // Automatically generate and dispatch verification email
     let _ = create_email_verification_token(pool, user.id, &email, base_url).await;
@@ -462,7 +462,7 @@ pub async fn get_user_by_session(
             return Ok(None);
         }
 
-        tracing::info!("Session {}… valid for user {}", tok_preview, r.email);
+        tracing::info!("Session {}… valid for user {}", tok_preview, r.id);
 
         Ok(Some(User {
             id: r.id,
@@ -972,7 +972,7 @@ pub async fn create_email_verification_token(
         crate::common::email::send_transactional_outbox_item(pool, id).await;
     }
 
-    tracing::info!("Queued email verification for {}", email);
+    tracing::info!("Queued email verification for user {}", user_id);
 
     Ok(())
 }
@@ -1018,7 +1018,7 @@ pub async fn verify_email(pool: &PgPool, token: &str) -> Result<(), AppError> {
         AppError::BadRequest("Invalid or expired email verification link.".to_string())
     })?;
 
-    let (token_id, user_id) = token_row;
+    let (_token_id, user_id) = token_row;
 
     // Update user status
     sqlx::query("UPDATE users SET email_verified = TRUE WHERE id = $1")
@@ -1026,9 +1026,13 @@ pub async fn verify_email(pool: &PgPool, token: &str) -> Result<(), AppError> {
         .execute(&mut *tx)
         .await?;
 
-    // Delete the token
-    sqlx::query("DELETE FROM email_verification_tokens WHERE id = $1")
-        .bind(token_id)
+    // Delete the consumed token AND every other outstanding verification
+    // token for this user. Defense-in-depth: if multiple links were issued
+    // (e.g. user clicked "resend" then verified an older one), no stale
+    // token should remain that an attacker with mailbox access could
+    // reuse. Mirrors the reset_password flow above.
+    sqlx::query("DELETE FROM email_verification_tokens WHERE user_id = $1")
+        .bind(user_id)
         .execute(&mut *tx)
         .await?;
 

@@ -217,6 +217,7 @@
       setText("ama-description", ama.description || "");
       setText("ama-date-time", formatDateTime(ama.scheduled_at));
       setText("ama-expert-name", ama.expert_name || "Expert");
+      setText("ama-expert-avatar", (ama.expert_name || "Expert").trim().charAt(0).toUpperCase());
       const titleEl = byId("ama-expert-title");
       if (titleEl) {
         if (ama.expert_title) {

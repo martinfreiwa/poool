@@ -39,6 +39,58 @@ def test_support_template_and_css_expose_accessible_upload_trigger():
     assert ".ticket-card-header:focus-visible" in css
 
 
+def test_support_submit_button_uses_primary_design_contract():
+    html = read("frontend/platform/support.html")
+    css = read("frontend/platform/static/css/support.css")
+
+    assert 'id="submit-ticket-btn"' in html
+    assert 'class="ds-btn ds-btn--primary support-submit-btn"' in html
+    assert "body#support-body #submit-ticket-btn.support-submit-btn" in css
+    assert "background: var(--btn-primary-bg, #0000FF) !important;" in css
+    assert "color: var(--btn-primary-color, #98FB96) !important;" in css
+    assert "min-height: 44px !important;" in css
+    assert "justify-content: center !important;" in css
+    assert "letter-spacing: 0 !important;" in css
+    assert "body#support-body #submit-ticket-btn.support-submit-btn svg" in css
+    assert "stroke: currentColor;" in css
+    submit_block = css.split("/* ── Primary submit", 1)[1].split("/* ── Ghost", 1)[0]
+    assert "color: #FFFFFF" not in submit_block
+    assert "letter-spacing: -0.01em" not in submit_block
+
+
+def test_support_card_headers_and_dropdowns_use_shared_ui_patterns():
+    html = read("frontend/platform/support.html")
+    css = read("frontend/platform/static/css/support.css")
+
+    assert '<div class="support-card-title-group">' in html
+    assert "Send us the details and we will route your request to the right team." in html
+    assert "Track open, pending, and resolved support conversations." in html
+    assert 'id="ticket-category" class="ds-select form-select support-select"' in html
+    assert 'id="ticket-priority" class="ds-select form-select support-select"' in html
+    assert ".support-card-title-group" in css
+    assert ".support-card-header p" in css
+    assert "padding-left: 48px;" in css
+    assert "#submit-ticket.support-form-card" in css
+    assert "overflow: visible;" in css
+    assert ".support-form-card .support-form-group > .poool-dropdown .poool-dropdown__trigger" in css
+    assert ".support-form-card .support-form-group > .poool-dropdown .poool-dropdown__panel" in css
+    assert ".support-form-card .support-form-group > .poool-dropdown .poool-dropdown__option--selected" in css
+    assert ".support-form-card .support-form-group > .poool-dropdown .poool-dropdown__check" in css
+
+
+def test_support_knowledge_base_has_subtitle_and_opens_by_default():
+    html = read("frontend/platform/support.html")
+    css = read("frontend/platform/static/css/support.css")
+
+    assert '<details class="ds-card support-form-card support-faq-card support-faq-disclosure" id="faq" open>' in html
+    assert '<span class="support-faq-summary__title">Knowledge base</span>' in html
+    assert "Find quick answers before opening a new support conversation." in html
+    assert ".support-faq-summary__title" in css
+    assert ".support-faq-summary p" in css
+    assert "font-size: 13px;" in css
+    assert "font-weight: 400;" in css
+
+
 def test_support_backend_rate_limits_and_transactional_replies():
     handlers = read("backend/src/support/handlers.rs")
     db = read("backend/src/support/db.rs")

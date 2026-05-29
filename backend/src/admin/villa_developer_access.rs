@@ -30,10 +30,13 @@ pub struct GrantInput {
 
 /// GET /api/admin/villas/:asset_id/developer-access
 pub async fn api_admin_developer_access_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
 ) -> Result<Json<Vec<DeveloperAccessRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.developer_access.view")
+        .await?;
     let rows: Vec<DeveloperAccessRow> = sqlx::query_as(
         r#"
         SELECT
@@ -66,6 +69,9 @@ pub async fn api_admin_developer_access_grant(
     Path(asset_id): Path<Uuid>,
     Json(input): Json<GrantInput>,
 ) -> Result<Json<DeveloperAccessRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.developer_access.manage")
+        .await?;
     let row: DeveloperAccessRow = sqlx::query_as(
         r#"
         INSERT INTO developer_asset_links (developer_user_id, asset_id, granted_by, notes)
@@ -109,6 +115,9 @@ pub async fn api_admin_developer_access_revoke(
     State(state): State<AppState>,
     Path((asset_id, link_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<DeveloperAccessRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.developer_access.manage")
+        .await?;
     let row: DeveloperAccessRow = sqlx::query_as(
         r#"
         UPDATE developer_asset_links SET

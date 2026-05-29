@@ -1,0 +1,605 @@
+/* Shared STANDARD for cards that contain tables.
+   Reference: Developer Dashboard -> "Top Performing Assets".
+   Keep page files limited to data/column specifics; visual chrome lives here. */
+
+:root {
+  --card-table-bg: #FFFFFF;
+  --card-table-border: #EAECF0;
+  --card-table-title: #0A0D12;
+  --card-table-text: #535862;
+  --card-table-muted: #717680;
+  --card-table-icon: #98A2B3;
+  --card-table-blue: #0000FF;
+  --card-table-green: #03FF88;
+  --card-table-hover: rgba(3, 255, 136, 0.08);
+  --card-table-radius: 12px;
+  --card-table-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.developer-assets-performance-section,
+.dat-table-card,
+.myt-table-card.submissions-table-container {
+  position: relative;
+  padding: 0 !important;
+  background: var(--card-table-bg) !important;
+  border: 1px solid var(--card-border-color, var(--card-table-border)) !important;
+  border-radius: var(--card-border-radius, var(--card-table-radius)) !important;
+  box-shadow: var(--card-shadow, var(--card-table-shadow)) !important;
+  overflow: hidden !important;
+}
+
+.developer-assets-performance-section::before,
+.dat-table-card::before,
+.myt-table-card.submissions-table-container::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--card-table-blue) 0%, var(--card-table-green) 100%);
+  border-radius: var(--card-table-radius) var(--card-table-radius) 0 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.dat-content-card.dat-table-card:hover,
+.myt-table-card.submissions-table-container:hover,
+body[id^="developer-"] .dev-submissions-table-card:hover,
+body[id^="developer-"] .submissions-table-container.dev-submissions-table-card:hover {
+  transform: none !important;
+  border-color: var(--card-border-color, var(--card-table-border)) !important;
+  box-shadow: var(--card-shadow, var(--card-table-shadow)) !important;
+}
+
+.developer-assets-performance-section__header,
+.dat-table-card .dat-card-header,
+.myt-table-card .myt-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px !important;
+  margin: 0 !important;
+  background: var(--card-table-bg) !important;
+  border-bottom: 1px solid var(--card-border-color, var(--card-table-border)) !important;
+}
+
+.developer-assets-performance-section__title-wrap,
+.dat-table-card .dat-card-header__title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.developer-assets-performance-section__header-actions,
+.dat-table-card .dat-card-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.developer-assets-performance-section__icon,
+.dat-table-card .dat-card-header__icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--card-table-blue) 0%, #1E40AF 100%) !important;
+  color: var(--card-table-green) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.developer-assets-performance-section__icon svg,
+.dat-table-card .dat-card-header__icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--card-table-green) !important;
+}
+
+.developer-assets-performance-section__header h2,
+.dat-table-card .dat-section__title {
+  margin: 0;
+  color: var(--page-title-color, var(--card-table-title));
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
+}
+
+.developer-assets-performance-section__header p,
+.dat-table-card .dat-section__hint {
+  margin: 2px 0 0;
+  color: var(--text-secondary, var(--card-table-muted));
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.developer-assets-performance-section__link,
+.developer-assets-performance-section__header a {
+  color: var(--primary-color, var(--card-table-blue));
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  background: var(--card-table-bg);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.developer-assets-performance-section__link:hover,
+.developer-assets-performance-section__header a:hover {
+  opacity: 1;
+  text-decoration: none;
+  border-color: var(--primary-color, var(--card-table-blue));
+  background: #F5F7FF;
+  color: var(--primary-color, var(--card-table-blue));
+}
+
+.developer-assets-performance-section .table__wrapper,
+.developer-assets-performance-section .table__container,
+.developer-assets-table__container,
+.dat-table-card > .dat-table-wrap {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow-x: auto;
+}
+
+.dat-table-card > .dat-table-pager-host {
+  padding: 12px 24px 0;
+  margin: 0;
+}
+
+.dat-table-card > .dat-table-pager-host:empty {
+  display: none;
+}
+
+.dat-table-card > .dat-card-footer {
+  margin: 0;
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--card-border-color, var(--card-table-border));
+}
+
+.developer-assets-table .table__row,
+.developer-assets-table .table__header-row {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+.developer-assets-table .table__header-row,
+.developer-assets-performance-section .table__header-row,
+.dat-table-card .dat-table thead,
+.dat-table-card .dat-table thead tr,
+.dat-table-card .dat-table th,
+.dev-submissions-table-card .submissions-table thead,
+.dev-submissions-table-card .submissions-table thead tr,
+.dev-submissions-table-card .submissions-table th,
+.myt-table-card .submissions-table thead,
+.myt-table-card .submissions-table thead tr,
+.myt-table-card .submissions-table th {
+  background: var(--card-table-bg) !important;
+}
+
+.developer-assets-table__row .table__header-cell,
+.developer-assets-performance-section .table__header-cell,
+.dat-table-card .dat-table th,
+.dev-submissions-table-card .submissions-table th,
+.myt-table-card .submissions-table th {
+  padding: 14px 12px !important;
+  color: var(--table-header-color, var(--card-table-muted)) !important;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-top: 0 !important;
+  border-bottom: 1px solid var(--card-border-color, var(--card-table-border)) !important;
+  white-space: nowrap;
+}
+
+.developer-assets-table__row .table__cell,
+.developer-assets-performance-section .table__cell,
+.dat-table-card .dat-table td,
+.dev-submissions-table-card .submissions-table td,
+.myt-table-card .submissions-table td {
+  padding: 14px 12px;
+  color: var(--text-secondary, var(--card-table-text));
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  border-bottom: 1px solid var(--card-border-color, var(--card-table-border));
+  vertical-align: middle;
+}
+
+.dat-table-card .dat-table,
+.dev-submissions-table-card .submissions-table,
+.myt-table-card .submissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.dat-table-card .dat-table th:first-child,
+.dat-table-card .dat-table td:first-child,
+.dev-submissions-table-card .submissions-table th:first-child,
+.dev-submissions-table-card .submissions-table td:first-child,
+.myt-table-card .submissions-table th:first-child,
+.myt-table-card .submissions-table td:first-child {
+  padding-left: 24px;
+}
+
+.dat-table-card .dat-table th:last-child,
+.dat-table-card .dat-table td:last-child,
+.dev-submissions-table-card .submissions-table th:last-child,
+.dev-submissions-table-card .submissions-table td:last-child,
+.myt-table-card .submissions-table th:last-child,
+.myt-table-card .submissions-table td:last-child {
+  padding-right: 24px;
+}
+
+.dat-table-card .dat-table__num,
+.dat-table-card .dat-th--num,
+.dat-table-card .dat-td--num,
+.dev-assets-table-card .dev-assets-table th:nth-child(n+2),
+.dev-assets-table-card .dev-assets-table td:nth-child(n+2) {
+  text-align: right !important;
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.developer-assets-table__row .developer-assets-table__sales,
+.developer-assets-table__row .developer-assets-table__views,
+.developer-assets-table__row .developer-assets-table__saved,
+.developer-assets-table__row .developer-assets-table__conversion,
+.developer-assets-table__row .developer-assets-table__funding {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.developer-assets-table__row:hover,
+.dev-assets-table-card .dev-asset-row:hover,
+.dev-submissions-table-card .submissions-table tbody tr:hover,
+.myt-table-card .submissions-table tbody tr:hover {
+  background: var(--card-table-hover) !important;
+}
+
+.dat-table-card .dat-table--hoverable tbody tr:hover td {
+  background: var(--card-table-hover) !important;
+  cursor: default;
+}
+
+.dat-table-card .dat-table--hoverable tbody tr:nth-child(even) td,
+.dev-assets-table-card .dev-asset-row,
+.dev-assets-table-card .dev-asset-row.is-selected,
+.dev-submissions-table-card .submissions-table tbody tr,
+.dev-submissions-table-card .submissions-table tbody tr.row-selected {
+  background: var(--card-table-bg) !important;
+}
+
+.dev-submissions-table-card .sub-toolbar,
+.dev-submissions-table-card .sub-pipeline--footer,
+.dev-submissions-table-card .submissions-table th.col-checkbox,
+.dev-submissions-table-card .submissions-table tbody td:first-child:has(.sub-checkbox-label),
+.dev-submissions-table-card .submissions-table tbody td.col-checkbox {
+  display: none !important;
+}
+
+.dev-submissions-table-card .submissions-table th.col-actions,
+.dev-submissions-table-card .submissions-table td.col-actions,
+.dev-assets-table-card .dev-assets-table .dev-assets-table__actions,
+.dev-assets-table-card .dev-assets-table td.dev-assets-table__actions,
+.dev-assets-table-card .dev-assets-table td:last-child > * {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.developer-assets-table__icon-btn,
+.dev-assets-table-card .dev-assets-table .developer-assets-table__icon-btn,
+.dat-table-card .dat-icon-btn {
+  color: var(--card-table-icon) !important;
+  background: transparent !important;
+}
+
+.developer-assets-table__icon-btn:hover,
+.developer-assets-table__icon-btn:focus-visible,
+.dev-assets-table-card .dev-assets-table .developer-assets-table__icon-btn:hover,
+.dev-assets-table-card .dev-assets-table .developer-assets-table__icon-btn:focus-visible,
+.dat-table-card .dat-icon-btn:hover,
+.dat-table-card .dat-icon-btn:focus-visible {
+  color: var(--primary-color, var(--card-table-blue)) !important;
+  background: transparent !important;
+}
+
+.myt-table-card .submissions-table tbody tr:has(.ds-table-empty):hover {
+  background: transparent !important;
+  cursor: default;
+}
+
+/* Asset detail native-table adapter. These tab panels use .ad-card/.ad-table
+   instead of the developer dashboard table primitives, but should render with
+   the same chrome as the Top Performing Assets reference card. */
+.ad-table-card {
+  position: relative;
+  padding: 0 !important;
+  background: var(--card-table-bg) !important;
+  border: 1px solid var(--card-border-color, var(--card-table-border)) !important;
+  border-radius: var(--card-border-radius, var(--card-table-radius)) !important;
+  box-shadow: var(--card-shadow, var(--card-table-shadow)) !important;
+  overflow: hidden !important;
+}
+
+.ad-table-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--card-table-blue) 0%, var(--card-table-green) 100%);
+  border-radius: var(--card-table-radius) var(--card-table-radius) 0 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.ad-table-card:hover {
+  transform: none !important;
+  border-color: var(--card-border-color, var(--card-table-border)) !important;
+  box-shadow: var(--card-shadow, var(--card-table-shadow)) !important;
+}
+
+.ad-table-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px !important;
+  margin: 0 !important;
+  background: var(--card-table-bg) !important;
+  border-bottom: 1px solid var(--card-border-color, var(--card-table-border)) !important;
+}
+
+.ad-table-card__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ad-table-card__title-text {
+  min-width: 0;
+}
+
+.ad-table-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ad-table-card__icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--card-table-blue) 0%, #1E40AF 100%) !important;
+  color: var(--card-table-green) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.ad-table-card__icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--card-table-green) !important;
+}
+
+.ad-table-card .ad-card__title {
+  margin: 0;
+  color: var(--page-title-color, var(--card-table-title));
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
+}
+
+.ad-table-card__hint {
+  margin: 2px 0 0;
+  color: var(--text-secondary, var(--card-table-muted));
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.ad-table-card .ad-card__body {
+  padding: 0 !important;
+  overflow-x: auto;
+  background: transparent !important;
+}
+
+.ad-table-card .ad-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.ad-table-card .ad-table thead,
+.ad-table-card .ad-table thead tr,
+.ad-table-card .ad-table th {
+  background: var(--card-table-bg) !important;
+}
+
+.ad-table-card .ad-table th {
+  padding: 14px 12px !important;
+  color: var(--table-header-color, var(--card-table-muted)) !important;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-top: 0 !important;
+  border-bottom: 1px solid var(--card-border-color, var(--card-table-border)) !important;
+  white-space: nowrap;
+  height: auto !important;
+}
+
+.ad-table-card .ad-table td {
+  padding: 14px 12px !important;
+  color: var(--text-secondary, var(--card-table-text));
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  border-bottom: 1px solid var(--card-border-color, var(--card-table-border));
+  vertical-align: middle;
+}
+
+.ad-table-card .ad-table th:first-child,
+.ad-table-card .ad-table td:first-child {
+  padding-left: 24px !important;
+}
+
+.ad-table-card .ad-table th:last-child,
+.ad-table-card .ad-table td:last-child {
+  padding-right: 24px !important;
+}
+
+.ad-table-card .ad-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ad-table-card .ad-table tbody tr:hover td {
+  background: var(--card-table-hover) !important;
+}
+
+.ad-table-card .ad-empty-cell,
+.ad-table-card .ad-empty {
+  padding: 48px 24px !important;
+  background: var(--card-table-bg) !important;
+  color: var(--card-table-muted) !important;
+  text-align: center;
+}
+
+.ad-table-card .ad-empty-cell:hover,
+.ad-table-card .ad-table tbody tr:hover .ad-empty-cell,
+.ad-table-card .ad-table tbody tr:hover .ad-empty {
+  background: var(--card-table-bg) !important;
+}
+
+.ad-table-card .ad-branded-empty {
+  min-height: 180px;
+  background: var(--card-table-bg) !important;
+}
+
+.ad-table-card .ad-branded-empty::before,
+.ad-table-card .ad-branded-empty__mark {
+  display: none;
+}
+
+.ad-table-card--financials .ad-table th:nth-child(n+2),
+.ad-table-card--financials .ad-table td:nth-child(n+2),
+.ad-table-card--captable .ad-table th:nth-child(n+2),
+.ad-table-card--captable .ad-table td:nth-child(n+2),
+.ad-table-card--orders .ad-table th:nth-child(n+3),
+.ad-table-card--orders .ad-table td:nth-child(n+3) {
+  text-align: right;
+}
+
+/* Keep wide JS-backed affiliate tables aligned with the analytics card:
+   header labels remain one-line and the table scrolls horizontally instead
+   of growing a tall wrapped header row. */
+#dat-customers-thead-row th:nth-child(1) { min-width: 220px; }
+#dat-customers-thead-row th:nth-child(2) { min-width: 150px; }
+#dat-customers-thead-row th:nth-child(3) { min-width: 120px; }
+#dat-customers-thead-row th:nth-child(4) { min-width: 120px; }
+#dat-customers-thead-row th:nth-child(5) { min-width: 130px; }
+#dat-customers-thead-row th:nth-child(6) { min-width: 90px; }
+#dat-customers-thead-row th:nth-child(7) { min-width: 110px; }
+#dat-customers-thead-row th:nth-child(8) { min-width: 130px; }
+#dat-customers-thead-row th:nth-child(9) { min-width: 110px; }
+#dat-customers-thead-row th:nth-child(10) { min-width: 110px; }
+
+#dat-products-thead-row th:nth-child(1) { min-width: 240px; }
+#dat-products-thead-row th:nth-child(2) { min-width: 120px; }
+#dat-products-thead-row th:nth-child(3) { min-width: 140px; }
+#dat-products-thead-row th:nth-child(4) { min-width: 145px; }
+#dat-products-thead-row th:nth-child(5) { min-width: 110px; }
+#dat-products-thead-row th:nth-child(6) { min-width: 130px; }
+#dat-products-thead-row th:nth-child(7) { min-width: 120px; }
+
+#dat-members-thead-row th:nth-child(1) { min-width: 220px; }
+#dat-members-thead-row th:nth-child(2) { min-width: 150px; }
+#dat-members-thead-row th:nth-child(3) { min-width: 120px; }
+#dat-members-thead-row th:nth-child(4) { min-width: 110px; }
+#dat-members-thead-row th:nth-child(5) { min-width: 130px; }
+#dat-members-thead-row th:nth-child(6) { min-width: 120px; }
+#dat-members-thead-row th:nth-child(7) { min-width: 150px; }
+#dat-members-thead-row th:nth-child(8) { min-width: 96px; }
+
+@media (max-width: 720px) {
+  .developer-assets-performance-section__header,
+  .dat-table-card .dat-card-header,
+  .myt-table-card .myt-card-header,
+  .ad-table-card__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .developer-assets-performance-section__header-actions,
+  .dat-table-card .dat-card-header__controls,
+  .ad-table-card__actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .developer-assets-performance-section__header,
+  .dat-table-card .dat-card-header,
+  .myt-table-card .myt-card-header,
+  .ad-table-card__header {
+    padding: 18px 18px !important;
+  }
+
+  .dat-table-card .dat-table th:first-child,
+  .dat-table-card .dat-table td:first-child,
+  .dev-submissions-table-card .submissions-table th:first-child,
+  .dev-submissions-table-card .submissions-table td:first-child,
+  .myt-table-card .submissions-table th:first-child,
+  .myt-table-card .submissions-table td:first-child,
+  .ad-table-card .ad-table th:first-child,
+  .ad-table-card .ad-table td:first-child {
+    padding-left: 18px;
+  }
+
+  .dat-table-card .dat-table th:last-child,
+  .dat-table-card .dat-table td:last-child,
+  .dev-submissions-table-card .submissions-table th:last-child,
+  .dev-submissions-table-card .submissions-table td:last-child,
+  .myt-table-card .submissions-table th:last-child,
+  .myt-table-card .submissions-table td:last-child,
+  .ad-table-card .ad-table th:last-child,
+  .ad-table-card .ad-table td:last-child {
+    padding-right: 18px;
+  }
+}

@@ -35,10 +35,13 @@ pub struct RejectInput {
 
 /// GET /api/admin/villas/:asset_id/capex?status=submitted — admin-side list.
 pub async fn api_admin_villa_capex_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
 ) -> Result<Json<Vec<CapexRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.capex.view")
+        .await?;
     let rows: Vec<CapexRow> = sqlx::query_as(
         r#"
         SELECT id, asset_id, event_date, amount_idr_cents, amount_usd_cents,
@@ -63,6 +66,9 @@ pub async fn api_admin_villa_capex_approve(
     State(state): State<AppState>,
     Path((asset_id, capex_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<CapexRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.capex.approve")
+        .await?;
     let existing: Option<(Uuid, String, Option<Uuid>)> = sqlx::query_as(
         "SELECT asset_id, status, submitted_by FROM villa_capex_events WHERE id = $1",
     )
@@ -147,6 +153,9 @@ pub async fn api_admin_villa_capex_reject(
     Path((asset_id, capex_id)): Path<(Uuid, i64)>,
     Json(input): Json<RejectInput>,
 ) -> Result<Json<CapexRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.capex.approve")
+        .await?;
     if input.reason.trim().is_empty() {
         return Err(ApiError::BadRequest(
             "Rejection reason required".to_string(),

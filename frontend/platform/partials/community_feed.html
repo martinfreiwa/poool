@@ -8,6 +8,8 @@
       <form id="feed-filters" class="ds-sr-only" aria-hidden="true">
           <input type="hidden" id="form-feed-mode" name="feed_mode" value="all">
           <input type="hidden" id="form-sort-by" name="sort_by" value="fresh">
+          <input type="hidden" id="form-post-type" name="post_type" value="all">
+          <input type="hidden" id="form-post-tag" name="tag" value="all">
       </form>
 
       <!-- Feed filter row -->
@@ -32,13 +34,11 @@
            ondragover="event.preventDefault(); this.classList.add('community-composer--dragover');"
            ondragleave="this.classList.remove('community-composer--dragover');"
            ondrop="window.handleComposerDrop(event)">
-        <input type="hidden" id="post-type-input" value="general">
-
         <!-- Composer textarea -->
         <label for="post-content-input" class="ds-sr-only">Write a post</label>
         <textarea id="post-content-input" rows="3" class="community-composer__textarea" placeholder="What's on your mind?"></textarea>
         <div class="ds-helper-text community-composer__disclaimer" id="post-disclaimer-warning" hidden>
-          ⚠️ Your post appears to discuss investments. A disclaimer will be automatically added.
+          Your post appears to discuss investments. A disclaimer will be automatically added.
         </div>
 
         <!-- Image previews -->

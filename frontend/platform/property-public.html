@@ -14,8 +14,8 @@
             <a href="/landing-v2.html#faq" class="nav-link">FAQ</a>
           </nav>
           <div class="header-actions">
-            <a href="https://platform.poool.app/auth/login" class="header-action-link">Log in</a>
-            <a href="https://platform.poool.app/auth/signup" class="ds-btn ds-btn--primary public-header-signup">Sign up</a>
+            <a href="/auth/login" class="header-action-link">Log in</a>
+            <a href="/auth/signup" class="ds-btn ds-btn--primary public-header-signup">Sign up</a>
           </div>
         </div>
       </div>
@@ -460,7 +460,7 @@
                           <div class="funded-text">{% if asset.is_public_preview %}{% if asset.funded_percentage >= 100 %}Preview fully allocated{% else %}{{ asset.funded_percentage_display }}% preview interest{% endif %}{% elif asset.funded_percentage >= 100 %}Fully funded{% else %}{{ asset.funded_percentage_display }}% funded{% endif %}</div>
                           <div class="available-text-wrapper">
                             {% if asset.funded_percentage >= 100 %}
-                            {% if asset.is_public_preview %}<a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="available-text" style="color:var(--primary-color);font-weight:600;text-decoration:none;">Join waitlist</a>{% else %}<span class="available-text">Sold out</span>{% endif %}
+                            {% if asset.is_public_preview %}<a href="/auth/signup?returnTo=/p/{{ asset.slug }}" class="available-text" style="color:var(--primary-color);font-weight:600;text-decoration:none;">Join waitlist</a>{% else %}<span class="available-text">Sold out</span>{% endif %}
                             {% else %}
                             <span class="available-text">{% if asset.is_public_preview %}Sign up for live availability{% else %}USD {{ asset.available_usd }} available{% endif %}</span>
                             {% endif %}
@@ -496,7 +496,7 @@
                   </div>
                   {% if asset.funded_percentage >= 100 %}
                   <div class="price-card-investment" style="flex-direction:column;">
-                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn" aria-disabled="true" tabindex="-1">
+                    <a href="/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn" aria-disabled="true" tabindex="-1">
                       <span class="btn-text">Sold out</span>
                     </a>
                   </div>
@@ -511,7 +511,7 @@
                         <input type="text" id="investment-amount-input" value="2,000" class="amount-input" />
                       </div>
                     </div>
-                    <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn">
+                    <a href="/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn">
                       <span class="btn-text">Sign up to invest</span>
                     </a>
                   </div>
@@ -640,7 +640,7 @@
               <div class="input-dropdown"><span class="currency-label">USD</span></div>
               <div class="input-field"><input type="text" id="mobile-investment-amount" value="2,000" class="amount-input" disabled /></div>
             </div>
-            <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn" aria-disabled="true" tabindex="-1">
+            <a href="/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn" aria-disabled="true" tabindex="-1">
               <span class="btn-text">Sold out</span>
             </a>
           </div>
@@ -658,7 +658,7 @@
               <div class="input-dropdown"><span class="currency-label">USD</span></div>
               <div class="input-field"><input type="text" id="mobile-investment-amount" value="2,000" class="amount-input" /></div>
             </div>
-            <a href="https://platform.poool.app/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn">
+            <a href="/auth/signup?returnTo=/p/{{ asset.slug }}" class="ds-btn ds-btn--primary ds-btn--full ds-btn--lg add-to-cart-btn">
               <span class="btn-text">Sign up to invest</span>
             </a>
           </div>
@@ -717,7 +717,7 @@
             <h3 class="footer-brand-heading-sm">Info, Documents and Support</h3>
             <p>For official documents, investment policies, and support, please refer to our Legal Center. Directorate General of Consumer Protection and Orderly Commerce Ministry of Trade of the Republic of Indonesia.</p>
             <p>For assistance, contact our team via WhatsApp:<br>
-              <a href="https://wa.me/6281325817676" class="footer-brand-link-green" target="_blank">+62 813-2581-7676</a>
+              <a href="https://wa.me/6281325817676" class="footer-brand-link-green" target="_blank" rel="noopener noreferrer">+62 813-2581-7676</a>
             </p>
             <p>Our virtual office address:<br>
               <span class="footer-brand-link-green">Jl. Raya Kerobokan No.98, Kerobokan Kelod, Kec. Kuta Utara, Kabupaten Badung, Bali 80361, Indonesia</span>
@@ -728,10 +728,10 @@
               <a href="/landing-v2.html#how">How it works</a>
               <a href="/landing-v2.html#marketplace">Market</a>
               <a href="/landing-v2.html#faq">FAQ</a>
-              <a href="https://platform.poool.app/terms">Terms &amp; Conditions</a>
-              <a href="https://platform.poool.app/cookies">Cookies</a>
-              <a href="https://platform.poool.app/privacy-policy">Privacy Policy</a>
-              <a href="https://platform.poool.app/currency-policy">Currency Policy</a>
+              <a href="/terms">Terms &amp; Conditions</a>
+              <a href="/cookies">Cookies</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/currency-policy">Currency Policy</a>
             </div>
             <div class="footer-brand-license">
               <h3>Licensed:</h3>

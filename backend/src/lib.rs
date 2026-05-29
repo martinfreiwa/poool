@@ -115,7 +115,7 @@ pub use auth::routes::AppState;
 use admin::extractors::{AdminUser, ApiError};
 use axum::{
     extract::{Path, State},
-    response::{IntoResponse, Json, Redirect},
+    response::{IntoResponse, Json, Redirect, Response},
     routing::{get, post},
     Router, ServiceExt,
 };
@@ -510,6 +510,34 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         tokio::spawn(community::background::circle_trending_refresh_worker(
             c_pool.clone(),
         ));
+        tokio::spawn(community::background::circle_ops_snapshot_worker(
+            c_pool.clone(),
+        ));
+        tokio::spawn(community::background::circle_ops_alert_fanout_worker(
+            c_pool.clone(),
+            pool.clone(),
+        ));
+        tokio::spawn(
+            community::background::circle_ops_alert_delivery_monitor_worker(
+                c_pool.clone(),
+                pool.clone(),
+            ),
+        );
+        tokio::spawn(community::background::circle_resource_retention_worker(
+            c_pool.clone(),
+        ));
+        if let Some(bucket) = state.config.gcs_bucket.clone() {
+            tokio::spawn(
+                community::background::circle_resource_object_cleanup_worker(
+                    c_pool.clone(),
+                    bucket,
+                ),
+            );
+        } else {
+            tracing::info!(
+                "Circle resource object cleanup disabled because GCS_BUCKET_NAME is not configured"
+            );
+        }
         tokio::spawn(community::background::gdpr_anonymization_worker(
             c_pool.clone(),
             pool.clone(),
@@ -1488,71 +1516,71 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(
             "/platform",
-            get(|| async { Redirect::to("https://platform.poool.app/") }),
+            get(|| async { Redirect::to(&platform_url("/")) }),
         )
         .route(
             "/platform/",
-            get(|| async { Redirect::to("https://platform.poool.app/") }),
+            get(|| async { Redirect::to(&platform_url("/")) }),
         )
         .route(
             "/auth/login",
-            get(|| async { Redirect::to("https://platform.poool.app/auth/login") }),
+            get(|| async { Redirect::to(&platform_url("/auth/login")) }),
         )
         .route(
             "/auth/signup",
-            get(|| async { Redirect::to("https://platform.poool.app/auth/signup") }),
+            get(|| async { Redirect::to(&platform_url("/auth/signup")) }),
         )
         .route(
             "/signup",
-            get(|| async { Redirect::to("https://platform.poool.app/auth/signup") }),
+            get(|| async { Redirect::to(&platform_url("/auth/signup")) }),
         )
         .route(
             "/marketplace",
-            get(|| async { Redirect::to("https://platform.poool.app/marketplace") }),
+            get(|| async { Redirect::to(&platform_url("/marketplace")) }),
         )
         .route(
             "/blog",
-            get(|| async { Redirect::to("https://platform.poool.app/blog") }),
+            get(|| async { Redirect::to(&platform_url("/blog")) }),
         )
         .route(
             "/terms",
-            get(|| async { Redirect::to("https://platform.poool.app/terms") }),
+            get(|| async { Redirect::to(&platform_url("/terms")) }),
         )
         .route(
             "/terms-and-conditions",
-            get(|| async { Redirect::to("https://platform.poool.app/terms") }),
+            get(|| async { Redirect::to(&platform_url("/terms")) }),
         )
         .route(
             "/cookies",
-            get(|| async { Redirect::to("https://platform.poool.app/cookies") }),
+            get(|| async { Redirect::to(&platform_url("/cookies")) }),
         )
         .route(
             "/privacy-policy",
-            get(|| async { Redirect::to("https://platform.poool.app/privacy-policy") }),
+            get(|| async { Redirect::to(&platform_url("/privacy-policy")) }),
         )
         .route(
             "/privacy",
-            get(|| async { Redirect::to("https://platform.poool.app/privacy-policy") }),
+            get(|| async { Redirect::to(&platform_url("/privacy-policy")) }),
         )
         .route(
             "/currency-policy",
-            get(|| async { Redirect::to("https://platform.poool.app/currency-policy") }),
+            get(|| async { Redirect::to(&platform_url("/currency-policy")) }),
         )
         .route(
             "/currency",
-            get(|| async { Redirect::to("https://platform.poool.app/currency-policy") }),
+            get(|| async { Redirect::to(&platform_url("/currency-policy")) }),
         )
         .route(
             "/aml-kyc-policy",
-            get(|| async { Redirect::to("https://platform.poool.app/aml-kyc-policy") }),
+            get(|| async { Redirect::to(&platform_url("/aml-kyc-policy")) }),
         )
         .route(
             "/imprint",
-            get(|| async { Redirect::to("https://platform.poool.app/imprint") }),
+            get(|| async { Redirect::to(&platform_url("/imprint")) }),
         )
         .route(
             "/gdpr-data-request",
-            get(|| async { Redirect::to("https://platform.poool.app/gdpr-data-request") }),
+            get(|| async { Redirect::to(&platform_url("/gdpr-data-request")) }),
         )
         .route("/p/:slug", get(redirect_www_property))
         // Root → landing-v2
@@ -1663,6 +1691,7 @@ pub fn build_platform_router(state: AppState) -> Router {
         .route("/payment-in-progress", get(page_payment_in_progress))
         // ── Community (demo + SSR Post Pages) ─────────────────────────
         .route("/community", get(page_community))
+        .route("/community/circles", get(page_community_circles))
         .route("/community/post/:id", get(page_community_post))
         .route("/community/hashtag/:tag", get(page_community_hashtag))
         // WS3.2 — full community profile page.
@@ -1673,16 +1702,7 @@ pub fn build_platform_router(state: AppState) -> Router {
             "/community/circle/:slug/settings",
             get(page_community_circle_settings),
         )
-        // Bare `/community/circle/:slug` lands on the settings page (the only
-        // existing slug-routed view). The settings template renders a
-        // role-aware view via `/api/community/circles/by-slug/:slug`, so
-        // non-owners get a read-only landing card instead of a 404.
-        .route(
-            "/community/circle/:slug",
-            get(|path: axum::extract::Path<String>| async move {
-                axum::response::Redirect::to(&format!("/community/circle/{}/settings", path.0))
-            }),
-        )
+        .route("/community/circle/:slug", get(page_community_circle_feed))
         .route("/community/badge/:id", get(page_community_badge))
         .route(
             "/community/partials/feed/list",
@@ -1720,6 +1740,8 @@ pub fn build_platform_router(state: AppState) -> Router {
                 .fallback(ServeDir::new("../frontend/platform/static/images/ui")),
         )
         .nest_service("/uploads", ServeDir::new("../uploads"))
+        .route("/live", get(handle_health_basic))
+        .route("/ready", get(handle_ready))
         .route("/health", get(handle_health))
         .route("/metrics", get(handle_metrics))
         .fallback_service(
@@ -1766,7 +1788,15 @@ pub fn build_platform_router(state: AppState) -> Router {
                 }
 
                 let base_host = base_url.replace("https://", "").replace("http://", "");
-                let bare_domain = base_host.replace("platform.", "");
+                // Anchor the `platform.` strip to the host prefix. Plain
+                // `.replace("platform.", "")` matches any occurrence anywhere
+                // (e.g. `eu-platform.poool.app` → `eu-poool.app`, or
+                // `platform.poool-platform.app` → `poool-.app`), which
+                // silently widens the CORS allow-list to wrong domains.
+                let bare_domain = base_host
+                    .strip_prefix("platform.")
+                    .unwrap_or(&base_host)
+                    .to_string();
 
                 let scheme = if base_url.starts_with("https") {
                     "https"
@@ -3143,8 +3173,26 @@ async fn handle_health_basic() -> impl IntoResponse {
     }))
 }
 
+fn platform_base_url() -> String {
+    std::env::var("BASE_URL")
+        .ok()
+        .map(|value| value.trim().trim_end_matches('/').to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "https://platform.poool.app".to_string())
+}
+
+fn platform_url(path: &str) -> String {
+    let normalized_path = if path.starts_with('/') {
+        path.to_string()
+    } else {
+        format!("/{path}")
+    };
+
+    format!("{}{}", platform_base_url(), normalized_path)
+}
+
 async fn redirect_www_property(Path(slug): Path<String>) -> Redirect {
-    Redirect::to(&format!("https://platform.poool.app/p/{slug}"))
+    Redirect::to(&platform_url(&format!("/p/{slug}")))
 }
 
 /// GET /health (platform router) — Health check endpoint for Cloud Run and uptime monitors.
@@ -3178,7 +3226,15 @@ async fn handle_metrics() -> impl IntoResponse {
     }
 }
 
-async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
+async fn handle_health(State(state): State<AppState>) -> Response {
+    build_readiness_response(&state, false).await
+}
+
+async fn handle_ready(State(state): State<AppState>) -> Response {
+    build_readiness_response(&state, true).await
+}
+
+async fn build_readiness_response(state: &AppState, strict_redis: bool) -> Response {
     let mut db_ok = false;
     let mut redis_status = "not_configured";
 
@@ -3219,8 +3275,9 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
     };
     let totp_key_ok = env_present("TOTP_SECRET_ENCRYPTION_KEY") || env_present("ENCRYPTION_KEY");
     let session_secret_ok = env_present("SESSION_SECRET") || env_present("JWT_SECRET");
+    let redis_ok = !strict_redis || redis_status == "ok";
 
-    let overall_status = if db_ok && totp_key_ok && session_secret_ok {
+    let overall_status = if db_ok && redis_ok && totp_key_ok && session_secret_ok {
         "ok"
     } else {
         "degraded"
@@ -3240,7 +3297,7 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
         }
     });
 
-    if db_ok {
+    if db_ok && redis_ok && totp_key_ok && session_secret_ok {
         (axum::http::StatusCode::OK, Json(body)).into_response()
     } else {
         (axum::http::StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
@@ -3292,8 +3349,7 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
             .unwrap_or("")
             .to_lowercase();
 
-        let base_url =
-            std::env::var("BASE_URL").unwrap_or_else(|_| "https://platform.poool.app".to_string());
+        let base_url = platform_base_url();
         let base_host = base_url.replace("https://", "").replace("http://", "");
         let bare_domain = base_host.replace("platform.", "");
         let www_domain = format!("www.{}", bare_domain);
@@ -3448,8 +3504,21 @@ async fn community_feed_list_htmx(
     // Phase 2 task 15: when the Saved tab requests the partial, return only
     // bookmarked posts. Anonymous viewers can't have bookmarks so fall back
     // to the global feed instead of erroring.
-    let is_bookmarks = query.source.as_deref() == Some("bookmarks") && user.is_some();
-    let posts = if is_bookmarks {
+    let is_circle_feed = query.circle_id.is_some();
+    let is_bookmarks =
+        query.source.as_deref() == Some("bookmarks") && user.is_some() && !is_circle_feed;
+    let posts = if let Some(circle_id) = query.circle_id {
+        crate::community::routes::get_circle_feed_data(
+            &state,
+            circle_id,
+            query.page,
+            query.sort_by.clone(),
+            query.post_type.clone(),
+            query.tag.clone(),
+            user.as_ref(),
+        )
+        .await?
+    } else if is_bookmarks {
         crate::community::routes::get_bookmark_feed_data(
             &state,
             user.as_ref().expect("user checked above").id,
@@ -3473,6 +3542,7 @@ async fn community_feed_list_htmx(
         current_source: String,
         current_category: String,
         current_sort_by: String,
+        current_circle_id: String,
     }
 
     let current_feed_mode = if is_bookmarks {
@@ -3501,6 +3571,7 @@ async fn community_feed_list_htmx(
             },
             current_category: query.category.clone().unwrap_or_default(),
             current_sort_by: query.sort_by.clone().unwrap_or_default(),
+            current_circle_id: query.circle_id.map(|id| id.to_string()).unwrap_or_default(),
         },
     )
     .await)
@@ -3554,6 +3625,203 @@ async fn community_announcements_list_htmx(
 /// GET /community — Community demo page (protected).
 async fn page_community(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "community.html").await
+}
+
+/// GET /community/circles — canonical My Circles and Discover entry point.
+async fn page_community_circles(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    #[derive(serde::Serialize)]
+    struct Context {
+        initial_tab: &'static str,
+    }
+
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "community.html",
+        Context {
+            initial_tab: "circle",
+        },
+    )
+    .await
+}
+
+/// GET /community/circle/:slug — content-first Circle Feed page.
+async fn page_community_circle_feed(
+    Path(slug): Path<String>,
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db).await;
+    let Some(user) = user else {
+        return axum::response::Redirect::to("/auth/login").into_response();
+    };
+
+    let Some(c_pool) = state.community_db.as_ref() else {
+        return crate::error::AppError::ServiceUnavailable(
+            "Community database is offline".to_string(),
+        )
+        .into_response();
+    };
+
+    let (circle, role) =
+        match crate::community::circles::get_circle_by_slug(c_pool, &slug, Some(user.id)).await {
+            Ok(value) => value,
+            Err(err) => return err.into_response(),
+        };
+
+    let platform_admin =
+        crate::auth::middleware::has_permission(&state.db, user.id, "community.manage").await;
+    let has_pending_invite = if role.is_none() {
+        crate::community::circles::has_pending_invite(c_pool, circle.id, user.id)
+            .await
+            .unwrap_or(false)
+    } else {
+        false
+    };
+    let is_gated = circle.token_gate_asset_id.is_some()
+        || circle.kyc_required
+        || matches!(circle.join_policy.as_str(), "holder_only" | "kyc_required");
+    let can_view = role.is_some()
+        || has_pending_invite
+        || (circle.is_public && circle.visibility == "public" && !is_gated);
+    let can_post = role.is_some();
+    let can_manage =
+        platform_admin || matches!(role.as_deref(), Some("owner" | "admin" | "moderator"));
+
+    let weekly_posts = match sqlx::query_scalar::<_, i64>(
+        r#"SELECT COUNT(*)::BIGINT
+           FROM posts
+           WHERE circle_id = $1
+             AND is_hidden = false
+             AND created_at >= NOW() - INTERVAL '7 days'"#,
+    )
+    .bind(circle.id)
+    .fetch_one(c_pool)
+    .await
+    {
+        Ok(count) => count,
+        Err(err) => return crate::error::AppError::Database(err).into_response(),
+    };
+
+    let role_label = if platform_admin && role.is_none() {
+        "Platform Admin".to_string()
+    } else {
+        match role.as_deref() {
+            Some("owner") => "Owner".to_string(),
+            Some("admin") => "Admin".to_string(),
+            Some("moderator") => "Moderator".to_string(),
+            Some("verified_expert") => "Verified Expert".to_string(),
+            Some("member") => "Member".to_string(),
+            Some(other) => other.to_string(),
+            None => "Visitor".to_string(),
+        }
+    };
+
+    let description = circle
+        .description
+        .clone()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| {
+            "A dedicated POOOL Circle for focused community discussion.".to_string()
+        });
+    let activity_label = if weekly_posts > 0 {
+        format!("{} posts this week", weekly_posts)
+    } else {
+        "New Circle - Be the first to post".to_string()
+    };
+    let privacy_label = match circle.visibility.as_str() {
+        "hidden" => "Hidden".to_string(),
+        "private" => "Private".to_string(),
+        _ if circle.is_public => "Public".to_string(),
+        _ => "Private".to_string(),
+    };
+    let type_label = match circle.circle_type.as_str() {
+        "asset" => "Asset Circle",
+        "topic" => "Topic Circle",
+        "expert" => "Expert Circle",
+        "private_investor" => "Private Investor Club",
+        "official" => "Official Circle",
+        _ => "Social Circle",
+    }
+    .to_string();
+    let gate_label = if circle.token_gate_asset_id.is_some() || circle.join_policy == "holder_only"
+    {
+        "Holder-only".to_string()
+    } else if circle.kyc_required || circle.join_policy == "kyc_required" {
+        "KYC-gated".to_string()
+    } else if circle.join_policy == "invite_only" {
+        "Invite-only".to_string()
+    } else if circle.join_policy == "request" {
+        "Request access".to_string()
+    } else {
+        "Open join".to_string()
+    };
+    let avatar_emoji = circle
+        .avatar_emoji
+        .clone()
+        .unwrap_or_else(|| "P".to_string());
+    let banner_url = circle.banner_url.clone().unwrap_or_default();
+    let circle_context_json = serde_json::json!({
+        "id": circle.id,
+        "slug": circle.slug,
+        "name": circle.name,
+    })
+    .to_string();
+
+    #[derive(serde::Serialize)]
+    struct Context {
+        circle_id: String,
+        circle_slug: String,
+        circle_name: String,
+        circle_description: String,
+        circle_context_json: String,
+        avatar_emoji: String,
+        banner_url: String,
+        privacy_label: String,
+        role_label: String,
+        type_label: String,
+        gate_label: String,
+        is_official: bool,
+        kyc_required: bool,
+        private_investor_club: bool,
+        member_count: i32,
+        activity_label: String,
+        can_view: bool,
+        can_post: bool,
+        can_manage: bool,
+    }
+
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "community-circle.html",
+        Context {
+            circle_id: circle.id.to_string(),
+            circle_slug: circle.slug,
+            circle_name: circle.name,
+            circle_description: description,
+            circle_context_json,
+            avatar_emoji,
+            banner_url,
+            privacy_label,
+            role_label,
+            type_label,
+            gate_label,
+            is_official: circle.is_official,
+            kyc_required: circle.kyc_required,
+            private_investor_club: circle.private_investor_club,
+            member_count: circle.member_count,
+            activity_label,
+            can_view,
+            can_post,
+            can_manage,
+        },
+    )
+    .await
+    .into_response()
 }
 
 /// GET /community/hashtag/:tag — Phase 3 task 24: dedicated hashtag landing
@@ -3868,6 +4136,7 @@ async fn page_community_post(
         content: String,
         image_urls: Option<Vec<String>>,
         user_id: uuid::Uuid,
+        circle_id: Option<uuid::Uuid>,
     }
 
     #[derive(sqlx::FromRow)]
@@ -3879,12 +4148,21 @@ async fn page_community_post(
     let post_record = if let Some(c_pool) = state.community_db.as_ref() {
         sqlx::query_as::<_, PostOgData>(
             r#"
-            SELECT p.content, p.image_urls, p.user_id
+            SELECT p.content, p.image_urls, p.user_id, p.circle_id
             FROM posts p
             JOIN community_profiles cp ON p.user_id = cp.user_id
+            LEFT JOIN circles c ON c.id = p.circle_id
             WHERE p.id = $1
               AND p.is_hidden = false
               AND (cp.is_shadowbanned = false OR p.user_id = $2)
+              AND (
+                p.circle_id IS NULL
+                OR c.is_public = true
+                OR EXISTS (
+                  SELECT 1 FROM circle_members cm
+                  WHERE cm.circle_id = p.circle_id AND cm.user_id = $2
+                )
+              )
             "#,
         )
         .bind(id)
@@ -4238,10 +4516,11 @@ async fn api_me_chain_wallet(
 /// Run all pending SQL migrations from `../database/` in alphanumeric order.
 ///
 /// Migrations are tracked in a `_schema_migrations` table. Each migration file
-/// is run exactly once. If a migration fails, the error is logged and the server
-/// continues (allowing partial migration scenarios to be debugged).
+/// is run exactly once. **Fail-closed**: any migration error aborts the
+/// process to prevent half-applied schemas from corrupting subsequent writes.
+/// The previous "log and continue" behavior masked partial migrations.
 async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
-    // 1. Ensure tracking table exists
+    // 1. Ensure tracking table exists — fatal if we can't track applied state.
     if let Err(e) = sqlx::query(
         r#"CREATE TABLE IF NOT EXISTS _schema_migrations (
             filename TEXT PRIMARY KEY,
@@ -4251,8 +4530,10 @@ async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
     .execute(pool)
     .await
     {
-        tracing::error!("Failed to create _schema_migrations table: {}", e);
-        return;
+        panic!(
+            "[{}] Failed to create _schema_migrations table: {}",
+            label, e
+        );
     }
 
     // 2. Read migration files from the specified directory
@@ -4278,20 +4559,42 @@ async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
                 }
             })
             .collect(),
-        Err(e) => {
-            tracing::error!("Failed to read migrations directory: {}", e);
-            return;
-        }
+        Err(e) => panic!("[{}] Failed to read migrations directory: {}", label, e),
     };
 
     files.sort();
 
     // 3. Fetch already-applied migrations
-    let applied: Vec<String> =
+    let mut applied: Vec<String> =
         sqlx::query_scalar::<_, String>("SELECT filename FROM _schema_migrations")
             .fetch_all(pool)
             .await
             .unwrap_or_default();
+
+    if let Some(first_pending_prefix) = legacy_migration_baseline_start(pool, label).await {
+        let missing_legacy_markers = files.iter().any(|filename| {
+            should_baseline_legacy_migration(filename, first_pending_prefix)
+                && !applied.iter().any(|applied| applied == filename)
+        });
+
+        if missing_legacy_markers {
+            let baselined =
+                seed_legacy_migration_baseline(pool, &files, first_pending_prefix, label).await;
+            if baselined > 0 {
+                tracing::warn!(
+                    "[{}] Seeded {} legacy migration marker(s); pending migrations start at {:03}",
+                    label,
+                    baselined,
+                    first_pending_prefix
+                );
+                applied =
+                    sqlx::query_scalar::<_, String>("SELECT filename FROM _schema_migrations")
+                        .fetch_all(pool)
+                        .await
+                        .unwrap_or_default();
+            }
+        }
+    }
 
     let applied_set: std::collections::HashSet<&str> = applied.iter().map(|s| s.as_str()).collect();
 
@@ -4305,25 +4608,22 @@ async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
         let filepath = migrations_dir.join(filename);
         let sql = match std::fs::read_to_string(&filepath) {
             Ok(s) => s,
-            Err(e) => {
-                tracing::error!("Failed to read migration file {:?}: {}", filepath, e);
-                continue;
-            }
+            Err(e) => panic!(
+                "[{}] Failed to read migration file {:?}: {}",
+                label, filepath, e
+            ),
         };
 
         tracing::info!("[{}] Applying migration: {}", label, filename);
 
-        // Run migration in a transaction
+        // Run migration in a transaction. Any failure aborts the boot —
+        // a half-applied schema is more dangerous than not starting at all.
         let mut tx = match pool.begin().await {
             Ok(t) => t,
-            Err(e) => {
-                tracing::error!(
-                    "Failed to begin transaction for migration {}: {}",
-                    filename,
-                    e
-                );
-                continue;
-            }
+            Err(e) => panic!(
+                "[{}] Failed to begin transaction for migration {}: {}",
+                label, filename, e
+            ),
         };
 
         // Split SQL into individual statements — sqlx cannot execute multiple
@@ -4331,17 +4631,14 @@ async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
         // We must respect dollar-quoted blocks (e.g. DO $$ ... END $$;) which
         // contain semicolons that are NOT statement separators.
         let statements = split_sql_statements(&sql);
-        let mut migration_failed = false;
         for stmt in &statements {
             if let Err(e) = sqlx::query(stmt).execute(&mut *tx).await {
-                tracing::error!("Migration {} failed on statement: {}", filename, e);
-                migration_failed = true;
-                break;
+                let _ = tx.rollback().await;
+                panic!(
+                    "[{}] Migration {} failed on statement: {}",
+                    label, filename, e
+                );
             }
-        }
-        if migration_failed {
-            let _ = tx.rollback().await;
-            continue;
         }
 
         // Record as applied
@@ -4350,14 +4647,12 @@ async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
             .execute(&mut *tx)
             .await
         {
-            tracing::error!("Failed to record migration {}: {}", filename, e);
             let _ = tx.rollback().await;
-            continue;
+            panic!("[{}] Failed to record migration {}: {}", label, filename, e);
         }
 
         if let Err(e) = tx.commit().await {
-            tracing::error!("Failed to commit migration {}: {}", filename, e);
-            continue;
+            panic!("[{}] Failed to commit migration {}: {}", label, filename, e);
         }
 
         applied_count += 1;
@@ -4372,6 +4667,106 @@ async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
             applied.len()
         );
     }
+}
+
+async fn legacy_migration_baseline_start(pool: &sqlx::PgPool, label: &str) -> Option<u32> {
+    let (sentinel_table, first_pending_prefix) = match label {
+        // Production existed before the fail-closed migration tracker. Files
+        // 202+ are the first core migrations introduced with that tracker.
+        "core" => ("users", 202),
+        // Community migrations 049+ were introduced after the same tracking
+        // change; older community tables may already exist without markers.
+        "community" => ("posts", 49),
+        _ => return None,
+    };
+
+    let exists = sqlx::query_scalar::<_, bool>(
+        r#"
+        SELECT EXISTS (
+            SELECT 1
+            FROM pg_catalog.pg_class c
+            JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relname = $1
+              AND c.relkind IN ('r', 'p')
+              AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+        )
+        "#,
+    )
+    .bind(sentinel_table)
+    .fetch_one(pool)
+    .await
+    .unwrap_or_else(|e| {
+        panic!(
+            "[{}] Failed to inspect legacy schema sentinel {}: {}",
+            label, sentinel_table, e
+        )
+    });
+
+    exists.then_some(first_pending_prefix)
+}
+
+async fn seed_legacy_migration_baseline(
+    pool: &sqlx::PgPool,
+    files: &[String],
+    first_pending_prefix: u32,
+    label: &str,
+) -> usize {
+    let mut tx = pool.begin().await.unwrap_or_else(|e| {
+        panic!(
+            "[{}] Failed to begin legacy migration baseline transaction: {}",
+            label, e
+        )
+    });
+    let mut seeded = 0;
+
+    for filename in files {
+        if !should_baseline_legacy_migration(filename, first_pending_prefix) {
+            continue;
+        }
+
+        if let Err(e) = sqlx::query(
+            "INSERT INTO _schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING",
+        )
+        .bind(filename)
+        .execute(&mut *tx)
+        .await
+        {
+            let _ = tx.rollback().await;
+            panic!(
+                "[{}] Failed to seed legacy migration marker {}: {}",
+                label, filename, e
+            );
+        }
+
+        seeded += 1;
+    }
+
+    tx.commit().await.unwrap_or_else(|e| {
+        panic!(
+            "[{}] Failed to commit legacy migration baseline transaction: {}",
+            label, e
+        )
+    });
+
+    seeded
+}
+
+fn should_baseline_legacy_migration(filename: &str, first_pending_prefix: u32) -> bool {
+    if filename.contains("_seed") || filename.starts_with("seed") {
+        return true;
+    }
+
+    migration_prefix(filename)
+        .map(|prefix| prefix < first_pending_prefix)
+        .unwrap_or(false)
+}
+
+fn migration_prefix(filename: &str) -> Option<u32> {
+    let prefix: String = filename
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    prefix.parse().ok()
 }
 
 /// Split a SQL string into individual statements, respecting dollar-quoting,

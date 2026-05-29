@@ -215,6 +215,9 @@ pub async fn api_admin_villa_operations_create(
     Path(asset_id): Path<Uuid>,
     Json(input): Json<VillaOperationsInput>,
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     if !(2000..=2100).contains(&input.period_year) || !(1..=12).contains(&input.period_month) {
         return Err(ApiError::BadRequest("Invalid period".to_string()));
     }
@@ -307,6 +310,9 @@ pub async fn api_admin_villa_operations_update(
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
     Json(input): Json<VillaOperationsInput>,
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     let existing = load_row(&state.db, log_id).await?;
     if existing.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -412,6 +418,9 @@ pub async fn api_admin_villa_operations_submit(
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     transition(&state.db, asset_id, log_id, admin.user.id, "submit").await
 }
 
@@ -421,6 +430,9 @@ pub async fn api_admin_villa_operations_approve(
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     let existing = load_row(&state.db, log_id).await?;
     if existing.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -445,6 +457,9 @@ pub async fn api_admin_villa_operations_publish(
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.approve")
+        .await?;
     let existing = load_row(&state.db, log_id).await?;
     if existing.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -666,6 +681,9 @@ pub async fn api_admin_villa_operations_top_up(
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<TopUpResult>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     let row = load_row(&state.db, log_id).await?;
     if row.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -899,6 +917,9 @@ pub async fn api_admin_villa_operations_reject(
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
     Json(input): Json<RejectInput>,
 ) -> Result<Json<VillaOperationsRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     if input.reason.trim().is_empty() {
         return Err(ApiError::BadRequest(
             "Rejection reason required".to_string(),
@@ -1219,15 +1240,21 @@ pub async fn api_admin_villa_operations_process_payouts(
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<ProcessPayoutsResult>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.approve")
+        .await?;
     let result = process_payouts_core(&state.db, asset_id, log_id, admin.user.id).await?;
     Ok(Json(result))
 }
 
 /// GET /api/admin/villa-operations-queue — cross-asset queue of submitted rows.
 pub async fn api_admin_villa_operations_queue(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<QueueRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.approve")
+        .await?;
     let rows: Vec<QueueRow> = sqlx::query_as(
         r#"
         SELECT
@@ -1304,6 +1331,9 @@ pub async fn api_admin_villa_operations_link_document(
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
     Json(input): Json<LinkDocumentInput>,
 ) -> Result<Json<PeriodDocumentRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     let row = load_row(&state.db, log_id).await?;
     if row.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -1352,10 +1382,13 @@ pub async fn api_admin_villa_operations_link_document(
 
 /// GET /api/admin/villas/:asset_id/operations/:log_id/documents — list linked docs.
 pub async fn api_admin_villa_operations_documents_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<Vec<PeriodDocumentRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.view")
+        .await?;
     let rows: Vec<PeriodDocumentRow> = sqlx::query_as(
         r#"
         SELECT id, asset_id, period_year, period_month, log_id, document_id, doc_type, uploaded_by, created_at
@@ -1576,6 +1609,9 @@ pub async fn api_admin_villa_operations_distribute(
     State(state): State<AppState>,
     Path((asset_id, log_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<DistributeResult>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     let result = distribute_core(&state.db, asset_id, log_id, admin.user.id).await?;
     Ok(Json(result))
 }
@@ -1600,10 +1636,13 @@ pub struct VillaConfigSummary {
 }
 
 pub async fn api_admin_villa_config_summary(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
 ) -> Result<Json<VillaConfigSummary>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.view")
+        .await?;
     let cfg: VillaConfigSummary = sqlx::query_as(
         r#"
         SELECT
@@ -1655,6 +1694,9 @@ pub async fn api_admin_villa_config_update(
     Path(asset_id): Path<Uuid>,
     Json(input): Json<VillaConfigInput>,
 ) -> Result<Json<VillaConfigSummary>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.write")
+        .await?;
     // Range validation up-front so partial inputs fail with clear messages.
     if let Some(v) = input.tokenized_pct_bps {
         if !(0..=10_000).contains(&v) {
@@ -1762,11 +1804,14 @@ pub async fn api_admin_villa_config_update(
 
 /// GET /api/admin/villas/:asset_id/operations?year=&month=&as_of=
 pub async fn api_admin_villa_operations_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
     Query(q): Query<OperationsQuery>,
 ) -> Result<Json<Vec<VillaOperationsRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.operations.view")
+        .await?;
     let rows: Vec<VillaOperationsRow> = sqlx::query_as(
         r#"
         SELECT * FROM villa_operations_log

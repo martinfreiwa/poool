@@ -15,6 +15,9 @@ Thumbs.db
 .env
 .env.backup
 .env.local
+.env.fast-dev
+.env.local-live
+.env.local-live.kyc
 *.env
 
 # Rust
@@ -118,3 +121,9 @@ contracts/report.md
 uploads/community/
 uploads/deposits/
 uploads/support/
+uploads/avatars/
+uploads/developer-logos/
+uploads/properties/
+
+# Local preview screenshots
+.tmp-*.png

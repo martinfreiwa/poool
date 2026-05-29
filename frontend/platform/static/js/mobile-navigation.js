@@ -423,7 +423,7 @@ let __globalSearchIndex = [];
 
 function initGlobalSearch() {
   const searchInputs = Array.from(document.querySelectorAll('input[type="search"]'))
-    .filter(input => input.id !== 'sidebar-search-input');
+    .filter(input => input.id !== 'sidebar-search-input' && !input.matches('[data-global-search-input]'));
   const isDeveloperPage = window.location.pathname.startsWith('/developer');
 
   // 1. Build the index from static pages and dynamic assets on current page

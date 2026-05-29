@@ -74,7 +74,6 @@ pub struct DeveloperTopAsset {
     pub views: i64,
     pub add_to_cart_count: i64,
     pub checkout_starts: i64,
-    pub saved_count: i64,
     pub conversion_rate: f64,
     pub conversion_display: String,
     pub funding_pct: f64,
@@ -110,7 +109,6 @@ pub struct DeveloperDashboardStats {
     pub total_views: i64,
     pub checkout_starts: i64,
     pub add_to_cart_count: i64,
-    pub saved_properties: i64,
     pub new_investors: i64,
     pub avg_conversion_rate: f64,
     pub sold_out_ratio: f64,
@@ -118,7 +116,6 @@ pub struct DeveloperDashboardStats {
     pub avg_investment_display: String,
     pub metrics: Vec<DeveloperMetric>,
     pub top_assets: Vec<DeveloperTopAsset>,
-    pub attention_assets: Vec<DeveloperTopAsset>,
     pub chart_percentage_display: String, // e.g. "+17.6%" or "0%"
     pub chart_trend: String,              // "up", "down", or "neutral"
     pub chart_period_label: String,

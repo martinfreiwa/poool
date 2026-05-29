@@ -1022,62 +1022,111 @@ pub async fn api_admin_emails_campaign(
     let subject: String = r.get("subject");
     let html_body: String = r.get("html_template");
 
-    let users = sqlx::query(audience_sql)
+    // Hard cap audience size to protect the admin worker — a 1M-user blast
+    // would block the request for hours and exhaust connection pool. Legit
+    // campaigns are well under 100K; over that, route through a dedicated
+    // background job instead.
+    const AUDIENCE_HARD_CAP: i64 = 100_000;
+    let capped_sql = format!("{audience_sql} LIMIT {AUDIENCE_HARD_CAP}");
+    let users = sqlx::query(&capped_sql)
         .fetch_all(&state.db)
         .await
         .map_err(ApiError::from)?;
+    if users.len() as i64 >= AUDIENCE_HARD_CAP {
+        tracing::warn!(
+            audience = %audience,
+            cap = AUDIENCE_HARD_CAP,
+            "campaign audience hit hard cap; remaining recipients skipped"
+        );
+    }
+
+    // Pre-render all per-recipient subject/body strings once; then batch
+    // INSERT into outbox + email_logs in chunks of 500. 500 rows × 5 cols
+    // = 2500 binds per statement, well under Postgres' 65535 bind limit.
+    #[derive(Clone)]
+    struct Recipient {
+        id: sqlx::types::Uuid,
+        email: String,
+        subject: String,
+        body: String,
+    }
+    let recipients: Vec<Recipient> = users
+        .into_iter()
+        .map(|row| {
+            let u_id: sqlx::types::Uuid = row.get("id");
+            let u_email: String = row.get("email");
+            let first_name: String = row.try_get("first_name").unwrap_or_default();
+            let ctx = serde_json::json!({
+                "first_name": first_name,
+                "email": u_email,
+                "user_id": u_id.to_string(),
+            });
+            Recipient {
+                id: u_id,
+                subject: crate::common::email::render_template(&subject, &ctx),
+                body: crate::common::email::render_template(&html_body, &ctx),
+                email: u_email,
+            }
+        })
+        .collect();
+
+    const BATCH_SIZE: usize = 500;
     let mut queued_count: i64 = 0;
+    for chunk in recipients.chunks(BATCH_SIZE) {
+        // Per-batch transaction: outbox + email_logs must both land for a
+        // given chunk, otherwise the admin delivery-logs view diverges from
+        // the worker's queue. Failure of one batch does not roll back prior
+        // batches — partial progress is preferable to losing everything.
+        let mut tx = state.db.begin().await.map_err(ApiError::from)?;
 
-    for row in users {
-        let u_id: sqlx::types::Uuid = row.get("id");
-        let u_email: String = row.get("email");
-        let first_name: String = row.try_get("first_name").unwrap_or_default();
-
-        // Per-recipient render: {{first_name}} / {{email}} interpolated via
-        // MiniJinja. Subject is rendered too so admins can personalise the
-        // email subject line (`Hi {{first_name}}, your asset shipped`).
-        let ctx = serde_json::json!({
-            "first_name": first_name,
-            "email": u_email,
-            "user_id": u_id.to_string(),
+        let mut qb_outbox = sqlx::QueryBuilder::new(
+            "INSERT INTO transactional_email_outbox \
+             (user_id, event_type, recipient_email, subject, html_body) ",
+        );
+        qb_outbox.push_values(chunk.iter(), |mut b, r| {
+            b.push_bind(r.id)
+                .push_bind(MARKETING_CAMPAIGN_EVENT_TYPE)
+                .push_bind(&r.email)
+                .push_bind(&r.subject)
+                .push_bind(&r.body);
         });
-        let rendered_subject = crate::common::email::render_template(&subject, &ctx);
-        let rendered_body = crate::common::email::render_template(&html_body, &ctx);
-
-        // Durable enqueue. Worker picks it up via process_transactional_email_outbox.
-        let outbox_result = sqlx::query(
-            "INSERT INTO transactional_email_outbox
-                (user_id, event_type, recipient_email, subject, html_body)
-             VALUES ($1, $2, $3, $4, $5)",
-        )
-        .bind(u_id)
-        .bind(MARKETING_CAMPAIGN_EVENT_TYPE)
-        .bind(&u_email)
-        .bind(&rendered_subject)
-        .bind(&rendered_body)
-        .execute(&state.db)
-        .await;
-
-        if outbox_result.is_err() {
+        if let Err(e) = qb_outbox.build().execute(&mut *tx).await {
+            tracing::warn!(error = %e, "outbox batch insert failed; skipping chunk");
             continue;
         }
 
-        // Mirror to email_logs so the delivery-logs tab in the admin shows
-        // the queue immediately (worker will update status on send).
-        let _ = sqlx::query(
-            "INSERT INTO email_logs
-                (user_id, template_id, subject, recipient_email, status, sent_at)
-             VALUES ($1, $2, $3, $4, 'queued', NOW())",
-        )
-        .bind(u_id)
-        .bind(uid)
-        .bind(&rendered_subject)
-        .bind(&u_email)
-        .execute(&state.db)
-        .await;
+        // email_logs needs sent_at=NOW() per row. Bind the literal as part
+        // of push_values via a trailing raw push so it's not a parameter.
+        let mut qb_logs = sqlx::QueryBuilder::new(
+            "INSERT INTO email_logs \
+             (user_id, template_id, subject, recipient_email, status, sent_at) ",
+        );
+        qb_logs.push_values(chunk.iter(), |mut b, r| {
+            b.push_bind(r.id)
+                .push_bind(uid)
+                .push_bind(&r.subject)
+                .push_bind(&r.email)
+                .push_bind("queued")
+                .push("NOW()");
+        });
+        if let Err(e) = qb_logs.build().execute(&mut *tx).await {
+            tracing::warn!(error = %e, "email_logs batch insert failed; rolling back chunk");
+            let _ = tx.rollback().await;
+            continue;
+        }
 
-        queued_count += 1;
+        if let Err(e) = tx.commit().await {
+            tracing::warn!(error = %e, "campaign batch commit failed");
+            continue;
+        }
+        queued_count += chunk.len() as i64;
     }
+    tracing::info!(
+        audience = %audience,
+        template_id = %uid,
+        queued_count,
+        "marketing campaign enqueued"
+    );
 
     // Best-effort audit trail. Lets admins answer "who sent campaign X?".
     let _ = sqlx::query(

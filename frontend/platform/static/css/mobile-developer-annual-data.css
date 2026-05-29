@@ -1,0 +1,237 @@
+/* Mobile Developer — Annual Data wizard
+ *
+ * Page: /developer/annual-data  (body#developer-annual-data-body)
+ * Pattern: form-heavy wizard. Stacks each .ds-card section vertically,
+ * makes inputs 44px tap-height, and forces the .dad-grid (inline `auto-fit`
+ * with 360px minmax) into a single column under 768px so the
+ * "Evidence document UUID" field can render at full width.
+ */
+
+@media (max-width: 1024px) {
+  /* Sidebar pulls back at large-phone / portrait-tablet */
+  #developer-annual-data-body .marketplace-sidebar,
+  #developer-annual-data-body #developer-annual-data-sidebar {
+    display: none !important;
+  }
+
+  #developer-annual-data-body .marketplace-page,
+  #developer-annual-data-body #developer-annual-data-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Hide cart icon on developer pages */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-annual-data-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-annual-data-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ── Page shell ───────────────────────────────────────── */
+  #developer-annual-data-body {
+    background: #fafafa;
+  }
+
+  #developer-annual-data-body .ds-main,
+  #developer-annual-data-body .marketplace-main {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: calc(100vh - 64px);
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #developer-annual-data-body .admin-content {
+    flex: 1;
+    padding: 16px !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* ── Breadcrumbs ─────────────────────────────────────── */
+  #developer-annual-data-body .admin-breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px !important;
+    font-size: 12px !important;
+    margin-bottom: 12px !important;
+    margin-top: 24px;
+  }
+
+  #developer-annual-data-body .admin-breadcrumbs a,
+  #developer-annual-data-body .admin-breadcrumbs .current {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 12px !important;
+    line-height: 18px;
+  }
+
+  #developer-annual-data-body .admin-breadcrumbs .separator {
+    margin: 0 2px;
+  }
+
+  #developer-annual-data-body #dad-breadcrumb {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* ── Force the inline .dad-grid (auto-fit minmax 360px) to single column ── */
+  #developer-annual-data-body .dad-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    width: 100% !important;
+  }
+
+  /* ── Card sections ───────────────────────────────────── */
+  #developer-annual-data-body .ds-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  }
+
+  #developer-annual-data-body .ds-card__header {
+    padding: 16px 16px 0 !important;
+  }
+
+  #developer-annual-data-body .ds-card__body {
+    padding: 16px !important;
+  }
+
+  #developer-annual-data-body .ds-card__title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 16px !important;
+    line-height: 22px !important;
+    color: var(--page-title-color) !important;
+    margin: 0 0 4px 0 !important;
+  }
+
+  #developer-annual-data-body .ds-card__subtitle {
+    font-size: 13px !important;
+    line-height: 18px !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  /* ── Form layout ─────────────────────────────────────── */
+  #developer-annual-data-body .ds-flex,
+  #developer-annual-data-body .ds-flex-col,
+  #developer-annual-data-body form {
+    width: 100% !important;
+  }
+
+  #developer-annual-data-body .ds-gap-16 {
+    gap: 14px !important;
+  }
+
+  #developer-annual-data-body .ds-form-group {
+    width: 100% !important;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  #developer-annual-data-body .ds-form-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    font-weight: 600 !important;
+    color: var(--page-title-color) !important;
+    margin: 0 !important;
+  }
+
+  /* ── Inputs / selects / textareas: 44px tap target ─── */
+  #developer-annual-data-body .ds-input,
+  #developer-annual-data-body .ds-select,
+  #developer-annual-data-body .ds-textarea,
+  #developer-annual-data-body input[type="text"],
+  #developer-annual-data-body input[type="number"],
+  #developer-annual-data-body input[type="date"],
+  #developer-annual-data-body input[type="file"],
+  #developer-annual-data-body select,
+  #developer-annual-data-body textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important; /* prevent iOS zoom-on-focus */
+    line-height: 22px !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+  }
+
+  #developer-annual-data-body .ds-textarea,
+  #developer-annual-data-body textarea {
+    min-height: 88px !important;
+    line-height: 1.5 !important;
+    resize: vertical;
+  }
+
+  /* The "Evidence document UUID" input is a long UUID — ensure overflow scroll, no truncation */
+  #developer-annual-data-body #dad-capex-evidence {
+    font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, monospace !important;
+    font-size: 14px !important;
+    letter-spacing: -0.01em;
+    overflow-x: auto;
+  }
+
+  /* ── Submit buttons ─────────────────────────────────── */
+  #developer-annual-data-body .ds-btn,
+  #developer-annual-data-body .ds-btn--primary {
+    width: 100% !important;
+    min-height: 44px !important;
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Inline error text ──────────────────────────────── */
+  #developer-annual-data-body .ds-form-error {
+    font-size: 12px !important;
+    line-height: 18px !important;
+    color: #B42318;
+    margin-top: 4px;
+  }
+
+  /* ── Lists rendered by JS into #dad-capex-list/#dad-forecast-list/#dad-doc-list ── */
+  #developer-annual-data-body #dad-capex-list,
+  #developer-annual-data-body #dad-forecast-list,
+  #developer-annual-data-body #dad-doc-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 12px !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  #developer-annual-data-body .admin-content {
+    padding: 12px !important;
+  }
+
+  #developer-annual-data-body .ds-card__header,
+  #developer-annual-data-body .ds-card__body {
+    padding: 14px !important;
+  }
+
+  #developer-annual-data-body .ds-card__title {
+    font-size: 15px !important;
+  }
+
+  #developer-annual-data-body .ds-card__subtitle {
+    font-size: 12px !important;
+  }
+}

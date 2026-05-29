@@ -1313,6 +1313,7 @@ pub async fn api_admin_blockchain_pause(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
+    require_blockchain_control_permission(&admin, pool).await?;
 
     let contract_address = std::env::var("CHAIN_CONTRACT_ADDRESS")
         .map_err(|_| ApiError::Internal("CHAIN_CONTRACT_ADDRESS not configured".to_string()))?;
@@ -1391,6 +1392,7 @@ pub async fn api_admin_blockchain_unpause(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
+    require_blockchain_control_permission(&admin, pool).await?;
 
     let contract_address = std::env::var("CHAIN_CONTRACT_ADDRESS")
         .map_err(|_| ApiError::Internal("CHAIN_CONTRACT_ADDRESS not configured".to_string()))?;
@@ -2050,6 +2052,7 @@ pub async fn api_admin_blockchain_pin_metadata(
     axum::extract::Path(asset_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
+    require_blockchain_control_permission(&admin, pool).await?;
 
     // 1. Build metadata from DB
     let metadata = crate::ipfs::metadata::build_metadata(pool, asset_id)

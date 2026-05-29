@@ -23,7 +23,7 @@
             </div>
             <div id="text-and-supporting-text">
               <h1 id="text">Welcome back</h1>
-              <p id="supporting-text">Please enter your details</p>
+              <p id="supporting-text">Access your portfolio, wallet, and active ownership account.</p>
             </div>
           </div>
 
@@ -41,14 +41,14 @@
               <div class="social-icon">
                 <img  src="/static/images/icons/social-google.svg" alt="Google" width="24" height="24">
               </div>
-              <span class="social-text">Log in with Google</span>
+              <span class="social-text">Continue with Google</span>
             </button>
           </div>
 
           <!-- Divider -->
           <div id="content-divider">
             <div id="divider-left"></div>
-            <span id="or-text">OR</span>
+            <span id="or-text">or log in with email</span>
             <div id="divider-right"></div>
           </div>
           {% endif %}
@@ -153,42 +153,7 @@
         </div>
       </div>
       {% else %}
-      <div id="testimonial-container">
-        <img
-          id="testimonial-image"
-          src="/static/images/auth/indonesian-login-portrait.webp"
-          alt="Portrait of a POOOL investor"
-          width="1536"
-          height="1024"
-          fetchpriority="high"
-        >
-        <div id="quote-panel">
-          <div id="attribution-card">
-            <h2 id="testimonial-quote">"POOOL made my first real estate investment feel clear, local, and within reach."</h2>
-            <div id="name-and-stars">
-              <div id="text-and-supporting">
-                <span id="author-name">POOOL Investor</span>
-                <span id="author-company">Indonesia</span>
-              </div>
-              <div id="stars-container">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              </div>
-            </div>
-          </div>
-          <div id="arrows-container">
-            <button class="carousel-arrow" id="prev-arrow" aria-label="Previous testimonial">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-            </button>
-            <button class="carousel-arrow" id="next-arrow" aria-label="Next testimonial">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      {% include "components/auth-customer-carousel.html" %}
       {% endif %}
     </section>
   </div>
@@ -212,51 +177,6 @@
       }
     })();
 
-    var team = [
-      { img: '/static/images/auth/indonesian-login-portrait.webp', quote: 'POOOL made my first real estate investment feel clear, local, and within reach.', name: 'POOOL Investor', role: 'Indonesia' },
-      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'All my real estate experience was building up to this moment — launching POOOL.', name: 'Jonas Freiwald',       role: 'Co-CEO, Founder' },
-      { img: '/webp/team/Dmitry Sikorski.webp',       quote: 'I know what it\'s like to build from zero. POOOL gives that chance to anyone.', name: 'Dmitry Sikorski',       role: 'Co-CEO, Founder' },
-      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Before it was a rich man\'s game. POOOL hacked the rules for everyone.', name: 'Nikita Kokhanevych',    role: 'CTO, Blockchain' },
-      { img: '/webp/team/Mykyta Hlukhuvskyi.webp',   quote: 'Investing in real estate is now simpler than ordering a taxi. That\'s POOOL.', name: 'Mykyta Hlukhuvskyi',   role: 'CTO, Back-end' },
-      { img: '/webp/team/Nataly Vovque.webp',         quote: 'Old money owned the buildings. POOOL lets new money own the future.', name: 'Nataly Vovque',         role: 'Branding' },
-      { img: '/png/Jonathan Rizky.webp',              quote: 'For me, POOOL is where compliance meets innovation — trust built on regulation.', name: 'Jonathan Rizky',         role: 'Compliance Officer' },
-      { img: '/png/Khai.webp',                        quote: 'For me, POOOL is where ideas turn into action, and teamwork creates real change.', name: 'Khairatul Raudah',       role: 'Corporate Assistant' },
-      { img: '/webp/team/Sean Reno.webp',             quote: 'Seen so many platforms promise trust — POOOL actually backs it up with law.', name: 'Sean Reno',              role: 'Government Relations' },
-      { img: '/webp/team/Patrick Werner.webp',        quote: 'POOOL is a fantastic tool to help people from around the world invest money.', name: 'Patrick Werner',         role: 'Local Director' },
-      { img: '/webp/team/Daniel Todorov.webp',        quote: 'Everyone sells dreams. We built POOOL to fractionalize what\'s real.', name: 'Daniel Todorov',         role: 'Head of Design' },
-      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'Through POOOL, I invested in a Bali villa. Real estate felt complex, but now I can invest in minutes from my phone.', name: 'Dewi Lestari',           role: 'Real Estate Investor' },
-      { img: '/webp/team/Patrick Werner.webp',        quote: 'POOOL gave me access to properties I never thought I could afford. My first investment was €500 in a Lisbon apartment.', name: 'Marco Fernandes',        role: 'Software Engineer' },
-      { img: '/webp/team/Sean Reno.webp',             quote: 'I\'ve tried stocks, crypto, and now real estate via POOOL. This is the most transparent platform I\'ve used.', name: 'Aiko Tanaka',             role: 'Portfolio Investor' },
-      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Finally a platform where a teacher\'s salary can buy into real estate. POOOL changed what I thought was possible.', name: 'Fatima Al-Rashid',        role: 'Educator & Investor' },
-      { img: '/webp/team/Nataly Vovque.webp',         quote: 'No bank ever offered me this. POOOL let me diversify across three countries with one account.', name: 'Lena Hoffmann',           role: 'Independent Investor' },
-    ];
-    var current = 0;
-    var container = document.getElementById('testimonial-container');
-    var imageEl   = document.getElementById('testimonial-image');
-    var quoteEl   = document.getElementById('testimonial-quote');
-    var nameEl    = document.getElementById('author-name');
-    var roleEl    = document.getElementById('author-company');
-
-    function show(idx) {
-      var t = team[idx];
-      if (imageEl) {
-        imageEl.src = t.img;
-      } else {
-        container.style.backgroundImage = 'url("' + t.img + '")';
-      }
-      quoteEl.textContent = '\u201c' + t.quote + '\u201d';
-      nameEl.textContent = t.name;
-      roleEl.textContent = t.role;
-    }
-
-    document.getElementById('prev-arrow').addEventListener('click', function () {
-      current = (current - 1 + team.length) % team.length;
-      show(current);
-    });
-    document.getElementById('next-arrow').addEventListener('click', function () {
-      current = (current + 1) % team.length;
-      show(current);
-    });
   </script>
 
   <script>

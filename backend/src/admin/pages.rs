@@ -250,6 +250,14 @@ pub async fn page_admin_generic(
 
     // 301 redirect .html → clean URL (#28 — keep canonical URLs).
     if let Some(stem) = relative.strip_suffix(".html") {
+        if let Some(section_root) = stem.strip_suffix("/index") {
+            let q = req
+                .uri()
+                .query()
+                .map(|s| format!("?{}", s))
+                .unwrap_or_default();
+            return Redirect::permanent(&format!("/{}/{}", section_root, q)).into_response();
+        }
         let q = req
             .uri()
             .query()
@@ -416,7 +424,7 @@ fn render_admin_template(state: &AppState, file: &str) -> axum::response::Respon
                 tracing::error!("Template rendering error for admin {}: {}", file, e);
                 (
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
+                    Html("<h1>Internal Server Error</h1>".to_string()),
                 )
                     .into_response()
             }
@@ -425,7 +433,7 @@ fn render_admin_template(state: &AppState, file: &str) -> axum::response::Respon
             tracing::error!("Template GET error for admin file {}: {:?}", file, e);
             (
                 axum::http::StatusCode::NOT_FOUND,
-                Html(format!("<h1>Page not found</h1><p>Debug info: Tried file '{}', minijinja error: {}</p>", file, e)),
+                Html("<h1>Page not found</h1>".to_string()),
             )
                 .into_response()
         }

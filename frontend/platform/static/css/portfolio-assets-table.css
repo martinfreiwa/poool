@@ -133,6 +133,46 @@
   flex-shrink: 0;
 }
 
+.portfolio-asset-circle-slot {
+  display: inline-flex;
+  margin-right: 4px;
+}
+
+.portfolio-assets-circle-btn {
+  color: #0000FF;
+  background: #EEF4FF;
+  border-color: #D7E3FF;
+}
+
+.portfolio-assets-circle-btn:hover,
+.portfolio-assets-circle-btn:focus-visible {
+  color: #001DCA;
+  background: #E6EEFF;
+  border-color: #B8CCFF;
+}
+
+.mobile-asset-circle-slot {
+  display: block;
+  margin-top: 6px;
+}
+
+.mobile-asset-circle-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  color: #0000FF;
+  background: #EEF4FF;
+  border: 1px solid #D7E3FF;
+  border-radius: 6px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-decoration: none;
+}
+
 /* Property Column Styles */
 .portfolio-assets-property {
   display: flex;

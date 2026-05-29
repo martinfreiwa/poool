@@ -1,6 +1,6 @@
 -- Module 5: Verified Property Reviews
 
-CREATE TABLE asset_reviews (
+CREATE TABLE IF NOT EXISTS asset_reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     asset_id UUID NOT NULL, -- Logical FK to poool.assets
     user_id UUID NOT NULL,  -- Logical FK to poool.users
@@ -13,12 +13,12 @@ CREATE TABLE asset_reviews (
     UNIQUE(asset_id, user_id)
 );
 
-CREATE TABLE review_upvotes (
+CREATE TABLE IF NOT EXISTS review_upvotes (
     review_id UUID NOT NULL REFERENCES asset_reviews(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (review_id, user_id)
 );
 
-CREATE INDEX idx_asset_reviews_asset_id ON asset_reviews(asset_id);
-CREATE INDEX idx_asset_reviews_rating ON asset_reviews(rating);
+CREATE INDEX IF NOT EXISTS idx_asset_reviews_asset_id ON asset_reviews(asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_reviews_rating ON asset_reviews(rating);

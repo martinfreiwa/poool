@@ -6,7 +6,7 @@
 -- where the "verified owner" flag lives — at minimum this request table is
 -- the audit trail).
 
-CREATE TABLE verified_owner_requests (
+CREATE TABLE IF NOT EXISTS verified_owner_requests (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id       UUID NOT NULL,
     asset_id      UUID NOT NULL,
@@ -23,5 +23,5 @@ CREATE TABLE verified_owner_requests (
     CONSTRAINT verified_owner_requests_one_pending UNIQUE (user_id, asset_id, status)
 );
 
-CREATE INDEX idx_verified_owner_requests_user ON verified_owner_requests (user_id);
-CREATE INDEX idx_verified_owner_requests_status ON verified_owner_requests (status);
+CREATE INDEX IF NOT EXISTS idx_verified_owner_requests_user ON verified_owner_requests (user_id);
+CREATE INDEX IF NOT EXISTS idx_verified_owner_requests_status ON verified_owner_requests (status);

@@ -1,10 +1,10 @@
 /* global window, document, fetch */
 
 /**
- * MyCircle tab — 2026-05-18 v3 redesign JS.
+ * My Circles tab — 2026-05-18 v3 redesign JS.
  *
  * Single-page vision: spotlight hero + horizontal My Circles strip +
- * one unified Discover grid (Featured/Trending/New merged with tag chips).
+ * one unified Discover grid with Phase 2 category filters.
  *
  * IDs read by this script:
  *   • cc-spotlight, cc-spotlight-section  (hero tile)
@@ -30,27 +30,164 @@
     return d.innerHTML;
   }
 
+  function escAttr(s) {
+    return escHtml(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function $(sel) { return document.querySelector(sel); }
 
   function initialFor(name) {
     return (name || 'C').trim().charAt(0).toUpperCase();
   }
 
-  // Activity copy from `recent_post_count` (already populated by the backend
-  // trending refresh job; safe to treat as 0 when missing).
-  function activityLabel(circle) {
-    var n = Number(circle && circle.recent_post_count) || 0;
-    if (n === 0) return { text: 'Quiet this week', state: 'quiet' };
-    if (n === 1) return { text: '1 post this week', state: 'low' };
-    if (n < 5)   return { text: n + ' posts this week', state: 'low' };
-    return { text: n + ' posts this week', state: 'active' };
+  function isHolderOnly(circle) {
+    return Boolean(circle && (
+      circle.token_gate_asset_id ||
+      circle.is_holder_only ||
+      circle.join_policy === 'holder_only'
+    ));
   }
 
-  function activityPill(circle) {
-    var a = activityLabel(circle);
-    return '<span class="cc-activity cc-activity--' + a.state + '">' +
-      '<span class="cc-activity__dot" aria-hidden="true"></span>' +
-      a.text + '</span>';
+  function isKycGated(circle) {
+    return Boolean(circle && (
+      circle.is_kyc_gated ||
+      circle.kyc_required ||
+      circle.join_policy === 'kyc_required'
+    ));
+  }
+
+  function isOfficial(circle) {
+    return Boolean(circle && (circle.is_official || circle.circle_type === 'official'));
+  }
+
+  function isAssetCircle(circle) {
+    return Boolean(circle && (
+      circle.token_gate_asset_id ||
+      circle.circle_type === 'asset' ||
+      circle.kind === 'asset' ||
+      circle.category === 'asset'
+    ));
+  }
+
+  function visibilityOf(circle) {
+    if (!circle) return 'public';
+    if (circle.visibility) return circle.visibility;
+    return circle.is_public === false ? 'private' : 'public';
+  }
+
+  function memberLabel(circle) {
+    var count = Number(circle && circle.member_count) || 0;
+    return count + ' member' + (count === 1 ? '' : 's');
+  }
+
+  function metaParts(circle) {
+    var parts = [
+      memberLabel(circle),
+      visibilityOf(circle) === 'public' ? 'Public' : 'Private'
+    ];
+    if (isHolderOnly(circle)) parts.push('Holder-only');
+    if (isKycGated(circle)) parts.push('KYC required');
+    if (isOfficial(circle)) parts.push('Official');
+    return parts;
+  }
+
+  function metaText(circle) {
+    return metaParts(circle).join(' · ');
+  }
+
+  function isPrivateCircle(circle) {
+    return visibilityOf(circle) === 'private' || circle.is_public === false;
+  }
+
+  function getFilterTags(item) {
+    var c = item && (item.circle || item);
+    var tags = new Set();
+    var sources = (item && item._sources) || (item && item._source ? [item._source] : []);
+    sources.forEach(function (source) {
+      if (source) tags.add(source);
+    });
+    if (c && c.is_featured) tags.add('featured');
+    if (c && isPrivateCircle(c)) tags.add('private');
+    if (c && visibilityOf(c) === 'public') tags.add('public');
+    if (isAssetCircle(c)) tags.add('asset');
+    if (isHolderOnly(c)) tags.add('holder-only');
+    if (isKycGated(c)) tags.add('kyc-gated');
+    if (isOfficial(c)) tags.add('official');
+    return Array.from(tags);
+  }
+
+  function hasFilterTag(item, tag) {
+    if (tag === 'all') return true;
+    var tags = item._filterTags || getFilterTags(item);
+    return tags.indexOf(tag) !== -1;
+  }
+
+  function circleUrl(circle) {
+    return '/community/circle/' + encodeURIComponent(circle.slug || '');
+  }
+
+  function canManageRole(role) {
+    return ['owner', 'admin', 'moderator', 'platform_admin'].indexOf(String(role || '').toLowerCase()) !== -1;
+  }
+
+  function accessChips(circle) {
+    var chips = '';
+    if (circle && isPrivateCircle(circle)) {
+      chips += '<span class="cc-tag cc-tag--private">Private</span>';
+    }
+    if (isHolderOnly(circle)) {
+      chips += '<span class="cc-tag cc-tag--holder">Holder-only</span>';
+    }
+    if (isKycGated(circle)) {
+      chips += '<span class="cc-tag cc-tag--kyc">KYC-gated</span>';
+    }
+    if (isOfficial(circle)) {
+      chips += '<span class="cc-tag cc-tag--official">Official</span>';
+    }
+    if (circle && circle.private_investor_club) {
+      chips += '<span class="cc-tag cc-tag--private">Investor Club</span>';
+    }
+    return chips;
+  }
+
+  function primaryAction(circle, role, extraClass) {
+    var url = circleUrl(circle);
+    var id = escHtml(circle.id);
+    var cls = extraClass || 'cc-card__cta';
+    if (_joinedIds.has(circle.id)) {
+      return '';
+    }
+    if (isHolderOnly(circle) || isKycGated(circle)) {
+      return '<button class="ds-btn ds-btn--secondary ds-btn--sm ' + cls + ' cc-card__cta--locked" type="button" disabled aria-disabled="true" title="Eligibility required">Locked</button>';
+    }
+    if (isPrivateCircle(circle)) {
+      return '<button class="ds-btn ds-btn--secondary ds-btn--sm ' + cls + '" type="button" data-cc-request="' + id + '">Request Access</button>';
+    }
+    return '<button class="ds-btn ds-btn--primary ds-btn--sm ' + cls + '" type="button" data-cc-join="' + id + '">Join</button>';
+  }
+
+  function actionMenu(circle, role, variant) {
+    var url = circleUrl(circle);
+    var id = escHtml(circle.id);
+    var compact = variant === 'pill';
+    var manage = canManageRole(role)
+      ? '<a class="cc-card-menu__item" href="' + url + '/settings">Manage</a>'
+      : '';
+    var leave = _joinedIds.has(circle.id) && String(role || '').toLowerCase() !== 'owner'
+      ? '<button type="button" class="cc-card-menu__item" data-cc-leave="' + id + '">Leave</button>'
+      : '';
+    return (
+      '<div class="' + (compact ? 'cc-pill-actions' : 'cc-card-actions') + '">' +
+        '<button type="button" class="cc-kebab" aria-label="Circle actions" aria-expanded="false" data-cc-menu-toggle>' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>' +
+        '</button>' +
+        '<div class="cc-card-menu" role="menu" hidden>' +
+          manage +
+          '<button type="button" class="cc-card-menu__item" data-cc-copy="' + url + '">Copy Link</button>' +
+          leave +
+        '</div>' +
+      '</div>'
+    );
   }
 
   // Member face-avatar stack — uses the `member_preview` slice returned
@@ -82,8 +219,8 @@
       html += '</span>';
       return html;
     }
-    // Fallback: 3-dot capacity hint
-    var filled = Math.max(1, Math.min(3, Math.ceil((circle.member_count || 0) / Math.max(1, circle.max_members || 50) * 3)));
+    // Fallback: compact member-presence hint when sample faces are unavailable.
+    var filled = Math.max(1, Math.min(3, circle.member_count || 1));
     var out = '<span class="cc-stack" aria-hidden="true">';
     for (var j = 0; j < 3; j++) {
       var on = j < filled;
@@ -121,12 +258,8 @@
     var slug = encodeURIComponent(c.slug || '');
     var name = escHtml(c.name || 'Untitled');
     var desc = escHtml((c.description || 'Join the conversation with active investors.').slice(0, 140));
-    var memberStr = (c.member_count || 0) + ' member' + ((c.member_count === 1) ? '' : 's');
-    var privacy = c.is_public ? 'Public' : 'Private';
-    var alreadyIn = _joinedIds.has(c.id);
-    var ctaHtml = alreadyIn
-      ? '<a class="ds-btn cc-spotlight__cta" href="/community/circle/' + slug + '">Open Circle</a>'
-      : '<button class="ds-btn cc-spotlight__cta" type="button" data-cc-join="' + escHtml(c.id) + '">Join Circle</button>';
+    var meta = escHtml(metaText(c));
+    var ctaHtml = primaryAction(c, null, 'cc-spotlight__cta');
     return (
       '<article class="cc-spotlight__card" data-circle-id="' + escHtml(c.id) + '" data-circle-slug="' + slug + '">' +
         '<span class="cc-spotlight__eyebrow">' +
@@ -135,55 +268,44 @@
         '<h2 class="cc-spotlight__name">' + name + '</h2>' +
         '<p class="cc-spotlight__desc">' + desc + '</p>' +
         '<div class="cc-spotlight__meta">' +
-          '<span>' + memberStr + '</span>' +
-          '<span class="cc-spotlight__dot">·</span>' +
-          '<span>' + privacy + '</span>' +
-          '<span class="cc-spotlight__dot">·</span>' +
-          '<span>' + activityLabel(c).text + '</span>' +
+          '<span>' + meta + '</span>' +
         '</div>' +
-        '<div class="cc-spotlight__actions">' + ctaHtml + '</div>' +
+        (ctaHtml ? '<div class="cc-spotlight__actions">' + ctaHtml + '</div>' : '') +
       '</article>'
     );
   }
 
-  // Discover grid card — uniform white tile with brand-gradient top bar
+  // Discover grid card — intentionally compact: card opens the Circle, while
+  // explicit buttons are reserved for join/request/locked states.
   function renderCard(item) {
     var c = item.circle || item;
     var source = item._source || null;
-    var role = _joinedIds.has(c.id) ? 'member' : null;
+    var role = item.role || (_joinedIds.has(c.id) ? 'member' : null);
     var name = escHtml(c.name || 'Untitled');
     var desc = escHtml((c.description || '').slice(0, 110));
-    var memberStr = (c.member_count || 0) + ' / ' + (c.max_members || 0) + ' members';
-    var privacy = c.is_public ? 'Public' : 'Private';
     var slug = encodeURIComponent(c.slug || '');
     var initial = escHtml(initialFor(c.name));
+    var meta = escHtml(metaText(c));
+    var url = circleUrl(c);
 
-    var actionBtn = role
-      ? '<a class="ds-btn ds-btn--secondary ds-btn--sm cc-card__cta" href="/community/circle/' + slug + '">Open</a>'
-      : '<button class="ds-btn ds-btn--primary ds-btn--sm cc-card__cta" type="button" data-cc-join="' + escHtml(c.id) + '">Join</button>';
+    var actionBtn = primaryAction(c, role, 'cc-card__cta');
+    var footer = actionBtn ? '<div class="cc-card__footer">' + actionBtn + '</div>' : '';
 
     return (
-      '<article class="cc-card" data-circle-id="' + escHtml(c.id) + '" data-circle-slug="' + slug + '" data-cc-source="' + escHtml(source || '') + '">' +
+      '<article class="cc-card cc-card--clickable" tabindex="0" role="link" aria-label="Open circle ' + escAttr(c.name || 'Untitled') + '" data-cc-open="' + escAttr(url) + '" data-circle-id="' + escHtml(c.id) + '" data-circle-slug="' + slug + '" data-cc-source="' + escHtml(source || '') + '" data-cc-filter-tags="' + escHtml(getFilterTags(item).join(' ')) + '">' +
         '<div class="cc-card__top">' +
           '<div class="cc-card__avatar" aria-hidden="true">' + initial + '</div>' +
           '<div class="cc-card__title-block">' +
             '<div class="cc-card__name-row">' +
               '<span class="cc-card__name">' + name + '</span>' +
-              sourceChip(source) +
             '</div>' +
             '<div class="cc-card__meta">' +
-              memberStack(c) +
-              '<span>' + memberStr + '</span>' +
-              '<span class="cc-card__sep">·</span>' +
-              '<span>' + privacy + '</span>' +
+              meta +
             '</div>' +
           '</div>' +
         '</div>' +
-        (desc ? '<p class="cc-card__desc">' + desc + '</p>' : '<div class="cc-card__desc cc-card__desc--placeholder"></div>') +
-        '<div class="cc-card__footer">' +
-          activityPill(c) +
-          actionBtn +
-        '</div>' +
+        (desc ? '<p class="cc-card__desc">' + desc + '</p>' : '') +
+        footer +
       '</article>'
     );
   }
@@ -197,13 +319,16 @@
     var initial = escHtml(initialFor(c.name));
     var memberStr = (c.member_count || 0) + ' members';
     return (
-      '<a class="cc-pill" href="/community/circle/' + slug + '" data-circle-id="' + escHtml(c.id) + '">' +
-        '<span class="cc-pill__avatar" aria-hidden="true">' + initial + '</span>' +
-        '<span class="cc-pill__body">' +
-          '<span class="cc-pill__name">' + name + '</span>' +
-          '<span class="cc-pill__meta">' + escHtml(role) + ' · ' + memberStr + '</span>' +
-        '</span>' +
-      '</a>'
+      '<div class="cc-pill-wrap" data-circle-id="' + escHtml(c.id) + '" data-circle-slug="' + slug + '">' +
+        '<a class="cc-pill" href="/community/circle/' + slug + '">' +
+          '<span class="cc-pill__avatar" aria-hidden="true">' + initial + '</span>' +
+          '<span class="cc-pill__body">' +
+            '<span class="cc-pill__name">' + name + '</span>' +
+            '<span class="cc-pill__meta">' + escHtml(role) + ' · ' + memberStr + '</span>' +
+          '</span>' +
+        '</a>' +
+        actionMenu(c, role, 'pill') +
+      '</div>'
     );
   }
 
@@ -268,7 +393,7 @@
     el.dataset.loaded = '1';
     var items = _discoverItems;
     if (_activeFilter !== 'all') {
-      items = items.filter(function (it) { return it._source === _activeFilter; });
+      items = items.filter(function (it) { return hasFilterTag(it, _activeFilter); });
     }
     if (items.length === 0) {
       el.innerHTML = '<div class="cc-empty">' +
@@ -282,19 +407,20 @@
   }
 
   function pickSpotlight() {
-    // Priority: Featured (not already joined) > Trending (not joined) > New (not joined)
+    // Priority: Featured (not already joined) > Trending (not joined) > Public > New.
     // Falls back to the same priority but allowing joined circles when nothing else fits.
-    var order = ['featured', 'trending', 'new'];
+    var order = ['featured', 'trending', 'public', 'new', 'private'];
     for (var i = 0; i < order.length; i++) {
       var src = order[i];
       var pick = _discoverItems.find(function (it) {
-        return it._source === src && !_joinedIds.has((it.circle || it).id);
+        var c = it.circle || it;
+        return hasFilterTag(it, src) && !_joinedIds.has(c.id) && !isHolderOnly(c) && !isKycGated(c);
       });
       if (pick) return pick.circle || pick;
     }
     for (var j = 0; j < order.length; j++) {
       var src2 = order[j];
-      var any = _discoverItems.find(function (it) { return it._source === src2; });
+      var any = _discoverItems.find(function (it) { return hasFilterTag(it, src2); });
       if (any) return any.circle || any;
     }
     return null;
@@ -322,23 +448,39 @@
     return arr.map(function (raw) {
       var item = raw && raw.circle ? raw : { circle: raw };
       item._source = source;
+      item._sources = [source];
+      item._filterTags = getFilterTags(item);
       return item;
     });
   }
 
-  // Dedupe by circle.id, preferring first-seen (featured before trending before new).
-  function mergeDiscover(featured, trending, fresh) {
+  // Dedupe by circle.id while merging all category tags. First source remains
+  // the visual badge priority; later sources feed the filter behavior.
+  function mergeDiscoverGroups(groups) {
     var seen = new Set();
     var out = [];
-    [featured, trending, fresh].forEach(function (group) {
+    groups.forEach(function (group) {
       group.forEach(function (it) {
         var id = (it.circle || it).id;
-        if (id && !seen.has(id)) {
+        if (!id) return;
+        if (!seen.has(id)) {
           seen.add(id);
           out.push(it);
+        } else {
+          var existing = out.find(function (candidate) {
+            return (candidate.circle || candidate).id === id;
+          });
+          if (existing) {
+            var sources = existing._sources || (existing._source ? [existing._source] : []);
+            (it._sources || [it._source]).forEach(function (source) {
+              if (source && sources.indexOf(source) === -1) sources.push(source);
+            });
+            existing._sources = sources;
+          }
         }
       });
     });
+    out.forEach(function (it) { it._filterTags = getFilterTags(it); });
     return out;
   }
 
@@ -347,11 +489,17 @@
       var res = await fetch('/api/community/circles/discover', { credentials: 'same-origin' });
       if (!res.ok) throw new Error('discover ' + res.status);
       var data = await res.json();
-      _discoverItems = mergeDiscover(
+      _discoverItems = mergeDiscoverGroups([
         tagItems(data.featured, 'featured'),
         tagItems(data.trending, 'trending'),
-        tagItems(data.new, 'new')
-      );
+        tagItems(data.new, 'new'),
+        tagItems(data.public, 'public'),
+        tagItems(data.private, 'private'),
+        tagItems(data.asset, 'asset'),
+        tagItems(data.holder_only, 'holder-only'),
+        tagItems(data.official, 'official'),
+        tagItems(data.kyc_gated, 'kyc-gated')
+      ]);
       renderSpotlightFromDiscover();
       renderDiscoverGrid();
     } catch (e) {
@@ -468,10 +616,37 @@
       var filter = btn.getAttribute('data-cc-filter');
       _activeFilter = filter;
       chipBar.querySelectorAll('.cc-chip').forEach(function (b) {
-        b.classList.toggle('cc-chip--active', b === btn);
+        var active = b === btn;
+        b.classList.toggle('cc-chip--active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
       renderDiscoverGrid();
     });
+  }
+
+  function closeActionMenus(except) {
+    document.querySelectorAll('.cc-card-menu').forEach(function (menu) {
+      if (menu === except) return;
+      menu.hidden = true;
+      var toggle = menu.parentElement && menu.parentElement.querySelector('[data-cc-menu-toggle]');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', 'readonly');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
   }
 
   // ─── Optimistic Join handler ────────────────────────────────────────
@@ -479,6 +654,70 @@
   // instant state change; reconcile in the background via the real API.
   // On failure: roll back the local state and surface a toast.
   document.addEventListener('click', async function (e) {
+    var menuToggle = e.target.closest('[data-cc-menu-toggle]');
+    if (menuToggle) {
+      var wrap = menuToggle.closest('.cc-card-actions, .cc-pill-actions');
+      var menu = wrap && wrap.querySelector('.cc-card-menu');
+      if (!menu) return;
+      var willOpen = menu.hidden;
+      closeActionMenus(menu);
+      menu.hidden = !willOpen;
+      menuToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      return;
+    }
+
+    var copyBtn = e.target.closest('[data-cc-copy]');
+    if (copyBtn) {
+      var href = copyBtn.getAttribute('data-cc-copy') || '';
+      var absolute = href.indexOf('http') === 0 ? href : window.location.origin + href;
+      try {
+        await copyText(absolute);
+        if (window.showToast) window.showToast('Circle link copied.', 'success');
+      } catch (err) {
+        if (window.showToast) window.showToast('Could not copy link.', 'error');
+      }
+      closeActionMenus();
+      return;
+    }
+
+    var leaveBtn = e.target.closest('[data-cc-leave]');
+    if (leaveBtn) {
+      var leaveId = leaveBtn.getAttribute('data-cc-leave');
+      if (!leaveId || leaveBtn.disabled) return;
+      if (!window.confirm('Leave this Circle?')) {
+        closeActionMenus();
+        return;
+      }
+      leaveBtn.disabled = true;
+      try {
+        var leaveRes = await fetch('/api/community/circles/leave', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ circle_id: leaveId })
+        });
+        if (!leaveRes.ok) {
+          var leaveMsg = 'Leave failed';
+          try { var leaveJson = await leaveRes.json(); leaveMsg = leaveJson.error || leaveJson.message || leaveMsg; } catch (_) {}
+          throw new Error(leaveMsg);
+        }
+        _joinedIds.delete(leaveId);
+        if (window.showToast) window.showToast('Left Circle.', 'success');
+        loadMyCircles();
+        loadDiscover();
+        if (_searchQuery) runSearch(_searchPage);
+      } catch (errLeave) {
+        leaveBtn.disabled = false;
+        if (window.showToast) window.showToast(errLeave.message || 'Could not leave Circle.', 'error');
+      }
+      closeActionMenus();
+      return;
+    }
+
+    if (!e.target.closest('.cc-card-actions, .cc-pill-actions')) {
+      closeActionMenus();
+    }
+
     var joinBtn = e.target.closest('[data-cc-join]');
     if (joinBtn) {
       var id = joinBtn.getAttribute('data-cc-join');
@@ -524,11 +763,52 @@
       }
       return;
     }
+    var requestBtn = e.target.closest('[data-cc-request]');
+    if (requestBtn) {
+      var requestId = requestBtn.getAttribute('data-cc-request');
+      if (!requestId || requestBtn.disabled) return;
+      requestBtn.disabled = true;
+      var oldText = requestBtn.textContent;
+      requestBtn.textContent = 'Requested';
+      try {
+        var requestRes = await fetch('/api/community/circles/' + encodeURIComponent(requestId) + '/request', {
+          method: 'POST',
+          credentials: 'same-origin'
+        });
+        if (!requestRes.ok) {
+          var requestMsg = 'Request failed';
+          try { var requestJson = await requestRes.json(); requestMsg = requestJson.error || requestJson.message || requestMsg; } catch (_) {}
+          throw new Error(requestMsg);
+        }
+        if (window.showToast) window.showToast('Access requested.', 'success');
+      } catch (errRequest) {
+        requestBtn.disabled = false;
+        requestBtn.textContent = oldText || 'Request Access';
+        if (window.showToast) window.showToast(errRequest.message || 'Could not request access.', 'error');
+      }
+      return;
+    }
+    var openCard = e.target.closest('[data-cc-open]');
+    if (openCard && !e.target.closest('a, button, input, textarea, select, [role="button"], [data-cc-menu-toggle]')) {
+      var openUrl = openCard.getAttribute('data-cc-open');
+      if (openUrl) window.location.href = openUrl;
+      return;
+    }
     var pageBtn = e.target.closest('[data-cc-page]');
     if (pageBtn) {
       runSearch(parseInt(pageBtn.getAttribute('data-cc-page'), 10));
       return;
     }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var openCard = e.target.closest && e.target.closest('[data-cc-open]');
+    if (!openCard || e.target.closest('a, button, input, textarea, select, [role="button"], [data-cc-menu-toggle]')) return;
+    var openUrl = openCard.getAttribute('data-cc-open');
+    if (!openUrl) return;
+    e.preventDefault();
+    window.location.href = openUrl;
   });
 
   // ─── Boot ────────────────────────────────────────────────────────────

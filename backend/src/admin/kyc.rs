@@ -1,20 +1,34 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     response::IntoResponse,
 };
+use std::collections::HashMap;
 
 //
 //  Admin KYC/AML API
 //
 
 /// GET /api/admin/kyc  List all KYC records with user info.
+///
+/// Bounded to 500 rows per page (`?page=N`, zero-indexed) to prevent OOM at
+/// scale. See CDDRP §3.5 (B6) for the broader unbounded-query remediation.
 pub async fn api_admin_kyc_records(
     admin: AdminUser,
     State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<axum::response::Response, ApiError> {
     admin.require_permission(&state.db, "kyc.view").await?;
+
+    // Pagination cap (CDDRP B6 fix).
+    const KYC_PAGE_SIZE: i64 = 500;
+    let page = params
+        .get("page")
+        .and_then(|p| p.parse::<i64>().ok())
+        .unwrap_or(0)
+        .max(0);
+    let offset = page.saturating_mul(KYC_PAGE_SIZE);
 
     let rows = sqlx::query_as::<
         _,
@@ -54,8 +68,11 @@ pub async fn api_admin_kyc_records(
                   WHEN 'in_review' THEN 1
                   ELSE 2
               END,
-              k.created_at DESC"#,
+              k.created_at DESC
+           LIMIT $1 OFFSET $2"#,
     )
+    .bind(KYC_PAGE_SIZE)
+    .bind(offset)
     .fetch_all(&state.db)
     .await
     .map_err(ApiError::Database)?;

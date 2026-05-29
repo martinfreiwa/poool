@@ -1,6 +1,6 @@
 {% with title="Affiliate Team Tier – POOOL", no_index=True,
 extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
-'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team', 'mobile-developer-affiliate-team'],
 extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-tier'] %}{% include
 "components/head.html" %}{% endwith %}
 
@@ -63,13 +63,24 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
         </section>
 
         <!-- ── CARD 2: Full ladder ─────────────────────────────────── -->
-        <section class="ds-card dat-content-card dat-settings-card" aria-labelledby="dat-ladder-title">
-          <header class="dat-settings-card__header">
-            <div>
-              <h3 class="dat-section__title" id="dat-ladder-title">Tier ladder</h3>
-              <p class="dat-section__hint">Each tier sets your commission rate on team-business links. Team-business volume aggregates conversions from every member's business link.</p>
+        <section class="ds-card dat-content-card dat-content-card--with-header dat-table-card" aria-labelledby="dat-ladder-title">
+          <div class="dat-card-header">
+            <div class="dat-card-header__title-group">
+              <span class="dat-card-header__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 21h8"/>
+                  <path d="M12 17v4"/>
+                  <path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/>
+                  <path d="M5 5H3v2a4 4 0 0 0 4 4"/>
+                  <path d="M19 5h2v2a4 4 0 0 1-4 4"/>
+                </svg>
+              </span>
+              <div class="dat-card-header__title-text">
+                <h3 class="dat-section__title" id="dat-ladder-title">Tier ladder</h3>
+                <p class="dat-section__hint">Each tier sets your commission rate on team-business links. Team-business volume aggregates conversions from every member's business link.</p>
+              </div>
             </div>
-          </header>
+          </div>
 
           <div class="dat-table-wrap">
             <table class="dat-table dat-table--hoverable" aria-describedby="dat-ladder-title">
@@ -99,14 +110,21 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
           </header>
 
           <div class="dat-compare-grid">
-            <article class="dat-compare-card dat-compare-card--personal">
-              <span class="dat-compare-card__label">Your personal tier</span>
+            <article class="dat-compare-panel dat-compare-panel--personal">
               <strong class="dat-compare-card__tier" id="dat-cmp-personal-tier">—</strong>
               <span class="dat-compare-card__rate" id="dat-cmp-personal-rate">—</span>
+              <dl class="dat-compare-facts" aria-label="Personal tier details">
+                <div>
+                  <dt>Source</dt>
+                  <dd>Personal affiliate link</dd>
+                </div>
+              </dl>
               <p class="dat-compare-card__msg">Applied when you convert someone via your <em>own personal</em> affiliate link.</p>
             </article>
-            <article class="dat-compare-card dat-compare-card--team">
-              <span class="dat-compare-card__label">Your team tier</span>
+            <div class="dat-compare-vs" aria-hidden="true">
+              <span>VS</span>
+            </div>
+            <article class="dat-compare-panel dat-compare-panel--team">
               <strong class="dat-compare-card__tier" id="dat-cmp-team-tier">—</strong>
               <span class="dat-compare-card__rate" id="dat-cmp-team-rate">—</span>
               <p class="dat-compare-card__msg">Applied when a team member converts someone via their <em>team-business</em> link. Goes to you as the developer.</p>

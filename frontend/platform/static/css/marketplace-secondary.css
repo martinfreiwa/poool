@@ -202,25 +202,28 @@ body.mp-secondary-body {
 
 .mp-sec__sort-select {
     height: 44px;
-    padding: 0 36px 0 14px;
-    background: var(--mp-input-bg);
-    border: 1px solid var(--mp-input-border);
-    border-radius: 8px;
-    color: var(--mp-text-primary);
+    padding: var(--input-padding, 10px 14px);
+    padding-right: 36px;
+    background-color: var(--input-bg, var(--mp-input-bg));
+    border: 1px solid var(--input-border-color, var(--mp-input-border));
+    border-radius: var(--input-border-radius, 8px);
+    color: var(--input-text-color, var(--mp-text-primary));
     font-family: var(--mp-font);
-    font-size: 16px;
+    font-size: var(--input-font-size, 14px);
     appearance: none;
     -webkit-appearance: none;
     cursor: pointer;
     outline: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23717680' stroke-width='1.67' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-image: var(--select-chevron-icon);
     background-repeat: no-repeat;
-    background-position: right 14px center;
-    transition: border-color 0.2s;
+    background-position: var(--select-chevron-position);
+    background-size: var(--select-chevron-size);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mp-sec__sort-select:focus {
-    border-color: var(--mp-blue);
+    border-color: var(--input-border-focus, var(--mp-blue));
+    box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
 }
 
 .mp-sec__sort-select option {

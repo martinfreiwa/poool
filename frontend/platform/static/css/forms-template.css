@@ -238,12 +238,12 @@
 }
 
 .ds-checkbox-label:hover .ds-checkbox-input:not(:disabled) ~ .ds-checkbox-custom {
-  border-color: var(--primary-color, #0000FF);
+  border-color: var(--checkbox-selected-border, var(--primary-color, #0000FF));
 }
 
 .ds-checkbox-input:checked ~ .ds-checkbox-custom {
-  background: var(--primary-color, #0000FF);
-  border-color: var(--primary-color, #0000FF);
+  background: var(--checkbox-selected-bg, var(--primary-color, #0000FF));
+  border-color: var(--checkbox-selected-border, var(--primary-color, #0000FF));
 }
 
 .ds-checkbox-input:focus-visible ~ .ds-checkbox-custom {
@@ -254,8 +254,8 @@
   content: '';
   width: 11px;
   height: 6px;
-  border-left: 2px solid #98FB96;
-  border-bottom: 2px solid #98FB96;
+  border-left: 2px solid var(--checkbox-selected-check-color, #03FF88);
+  border-bottom: 2px solid var(--checkbox-selected-check-color, #03FF88);
   transform: rotate(-45deg) scale(0);
   margin-bottom: 3px;
   transition: transform 0.15s ease;
@@ -289,7 +289,7 @@
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  border: 1px solid var(--input-border-color, #D0D5DD);
+  border: 2px solid var(--input-border-color, #D0D5DD);
   border-radius: 50%;
   background: #FFFFFF;
   display: flex;
@@ -299,14 +299,27 @@
   margin-top: 2px;
 }
 
+.ds-radio-custom::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--radio-selected-dot-color, #03FF88);
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+
 .ds-radio-label:hover .ds-radio-input:not(:disabled) ~ .ds-radio-custom {
-  border-color: var(--primary-color, #0000FF);
+  border-color: var(--radio-selected-border, var(--primary-color, #0000FF));
 }
 
 .ds-radio-input:checked ~ .ds-radio-custom {
-  border-color: var(--primary-color, #0000FF);
-  border-width: 6px;
-  background: #03FF88;
+  border-color: var(--radio-selected-border, var(--primary-color, #0000FF));
+  background: var(--radio-selected-bg, var(--primary-color, #0000FF));
+}
+
+.ds-radio-input:checked ~ .ds-radio-custom::after {
+  transform: scale(1);
 }
 
 .ds-radio-input:focus-visible ~ .ds-radio-custom {

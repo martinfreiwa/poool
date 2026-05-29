@@ -1,6 +1,6 @@
 {% with title="Developer Application – POOOL", no_index=True,
-  extra_css=['leaderboard', 'developer-leaderboard-navbar', 'developer-onboarding'],
-  extra_js=['profile-dropdown', 'mobile-navigation'] %}
+  extra_css=['leaderboard', 'developer-leaderboard-navbar', 'poool-dropdown', 'developer-onboarding'],
+  extra_js=['profile-dropdown', 'mobile-navigation', 'poool-dropdown'] %}
 {% include "components/head.html" %}{% endwith %}
 
 <body id="developer-onboarding-body" class="fouc-guard">
@@ -39,10 +39,20 @@
       <!-- ── Step 1: Personal Details ── -->
       <div class="onb-step-content onb-step-content--active" id="content-step-1">
         <div class="ds-card onb-card">
-          <div class="ds-card__header">
-            <div class="onb-eyebrow">Step 1 of 3</div>
-            <h2 class="ds-card__title">Personal Details</h2>
-            <p class="ds-card__subtitle">We need a few details to verify your identity and get in touch with you.</p>
+          <div class="ds-card__header onb-card__header">
+            <span class="onb-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <div class="onb-card__title-wrap">
+              <div class="onb-eyebrow">Step 1 of 3</div>
+              <h2 class="ds-card__title">Personal Details</h2>
+              <p class="ds-card__subtitle">We need a few details to verify your identity and get in touch with you.</p>
+            </div>
           </div>
           <div class="ds-card__body">
 
@@ -63,22 +73,15 @@
               <span class="ds-form-hint">Pulled from your account — contact support to change.</span>
             </div>
 
-            <div class="onb-row">
-              <div class="ds-form-group">
-                <label class="ds-form-label ds-form-label--required" for="ob-phone">Phone Number</label>
-                <input class="ds-input" type="tel" id="ob-phone" placeholder="+62 812 000 0000" autocomplete="tel">
-              </div>
-              <div class="ds-form-group">
-                <label class="ds-form-label" for="ob-whatsapp">WhatsApp Number</label>
-                <input class="ds-input" type="tel" id="ob-whatsapp" placeholder="Same as phone">
-                <span class="ds-form-hint">Optional — preferred contact channel.</span>
-              </div>
+            <div class="ds-form-group">
+              <label class="ds-form-label ds-form-label--required" for="ob-phone">Phone Number</label>
+              <input class="ds-input" type="tel" id="ob-phone" placeholder="+62 812 000 0000" autocomplete="tel">
             </div>
 
             <div class="onb-row">
               <div class="ds-form-group">
                 <label class="ds-form-label ds-form-label--required" for="ob-nationality">Nationality</label>
-                <select class="ds-select" id="ob-nationality" autocomplete="country">
+                <select class="ds-select onb-select" id="ob-nationality" autocomplete="country">
                   <option value="">Select…</option>
                   <option value="DE">Germany</option>
                   <option value="ID">Indonesia</option>
@@ -92,7 +95,7 @@
               </div>
               <div class="ds-form-group">
                 <label class="ds-form-label ds-form-label--required" for="ob-country">Country of Residence</label>
-                <select class="ds-select" id="ob-country" autocomplete="country">
+                <select class="ds-select onb-select" id="ob-country" autocomplete="country">
                   <option value="">Select…</option>
                   <option value="ID">Indonesia (Bali)</option>
                   <option value="DE">Germany</option>
@@ -105,14 +108,14 @@
             </div>
 
             <div class="ds-form-group">
-              <label class="ds-form-label" for="ob-website">LinkedIn or Website</label>
-              <input class="ds-input" type="url" id="ob-website" placeholder="https://linkedin.com/in/yourname">
+              <label class="ds-form-label" for="ob-website">Website or Social Media Link</label>
+              <input class="ds-input" type="url" id="ob-website" placeholder="https://yourwebsite.com">
               <span class="ds-form-hint">Optional — helps us learn more about you.</span>
             </div>
 
           </div>
           <div class="ds-card__footer onb-footer">
-            <a href="/marketplace" class="ds-btn ds-btn--ghost">Cancel</a>
+            <a href="/marketplace" class="ds-btn ds-btn--secondary onb-footer__secondary">Cancel</a>
             <button class="ds-btn ds-btn--primary" onclick="goToStep(2)">Continue →</button>
           </div>
         </div>
@@ -121,10 +124,21 @@
       <!-- ── Step 2: Portfolio ── -->
       <div class="onb-step-content" id="content-step-2">
         <div class="ds-card onb-card">
-          <div class="ds-card__header">
-            <div class="onb-eyebrow">Step 2 of 3</div>
-            <h2 class="ds-card__title">Your Property Portfolio</h2>
-            <p class="ds-card__subtitle">Help us understand the size and nature of your portfolio so we can set you up for success on POOOL.</p>
+          <div class="ds-card__header onb-card__header">
+            <span class="onb-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 21h18" />
+                <path d="M5 21V8l7-5 7 5v13" />
+                <path d="M9 21v-6h6v6" />
+                <path d="M9 10h.01" />
+                <path d="M15 10h.01" />
+              </svg>
+            </span>
+            <div class="onb-card__title-wrap">
+              <div class="onb-eyebrow">Step 2 of 3</div>
+              <h2 class="ds-card__title">Your Property Portfolio</h2>
+              <p class="ds-card__subtitle">Help us understand the size and nature of your portfolio so we can set you up for success on POOOL.</p>
+            </div>
           </div>
           <div class="ds-card__body">
 
@@ -196,7 +210,7 @@
             <div class="onb-row">
               <div class="ds-form-group">
                 <label class="ds-form-label ds-form-label--required" for="ob-asset-value">Estimated total asset value</label>
-                <select class="ds-select" id="ob-asset-value">
+                <select class="ds-select onb-select" id="ob-asset-value">
                   <option value="">Select range…</option>
                   <option value="<500k">Under $500,000</option>
                   <option value="500k-1m">$500k – $1M</option>
@@ -208,7 +222,7 @@
               </div>
               <div class="ds-form-group">
                 <label class="ds-form-label ds-form-label--required" for="ob-monthly-income">Estimated monthly rental income</label>
-                <select class="ds-select" id="ob-monthly-income">
+                <select class="ds-select onb-select" id="ob-monthly-income">
                   <option value="">Select range…</option>
                   <option value="<5k">Under $5,000</option>
                   <option value="5k-15k">$5,000 – $15,000</option>
@@ -222,13 +236,16 @@
 
             <div class="ds-form-group">
               <label class="ds-form-label" for="ob-bio">Tell us about your experience as a property developer</label>
-              <textarea class="ds-textarea" id="ob-bio" rows="4" placeholder="e.g. I've been developing villas in Canggu since 2018, with a focus on eco-friendly builds and long-term lease structures…"></textarea>
-              <span class="ds-form-hint">Optional — helps us understand your background.</span>
+              <textarea class="ds-textarea" id="ob-bio" rows="4" maxlength="4000" aria-describedby="ob-bio-help ob-bio-counter" placeholder="e.g. I've been developing villas in Canggu since 2018, with a focus on eco-friendly builds and long-term lease structures…"></textarea>
+              <div class="onb-field-meta">
+                <span class="ds-form-hint" id="ob-bio-help">Optional — helps us understand your background.</span>
+                <span class="onb-char-counter" id="ob-bio-counter" aria-live="polite">4,000 characters remaining</span>
+              </div>
             </div>
 
           </div>
           <div class="ds-card__footer onb-footer">
-            <button class="ds-btn ds-btn--ghost" onclick="goToStep(1)">← Back</button>
+            <button class="ds-btn ds-btn--secondary onb-footer__secondary" onclick="goToStep(1)">← Back</button>
             <button class="ds-btn ds-btn--primary" onclick="goToStep(3)">Review Application →</button>
           </div>
         </div>
@@ -237,21 +254,21 @@
       <!-- ── Step 3: Review & Submit ── -->
       <div class="onb-step-content" id="content-step-3">
         <div class="ds-card onb-card">
-          <div class="ds-card__header">
-            <div class="onb-eyebrow">Step 3 of 3</div>
-            <h2 class="ds-card__title">Review Your Application</h2>
-            <p class="ds-card__subtitle">Check everything looks right. Our team will review your details — but you get immediate access to the developer dashboard.</p>
+          <div class="ds-card__header onb-card__header">
+            <span class="onb-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="m9 15 2 2 4-5" />
+              </svg>
+            </span>
+            <div class="onb-card__title-wrap">
+              <div class="onb-eyebrow">Step 3 of 3</div>
+              <h2 class="ds-card__title">Review Your Application</h2>
+              <p class="ds-card__subtitle">Check everything looks right. Our team reviews each application after KYC verification — we'll email you when you're approved.</p>
+            </div>
           </div>
           <div class="ds-card__body">
-
-            <div class="onb-notice">
-              <div class="onb-notice__icon">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M9 8v4M9 5.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              </div>
-              <div class="onb-notice__text">
-                <strong>Immediate access, manual review.</strong> You'll be taken to your developer dashboard right away. Our team reviews applications within 2 business days. You'll hear from us at <strong id="review-email"></strong>.
-              </div>
-            </div>
 
             <div class="onb-review-section">
               <div class="onb-review-section__title">Personal Details</div>
@@ -273,16 +290,16 @@
               <div class="onb-review-row"><span class="onb-review-key">Monthly income</span><span class="onb-review-val" id="rv-income">—</span></div>
             </div>
 
-            <p style="font-size:13px;color:var(--muted-text,#667085);line-height:1.6;margin-top:8px;">
+            <p class="onb-review-legal">
               By submitting you confirm this information is accurate and agree to POOOL's
-              <a href="#" style="color:var(--btn-primary-bg,#0000FF);">Developer Terms of Service</a>.
+              <a href="/terms" target="_blank" rel="noopener">Developer Terms of Service</a>.
             </p>
 
           </div>
           <div class="ds-card__footer onb-footer">
-            <button class="ds-btn ds-btn--ghost" onclick="goToStep(2)">← Back</button>
+            <button class="ds-btn ds-btn--secondary onb-footer__secondary" onclick="goToStep(2)">← Back</button>
             <button class="ds-btn ds-btn--primary ds-btn--lg" id="btn-submit" onclick="submitApplication()">
-              Submit &amp; Access Dashboard
+              Submit Application
             </button>
           </div>
         </div>
@@ -312,14 +329,69 @@
     '<5k':'Under $5,000','5k-15k':'$5,000 – $15,000','15k-50k':'$15,000 – $50,000',
     '50k-100k':'$50,000 – $100,000','100k+':'$100,000+'
   };
+  var BIO_MAX_LENGTH = 4000;
+
+  function initOnboardingDropdowns() {
+    if (!window.PooolDropdown) return;
+
+    document.querySelectorAll('select.onb-select').forEach(function(selectEl) {
+      if (selectEl.closest('[data-dropdown]')) return;
+
+      var placeholder = selectEl.options[0]
+        ? selectEl.options[0].textContent
+        : 'Select...';
+      var dropdown = window.PooolDropdown.fromSelect(selectEl, {
+        placeholder: placeholder,
+        noLabel: true,
+        className: 'onb-poool-dropdown'
+      });
+
+      if (!selectEl.value && dropdown && typeof dropdown.reset === 'function') {
+        dropdown.reset();
+      }
+
+      if (dropdown && dropdown.panel) {
+        dropdown.optionEls.forEach(function(optionEl) {
+          if (optionEl.getAttribute('data-value') === '') {
+            optionEl.style.display = 'none';
+            optionEl.setAttribute('aria-hidden', 'true');
+          }
+        });
+      }
+    });
+  }
+
+  initOnboardingDropdowns();
+
+  function initBioCharacterCounter() {
+    var bio = document.getElementById('ob-bio');
+    var counter = document.getElementById('ob-bio-counter');
+    if (!bio || !counter) return;
+
+    function formatCount(value) {
+      return value.toLocaleString('en-US');
+    }
+
+    function updateCounter() {
+      var remaining = Math.max(BIO_MAX_LENGTH - bio.value.length, 0);
+      counter.textContent = formatCount(remaining) + ' characters remaining';
+      counter.classList.toggle('onb-char-counter--limit', remaining === 0);
+    }
+
+    if (!bio.getAttribute('maxlength')) {
+      bio.setAttribute('maxlength', String(BIO_MAX_LENGTH));
+    }
+    bio.addEventListener('input', updateCounter);
+    updateCounter();
+  }
+
+  initBioCharacterCounter();
 
   // Pre-fill email from API
   fetch('/api/me').then(function(r){ return r.json(); }).then(function(u) {
     if (u && u.email) {
       var el = document.getElementById('ob-email');
       if (el) el.value = u.email;
-      var re = document.getElementById('review-email');
-      if (re) re.textContent = u.email;
     }
     if (u && u.first_name) {
       var fn = document.getElementById('ob-first-name');
@@ -381,9 +453,6 @@
       setText('rv-value', VALUE_LABELS[document.getElementById('ob-asset-value').value] || '—');
       setText('rv-income', INCOME_LABELS[document.getElementById('ob-monthly-income').value] || '—');
 
-      var email = document.getElementById('ob-email').value;
-      var re = document.getElementById('review-email');
-      if (re && email) re.textContent = email;
     }
 
     document.documentElement.scrollTop = 0;
@@ -423,7 +492,6 @@
         first_name: document.getElementById('ob-first-name').value,
         last_name: document.getElementById('ob-last-name').value,
         phone: document.getElementById('ob-phone').value,
-        whatsapp: document.getElementById('ob-whatsapp').value,
         nationality: document.getElementById('ob-nationality').value,
         country: document.getElementById('ob-country').value,
         website: document.getElementById('ob-website').value,
@@ -436,16 +504,20 @@
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok || data.success) {
-        // Mark review banner to show on developer dashboard
+        // Application is now pending admin review (post-2026-05-19 audit fix).
+        // The dashboard page allows pending applicants to see their review state
+        // without granting developer-only API write access.
         localStorage.setItem('dev_application_review', '1');
+        localStorage.setItem('dev_application_message',
+          data.message || 'Application received. We will review and email you within 2 business days.');
         window.location.href = '/developer/dashboard';
       } else {
-        if (btn) { btn.disabled = false; btn.textContent = 'Submit & Access Dashboard'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Submit Application'; }
         alert(data.error || 'Something went wrong. Please try again.');
       }
     })
     .catch(function() {
-      if (btn) { btn.disabled = false; btn.textContent = 'Submit & Access Dashboard'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit Application'; }
       alert('Network error. Please try again.');
     });
   };

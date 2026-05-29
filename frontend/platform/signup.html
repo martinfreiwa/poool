@@ -24,7 +24,7 @@
             </div>
             <div id="text-and-supporting-text">
               <h1 id="text">Create an account</h1>
-              <p id="supporting-text">Start your investment journey</p>
+              <p id="supporting-text">Create your account in a few minutes. You can finish identity checks after your first sign-in.</p>
             </div>
           </div>
 
@@ -51,7 +51,7 @@
           <!-- Divider -->
           <div id="content-divider">
             <div id="divider-left"></div>
-            <span id="or-text">OR</span>
+            <span id="or-text">or sign up with email</span>
             <div id="divider-right"></div>
           </div>
           {% endif %}
@@ -89,7 +89,7 @@
             </div>
 
             <button type="submit" id="login-button" aria-describedby="auth-error">
-              <span id="button-text">Get started</span>
+              <span id="button-text">Create account</span>
             </button>
           </form>
 
@@ -155,27 +155,7 @@
         </div>
       </div>
       {% else %}
-      <div id="testimonial-container">
-        <img id="testimonial-image" src="/static/images/auth/indonesian-login-portrait.webp" alt="POOOL investor" width="1536" height="1024" fetchpriority="high">
-        <div id="quote-panel">
-          <div id="attribution-card">
-            <h2 id="testimonial-quote">"POOOL made my first real estate investment feel clear, local, and within reach."</h2>
-            <div id="name-and-stars">
-              <div id="text-and-supporting">
-                <span id="author-name">POOOL Investor</span>
-                <span id="author-company">Indonesia</span>
-              </div>
-              <div id="stars-container">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {% include "components/auth-customer-carousel.html" %}
       {% endif %}
     </section>
   </div>
@@ -202,7 +182,7 @@
       if (btn) {
         btn.disabled = false;
         btn.removeAttribute('aria-busy');
-        btn.querySelector('#button-text').textContent = 'Get started';
+        btn.querySelector('#button-text').textContent = 'Create account';
       }
 
       if (evt.detail && evt.detail.xhr && evt.detail.xhr.status >= 400) {

@@ -1,10 +1,11 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     Json,
 };
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::extractors::AdminUser;
@@ -59,11 +60,25 @@ async fn require_withdraw_permission(
 }
 
 /// GET /api/admin/withdrawals
+///
+/// Bounded to 500 rows per page (`?page=N`, zero-indexed) to prevent OOM at
+/// scale. See CDDRP §3.5 (B6) for the broader unbounded-query remediation.
 pub async fn api_admin_withdrawals(
     admin: AdminUser,
     State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<Vec<WithdrawalRequestView>>, AppError> {
     require_withdraw_permission(&admin, &state.db, "withdrawals.read").await?;
+
+    // Pagination cap (CDDRP B6 fix).
+    const WITHDRAWALS_PAGE_SIZE: i64 = 500;
+    let page = params
+        .get("page")
+        .and_then(|p| p.parse::<i64>().ok())
+        .unwrap_or(0)
+        .max(0);
+    let offset = page.saturating_mul(WITHDRAWALS_PAGE_SIZE);
+
     let rows = sqlx::query(
         r#"
         SELECT wr.id, wr.user_id, u.email as user_email, wr.amount_cents, wr.currency, wr.status,
@@ -71,8 +86,11 @@ pub async fn api_admin_withdrawals(
         FROM withdrawal_requests wr
         JOIN users u ON wr.user_id = u.id
         ORDER BY wr.created_at DESC
+        LIMIT $1 OFFSET $2
         "#,
     )
+    .bind(WITHDRAWALS_PAGE_SIZE)
+    .bind(offset)
     .fetch_all(&state.db)
     .await?;
 

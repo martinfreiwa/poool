@@ -54,7 +54,7 @@ pub async fn serve_protected(
                 error!("Template rendering error for {}: {}", file, e);
                 (
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
+                    Html("<h1>Internal Server Error</h1>".to_string()),
                 )
                     .into_response()
             }
@@ -120,7 +120,7 @@ pub async fn serve_protected_with_context<T: serde::Serialize>(
                 error!("Template rendering error for {}: {}", file, chain);
                 (
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Internal Server Error: {}</h1>", chain)),
+                    Html("<h1>Internal Server Error</h1>".to_string()),
                 )
                     .into_response()
             }
@@ -178,7 +178,7 @@ pub async fn serve_public_with_context<T: serde::Serialize>(
                 error!("Template rendering error for public {}: {}", file, e);
                 (
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
+                    Html("<h1>Internal Server Error</h1>".to_string()),
                 )
                     .into_response()
             }
@@ -191,47 +191,5 @@ pub async fn serve_public_with_context<T: serde::Serialize>(
             )
                 .into_response()
         }
-    }
-}
-
-/// Helper: serve an admin-protected HTML page.
-///
-/// Checks if the user is authenticated AND has an 'admin' or 'super_admin' role.
-/// If not an admin, redirects to the marketplace (if authenticated) or login.
-#[allow(dead_code)]
-pub async fn serve_admin_protected(
-    jar: CookieJar,
-    state: &AppState,
-    file: &str,
-) -> axum::response::Response {
-    // Check authentication
-    if !middleware::is_authenticated(&jar, &state.db).await {
-        return Redirect::to("/auth/login").into_response();
-    }
-
-    // Check admin role
-    if !middleware::is_admin(&jar, &state.db).await {
-        tracing::warn!("Non-admin user attempted to access admin page: {}", file);
-        return Redirect::to("/marketplace").into_response();
-    }
-
-    // Render using Minijinja
-    match state.templates.get_template(file) {
-        Ok(template) => match template.render(context! {}) {
-            Ok(content) => Html(content).into_response(),
-            Err(e) => {
-                error!("Template rendering error for admin {}: {}", file, e);
-                (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
-                )
-                    .into_response()
-            }
-        },
-        Err(_) => (
-            axum::http::StatusCode::NOT_FOUND,
-            Html("<h1>Page not found</h1>".to_string()),
-        )
-            .into_response(),
     }
 }

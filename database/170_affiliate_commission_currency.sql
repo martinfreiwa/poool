@@ -167,7 +167,6 @@ COMMENT ON COLUMN affiliate_daily_rollups.currency IS
 
 COMMIT;
 
-\echo '── Currency column populated ──'
 SELECT 'commissions' AS tbl, currency, COUNT(*) FROM affiliate_commissions GROUP BY currency
 UNION ALL
 SELECT 'live_counters', currency, COUNT(*) FROM affiliate_live_counters GROUP BY currency

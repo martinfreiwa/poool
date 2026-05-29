@@ -872,7 +872,23 @@ pub async fn get_user_trades_history(
     for r in raw {
         let is_buyer = r.buyer_user_id == user_id;
         let side = if is_buyer { "buy" } else { "sell" };
-        let total = r.price_cents.saturating_mul(r.quantity as i64);
+        // Use checked_mul — saturating_mul would silently clamp to i64::MAX on
+        // overflow, and the subsequent fee add/sub would then wrap and corrupt
+        // the user's tax-history net. Mirrors the approach at order-creation
+        // (:287). If a single trade row overflows, skip it rather than expose
+        // bogus numbers — better a missing row than a wrong tax figure.
+        let total = match r.price_cents.checked_mul(r.quantity as i64) {
+            Some(t) => t,
+            None => {
+                tracing::warn!(
+                    trade_id = %r.id,
+                    price_cents = r.price_cents,
+                    quantity = r.quantity,
+                    "trade total overflowed i64; skipping row in /my-trades"
+                );
+                continue;
+            }
+        };
 
         // Show the fee actually charged to THIS user (per-side after maker/taker
         // split). Backfilled rows pre-migration-095 carry the legacy `fee_cents`
@@ -886,7 +902,24 @@ pub async fn get_user_trades_history(
         let fee = if user_fee > 0 { user_fee } else { r.fee_cents };
 
         // Buyer cash out = price × qty + buyer fee. Seller cash in = price × qty - seller fee.
-        let net = if is_buyer { total + fee } else { total - fee };
+        let net_opt = if is_buyer {
+            total.checked_add(fee)
+        } else {
+            total.checked_sub(fee)
+        };
+        let net = match net_opt {
+            Some(n) => n,
+            None => {
+                tracing::warn!(
+                    trade_id = %r.id,
+                    total = total,
+                    fee = fee,
+                    is_buyer = is_buyer,
+                    "trade net overflowed; falling back to total in /my-trades"
+                );
+                total
+            }
+        };
 
         // P&L requires the buyer's cost basis for the same asset, which we
         // don't compute in this query. Return None instead of a fake value.

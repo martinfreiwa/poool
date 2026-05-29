@@ -53,7 +53,7 @@ body, html {
 
 /* Left Section - Form Area */
 #left-section {
-  flex: 1;
+  flex: 0 0 44%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -72,17 +72,31 @@ body, html {
     /* Account for fixed back-link + notch */
     padding-top: max(56px, calc(env(safe-area-inset-top) + 56px));
   }
+
+  #header {
+    align-items: center;
+    gap: 18px;
+    text-align: center;
+  }
+
+  #text {
+    font-size: 32px;
+  }
 }
 
 #container {
   width: 100%;
-  max-width: 360px;
+  max-width: 420px;
 }
 
 #content {
   display: flex;
   flex-direction: column;
   gap: 24px; /* Balanced gap between main blocks */
+}
+
+#auth-error:empty {
+  display: none;
 }
 
 .auth-error-message {
@@ -131,9 +145,9 @@ body, html {
 #header {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
+  align-items: flex-start;
+  gap: 34px;
+  text-align: left;
 }
 
 #logo-pool img {
@@ -143,15 +157,17 @@ body, html {
 
 #text {
   font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-size: 36px;
+  font-size: 38px;
   font-weight: 700;
   color: var(--page-title-color);
-  letter-spacing: -0.02em;
+  line-height: 1.08;
+  letter-spacing: 0;
 }
 
 #supporting-text {
   font-size: 16px;
-  color: var(--text-secondary);
+  color: #667085;
+  line-height: 1.45;
 }
 
 /* Social Buttons */
@@ -159,7 +175,7 @@ body, html {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 32px; /* Increased top margin - moves it down from header */
+  margin-top: 0;
 }
 
 .social-button {
@@ -206,6 +222,7 @@ body, html {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
+  text-transform: lowercase;
 }
 
 /* Form */
@@ -249,8 +266,15 @@ body, html {
   border: none;
   outline: none;
   font-size: 16px;
+  font-weight: 500;
   color: var(--page-title-color);
   background: transparent;
+}
+
+.input-wrapper input::placeholder {
+  color: #667085;
+  font-weight: 500;
+  opacity: 1;
 }
 
 #remember-forgot-row {
@@ -383,6 +407,7 @@ input[type="checkbox"] {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
+  margin: 0;
   border: 1px solid #d0d5dd;
   border-radius: 4px;
   background-color: #ffffff;
@@ -419,119 +444,181 @@ input[type="checkbox"]:checked::after {
   align-items: stretch;
 }
 
-#testimonial-container {
-  width: 100%;
-  height: 100%;
-  border-radius: 24px;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  background: #101828;
-}
-
-#testimonial-image {
+.auth-customer-carousel {
   width: 100%;
   height: 100%;
   min-height: calc(100vh - 48px);
+  min-height: calc(100dvh - 48px);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  background: #101828;
+}
+
+.auth-customer-carousel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(10, 13, 18, 0.44) 0%, rgba(10, 13, 18, 0.10) 46%, rgba(10, 13, 18, 0.02) 100%),
+    linear-gradient(180deg, rgba(10, 13, 18, 0.00) 48%, rgba(10, 13, 18, 0.20) 100%);
+}
+
+.auth-customer-carousel__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center;
+  object-position: 68% center;
   transition: opacity 0.25s ease;
 }
 
-#quote-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 28px;
+.auth-customer-carousel__quote {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  min-height: 50%;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.7) 100%
-  );
-  padding: 32px;
-}
-
-#attribution-card {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-#testimonial-quote {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-weight: 500;
-  font-size: 28px;
-  line-height: 1.3;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(116px, auto);
+  align-items: end;
+  gap: 28px;
+  width: 100%;
+  height: 15%;
+  min-height: 116px;
+  max-height: 132px;
+  padding: 16px 34px 40px;
   color: #ffffff;
-  letter-spacing: -0.02em;
+  background:
+    linear-gradient(180deg, rgba(10, 13, 18, 0.06) 0%, rgba(10, 13, 18, 0.82) 100%),
+    rgba(10, 13, 18, 0.28);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
 }
 
-.highlight-green {
-  color: var(--brand-greeny-green, #03FF88);
-}
-
-#name-and-stars {
+.auth-customer-carousel__copy {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
 }
 
-#text-and-supporting {
+.auth-customer-carousel__kicker {
+  align-items: center;
+  color: var(--btn-primary-color, #98FB96);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-customer-carousel__quote blockquote {
+  display: -webkit-box;
+  margin: 0;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  max-width: 650px;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.16;
+  letter-spacing: 0;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.auth-customer-carousel__person {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  justify-self: end;
+  min-width: 0;
+  text-align: right;
 }
 
-#author-name {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-weight: 600;
-  font-size: 20px;
+.auth-customer-carousel__person strong {
   color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.1;
 }
 
-#author-company {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-weight: 400;
-  font-size: 16px;
-  color: #D0D5DD;
+.auth-customer-carousel__person span {
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-#stars-container {
-  display: flex;
-  flex-direction: row;
-  gap: 6px;
+.auth-customer-carousel__controls {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
 }
 
-#arrows-container {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.carousel-arrow {
+.auth-customer-carousel__arrow {
+  position: absolute;
+  top: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.12);
   cursor: pointer;
   transition: all 0.2s ease;
+  pointer-events: auto;
+  transform: translateY(-50%);
 }
 
-.carousel-arrow:hover {
+.auth-customer-carousel__arrow:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.8);
+}
+
+.auth-customer-carousel__arrow[data-auth-carousel-prev] {
+  left: 22px;
+}
+
+.auth-customer-carousel__arrow[data-auth-carousel-next] {
+  right: 22px;
+}
+
+.auth-customer-carousel__dots {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+.auth-customer-carousel__dot {
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.40);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.auth-customer-carousel__dot.is-active {
+  width: 22px;
+  background: var(--btn-primary-color, #98FB96);
 }
 
 /* 2FA setup */
@@ -1017,4 +1104,11 @@ input[type="checkbox"]:checked::after {
 #property-progress-label {
   font-size: 12px;
   color: #98A2B3;
+}
+
+@media (max-width: 767px) {
+  #header {
+    align-items: center;
+    text-align: center;
+  }
 }

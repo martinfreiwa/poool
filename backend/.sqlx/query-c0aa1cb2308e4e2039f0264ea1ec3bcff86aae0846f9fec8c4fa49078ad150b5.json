@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n               ar.id::text as referral_id,\n               ar.status as referral_status,\n               ar.created_at::text as created_at,\n               ar.holdback_expires_at::text as holdback_expires_at,\n               c.status as commission_status,\n               COALESCE(c.provisional_amount_cents, 0) as provisional_amount_cents,\n               u.email as referred_email\n           FROM affiliate_referrals ar\n           JOIN users u ON u.id = ar.referred_user_id\n           LEFT JOIN affiliate_commissions c ON c.referral_id = ar.id\n           WHERE ar.affiliate_id = $1\n           ORDER BY ar.created_at DESC\n           LIMIT $2 OFFSET $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "referral_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "referral_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "holdback_expires_at",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "commission_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "provisional_amount_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "referred_email",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      true,
+      null,
+      null,
+      true,
+      null,
+      false
+    ]
+  },
+  "hash": "c0aa1cb2308e4e2039f0264ea1ec3bcff86aae0846f9fec8c4fa49078ad150b5"
+}

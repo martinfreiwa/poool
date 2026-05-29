@@ -367,22 +367,23 @@
 /* ── Inline type selector (pill) ── */
 .dops-type-select {
   -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
-  background-color: #EEF4FF;
-  border: 1px solid #C7D7FF;
-  color: #1849A9;
+  background-color: var(--input-bg, #FFFFFF);
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  color: var(--input-text-color, #101828);
   font-size: 11px;
   font-weight: 600;
   padding: 3px 20px 3px 8px;
-  border-radius: 20px;
+  border-radius: var(--input-border-radius, 8px);
   cursor: pointer;
   flex-shrink: 0;
   max-width: 140px;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%231849A9' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: var(--select-chevron-icon);
   background-repeat: no-repeat;
   background-position: right 5px center;
-  background-size: 10px;
+  background-size: 10px 7px;
 }
 .dops-type-select:focus {
   outline: 2px solid rgba(0, 0, 255, 0.12);

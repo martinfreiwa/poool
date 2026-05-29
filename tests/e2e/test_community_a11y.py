@@ -21,7 +21,7 @@ import json
 import pytest
 from playwright.sync_api import expect
 
-from community_helpers import BASE_URL, mint_user, make_context, cleanup_user
+from community_helpers import BASE_URL, mint_user, make_context, cleanup_user, seed_circle
 
 
 AXE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
@@ -48,6 +48,14 @@ KNOWN_BUT_TOLERATED = {
 def a11y_user():
     user = mint_user(prefix="e2e-a11y", display_name="A11y Tester")
     yield user
+    cleanup_user(user["user_id"])
+
+
+@pytest.fixture(scope="function")
+def a11y_circle_user():
+    user = mint_user(prefix="e2e-a11y-circle", display_name="A11y Circle Tester")
+    circle = seed_circle(user["user_id"], name="A11y Circle Space")
+    yield user, circle
     cleanup_user(user["user_id"])
 
 
@@ -148,6 +156,36 @@ def test_no_critical_or_serious_a11y_violations(
     if blocking:
         details = "\n".join(_format_violation(v) for v in blocking)
         # Full JSON for the first offender helps reproduce.
+        first = json.dumps(blocking[0], indent=2)[:800]
+        raise AssertionError(
+            f"{len(blocking)} blocking a11y violations on {path}:\n{details}"
+            f"\n\nFirst violation (truncated):\n{first}"
+        )
+
+
+@pytest.mark.community
+@pytest.mark.a11y
+@pytest.mark.parametrize(
+    "surface",
+    ["canonical-circles", "circle-feed", "circle-settings"],
+)
+def test_circle_surfaces_no_critical_or_serious_a11y_violations(
+    playwright_session,
+    a11y_circle_user,
+    surface,
+):
+    user, circle = a11y_circle_user
+    if surface == "canonical-circles":
+        path = "/community/circles"
+    elif surface == "circle-feed":
+        path = f"/community/circle/{circle['slug']}"
+    else:
+        path = f"/community/circle/{circle['slug']}/settings"
+
+    blocking, all_violations, js_errors = _audit_page(playwright_session, user, path)
+    assert not js_errors, f"JS errors on {path}: {js_errors[:5]}"
+    if blocking:
+        details = "\n".join(_format_violation(v) for v in blocking)
         first = json.dumps(blocking[0], indent=2)[:800]
         raise AssertionError(
             f"{len(blocking)} blocking a11y violations on {path}:\n{details}"

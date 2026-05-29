@@ -100,7 +100,19 @@ function getGalleryImages() {
 document.addEventListener("DOMContentLoaded", function () {
   initializePropertyImageFallbacks(document);
   initializeFAQExpansionMonitoring();
+  initializePropertyAssetCircleCta();
 });
+
+async function initializePropertyAssetCircleCta() {
+  var container = document.querySelector(".asset-circle-cta-section[data-asset-circle-asset-id]");
+  if (!container || !window.PooolAssetCircleCta) return;
+
+  var assetId = container.getAttribute("data-asset-circle-asset-id");
+  if (!assetId) return;
+
+  var data = await window.PooolAssetCircleCta.fetchAssetCircle(assetId);
+  window.PooolAssetCircleCta.renderPropertyCta(container, data);
+}
 
 // Monitor FAQ expansions to update Similar Properties position
 function initializeFAQExpansionMonitoring() {
