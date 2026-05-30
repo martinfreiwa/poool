@@ -47,6 +47,19 @@ async fn pool() -> PgPool {
         .expect("connect to test DB")
 }
 
+fn test_webauthn() -> std::sync::Arc<webauthn_rs::Webauthn> {
+    std::sync::Arc::new(
+        webauthn_rs::WebauthnBuilder::new(
+            "localhost",
+            &url::Url::parse("http://localhost:8888").expect("test WebAuthn origin"),
+        )
+        .expect("test WebAuthn config")
+        .rp_name("POOOL")
+        .build()
+        .expect("build test WebAuthn instance"),
+    )
+}
+
 fn make_state(pool: PgPool) -> AppState {
     std::env::set_var("POOOL_ENV", "development");
     install_test_totp_key();
@@ -68,6 +81,7 @@ fn make_state(pool: PgPool) -> AppState {
         community_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
         storage_rate_limiter: poool_backend::auth::rate_limit::RateLimiter::disabled(),
         leaderboard_last_refresh: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
+        webauthn: test_webauthn(),
     }
 }
 
