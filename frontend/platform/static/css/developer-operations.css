@@ -944,58 +944,77 @@ body#developer-operations-body .dae-empty__metrics {
    cobalt-active filter chips, refined alerts.
    ═══════════════════════════════════════════════ */
 
-/* ── Stat cards: match developer-assets page KPI cards ──────────
-   Clean white surface, bold black number, uppercase tracked label.
-   No top accent bar, no icon, no colored numbers, no trend text.   */
+/* ── Stat cards: match the platform metric-card pattern ─────────
+   Brand-gradient top strip, p-icon multilayer at top-right,
+   uppercase tracked label, bold black number, soft trend sub-text. */
 .ops-stats-grid .dev-stat {
   position: relative;
   overflow: hidden;
-  padding: 20px 22px;
+  padding: 20px 22px 18px;
   border-radius: 12px;
   border: 1px solid var(--card-border-color, #EAECF0);
   background: var(--card-bg, #fff);
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 132px;
 }
-.ops-stats-grid .dev-stat::before { display: none !important; }
+.ops-stats-grid .dev-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+}
 .ops-stats-grid .dev-stat:hover {
-  border-color: rgba(0, 0, 255, 0.18);
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.05);
+  border-color: rgba(0, 0, 255, 0.20);
+  box-shadow: 0 12px 28px -16px rgba(0, 0, 255, 0.18);
+  transform: translateY(-1px);
 }
 
-/* Hide icon chip + trend sub-text — KPI card carries only number + label */
-.ops-stats-grid .dev-stat .p-icon,
-.ops-stats-grid .dev-stat .ops-stat__icon,
-.ops-stats-grid .dev-stat .ops-stat__trend {
-  display: none !important;
+/* Top row: icon (right) sits beside the rest; number+label flow below */
+.ops-stats-grid .ops-stat__top {
+  display: flex !important;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 4px 0 0 !important;
 }
 
-.ops-stat__top {
-  display: block !important;
-  margin: 0 !important;
+.ops-stats-grid .ops-stat__num,
+.ops-stats-grid .ops-stat__num--red,
+.ops-stats-grid .ops-stat__num--amber,
+.ops-stats-grid .ops-stat__num--blue,
+.ops-stats-grid .ops-stat__num--green,
+.ops-stats-grid .ops-stat__num--muted {
+  color: #0A0D12;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
-.ops-stat__num,
-.ops-stat__num--red,
-.ops-stat__num--amber,
-.ops-stat__num--blue,
-.ops-stat__num--green,
-.ops-stat__num--muted {
-  color: #0A0D12 !important;
-  font-size: 32px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.02em !important;
-  line-height: 1 !important;
+.ops-stats-grid .ops-stat__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #717680;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 16px;
+  margin-top: 8px;
 }
 
-.ops-stat__label {
-  display: block !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  color: #717680 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.07em !important;
-  margin-top: 10px !important;
+.ops-stats-grid .ops-stat__trend {
+  font-size: 11px;
+  font-weight: 500;
+  color: #98A2B3;
+  letter-spacing: 0.01em;
+  margin-top: auto;
 }
 
 /* ── Action queue (alert banner): amber→peach, hairline divider ── */
@@ -1043,6 +1062,13 @@ body#developer-operations-body .dae-empty__metrics {
   border-radius: 14px 14px 0 0;
   pointer-events: none;
   z-index: 1;
+}
+
+body#developer-operations-body #ops-matrix-wrap::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
 }
 .ops-matrix-topbar {
   padding: 20px 22px;
@@ -1097,4 +1123,185 @@ body#developer-operations-body .dae-empty__metrics {
 .ops-filter-tab.active .ops-filter-count {
   background: #FFFFFF !important;
   color: var(--btn-primary-bg, #0000FF) !important;
+}
+
+/* ── Empty-state branded operations artwork ───────────────────────── */
+body#developer-operations-body .dae-empty__operations-art {
+  position: relative;
+  width: min(100%, 420px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 255, 0.2);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(3, 255, 136, 0.18) 0%, rgba(3, 255, 136, 0) 44%),
+    linear-gradient(135deg, #0000FF 0%, #001DCA 62%, #07107C 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 255, 0.16);
+}
+
+body#developer-operations-body .dae-empty__operations-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.42;
+}
+
+body#developer-operations-body .dae-empty__operations-art::after {
+  content: '';
+  position: absolute;
+  right: -54px;
+  bottom: -60px;
+  width: 260px;
+  height: 150px;
+  transform: rotate(-8deg);
+  border: 1px solid rgba(3, 255, 136, 0.22);
+  border-radius: 26px;
+  background: rgba(3, 255, 136, 0.09);
+}
+
+body#developer-operations-body .dae-empty__operations-ribbon {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 5px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
+
+body#developer-operations-body .dae-empty__operations-lockup {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 164px;
+  height: 54px;
+  border: 1px solid rgba(3, 255, 136, 0.46);
+  border-radius: 12px;
+  background: #03FF88;
+  box-shadow: 0 14px 28px rgba(0, 0, 255, 0.22);
+}
+
+body#developer-operations-body .dae-empty__operations-lockup img {
+  display: block;
+  width: 132px;
+  height: auto;
+}
+
+body#developer-operations-body .dae-empty__operations-card {
+  position: absolute;
+  left: 40px;
+  bottom: 30px;
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  width: 214px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 34px rgba(0, 0, 255, 0.18);
+}
+
+body#developer-operations-body .dae-empty__operations-card-header,
+body#developer-operations-body .dae-empty__operations-line,
+body#developer-operations-body .dae-empty__operations-progress {
+  display: block;
+  border-radius: 999px;
+}
+
+body#developer-operations-body .dae-empty__operations-card-header {
+  width: 58px;
+  height: 10px;
+  background: #03FF88;
+}
+
+body#developer-operations-body .dae-empty__operations-line {
+  width: 64%;
+  height: 8px;
+  background: #D6E3FF;
+}
+
+body#developer-operations-body .dae-empty__operations-line--wide {
+  width: 100%;
+  background: #AFC6FF;
+}
+
+body#developer-operations-body .dae-empty__operations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+body#developer-operations-body .dae-empty__operations-grid span {
+  display: block;
+  height: 22px;
+  border: 1px solid rgba(0, 0, 255, 0.12);
+  border-radius: 7px;
+  background: #EEF4FF;
+}
+
+body#developer-operations-body .dae-empty__operations-grid span:nth-child(1),
+body#developer-operations-body .dae-empty__operations-grid span:nth-child(2),
+body#developer-operations-body .dae-empty__operations-grid span:nth-child(5) {
+  border-color: rgba(3, 255, 136, 0.38);
+  background: rgba(3, 255, 136, 0.2);
+}
+
+body#developer-operations-body .dae-empty__operations-progress {
+  height: 8px;
+  overflow: hidden;
+  background: #EEF2FF;
+}
+
+body#developer-operations-body .dae-empty__operations-progress span {
+  display: block;
+  width: 68%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
+
+body#developer-operations-body .dae-empty__operations-panel {
+  position: absolute;
+  right: 42px;
+  top: 64px;
+  z-index: 3;
+  display: grid;
+  gap: 12px;
+  width: 82px;
+}
+
+body#developer-operations-body .dae-empty__operations-panel span {
+  display: block;
+  height: 52px;
+  border: 1px solid rgba(3, 255, 136, 0.34);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(3, 255, 136, 0.2), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+body#developer-operations-body .dae-empty__operations-stack {
+  position: absolute;
+  right: 36px;
+  bottom: 36px;
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+}
+
+body#developer-operations-body .dae-empty__operations-stack span {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(3, 255, 136, 0.36);
+  border-radius: 10px;
+  background: rgba(3, 255, 136, 0.15);
 }

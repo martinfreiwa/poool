@@ -973,14 +973,13 @@ async fn read_admin_asset_image_multipart(
                     .content_type()
                     .unwrap_or("application/octet-stream")
                     .to_string();
-                let bytes = field
-                    .bytes()
-                    .await
-                    .map_err(|_| ApiError::BadRequest("Failed to read uploaded image".to_string()))?
-                    .to_vec();
-                if bytes.len() > MAX_ADMIN_ASSET_IMAGE_BYTES {
-                    return Err(ApiError::BadRequest("Image must be <= 20 MB".to_string()));
-                }
+                let mut field = field;
+                let bytes = crate::storage::upload_helpers::read_field_capped(
+                    &mut field,
+                    MAX_ADMIN_ASSET_IMAGE_BYTES,
+                    "image",
+                )
+                .await?;
                 file_bytes = Some(bytes);
             }
             "sort_order" => {
@@ -1093,18 +1092,13 @@ async fn read_admin_asset_document_multipart(
                 if title.trim().is_empty() {
                     title = file_name;
                 }
-                let bytes = field
-                    .bytes()
-                    .await
-                    .map_err(|_| {
-                        ApiError::BadRequest("Failed to read uploaded document".to_string())
-                    })?
-                    .to_vec();
-                if bytes.len() > MAX_ADMIN_ASSET_DOCUMENT_BYTES {
-                    return Err(ApiError::BadRequest(
-                        "Document must be <= 20 MB".to_string(),
-                    ));
-                }
+                let mut field = field;
+                let bytes = crate::storage::upload_helpers::read_field_capped(
+                    &mut field,
+                    MAX_ADMIN_ASSET_DOCUMENT_BYTES,
+                    "document",
+                )
+                .await?;
                 file_bytes = Some(bytes);
             }
             _ => {}

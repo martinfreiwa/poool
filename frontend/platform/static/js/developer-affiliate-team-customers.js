@@ -144,6 +144,7 @@
     const theadRow  = DAT.$('#dat-customers-thead-row');
     const pagerHost = DAT.$('#dat-customers-pager-host');
     const pagerFooterHost = DAT.$('#dat-customers-pager-footer');
+    const searchHost = DAT.$('#dat-customers-search-host');
     if (!tbody || !theadRow || !pagerHost) return;
 
     // Topbar date-range owns from/to; reload the table on each change.
@@ -152,7 +153,7 @@
     _table = DAT.dataTable({
       pageKey: 'customers',
       endpoint: '/api/developer/affiliate/team/customers',
-      tbody, theadRow, pagerHost, pagerFooterHost,
+      tbody, theadRow, pagerHost, pagerFooterHost, searchHost,
       extraParams: () => {
         const r = DAT.currentRange();
         return { from: r.from || '', to: r.to || '' };

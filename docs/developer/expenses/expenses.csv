@@ -1,0 +1,4 @@
+month,vendor,category,description,currency,amount_cents,amount_display
+2026-05,Google,Hosting,Website hosting on Google,USD,1500,$15.00
+2026-05,Anthropic,AI tooling,Claude subscription,USD,24000,$240.00
+2026-05,OpenAI,AI tooling,Codex subscription,USD,20000,$200.00

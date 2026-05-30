@@ -60,10 +60,13 @@ pub async fn api_villa_expense_categories(
 
 /// GET /api/admin/villas/:asset_id/deduction-policies — full history, newest first.
 pub async fn api_admin_deduction_policies_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
 ) -> Result<Json<Vec<DeductionPolicyRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.deduction_policy.view")
+        .await?;
     let rows: Vec<DeductionPolicyRow> = sqlx::query_as(
         r#"
         SELECT id, asset_id, effective_from, allowed_codes,
@@ -87,6 +90,9 @@ pub async fn api_admin_deduction_policy_create(
     Path(asset_id): Path<Uuid>,
     Json(input): Json<DeductionPolicyInput>,
 ) -> Result<Json<DeductionPolicyRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.deduction_policy.write")
+        .await?;
     if input.allowed_codes.is_empty() {
         return Err(ApiError::BadRequest(
             "At least one allowed category required".to_string(),

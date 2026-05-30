@@ -1,7 +1,7 @@
 use axum::{
-    extract::{Path, Query, State},
-    http::HeaderMap,
-    response::{IntoResponse, Json},
+    extract::{Multipart, Path, Query, State},
+    http::{header, HeaderMap, StatusCode},
+    response::{IntoResponse, Json, Redirect, Response},
     routing::{delete, get, post, put},
     Router,
 };
@@ -22,6 +22,9 @@ pub struct FeedQuery {
     pub page: Option<i64>,
     pub feed_mode: Option<String>,
     pub sort_by: Option<String>,
+    pub circle_id: Option<Uuid>,
+    pub post_type: Option<String>,
+    pub tag: Option<String>,
     // Phase 2 task 15: when "bookmarks", the HTMX feed partial returns the
     // viewer's bookmarked posts instead of the global feed. Any other value
     // is treated as the default global feed.
@@ -46,8 +49,66 @@ const ANNOUNCEMENT_CATEGORIES: &[&str] = &[
 
 const ADMIN_CIRCLE_DEFAULT_LIMIT: i64 = 50;
 const ADMIN_CIRCLE_MAX_LIMIT: i64 = 100;
+const ADMIN_CIRCLE_OPS_ALERT_DEFAULT_LIMIT: i64 = 50;
+const ADMIN_CIRCLE_OPS_ALERT_MAX_LIMIT: i64 = 100;
 const ADMIN_COMMENTS_DEFAULT_LIMIT: i64 = 200;
 const ADMIN_COMMENTS_MAX_LIMIT: i64 = 200;
+const MAX_POST_TAGS: usize = 8;
+
+const COMMUNITY_POST_TYPES: &[&str] = &[
+    "general",
+    "discussion",
+    "question",
+    "market_insight",
+    "property_update",
+    "due_diligence",
+    "poll",
+    "announcement",
+    "ama_question",
+    "resource",
+    "risk_discussion",
+    "official_update",
+    // Legacy values remain accepted for existing API/back-office flows.
+    "milestone",
+    "farm_update",
+    "review",
+];
+
+const OFFICIAL_ONLY_POST_TYPES: &[&str] = &["announcement", "official_update"];
+
+const PRIVILEGED_POST_TAGS: &[&str] = &["official", "featured", "answered"];
+
+const COMMUNITY_POST_TAGS: &[&str] = &[
+    "market_insight",
+    "question",
+    "risk",
+    "yield",
+    "real_estate",
+    "commodity",
+    "bali",
+    "cocoa",
+    "tokenization",
+    "property_update",
+    "beginner",
+    "advanced",
+    "official",
+    "answered",
+    "featured",
+    "due_diligence",
+    "legal",
+    "tax",
+    "liquidity",
+];
+
+const QA_POST_TYPES: &[&str] = &["question", "due_diligence"];
+const QA_STATUSES: &[&str] = &[
+    "open",
+    "answered",
+    "official_answer",
+    "needs_clarification",
+    "archived",
+];
+const MAX_CIRCLE_RESOURCE_UPLOAD_BYTES: usize = 20 * 1024 * 1024;
 
 fn validate_announcement_category(category: &str) -> Result<(), AppError> {
     if ANNOUNCEMENT_CATEGORIES.contains(&category) {
@@ -99,6 +160,616 @@ fn require_csrf_header(headers: &HeaderMap, jar: &CookieJar) -> Result<(), AppEr
     }
 }
 
+fn is_circle_manager_role(role: Option<&str>) -> bool {
+    matches!(role, Some("owner" | "admin" | "moderator"))
+}
+
+fn is_circle_qa_responder_role(role: Option<&str>) -> bool {
+    is_circle_manager_role(role) || matches!(role, Some("verified_expert"))
+}
+
+fn canonical_community_code(value: &str) -> String {
+    let mut out = String::new();
+    let mut last_was_separator = false;
+
+    for ch in value.trim().chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+            last_was_separator = false;
+        } else if matches!(ch, ' ' | '_' | '-' | '/' | '.')
+            && !out.is_empty()
+            && !last_was_separator
+        {
+            out.push('_');
+            last_was_separator = true;
+        }
+    }
+
+    while out.ends_with('_') {
+        out.pop();
+    }
+
+    out
+}
+
+fn normalize_post_type(post_type: &str) -> Result<String, AppError> {
+    let normalized = canonical_community_code(post_type);
+    if COMMUNITY_POST_TYPES.contains(&normalized.as_str()) {
+        Ok(normalized)
+    } else {
+        Err(AppError::BadRequest(
+            "Invalid post type for community content.".to_string(),
+        ))
+    }
+}
+
+fn normalize_post_tags(tags: Option<Vec<String>>) -> Result<Vec<String>, AppError> {
+    let mut normalized = Vec::new();
+
+    for tag in tags.unwrap_or_default() {
+        let code = canonical_community_code(&tag);
+        if code.is_empty() {
+            continue;
+        }
+        if !COMMUNITY_POST_TAGS.contains(&code.as_str()) {
+            return Err(AppError::BadRequest(format!(
+                "Invalid post tag: {}",
+                tag.trim()
+            )));
+        }
+        if !normalized.contains(&code) {
+            normalized.push(code);
+        }
+        if normalized.len() > MAX_POST_TAGS {
+            return Err(AppError::BadRequest(format!(
+                "Posts can have at most {} tags.",
+                MAX_POST_TAGS
+            )));
+        }
+    }
+
+    Ok(normalized)
+}
+
+fn normalize_qa_status(status: &str) -> Result<String, AppError> {
+    let normalized = canonical_community_code(status);
+    if QA_STATUSES.contains(&normalized.as_str()) {
+        Ok(normalized)
+    } else {
+        Err(AppError::BadRequest("Invalid Q&A status.".to_string()))
+    }
+}
+
+fn is_qa_post_type(post_type: &str) -> bool {
+    QA_POST_TYPES.contains(&post_type)
+}
+
+async fn user_can_manage_qa_post(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    user_id: Uuid,
+    post_id: Uuid,
+) -> Result<bool, AppError> {
+    if middleware::has_permission(&state.db, user_id, "community.manage").await {
+        return Ok(true);
+    }
+
+    let circle_id: Option<Uuid> = sqlx::query_scalar("SELECT circle_id FROM posts WHERE id = $1")
+        .bind(post_id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Post not found".into()))?;
+
+    let Some(circle_id) = circle_id else {
+        return Ok(false);
+    };
+
+    let role = get_circle_member_role(pool, circle_id, user_id).await?;
+    Ok(is_circle_qa_responder_role(role.as_deref()))
+}
+
+async fn user_can_publish_privileged_circle_content(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    user_id: Uuid,
+    circle_id: Option<Uuid>,
+) -> Result<bool, AppError> {
+    if middleware::has_permission(&state.db, user_id, "community.manage").await {
+        return Ok(true);
+    }
+
+    if let Some(circle_id) = circle_id {
+        let role = get_circle_member_role(pool, circle_id, user_id).await?;
+        return Ok(is_circle_manager_role(role.as_deref()));
+    }
+
+    Ok(false)
+}
+
+async fn ensure_post_taxonomy_allowed(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    user_id: Uuid,
+    circle_id: Option<Uuid>,
+    post_type: &str,
+    content_tags: &[String],
+) -> Result<(), AppError> {
+    let has_privileged_publish_access =
+        user_can_publish_privileged_circle_content(state, pool, user_id, circle_id).await?;
+
+    if OFFICIAL_ONLY_POST_TYPES.contains(&post_type) && !has_privileged_publish_access {
+        return Err(AppError::Forbidden(
+            "Only Circle moderators or platform admins can publish this post type.".into(),
+        ));
+    }
+
+    if content_tags
+        .iter()
+        .any(|tag| PRIVILEGED_POST_TAGS.contains(&tag.as_str()))
+        && !has_privileged_publish_access
+    {
+        return Err(AppError::Forbidden(
+            "Only Circle moderators or platform admins can apply official post tags.".into(),
+        ));
+    }
+
+    let Some(circle_id) = circle_id else {
+        return Ok(());
+    };
+
+    let (required_tags, allowed_post_types): (Vec<String>, Vec<String>) = sqlx::query_as(
+        "SELECT COALESCE(required_post_tags, '{}'::TEXT[]),
+                COALESCE(allowed_post_types, '{}'::TEXT[])
+         FROM circles
+         WHERE id = $1",
+    )
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+
+    let allowed_post_types: Vec<String> = allowed_post_types
+        .iter()
+        .map(|item| canonical_community_code(item))
+        .filter(|item| !item.is_empty())
+        .collect();
+    if !allowed_post_types.is_empty() && !allowed_post_types.iter().any(|item| item == post_type) {
+        return Err(AppError::Forbidden(
+            "This Circle does not allow that post type.".into(),
+        ));
+    }
+
+    let missing_required_tag = required_tags
+        .iter()
+        .map(|tag| canonical_community_code(tag))
+        .filter(|tag| !tag.is_empty())
+        .find(|tag| !content_tags.contains(tag));
+    if let Some(tag) = missing_required_tag {
+        return Err(AppError::BadRequest(format!(
+            "This Circle requires the '{}' tag.",
+            tag
+        )));
+    }
+
+    Ok(())
+}
+
+async fn get_circle_member_role(
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<Option<String>, AppError> {
+    let role =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
+    Ok(role)
+}
+
+async fn ensure_circle_manage_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<String, AppError> {
+    if middleware::has_permission(&state.db, user_id, "community.manage").await {
+        return Ok("platform_admin".to_string());
+    }
+
+    let role = get_circle_member_role(pool, circle_id, user_id)
+        .await?
+        .ok_or_else(|| AppError::Forbidden("Manage access requires Circle membership.".into()))?;
+    if is_circle_manager_role(Some(role.as_str())) {
+        Ok(role)
+    } else {
+        Err(AppError::Forbidden(
+            "Only Circle owners, admins, and moderators can manage this Circle.".into(),
+        ))
+    }
+}
+
+async fn is_circle_banned(
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<bool, AppError> {
+    let banned = sqlx::query_scalar::<_, bool>(
+        r#"SELECT EXISTS(
+             SELECT 1 FROM circle_bans
+             WHERE circle_id = $1
+               AND banned_user_id = $2
+               AND (expires_at IS NULL OR expires_at > NOW())
+           )"#,
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+    Ok(banned)
+}
+
+pub async fn ensure_circle_read_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+    user_id: Option<Uuid>,
+) -> Result<(), AppError> {
+    let row = sqlx::query(
+        "SELECT is_public, visibility, token_gate_asset_id, related_asset_id, kyc_required, join_policy
+         FROM circles WHERE id = $1",
+    )
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+    use sqlx::Row;
+    let is_public: bool = row.try_get("is_public").unwrap_or(false);
+    let visibility: String = row.try_get("visibility").unwrap_or_else(|_| {
+        if is_public {
+            "public".into()
+        } else {
+            "private".into()
+        }
+    });
+    let token_gate_asset_id: Option<Uuid> = row.try_get("token_gate_asset_id").ok().flatten();
+    let related_asset_id: Option<Uuid> = row.try_get("related_asset_id").ok().flatten();
+    let kyc_required: bool = row.try_get("kyc_required").unwrap_or(false);
+    let join_policy: String = row
+        .try_get("join_policy")
+        .unwrap_or_else(|_| "open".to_string());
+    let requires_holding = token_gate_asset_id.is_some() || join_policy == "holder_only";
+    let is_gated = token_gate_asset_id.is_some()
+        || kyc_required
+        || matches!(join_policy.as_str(), "holder_only" | "kyc_required");
+
+    if is_public && visibility == "public" && !is_gated {
+        return Ok(());
+    }
+
+    let user_id = user_id.ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    if is_circle_banned(pool, circle_id, user_id).await? {
+        return Err(AppError::Forbidden("You cannot access this Circle.".into()));
+    }
+
+    if middleware::has_permission(&state.db, user_id, "community.manage").await {
+        return Ok(());
+    }
+
+    let has_required_holding = if requires_holding {
+        if token_gate_asset_id.is_some() {
+            crate::community::circles::check_token_gate(pool, &state.db, user_id, circle_id)
+                .await?;
+            true
+        } else if let Some(asset_id) = related_asset_id {
+            user_has_asset_holding(&state.db, user_id, asset_id).await?
+        } else {
+            return Err(AppError::Forbidden(
+                "This Circle requires a related asset holding.".into(),
+            ));
+        }
+    } else {
+        false
+    };
+
+    if requires_holding && !has_required_holding {
+        return Err(AppError::Forbidden(
+            "You must hold the related asset to view this Circle.".into(),
+        ));
+    }
+
+    if get_circle_member_role(pool, circle_id, user_id)
+        .await?
+        .is_some()
+        || has_required_holding
+    {
+        Ok(())
+    } else if visibility == "hidden"
+        && crate::community::circles::has_pending_invite(pool, circle_id, user_id).await?
+    {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden(
+            "You must be a member to view this Circle.".into(),
+        ))
+    }
+}
+
+async fn ensure_circle_write_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<String, AppError> {
+    ensure_circle_read_access(state, pool, circle_id, Some(user_id)).await?;
+
+    if is_circle_banned(pool, circle_id, user_id).await? {
+        return Err(AppError::Forbidden(
+            "You cannot post in this Circle.".into(),
+        ));
+    }
+
+    let role = get_circle_member_role(pool, circle_id, user_id)
+        .await?
+        .ok_or_else(|| AppError::Forbidden("Join this Circle before posting.".into()))?;
+
+    Ok(role)
+}
+
+async fn ensure_post_read_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    post_id: Uuid,
+    user_id: Option<Uuid>,
+) -> Result<Option<Uuid>, AppError> {
+    let circle_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT circle_id FROM posts WHERE id = $1 AND is_hidden = false")
+            .bind(post_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Post not found".into()))?;
+
+    if let Some(circle_id) = circle_id {
+        ensure_circle_read_access(state, pool, circle_id, user_id).await?;
+    }
+
+    Ok(circle_id)
+}
+
+async fn ensure_post_write_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    post_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), AppError> {
+    if let Some(circle_id) = ensure_post_read_access(state, pool, post_id, Some(user_id)).await? {
+        ensure_circle_write_access(state, pool, circle_id, user_id).await?;
+    }
+    Ok(())
+}
+
+async fn ensure_ama_read_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    ama_id: Uuid,
+    user_id: Uuid,
+) -> Result<Option<Uuid>, AppError> {
+    let circle_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT circle_id FROM amas WHERE id = $1 AND status != 'draft'")
+            .bind(ama_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("AMA not found".into()))?;
+
+    if let Some(circle_id) = circle_id {
+        ensure_circle_read_access(state, pool, circle_id, Some(user_id)).await?;
+    }
+
+    Ok(circle_id)
+}
+
+fn normalize_circle_onboarding_step(step: &str) -> Result<&'static str, AppError> {
+    let normalized = canonical_community_code(step);
+    CIRCLE_ONBOARDING_STEPS
+        .iter()
+        .copied()
+        .find(|candidate| *candidate == normalized)
+        .ok_or_else(|| AppError::BadRequest("Invalid Circle onboarding step.".to_string()))
+}
+
+async fn mark_circle_onboarding_step(
+    pool: &sqlx::PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+    step: &str,
+) -> Result<(), AppError> {
+    let step = normalize_circle_onboarding_step(step)?;
+    sqlx::query(
+        r#"
+        INSERT INTO circle_onboarding_progress (circle_id, user_id)
+        VALUES ($1, $2)
+        ON CONFLICT (circle_id, user_id) DO NOTHING
+        "#,
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    let update_sql = match step {
+        "rules_read" => {
+            "UPDATE circle_onboarding_progress SET rules_read = TRUE, updated_at = NOW() WHERE circle_id = $1 AND user_id = $2"
+        }
+        "introduced_self" => {
+            "UPDATE circle_onboarding_progress SET introduced_self = TRUE, updated_at = NOW() WHERE circle_id = $1 AND user_id = $2"
+        }
+        "interests_selected" => {
+            "UPDATE circle_onboarding_progress SET interests_selected = TRUE, updated_at = NOW() WHERE circle_id = $1 AND user_id = $2"
+        }
+        "ama_followed" => {
+            "UPDATE circle_onboarding_progress SET ama_followed = TRUE, updated_at = NOW() WHERE circle_id = $1 AND user_id = $2"
+        }
+        "first_question_posted" => {
+            "UPDATE circle_onboarding_progress SET first_question_posted = TRUE, updated_at = NOW() WHERE circle_id = $1 AND user_id = $2"
+        }
+        _ => unreachable!("step allowlist is enforced above"),
+    };
+
+    sqlx::query(update_sql)
+        .bind(circle_id)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE circle_onboarding_progress
+        SET is_completed = (
+                rules_read
+            AND introduced_self
+            AND interests_selected
+            AND ama_followed
+            AND first_question_posted
+          ),
+          completed_at = CASE
+            WHEN rules_read
+             AND introduced_self
+             AND interests_selected
+             AND ama_followed
+             AND first_question_posted
+             AND completed_at IS NULL THEN NOW()
+            ELSE completed_at
+          END,
+          updated_at = NOW()
+        WHERE circle_id = $1 AND user_id = $2
+        "#,
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+async fn record_circle_post_engagement(
+    pool: &sqlx::PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+    post_type: &str,
+) -> Result<(), AppError> {
+    match post_type {
+        "question" | "due_diligence" => {
+            let _ = mark_circle_onboarding_step(pool, user_id, circle_id, "first_question_posted")
+                .await;
+            let _ = crate::community::challenges::increment_circle_progress(
+                pool,
+                user_id,
+                circle_id,
+                "circle_due_diligence_question",
+                1,
+            )
+            .await;
+        }
+        "market_insight" => {
+            let _ = crate::community::challenges::increment_circle_progress(
+                pool,
+                user_id,
+                circle_id,
+                "circle_market_insight",
+                1,
+            )
+            .await;
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+async fn user_has_asset_holding(
+    core_db: &sqlx::PgPool,
+    user_id: Uuid,
+    asset_id: Uuid,
+) -> Result<bool, AppError> {
+    let has_holding = sqlx::query_scalar::<_, bool>(
+        r#"
+        SELECT EXISTS(
+          SELECT 1
+          FROM investments
+          WHERE user_id = $1
+            AND asset_id = $2
+            AND tokens_owned > 0
+        )
+        "#,
+    )
+    .bind(user_id)
+    .bind(asset_id)
+    .fetch_one(core_db)
+    .await?;
+
+    Ok(has_holding)
+}
+
+async fn ensure_asset_circle_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<(Option<Uuid>, bool, bool), AppError> {
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT is_public,
+               visibility,
+               join_policy,
+               token_gate_asset_id,
+               related_asset_id,
+               kyc_required
+        FROM circles
+        WHERE id = $1
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+
+    let is_public = row.try_get::<bool, _>("is_public").unwrap_or(false);
+    let visibility = row
+        .try_get::<String, _>("visibility")
+        .unwrap_or_else(|_| "private".to_string());
+    let join_policy = row
+        .try_get::<String, _>("join_policy")
+        .unwrap_or_else(|_| "request".to_string());
+    let token_gate_asset_id: Option<Uuid> = row.try_get("token_gate_asset_id").ok().flatten();
+    let related_asset_id: Option<Uuid> = row.try_get("related_asset_id").ok().flatten();
+    let kyc_required = row.try_get::<bool, _>("kyc_required").unwrap_or(false);
+    let asset_id = related_asset_id.or(token_gate_asset_id);
+    let is_gated = asset_id.is_some()
+        || kyc_required
+        || matches!(join_policy.as_str(), "holder_only" | "kyc_required");
+
+    let role = get_circle_member_role(pool, circle_id, user_id).await?;
+    let has_holding = match asset_id {
+        Some(asset_id) => user_has_asset_holding(&state.db, user_id, asset_id).await?,
+        None => false,
+    };
+
+    if role.is_some()
+        || has_holding
+        || (is_public && visibility == "public" && !is_gated)
+        || middleware::has_permission(&state.db, user_id, "community.manage").await
+    {
+        return Ok((asset_id, has_holding, role.is_some()));
+    }
+
+    Err(AppError::Forbidden(
+        "You must hold the related asset or be a Circle member to access this resource.".into(),
+    ))
+}
+
 async fn require_community_manage(
     state: &AppState,
     admin: &crate::admin::extractors::AdminUser,
@@ -140,6 +811,34 @@ pub struct CreateCommentReq {
     // in service layer).
     pub parent_comment_id: Option<Uuid>,
 }
+
+#[derive(Deserialize)]
+pub struct UpdateQaStatusReq {
+    pub status: String,
+    pub official_answer_comment_id: Option<Uuid>,
+    pub faq_candidate: Option<bool>,
+    pub featured_question: Option<bool>,
+    pub related_resource_url: Option<String>,
+    pub related_asset_id: Option<Uuid>,
+}
+
+#[derive(Deserialize)]
+pub struct MarkOfficialAnswerReq {
+    #[serde(default)]
+    pub is_official_answer: Option<bool>,
+    #[serde(default)]
+    pub is_verified_answer: Option<bool>,
+    #[serde(default)]
+    pub qa_status: Option<String>,
+}
+
+const CIRCLE_ONBOARDING_STEPS: &[&str] = &[
+    "rules_read",
+    "introduced_self",
+    "interests_selected",
+    "ama_followed",
+    "first_question_posted",
+];
 
 /// Helper to assert the community database is available
 fn get_community_pool(state: &AppState) -> Result<sqlx::PgPool, AppError> {
@@ -187,14 +886,35 @@ async fn parse_and_notify_mentions(
     author_name: String,
     post_id: Uuid,
 ) {
+    // CDDRP Phase 3.2: cap fan-out per post to prevent notification amplification
+    // (a single post with hundreds of @mentions would otherwise spam every target).
+    const MAX_MENTIONS_PER_POST: usize = 50;
+
     let mut mentions = std::collections::HashSet::new();
     for word in content.split_whitespace() {
+        if word.starts_with("@circle/") {
+            // Phase 4: Circle Mentions are not user mentions and must not fan
+            // out notifications to Circle members automatically.
+            continue;
+        }
         if word.starts_with('@') && word.len() > 1 {
             let mention = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '_' && c != '-');
             if mention.len() > 1 {
                 mentions.insert(mention[1..].to_string()); // skip '@'
             }
         }
+    }
+
+    let original_mention_count = mentions.len();
+    let mentions: Vec<String> = mentions.into_iter().take(MAX_MENTIONS_PER_POST).collect();
+    if original_mention_count > MAX_MENTIONS_PER_POST {
+        tracing::warn!(
+            post_id = %post_id,
+            author_id = %author_id,
+            original_count = original_mention_count,
+            capped_at = MAX_MENTIONS_PER_POST,
+            "mention fan-out exceeded cap; truncating to prevent notification amplification"
+        );
     }
 
     for mention in mentions {
@@ -227,37 +947,132 @@ async fn parse_and_notify_mentions(
 
 /// Helper to parse the first URL in the content and fetch its OpenGraph data
 async fn parse_and_store_opengraph(c_pool: sqlx::PgPool, content: String, post_id: Uuid) {
+    // CDDRP Phase 3.2: cap OG body to 1 MB to prevent memory exhaustion from
+    // attacker-controlled URLs that return huge or chunked bodies.
+    const MAX_OG_BYTES: usize = 1024 * 1024;
+
     if let Ok(url_regex) = regex::Regex::new(r"https?://[^\s<]+") {
         if let Some(mat) = url_regex.find(&content) {
             let url = mat.as_str().to_string();
 
+            // CDDRP Phase 3.2 (SSRF hardening): validate the URL host BEFORE we
+            // make any outbound request. Mirrors the logic in
+            // `backend/src/rewards/service.rs::validate_postback_url` /
+            // `is_blocked_postback_ip`. OG is allowed over http OR https.
+            let parsed = match url::Url::parse(&url) {
+                Ok(u) => u,
+                Err(_) => return,
+            };
+            if !matches!(parsed.scheme(), "http" | "https") {
+                return;
+            }
+            let host = match parsed.host_str() {
+                Some(h) => h,
+                None => return,
+            };
+            let host_lower = host.trim_end_matches('.').to_ascii_lowercase();
+            if matches!(
+                host_lower.as_str(),
+                "localhost" | "metadata.google.internal" | "metadata"
+            ) || host_lower.ends_with(".localhost")
+            {
+                return;
+            }
+            if let Ok(ip) = host.parse::<std::net::IpAddr>() {
+                if is_blocked_og_ip(ip) {
+                    return;
+                }
+            } else {
+                // Non-literal hostname: TOCTOU-aware DNS check. reqwest will
+                // resolve again, but rejecting here drops the obvious cases.
+                let port = parsed.port_or_known_default().unwrap_or(80);
+                match tokio::net::lookup_host((host, port)).await {
+                    Ok(addrs) => {
+                        for addr in addrs {
+                            if is_blocked_og_ip(addr.ip()) {
+                                return;
+                            }
+                        }
+                    }
+                    Err(_) => return,
+                }
+            }
+
             let client = reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(3))
+                // CDDRP Phase 3.2: disable redirects so attacker-controlled
+                // 302 → http://169.254.169.254/ cannot bypass our checks.
+                .redirect(reqwest::redirect::Policy::none())
                 .build()
                 .unwrap_or_default();
 
-            if let Ok(res) = client.get(&url).send().await {
-                if let Ok(html) = res.text().await {
-                    let title = extract_meta_tag(&html, "og:title");
-                    let image = extract_meta_tag(&html, "og:image");
-                    let desc = extract_meta_tag(&html, "og:description");
-
-                    if title.is_some() || image.is_some() || desc.is_some() {
-                        let preview = serde_json::json!({
-                            "url": url,
-                            "title": title.unwrap_or_else(|| url.clone()),
-                            "image": image,
-                            "description": desc,
-                        });
-
-                        let _ = sqlx::query("UPDATE posts SET link_preview = $1 WHERE id = $2")
-                            .bind(preview)
-                            .bind(post_id)
-                            .execute(&c_pool)
-                            .await;
+            if let Ok(mut res) = client.get(&url).send().await {
+                // CDDRP Phase 3.2: bounded body read (1 MB cap). Stream chunks
+                // via `Response::chunk()` and bail as soon as we exceed the cap.
+                let mut buf: Vec<u8> = Vec::new();
+                let mut over_cap = false;
+                loop {
+                    match res.chunk().await {
+                        Ok(Some(chunk)) => {
+                            if buf.len().saturating_add(chunk.len()) > MAX_OG_BYTES {
+                                over_cap = true;
+                                break;
+                            }
+                            buf.extend_from_slice(&chunk);
+                        }
+                        Ok(None) => break,
+                        Err(_) => return,
                     }
                 }
+                if over_cap {
+                    return;
+                }
+                let html = String::from_utf8_lossy(&buf);
+                let title = extract_meta_tag(&html, "og:title");
+                let image = extract_meta_tag(&html, "og:image");
+                let desc = extract_meta_tag(&html, "og:description");
+
+                if title.is_some() || image.is_some() || desc.is_some() {
+                    let preview = serde_json::json!({
+                        "url": url,
+                        "title": title.unwrap_or_else(|| url.clone()),
+                        "image": image,
+                        "description": desc,
+                    });
+
+                    let _ = sqlx::query("UPDATE posts SET link_preview = $1 WHERE id = $2")
+                        .bind(preview)
+                        .bind(post_id)
+                        .execute(&c_pool)
+                        .await;
+                }
             }
+        }
+    }
+}
+
+/// CDDRP Phase 3.2: mirrors `is_blocked_postback_ip` in
+/// `backend/src/rewards/service.rs`. Kept inline (rather than `pub use`) because
+/// the source helper is private; if it ever becomes `pub`, replace with a call.
+fn is_blocked_og_ip(ip: std::net::IpAddr) -> bool {
+    match ip {
+        std::net::IpAddr::V4(ip) => {
+            ip.is_private()
+                || ip.is_loopback()
+                || ip.is_link_local()
+                || ip.is_broadcast()
+                || ip.is_documentation()
+                || ip.is_unspecified()
+                || ip.octets()[0] == 0
+                || ip.octets()[0] >= 224
+                || ip == std::net::Ipv4Addr::new(169, 254, 169, 254)
+        }
+        std::net::IpAddr::V6(ip) => {
+            ip.is_loopback()
+                || ip.is_unspecified()
+                || ip.is_unique_local()
+                || ip.is_unicast_link_local()
+                || ip.is_multicast()
         }
     }
 }
@@ -334,6 +1149,350 @@ fn extract_video_embed(url: &str) -> Option<(String, String)> {
     }
 }
 
+fn html_escape(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
+fn attr_escape(value: &str) -> String {
+    html_escape(value)
+}
+
+#[derive(Debug, Clone)]
+struct CircleMentionRef {
+    slug: String,
+    name: String,
+    visibility: String,
+    is_public: bool,
+    viewer_role: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+enum InlineMentionToken {
+    Text(String),
+    Hashtag(String),
+    Asset(String),
+    User(String),
+    Circle {
+        matched: String,
+        circle: CircleMentionRef,
+    },
+}
+
+fn is_mention_word_char(ch: char) -> bool {
+    ch.is_alphanumeric() || ch == '_' || ch == '-'
+}
+
+fn is_circle_name_char(ch: char) -> bool {
+    ch.is_alphanumeric() || ch == '_' || ch == '-' || ch == ' '
+}
+
+fn has_token_boundary(rest: &str, len: usize) -> bool {
+    rest.get(len..)
+        .and_then(|tail| tail.chars().next())
+        .map(|ch| !is_circle_name_char(ch))
+        .unwrap_or(true)
+}
+
+fn normalize_circle_term(value: &str) -> String {
+    value.trim().to_lowercase()
+}
+
+fn extract_circle_mention_terms(content: &str) -> (Vec<String>, Vec<String>) {
+    const MAX_CIRCLE_MENTION_CANDIDATES: usize = 80;
+    let mut names = std::collections::BTreeSet::new();
+    let mut slugs = std::collections::BTreeSet::new();
+
+    let canonical = regex::Regex::new(r"@circle/([A-Za-z0-9][A-Za-z0-9_-]{0,80})").unwrap();
+    for caps in canonical
+        .captures_iter(content)
+        .take(MAX_CIRCLE_MENTION_CANDIDATES)
+    {
+        if let Some(slug) = caps.get(1) {
+            slugs.insert(normalize_circle_term(slug.as_str()));
+        }
+    }
+
+    for (idx, ch) in content.char_indices() {
+        if ch != '@' {
+            continue;
+        }
+        let rest = &content[idx + 1..];
+        if rest.starts_with("circle/") {
+            continue;
+        }
+
+        let mut end = 0;
+        for (offset, next) in rest.char_indices() {
+            if offset > 80 || !is_circle_name_char(next) {
+                break;
+            }
+            end = offset + next.len_utf8();
+        }
+        if end == 0 {
+            continue;
+        }
+
+        let phrase = rest[..end].trim();
+        if phrase.is_empty() {
+            continue;
+        }
+
+        let words: Vec<&str> = phrase.split_whitespace().take(5).collect();
+        for end_word in 1..=words.len() {
+            let candidate = words[..end_word].join(" ");
+            if candidate.chars().count() < 2 {
+                continue;
+            }
+            let normalized = normalize_circle_term(&candidate);
+            names.insert(normalized.clone());
+            slugs.insert(normalized.replace(' ', "-"));
+        }
+    }
+
+    (
+        names
+            .into_iter()
+            .take(MAX_CIRCLE_MENTION_CANDIDATES)
+            .collect(),
+        slugs
+            .into_iter()
+            .take(MAX_CIRCLE_MENTION_CANDIDATES)
+            .collect(),
+    )
+}
+
+async fn resolve_circle_mentions_for_content(
+    pool: &sqlx::PgPool,
+    viewer_id: Option<Uuid>,
+    contents: &[String],
+) -> Result<Vec<CircleMentionRef>, AppError> {
+    let mut names = std::collections::BTreeSet::new();
+    let mut slugs = std::collections::BTreeSet::new();
+    for content in contents {
+        let (content_names, content_slugs) = extract_circle_mention_terms(content);
+        names.extend(content_names);
+        slugs.extend(content_slugs);
+    }
+    if names.is_empty() && slugs.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    use sqlx::Row;
+    let names: Vec<String> = names.into_iter().collect();
+    let slugs: Vec<String> = slugs.into_iter().collect();
+    let rows = sqlx::query(
+        r#"
+        SELECT c.slug, c.name, c.visibility, c.is_public, cm.role AS viewer_role
+        FROM circles c
+        LEFT JOIN circle_members cm
+          ON cm.circle_id = c.id
+         AND cm.user_id = $3
+        WHERE LOWER(c.name) = ANY($1)
+           OR LOWER(c.slug) = ANY($2)
+        ORDER BY GREATEST(length(c.name), length(c.slug)) DESC
+        LIMIT 100
+        "#,
+    )
+    .bind(&names)
+    .bind(&slugs)
+    .bind(viewer_id)
+    .fetch_all(pool)
+    .await?;
+
+    let mut circles = Vec::with_capacity(rows.len());
+    for row in rows {
+        circles.push(CircleMentionRef {
+            slug: row.try_get("slug")?,
+            name: row.try_get("name")?,
+            visibility: row
+                .try_get("visibility")
+                .unwrap_or_else(|_| "public".to_string()),
+            is_public: row.try_get("is_public").unwrap_or(false),
+            viewer_role: row.try_get("viewer_role").ok().flatten(),
+        });
+    }
+    circles.sort_by(|a, b| {
+        let a_len = a.name.len().max(a.slug.len());
+        let b_len = b.name.len().max(b.slug.len());
+        b_len.cmp(&a_len)
+    });
+    Ok(circles)
+}
+
+fn match_circle_mention_at(
+    rest_after_at: &str,
+    circles: &[CircleMentionRef],
+) -> Option<(usize, CircleMentionRef, String)> {
+    if let Some(slug_part) = rest_after_at.strip_prefix("circle/") {
+        let slug_len = slug_part
+            .chars()
+            .take_while(|ch| is_mention_word_char(*ch))
+            .map(char::len_utf8)
+            .sum::<usize>();
+        if slug_len > 0 {
+            let slug = &slug_part[..slug_len];
+            if let Some(circle) = circles
+                .iter()
+                .find(|circle| circle.slug.eq_ignore_ascii_case(slug))
+            {
+                let matched = format!("@circle/{}", slug);
+                return Some(("circle/".len() + slug_len + 1, circle.clone(), matched));
+            }
+        }
+    }
+
+    let lower_rest = rest_after_at.to_lowercase();
+    for circle in circles {
+        let name = circle.name.to_lowercase();
+        if lower_rest.starts_with(&name) && has_token_boundary(rest_after_at, circle.name.len()) {
+            let matched = format!("@{}", &rest_after_at[..circle.name.len()]);
+            return Some((circle.name.len() + 1, circle.clone(), matched));
+        }
+        let slug = circle.slug.to_lowercase();
+        if lower_rest.starts_with(&slug) && has_token_boundary(rest_after_at, circle.slug.len()) {
+            let matched = format!("@{}", &rest_after_at[..circle.slug.len()]);
+            return Some((circle.slug.len() + 1, circle.clone(), matched));
+        }
+    }
+    None
+}
+
+fn tokenize_inline_mentions(
+    content: &str,
+    circles: &[CircleMentionRef],
+) -> Vec<InlineMentionToken> {
+    let hashtag_re = regex::Regex::new(r"^#[\w\u00C0-\u024F]+").unwrap();
+    let user_re = regex::Regex::new(r"^@[\w\u00C0-\u024F_-]+").unwrap();
+    let asset_re = regex::Regex::new(r"^\$[a-zA-Z0-9_-]+").unwrap();
+
+    let mut out = Vec::new();
+    let mut cursor = 0;
+    while cursor < content.len() {
+        let next = content[cursor..]
+            .find(|ch| matches!(ch, '#' | '@' | '$'))
+            .map(|offset| cursor + offset);
+        let Some(start) = next else {
+            out.push(InlineMentionToken::Text(content[cursor..].to_string()));
+            break;
+        };
+        if start > cursor {
+            out.push(InlineMentionToken::Text(content[cursor..start].to_string()));
+        }
+
+        let rest = &content[start..];
+        if let Some(after_at) = rest.strip_prefix('@') {
+            if let Some((len, circle, matched)) = match_circle_mention_at(after_at, circles) {
+                out.push(InlineMentionToken::Circle { matched, circle });
+                cursor = start + len;
+                continue;
+            }
+            if let Some(matched) = user_re.find(rest).map(|m| m.as_str()) {
+                out.push(InlineMentionToken::User(matched[1..].to_string()));
+                cursor = start + matched.len();
+                continue;
+            }
+        } else if let Some(matched) = hashtag_re.find(rest).map(|m| m.as_str()) {
+            out.push(InlineMentionToken::Hashtag(matched[1..].to_string()));
+            cursor = start + matched.len();
+            continue;
+        } else if let Some(matched) = asset_re.find(rest).map(|m| m.as_str()) {
+            out.push(InlineMentionToken::Asset(matched[1..].to_string()));
+            cursor = start + matched.len();
+            continue;
+        }
+
+        let ch_len = rest.chars().next().map(char::len_utf8).unwrap_or(1);
+        out.push(InlineMentionToken::Text(rest[..ch_len].to_string()));
+        cursor = start + ch_len;
+    }
+    out
+}
+
+fn render_circle_mention(circle: &CircleMentionRef, matched: &str) -> String {
+    let viewer_can_see =
+        circle.viewer_role.is_some() || (circle.is_public && circle.visibility == "public");
+
+    if viewer_can_see {
+        let label = format!("@{}", circle.name);
+        return format!(
+            "<a class='circle-mention-tag' data-circle-slug='{}' href='/community/circle/{}' aria-label='Open Circle {}'>{}</a>",
+            attr_escape(&circle.slug),
+            attr_escape(&circle.slug),
+            attr_escape(&circle.name),
+            html_escape(&label)
+        );
+    }
+
+    if circle.visibility == "hidden" {
+        return "<span class='circle-mention-tag circle-mention-tag--redacted' aria-label='Hidden Circle'>Circle mention unavailable</span>".to_string();
+    }
+
+    let _ = matched;
+    "<span class='circle-mention-tag circle-mention-tag--private' aria-label='Private Circle'>Private Circle</span>".to_string()
+}
+
+fn render_inline_content_with_circle_mentions(
+    content: &str,
+    circles: &[CircleMentionRef],
+) -> String {
+    let tokens = tokenize_inline_mentions(content, circles);
+    let mut rendered = String::with_capacity(content.len());
+    for token in tokens {
+        match token {
+            InlineMentionToken::Text(text) => rendered.push_str(&text),
+            InlineMentionToken::Hashtag(tag) => {
+                let tag_lower = tag.to_lowercase();
+                rendered.push_str(&format!(
+                    "<a class='hashtag-tag' href='/community/hashtag/{}'>#{}</a>",
+                    attr_escape(&tag_lower),
+                    html_escape(&tag)
+                ));
+            }
+            InlineMentionToken::Asset(slug) => {
+                let slug_lower = slug.to_lowercase();
+                rendered.push_str(&format!(
+                    "<a class='asset-tag' data-asset-slug='{}' href='/marketplace?q={}'>${}</a>",
+                    attr_escape(&slug_lower),
+                    attr_escape(&slug_lower),
+                    html_escape(&slug)
+                ));
+            }
+            InlineMentionToken::User(user) => {
+                rendered.push_str(&format!(
+                    "<span class='mention-tag' data-handle='{}'>@{}</span>",
+                    attr_escape(&user),
+                    html_escape(&user)
+                ));
+            }
+            InlineMentionToken::Circle { matched, circle } => {
+                rendered.push_str(&render_circle_mention(&circle, &matched));
+            }
+        }
+    }
+    rendered
+}
+
+async fn hydrate_circle_mentions(
+    pool: &sqlx::PgPool,
+    viewer_id: Option<Uuid>,
+    posts: &mut [PostDisplay],
+) -> Result<(), AppError> {
+    let contents: Vec<String> = posts.iter().map(|post| post.content.clone()).collect();
+    let circles = resolve_circle_mentions_for_content(pool, viewer_id, &contents).await?;
+    if circles.is_empty() {
+        return Ok(());
+    }
+    for post in posts {
+        post.rendered_content = render_inline_content_with_circle_mentions(&post.content, &circles);
+    }
+    Ok(())
+}
+
 pub fn map_to_post_display(
     p: &models::Post,
     author_name: String,
@@ -366,44 +1525,10 @@ pub fn map_to_post_display(
         .content_sanitized
         .clone()
         .unwrap_or_else(|| p.content.clone());
-    // W3.5: also capture `$slug` so we can render asset tickers as links
-    // straight to the marketplace card. Slug accepts a-z, 0-9, hyphen.
-    let re =
-        regex::Regex::new(r"(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+|\$[a-zA-Z0-9_-]+)").unwrap();
     let rendered_content = if p.post_type == "announcement" {
         raw_content.clone()
     } else {
-        re.replace_all(&raw_content, |caps: &regex::Captures| {
-            let matched = &caps[0];
-            if matched.starts_with('#') {
-                let tag = matched[1..].to_lowercase();
-                // Phase 3 task 24: render hashtags as proper links to the
-                // dedicated /community/hashtag/:tag SSR page.
-                format!(
-                    "<a class='hashtag-tag' href='/community/hashtag/{}'>{}</a>",
-                    tag, matched
-                )
-            } else if matched.starts_with('$') {
-                // W3.5 \u2014 asset ticker. Link to the marketplace search page;
-                // FE upgrades it to a "Buy now" mini-CTA on hover.
-                let slug = matched[1..].to_lowercase();
-                format!(
-                    "<a class='asset-tag' data-asset-slug='{}' href='/marketplace?q={}'>{}</a>",
-                    slug, slug, matched
-                )
-            } else {
-                let user = &matched[1..];
-                // Emit data-handle so the client can resolve the mention to a
-                // user_id and open the profile modal. Until the dedicated
-                // by-handle endpoint lands in Phase 2 the client falls back to
-                // /api/community/search to resolve the handle.
-                format!(
-                    "<span class='mention-tag' data-handle='{}'>{}</span>",
-                    user, matched
-                )
-            }
-        })
-        .into_owned()
+        render_inline_content_with_circle_mentions(&raw_content, &[])
     };
 
     let image_urls = p
@@ -442,14 +1567,23 @@ pub fn map_to_post_display(
         author_avatar,
         author_badges,
         post_type: p.post_type.clone(),
+        content_tags: p.content_tags.clone().unwrap_or_default(),
         content: raw_content,
         rendered_content,
         asset_id: p.asset_id,
+        circle_id: p.circle_id,
+        circle_name: None,
         image_urls,
         link_preview: p.link_preview.clone(),
         link_preview_domain,
         reaction_count: p.reaction_count,
         comment_count: p.comment_count,
+        qa_status: p.qa_status.clone(),
+        official_answer_comment_id: p.official_answer_comment_id,
+        faq_candidate: p.faq_candidate,
+        featured_question: p.featured_question,
+        related_resource_url: p.related_resource_url.clone(),
+        related_asset_id: p.related_asset_id,
         current_user_reacted,
         is_bookmarked,
         is_hidden: p.is_hidden,
@@ -468,6 +1602,7 @@ pub fn map_to_post_display(
         // UX.14: ditto — feed-level callers hydrate this via the flair
         // batch helper. Detail/admin paths are free to skip the lookup.
         author_flair: None,
+        author_reputation_flairs: Vec::new(),
         author_top_contributor: false,
         author_tier: None,
     }
@@ -494,22 +1629,87 @@ pub async fn get_feed_data(
     } else {
         None
     };
+    let post_type_filter = match query.post_type.as_deref().map(str::trim) {
+        Some(value) if !value.is_empty() && value != "all" => Some(normalize_post_type(value)?),
+        _ => None,
+    };
+    let tag_filter = match query.tag.as_deref().map(str::trim) {
+        Some(value) if !value.is_empty() && value != "all" => {
+            let normalized = normalize_post_tags(Some(vec![value.to_string()]))?;
+            normalized.into_iter().next()
+        }
+        _ => None,
+    };
 
     let posts = service::get_community_feed(
         &c_pool,
         query.category.clone(),
         only_following_user_id,
         query.sort_by.clone(),
+        post_type_filter,
+        tag_filter,
         limit,
         offset,
         user.map(|u| u.id),
     )
     .await?;
 
+    hydrate_post_displays(state, &c_pool, posts, user).await
+}
+
+pub async fn get_circle_feed_data(
+    state: &AppState,
+    circle_id: Uuid,
+    page: Option<i64>,
+    sort_by: Option<String>,
+    post_type: Option<String>,
+    tag: Option<String>,
+    user: Option<&crate::auth::models::User>,
+) -> Result<Vec<PostDisplay>, AppError> {
+    let c_pool = get_community_pool(state)?;
+    ensure_circle_read_access(state, &c_pool, circle_id, user.map(|u| u.id)).await?;
+
+    let limit = 20;
+    let offset = (page.unwrap_or(1).max(1) - 1) * limit;
+    let post_type_filter = match post_type.as_deref().map(str::trim) {
+        Some(value) if !value.is_empty() && value != "all" => Some(normalize_post_type(value)?),
+        _ => None,
+    };
+    let tag_filter = match tag.as_deref().map(str::trim) {
+        Some(value) if !value.is_empty() && value != "all" => {
+            let normalized = normalize_post_tags(Some(vec![value.to_string()]))?;
+            normalized.into_iter().next()
+        }
+        _ => None,
+    };
+    let posts = service::get_circle_feed(
+        &c_pool,
+        circle_id,
+        sort_by,
+        post_type_filter,
+        tag_filter,
+        limit,
+        offset,
+        user.map(|u| u.id),
+    )
+    .await?;
+
+    hydrate_post_displays(state, &c_pool, posts, user).await
+}
+
+async fn hydrate_post_displays(
+    state: &AppState,
+    c_pool: &sqlx::PgPool,
+    posts: Vec<models::Post>,
+    user: Option<&crate::auth::models::User>,
+) -> Result<Vec<PostDisplay>, AppError> {
+    use sqlx::Row;
+
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
+    let circle_ids: Vec<Uuid> = posts.iter().filter_map(|p| p.circle_id).collect();
     let authors =
         user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
-    let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
+    let badges = service::get_badges_batch(c_pool, &user_ids).await?;
     let post_ids: Vec<Uuid> = posts.iter().map(|p| p.id).collect();
     let (reacted_post_ids, bookmarked_post_ids) = if let Some(current_user) = user {
         if post_ids.is_empty() {
@@ -526,7 +1726,7 @@ pub async fn get_feed_data(
             )
             .bind(current_user.id)
             .bind(&post_ids)
-            .fetch_all(&c_pool)
+            .fetch_all(c_pool)
             .await?
             .into_iter()
             .collect();
@@ -535,7 +1735,7 @@ pub async fn get_feed_data(
             )
             .bind(current_user.id)
             .bind(&post_ids)
-            .fetch_all(&c_pool)
+            .fetch_all(c_pool)
             .await?
             .into_iter()
             .collect();
@@ -550,19 +1750,39 @@ pub async fn get_feed_data(
 
     // UX.16 — batch-fetch quoted post briefs so each card can render the
     // shared post without an extra request per row.
-    let quoted_brief_map = fetch_quoted_briefs(state, &c_pool, &posts).await;
+    let quoted_brief_map = fetch_quoted_briefs(state, c_pool, &posts).await;
     // UX.14 — batch-fetch user flairs.
-    let flair_map = service::get_flairs_batch(&c_pool, &user_ids)
+    let flair_map = service::get_flairs_batch(c_pool, &user_ids)
+        .await
+        .unwrap_or_default();
+    // Phase 3 — non-user-editable reputation signals such as Official POOOL,
+    // Verified Investor, Asset Holder, and domain expert labels.
+    let reputation_flair_map = service::get_reputation_flairs_batch(c_pool, &user_ids)
         .await
         .unwrap_or_default();
     // UX.17 — top-50 by XP gets a "Top Contributor" badge.
-    let top_contributor_set = service::get_top_contributor_set(&c_pool, 50)
+    let top_contributor_set = service::get_top_contributor_set(c_pool, 50)
         .await
         .unwrap_or_default();
     // W3.4 — portfolio tier (cross-DB lookup against the core investments table).
     let tier_map = user_bridge::get_portfolio_tiers_batch(&state.db, &user_ids)
         .await
         .unwrap_or_default();
+    let circle_name_map: std::collections::HashMap<Uuid, String> = if circle_ids.is_empty() {
+        std::collections::HashMap::new()
+    } else {
+        sqlx::query("SELECT id, name FROM circles WHERE id = ANY($1)")
+            .bind(&circle_ids)
+            .fetch_all(c_pool)
+            .await?
+            .into_iter()
+            .filter_map(|row| {
+                let id: Uuid = row.try_get("id").ok()?;
+                let name: String = row.try_get("name").ok()?;
+                Some((id, name))
+            })
+            .collect()
+    };
 
     let mut feed = Vec::with_capacity(posts.len());
 
@@ -584,11 +1804,20 @@ pub async fn get_feed_data(
         if let Some(qid) = p.quoted_post_id {
             display.quoted = quoted_brief_map.get(&qid).cloned();
         }
+        display.circle_name = p
+            .circle_id
+            .and_then(|circle_id| circle_name_map.get(&circle_id).cloned());
         display.author_flair = flair_map.get(&p.user_id).cloned();
+        display.author_reputation_flairs = reputation_flair_map
+            .get(&p.user_id)
+            .cloned()
+            .unwrap_or_default();
         display.author_top_contributor = top_contributor_set.contains(&p.user_id);
         display.author_tier = tier_map.get(&p.user_id).cloned();
         feed.push(display);
     }
+
+    hydrate_circle_mentions(c_pool, user.map(|current_user| current_user.id), &mut feed).await?;
 
     Ok(feed)
 }
@@ -676,6 +1905,26 @@ async fn get_feed(
     Ok(Json(feed))
 }
 
+async fn get_circle_posts(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Query(query): Query<FeedQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db).await;
+    let feed = get_circle_feed_data(
+        &state,
+        circle_id,
+        query.page,
+        query.sort_by,
+        query.post_type,
+        query.tag,
+        user.as_ref(),
+    )
+    .await?;
+    Ok(Json(feed))
+}
+
 async fn get_post_detail(
     Path(post_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -691,8 +1940,8 @@ async fn get_post_detail(
         SELECT p.*
         FROM posts p
         JOIN community_profiles cp ON p.user_id = cp.user_id
-        WHERE p.id = $1 
-          AND p.is_hidden = false 
+        WHERE p.id = $1
+          AND p.is_hidden = false
           AND (cp.is_shadowbanned = false OR p.user_id = $2)
         "#,
     )
@@ -706,6 +1955,10 @@ async fn get_post_detail(
         Some(pt) => pt,
         None => return Err(AppError::NotFound("Post not found".into())),
     };
+
+    if let Some(circle_id) = p.circle_id {
+        ensure_circle_read_access(&state, &c_pool, circle_id, user.as_ref().map(|u| u.id)).await?;
+    }
 
     let author_info = user_bridge::get_user_info(&state.db, state.redis.as_ref(), p.user_id)
         .await
@@ -744,7 +1997,7 @@ async fn get_post_detail(
         false
     };
 
-    let response = map_to_post_display(
+    let mut response = map_to_post_display(
         &p,
         author_name,
         author_info.and_then(|a| a.avatar_url.clone()),
@@ -752,6 +2005,12 @@ async fn get_post_detail(
         current_user_reacted,
         is_bookmarked,
     );
+    hydrate_circle_mentions(
+        &c_pool,
+        user.as_ref().map(|current_user| current_user.id),
+        std::slice::from_mut(&mut response),
+    )
+    .await?;
 
     Ok(Json(response))
 }
@@ -839,6 +2098,7 @@ async fn toggle_reaction(
 
     // FIX-F7: Check ban before allowing reaction
     check_user_not_banned(&c_pool, user.id).await?;
+    ensure_post_read_access(&state, &c_pool, post_id, Some(user.id)).await?;
 
     let outcome =
         service::toggle_reaction(&c_pool, post_id, user.id, payload.reaction_type).await?;
@@ -886,6 +2146,7 @@ async fn create_comment(
 
     // FIX-F7: Check ban before allowing comment
     check_user_not_banned(&c_pool, user.id).await?;
+    ensure_post_write_access(&state, &c_pool, post_id, user.id).await?;
 
     // Check if post is locked (M6-ADMIN.1)
     let is_locked: Option<bool> = sqlx::query_scalar("SELECT is_locked FROM posts WHERE id = $1")
@@ -926,6 +2187,23 @@ async fn create_comment(
         payload.parent_comment_id,
     )
     .await?;
+
+    let comment_circle_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT circle_id FROM posts WHERE id = $1")
+            .bind(post_id)
+            .fetch_optional(&c_pool)
+            .await?
+            .flatten();
+    if let Some(circle_id) = comment_circle_id {
+        let _ = crate::community::challenges::increment_circle_progress(
+            &c_pool,
+            user.id,
+            circle_id,
+            "circle_comment",
+            1,
+        )
+        .await;
+    }
 
     // Award XP for comment
     let _ = crate::community::xp::award_xp(
@@ -1008,6 +2286,7 @@ async fn update_own_comment(
     }
     let post_id: Uuid = row.try_get("post_id")?;
     let original_content: String = row.try_get("content")?;
+    ensure_post_write_access(&state, &c_pool, post_id, user.id).await?;
 
     // Refuse edits on locked threads (same rule as create_comment).
     let is_locked: Option<bool> = sqlx::query_scalar("SELECT is_locked FROM posts WHERE id = $1")
@@ -1069,6 +2348,7 @@ async fn delete_own_comment(
         ));
     }
     let post_id: Uuid = row.try_get("post_id")?;
+    ensure_post_write_access(&state, &c_pool, post_id, user.id).await?;
     let is_locked: Option<bool> = sqlx::query_scalar("SELECT is_locked FROM posts WHERE id = $1")
         .bind(post_id)
         .fetch_optional(&c_pool)
@@ -1184,14 +2464,17 @@ async fn get_comments(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+    ensure_post_read_access(&state, &c_pool, post_id, Some(_user.id)).await?;
+    let can_mark_official_answer =
+        user_can_manage_qa_post(&state, &c_pool, _user.id, post_id).await?;
 
     let comments = sqlx::query_as::<_, Comment>(
         r#"
         SELECT c.*
         FROM comments c
         JOIN community_profiles cp ON c.user_id = cp.user_id
-        WHERE c.post_id = $1 
-          AND c.is_hidden = false 
+        WHERE c.post_id = $1
+          AND c.is_hidden = false
           AND (cp.is_shadowbanned = false OR c.user_id = $2)
         ORDER BY c.created_at ASC
         "#,
@@ -1221,10 +2504,259 @@ async fn get_comments(
             "edited_at": c.edited_at,
             "parent_comment_id": c.parent_comment_id,
             "reaction_count": c.reaction_count,
+            "is_official_answer": c.is_official_answer,
+            "is_verified_answer": c.is_verified_answer,
+            "answer_marked_by": c.answer_marked_by,
+            "answer_marked_at": c.answer_marked_at,
+            "can_mark_official_answer": can_mark_official_answer,
         }));
     }
 
     Ok(Json(result))
+}
+
+async fn update_post_qa_status(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+    Json(payload): Json<UpdateQaStatusReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    ensure_post_read_access(&state, &c_pool, post_id, Some(user.id)).await?;
+    if !user_can_manage_qa_post(&state, &c_pool, user.id, post_id).await? {
+        return Err(AppError::Forbidden(
+            "Only Circle moderators, verified experts, or platform admins can update Q&A status."
+                .into(),
+        ));
+    }
+
+    let status = normalize_qa_status(&payload.status)?;
+    let mut tx = c_pool.begin().await?;
+    use sqlx::Row;
+    let post = sqlx::query(
+        "SELECT post_type, qa_status FROM posts WHERE id = $1 AND is_hidden = false FOR UPDATE",
+    )
+    .bind(post_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Post not found".into()))?;
+    let post_type: String = post.try_get("post_type")?;
+    let previous_status: String = post
+        .try_get("qa_status")
+        .unwrap_or_else(|_| "open".to_string());
+
+    if !is_qa_post_type(&post_type) {
+        return Err(AppError::BadRequest(
+            "Q&A status can only be set on Question or Due Diligence posts.".into(),
+        ));
+    }
+
+    if let Some(comment_id) = payload.official_answer_comment_id {
+        let belongs_to_post = sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM comments WHERE id = $1 AND post_id = $2 AND is_hidden = false)",
+        )
+        .bind(comment_id)
+        .bind(post_id)
+        .fetch_one(&mut *tx)
+        .await?;
+        if !belongs_to_post {
+            return Err(AppError::BadRequest(
+                "Official answer comment must belong to this post.".into(),
+            ));
+        }
+    }
+
+    sqlx::query(
+        r#"
+        UPDATE posts
+        SET qa_status = $1,
+            official_answer_comment_id = COALESCE($2, official_answer_comment_id),
+            faq_candidate = COALESCE($3, faq_candidate),
+            featured_question = COALESCE($4, featured_question),
+            related_resource_url = COALESCE($5, related_resource_url),
+            related_asset_id = COALESCE($6, related_asset_id),
+            is_locked = CASE WHEN $1 = 'archived' THEN TRUE ELSE is_locked END,
+            updated_at = NOW()
+        WHERE id = $7
+        "#,
+    )
+    .bind(&status)
+    .bind(payload.official_answer_comment_id)
+    .bind(payload.faq_candidate)
+    .bind(payload.featured_question)
+    .bind(payload.related_resource_url.as_deref())
+    .bind(payload.related_asset_id)
+    .bind(post_id)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO community_answer_audit_log
+          (post_id, comment_id, actor_user_id, action, previous_status, new_status, metadata)
+        VALUES ($1, $2, $3, 'qa.status.update', $4, $5, $6)
+        "#,
+    )
+    .bind(post_id)
+    .bind(payload.official_answer_comment_id)
+    .bind(user.id)
+    .bind(&previous_status)
+    .bind(&status)
+    .bind(serde_json::json!({
+        "faq_candidate": payload.faq_candidate,
+        "featured_question": payload.featured_question,
+        "related_resource_url": payload.related_resource_url,
+        "related_asset_id": payload.related_asset_id,
+    }))
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "post_id": post_id,
+        "qa_status": status,
+    })))
+}
+
+async fn mark_official_answer(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(comment_id): Path<Uuid>,
+    Json(payload): Json<MarkOfficialAnswerReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+
+    let mark_official = payload.is_official_answer.unwrap_or(true);
+    let mark_verified = payload.is_verified_answer.unwrap_or(mark_official);
+    let requested_status = payload
+        .qa_status
+        .as_deref()
+        .map(normalize_qa_status)
+        .transpose()?;
+
+    let mut tx = c_pool.begin().await?;
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT c.post_id, c.is_official_answer, c.is_verified_answer,
+               p.post_type, p.qa_status, p.official_answer_comment_id
+        FROM comments c
+        JOIN posts p ON p.id = c.post_id
+        WHERE c.id = $1 AND c.is_hidden = false AND p.is_hidden = false
+        FOR UPDATE
+        "#,
+    )
+    .bind(comment_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Comment not found".into()))?;
+
+    let post_id: Uuid = row.try_get("post_id")?;
+    let post_type: String = row.try_get("post_type")?;
+    let previous_status: String = row
+        .try_get("qa_status")
+        .unwrap_or_else(|_| "open".to_string());
+    let previous_official_comment_id: Option<Uuid> =
+        row.try_get("official_answer_comment_id").ok().flatten();
+    let previous_official: bool = row.try_get("is_official_answer").unwrap_or(false);
+    let previous_verified: bool = row.try_get("is_verified_answer").unwrap_or(false);
+
+    ensure_post_read_access(&state, &c_pool, post_id, Some(user.id)).await?;
+    if !is_qa_post_type(&post_type) {
+        return Err(AppError::BadRequest(
+            "Official answers can only be set on Question or Due Diligence posts.".into(),
+        ));
+    }
+    if !user_can_manage_qa_post(&state, &c_pool, user.id, post_id).await? {
+        return Err(AppError::Forbidden(
+            "Only Circle moderators, verified experts, or platform admins can mark official answers."
+                .into(),
+        ));
+    }
+
+    let new_status = if mark_official {
+        requested_status.unwrap_or_else(|| "official_answer".to_string())
+    } else if previous_official_comment_id == Some(comment_id) {
+        requested_status.unwrap_or_else(|| "answered".to_string())
+    } else {
+        previous_status.clone()
+    };
+
+    sqlx::query(
+        r#"
+        UPDATE comments
+        SET is_official_answer = $1,
+            is_verified_answer = $2,
+            answer_marked_by = CASE WHEN $1 OR $2 THEN $3 ELSE answer_marked_by END,
+            answer_marked_at = CASE WHEN $1 OR $2 THEN NOW() ELSE answer_marked_at END
+        WHERE id = $4
+        "#,
+    )
+    .bind(mark_official)
+    .bind(mark_verified)
+    .bind(user.id)
+    .bind(comment_id)
+    .execute(&mut *tx)
+    .await?;
+
+    if mark_official {
+        sqlx::query(
+            "UPDATE posts SET qa_status = $1, official_answer_comment_id = $2, updated_at = NOW() WHERE id = $3",
+        )
+        .bind(&new_status)
+        .bind(comment_id)
+        .bind(post_id)
+        .execute(&mut *tx)
+        .await?;
+    } else if previous_official_comment_id == Some(comment_id) {
+        sqlx::query(
+            "UPDATE posts SET qa_status = $1, official_answer_comment_id = NULL, updated_at = NOW() WHERE id = $2",
+        )
+        .bind(&new_status)
+        .bind(post_id)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    sqlx::query(
+        r#"
+        INSERT INTO community_answer_audit_log
+          (post_id, comment_id, actor_user_id, action, previous_status, new_status, metadata)
+        VALUES ($1, $2, $3, 'qa.official_answer.mark', $4, $5, $6)
+        "#,
+    )
+    .bind(post_id)
+    .bind(comment_id)
+    .bind(user.id)
+    .bind(&previous_status)
+    .bind(&new_status)
+    .bind(serde_json::json!({
+        "previous_official": previous_official,
+        "previous_verified": previous_verified,
+        "is_official_answer": mark_official,
+        "is_verified_answer": mark_verified,
+    }))
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "post_id": post_id,
+        "comment_id": comment_id,
+        "qa_status": new_status,
+        "is_official_answer": mark_official,
+        "is_verified_answer": mark_verified,
+    })))
 }
 
 async fn get_admin_stats(
@@ -1284,7 +2816,60 @@ async fn create_user_post(
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
+    if payload.circle_id.is_some() {
+        return Err(AppError::BadRequest(
+            "Use the Circle post endpoint for Circle-scoped posts.".into(),
+        ));
+    }
+
+    let (post_id, verified_owner) = create_user_post_for_scope(&state, user, payload).await?;
+
+    Ok(Json(
+        serde_json::json!({ "id": post_id, "verified_owner": verified_owner }),
+    ))
+}
+
+async fn create_circle_post(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(mut payload): Json<CreatePostRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
     let c_pool = get_community_pool(&state)?;
+    ensure_circle_write_access(&state, &c_pool, circle_id, user.id).await?;
+    payload.circle_id = Some(circle_id);
+
+    let (post_id, verified_owner) = create_user_post_for_scope(&state, user, payload).await?;
+
+    Ok(Json(
+        serde_json::json!({ "id": post_id, "verified_owner": verified_owner }),
+    ))
+}
+
+async fn create_user_post_for_scope(
+    state: &AppState,
+    user: crate::auth::models::User,
+    mut payload: CreatePostRequest,
+) -> Result<(Uuid, bool), AppError> {
+    let c_pool = get_community_pool(state)?;
+
+    let post_type = normalize_post_type(&payload.post_type)?;
+    let content_tags = normalize_post_tags(payload.content_tags.take())?;
+    ensure_post_taxonomy_allowed(
+        state,
+        &c_pool,
+        user.id,
+        payload.circle_id,
+        &post_type,
+        &content_tags,
+    )
+    .await?;
+    payload.post_type = post_type;
+    payload.content_tags = Some(content_tags);
 
     if let Some(reason) = validation::check_automod(&payload.content) {
         return Err(AppError::Forbidden(format!(
@@ -1327,7 +2912,7 @@ async fn create_user_post(
     } else {
         // Fallback: Check if they mention an asset they own
         let owned_assets: Vec<String> = sqlx::query_scalar(
-            "SELECT a.name FROM investments i JOIN assets a ON i.asset_id = a.id WHERE i.user_id = $1 AND i.tokens_owned > 0"
+            "SELECT a.title FROM investments i JOIN assets a ON i.asset_id = a.id WHERE i.user_id = $1 AND i.tokens_owned > 0"
         )
         .bind(user.id)
         .fetch_all(&state.db)
@@ -1354,6 +2939,11 @@ async fn create_user_post(
         is_high_level_user,
     )
     .await?;
+
+    if let Some(circle_id) = payload.circle_id {
+        let _ =
+            record_circle_post_engagement(&c_pool, user.id, circle_id, &payload.post_type).await;
+    }
 
     // Award XP for post creation
     let _ = crate::community::xp::award_xp(
@@ -1401,9 +2991,7 @@ async fn create_user_post(
         parse_and_store_opengraph(c_pool_clone_for_og, content_clone_for_og, post_id).await;
     });
 
-    Ok(Json(
-        serde_json::json!({ "id": post_id, "verified_owner": verified_owner }),
-    ))
+    Ok((post_id, verified_owner))
 }
 
 #[derive(Deserialize)]
@@ -1596,6 +3184,707 @@ async fn take_report_action(
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
+#[derive(Deserialize)]
+struct AdminCircleOpsAlertQuery {
+    status: Option<String>,
+    severity: Option<String>,
+    alert_type: Option<String>,
+    circle_id: Option<Uuid>,
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
+
+#[derive(Deserialize)]
+struct AdminCircleOpsAlertActionReq {
+    action: String,
+    note: Option<String>,
+    assigned_to_user_id: Option<Uuid>,
+    snooze_minutes: Option<i64>,
+    workflow_state: Option<String>,
+}
+
+fn normalize_ops_alert_workflow_state(value: Option<&str>) -> Result<String, AppError> {
+    let normalized = value
+        .map(canonical_community_code)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| AppError::BadRequest("workflow_state is required.".into()))?;
+    match normalized.as_str() {
+        "triage"
+        | "investigating"
+        | "waiting_on_moderator"
+        | "waiting_on_policy"
+        | "mitigated"
+        | "monitoring" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "workflow_state must be triage, investigating, waiting_on_moderator, waiting_on_policy, mitigated, or monitoring."
+                .into(),
+        )),
+    }
+}
+
+fn normalize_admin_ops_alert_status(value: Option<&str>) -> Result<String, AppError> {
+    let normalized = value
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("active")
+        .to_ascii_lowercase();
+    match normalized.as_str() {
+        "active" | "open" | "acknowledged" | "resolved" | "all" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "status must be active, open, acknowledged, resolved, or all".to_string(),
+        )),
+    }
+}
+
+fn normalize_admin_ops_alert_severity(value: Option<&str>) -> Result<String, AppError> {
+    let normalized = value
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("all")
+        .to_ascii_lowercase();
+    match normalized.as_str() {
+        "all" | "info" | "warning" | "critical" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "severity must be info, warning, critical, or all".to_string(),
+        )),
+    }
+}
+
+fn normalize_admin_ops_alert_type(value: Option<&str>) -> Result<String, AppError> {
+    let normalized = value
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("all")
+        .to_ascii_lowercase();
+    match normalized.as_str() {
+        "all" | "report_backlog" | "spam_spike" | "failed_worker" | "posting_spike"
+        | "moderation_sla" | "notification_delivery" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "alert_type must be report_backlog, spam_spike, failed_worker, posting_spike, moderation_sla, notification_delivery, or all"
+                .to_string(),
+        )),
+    }
+}
+
+async fn admin_list_circle_ops_alerts(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Query(query): Query<AdminCircleOpsAlertQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_community_manage(&state, &admin).await?;
+    let c_pool = get_community_pool(&state)?;
+
+    let status = normalize_admin_ops_alert_status(query.status.as_deref())?;
+    let severity = normalize_admin_ops_alert_severity(query.severity.as_deref())?;
+    let alert_type = normalize_admin_ops_alert_type(query.alert_type.as_deref())?;
+    let limit = query
+        .limit
+        .unwrap_or(ADMIN_CIRCLE_OPS_ALERT_DEFAULT_LIMIT)
+        .clamp(1, ADMIN_CIRCLE_OPS_ALERT_MAX_LIMIT);
+    let offset = query.offset.unwrap_or(0).max(0);
+
+    let rows = sqlx::query(
+        r#"
+        SELECT a.id,
+               a.circle_id,
+               c.name AS circle_name,
+               c.slug AS circle_slug,
+               a.alert_type,
+               a.severity,
+               a.status,
+               a.summary,
+               a.details,
+               a.assigned_to_user_id,
+               a.escalation_level,
+               a.escalated_at,
+               a.snoozed_until,
+               a.escalation_note,
+               a.on_call_notified_at,
+               a.workflow_state,
+               a.workflow_note,
+               a.workflow_updated_at,
+               a.workflow_updated_by,
+               a.created_at,
+               a.resolved_at,
+               COUNT(*) OVER()::BIGINT AS total
+          FROM circle_ops_alerts a
+          LEFT JOIN circles c ON c.id = a.circle_id
+         WHERE ($1 = 'all'
+                OR ($1 = 'active' AND a.status IN ('open', 'acknowledged'))
+                OR a.status = $1)
+           AND ($2 = 'all' OR a.severity = $2)
+           AND ($3 = 'all' OR a.alert_type = $3)
+           AND ($4::UUID IS NULL OR a.circle_id = $4)
+         ORDER BY
+           CASE
+             WHEN a.snoozed_until IS NOT NULL AND a.snoozed_until > NOW() THEN 1
+             ELSE 0
+           END,
+           CASE a.status
+             WHEN 'open' THEN 0
+             WHEN 'acknowledged' THEN 1
+             ELSE 2
+           END,
+           CASE a.severity
+             WHEN 'critical' THEN 0
+             WHEN 'warning' THEN 1
+             ELSE 2
+           END,
+           a.escalation_level DESC,
+           a.created_at DESC
+         LIMIT $5 OFFSET $6
+        "#,
+    )
+    .bind(&status)
+    .bind(&severity)
+    .bind(&alert_type)
+    .bind(query.circle_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let total = rows
+        .first()
+        .and_then(|row| row.try_get::<i64, _>("total").ok())
+        .unwrap_or(0);
+
+    let alerts: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "circle_id": row.try_get::<Option<Uuid>, _>("circle_id").ok().flatten(),
+                "circle_name": row.try_get::<Option<String>, _>("circle_name").ok().flatten(),
+                "circle_slug": row.try_get::<Option<String>, _>("circle_slug").ok().flatten(),
+                "alert_type": row.try_get::<String, _>("alert_type").unwrap_or_default(),
+                "severity": row.try_get::<String, _>("severity").unwrap_or_else(|_| "info".to_string()),
+                "status": row.try_get::<String, _>("status").unwrap_or_else(|_| "open".to_string()),
+                "summary": row.try_get::<String, _>("summary").unwrap_or_default(),
+                "details": row.try_get::<serde_json::Value, _>("details").unwrap_or_else(|_| serde_json::json!({})),
+                "assigned_to_user_id": row.try_get::<Option<Uuid>, _>("assigned_to_user_id").ok().flatten(),
+                "escalation_level": row.try_get::<i32, _>("escalation_level").unwrap_or(0),
+                "escalated_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("escalated_at").ok().flatten(),
+                "snoozed_until": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("snoozed_until").ok().flatten(),
+                "escalation_note": row.try_get::<Option<String>, _>("escalation_note").ok().flatten(),
+                "on_call_notified_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("on_call_notified_at").ok().flatten(),
+                "workflow_state": row.try_get::<String, _>("workflow_state").unwrap_or_else(|_| "triage".to_string()),
+                "workflow_note": row.try_get::<Option<String>, _>("workflow_note").ok().flatten(),
+                "workflow_updated_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("workflow_updated_at").ok().flatten(),
+                "workflow_updated_by": row.try_get::<Option<Uuid>, _>("workflow_updated_by").ok().flatten(),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+                "resolved_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("resolved_at").ok().flatten(),
+            })
+        })
+        .collect();
+
+    let summary_row = sqlx::query(
+        r#"
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'open')::BIGINT AS open_count,
+          COUNT(*) FILTER (WHERE status = 'acknowledged')::BIGINT AS acknowledged_count,
+          COUNT(*) FILTER (WHERE severity = 'critical' AND status IN ('open', 'acknowledged'))::BIGINT AS critical_active_count,
+          COUNT(*) FILTER (WHERE alert_type = 'failed_worker' AND status IN ('open', 'acknowledged'))::BIGINT AS failed_worker_active_count,
+          COUNT(*) FILTER (WHERE escalation_level > 0 AND status IN ('open', 'acknowledged'))::BIGINT AS escalated_active_count,
+          COUNT(*) FILTER (WHERE snoozed_until IS NOT NULL AND snoozed_until > NOW() AND status IN ('open', 'acknowledged'))::BIGINT AS snoozed_active_count,
+          COUNT(*) FILTER (WHERE workflow_state IN ('waiting_on_moderator', 'waiting_on_policy') AND status IN ('open', 'acknowledged'))::BIGINT AS blocked_workflow_count
+          FROM circle_ops_alerts a
+         WHERE ($1 = 'all' OR a.severity = $1)
+           AND ($2 = 'all' OR a.alert_type = $2)
+           AND ($3::UUID IS NULL OR a.circle_id = $3)
+        "#,
+    )
+    .bind(&severity)
+    .bind(&alert_type)
+    .bind(query.circle_id)
+    .fetch_one(&c_pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "alerts": alerts,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "filters": {
+            "status": status,
+            "severity": severity,
+            "alert_type": alert_type,
+            "circle_id": query.circle_id,
+        },
+        "summary": {
+            "open_count": summary_row.try_get::<i64, _>("open_count").unwrap_or(0),
+            "acknowledged_count": summary_row.try_get::<i64, _>("acknowledged_count").unwrap_or(0),
+            "critical_active_count": summary_row.try_get::<i64, _>("critical_active_count").unwrap_or(0),
+            "failed_worker_active_count": summary_row.try_get::<i64, _>("failed_worker_active_count").unwrap_or(0),
+            "escalated_active_count": summary_row.try_get::<i64, _>("escalated_active_count").unwrap_or(0),
+            "snoozed_active_count": summary_row.try_get::<i64, _>("snoozed_active_count").unwrap_or(0),
+            "blocked_workflow_count": summary_row.try_get::<i64, _>("blocked_workflow_count").unwrap_or(0),
+        }
+    })))
+}
+
+async fn admin_take_circle_ops_alert_action(
+    admin: crate::admin::extractors::AdminUser,
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path(alert_id): Path<Uuid>,
+    Json(payload): Json<AdminCircleOpsAlertActionReq>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    require_community_manage(&state, &admin).await?;
+
+    let action = payload.action.trim().to_ascii_lowercase();
+    match action.as_str() {
+        "acknowledge"
+        | "resolve"
+        | "assign"
+        | "escalate"
+        | "snooze"
+        | "unsnooze"
+        | "mark_on_call_notified"
+        | "set_workflow_state" => {}
+        _ => {
+            return Err(AppError::BadRequest(
+                "Circle ops alert action must be acknowledge, resolve, assign, escalate, snooze, unsnooze, mark_on_call_notified, or set_workflow_state."
+                    .into(),
+            ));
+        }
+    };
+    let note = payload.note.unwrap_or_default().trim().to_string();
+    if note.chars().count() > 1000 {
+        return Err(AppError::BadRequest(
+            "Alert action note must be 1000 characters or fewer.".into(),
+        ));
+    }
+    let assigned_to_user_id = if action == "assign" {
+        let Some(user_id) = payload.assigned_to_user_id else {
+            return Err(AppError::BadRequest(
+                "assigned_to_user_id is required for assign actions.".into(),
+            ));
+        };
+        let target_exists = sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND status <> 'deleted')",
+        )
+        .bind(user_id)
+        .fetch_one(&state.db)
+        .await?;
+        if !target_exists {
+            return Err(AppError::NotFound("Assigned user not found.".into()));
+        }
+        Some(user_id)
+    } else {
+        None
+    };
+    let snooze_minutes = if action == "snooze" {
+        let minutes = payload.snooze_minutes.ok_or_else(|| {
+            AppError::BadRequest("snooze_minutes is required for snooze actions.".into())
+        })?;
+        if !(5..=10_080).contains(&minutes) {
+            return Err(AppError::BadRequest(
+                "snooze_minutes must be between 5 and 10080.".into(),
+            ));
+        }
+        Some(minutes as i32)
+    } else {
+        None
+    };
+    let workflow_state = if action == "set_workflow_state" {
+        Some(normalize_ops_alert_workflow_state(
+            payload.workflow_state.as_deref(),
+        )?)
+    } else {
+        None
+    };
+
+    let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
+    let actor_id = admin.user.id.to_string();
+    let row = match action.as_str() {
+        "acknowledge" | "resolve" => {
+            let new_status = if action == "acknowledge" {
+                "acknowledged"
+            } else {
+                "resolved"
+            };
+            sqlx::query(
+                r#"
+                UPDATE circle_ops_alerts
+                   SET status = $2,
+                       resolved_at = CASE WHEN $2 = 'resolved' THEN NOW() ELSE resolved_at END,
+                       snoozed_until = CASE WHEN $2 = 'resolved' THEN NULL ELSE snoozed_until END,
+                       details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                         'last_platform_action', $3,
+                         'last_platform_action_note', NULLIF($4, ''),
+                         'last_platform_action_by', $5,
+                         'last_platform_action_at', NOW()
+                       )
+                 WHERE id = $1
+                   AND status IN ('open', 'acknowledged')
+                 RETURNING alert_type,
+                           severity,
+                           status,
+                           circle_id,
+                           summary,
+                           assigned_to_user_id,
+                           escalation_level,
+                           snoozed_until,
+                           on_call_notified_at,
+                           workflow_state,
+                           workflow_note,
+                           workflow_updated_at,
+                           workflow_updated_by
+                "#,
+            )
+            .bind(alert_id)
+            .bind(new_status)
+            .bind(&action)
+            .bind(&note)
+            .bind(&actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        "assign" => {
+            let user_id = assigned_to_user_id.expect("assign action validated assigned user");
+            sqlx::query(
+                r#"
+                UPDATE circle_ops_alerts
+                   SET assigned_to_user_id = $2,
+                       details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                         'last_platform_action', $3,
+                         'last_platform_action_note', NULLIF($4, ''),
+                         'last_platform_action_by', $5,
+                         'last_platform_action_at', NOW(),
+                         'assigned_to_user_id', $2::TEXT
+                       )
+                 WHERE id = $1
+                   AND status IN ('open', 'acknowledged')
+                 RETURNING alert_type,
+                           severity,
+                           status,
+                           circle_id,
+                           summary,
+                           assigned_to_user_id,
+                           escalation_level,
+                           snoozed_until,
+                           on_call_notified_at,
+                           workflow_state,
+                           workflow_note,
+                           workflow_updated_at,
+                           workflow_updated_by
+                "#,
+            )
+            .bind(alert_id)
+            .bind(user_id)
+            .bind(&action)
+            .bind(&note)
+            .bind(&actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        "escalate" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_ops_alerts
+                   SET escalation_level = LEAST(escalation_level + 1, 5),
+                       escalated_at = NOW(),
+                       escalation_note = NULLIF($2, ''),
+                       details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                         'last_platform_action', $3,
+                         'last_platform_action_note', NULLIF($2, ''),
+                         'last_platform_action_by', $4,
+                         'last_platform_action_at', NOW(),
+                         'escalation_level', LEAST(escalation_level + 1, 5)
+                       )
+                 WHERE id = $1
+                   AND status IN ('open', 'acknowledged')
+                 RETURNING alert_type,
+                           severity,
+                           status,
+                           circle_id,
+                           summary,
+                           assigned_to_user_id,
+                           escalation_level,
+                           snoozed_until,
+                           on_call_notified_at,
+                           workflow_state,
+                           workflow_note,
+                           workflow_updated_at,
+                           workflow_updated_by
+                "#,
+            )
+            .bind(alert_id)
+            .bind(&note)
+            .bind(&action)
+            .bind(&actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        "snooze" => {
+            let minutes = snooze_minutes.expect("snooze action validated minutes");
+            sqlx::query(
+                r#"
+                UPDATE circle_ops_alerts
+                   SET snoozed_until = NOW() + ($2::INT * INTERVAL '1 minute'),
+                       details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                         'last_platform_action', $3,
+                         'last_platform_action_note', NULLIF($4, ''),
+                         'last_platform_action_by', $5,
+                         'last_platform_action_at', NOW(),
+                         'snooze_minutes', $2
+                       )
+                 WHERE id = $1
+                   AND status IN ('open', 'acknowledged')
+                 RETURNING alert_type,
+                           severity,
+                           status,
+                           circle_id,
+                           summary,
+                           assigned_to_user_id,
+                           escalation_level,
+                           snoozed_until,
+                           on_call_notified_at,
+                           workflow_state,
+                           workflow_note,
+                           workflow_updated_at,
+                           workflow_updated_by
+                "#,
+            )
+            .bind(alert_id)
+            .bind(minutes)
+            .bind(&action)
+            .bind(&note)
+            .bind(&actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        "unsnooze" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_ops_alerts
+                   SET snoozed_until = NULL,
+                       details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                         'last_platform_action', $2,
+                         'last_platform_action_note', NULLIF($3, ''),
+                         'last_platform_action_by', $4,
+                         'last_platform_action_at', NOW()
+                       )
+                 WHERE id = $1
+                   AND status IN ('open', 'acknowledged')
+                 RETURNING alert_type,
+                           severity,
+                           status,
+                           circle_id,
+                           summary,
+                           assigned_to_user_id,
+                           escalation_level,
+                           snoozed_until,
+                           on_call_notified_at,
+                           workflow_state,
+                           workflow_note,
+                           workflow_updated_at,
+                           workflow_updated_by
+                "#,
+            )
+            .bind(alert_id)
+            .bind(&action)
+            .bind(&note)
+            .bind(&actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        "mark_on_call_notified" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_ops_alerts
+                   SET on_call_notified_at = NOW(),
+                       details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                         'last_platform_action', $2,
+                         'last_platform_action_note', NULLIF($3, ''),
+                         'last_platform_action_by', $4,
+                         'last_platform_action_at', NOW()
+                       )
+                 WHERE id = $1
+                   AND status IN ('open', 'acknowledged')
+                 RETURNING alert_type,
+                           severity,
+                           status,
+                           circle_id,
+                           summary,
+                           assigned_to_user_id,
+                           escalation_level,
+                           snoozed_until,
+                           on_call_notified_at,
+                           workflow_state,
+                           workflow_note,
+                           workflow_updated_at,
+                           workflow_updated_by
+                "#,
+            )
+            .bind(alert_id)
+            .bind(&action)
+            .bind(&note)
+            .bind(&actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        "set_workflow_state" => {
+            let workflow_state = workflow_state
+                .as_deref()
+                .expect("workflow action validated state");
+            sqlx::query(
+                r#"
+                UPDATE circle_ops_alerts
+                   SET workflow_state = $2,
+                       workflow_note = NULLIF($3, ''),
+                       workflow_updated_at = NOW(),
+                       workflow_updated_by = $4,
+                       status = CASE WHEN status = 'open' THEN 'acknowledged' ELSE status END,
+                       details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                         'last_platform_action', $5,
+                         'last_platform_action_note', NULLIF($3, ''),
+                         'last_platform_action_by', $6,
+                         'last_platform_action_at', NOW(),
+                         'workflow_state', $2
+                       )
+                 WHERE id = $1
+                   AND status IN ('open', 'acknowledged')
+                 RETURNING alert_type,
+                           severity,
+                           status,
+                           circle_id,
+                           summary,
+                           assigned_to_user_id,
+                           escalation_level,
+                           snoozed_until,
+                           on_call_notified_at,
+                           workflow_state,
+                           workflow_note,
+                           workflow_updated_at,
+                           workflow_updated_by
+                "#,
+            )
+            .bind(alert_id)
+            .bind(workflow_state)
+            .bind(&note)
+            .bind(admin.user.id)
+            .bind(&action)
+            .bind(&actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        _ => unreachable!("action allowlist validated above"),
+    }
+    .ok_or_else(|| AppError::NotFound("Circle ops alert not found.".into()))?;
+
+    let alert_type = row.try_get::<String, _>("alert_type").unwrap_or_default();
+    let severity = row.try_get::<String, _>("severity").unwrap_or_default();
+    let updated_status = row
+        .try_get::<String, _>("status")
+        .unwrap_or_else(|_| "open".into());
+    let circle_id = row.try_get::<Option<Uuid>, _>("circle_id").ok().flatten();
+    let summary = row.try_get::<String, _>("summary").unwrap_or_default();
+    let updated_assignee = row
+        .try_get::<Option<Uuid>, _>("assigned_to_user_id")
+        .ok()
+        .flatten();
+    let escalation_level = row.try_get::<i32, _>("escalation_level").unwrap_or(0);
+    let snoozed_until = row
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("snoozed_until")
+        .ok()
+        .flatten();
+    let on_call_notified_at = row
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("on_call_notified_at")
+        .ok()
+        .flatten();
+    let workflow_state = row
+        .try_get::<String, _>("workflow_state")
+        .unwrap_or_else(|_| "triage".to_string());
+    let workflow_note = row
+        .try_get::<Option<String>, _>("workflow_note")
+        .ok()
+        .flatten();
+    let workflow_updated_at = row
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("workflow_updated_at")
+        .ok()
+        .flatten();
+    let workflow_updated_by = row
+        .try_get::<Option<Uuid>, _>("workflow_updated_by")
+        .ok()
+        .flatten();
+    let fanout_queued = matches!(action.as_str(), "escalate" | "mark_on_call_notified");
+    if fanout_queued {
+        crate::community::background::enqueue_circle_ops_alert_notification_tx(
+            &mut tx,
+            alert_id,
+            &action,
+            updated_assignee,
+            serde_json::json!({
+                "circle_id": circle_id,
+                "alert_type": alert_type,
+                "severity": severity,
+                "status": updated_status,
+                "summary": summary,
+                "trigger_action": action,
+                "assigned_to_user_id": updated_assignee,
+                "escalation_level": escalation_level,
+                "snoozed_until": snoozed_until,
+                "on_call_notified_at": on_call_notified_at,
+                "workflow_state": workflow_state,
+                "workflow_updated_at": workflow_updated_at,
+                "workflow_updated_by": workflow_updated_by,
+                "platform_scope": true,
+            }),
+        )
+        .await?;
+    }
+
+    log_community_admin_action_tx(
+        &mut tx,
+        admin.user.id,
+        &format!("platform.circle_ops_alert.{}", action),
+        "circle_ops_alert",
+        Some(alert_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "alert_type": alert_type,
+            "severity": severity,
+            "status": updated_status,
+            "summary": summary,
+            "has_note": !note.is_empty(),
+            "assigned_to_user_id": updated_assignee,
+            "escalation_level": escalation_level,
+            "snoozed_until": snoozed_until,
+            "on_call_notified_at": on_call_notified_at,
+            "workflow_state": workflow_state,
+            "workflow_updated_at": workflow_updated_at,
+            "workflow_updated_by": workflow_updated_by,
+            "has_workflow_note": workflow_note.is_some(),
+            "fanout_queued": fanout_queued,
+            "platform_scope": true,
+        }),
+    )
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "status": updated_status,
+        "assigned_to_user_id": updated_assignee,
+        "escalation_level": escalation_level,
+        "snoozed_until": snoozed_until,
+        "on_call_notified_at": on_call_notified_at,
+        "workflow_state": workflow_state,
+        "workflow_updated_at": workflow_updated_at,
+        "workflow_updated_by": workflow_updated_by,
+        "fanout_queued": fanout_queued,
+    })))
+}
+
 // ─── ADMIN CHALLENGES ──────────────────────────────────────────────
 
 #[derive(serde::Deserialize)]
@@ -1749,11 +4038,12 @@ async fn get_trending_assets(
 
     let asset_ids: Vec<Uuid> = trending.iter().map(|(id, _)| *id).collect();
 
-    let assets: Vec<(Uuid, String, String, String, String)> =
-        sqlx::query_as("SELECT id, name, symbol, slug, asset_type FROM assets WHERE id = ANY($1)")
-            .bind(&asset_ids)
-            .fetch_all(&state.db)
-            .await?;
+    let assets: Vec<(Uuid, String, String, String, String)> = sqlx::query_as(
+        "SELECT id, title, COALESCE(NULLIF(UPPER(LEFT(REPLACE(slug, '-', ''), 8)), ''), 'ASSET') AS symbol, slug, asset_type FROM assets WHERE id = ANY($1)",
+    )
+    .bind(&asset_ids)
+    .fetch_all(&state.db)
+    .await?;
 
     let mut asset_map = std::collections::HashMap::new();
     for a in assets {
@@ -1806,9 +4096,10 @@ async fn admin_get_posts(
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
 
-    let posts: Vec<models::Post> = sqlx::query_as("SELECT * FROM posts ORDER BY created_at DESC")
-        .fetch_all(&c_pool)
-        .await?;
+    let posts: Vec<models::Post> =
+        sqlx::query_as("SELECT * FROM posts ORDER BY created_at DESC LIMIT 200")
+            .fetch_all(&c_pool)
+            .await?;
 
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
     let authors =
@@ -2659,6 +4950,10 @@ pub fn router() -> Router<AppState> {
             "/api/community/posts/:id/report",
             post(create_content_report),
         )
+        .route(
+            "/api/community/posts/:id/qa-status",
+            put(update_post_qa_status),
+        )
         // Reactions
         .route("/api/community/posts/:id/reactions", post(toggle_reaction))
         // Comments
@@ -2676,12 +4971,24 @@ pub fn router() -> Router<AppState> {
             "/api/community/comments/:id/reactions",
             post(toggle_comment_reaction),
         )
+        .route(
+            "/api/community/comments/:id/official-answer",
+            post(mark_official_answer),
+        )
         // Admin Stats & Moderation
         .route("/api/admin/community/stats", get(get_admin_stats))
         .route("/api/admin/community/reports", get(get_reports))
         .route(
             "/api/admin/community/reports/:id/action",
             post(take_report_action),
+        )
+        .route(
+            "/api/admin/community/ops-alerts",
+            get(admin_list_circle_ops_alerts),
+        )
+        .route(
+            "/api/admin/community/ops-alerts/:id/action",
+            post(admin_take_circle_ops_alert_action),
         )
         .route("/api/admin/community/posts", get(admin_get_posts))
         .route("/api/admin/community/posts/:id", get(admin_get_post_detail))
@@ -2791,6 +5098,99 @@ pub fn router() -> Router<AppState> {
             put(update_circle).delete(delete_own_circle_handler),
         )
         .route(
+            "/api/community/circles/:id/posts",
+            get(get_circle_posts).post(create_circle_post),
+        )
+        .route(
+            "/api/community/circles/:id/announcements",
+            get(get_circle_announcements),
+        )
+        .route("/api/community/circles/:id/events", get(get_circle_events))
+        .route(
+            "/api/community/circles/:id/resources",
+            get(get_circle_resources),
+        )
+        .route(
+            "/api/community/circles/:id/resources/manage",
+            get(get_circle_resource_manage).post(create_circle_resource_manage),
+        )
+        .route(
+            "/api/community/circles/:id/resources/upload",
+            post(upload_circle_resource_file),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/manage",
+            put(update_circle_resource_manage),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/lifecycle",
+            post(update_circle_resource_lifecycle),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/versions",
+            get(get_circle_resource_versions).post(create_circle_resource_version),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/versions/upload",
+            post(upload_circle_resource_version_file),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/versions/:version_id/access",
+            get(get_circle_resource_version_access),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/versions/:version_id/restore",
+            post(restore_circle_resource_version),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/versions/:version_id/review",
+            post(review_circle_resource_version),
+        )
+        .route(
+            "/api/community/circles/:id/resources/:resource_id/access",
+            get(get_circle_resource_access),
+        )
+        .route(
+            "/api/community/circles/:id/manage",
+            get(get_circle_manage_summary).put(update_circle_manage_settings),
+        )
+        .route(
+            "/api/community/circles/:id/analytics",
+            get(get_circle_analytics),
+        )
+        .route(
+            "/api/community/circles/:id/ops-alerts",
+            get(get_circle_ops_alerts),
+        )
+        .route(
+            "/api/community/circles/:id/ops-alerts/:alert_id/action",
+            post(take_circle_ops_alert_action),
+        )
+        .route(
+            "/api/community/circles/:id/reports",
+            get(get_circle_report_queue),
+        )
+        .route(
+            "/api/community/circles/:id/reports/bulk-action",
+            post(take_circle_report_bulk_action),
+        )
+        .route(
+            "/api/community/circles/:id/reports/:report_id/action",
+            post(take_circle_report_action),
+        )
+        .route(
+            "/api/community/circles/:id/challenges",
+            get(get_circle_challenges),
+        )
+        .route(
+            "/api/community/circles/:id/onboarding",
+            get(get_circle_onboarding),
+        )
+        .route(
+            "/api/community/circles/:id/onboarding/:step",
+            post(update_circle_onboarding_step),
+        )
+        .route(
             "/api/community/circles/:id/members",
             get(get_circle_members),
         )
@@ -2876,6 +5276,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/invites/:id/accept", post(accept_invite))
         .route("/api/community/invites/:id/decline", post(decline_invite))
         // Property Reviews (M5)
+        .route("/api/community/assets/:id/circle", get(get_asset_circle))
         .route(
             "/api/community/assets/:id/reviews",
             get(list_asset_reviews)
@@ -3088,6 +5489,11 @@ async fn get_profile_me(
 
     let c_pool = get_community_pool(&state)?;
     let profile = crate::community::service::get_user_profile(&c_pool, user.id).await?;
+    let mut reputation_flair_map =
+        crate::community::service::get_reputation_flairs_batch(&c_pool, &[user.id])
+            .await
+            .unwrap_or_default();
+    let reputation_flairs = reputation_flair_map.remove(&user.id).unwrap_or_default();
 
     // 14.8.1: surface ban state + pending-appeal flag so the frontend can render
     // the ban-appeal banner without a second roundtrip. We propagate SQL errors
@@ -3171,6 +5577,7 @@ async fn get_profile_me(
         "following_count": profile.following_count,
         "badges": profile.badges,
         "flair": profile.flair,
+        "reputation_flairs": reputation_flairs,
         "is_public_profile": profile.is_public_profile,
         "allow_dms_from_strangers": profile.allow_dms_from_strangers,
         "leaderboard_visible": leaderboard_visible,
@@ -4731,8 +7138,8 @@ async fn search_community(
     if search_type == "all" || search_type == "users" {
         users_result = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
             r#"
-            SELECT * FROM community_profiles 
-            WHERE is_shadowbanned = false 
+            SELECT * FROM community_profiles
+            WHERE is_shadowbanned = false
               AND is_community_banned = false
               AND bio ILIKE $1
             ORDER BY follower_count DESC
@@ -4758,8 +7165,8 @@ async fn search_community(
             let name_matched_users =
                 sqlx::query_as::<_, crate::community::models::CommunityProfile>(
                     r#"
-                SELECT * FROM community_profiles 
-                WHERE is_shadowbanned = false 
+                SELECT * FROM community_profiles
+                WHERE is_shadowbanned = false
                   AND is_community_banned = false
                   AND user_id = ANY($1)
                 "#,
@@ -4808,7 +7215,14 @@ async fn search_community(
               AND ($5::timestamptz IS NULL OR p.created_at <= $5)
               AND ($6::uuid IS NULL OR p.user_id = $6)
               AND (p.reaction_count + p.comment_count) >= $7
-            ORDER BY p.created_at DESC
+            ORDER BY
+              CASE
+                WHEN p.qa_status = 'official_answer' THEN 0
+                WHEN p.qa_status = 'answered' THEN 1
+                WHEN p.post_type IN ('question', 'due_diligence', 'resource') THEN 2
+                ELSE 3
+              END,
+              p.created_at DESC
             LIMIT $2 OFFSET $3
             "#,
         )
@@ -5095,6 +7509,163 @@ struct UpdateCircleReq {
     banner_url: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct CircleManageSettingsReq {
+    name: Option<String>,
+    description: Option<String>,
+    avatar_emoji: Option<String>,
+    slug: Option<String>,
+    is_public: Option<bool>,
+    visibility: Option<String>,
+    join_policy: Option<String>,
+    circle_type: Option<String>,
+    category: Option<String>,
+    language: Option<String>,
+    location_text: Option<String>,
+    rules_text: Option<String>,
+    investment_disclaimer: Option<String>,
+    join_approval_required: Option<bool>,
+    auto_approve_verified_investors: Option<bool>,
+    media_uploads_enabled: Option<bool>,
+    polls_enabled: Option<bool>,
+    anonymous_posting_enabled: Option<bool>,
+    link_posting_enabled: Option<bool>,
+    first_post_approval_enabled: Option<bool>,
+    slow_mode_seconds: Option<i32>,
+    blocked_words: Option<Vec<String>>,
+    investment_risk_keywords: Option<Vec<String>>,
+    allowed_post_types: Option<Vec<String>>,
+    required_post_tags: Option<Vec<String>>,
+    announcement_comments_enabled: Option<bool>,
+    onboarding_enabled: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct CircleOpsAlertActionReq {
+    action: String,
+    note: Option<String>,
+    workflow_state: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CircleReportBulkActionReq {
+    action: String,
+    report_ids: Vec<Uuid>,
+    admin_notes: Option<String>,
+}
+
+fn normalize_manage_text(
+    value: Option<String>,
+    max_len: usize,
+    label: &str,
+) -> Result<Option<String>, AppError> {
+    match value {
+        Some(v) => {
+            let trimmed = v.trim();
+            if trimmed.chars().count() > max_len {
+                return Err(AppError::BadRequest(format!(
+                    "{} must be {} characters or fewer.",
+                    label, max_len
+                )));
+            }
+            Ok(if trimmed.is_empty() {
+                Some(String::new())
+            } else {
+                Some(trimmed.to_string())
+            })
+        }
+        None => Ok(None),
+    }
+}
+
+fn validate_circle_slug(value: Option<String>) -> Result<Option<String>, AppError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let slug = value.trim().to_ascii_lowercase();
+    let valid_len = (3..=60).contains(&slug.len());
+    let valid_chars = slug
+        .chars()
+        .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-');
+    let valid_edges = !slug.starts_with('-') && !slug.ends_with('-');
+    if !(valid_len && valid_chars && valid_edges) {
+        return Err(AppError::BadRequest(
+            "Circle slug must be 3-60 lowercase letters, numbers, or hyphens and cannot start or end with a hyphen.".into(),
+        ));
+    }
+    Ok(Some(slug))
+}
+
+fn ensure_manage_value_allowed(
+    value: Option<String>,
+    allowed: &[&str],
+    label: &str,
+) -> Result<Option<String>, AppError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let normalized = canonical_community_code(&value);
+    if allowed.contains(&normalized.as_str()) {
+        Ok(Some(normalized))
+    } else {
+        Err(AppError::BadRequest(format!("Invalid {}.", label)))
+    }
+}
+
+fn normalize_manage_keywords(
+    values: Option<Vec<String>>,
+    label: &str,
+) -> Result<Option<Vec<String>>, AppError> {
+    let Some(values) = values else {
+        return Ok(None);
+    };
+    if values.len() > 50 {
+        return Err(AppError::BadRequest(format!(
+            "{} can contain at most 50 entries.",
+            label
+        )));
+    }
+
+    let mut out = Vec::new();
+    for value in values {
+        let item = value.trim().to_ascii_lowercase();
+        if item.is_empty() {
+            continue;
+        }
+        if item.chars().count() > 80 {
+            return Err(AppError::BadRequest(format!(
+                "{} entries must be 80 characters or fewer.",
+                label
+            )));
+        }
+        if !out.iter().any(|existing| existing == &item) {
+            out.push(item);
+        }
+    }
+    Ok(Some(out))
+}
+
+fn normalize_manage_post_types(
+    values: Option<Vec<String>>,
+) -> Result<Option<Vec<String>>, AppError> {
+    let Some(values) = values else {
+        return Ok(None);
+    };
+    let mut out = Vec::new();
+    for value in values {
+        let normalized = normalize_post_type(&value)?;
+        if !out.iter().any(|existing| existing == &normalized) {
+            out.push(normalized);
+        }
+    }
+    if out.is_empty() {
+        return Err(AppError::BadRequest(
+            "At least one allowed post type is required.".into(),
+        ));
+    }
+    Ok(Some(out))
+}
+
 async fn update_circle(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -5117,6 +7688,944 @@ async fn update_circle(
     )
     .await?;
     Ok(Json(circle))
+}
+
+async fn circle_manage_analytics_json(
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+) -> Result<serde_json::Value, AppError> {
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT
+          (SELECT COUNT(*)::BIGINT
+             FROM posts
+            WHERE circle_id = $1
+              AND is_hidden = FALSE
+              AND created_at >= NOW() - INTERVAL '7 days') AS posts_7d,
+          (SELECT COUNT(*)::BIGINT
+             FROM comments c
+             JOIN posts p ON p.id = c.post_id
+            WHERE p.circle_id = $1
+              AND c.is_hidden = FALSE
+              AND c.created_at >= NOW() - INTERVAL '7 days') AS comments_7d,
+          (SELECT COUNT(DISTINCT activity.user_id)::BIGINT
+             FROM (
+               SELECT user_id FROM posts
+                WHERE circle_id = $1
+                  AND is_hidden = FALSE
+                  AND created_at >= NOW() - INTERVAL '7 days'
+               UNION
+               SELECT c.user_id FROM comments c
+                JOIN posts p ON p.id = c.post_id
+               WHERE p.circle_id = $1
+                 AND c.is_hidden = FALSE
+                 AND c.created_at >= NOW() - INTERVAL '7 days'
+             ) activity) AS active_members_7d,
+          (SELECT COUNT(*)::BIGINT
+             FROM content_reports cr
+             JOIN posts p ON p.id = cr.post_id
+            WHERE p.circle_id = $1
+              AND cr.status = 'pending') AS pending_reports,
+          (SELECT COUNT(*)::BIGINT
+             FROM circle_members
+            WHERE circle_id = $1) AS member_count,
+          (SELECT COUNT(*)::BIGINT
+             FROM community_audit_logs
+            WHERE entity_type = 'circle'
+              AND entity_id = $1
+              AND created_at >= NOW() - INTERVAL '7 days') AS audit_events_7d
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_one(pool)
+    .await?;
+
+    let pending_reports: i64 = row.try_get("pending_reports").unwrap_or(0);
+    Ok(serde_json::json!({
+        "posts_7d": row.try_get::<i64, _>("posts_7d").unwrap_or(0),
+        "comments_7d": row.try_get::<i64, _>("comments_7d").unwrap_or(0),
+        "active_members_7d": row.try_get::<i64, _>("active_members_7d").unwrap_or(0),
+        "pending_reports": pending_reports,
+        "member_count": row.try_get::<i64, _>("member_count").unwrap_or(0),
+        "audit_events_7d": row.try_get::<i64, _>("audit_events_7d").unwrap_or(0),
+        "report_backlog_status": if pending_reports > 0 { "attention" } else { "healthy" },
+    }))
+}
+
+async fn get_circle_manage_summary(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let row = sqlx::query(
+        r#"
+        SELECT id, name, description, avatar_emoji, slug, is_public,
+               circle_type, visibility, join_policy, category, language,
+               location_text, rules_text, investment_disclaimer,
+               join_approval_required, auto_approve_verified_investors,
+               allowed_post_types, required_post_tags,
+               media_uploads_enabled, polls_enabled, anonymous_posting_enabled,
+               link_posting_enabled, first_post_approval_enabled,
+               slow_mode_seconds, blocked_words, investment_risk_keywords,
+               announcement_comments_enabled, onboarding_enabled,
+               analytics_enabled, updated_at
+          FROM circles
+         WHERE id = $1
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+
+    let analytics = circle_manage_analytics_json(&c_pool, circle_id).await?;
+
+    let audit_rows = sqlx::query(
+        r#"
+        SELECT action, entity_type, entity_id, target_user_id, details, created_at
+          FROM community_audit_logs
+         WHERE entity_type = 'circle'
+           AND entity_id = $1
+         ORDER BY created_at DESC
+         LIMIT 10
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let audit_log: Vec<serde_json::Value> = audit_rows
+        .into_iter()
+        .map(|audit| {
+            serde_json::json!({
+                "action": audit.try_get::<String, _>("action").unwrap_or_default(),
+                "entity_type": audit.try_get::<String, _>("entity_type").unwrap_or_default(),
+                "entity_id": audit.try_get::<Option<Uuid>, _>("entity_id").ok().flatten(),
+                "target_user_id": audit.try_get::<Option<Uuid>, _>("target_user_id").ok().flatten(),
+                "details": audit.try_get::<serde_json::Value, _>("details").unwrap_or_else(|_| serde_json::json!({})),
+                "created_at": audit.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "role": role,
+        "circle": {
+            "id": row.try_get::<Uuid, _>("id").unwrap_or(circle_id),
+            "name": row.try_get::<String, _>("name").unwrap_or_default(),
+            "description": row.try_get::<Option<String>, _>("description").ok().flatten(),
+            "avatar_emoji": row.try_get::<Option<String>, _>("avatar_emoji").ok().flatten(),
+            "slug": row.try_get::<String, _>("slug").unwrap_or_default(),
+            "is_public": row.try_get::<bool, _>("is_public").unwrap_or(false),
+            "circle_type": row.try_get::<String, _>("circle_type").unwrap_or_else(|_| "social".to_string()),
+            "visibility": row.try_get::<String, _>("visibility").unwrap_or_else(|_| "private".to_string()),
+            "join_policy": row.try_get::<String, _>("join_policy").unwrap_or_else(|_| "request".to_string()),
+            "category": row.try_get::<Option<String>, _>("category").ok().flatten(),
+            "language": row.try_get::<String, _>("language").unwrap_or_else(|_| "en".to_string()),
+            "location_text": row.try_get::<Option<String>, _>("location_text").ok().flatten(),
+            "rules_text": row.try_get::<Option<String>, _>("rules_text").ok().flatten(),
+            "investment_disclaimer": row.try_get::<Option<String>, _>("investment_disclaimer").ok().flatten(),
+            "join_approval_required": row.try_get::<bool, _>("join_approval_required").unwrap_or(false),
+            "auto_approve_verified_investors": row.try_get::<bool, _>("auto_approve_verified_investors").unwrap_or(false),
+            "allowed_post_types": row.try_get::<Vec<String>, _>("allowed_post_types").unwrap_or_default(),
+            "required_post_tags": row.try_get::<Vec<String>, _>("required_post_tags").unwrap_or_default(),
+            "media_uploads_enabled": row.try_get::<bool, _>("media_uploads_enabled").unwrap_or(true),
+            "polls_enabled": row.try_get::<bool, _>("polls_enabled").unwrap_or(true),
+            "anonymous_posting_enabled": row.try_get::<bool, _>("anonymous_posting_enabled").unwrap_or(false),
+            "link_posting_enabled": row.try_get::<bool, _>("link_posting_enabled").unwrap_or(true),
+            "first_post_approval_enabled": row.try_get::<bool, _>("first_post_approval_enabled").unwrap_or(false),
+            "slow_mode_seconds": row.try_get::<i32, _>("slow_mode_seconds").unwrap_or(0),
+            "blocked_words": row.try_get::<Vec<String>, _>("blocked_words").unwrap_or_default(),
+            "investment_risk_keywords": row.try_get::<Vec<String>, _>("investment_risk_keywords").unwrap_or_default(),
+            "announcement_comments_enabled": row.try_get::<bool, _>("announcement_comments_enabled").unwrap_or(true),
+            "onboarding_enabled": row.try_get::<bool, _>("onboarding_enabled").unwrap_or(true),
+            "analytics_enabled": row.try_get::<bool, _>("analytics_enabled").unwrap_or(true),
+            "updated_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("updated_at").ok(),
+        },
+        "analytics": analytics,
+        "audit_log": audit_log,
+    })))
+}
+
+async fn get_circle_analytics(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+    let analytics = circle_manage_analytics_json(&c_pool, circle_id).await?;
+    Ok(Json(serde_json::json!({
+        "circle_id": circle_id,
+        "role": role,
+        "analytics": analytics,
+    })))
+}
+
+async fn get_circle_ops_alerts(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let rows = sqlx::query(
+        r#"
+        SELECT id,
+               alert_type,
+               severity,
+               status,
+               workflow_state,
+               workflow_note,
+               workflow_updated_at,
+               workflow_updated_by,
+               summary,
+               details,
+               created_at,
+               resolved_at
+          FROM circle_ops_alerts
+         WHERE circle_id = $1
+           AND status IN ('open', 'acknowledged')
+         ORDER BY
+           CASE severity
+             WHEN 'critical' THEN 0
+             WHEN 'warning' THEN 1
+             ELSE 2
+           END,
+           created_at DESC
+         LIMIT 50
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let alerts: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "alert_type": row.try_get::<String, _>("alert_type").unwrap_or_default(),
+                "severity": row.try_get::<String, _>("severity").unwrap_or_else(|_| "info".to_string()),
+                "status": row.try_get::<String, _>("status").unwrap_or_else(|_| "open".to_string()),
+                "workflow_state": row.try_get::<String, _>("workflow_state").unwrap_or_else(|_| "triage".to_string()),
+                "workflow_note": row.try_get::<Option<String>, _>("workflow_note").ok().flatten(),
+                "workflow_updated_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("workflow_updated_at").ok().flatten(),
+                "workflow_updated_by": row.try_get::<Option<Uuid>, _>("workflow_updated_by").ok().flatten(),
+                "summary": row.try_get::<String, _>("summary").unwrap_or_default(),
+                "details": row.try_get::<serde_json::Value, _>("details").unwrap_or_else(|_| serde_json::json!({})),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+                "resolved_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("resolved_at").ok().flatten(),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "circle_id": circle_id,
+        "role": role,
+        "alerts": alerts,
+    })))
+}
+
+async fn take_circle_ops_alert_action(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, alert_id)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<CircleOpsAlertActionReq>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let action = payload.action.trim().to_ascii_lowercase();
+    if !matches!(
+        action.as_str(),
+        "acknowledge" | "resolve" | "set_workflow_state"
+    ) {
+        return Err(AppError::BadRequest(
+            "Circle ops alert action must be acknowledge, resolve, or set_workflow_state.".into(),
+        ));
+    }
+    let new_status = match action.as_str() {
+        "resolve" => "resolved",
+        "set_workflow_state" | "acknowledge" => "acknowledged",
+        _ => "acknowledged",
+    };
+    let workflow_state = if action == "set_workflow_state" {
+        Some(normalize_ops_alert_workflow_state(
+            payload.workflow_state.as_deref(),
+        )?)
+    } else {
+        None
+    };
+    let note = payload.note.unwrap_or_default().trim().to_string();
+    if note.chars().count() > 1000 {
+        return Err(AppError::BadRequest(
+            "Alert action note must be 1000 characters or fewer.".into(),
+        ));
+    }
+
+    let row = sqlx::query(
+        r#"
+        UPDATE circle_ops_alerts
+           SET status = $3,
+               resolved_at = CASE WHEN $3 = 'resolved' THEN NOW() ELSE resolved_at END,
+               workflow_state = COALESCE($7::TEXT, workflow_state),
+               workflow_note = CASE WHEN $7::TEXT IS NULL THEN workflow_note ELSE NULLIF($5, '') END,
+               workflow_updated_at = CASE WHEN $7::TEXT IS NULL THEN workflow_updated_at ELSE NOW() END,
+               workflow_updated_by = CASE WHEN $7::TEXT IS NULL THEN workflow_updated_by ELSE $6::UUID END,
+               details = COALESCE(details, '{}'::JSONB) || JSONB_BUILD_OBJECT(
+                 'last_action', $4,
+                 'last_action_note', NULLIF($5, ''),
+                 'last_action_by', $6,
+                 'last_action_at', NOW(),
+                 'workflow_state', COALESCE($7::TEXT, workflow_state)
+               )
+         WHERE id = $1
+           AND circle_id = $2
+           AND status IN ('open', 'acknowledged')
+         RETURNING alert_type, severity, status, workflow_state
+        "#,
+    )
+    .bind(alert_id)
+    .bind(circle_id)
+    .bind(new_status)
+    .bind(&action)
+    .bind(&note)
+    .bind(user.id.to_string())
+    .bind(workflow_state.as_deref())
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle ops alert not found.".into()))?;
+
+    let alert_type = row.try_get::<String, _>("alert_type").unwrap_or_default();
+    let severity = row.try_get::<String, _>("severity").unwrap_or_default();
+    let workflow_state = row
+        .try_get::<String, _>("workflow_state")
+        .unwrap_or_else(|_| "triage".to_string());
+    crate::community::audit::log(
+        &c_pool,
+        user.id,
+        &format!("circle.ops_alert.{}", action),
+        "circle_ops_alert",
+        Some(alert_id),
+        None,
+        Some(serde_json::json!({
+            "circle_id": circle_id,
+            "alert_type": alert_type,
+            "severity": severity,
+            "status": new_status,
+            "workflow_state": workflow_state,
+            "has_note": !note.is_empty(),
+        })),
+    )
+    .await;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "status": new_status,
+        "workflow_state": workflow_state,
+    })))
+}
+
+async fn get_circle_report_queue(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let rows = sqlx::query(
+        r#"
+        SELECT cr.id,
+               cr.post_id,
+               cr.reporter_id,
+               cr.reason,
+               cr.reporter_note,
+               cr.status,
+               cr.admin_notes,
+               cr.created_at,
+               p.user_id AS post_author_id,
+               p.post_type,
+               LEFT(COALESCE(p.content_sanitized, p.content), 500) AS post_content
+          FROM content_reports cr
+          JOIN posts p ON p.id = cr.post_id
+         WHERE p.circle_id = $1
+           AND cr.status = 'pending'
+         ORDER BY cr.created_at ASC
+         LIMIT 50
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let mut user_ids = std::collections::HashSet::new();
+    for row in &rows {
+        if let Ok(id) = row.try_get::<Uuid, _>("reporter_id") {
+            user_ids.insert(id);
+        }
+        if let Ok(id) = row.try_get::<Uuid, _>("post_author_id") {
+            user_ids.insert(id);
+        }
+    }
+    let user_ids: Vec<Uuid> = user_ids.into_iter().collect();
+    let users = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids)
+        .await
+        .unwrap_or_default();
+
+    let reports: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            let reporter_id = row.try_get::<Uuid, _>("reporter_id").unwrap_or_default();
+            let author_id = row.try_get::<Uuid, _>("post_author_id").unwrap_or_default();
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").unwrap_or_default(),
+                "post_id": row.try_get::<Uuid, _>("post_id").unwrap_or_default(),
+                "reporter_id": reporter_id,
+                "reporter_name": users.get(&reporter_id)
+                    .map(|info| info.display_name.clone())
+                    .unwrap_or_else(|| "Unknown reporter".to_string()),
+                "post_author_id": author_id,
+                "post_author_name": users.get(&author_id)
+                    .map(|info| info.display_name.clone())
+                    .unwrap_or_else(|| "Unknown author".to_string()),
+                "post_type": row.try_get::<String, _>("post_type").unwrap_or_else(|_| "general".to_string()),
+                "post_content": row.try_get::<String, _>("post_content").unwrap_or_default(),
+                "reason": row.try_get::<String, _>("reason").unwrap_or_default(),
+                "reporter_note": row.try_get::<Option<String>, _>("reporter_note").ok().flatten(),
+                "status": row.try_get::<String, _>("status").unwrap_or_else(|_| "pending".to_string()),
+                "admin_notes": row.try_get::<Option<String>, _>("admin_notes").ok().flatten(),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "circle_id": circle_id,
+        "role": role,
+        "reports": reports,
+    })))
+}
+
+async fn take_circle_report_action(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, report_id)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<models::AdminReportActionRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+
+    if !matches!(payload.action.as_str(), "hide_post" | "dismiss_report") {
+        return Err(AppError::BadRequest(
+            "Circle report actions are limited to hide_post or dismiss_report.".into(),
+        ));
+    }
+
+    let notes = payload
+        .admin_notes
+        .as_deref()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    if notes.is_empty() {
+        return Err(AppError::BadRequest(
+            "Moderation notes are required.".to_string(),
+        ));
+    }
+    if notes.chars().count() > 1000 {
+        return Err(AppError::BadRequest(
+            "Moderation notes must be 1000 characters or fewer.".to_string(),
+        ));
+    }
+
+    let belongs_to_circle = sqlx::query_scalar::<_, bool>(
+        r#"
+        SELECT EXISTS(
+          SELECT 1
+            FROM content_reports cr
+            JOIN posts p ON p.id = cr.post_id
+           WHERE cr.id = $1
+             AND p.circle_id = $2
+        )
+        "#,
+    )
+    .bind(report_id)
+    .bind(circle_id)
+    .fetch_one(&c_pool)
+    .await?;
+    if !belongs_to_circle {
+        return Err(AppError::NotFound(
+            "Report not found for this Circle.".into(),
+        ));
+    }
+
+    service::action_on_report(&c_pool, report_id, user.id, &payload.action, notes).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+async fn take_circle_report_bulk_action(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<CircleReportBulkActionReq>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+
+    if !matches!(payload.action.as_str(), "hide_posts" | "dismiss_reports") {
+        return Err(AppError::BadRequest(
+            "Circle bulk report action must be hide_posts or dismiss_reports.".into(),
+        ));
+    }
+
+    let mut deduped_report_ids = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for report_id in payload.report_ids {
+        if seen.insert(report_id) {
+            deduped_report_ids.push(report_id);
+        }
+    }
+    if deduped_report_ids.is_empty() {
+        return Err(AppError::BadRequest(
+            "At least one report must be selected.".into(),
+        ));
+    }
+    if deduped_report_ids.len() > 50 {
+        return Err(AppError::BadRequest(
+            "Bulk report actions are limited to 50 reports.".into(),
+        ));
+    }
+
+    let notes = payload
+        .admin_notes
+        .as_deref()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    if notes.is_empty() {
+        return Err(AppError::BadRequest(
+            "Moderation notes are required.".to_string(),
+        ));
+    }
+    if notes.chars().count() > 1000 {
+        return Err(AppError::BadRequest(
+            "Moderation notes must be 1000 characters or fewer.".to_string(),
+        ));
+    }
+
+    let mut tx = c_pool.begin().await?;
+    let rows = sqlx::query(
+        r#"
+        SELECT cr.id,
+               cr.post_id,
+               cr.status,
+               p.user_id AS post_author_id,
+               p.is_hidden,
+               p.hidden_reason
+          FROM content_reports cr
+          JOIN posts p ON p.id = cr.post_id
+         WHERE cr.id = ANY($1)
+           AND p.circle_id = $2
+         FOR UPDATE OF cr, p
+        "#,
+    )
+    .bind(&deduped_report_ids)
+    .bind(circle_id)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    if rows.len() != deduped_report_ids.len() {
+        return Err(AppError::NotFound(
+            "One or more reports were not found for this Circle.".into(),
+        ));
+    }
+
+    let mut report_ids = Vec::with_capacity(rows.len());
+    let mut post_ids = Vec::new();
+    let mut target_user_ids = Vec::new();
+    let mut previous_posts = Vec::new();
+    let mut post_seen = std::collections::HashSet::new();
+    for row in rows {
+        let report_id: Uuid = row.try_get("id")?;
+        let post_id: Uuid = row.try_get("post_id")?;
+        let status: String = row.try_get("status")?;
+        if status != "pending" {
+            return Err(AppError::Conflict(
+                "One or more reports have already been moderated.".into(),
+            ));
+        }
+
+        report_ids.push(report_id);
+        target_user_ids.push(row.try_get::<Uuid, _>("post_author_id")?);
+        previous_posts.push(serde_json::json!({
+            "report_id": report_id,
+            "post_id": post_id,
+            "is_hidden": row.try_get::<bool, _>("is_hidden")?,
+            "hidden_reason": row.try_get::<Option<String>, _>("hidden_reason")?,
+        }));
+        if post_seen.insert(post_id) {
+            post_ids.push(post_id);
+        }
+    }
+
+    let (report_status, audit_action, hidden_reason) = match payload.action.as_str() {
+        "hide_posts" => (
+            "resolved",
+            "circle.report.bulk_hide_posts",
+            Some(format!("Hidden after bulk report triage: {}", notes)),
+        ),
+        "dismiss_reports" => ("dismissed", "circle.report.bulk_dismiss_reports", None),
+        _ => unreachable!("bulk report action was allowlisted above"),
+    };
+
+    if let Some(reason) = hidden_reason.as_deref() {
+        let post_result = sqlx::query(
+            "UPDATE posts SET is_hidden = true, hidden_reason = $1, updated_at = NOW() WHERE id = ANY($2)",
+        )
+        .bind(reason)
+        .bind(&post_ids)
+        .execute(&mut *tx)
+        .await?;
+        if post_result.rows_affected() != post_ids.len() as u64 {
+            return Err(AppError::Conflict(
+                "One or more reported posts could not be updated.".into(),
+            ));
+        }
+    }
+
+    let report_result = sqlx::query(
+        "UPDATE content_reports SET status = $1, admin_notes = $2, updated_at = NOW() WHERE id = ANY($3) AND status = 'pending'",
+    )
+    .bind(report_status)
+    .bind(&notes)
+    .bind(&report_ids)
+    .execute(&mut *tx)
+    .await?;
+    if report_result.rows_affected() != report_ids.len() as u64 {
+        return Err(AppError::Conflict(
+            "One or more reports have already been moderated.".into(),
+        ));
+    }
+
+    sqlx::query(
+        r#"INSERT INTO community_audit_logs
+           (actor_user_id, action, entity_type, entity_id, target_user_id, details)
+           VALUES ($1, $2, 'circle_report_bulk_action', $3, $4, $5)"#,
+    )
+    .bind(user.id)
+    .bind(audit_action)
+    .bind(circle_id)
+    .bind(Option::<Uuid>::None)
+    .bind(serde_json::json!({
+        "circle_id": circle_id,
+        "action": payload.action,
+        "report_ids": report_ids,
+        "post_ids": post_ids,
+        "target_user_ids": target_user_ids,
+        "report_count": report_result.rows_affected(),
+        "post_count": post_ids.len(),
+        "new_report_status": report_status,
+        "admin_notes": notes,
+        "previous_posts": previous_posts,
+    }))
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "action": audit_action,
+        "report_count": report_result.rows_affected(),
+        "post_count": post_ids.len(),
+    })))
+}
+
+async fn update_circle_manage_settings(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<CircleManageSettingsReq>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_manage_access(&state, &c_pool, circle_id, user.id).await?;
+    let is_platform_admin = role == "platform_admin";
+    let is_owner = role == "owner" || is_platform_admin;
+    let is_admin_or_owner = matches!(role.as_str(), "owner" | "admin" | "platform_admin");
+
+    if payload.slug.is_some() && !is_owner {
+        return Err(AppError::Forbidden(
+            "Only the Circle owner or platform admin can change the Circle slug.".into(),
+        ));
+    }
+
+    let admin_only_payload = payload.name.is_some()
+        || payload.description.is_some()
+        || payload.avatar_emoji.is_some()
+        || payload.is_public.is_some()
+        || payload.visibility.is_some()
+        || payload.join_policy.is_some()
+        || payload.circle_type.is_some()
+        || payload.category.is_some()
+        || payload.language.is_some()
+        || payload.location_text.is_some()
+        || payload.rules_text.is_some()
+        || payload.investment_disclaimer.is_some()
+        || payload.join_approval_required.is_some()
+        || payload.auto_approve_verified_investors.is_some()
+        || payload.media_uploads_enabled.is_some()
+        || payload.polls_enabled.is_some()
+        || payload.anonymous_posting_enabled.is_some()
+        || payload.link_posting_enabled.is_some()
+        || payload.allowed_post_types.is_some()
+        || payload.required_post_tags.is_some()
+        || payload.announcement_comments_enabled.is_some()
+        || payload.onboarding_enabled.is_some();
+
+    if admin_only_payload && !is_admin_or_owner {
+        return Err(AppError::Forbidden(
+            "Moderators can update moderation controls, but not Circle owner/admin settings."
+                .into(),
+        ));
+    }
+
+    let name = normalize_manage_text(payload.name, 100, "Circle name")?;
+    if matches!(name.as_deref(), Some("")) {
+        return Err(AppError::BadRequest("Circle name is required.".into()));
+    }
+    let description = normalize_manage_text(payload.description, 500, "Description")?;
+    let avatar_emoji = normalize_manage_text(payload.avatar_emoji, 10, "Circle icon")?;
+    let slug = validate_circle_slug(payload.slug)?;
+    let visibility = ensure_manage_value_allowed(
+        payload.visibility,
+        &["public", "private", "hidden"],
+        "visibility",
+    )?;
+    let join_policy = ensure_manage_value_allowed(
+        payload.join_policy,
+        &[
+            "open",
+            "request",
+            "invite_only",
+            "holder_only",
+            "kyc_required",
+        ],
+        "join policy",
+    )?;
+    let circle_type = ensure_manage_value_allowed(
+        payload.circle_type,
+        &[
+            "social",
+            "asset",
+            "topic",
+            "expert",
+            "private_investor",
+            "official",
+        ],
+        "circle type",
+    )?;
+    let category = normalize_manage_text(payload.category, 80, "Category")?;
+    let language = normalize_manage_text(payload.language, 16, "Language")?.and_then(|value| {
+        if value.is_empty() {
+            None
+        } else {
+            Some(value.to_ascii_lowercase())
+        }
+    });
+    let location_text = normalize_manage_text(payload.location_text, 120, "Location")?;
+    let rules_text = normalize_manage_text(payload.rules_text, 5000, "Rules")?;
+    let investment_disclaimer =
+        normalize_manage_text(payload.investment_disclaimer, 2000, "Investment disclaimer")?;
+    let blocked_words = normalize_manage_keywords(payload.blocked_words, "Blocked words")?;
+    let investment_risk_keywords =
+        normalize_manage_keywords(payload.investment_risk_keywords, "Investment risk keywords")?;
+    let allowed_post_types = normalize_manage_post_types(payload.allowed_post_types)?;
+    let required_post_tags = if payload.required_post_tags.is_some() {
+        Some(normalize_post_tags(payload.required_post_tags)?)
+    } else {
+        None
+    };
+    let slow_mode_seconds = match payload.slow_mode_seconds {
+        Some(value) if !(0..=86400).contains(&value) => {
+            return Err(AppError::BadRequest(
+                "Slow mode must be between 0 and 86400 seconds.".into(),
+            ));
+        }
+        other => other,
+    };
+
+    use sqlx::Row;
+    let updated = sqlx::query(
+        r#"
+        UPDATE circles SET
+          name = COALESCE($2, name),
+          avatar_emoji = COALESCE($3, avatar_emoji),
+          description = CASE WHEN $4::BOOL THEN NULLIF($5, '') ELSE description END,
+          slug = COALESCE($6, slug),
+          is_public = COALESCE($7, is_public),
+          visibility = COALESCE($8, visibility),
+          join_policy = COALESCE($9, join_policy),
+          circle_type = COALESCE($10, circle_type),
+          category = CASE WHEN $11::BOOL THEN NULLIF($12, '') ELSE category END,
+          language = COALESCE($13, language),
+          location_text = CASE WHEN $14::BOOL THEN NULLIF($15, '') ELSE location_text END,
+          rules_text = CASE WHEN $16::BOOL THEN NULLIF($17, '') ELSE rules_text END,
+          investment_disclaimer = CASE WHEN $18::BOOL THEN NULLIF($19, '') ELSE investment_disclaimer END,
+          join_approval_required = COALESCE($20, join_approval_required),
+          auto_approve_verified_investors = COALESCE($21, auto_approve_verified_investors),
+          media_uploads_enabled = COALESCE($22, media_uploads_enabled),
+          polls_enabled = COALESCE($23, polls_enabled),
+          anonymous_posting_enabled = COALESCE($24, anonymous_posting_enabled),
+          link_posting_enabled = COALESCE($25, link_posting_enabled),
+          first_post_approval_enabled = COALESCE($26, first_post_approval_enabled),
+          slow_mode_seconds = COALESCE($27, slow_mode_seconds),
+          blocked_words = CASE WHEN $28::BOOL THEN $29 ELSE blocked_words END,
+          investment_risk_keywords = CASE WHEN $30::BOOL THEN $31 ELSE investment_risk_keywords END,
+          allowed_post_types = CASE WHEN $32::BOOL THEN $33 ELSE allowed_post_types END,
+          required_post_tags = CASE WHEN $34::BOOL THEN $35 ELSE required_post_tags END,
+          announcement_comments_enabled = COALESCE($36, announcement_comments_enabled),
+          onboarding_enabled = COALESCE($37, onboarding_enabled),
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, slug
+        "#,
+    )
+    .bind(circle_id)
+    .bind(name.as_deref())
+    .bind(avatar_emoji.as_deref())
+    .bind(description.is_some())
+    .bind(description.as_deref())
+    .bind(slug.as_deref())
+    .bind(payload.is_public)
+    .bind(visibility.as_deref())
+    .bind(join_policy.as_deref())
+    .bind(circle_type.as_deref())
+    .bind(category.is_some())
+    .bind(category.as_deref())
+    .bind(language.as_deref())
+    .bind(location_text.is_some())
+    .bind(location_text.as_deref())
+    .bind(rules_text.is_some())
+    .bind(rules_text.as_deref())
+    .bind(investment_disclaimer.is_some())
+    .bind(investment_disclaimer.as_deref())
+    .bind(payload.join_approval_required)
+    .bind(payload.auto_approve_verified_investors)
+    .bind(payload.media_uploads_enabled)
+    .bind(payload.polls_enabled)
+    .bind(payload.anonymous_posting_enabled)
+    .bind(payload.link_posting_enabled)
+    .bind(payload.first_post_approval_enabled)
+    .bind(slow_mode_seconds)
+    .bind(blocked_words.is_some())
+    .bind(blocked_words.as_ref())
+    .bind(investment_risk_keywords.is_some())
+    .bind(investment_risk_keywords.as_ref())
+    .bind(allowed_post_types.is_some())
+    .bind(allowed_post_types.as_ref())
+    .bind(required_post_tags.is_some())
+    .bind(required_post_tags.as_ref())
+    .bind(payload.announcement_comments_enabled)
+    .bind(payload.onboarding_enabled)
+    .fetch_one(&c_pool)
+    .await?;
+
+    crate::community::audit::log(
+        &c_pool,
+        user.id,
+        "circle.manage.update",
+        "circle",
+        Some(circle_id),
+        None,
+        Some(serde_json::json!({
+            "role": role,
+            "settings": {
+                "name": name,
+                "slug": slug,
+                "visibility": visibility,
+                "join_policy": join_policy,
+                "circle_type": circle_type,
+                "category": category,
+                "language": language,
+                "location_text": location_text,
+                "join_approval_required": payload.join_approval_required,
+                "auto_approve_verified_investors": payload.auto_approve_verified_investors,
+                "media_uploads_enabled": payload.media_uploads_enabled,
+                "polls_enabled": payload.polls_enabled,
+                "anonymous_posting_enabled": payload.anonymous_posting_enabled,
+                "link_posting_enabled": payload.link_posting_enabled,
+                "first_post_approval_enabled": payload.first_post_approval_enabled,
+                "slow_mode_seconds": slow_mode_seconds,
+                "blocked_words_count": blocked_words.as_ref().map(|items| items.len()),
+                "investment_risk_keywords_count": investment_risk_keywords.as_ref().map(|items| items.len()),
+                "allowed_post_types": allowed_post_types,
+                "required_post_tags": required_post_tags,
+                "announcement_comments_enabled": payload.announcement_comments_enabled,
+                "onboarding_enabled": payload.onboarding_enabled,
+            }
+        })),
+    )
+    .await;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "id": updated.try_get::<Uuid, _>("id").unwrap_or(circle_id),
+        "slug": updated.try_get::<String, _>("slug").unwrap_or_default(),
+    })))
 }
 
 async fn delete_own_circle_handler(
@@ -5162,6 +8671,7 @@ async fn join_circle(
 
     // W3.1: Check token gate requirement before allowing join
     crate::community::circles::check_token_gate(&c_pool, &state.db, user.id, circle_id).await?;
+    crate::community::circles::check_kyc_gate(&c_pool, &state.db, user.id, circle_id).await?;
 
     crate::community::circles::join_circle(&c_pool, user.id, circle_id).await?;
 
@@ -5249,15 +8759,17 @@ async fn kick_circle_member(
 #[derive(Deserialize)]
 struct UpdateRoleReq {
     user_id: Uuid,
-    role: String, // "admin" | "member"
+    role: String, // "admin" | "verified_expert" | "member"
 }
 
 async fn update_circle_member_role(
     jar: CookieJar,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(circle_id): Path<Uuid>,
     Json(payload): Json<UpdateRoleReq>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
     let user = middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
@@ -5411,6 +8923,7 @@ async fn request_to_join_circle(
 
     // W3.1: Check token gate requirement before allowing join request
     crate::community::circles::check_token_gate(&c_pool, &state.db, user.id, circle_id).await?;
+    crate::community::circles::check_kyc_gate(&c_pool, &state.db, user.id, circle_id).await?;
 
     let req = crate::community::circles::request_to_join(&c_pool, user.id, circle_id).await?;
 
@@ -5607,6 +9120,21 @@ async fn accept_invite(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+    let invite_circle_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT circle_id FROM circle_invites
+         WHERE id = $1
+           AND invitee_id = $2
+           AND status = 'pending'
+           AND expires_at > NOW()",
+    )
+    .bind(invite_id)
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await?;
+    if let Some(circle_id) = invite_circle_id {
+        crate::community::circles::check_token_gate(&c_pool, &state.db, user.id, circle_id).await?;
+        crate::community::circles::check_kyc_gate(&c_pool, &state.db, user.id, circle_id).await?;
+    }
     crate::community::circles::accept_invite(&c_pool, user.id, invite_id).await?;
 
     // Award XP
@@ -5880,6 +9408,3202 @@ async fn list_challenges(
         crate::community::challenges::list_challenges_for_user(&c_pool, user.id).await?;
 
     Ok(Json(serde_json::json!({ "challenges": challenges })))
+}
+
+async fn get_circle_announcements(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_read_access(&state, &c_pool, circle_id, Some(user.id)).await?;
+
+    use sqlx::Row;
+    let rows = sqlx::query(
+        r#"
+        SELECT p.id,
+               p.user_id,
+               p.post_type,
+               COALESCE(p.content_sanitized, p.content) AS content,
+               COALESCE(p.content_tags, '{}'::TEXT[]) AS content_tags,
+               p.is_pinned,
+               p.comment_count,
+               p.reaction_count,
+               p.created_at,
+               COALESCE(c.announcement_comments_enabled, TRUE) AS comments_enabled
+        FROM posts p
+        JOIN circles c ON c.id = p.circle_id
+        WHERE p.circle_id = $1
+          AND p.is_hidden = FALSE
+          AND p.post_type IN ('announcement', 'official_update')
+        ORDER BY p.is_pinned DESC, p.created_at DESC
+        LIMIT 20
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let author_ids: Vec<Uuid> = rows
+        .iter()
+        .filter_map(|row| row.try_get::<Uuid, _>("user_id").ok())
+        .collect();
+    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &author_ids)
+        .await
+        .unwrap_or_default();
+
+    let announcements: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|row| {
+            let author_id: Uuid = row.try_get("user_id").unwrap_or_default();
+            let author = authors.get(&author_id);
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "circle_id": circle_id,
+                "post_type": row.try_get::<String, _>("post_type").unwrap_or_else(|_| "announcement".to_string()),
+                "content": row.try_get::<String, _>("content").unwrap_or_default(),
+                "content_tags": row.try_get::<Vec<String>, _>("content_tags").unwrap_or_default(),
+                "is_pinned": row.try_get::<bool, _>("is_pinned").unwrap_or(false),
+                "comments_enabled": row.try_get::<bool, _>("comments_enabled").unwrap_or(true),
+                "comment_count": row.try_get::<i32, _>("comment_count").unwrap_or(0),
+                "reaction_count": row.try_get::<i32, _>("reaction_count").unwrap_or(0),
+                "author_name": author
+                    .map(|info| info.display_name.clone())
+                    .unwrap_or_else(|| "POOOL".to_string()),
+                "author_avatar": author.and_then(|info| info.avatar_url.clone()),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "announcements": announcements,
+        "scope": "circle",
+        "circle_id": circle_id,
+    })))
+}
+
+async fn get_circle_events(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_read_access(&state, &c_pool, circle_id, Some(user.id)).await?;
+    let events = crate::community::amas::list_circle_amas(&c_pool, circle_id).await?;
+
+    Ok(Json(serde_json::json!({
+        "events": events,
+        "scope": "circle",
+        "circle_id": circle_id,
+        "notifications_feature_flagged": true,
+    })))
+}
+
+#[derive(Deserialize)]
+struct CircleResourceCreateReq {
+    title: String,
+    description: Option<String>,
+    resource_type: Option<String>,
+    access_scope: Option<String>,
+    url: Option<String>,
+    storage_object_path: Option<String>,
+    is_official: Option<bool>,
+    file_name: Option<String>,
+    mime_type: Option<String>,
+    file_size_bytes: Option<i64>,
+    sha256_hex: Option<String>,
+    version_label: Option<String>,
+    published_at: Option<chrono::DateTime<chrono::Utc>>,
+    expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    requires_download: Option<bool>,
+    change_note: Option<String>,
+    upload_status: Option<String>,
+    retention_policy: Option<String>,
+    retention_until: Option<chrono::DateTime<chrono::Utc>>,
+    review_required_at: Option<chrono::DateTime<chrono::Utc>>,
+    document_lifecycle_notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CircleResourceUpdateReq {
+    title: Option<String>,
+    description: Option<String>,
+    resource_type: Option<String>,
+    access_scope: Option<String>,
+    is_official: Option<bool>,
+    is_active: Option<bool>,
+    expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    upload_status: Option<String>,
+    retention_policy: Option<String>,
+    retention_until: Option<chrono::DateTime<chrono::Utc>>,
+    review_required_at: Option<chrono::DateTime<chrono::Utc>>,
+    document_lifecycle_notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CircleResourceVersionReq {
+    version_label: Option<String>,
+    url: Option<String>,
+    storage_object_path: Option<String>,
+    file_name: Option<String>,
+    mime_type: Option<String>,
+    file_size_bytes: Option<i64>,
+    sha256_hex: Option<String>,
+    published_at: Option<chrono::DateTime<chrono::Utc>>,
+    expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    requires_download: Option<bool>,
+    change_note: Option<String>,
+    upload_status: Option<String>,
+    retention_policy: Option<String>,
+    retention_until: Option<chrono::DateTime<chrono::Utc>>,
+    review_required_at: Option<chrono::DateTime<chrono::Utc>>,
+    document_lifecycle_notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CircleResourceVersionReviewReq {
+    action: String,
+    note: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CircleResourceLifecycleReq {
+    action: String,
+    note: Option<String>,
+    retention_policy: Option<String>,
+    retention_until: Option<chrono::DateTime<chrono::Utc>>,
+    review_required_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Default)]
+struct CircleResourceUploadFields {
+    title: Option<String>,
+    description: Option<String>,
+    resource_type: Option<String>,
+    access_scope: Option<String>,
+    is_official: bool,
+    file_name: Option<String>,
+    version_label: Option<String>,
+    change_note: Option<String>,
+    retention_policy: Option<String>,
+    retention_until: Option<chrono::DateTime<chrono::Utc>>,
+    review_required_at: Option<chrono::DateTime<chrono::Utc>>,
+    document_lifecycle_notes: Option<String>,
+}
+
+fn is_circle_resource_admin_role(role: &str) -> bool {
+    matches!(role, "owner" | "admin" | "platform_admin")
+}
+
+async fn ensure_circle_resource_admin_access(
+    state: &AppState,
+    pool: &sqlx::PgPool,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<String, AppError> {
+    let role = ensure_circle_manage_access(state, pool, circle_id, user_id).await?;
+    if is_circle_resource_admin_role(&role) {
+        Ok(role)
+    } else {
+        Err(AppError::Forbidden(
+            "Circle resource management requires owner, admin, or platform admin access.".into(),
+        ))
+    }
+}
+
+fn normalize_resource_required_text(
+    value: &str,
+    max_chars: usize,
+    label: &str,
+) -> Result<String, AppError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::BadRequest(format!("{label} is required.")));
+    }
+    if trimmed.chars().count() > max_chars {
+        return Err(AppError::BadRequest(format!(
+            "{label} must be {max_chars} characters or fewer."
+        )));
+    }
+    Ok(trimmed.to_string())
+}
+
+fn normalize_resource_optional_text(
+    value: Option<String>,
+    max_chars: usize,
+    label: &str,
+) -> Result<Option<String>, AppError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    if trimmed.chars().count() > max_chars {
+        return Err(AppError::BadRequest(format!(
+            "{label} must be {max_chars} characters or fewer."
+        )));
+    }
+    Ok(Some(trimmed.to_string()))
+}
+
+fn normalize_circle_resource_type(value: Option<String>) -> Result<String, AppError> {
+    let normalized = value
+        .as_deref()
+        .map(canonical_community_code)
+        .unwrap_or_else(|| "resource".to_string());
+    match normalized.as_str() {
+        "official_document" | "report" | "yield_report" | "guide" | "link" | "photo_update"
+        | "community_resource" | "resource" => Ok(if normalized == "resource" {
+            "community_resource".to_string()
+        } else {
+            normalized
+        }),
+        _ => Err(AppError::BadRequest("Invalid Circle resource type.".into())),
+    }
+}
+
+fn normalize_circle_resource_access_scope(value: Option<String>) -> Result<String, AppError> {
+    let normalized = value
+        .as_deref()
+        .map(canonical_community_code)
+        .unwrap_or_else(|| "member".to_string());
+    match normalized.as_str() {
+        "public" | "member" | "holder_only" | "admin_only" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "Invalid Circle resource access scope.".into(),
+        )),
+    }
+}
+
+fn normalize_circle_resource_upload_status(
+    value: Option<String>,
+    default_status: &str,
+) -> Result<String, AppError> {
+    let normalized = value
+        .as_deref()
+        .map(canonical_community_code)
+        .unwrap_or_else(|| default_status.to_string());
+    match normalized.as_str() {
+        "external" | "pending_upload" | "uploaded" | "rejected" | "expired" | "deleted" => {
+            Ok(normalized)
+        }
+        _ => Err(AppError::BadRequest(
+            "Invalid Circle resource upload status.".into(),
+        )),
+    }
+}
+
+fn normalize_circle_resource_retention_policy(value: Option<String>) -> Result<String, AppError> {
+    let normalized = value
+        .as_deref()
+        .map(canonical_community_code)
+        .unwrap_or_else(|| "standard".to_string());
+    match normalized.as_str() {
+        "standard" | "legal_hold" | "delete_after_expiry" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "Invalid Circle resource retention policy.".into(),
+        )),
+    }
+}
+
+fn normalize_circle_resource_lifecycle_action(value: &str) -> Result<String, AppError> {
+    let normalized = canonical_community_code(value);
+    match normalized.as_str() {
+        "mark_reviewed"
+        | "clear_review"
+        | "mark_uploaded"
+        | "mark_pending_upload"
+        | "reject_upload"
+        | "expire"
+        | "soft_delete"
+        | "restore"
+        | "legal_hold"
+        | "standard_retention"
+        | "schedule_review" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "Invalid Circle resource lifecycle action.".into(),
+        )),
+    }
+}
+
+fn normalize_circle_resource_version_review_action(value: &str) -> Result<String, AppError> {
+    let normalized = canonical_community_code(value);
+    match normalized.as_str() {
+        "approve" | "reject" | "mark_pending" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "Invalid Circle resource version review action.".into(),
+        )),
+    }
+}
+
+fn parse_circle_resource_upload_datetime(
+    value: Option<String>,
+    label: &str,
+) -> Result<Option<chrono::DateTime<chrono::Utc>>, AppError> {
+    let Some(value) = normalize_resource_optional_text(value, 80, label)? else {
+        return Ok(None);
+    };
+    chrono::DateTime::parse_from_rfc3339(&value)
+        .map(|dt| Some(dt.with_timezone(&chrono::Utc)))
+        .map_err(|_| AppError::BadRequest(format!("{label} must be an ISO-8601 timestamp.")))
+}
+
+fn parse_circle_resource_upload_bool(value: &str) -> bool {
+    matches!(
+        canonical_community_code(value).as_str(),
+        "true" | "1" | "yes" | "on"
+    )
+}
+
+fn normalize_circle_resource_source(
+    url: Option<String>,
+    storage_object_path: Option<String>,
+    configured_bucket: Option<&str>,
+) -> Result<(Option<String>, Option<String>), AppError> {
+    let url = normalize_resource_optional_text(url, 2000, "Resource URL")?;
+    let storage_object_path =
+        normalize_resource_optional_text(storage_object_path, 1024, "Storage object path")?;
+
+    match (url, storage_object_path) {
+        (Some(url), None) => {
+            if !is_safe_circle_resource_url(&url) {
+                return Err(AppError::BadRequest(
+                    "Resource URL must be http(s) or a safe relative path.".into(),
+                ));
+            }
+            Ok((Some(url), None))
+        }
+        (None, Some(storage_path)) => {
+            validate_circle_resource_storage_path_input(&storage_path, configured_bucket)?;
+            Ok((None, Some(storage_path)))
+        }
+        (Some(_), Some(_)) => Err(AppError::BadRequest(
+            "Provide either a Resource URL or a storage object path, not both.".into(),
+        )),
+        (None, None) => Err(AppError::BadRequest(
+            "Resource URL or storage object path is required.".into(),
+        )),
+    }
+}
+
+fn validate_circle_resource_storage_path_input(
+    value: &str,
+    configured_bucket: Option<&str>,
+) -> Result<(), AppError> {
+    if value.chars().any(char::is_control) || value.contains("..") {
+        return Err(AppError::BadRequest(
+            "Storage object path contains unsafe characters.".into(),
+        ));
+    }
+    if parse_circle_resource_storage_path(value, configured_bucket).is_err() {
+        return Err(AppError::BadRequest(
+            "Storage object path must be a valid gs:// path, configured-bucket object path, or existing GCS proxy path.".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn normalize_circle_resource_sha(value: Option<String>) -> Result<Option<String>, AppError> {
+    let Some(value) = normalize_resource_optional_text(value, 64, "SHA-256 hash")? else {
+        return Ok(None);
+    };
+    let normalized = value.to_ascii_lowercase();
+    let valid = normalized.len() == 64 && normalized.chars().all(|ch| ch.is_ascii_hexdigit());
+    if !valid {
+        return Err(AppError::BadRequest(
+            "SHA-256 hash must be 64 lowercase hexadecimal characters.".into(),
+        ));
+    }
+    Ok(Some(normalized))
+}
+
+fn validate_circle_resource_file_size(value: Option<i64>) -> Result<Option<i64>, AppError> {
+    if value.is_some_and(|size| size < 0) {
+        return Err(AppError::BadRequest(
+            "File size must be zero or greater.".into(),
+        ));
+    }
+    Ok(value)
+}
+
+async fn get_circle_resource_manage(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let rows = sqlx::query(
+        r#"
+        SELECT r.id,
+               r.circle_id,
+               r.asset_id,
+               r.title,
+               r.description,
+               r.resource_type,
+               r.access_scope,
+               CASE WHEN r.storage_object_path IS NULL THEN r.url ELSE NULL END AS external_url,
+               r.is_official,
+               r.is_active,
+               r.file_name,
+               r.mime_type,
+               r.file_size_bytes,
+               r.sha256_hex,
+               r.version_label,
+               r.published_at,
+               r.expires_at,
+               r.requires_download,
+               r.upload_status,
+               r.retention_policy,
+               r.retention_until,
+               r.review_required_at,
+               r.reviewed_at,
+               r.reviewed_by,
+               r.legal_hold,
+               r.deleted_at,
+               r.deleted_by,
+               r.deletion_reason,
+               r.document_lifecycle_notes,
+               r.storage_object_path IS NOT NULL AS has_private_file,
+               current_version.id AS current_version_id,
+               COALESCE(version_counts.version_count, 0)::BIGINT AS version_count,
+               r.created_at,
+               r.updated_at
+          FROM circle_resources r
+          LEFT JOIN LATERAL (
+            SELECT id
+              FROM circle_resource_versions v
+             WHERE v.resource_id = r.id
+               AND v.is_current = TRUE
+             ORDER BY v.created_at DESC
+             LIMIT 1
+          ) current_version ON TRUE
+          LEFT JOIN (
+            SELECT resource_id, COUNT(*)::BIGINT AS version_count
+              FROM circle_resource_versions
+             GROUP BY resource_id
+          ) version_counts ON version_counts.resource_id = r.id
+         WHERE r.circle_id = $1
+         ORDER BY r.is_active DESC, r.is_official DESC, r.updated_at DESC, r.created_at DESC
+         LIMIT 200
+        "#,
+    )
+    .bind(circle_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let resources: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            let resource_id = row.try_get::<Uuid, _>("id").ok();
+            serde_json::json!({
+                "id": resource_id,
+                "circle_id": row.try_get::<Uuid, _>("circle_id").ok(),
+                "asset_id": row.try_get::<Option<Uuid>, _>("asset_id").ok().flatten(),
+                "title": row.try_get::<String, _>("title").unwrap_or_default(),
+                "description": row.try_get::<Option<String>, _>("description").ok().flatten(),
+                "resource_type": row.try_get::<String, _>("resource_type").unwrap_or_else(|_| "community_resource".to_string()),
+                "access_scope": row.try_get::<String, _>("access_scope").unwrap_or_else(|_| "member".to_string()),
+                "external_url": row.try_get::<Option<String>, _>("external_url").ok().flatten(),
+                "is_official": row.try_get::<bool, _>("is_official").unwrap_or(false),
+                "is_active": row.try_get::<bool, _>("is_active").unwrap_or(false),
+                "file_name": row.try_get::<Option<String>, _>("file_name").ok().flatten(),
+                "mime_type": row.try_get::<Option<String>, _>("mime_type").ok().flatten(),
+                "file_size_bytes": row.try_get::<Option<i64>, _>("file_size_bytes").ok().flatten(),
+                "sha256_hex": row.try_get::<Option<String>, _>("sha256_hex").ok().flatten(),
+                "version_label": row.try_get::<String, _>("version_label").unwrap_or_else(|_| "v1".to_string()),
+                "published_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("published_at").ok(),
+                "expires_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("expires_at").ok().flatten(),
+                "requires_download": row.try_get::<bool, _>("requires_download").unwrap_or(true),
+                "upload_status": row.try_get::<String, _>("upload_status").unwrap_or_else(|_| "external".to_string()),
+                "retention_policy": row.try_get::<String, _>("retention_policy").unwrap_or_else(|_| "standard".to_string()),
+                "retention_until": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("retention_until").ok().flatten(),
+                "review_required_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("review_required_at").ok().flatten(),
+                "reviewed_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("reviewed_at").ok().flatten(),
+                "reviewed_by": row.try_get::<Option<Uuid>, _>("reviewed_by").ok().flatten(),
+                "legal_hold": row.try_get::<bool, _>("legal_hold").unwrap_or(false),
+                "deleted_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("deleted_at").ok().flatten(),
+                "deleted_by": row.try_get::<Option<Uuid>, _>("deleted_by").ok().flatten(),
+                "deletion_reason": row.try_get::<Option<String>, _>("deletion_reason").ok().flatten(),
+                "document_lifecycle_notes": row.try_get::<Option<String>, _>("document_lifecycle_notes").ok().flatten(),
+                "has_private_file": row.try_get::<bool, _>("has_private_file").unwrap_or(false),
+                "current_version_id": row.try_get::<Option<Uuid>, _>("current_version_id").ok().flatten(),
+                "version_count": row.try_get::<i64, _>("version_count").unwrap_or(0),
+                "delivery_url": resource_id.map(|id| circle_resource_delivery_url(circle_id, id)),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+                "updated_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("updated_at").ok(),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "circle_id": circle_id,
+        "role": role,
+        "resources": resources,
+        "storage_paths_hidden": true,
+    })))
+}
+
+async fn create_circle_resource_manage(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<CircleResourceCreateReq>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let title = normalize_resource_required_text(&payload.title, 240, "Resource title")?;
+    let description =
+        normalize_resource_optional_text(payload.description, 2000, "Resource description")?;
+    let resource_type = normalize_circle_resource_type(payload.resource_type)?;
+    let access_scope = normalize_circle_resource_access_scope(payload.access_scope)?;
+    let (url, storage_object_path) = normalize_circle_resource_source(
+        payload.url,
+        payload.storage_object_path,
+        state.config.gcs_bucket.as_deref(),
+    )?;
+    let file_name = normalize_resource_optional_text(payload.file_name, 240, "File name")?;
+    let mime_type = normalize_resource_optional_text(payload.mime_type, 120, "MIME type")?;
+    let file_size_bytes = validate_circle_resource_file_size(payload.file_size_bytes)?;
+    let sha256_hex = normalize_circle_resource_sha(payload.sha256_hex)?;
+    let version_label =
+        normalize_resource_optional_text(payload.version_label, 80, "Version label")?
+            .unwrap_or_else(|| "v1".to_string());
+    let change_note = normalize_resource_optional_text(payload.change_note, 1000, "Change note")?;
+    let requires_download = payload.requires_download.unwrap_or(true);
+    let default_upload_status = if storage_object_path.is_some() {
+        "uploaded"
+    } else {
+        "external"
+    };
+    let upload_status =
+        normalize_circle_resource_upload_status(payload.upload_status, default_upload_status)?;
+    let retention_policy = normalize_circle_resource_retention_policy(payload.retention_policy)?;
+    let document_lifecycle_notes = normalize_resource_optional_text(
+        payload.document_lifecycle_notes,
+        2000,
+        "Document lifecycle notes",
+    )?;
+    let retention_until = payload.retention_until;
+    let review_required_at = payload.review_required_at;
+
+    let mut tx = c_pool.begin().await?;
+    let asset_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT related_asset_id FROM circles WHERE id = $1 FOR UPDATE")
+            .bind(circle_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Circle not found.".into()))?;
+
+    let resource_row = sqlx::query(
+        r#"
+        INSERT INTO circle_resources (
+          circle_id, asset_id, title, description, resource_type, access_scope,
+          url, storage_object_path, is_official, is_active, created_by,
+          file_name, mime_type, file_size_bytes, sha256_hex, version_label,
+          published_at, expires_at, requires_download, upload_status,
+          retention_policy, retention_until, review_required_at, legal_hold,
+          document_lifecycle_notes
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, TRUE, $10,
+          $11, $12, $13, $14, $15,
+          COALESCE($16, NOW()), $17, $18, $19,
+          $20, $21, $22, $23, $24
+        )
+        RETURNING id, version_label, published_at, expires_at
+        "#,
+    )
+    .bind(circle_id)
+    .bind(asset_id)
+    .bind(&title)
+    .bind(description.as_deref())
+    .bind(&resource_type)
+    .bind(&access_scope)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(payload.is_official.unwrap_or(false))
+    .bind(user.id)
+    .bind(file_name.as_deref())
+    .bind(mime_type.as_deref())
+    .bind(file_size_bytes)
+    .bind(sha256_hex.as_deref())
+    .bind(&version_label)
+    .bind(payload.published_at)
+    .bind(payload.expires_at)
+    .bind(requires_download)
+    .bind(&upload_status)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(retention_policy == "legal_hold")
+    .bind(document_lifecycle_notes.as_deref())
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let resource_id = resource_row.try_get::<Uuid, _>("id").unwrap_or_default();
+    let published_at = resource_row
+        .try_get::<chrono::DateTime<chrono::Utc>, _>("published_at")
+        .ok();
+    let expires_at = resource_row
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("expires_at")
+        .ok()
+        .flatten();
+
+    sqlx::query(
+        r#"
+        INSERT INTO circle_resource_versions (
+          resource_id, circle_id, version_label, url, storage_object_path,
+          file_name, mime_type, file_size_bytes, sha256_hex, requires_download,
+          published_at, expires_at, change_note, upload_status, retention_policy,
+          retention_until, review_required_at, document_lifecycle_notes, is_current, created_by
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          COALESCE($11, NOW()), $12, $13, $14, $15, $16, $17, $18, TRUE, $19
+        )
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(&version_label)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(file_name.as_deref())
+    .bind(mime_type.as_deref())
+    .bind(file_size_bytes)
+    .bind(sha256_hex.as_deref())
+    .bind(requires_download)
+    .bind(published_at)
+    .bind(expires_at)
+    .bind(change_note.as_deref())
+    .bind(&upload_status)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(document_lifecycle_notes.as_deref())
+    .bind(user.id)
+    .execute(&mut *tx)
+    .await?;
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.create",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "role": role,
+            "resource_type": resource_type,
+            "access_scope": access_scope,
+            "version_label": version_label,
+            "has_private_file": storage_object_path.is_some(),
+            "upload_status": upload_status,
+            "retention_policy": retention_policy,
+            "review_required_at": review_required_at,
+            "retention_until": retention_until,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "resource_id": resource_id,
+    })))
+}
+
+async fn upload_circle_resource_file(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    mut multipart: Multipart,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_community_rate_limit(&state, user.id, "circle_resource_upload").await?;
+
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let mut fields = CircleResourceUploadFields::default();
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut client_mime = "application/octet-stream".to_string();
+    let mut original_file_name: Option<String> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| AppError::BadRequest("Invalid multipart upload body.".into()))?
+    {
+        let field_name = field.name().unwrap_or_default().to_string();
+        if field_name == "file" {
+            if file_bytes.is_some() {
+                return Err(AppError::BadRequest(
+                    "Only one Circle resource file can be uploaded at a time.".into(),
+                ));
+            }
+            client_mime = field
+                .content_type()
+                .unwrap_or("application/octet-stream")
+                .to_string();
+            original_file_name = field.file_name().map(str::to_string);
+            let mut field = field;
+            file_bytes = Some(
+                crate::storage::upload_helpers::read_field_capped(
+                    &mut field,
+                    MAX_CIRCLE_RESOURCE_UPLOAD_BYTES,
+                    "Circle resource file",
+                )
+                .await
+                .map_err(|e| AppError::BadRequest(e.to_string()))?,
+            );
+            continue;
+        }
+
+        let mut field = field;
+        let value_bytes =
+            crate::storage::upload_helpers::read_field_capped(&mut field, 4096, &field_name)
+                .await
+                .map_err(|e| AppError::BadRequest(e.to_string()))?;
+        let value = String::from_utf8(value_bytes)
+            .map_err(|_| AppError::BadRequest("Multipart field must be UTF-8.".into()))?;
+        match field_name.as_str() {
+            "title" => fields.title = Some(value),
+            "description" => fields.description = Some(value),
+            "resource_type" => fields.resource_type = Some(value),
+            "access_scope" => fields.access_scope = Some(value),
+            "is_official" => fields.is_official = parse_circle_resource_upload_bool(&value),
+            "file_name" => fields.file_name = Some(value),
+            "version_label" => fields.version_label = Some(value),
+            "change_note" => fields.change_note = Some(value),
+            "retention_policy" => fields.retention_policy = Some(value),
+            "retention_until" => {
+                fields.retention_until =
+                    parse_circle_resource_upload_datetime(Some(value), "Retention until")?
+            }
+            "review_required_at" => {
+                fields.review_required_at =
+                    parse_circle_resource_upload_datetime(Some(value), "Review required at")?
+            }
+            "document_lifecycle_notes" => fields.document_lifecycle_notes = Some(value),
+            _ => {}
+        }
+    }
+
+    let file_bytes = file_bytes
+        .ok_or_else(|| AppError::BadRequest("Circle resource file is required.".into()))?;
+    if file_bytes.is_empty() {
+        return Err(AppError::BadRequest(
+            "Circle resource file cannot be empty.".into(),
+        ));
+    }
+    let sniffed = crate::storage::service::sniff_mime(&file_bytes)
+        .ok_or_else(|| AppError::BadRequest("Unsupported or unrecognized file format.".into()))?;
+    if !crate::storage::service::mime_matches(&client_mime, sniffed) {
+        tracing::warn!(
+            circle_id = %circle_id,
+            user_id = %user.id,
+            claimed_mime = %client_mime,
+            sniffed_mime = %sniffed,
+            "Circle resource upload rejected: MIME mismatch"
+        );
+        return Err(AppError::BadRequest(
+            "File content does not match declared type.".into(),
+        ));
+    }
+    let mime_type = if client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .eq_ignore_ascii_case(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        && sniffed == "application/zip"
+    {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string()
+    } else {
+        sniffed.to_string()
+    };
+    crate::storage::service::validate_asset_doc_mime(&mime_type)?;
+
+    let ext = crate::storage::service::extension_for_doc_mime(&mime_type);
+    let fallback_title = original_file_name
+        .as_deref()
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or("Circle resource file");
+    let title = normalize_resource_required_text(
+        fields.title.as_deref().unwrap_or(fallback_title),
+        240,
+        "Resource title",
+    )?;
+    let description =
+        normalize_resource_optional_text(fields.description, 2000, "Resource description")?;
+    let resource_type = normalize_circle_resource_type(fields.resource_type)?;
+    let access_scope = normalize_circle_resource_access_scope(fields.access_scope)?;
+    let file_name = normalize_resource_optional_text(
+        fields.file_name.or(original_file_name),
+        240,
+        "File name",
+    )?
+    .unwrap_or_else(|| format!("{}.{}", title, ext));
+    let version_label =
+        normalize_resource_optional_text(fields.version_label, 80, "Version label")?
+            .unwrap_or_else(|| "v1".to_string());
+    let retention_policy = normalize_circle_resource_retention_policy(fields.retention_policy)?;
+    let retention_until = fields.retention_until;
+    let review_required_at = fields.review_required_at;
+    let document_lifecycle_notes = normalize_resource_optional_text(
+        fields.document_lifecycle_notes,
+        2000,
+        "Document lifecycle notes",
+    )?;
+    let file_size_bytes = file_bytes.len() as i64;
+    let sha256_hex = crate::storage::service::sha256_hex(&file_bytes);
+    let file_id = Uuid::new_v4();
+    let object_path = format!(
+        "community/circles/{}/resources/{}.{}",
+        circle_id, file_id, ext
+    );
+
+    let (url, storage_object_path) = if let Some(bucket) = state.config.gcs_bucket.as_deref() {
+        let upload = crate::storage::service::upload_private_with_markers(
+            bucket,
+            &object_path,
+            file_bytes.clone(),
+            &mime_type,
+            crate::storage::service::PiiClass::B,
+            Some(user.id),
+        );
+        match tokio::time::timeout(std::time::Duration::from_secs(15), upload).await {
+            Ok(Ok(path)) => (None, Some(path)),
+            Ok(Err(e)) => {
+                tracing::error!(
+                    circle_id = %circle_id,
+                    error = %e,
+                    "Circle resource GCS upload failed; trying local fallback"
+                );
+                let local_url =
+                    crate::storage::service::upload_local(&object_path, file_bytes.clone()).await?;
+                (Some(local_url), None)
+            }
+            Err(_) => {
+                tracing::error!(
+                    circle_id = %circle_id,
+                    "Circle resource GCS upload timed out; trying local fallback"
+                );
+                let local_url =
+                    crate::storage::service::upload_local(&object_path, file_bytes.clone()).await?;
+                (Some(local_url), None)
+            }
+        }
+    } else {
+        let local_url = crate::storage::service::upload_local(&object_path, file_bytes).await?;
+        (Some(local_url), None)
+    };
+
+    let mut tx = c_pool.begin().await?;
+    let asset_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT related_asset_id FROM circles WHERE id = $1 FOR UPDATE")
+            .bind(circle_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Circle not found.".into()))?;
+
+    let resource_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO circle_resources (
+          circle_id, asset_id, title, description, resource_type, access_scope,
+          url, storage_object_path, is_official, is_active, created_by,
+          file_name, mime_type, file_size_bytes, sha256_hex, version_label,
+          published_at, requires_download, upload_status, retention_policy,
+          retention_until, review_required_at, legal_hold, document_lifecycle_notes
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, TRUE, $10,
+          $11, $12, $13, $14, $15,
+          NOW(), TRUE, 'uploaded', $16,
+          $17, $18, $19, $20
+        )
+        RETURNING id
+        "#,
+    )
+    .bind(circle_id)
+    .bind(asset_id)
+    .bind(&title)
+    .bind(description.as_deref())
+    .bind(&resource_type)
+    .bind(&access_scope)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(fields.is_official)
+    .bind(user.id)
+    .bind(&file_name)
+    .bind(&mime_type)
+    .bind(file_size_bytes)
+    .bind(&sha256_hex)
+    .bind(&version_label)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(retention_policy == "legal_hold")
+    .bind(document_lifecycle_notes.as_deref())
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO circle_resource_versions (
+          resource_id, circle_id, version_label, url, storage_object_path,
+          file_name, mime_type, file_size_bytes, sha256_hex, requires_download,
+          published_at, change_note, upload_status, retention_policy,
+          retention_until, review_required_at, document_lifecycle_notes, is_current, created_by
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE,
+          NOW(), 'Initial binary upload', 'uploaded', $10,
+          $11, $12, $13, TRUE, $14
+        )
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(&version_label)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(&file_name)
+    .bind(&mime_type)
+    .bind(file_size_bytes)
+    .bind(&sha256_hex)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(document_lifecycle_notes.as_deref())
+    .bind(user.id)
+    .execute(&mut *tx)
+    .await?;
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.upload",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "role": role,
+            "resource_type": resource_type,
+            "access_scope": access_scope,
+            "mime_type": mime_type,
+            "file_size_bytes": file_size_bytes,
+            "sha256_hex": sha256_hex,
+            "has_private_file": storage_object_path.is_some(),
+            "retention_policy": retention_policy,
+            "review_required_at": review_required_at,
+            "retention_until": retention_until,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "resource_id": resource_id,
+        "delivery_url": circle_resource_delivery_url(circle_id, resource_id),
+    })))
+}
+
+async fn upload_circle_resource_version_file(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id)): Path<(Uuid, Uuid)>,
+    mut multipart: Multipart,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    require_community_rate_limit(&state, user.id, "circle_resource_upload").await?;
+
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let existing_title: Option<String> =
+        sqlx::query_scalar("SELECT title FROM circle_resources WHERE id = $1 AND circle_id = $2")
+            .bind(resource_id)
+            .bind(circle_id)
+            .fetch_optional(&c_pool)
+            .await?;
+    let existing_title =
+        existing_title.ok_or_else(|| AppError::NotFound("Circle resource not found.".into()))?;
+
+    let mut fields = CircleResourceUploadFields::default();
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut client_mime = "application/octet-stream".to_string();
+    let mut original_file_name: Option<String> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| AppError::BadRequest("Invalid multipart upload body.".into()))?
+    {
+        let field_name = field.name().unwrap_or_default().to_string();
+        if field_name == "file" {
+            if file_bytes.is_some() {
+                return Err(AppError::BadRequest(
+                    "Only one Circle resource file can be uploaded at a time.".into(),
+                ));
+            }
+            client_mime = field
+                .content_type()
+                .unwrap_or("application/octet-stream")
+                .to_string();
+            original_file_name = field.file_name().map(str::to_string);
+            let mut field = field;
+            file_bytes = Some(
+                crate::storage::upload_helpers::read_field_capped(
+                    &mut field,
+                    MAX_CIRCLE_RESOURCE_UPLOAD_BYTES,
+                    "Circle resource version file",
+                )
+                .await
+                .map_err(|e| AppError::BadRequest(e.to_string()))?,
+            );
+            continue;
+        }
+
+        let mut field = field;
+        let value_bytes =
+            crate::storage::upload_helpers::read_field_capped(&mut field, 4096, &field_name)
+                .await
+                .map_err(|e| AppError::BadRequest(e.to_string()))?;
+        let value = String::from_utf8(value_bytes)
+            .map_err(|_| AppError::BadRequest("Multipart field must be UTF-8.".into()))?;
+        match field_name.as_str() {
+            "file_name" => fields.file_name = Some(value),
+            "version_label" => fields.version_label = Some(value),
+            "change_note" => fields.change_note = Some(value),
+            "retention_policy" => fields.retention_policy = Some(value),
+            "retention_until" => {
+                fields.retention_until =
+                    parse_circle_resource_upload_datetime(Some(value), "Retention until")?
+            }
+            "review_required_at" => {
+                fields.review_required_at =
+                    parse_circle_resource_upload_datetime(Some(value), "Review required at")?
+            }
+            "document_lifecycle_notes" => fields.document_lifecycle_notes = Some(value),
+            _ => {}
+        }
+    }
+
+    let file_bytes = file_bytes.ok_or_else(|| {
+        AppError::BadRequest("Circle resource replacement file is required.".into())
+    })?;
+    if file_bytes.is_empty() {
+        return Err(AppError::BadRequest(
+            "Circle resource replacement file cannot be empty.".into(),
+        ));
+    }
+    let sniffed = crate::storage::service::sniff_mime(&file_bytes)
+        .ok_or_else(|| AppError::BadRequest("Unsupported or unrecognized file format.".into()))?;
+    if !crate::storage::service::mime_matches(&client_mime, sniffed) {
+        tracing::warn!(
+            circle_id = %circle_id,
+            resource_id = %resource_id,
+            user_id = %user.id,
+            claimed_mime = %client_mime,
+            sniffed_mime = %sniffed,
+            "Circle resource replacement upload rejected: MIME mismatch"
+        );
+        return Err(AppError::BadRequest(
+            "File content does not match declared type.".into(),
+        ));
+    }
+    let mime_type = if client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .eq_ignore_ascii_case(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        && sniffed == "application/zip"
+    {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string()
+    } else {
+        sniffed.to_string()
+    };
+    crate::storage::service::validate_asset_doc_mime(&mime_type)?;
+
+    let ext = crate::storage::service::extension_for_doc_mime(&mime_type);
+    let file_name = normalize_resource_optional_text(
+        fields.file_name.or(original_file_name),
+        240,
+        "File name",
+    )?
+    .unwrap_or_else(|| format!("{}.{}", existing_title, ext));
+    let version_label =
+        normalize_resource_optional_text(fields.version_label, 80, "Version label")?
+            .unwrap_or_else(|| "replacement".to_string());
+    let change_note = normalize_resource_optional_text(fields.change_note, 1000, "Change note")?
+        .unwrap_or_else(|| "Binary replacement upload".to_string());
+    let retention_policy = normalize_circle_resource_retention_policy(fields.retention_policy)?;
+    let retention_until = fields.retention_until;
+    let review_required_at = fields.review_required_at;
+    let document_lifecycle_notes = normalize_resource_optional_text(
+        fields.document_lifecycle_notes,
+        2000,
+        "Document lifecycle notes",
+    )?;
+    let file_size_bytes = file_bytes.len() as i64;
+    let sha256_hex = crate::storage::service::sha256_hex(&file_bytes);
+    let file_id = Uuid::new_v4();
+    let object_path = format!(
+        "community/circles/{}/resources/{}/versions/{}.{}",
+        circle_id, resource_id, file_id, ext
+    );
+
+    let (url, storage_object_path) = if let Some(bucket) = state.config.gcs_bucket.as_deref() {
+        let upload = crate::storage::service::upload_private_with_markers(
+            bucket,
+            &object_path,
+            file_bytes.clone(),
+            &mime_type,
+            crate::storage::service::PiiClass::B,
+            Some(user.id),
+        );
+        match tokio::time::timeout(std::time::Duration::from_secs(15), upload).await {
+            Ok(Ok(path)) => (None, Some(path)),
+            Ok(Err(e)) => {
+                tracing::error!(
+                    circle_id = %circle_id,
+                    resource_id = %resource_id,
+                    error = %e,
+                    "Circle resource replacement GCS upload failed; trying local fallback"
+                );
+                let local_url =
+                    crate::storage::service::upload_local(&object_path, file_bytes.clone()).await?;
+                (Some(local_url), None)
+            }
+            Err(_) => {
+                tracing::error!(
+                    circle_id = %circle_id,
+                    resource_id = %resource_id,
+                    "Circle resource replacement GCS upload timed out; trying local fallback"
+                );
+                let local_url =
+                    crate::storage::service::upload_local(&object_path, file_bytes.clone()).await?;
+                (Some(local_url), None)
+            }
+        }
+    } else {
+        let local_url = crate::storage::service::upload_local(&object_path, file_bytes).await?;
+        (Some(local_url), None)
+    };
+
+    let mut tx = c_pool.begin().await?;
+    let resource_exists: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM circle_resources WHERE id = $1 AND circle_id = $2 FOR UPDATE",
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+    if resource_exists.is_none() {
+        return Err(AppError::NotFound("Circle resource not found.".into()));
+    }
+
+    sqlx::query("UPDATE circle_resource_versions SET is_current = FALSE WHERE resource_id = $1")
+        .bind(resource_id)
+        .execute(&mut *tx)
+        .await?;
+
+    let version_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO circle_resource_versions (
+          resource_id, circle_id, version_label, url, storage_object_path,
+          file_name, mime_type, file_size_bytes, sha256_hex, requires_download,
+          published_at, change_note, upload_status, retention_policy,
+          retention_until, review_required_at, document_lifecycle_notes, is_current, created_by
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE,
+          NOW(), $10, 'uploaded', $11, $12, $13, $14, TRUE, $15
+        )
+        RETURNING id
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(&version_label)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(&file_name)
+    .bind(&mime_type)
+    .bind(file_size_bytes)
+    .bind(&sha256_hex)
+    .bind(&change_note)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(document_lifecycle_notes.as_deref())
+    .bind(user.id)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE circle_resources
+           SET url = $3,
+               storage_object_path = $4,
+               file_name = $5,
+               mime_type = $6,
+               file_size_bytes = $7,
+               sha256_hex = $8,
+               version_label = $9,
+               published_at = NOW(),
+               expires_at = NULL,
+               requires_download = TRUE,
+               upload_status = 'uploaded',
+               retention_policy = $10,
+               retention_until = $11,
+               review_required_at = $12,
+               legal_hold = $13,
+               reviewed_at = NULL,
+               reviewed_by = NULL,
+               document_lifecycle_notes = COALESCE($14, document_lifecycle_notes),
+               is_active = TRUE,
+               deleted_at = NULL,
+               deleted_by = NULL,
+               deletion_reason = NULL,
+               storage_deleted_at = NULL,
+               storage_delete_attempts = 0,
+               storage_delete_last_error = NULL,
+               storage_delete_next_attempt_at = NULL,
+               updated_at = NOW()
+         WHERE id = $1
+           AND circle_id = $2
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(&file_name)
+    .bind(&mime_type)
+    .bind(file_size_bytes)
+    .bind(&sha256_hex)
+    .bind(&version_label)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(retention_policy == "legal_hold")
+    .bind(document_lifecycle_notes.as_deref())
+    .execute(&mut *tx)
+    .await?;
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.version.upload",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "version_id": version_id,
+            "role": role,
+            "version_label": version_label,
+            "mime_type": mime_type,
+            "file_size_bytes": file_size_bytes,
+            "sha256_hex": sha256_hex,
+            "has_private_file": storage_object_path.is_some(),
+            "retention_policy": retention_policy,
+            "review_required_at": review_required_at,
+            "retention_until": retention_until,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "resource_id": resource_id,
+        "version_id": version_id,
+        "delivery_url": circle_resource_delivery_url(circle_id, resource_id),
+    })))
+}
+
+async fn update_circle_resource_manage(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<CircleResourceUpdateReq>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let title = match payload.title {
+        Some(value) => Some(normalize_resource_required_text(
+            &value,
+            240,
+            "Resource title",
+        )?),
+        None => None,
+    };
+    let description =
+        normalize_resource_optional_text(payload.description, 2000, "Resource description")?;
+    let resource_type = match payload.resource_type {
+        Some(value) => Some(normalize_circle_resource_type(Some(value))?),
+        None => None,
+    };
+    let access_scope = match payload.access_scope {
+        Some(value) => Some(normalize_circle_resource_access_scope(Some(value))?),
+        None => None,
+    };
+    let upload_status = match payload.upload_status {
+        Some(value) => Some(normalize_circle_resource_upload_status(
+            Some(value),
+            "external",
+        )?),
+        None => None,
+    };
+    let retention_policy = match payload.retention_policy {
+        Some(value) => Some(normalize_circle_resource_retention_policy(Some(value))?),
+        None => None,
+    };
+    let lifecycle_retention_until = payload.retention_until;
+    let lifecycle_review_required_at = payload.review_required_at;
+    let document_lifecycle_notes = normalize_resource_optional_text(
+        payload.document_lifecycle_notes,
+        2000,
+        "Document lifecycle notes",
+    )?;
+
+    if title.is_none()
+        && description.is_none()
+        && resource_type.is_none()
+        && access_scope.is_none()
+        && payload.is_official.is_none()
+        && payload.is_active.is_none()
+        && payload.expires_at.is_none()
+        && upload_status.is_none()
+        && retention_policy.is_none()
+        && lifecycle_retention_until.is_none()
+        && lifecycle_review_required_at.is_none()
+        && document_lifecycle_notes.is_none()
+    {
+        return Err(AppError::BadRequest(
+            "At least one resource field must be provided.".into(),
+        ));
+    }
+
+    let mut tx = c_pool.begin().await?;
+    let updated_id: Option<Uuid> = sqlx::query_scalar(
+        r#"
+        UPDATE circle_resources
+           SET title = COALESCE($3, title),
+               description = COALESCE($4, description),
+               resource_type = COALESCE($5, resource_type),
+               access_scope = COALESCE($6, access_scope),
+               is_official = COALESCE($7, is_official),
+               is_active = COALESCE($8, is_active),
+               expires_at = COALESCE($9, expires_at),
+               upload_status = COALESCE($10, upload_status),
+               retention_policy = COALESCE($11, retention_policy),
+               retention_until = COALESCE($12, retention_until),
+               review_required_at = COALESCE($13, review_required_at),
+               legal_hold = CASE
+                 WHEN $11 = 'legal_hold' THEN TRUE
+                 WHEN $11 IN ('standard', 'delete_after_expiry') THEN FALSE
+                 ELSE legal_hold
+               END,
+               document_lifecycle_notes = COALESCE($14, document_lifecycle_notes),
+               updated_at = NOW()
+         WHERE id = $1
+           AND circle_id = $2
+         RETURNING id
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(title.as_deref())
+    .bind(description.as_deref())
+    .bind(resource_type.as_deref())
+    .bind(access_scope.as_deref())
+    .bind(payload.is_official)
+    .bind(payload.is_active)
+    .bind(payload.expires_at)
+    .bind(upload_status.as_deref())
+    .bind(retention_policy.as_deref())
+    .bind(lifecycle_retention_until)
+    .bind(lifecycle_review_required_at)
+    .bind(document_lifecycle_notes.as_deref())
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    if updated_id.is_none() {
+        return Err(AppError::NotFound("Circle resource not found.".into()));
+    }
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.update",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "role": role,
+            "changed": {
+                "title": title.is_some(),
+                "description": description.is_some(),
+                "resource_type": resource_type,
+                "access_scope": access_scope,
+                "is_official": payload.is_official,
+                "is_active": payload.is_active,
+                "expires_at": payload.expires_at,
+                "upload_status": upload_status,
+                "retention_policy": retention_policy,
+                "retention_until": lifecycle_retention_until,
+                "review_required_at": lifecycle_review_required_at,
+                "document_lifecycle_notes": document_lifecycle_notes.is_some(),
+            }
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
+async fn update_circle_resource_lifecycle(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<CircleResourceLifecycleReq>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let action = normalize_circle_resource_lifecycle_action(&payload.action)?;
+    let note = normalize_resource_optional_text(payload.note, 2000, "Lifecycle note")?;
+    let retention_policy = match payload.retention_policy {
+        Some(value) => Some(normalize_circle_resource_retention_policy(Some(value))?),
+        None => None,
+    };
+    let lifecycle_retention_until = payload.retention_until;
+    let lifecycle_review_required_at = payload.review_required_at;
+
+    let mut tx = c_pool.begin().await?;
+    let row = sqlx::query(
+        r#"
+        SELECT id,
+               storage_object_path IS NOT NULL AS has_private_file
+          FROM circle_resources
+         WHERE id = $1
+           AND circle_id = $2
+         FOR UPDATE
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle resource not found.".into()))?;
+
+    let has_private_file = row.try_get::<bool, _>("has_private_file").unwrap_or(false);
+    let restored_upload_status = if has_private_file {
+        "uploaded"
+    } else {
+        "external"
+    };
+
+    match action.as_str() {
+        "mark_reviewed" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET reviewed_at = NOW(),
+                       reviewed_by = $3,
+                       document_lifecycle_notes = COALESCE($4, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(user.id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "clear_review" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET reviewed_at = NULL,
+                       reviewed_by = NULL,
+                       document_lifecycle_notes = COALESCE($3, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "mark_uploaded" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET upload_status = 'uploaded',
+                       deleted_at = NULL,
+                       deleted_by = NULL,
+                       deletion_reason = NULL,
+                       is_active = TRUE,
+                       document_lifecycle_notes = COALESCE($3, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "mark_pending_upload" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET upload_status = 'pending_upload',
+                       document_lifecycle_notes = COALESCE($3, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "reject_upload" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET upload_status = 'rejected',
+                       is_active = FALSE,
+                       document_lifecycle_notes = COALESCE($3, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "expire" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET upload_status = 'expired',
+                       is_active = FALSE,
+                       expires_at = COALESCE(expires_at, NOW()),
+                       document_lifecycle_notes = COALESCE($3, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "soft_delete" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET upload_status = 'deleted',
+                       is_active = FALSE,
+                       deleted_at = NOW(),
+                       deleted_by = $3,
+                       deletion_reason = COALESCE($4, deletion_reason),
+                       document_lifecycle_notes = COALESCE($4, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(user.id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "restore" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET upload_status = $3,
+                       is_active = TRUE,
+                       deleted_at = NULL,
+                       deleted_by = NULL,
+                       deletion_reason = NULL,
+                       document_lifecycle_notes = COALESCE($4, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(restored_upload_status)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "legal_hold" => {
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET retention_policy = 'legal_hold',
+                       legal_hold = TRUE,
+                       document_lifecycle_notes = COALESCE($3, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "standard_retention" => {
+            let policy = retention_policy
+                .clone()
+                .unwrap_or_else(|| "standard".to_string());
+            if policy == "legal_hold" {
+                return Err(AppError::BadRequest(
+                    "Use the legal_hold lifecycle action to place a document on legal hold.".into(),
+                ));
+            }
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET retention_policy = $3,
+                       retention_until = COALESCE($4, retention_until),
+                       legal_hold = FALSE,
+                       document_lifecycle_notes = COALESCE($5, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(policy)
+            .bind(lifecycle_retention_until)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        "schedule_review" => {
+            let review_required_at = lifecycle_review_required_at.ok_or_else(|| {
+                AppError::BadRequest("review_required_at is required for schedule_review.".into())
+            })?;
+            sqlx::query(
+                r#"
+                UPDATE circle_resources
+                   SET review_required_at = $3,
+                       reviewed_at = NULL,
+                       reviewed_by = NULL,
+                       document_lifecycle_notes = COALESCE($4, document_lifecycle_notes),
+                       updated_at = NOW()
+                 WHERE id = $1
+                   AND circle_id = $2
+                "#,
+            )
+            .bind(resource_id)
+            .bind(circle_id)
+            .bind(review_required_at)
+            .bind(note.as_deref())
+            .execute(&mut *tx)
+            .await?;
+        }
+        _ => unreachable!("validated lifecycle action"),
+    }
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.lifecycle",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "role": role,
+            "action": action,
+            "has_note": note.is_some(),
+            "retention_policy": retention_policy,
+            "retention_until": lifecycle_retention_until,
+            "review_required_at": lifecycle_review_required_at,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "resource_id": resource_id,
+        "action": action,
+    })))
+}
+
+fn circle_resource_version_field_label(field: &str) -> &'static str {
+    match field {
+        "version_label" => "Version label",
+        "file_name" => "File name",
+        "mime_type" => "MIME type",
+        "file_size_bytes" => "File size",
+        "sha256_hex" => "SHA-256",
+        "requires_download" => "Requires download",
+        "published_at" => "Published at",
+        "expires_at" => "Expires at",
+        "upload_status" => "Upload status",
+        "retention_policy" => "Retention policy",
+        "retention_until" => "Retention until",
+        "review_required_at" => "Review required at",
+        "review_status" => "Review status",
+        _ => "Field",
+    }
+}
+
+fn circle_resource_version_comparison(versions: &[serde_json::Value]) -> Option<serde_json::Value> {
+    let current = versions.iter().find(|version| {
+        version
+            .get("is_current")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+    })?;
+    let candidate = versions.iter().find(|version| {
+        !version
+            .get("is_current")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+    })?;
+    let fields = [
+        "version_label",
+        "file_name",
+        "mime_type",
+        "file_size_bytes",
+        "sha256_hex",
+        "requires_download",
+        "published_at",
+        "expires_at",
+        "upload_status",
+        "retention_policy",
+        "retention_until",
+        "review_required_at",
+        "review_status",
+    ];
+    let changed_fields: Vec<serde_json::Value> = fields
+        .iter()
+        .filter_map(|field| {
+            let current_value = current
+                .get(field)
+                .cloned()
+                .unwrap_or(serde_json::Value::Null);
+            let candidate_value = candidate
+                .get(field)
+                .cloned()
+                .unwrap_or(serde_json::Value::Null);
+            if current_value == candidate_value {
+                None
+            } else {
+                Some(serde_json::json!({
+                    "field": field,
+                    "label": circle_resource_version_field_label(field),
+                    "current": current_value,
+                    "candidate": candidate_value,
+                }))
+            }
+        })
+        .collect();
+
+    Some(serde_json::json!({
+        "current_version_id": current.get("id").cloned().unwrap_or(serde_json::Value::Null),
+        "candidate_version_id": candidate.get("id").cloned().unwrap_or(serde_json::Value::Null),
+        "candidate_label": candidate.get("version_label").cloned().unwrap_or(serde_json::Value::Null),
+        "change_count": changed_fields.len(),
+        "changed_fields": changed_fields,
+    }))
+}
+
+async fn get_circle_resource_versions(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circle_resources WHERE id = $1 AND circle_id = $2)",
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_one(&c_pool)
+    .await?;
+    if !exists {
+        return Err(AppError::NotFound("Circle resource not found.".into()));
+    }
+
+    let rows = sqlx::query(
+        r#"
+        SELECT id,
+               resource_id,
+               circle_id,
+               version_label,
+               CASE WHEN storage_object_path IS NULL THEN url ELSE NULL END AS external_url,
+               storage_object_path IS NOT NULL AS has_private_file,
+               file_name,
+               mime_type,
+               file_size_bytes,
+               sha256_hex,
+               requires_download,
+               published_at,
+               expires_at,
+               change_note,
+               upload_status,
+               retention_policy,
+               retention_until,
+               review_required_at,
+               review_status,
+               reviewed_at,
+               reviewed_by,
+               review_note,
+               document_lifecycle_notes,
+               is_current,
+               created_by,
+               created_at
+          FROM circle_resource_versions
+         WHERE resource_id = $1
+           AND circle_id = $2
+         ORDER BY is_current DESC, created_at DESC
+         LIMIT 100
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let versions: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "id": row.try_get::<Uuid, _>("id").ok(),
+                "resource_id": row.try_get::<Uuid, _>("resource_id").ok(),
+                "circle_id": row.try_get::<Uuid, _>("circle_id").ok(),
+                "version_label": row.try_get::<String, _>("version_label").unwrap_or_else(|_| "v1".to_string()),
+                "external_url": row.try_get::<Option<String>, _>("external_url").ok().flatten(),
+                "has_private_file": row.try_get::<bool, _>("has_private_file").unwrap_or(false),
+                "file_name": row.try_get::<Option<String>, _>("file_name").ok().flatten(),
+                "mime_type": row.try_get::<Option<String>, _>("mime_type").ok().flatten(),
+                "file_size_bytes": row.try_get::<Option<i64>, _>("file_size_bytes").ok().flatten(),
+                "sha256_hex": row.try_get::<Option<String>, _>("sha256_hex").ok().flatten(),
+                "requires_download": row.try_get::<bool, _>("requires_download").unwrap_or(true),
+                "published_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("published_at").ok(),
+                "expires_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("expires_at").ok().flatten(),
+                "change_note": row.try_get::<Option<String>, _>("change_note").ok().flatten(),
+                "upload_status": row.try_get::<String, _>("upload_status").unwrap_or_else(|_| "external".to_string()),
+                "retention_policy": row.try_get::<String, _>("retention_policy").unwrap_or_else(|_| "standard".to_string()),
+                "retention_until": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("retention_until").ok().flatten(),
+                "review_required_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("review_required_at").ok().flatten(),
+                "review_status": row.try_get::<String, _>("review_status").unwrap_or_else(|_| "pending".to_string()),
+                "reviewed_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("reviewed_at").ok().flatten(),
+                "reviewed_by": row.try_get::<Option<Uuid>, _>("reviewed_by").ok().flatten(),
+                "review_note": row.try_get::<Option<String>, _>("review_note").ok().flatten(),
+                "document_lifecycle_notes": row.try_get::<Option<String>, _>("document_lifecycle_notes").ok().flatten(),
+                "is_current": row.try_get::<bool, _>("is_current").unwrap_or(false),
+                "created_by": row.try_get::<Option<Uuid>, _>("created_by").ok().flatten(),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+                "delivery_url": row.try_get::<Uuid, _>("id").ok().map(|version_id| circle_resource_version_delivery_url(circle_id, resource_id, version_id)),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "circle_id": circle_id,
+        "resource_id": resource_id,
+        "role": role,
+        "comparison": circle_resource_version_comparison(&versions),
+        "versions": versions,
+        "storage_paths_hidden": true,
+    })))
+}
+
+async fn create_circle_resource_version(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<CircleResourceVersionReq>,
+) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let version_label =
+        normalize_resource_optional_text(payload.version_label, 80, "Version label")?
+            .unwrap_or_else(|| "v1".to_string());
+    let (url, storage_object_path) = normalize_circle_resource_source(
+        payload.url,
+        payload.storage_object_path,
+        state.config.gcs_bucket.as_deref(),
+    )?;
+    let file_name = normalize_resource_optional_text(payload.file_name, 240, "File name")?;
+    let mime_type = normalize_resource_optional_text(payload.mime_type, 120, "MIME type")?;
+    let file_size_bytes = validate_circle_resource_file_size(payload.file_size_bytes)?;
+    let sha256_hex = normalize_circle_resource_sha(payload.sha256_hex)?;
+    let change_note = normalize_resource_optional_text(payload.change_note, 1000, "Change note")?;
+    let requires_download = payload.requires_download.unwrap_or(true);
+    let default_upload_status = if storage_object_path.is_some() {
+        "uploaded"
+    } else {
+        "external"
+    };
+    let upload_status =
+        normalize_circle_resource_upload_status(payload.upload_status, default_upload_status)?;
+    let retention_policy = normalize_circle_resource_retention_policy(payload.retention_policy)?;
+    let document_lifecycle_notes = normalize_resource_optional_text(
+        payload.document_lifecycle_notes,
+        2000,
+        "Document lifecycle notes",
+    )?;
+    let retention_until = payload.retention_until;
+    let review_required_at = payload.review_required_at;
+
+    let mut tx = c_pool.begin().await?;
+    let resource_exists: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM circle_resources WHERE id = $1 AND circle_id = $2 FOR UPDATE",
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+    if resource_exists.is_none() {
+        return Err(AppError::NotFound("Circle resource not found.".into()));
+    }
+
+    sqlx::query("UPDATE circle_resource_versions SET is_current = FALSE WHERE resource_id = $1")
+        .bind(resource_id)
+        .execute(&mut *tx)
+        .await?;
+
+    let version_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO circle_resource_versions (
+          resource_id, circle_id, version_label, url, storage_object_path,
+          file_name, mime_type, file_size_bytes, sha256_hex, requires_download,
+          published_at, expires_at, change_note, upload_status, retention_policy,
+          retention_until, review_required_at, document_lifecycle_notes, is_current, created_by
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          COALESCE($11, NOW()), $12, $13, $14, $15, $16, $17, $18, TRUE, $19
+        )
+        RETURNING id
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(&version_label)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(file_name.as_deref())
+    .bind(mime_type.as_deref())
+    .bind(file_size_bytes)
+    .bind(sha256_hex.as_deref())
+    .bind(requires_download)
+    .bind(payload.published_at)
+    .bind(payload.expires_at)
+    .bind(change_note.as_deref())
+    .bind(&upload_status)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(document_lifecycle_notes.as_deref())
+    .bind(user.id)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE circle_resources
+           SET url = $3,
+               storage_object_path = $4,
+               file_name = $5,
+               mime_type = $6,
+               file_size_bytes = $7,
+               sha256_hex = $8,
+               version_label = $9,
+               published_at = COALESCE($10, NOW()),
+               expires_at = $11,
+               requires_download = $12,
+               upload_status = $13,
+               retention_policy = $14,
+               retention_until = $15,
+               review_required_at = $16,
+               legal_hold = $17,
+               reviewed_at = NULL,
+               reviewed_by = NULL,
+               document_lifecycle_notes = COALESCE($18, document_lifecycle_notes),
+               updated_at = NOW()
+         WHERE id = $1
+           AND circle_id = $2
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(url.as_deref())
+    .bind(storage_object_path.as_deref())
+    .bind(file_name.as_deref())
+    .bind(mime_type.as_deref())
+    .bind(file_size_bytes)
+    .bind(sha256_hex.as_deref())
+    .bind(&version_label)
+    .bind(payload.published_at)
+    .bind(payload.expires_at)
+    .bind(requires_download)
+    .bind(&upload_status)
+    .bind(&retention_policy)
+    .bind(retention_until)
+    .bind(review_required_at)
+    .bind(retention_policy == "legal_hold")
+    .bind(document_lifecycle_notes.as_deref())
+    .execute(&mut *tx)
+    .await?;
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.version.create",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "version_id": version_id,
+            "role": role,
+            "version_label": version_label,
+            "has_private_file": storage_object_path.is_some(),
+            "has_change_note": change_note.is_some(),
+            "upload_status": upload_status,
+            "retention_policy": retention_policy,
+            "review_required_at": review_required_at,
+            "retention_until": retention_until,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "resource_id": resource_id,
+        "version_id": version_id,
+    })))
+}
+
+async fn get_circle_resource_version_access(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id, version_id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<Response, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT version.id,
+               resource.title,
+               version.url,
+               version.storage_object_path,
+               version.file_name,
+               version.mime_type,
+               version.requires_download
+          FROM circle_resource_versions version
+          JOIN circle_resources resource ON resource.id = version.resource_id
+         WHERE version.id = $1
+           AND version.resource_id = $2
+           AND version.circle_id = $3
+           AND resource.circle_id = $3
+           AND (version.storage_object_path IS NULL OR version.storage_deleted_at IS NULL)
+         LIMIT 1
+        "#,
+    )
+    .bind(version_id)
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle resource version not found.".into()))?;
+
+    if let Some(url) = row.try_get::<Option<String>, _>("url").ok().flatten() {
+        let url = url.trim().to_string();
+        if !is_safe_circle_resource_url(&url) {
+            return Err(AppError::Internal(
+                "Circle resource version has an unsafe delivery URL.".into(),
+            ));
+        }
+        return Ok(Redirect::temporary(&url).into_response());
+    }
+
+    let storage_path = row
+        .try_get::<Option<String>, _>("storage_object_path")
+        .ok()
+        .flatten()
+        .ok_or_else(|| AppError::NotFound("Circle resource version file not found.".into()))?;
+    let (bucket, object_path) =
+        parse_circle_resource_storage_path(&storage_path, state.config.gcs_bucket.as_deref())?;
+
+    match crate::storage::service::download_object(&bucket, &object_path).await {
+        Ok((downloaded_content_type, data)) => {
+            let title = row.try_get::<String, _>("title").unwrap_or_default();
+            let file_name = row.try_get::<Option<String>, _>("file_name").ok().flatten();
+            let filename =
+                safe_circle_resource_filename(&title, file_name.as_deref(), &object_path);
+            let content_type = row
+                .try_get::<Option<String>, _>("mime_type")
+                .ok()
+                .flatten()
+                .unwrap_or(downloaded_content_type);
+            let requires_download = row.try_get::<bool, _>("requires_download").unwrap_or(true);
+            let mut headers = HeaderMap::new();
+            if let Ok(v) = content_type.parse() {
+                headers.insert(header::CONTENT_TYPE, v);
+            }
+            headers.insert(
+                header::CACHE_CONTROL,
+                "private, max-age=0, no-store".parse().unwrap(),
+            );
+            headers.insert(
+                header::HeaderName::from_static("x-content-type-options"),
+                "nosniff".parse().unwrap(),
+            );
+            if requires_download || !content_type.starts_with("image/") {
+                if let Ok(v) = format!("attachment; filename=\"{}\"", filename).parse() {
+                    headers.insert(header::CONTENT_DISPOSITION, v);
+                }
+            }
+            Ok((StatusCode::OK, headers, data).into_response())
+        }
+        Err(e) => {
+            tracing::error!(
+                resource_id = %resource_id,
+                version_id = %version_id,
+                circle_id = %circle_id,
+                error = %e,
+                "Circle resource version delivery failed"
+            );
+            Err(AppError::Internal(
+                "Failed to fetch Circle resource version file.".into(),
+            ))
+        }
+    }
+}
+
+async fn restore_circle_resource_version(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id, version_id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let mut tx = c_pool.begin().await?;
+    let version = sqlx::query(
+        r#"
+        SELECT version.id,
+               version.version_label,
+               version.url,
+               version.storage_object_path,
+               version.file_name,
+               version.mime_type,
+               version.file_size_bytes,
+               version.sha256_hex,
+               version.requires_download,
+               version.published_at,
+               version.expires_at,
+               version.change_note,
+               version.upload_status,
+               version.retention_policy,
+               version.retention_until,
+               version.review_required_at,
+               version.document_lifecycle_notes,
+               version.storage_deleted_at,
+               version.storage_object_path IS NOT NULL AS has_private_file
+          FROM circle_resource_versions version
+          JOIN circle_resources resource ON resource.id = version.resource_id
+         WHERE version.id = $1
+           AND version.resource_id = $2
+           AND version.circle_id = $3
+           AND resource.circle_id = $3
+         FOR UPDATE OF version, resource
+        "#,
+    )
+    .bind(version_id)
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle resource version not found.".into()))?;
+
+    let restored_url = version.try_get::<Option<String>, _>("url").ok().flatten();
+    let restored_storage_object_path = version
+        .try_get::<Option<String>, _>("storage_object_path")
+        .ok()
+        .flatten();
+    let restored_storage_deleted_at = version
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("storage_deleted_at")
+        .ok()
+        .flatten();
+    if restored_storage_object_path.is_some() && restored_storage_deleted_at.is_some() {
+        return Err(AppError::BadRequest(
+            "This Circle resource version's backing file has already been physically deleted."
+                .into(),
+        ));
+    }
+    let restored_file_name = version
+        .try_get::<Option<String>, _>("file_name")
+        .ok()
+        .flatten();
+    let restored_mime_type = version
+        .try_get::<Option<String>, _>("mime_type")
+        .ok()
+        .flatten();
+    let restored_file_size_bytes = version
+        .try_get::<Option<i64>, _>("file_size_bytes")
+        .ok()
+        .flatten();
+    let restored_sha256_hex = version
+        .try_get::<Option<String>, _>("sha256_hex")
+        .ok()
+        .flatten();
+    let version_label = version
+        .try_get::<String, _>("version_label")
+        .unwrap_or_else(|_| "v1".to_string());
+    let restored_published_at = version
+        .try_get::<chrono::DateTime<chrono::Utc>, _>("published_at")
+        .unwrap_or_else(|_| chrono::Utc::now());
+    let restored_expires_at = version
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("expires_at")
+        .ok()
+        .flatten();
+    let restored_requires_download = version
+        .try_get::<bool, _>("requires_download")
+        .unwrap_or(true);
+    let upload_status = version
+        .try_get::<String, _>("upload_status")
+        .unwrap_or_else(|_| "external".to_string());
+    let retention_policy = version
+        .try_get::<String, _>("retention_policy")
+        .unwrap_or_else(|_| "standard".to_string());
+    let restored_retention_until = version
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("retention_until")
+        .ok()
+        .flatten();
+    let restored_review_required_at = version
+        .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("review_required_at")
+        .ok()
+        .flatten();
+    let restored_lifecycle_notes = version
+        .try_get::<Option<String>, _>("document_lifecycle_notes")
+        .ok()
+        .flatten();
+    let has_private_file = version
+        .try_get::<bool, _>("has_private_file")
+        .unwrap_or(false);
+
+    sqlx::query("UPDATE circle_resource_versions SET is_current = FALSE WHERE resource_id = $1")
+        .bind(resource_id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE circle_resource_versions SET is_current = TRUE WHERE id = $1")
+        .bind(version_id)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE circle_resources
+           SET url = $3,
+               storage_object_path = $4,
+               file_name = $5,
+               mime_type = $6,
+               file_size_bytes = $7,
+               sha256_hex = $8,
+               version_label = $9,
+               published_at = $10,
+               expires_at = $11,
+               requires_download = $12,
+               upload_status = $13,
+               retention_policy = $14,
+               retention_until = $15,
+               review_required_at = $16,
+               legal_hold = $17,
+               document_lifecycle_notes = COALESCE($18, document_lifecycle_notes),
+               is_active = TRUE,
+               deleted_at = NULL,
+               deleted_by = NULL,
+               deletion_reason = NULL,
+               storage_deleted_at = NULL,
+               storage_delete_attempts = 0,
+               storage_delete_last_error = NULL,
+               storage_delete_next_attempt_at = NULL,
+               updated_at = NOW()
+         WHERE id = $1
+           AND circle_id = $2
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(restored_url.as_deref())
+    .bind(restored_storage_object_path.as_deref())
+    .bind(restored_file_name.as_deref())
+    .bind(restored_mime_type.as_deref())
+    .bind(restored_file_size_bytes)
+    .bind(restored_sha256_hex.as_deref())
+    .bind(&version_label)
+    .bind(restored_published_at)
+    .bind(restored_expires_at)
+    .bind(restored_requires_download)
+    .bind(&upload_status)
+    .bind(&retention_policy)
+    .bind(restored_retention_until)
+    .bind(restored_review_required_at)
+    .bind(retention_policy == "legal_hold")
+    .bind(restored_lifecycle_notes.as_deref())
+    .execute(&mut *tx)
+    .await?;
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.version.restore",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "version_id": version_id,
+            "role": role,
+            "version_label": version_label,
+            "upload_status": upload_status,
+            "has_private_file": has_private_file,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "resource_id": resource_id,
+        "version_id": version_id,
+        "delivery_url": circle_resource_delivery_url(circle_id, resource_id),
+    })))
+}
+
+async fn review_circle_resource_version(
+    jar: CookieJar,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id, version_id)): Path<(Uuid, Uuid, Uuid)>,
+    Json(payload): Json<CircleResourceVersionReviewReq>,
+) -> Result<impl IntoResponse, AppError> {
+    use sqlx::Row;
+    require_csrf_header(&headers, &jar)?;
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+    let c_pool = get_community_pool(&state)?;
+    let role = ensure_circle_resource_admin_access(&state, &c_pool, circle_id, user.id).await?;
+
+    let action = normalize_circle_resource_version_review_action(&payload.action)?;
+    let review_status = match action.as_str() {
+        "approve" => "approved",
+        "reject" => "rejected",
+        "mark_pending" => "pending",
+        _ => "pending",
+    };
+    let note = normalize_resource_optional_text(payload.note, 2000, "Review note")?;
+    if action == "reject" && note.is_none() {
+        return Err(AppError::BadRequest(
+            "Review note is required when rejecting a resource version.".into(),
+        ));
+    }
+
+    let mut tx = c_pool.begin().await?;
+    let version = sqlx::query(
+        r#"
+        SELECT version.id,
+               version.version_label,
+               version.storage_object_path,
+               version.storage_deleted_at,
+               version.is_current,
+               version.upload_status
+          FROM circle_resource_versions version
+          JOIN circle_resources resource ON resource.id = version.resource_id
+         WHERE version.id = $1
+           AND version.resource_id = $2
+           AND version.circle_id = $3
+           AND resource.circle_id = $3
+         FOR UPDATE OF version, resource
+        "#,
+    )
+    .bind(version_id)
+    .bind(resource_id)
+    .bind(circle_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle resource version not found.".into()))?;
+
+    let has_deleted_private_file = version
+        .try_get::<Option<String>, _>("storage_object_path")
+        .ok()
+        .flatten()
+        .is_some()
+        && version
+            .try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("storage_deleted_at")
+            .ok()
+            .flatten()
+            .is_some();
+    if review_status == "approved" && has_deleted_private_file {
+        return Err(AppError::BadRequest(
+            "This Circle resource version's backing file has already been physically deleted."
+                .into(),
+        ));
+    }
+
+    sqlx::query(
+        r#"
+        UPDATE circle_resource_versions
+           SET review_status = $2,
+               reviewed_at = CASE WHEN $2 = 'pending' THEN NULL ELSE NOW() END,
+               reviewed_by = CASE WHEN $2 = 'pending' THEN NULL ELSE $3 END,
+               review_note = $4
+         WHERE id = $1
+        "#,
+    )
+    .bind(version_id)
+    .bind(review_status)
+    .bind(user.id)
+    .bind(note.as_deref())
+    .execute(&mut *tx)
+    .await?;
+
+    let is_current = version.try_get::<bool, _>("is_current").unwrap_or(false);
+    let upload_status = version
+        .try_get::<String, _>("upload_status")
+        .unwrap_or_else(|_| "external".to_string());
+    if is_current {
+        sqlx::query(
+            r#"
+            UPDATE circle_resources
+               SET reviewed_at = CASE WHEN $3 = 'pending' THEN NULL ELSE NOW() END,
+                   reviewed_by = CASE WHEN $3 = 'pending' THEN NULL ELSE $4 END,
+                   review_required_at = CASE WHEN $3 = 'approved' THEN NULL ELSE review_required_at END,
+                   upload_status = CASE
+                     WHEN $3 = 'rejected' THEN 'rejected'
+                     WHEN $3 = 'approved' AND upload_status = 'rejected' THEN $6
+                     ELSE upload_status
+                   END,
+                   document_lifecycle_notes = COALESCE($5, document_lifecycle_notes),
+                   updated_at = NOW()
+             WHERE id = $1
+               AND circle_id = $2
+            "#,
+        )
+        .bind(resource_id)
+        .bind(circle_id)
+        .bind(review_status)
+        .bind(user.id)
+        .bind(note.as_deref())
+        .bind(&upload_status)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    let version_label = version
+        .try_get::<String, _>("version_label")
+        .unwrap_or_else(|_| "v1".to_string());
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "circle.resource.version.review",
+        "circle_resource",
+        Some(resource_id),
+        None,
+        serde_json::json!({
+            "circle_id": circle_id,
+            "version_id": version_id,
+            "role": role,
+            "action": action,
+            "review_status": review_status,
+            "version_label": version_label,
+            "upload_status": upload_status,
+            "is_current": is_current,
+            "has_review_note": note.is_some(),
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "resource_id": resource_id,
+        "version_id": version_id,
+        "review_status": review_status,
+    })))
+}
+
+async fn get_circle_resources(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let (circle_asset_id, has_holding, is_member) =
+        ensure_asset_circle_access(&state, &c_pool, circle_id, user.id).await?;
+    let is_platform_admin =
+        middleware::has_permission(&state.db, user.id, "community.manage").await;
+
+    use sqlx::Row;
+    let rows = sqlx::query(
+        r#"
+        SELECT id,
+               circle_id,
+               asset_id,
+               title,
+               description,
+               resource_type,
+               access_scope,
+               is_official,
+               file_name,
+               mime_type,
+               file_size_bytes,
+               sha256_hex,
+               version_label,
+               published_at,
+               expires_at,
+               storage_object_path IS NOT NULL AS has_private_file,
+               created_at
+        FROM circle_resources
+        WHERE circle_id = $1
+          AND is_active = TRUE
+          AND (expires_at IS NULL OR expires_at > NOW())
+          AND (
+                access_scope = 'public'
+             OR (access_scope = 'member' AND $2)
+             OR (access_scope = 'holder_only' AND $3)
+             OR (access_scope = 'admin_only' AND $4)
+          )
+        ORDER BY is_official DESC, created_at DESC
+        LIMIT 100
+        "#,
+    )
+    .bind(circle_id)
+    .bind(is_member || has_holding || is_platform_admin)
+    .bind(has_holding || is_platform_admin)
+    .bind(is_platform_admin)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let resources: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|row| {
+            let access_scope = row
+                .try_get::<String, _>("access_scope")
+                .unwrap_or_else(|_| "member".to_string());
+            let resource_id = row.try_get::<Uuid, _>("id").ok();
+            let has_private_file = row
+                .try_get::<bool, _>("has_private_file")
+                .unwrap_or(false);
+            serde_json::json!({
+                "id": resource_id,
+                "circle_id": row.try_get::<Uuid, _>("circle_id").ok(),
+                "asset_id": row.try_get::<Option<Uuid>, _>("asset_id").ok().flatten().or(circle_asset_id),
+                "title": row.try_get::<String, _>("title").unwrap_or_default(),
+                "description": row.try_get::<Option<String>, _>("description").ok().flatten(),
+                "resource_type": row.try_get::<String, _>("resource_type").unwrap_or_else(|_| "resource".to_string()),
+                "access_scope": access_scope,
+                "is_official": row.try_get::<bool, _>("is_official").unwrap_or(false),
+                "file_name": row.try_get::<Option<String>, _>("file_name").ok().flatten(),
+                "mime_type": row.try_get::<Option<String>, _>("mime_type").ok().flatten(),
+                "file_size_bytes": row.try_get::<Option<i64>, _>("file_size_bytes").ok().flatten(),
+                "sha256_hex": row.try_get::<Option<String>, _>("sha256_hex").ok().flatten(),
+                "version_label": row.try_get::<String, _>("version_label").unwrap_or_else(|_| "v1".to_string()),
+                "published_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("published_at").ok(),
+                "expires_at": row.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("expires_at").ok().flatten(),
+                "has_private_file": has_private_file,
+                "delivery_mode": if has_private_file { "api_stream" } else { "api_redirect" },
+                "delivery_url": resource_id.map(|id| circle_resource_delivery_url(circle_id, id)),
+                "created_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "resources": resources,
+        "scope": "circle",
+        "circle_id": circle_id,
+        "asset_id": circle_asset_id,
+        "has_holding": has_holding,
+        "is_member": is_member,
+    })))
+}
+
+async fn get_circle_resource_access(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path((circle_id, resource_id)): Path<(Uuid, Uuid)>,
+) -> Result<Response, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let (_circle_asset_id, has_holding, is_member) =
+        ensure_asset_circle_access(&state, &c_pool, circle_id, user.id).await?;
+    let is_platform_admin =
+        middleware::has_permission(&state.db, user.id, "community.manage").await;
+
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT id,
+               title,
+               access_scope,
+               url,
+               storage_object_path,
+               file_name,
+               mime_type,
+               requires_download
+        FROM circle_resources
+        WHERE id = $1
+          AND circle_id = $2
+          AND is_active = TRUE
+          AND (expires_at IS NULL OR expires_at > NOW())
+          AND (
+                access_scope = 'public'
+             OR (access_scope = 'member' AND $3)
+             OR (access_scope = 'holder_only' AND $4)
+             OR (access_scope = 'admin_only' AND $5)
+          )
+        LIMIT 1
+        "#,
+    )
+    .bind(resource_id)
+    .bind(circle_id)
+    .bind(is_member || has_holding || is_platform_admin)
+    .bind(has_holding || is_platform_admin)
+    .bind(is_platform_admin)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle resource not found.".into()))?;
+
+    if let Some(url) = row.try_get::<Option<String>, _>("url").ok().flatten() {
+        let url = url.trim().to_string();
+        if !is_safe_circle_resource_url(&url) {
+            return Err(AppError::Internal(
+                "Circle resource has an unsafe delivery URL.".into(),
+            ));
+        }
+        return Ok(Redirect::temporary(&url).into_response());
+    }
+
+    let storage_path = row
+        .try_get::<Option<String>, _>("storage_object_path")
+        .ok()
+        .flatten()
+        .ok_or_else(|| AppError::NotFound("Circle resource file not found.".into()))?;
+    let (bucket, object_path) =
+        parse_circle_resource_storage_path(&storage_path, state.config.gcs_bucket.as_deref())?;
+
+    match crate::storage::service::download_object(&bucket, &object_path).await {
+        Ok((downloaded_content_type, data)) => {
+            let title = row.try_get::<String, _>("title").unwrap_or_default();
+            let file_name = row.try_get::<Option<String>, _>("file_name").ok().flatten();
+            let filename =
+                safe_circle_resource_filename(&title, file_name.as_deref(), &object_path);
+            let content_type = row
+                .try_get::<Option<String>, _>("mime_type")
+                .ok()
+                .flatten()
+                .unwrap_or(downloaded_content_type);
+            let requires_download = row.try_get::<bool, _>("requires_download").unwrap_or(true);
+            let mut headers = HeaderMap::new();
+            if let Ok(v) = content_type.parse() {
+                headers.insert(header::CONTENT_TYPE, v);
+            }
+            headers.insert(
+                header::CACHE_CONTROL,
+                "private, max-age=0, no-store".parse().unwrap(),
+            );
+            headers.insert(
+                header::HeaderName::from_static("x-content-type-options"),
+                "nosniff".parse().unwrap(),
+            );
+            if requires_download || !content_type.starts_with("image/") {
+                if let Ok(v) = format!("attachment; filename=\"{}\"", filename).parse() {
+                    headers.insert(header::CONTENT_DISPOSITION, v);
+                }
+            }
+            Ok((StatusCode::OK, headers, data).into_response())
+        }
+        Err(e) => {
+            tracing::error!(
+                resource_id = %resource_id,
+                circle_id = %circle_id,
+                error = %e,
+                "Circle resource delivery failed"
+            );
+            Err(AppError::Internal(
+                "Failed to fetch Circle resource file.".into(),
+            ))
+        }
+    }
+}
+
+fn circle_resource_delivery_url(circle_id: Uuid, resource_id: Uuid) -> String {
+    format!(
+        "/api/community/circles/{}/resources/{}/access",
+        circle_id, resource_id
+    )
+}
+
+fn circle_resource_version_delivery_url(
+    circle_id: Uuid,
+    resource_id: Uuid,
+    version_id: Uuid,
+) -> String {
+    format!(
+        "/api/community/circles/{}/resources/{}/versions/{}/access",
+        circle_id, resource_id, version_id
+    )
+}
+
+fn is_safe_circle_resource_url(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    !url.chars().any(char::is_control)
+        && (lower.starts_with("https://")
+            || lower.starts_with("http://")
+            || (url.starts_with('/') && !url.starts_with("//")))
+}
+
+fn parse_circle_resource_storage_path(
+    raw: &str,
+    configured_bucket: Option<&str>,
+) -> Result<(String, String), AppError> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return Err(AppError::Internal(
+            "Circle resource storage path is empty.".into(),
+        ));
+    }
+
+    let (bucket, object_path) = if let Some(rest) = raw.strip_prefix("gs://") {
+        let mut parts = rest.splitn(2, '/');
+        let bucket = parts.next().unwrap_or_default();
+        let object_path = parts.next().unwrap_or_default();
+        if bucket.is_empty() || object_path.is_empty() {
+            return Err(AppError::Internal(
+                "Circle resource storage path is invalid.".into(),
+            ));
+        }
+        (bucket.to_string(), object_path.to_string())
+    } else if let Some(rest) = raw.strip_prefix("/api/proxy/gcs/") {
+        let mut parts = rest.splitn(2, '/');
+        let bucket = parts.next().unwrap_or_default();
+        let object_path = parts.next().unwrap_or_default();
+        if bucket.is_empty() || object_path.is_empty() {
+            return Err(AppError::Internal(
+                "Circle resource proxy path is invalid.".into(),
+            ));
+        }
+        (bucket.to_string(), object_path.to_string())
+    } else {
+        let bucket = configured_bucket.ok_or_else(|| {
+            AppError::Internal("GCS bucket is not configured for Circle resources.".into())
+        })?;
+        (bucket.to_string(), raw.to_string())
+    };
+
+    if configured_bucket.is_some_and(|allowed| allowed != bucket) {
+        return Err(AppError::NotFound("Circle resource not found.".into()));
+    }
+    if object_path.starts_with('/')
+        || object_path.contains("..")
+        || object_path.contains("//")
+        || object_path.contains('\\')
+        || object_path.chars().any(char::is_control)
+    {
+        return Err(AppError::BadRequest(
+            "Circle resource path is invalid.".into(),
+        ));
+    }
+
+    Ok((bucket, object_path))
+}
+
+fn safe_circle_resource_filename(
+    title: &str,
+    file_name: Option<&str>,
+    object_path: &str,
+) -> String {
+    let candidate = file_name
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or_else(|| {
+            object_path
+                .rsplit('/')
+                .next()
+                .filter(|name| !name.trim().is_empty())
+                .unwrap_or(title)
+        });
+    let cleaned = candidate
+        .chars()
+        .filter(|ch| !matches!(ch, '"' | '\r' | '\n' | '\\'))
+        .collect::<String>();
+    if cleaned.trim().is_empty() {
+        "circle-resource".to_string()
+    } else {
+        cleaned
+    }
+}
+
+async fn get_asset_circle(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(asset_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let has_holding = user_has_asset_holding(&state.db, user.id, asset_id).await?;
+
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT id,
+               name,
+               slug,
+               description,
+               member_count,
+               visibility,
+               join_policy,
+               is_official,
+               is_primary_asset_circle,
+               token_gate_asset_id,
+               related_asset_id,
+               recent_post_count
+        FROM circles
+        WHERE (related_asset_id = $1 OR token_gate_asset_id = $1)
+          AND circle_type = 'asset'
+          AND visibility != 'hidden'
+        ORDER BY is_primary_asset_circle DESC, is_official DESC, created_at ASC
+        LIMIT 1
+        "#,
+    )
+    .bind(asset_id)
+    .fetch_optional(&c_pool)
+    .await?;
+
+    let Some(row) = row else {
+        return Ok(Json(serde_json::json!({
+            "circle": null,
+            "asset_id": asset_id,
+            "has_holding": has_holding,
+        })));
+    };
+
+    let circle_id: Uuid = row.try_get("id").unwrap_or_default();
+    let role = get_circle_member_role(&c_pool, circle_id, user.id).await?;
+    let is_member = role.is_some();
+    let join_policy = row
+        .try_get::<String, _>("join_policy")
+        .unwrap_or_else(|_| "request".to_string());
+    let access_state = if is_member {
+        "open"
+    } else if has_holding || join_policy == "open" {
+        "join"
+    } else if join_policy == "holder_only" {
+        "locked"
+    } else {
+        "request_access"
+    };
+
+    Ok(Json(serde_json::json!({
+        "asset_id": asset_id,
+        "has_holding": has_holding,
+        "circle": {
+            "id": circle_id,
+            "name": row.try_get::<String, _>("name").unwrap_or_default(),
+            "slug": row.try_get::<String, _>("slug").unwrap_or_default(),
+            "description": row.try_get::<Option<String>, _>("description").ok().flatten(),
+            "member_count": row.try_get::<i32, _>("member_count").unwrap_or(0),
+            "visibility": row.try_get::<String, _>("visibility").unwrap_or_else(|_| "private".to_string()),
+            "join_policy": join_policy,
+            "is_official": row.try_get::<bool, _>("is_official").unwrap_or(false),
+            "is_primary_asset_circle": row.try_get::<bool, _>("is_primary_asset_circle").unwrap_or(false),
+            "related_asset_id": row.try_get::<Option<Uuid>, _>("related_asset_id").ok().flatten(),
+            "token_gate_asset_id": row.try_get::<Option<Uuid>, _>("token_gate_asset_id").ok().flatten(),
+            "recent_post_count": row.try_get::<i32, _>("recent_post_count").unwrap_or(0),
+            "is_member": is_member,
+            "role": role,
+            "access_state": access_state,
+            "url": format!("/community/circle/{}", row.try_get::<String, _>("slug").unwrap_or_default()),
+        }
+    })))
+}
+
+async fn get_circle_challenges(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_read_access(&state, &c_pool, circle_id, Some(user.id)).await?;
+    let challenges =
+        crate::community::challenges::list_circle_challenges_for_user(&c_pool, user.id, circle_id)
+            .await?;
+
+    Ok(Json(serde_json::json!({
+        "challenges": challenges,
+        "scope": "circle",
+        "circle_id": circle_id,
+    })))
+}
+
+async fn get_circle_onboarding(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_read_access(&state, &c_pool, circle_id, Some(user.id)).await?;
+
+    let role = get_circle_member_role(&c_pool, circle_id, user.id).await?;
+    if role.is_none() {
+        return Ok(Json(serde_json::json!({
+            "enabled": false,
+            "reason": "not_member",
+            "steps": [],
+            "is_completed": false,
+        })));
+    }
+
+    let onboarding_enabled: bool =
+        sqlx::query_scalar("SELECT COALESCE(onboarding_enabled, TRUE) FROM circles WHERE id = $1")
+            .bind(circle_id)
+            .fetch_one(&c_pool)
+            .await?;
+
+    if !onboarding_enabled {
+        return Ok(Json(serde_json::json!({
+            "enabled": false,
+            "reason": "disabled",
+            "steps": [],
+            "is_completed": false,
+        })));
+    }
+
+    sqlx::query(
+        r#"
+        INSERT INTO circle_onboarding_progress (circle_id, user_id)
+        VALUES ($1, $2)
+        ON CONFLICT (circle_id, user_id) DO NOTHING
+        "#,
+    )
+    .bind(circle_id)
+    .bind(user.id)
+    .execute(&c_pool)
+    .await?;
+
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT rules_read,
+               introduced_self,
+               interests_selected,
+               ama_followed,
+               first_question_posted,
+               is_completed,
+               completed_at
+        FROM circle_onboarding_progress
+        WHERE circle_id = $1 AND user_id = $2
+        "#,
+    )
+    .bind(circle_id)
+    .bind(user.id)
+    .fetch_one(&c_pool)
+    .await?;
+
+    let rules_read = row.try_get::<bool, _>("rules_read").unwrap_or(false);
+    let introduced_self = row.try_get::<bool, _>("introduced_self").unwrap_or(false);
+    let interests_selected = row
+        .try_get::<bool, _>("interests_selected")
+        .unwrap_or(false);
+    let ama_followed = row.try_get::<bool, _>("ama_followed").unwrap_or(false);
+    let first_question_posted = row
+        .try_get::<bool, _>("first_question_posted")
+        .unwrap_or(false);
+    let is_completed = row.try_get::<bool, _>("is_completed").unwrap_or(false);
+
+    let steps = vec![
+        serde_json::json!({"code": "rules_read", "label": "Read the Circle rules", "completed": rules_read, "action": "confirm"}),
+        serde_json::json!({"code": "introduced_self", "label": "Introduce yourself", "completed": introduced_self, "action": "confirm"}),
+        serde_json::json!({"code": "interests_selected", "label": "Choose your interests", "completed": interests_selected, "action": "confirm"}),
+        serde_json::json!({"code": "ama_followed", "label": "Follow an upcoming AMA", "completed": ama_followed, "action": "confirm"}),
+        serde_json::json!({"code": "first_question_posted", "label": "Post your first question", "completed": first_question_posted, "action": "post_question"}),
+    ];
+
+    Ok(Json(serde_json::json!({
+        "enabled": !is_completed,
+        "is_completed": is_completed,
+        "completed_at": row.try_get::<chrono::DateTime<chrono::Utc>, _>("completed_at").ok(),
+        "steps": steps,
+    })))
+}
+
+async fn update_circle_onboarding_step(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path((circle_id, step)): Path<(Uuid, String)>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    ensure_circle_write_access(&state, &c_pool, circle_id, user.id).await?;
+    let step = normalize_circle_onboarding_step(&step)?;
+    mark_circle_onboarding_step(&c_pool, user.id, circle_id, step).await?;
+
+    let challenge_type = match step {
+        "rules_read" => Some("circle_guide_read"),
+        "introduced_self" => Some("circle_introduction"),
+        "ama_followed" => Some("circle_ama_join"),
+        _ => None,
+    };
+    if let Some(challenge_type) = challenge_type {
+        let _ = crate::community::challenges::increment_circle_progress(
+            &c_pool,
+            user.id,
+            circle_id,
+            challenge_type,
+            1,
+        )
+        .await;
+    }
+
+    Ok(Json(serde_json::json!({ "success": true, "step": step })))
 }
 
 // ─── Challenge Submissions (14.8.11 follow-up) ─────────────────────────────
@@ -6214,6 +12938,7 @@ async fn get_ama_detail(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+    ensure_ama_read_access(&state, &c_pool, ama_id, user.id).await?;
     let detail = crate::community::amas::get_ama_detail(&c_pool, ama_id, user.id).await?;
     Ok(Json(detail))
 }
@@ -6241,6 +12966,7 @@ async fn submit_ama_question(
     }
 
     let c_pool = get_community_pool(&state)?;
+    ensure_ama_read_access(&state, &c_pool, ama_id, user.id).await?;
     let question =
         crate::community::amas::submit_question(&c_pool, ama_id, user.id, q_text).await?;
 
@@ -6260,13 +12986,24 @@ async fn submit_ama_question(
 async fn toggle_ama_upvote(
     jar: CookieJar,
     State(state): State<AppState>,
-    Path((_, qid)): Path<(Uuid, Uuid)>,
+    Path((ama_id, qid)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
     let user = middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+    ensure_ama_read_access(&state, &c_pool, ama_id, user.id).await?;
+    let question_belongs_to_ama: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM ama_questions WHERE id = $1 AND ama_id = $2)",
+    )
+    .bind(qid)
+    .bind(ama_id)
+    .fetch_one(&c_pool)
+    .await?;
+    if !question_belongs_to_ama {
+        return Err(AppError::NotFound("AMA question not found.".into()));
+    }
     let added = crate::community::amas::toggle_upvote(&c_pool, qid, user.id).await?;
     Ok(Json(serde_json::json!({"upvoted": added})))
 }
@@ -6298,6 +13035,10 @@ struct CreateAmaReq {
     banner_url: Option<String>,
     scheduled_at: Option<chrono::DateTime<chrono::Utc>>,
     status: Option<String>,
+    circle_id: Option<Uuid>,
+    asset_id: Option<Uuid>,
+    #[serde(default)]
+    rsvp_enabled: bool,
 }
 
 async fn admin_create_ama(
@@ -6323,6 +13064,9 @@ async fn admin_create_ama(
         payload.banner_url.as_deref(),
         payload.scheduled_at,
         payload.status.as_deref(),
+        payload.circle_id,
+        payload.asset_id,
+        payload.rsvp_enabled,
     )
     .await?;
 
@@ -6337,6 +13081,9 @@ async fn admin_create_ama(
             "title": ama.title,
             "status": ama.status,
             "scheduled_at": ama.scheduled_at,
+            "circle_id": ama.circle_id,
+            "asset_id": ama.asset_id,
+            "rsvp_enabled": ama.rsvp_enabled,
         })),
     )
     .await;
@@ -7031,12 +13778,13 @@ async fn admin_list_circles(
         .map(str::trim)
         .filter(|s| !s.is_empty());
     let visibility = match query.visibility.as_deref() {
-        Some("public") => Some(true),
-        Some("private") => Some(false),
+        Some("public") => Some("public"),
+        Some("private") => Some("private"),
+        Some("hidden") => Some("hidden"),
         Some("all") | None | Some("") => None,
         Some(_) => {
             return Err(AppError::BadRequest(
-                "visibility must be public, private, or all".to_string(),
+                "visibility must be public, private, hidden, or all".to_string(),
             ))
         }
     };
@@ -7117,6 +13865,13 @@ struct AdminUpdateCircleReq {
     description: Option<String>,
     avatar_emoji: Option<String>,
     is_public: Option<bool>,
+    circle_type: Option<String>,
+    visibility: Option<String>,
+    join_policy: Option<String>,
+    is_official: Option<bool>,
+    kyc_required: Option<bool>,
+    private_investor_club: Option<bool>,
+    allow_cross_post: Option<bool>,
 }
 
 async fn admin_update_circle(
@@ -7134,6 +13889,13 @@ async fn admin_update_circle(
         payload.description.as_deref(),
         payload.avatar_emoji.as_deref(),
         payload.is_public,
+        payload.circle_type.as_deref(),
+        payload.visibility.as_deref(),
+        payload.join_policy.as_deref(),
+        payload.is_official,
+        payload.kyc_required,
+        payload.private_investor_club,
+        payload.allow_cross_post,
     )
     .await?;
     crate::community::audit::log(
@@ -7737,6 +14499,7 @@ async fn toggle_bookmark(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+    ensure_post_read_access(&state, &c_pool, post_id, Some(user.id)).await?;
 
     // Check if already bookmarked
     let existing: Option<Uuid> =
@@ -7790,6 +14553,7 @@ async fn get_bookmark_status(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+    ensure_post_read_access(&state, &c_pool, post_id, Some(user.id)).await?;
 
     let is_bookmarked: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $1 AND post_id = $2)",
@@ -7825,7 +14589,23 @@ pub async fn get_bookmark_feed_data(
         SELECT p.*
         FROM bookmarks b
         JOIN posts p ON b.post_id = p.id
-        WHERE b.user_id = $1 AND p.is_hidden = false
+        WHERE b.user_id = $1
+          AND p.is_hidden = false
+          AND (
+            p.circle_id IS NULL
+            OR EXISTS (
+              SELECT 1
+              FROM circles c
+              WHERE c.id = p.circle_id
+                AND (
+                  c.is_public = true
+                  OR EXISTS (
+                    SELECT 1 FROM circle_members cm
+                    WHERE cm.circle_id = p.circle_id AND cm.user_id = $1
+                  )
+                )
+            )
+          )
         ORDER BY b.created_at DESC
         LIMIT $2 OFFSET $3
         "#,
@@ -8131,14 +14911,20 @@ async fn suggest_hashtags(
 }
 
 async fn suggest_mentions(
+    jar: CookieJar,
     State(state): State<AppState>,
     Query(q): Query<SuggestQuery>,
 ) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
     let prefix = q.q.trim().trim_start_matches('@');
     if prefix.is_empty() {
-        return Ok(Json(serde_json::json!({ "users": [] })));
+        return Ok(Json(serde_json::json!({ "users": [], "circles": [] })));
     }
+    let circle_prefix = prefix.strip_prefix("circle/").unwrap_or(prefix);
     let pattern = format!("{}%", prefix);
+    let circle_pattern = format!("{}%", circle_prefix);
     let rows = sqlx::query_as::<_, (Uuid, Option<String>, Option<String>)>(
         r#"
         SELECT u.id, up.display_name, u.avatar_url
@@ -8153,6 +14939,31 @@ async fn suggest_mentions(
     .bind(&pattern)
     .fetch_all(&state.db)
     .await?;
+    let c_pool = get_community_pool(&state)?;
+    use sqlx::Row;
+    let circle_rows = sqlx::query(
+        r#"
+        SELECT c.id, c.slug, c.name, c.visibility, c.is_public, cm.role AS my_role
+        FROM circles c
+        LEFT JOIN circle_members cm
+          ON cm.circle_id = c.id
+         AND cm.user_id = $2
+        WHERE (c.name ILIKE $1 OR c.slug ILIKE $1)
+          AND (
+            (c.visibility = 'public' AND c.is_public = TRUE)
+            OR cm.user_id IS NOT NULL
+          )
+        ORDER BY
+          CASE WHEN c.slug ILIKE $1 THEN 0 ELSE 1 END,
+          c.member_count DESC,
+          c.name ASC
+        LIMIT 10
+        "#,
+    )
+    .bind(&circle_pattern)
+    .bind(user.id)
+    .fetch_all(&c_pool)
+    .await?;
     let users: Vec<serde_json::Value> = rows
         .iter()
         .map(|(id, name, avatar)| {
@@ -8163,7 +14974,24 @@ async fn suggest_mentions(
             })
         })
         .collect();
-    Ok(Json(serde_json::json!({ "users": users })))
+    let circles: Vec<serde_json::Value> = circle_rows
+        .iter()
+        .map(|row| {
+            let slug = row.try_get::<String, _>("slug").unwrap_or_default();
+            serde_json::json!({
+                "circle_id": row.try_get::<Uuid, _>("id").ok(),
+                "slug": slug,
+                "name": row.try_get::<String, _>("name").unwrap_or_default(),
+                "visibility": row.try_get::<String, _>("visibility").unwrap_or_else(|_| "public".to_string()),
+                "is_public": row.try_get::<bool, _>("is_public").unwrap_or(false),
+                "my_role": row.try_get::<Option<String>, _>("my_role").ok().flatten(),
+                "mention_token": format!("@circle/{}", slug),
+            })
+        })
+        .collect();
+    Ok(Json(
+        serde_json::json!({ "users": users, "circles": circles }),
+    ))
 }
 
 // ─── UX.8: Trending posts (sidebar widget) ──────────────────────────
@@ -8602,16 +15430,31 @@ async fn discover_circles_handler(
     let c_pool = get_community_pool(&state)?;
     let payload = crate::community::circles::discover_circles(&c_pool).await?;
 
-    // Gather all circle ids surfaced in any of the three rails, then
+    // Gather all circle ids surfaced in any discover section, then
     // batch-hydrate member previews so each card can render face avatars
     // without a follow-up roundtrip.
-    let mut ids: Vec<Uuid> =
-        Vec::with_capacity(payload.featured.len() + payload.trending.len() + payload.new.len());
+    let mut ids: Vec<Uuid> = Vec::with_capacity(
+        payload.featured.len()
+            + payload.trending.len()
+            + payload.new.len()
+            + payload.public.len()
+            + payload.private.len()
+            + payload.asset.len()
+            + payload.holder_only.len()
+            + payload.official.len()
+            + payload.kyc_gated.len(),
+    );
     for row in payload
         .featured
         .iter()
         .chain(payload.trending.iter())
         .chain(payload.new.iter())
+        .chain(payload.public.iter())
+        .chain(payload.private.iter())
+        .chain(payload.asset.iter())
+        .chain(payload.holder_only.iter())
+        .chain(payload.official.iter())
+        .chain(payload.kyc_gated.iter())
     {
         ids.push(row.id);
     }
@@ -8641,9 +15484,15 @@ async fn discover_circles_handler(
     };
 
     Ok(Json(serde_json::json!({
-        "featured": attach(&payload.featured),
-        "trending": attach(&payload.trending),
-        "new":      attach(&payload.new),
+        "featured":   attach(&payload.featured),
+        "trending":   attach(&payload.trending),
+        "new":        attach(&payload.new),
+        "public":     attach(&payload.public),
+        "private":    attach(&payload.private),
+        "asset":      attach(&payload.asset),
+        "holder_only": attach(&payload.holder_only),
+        "official":   attach(&payload.official),
+        "kyc_gated":  attach(&payload.kyc_gated),
     })))
 }
 

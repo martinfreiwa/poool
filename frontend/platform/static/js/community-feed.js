@@ -172,6 +172,24 @@ window.initCommunityFeed = function() {
         document.body.dispatchEvent(new Event('reload-feed'));
     };
 
+    window.setPostTypeFilter = function(postType) {
+        const value = postType || 'all';
+        const formInput = document.getElementById('form-post-type');
+        if (formInput) formInput.value = value;
+        const select = document.getElementById('feed-post-type-filter');
+        if (select && select.value !== value) select.value = value;
+        document.body.dispatchEvent(new Event('reload-feed'));
+    };
+
+    window.setPostTagFilter = function(tag) {
+        const value = tag || 'all';
+        const formInput = document.getElementById('form-post-tag');
+        if (formInput) formInput.value = value;
+        const select = document.getElementById('feed-post-tag-filter');
+        if (select && select.value !== value) select.value = value;
+        document.body.dispatchEvent(new Event('reload-feed'));
+    };
+
     // ─── XSS-safe helpers ───────────────────────────────────────
     function getInitials(name) {
         if (!name) return '?';
@@ -329,6 +347,23 @@ window.initCommunityFeed = function() {
                 contentDiv.textContent = c.content; // SAFE: textContent escapes HTML
 
                 body.appendChild(header);
+                if (c.is_official_answer || c.is_verified_answer) {
+                    const answerBadges = document.createElement('div');
+                    answerBadges.className = 'community-comment-row__answer-badges';
+                    if (c.is_official_answer) {
+                        const officialBadge = document.createElement('span');
+                        officialBadge.className = 'community-comment-row__answer-badge community-comment-row__answer-badge--official';
+                        officialBadge.textContent = 'Official Answer';
+                        answerBadges.appendChild(officialBadge);
+                    }
+                    if (c.is_verified_answer) {
+                        const verifiedBadge = document.createElement('span');
+                        verifiedBadge.className = 'community-comment-row__answer-badge community-comment-row__answer-badge--verified';
+                        verifiedBadge.textContent = 'Verified Answer';
+                        answerBadges.appendChild(verifiedBadge);
+                    }
+                    body.appendChild(answerBadges);
+                }
                 body.appendChild(contentDiv);
 
                 // 14.8.6 — reaction button on every comment row.
@@ -397,6 +432,18 @@ window.initCommunityFeed = function() {
                     });
                     ownActions.appendChild(deleteBtn);
                     body.appendChild(ownActions);
+                }
+
+                if (c.can_mark_official_answer && !isReply) {
+                    const answerAction = document.createElement('button');
+                    answerAction.type = 'button';
+                    answerAction.className = 'ds-btn ds-btn--ghost ds-btn--sm community-comment-row__answer-btn';
+                    answerAction.textContent = c.is_official_answer ? 'Remove official answer' : 'Mark official answer';
+                    answerAction.setAttribute('aria-label', answerAction.textContent);
+                    answerAction.addEventListener('click', () =>
+                        window.markOfficialAnswer(c.id, !c.is_official_answer)
+                    );
+                    body.appendChild(answerAction);
                 }
 
                 // WS1.1 — Reply button on top-level comments. Opens an inline
@@ -494,6 +541,7 @@ window.initCommunityFeed = function() {
                 if (!res.ok) throw new Error(await res.text());
                 wrap.remove();
                 await window.loadComments(postId);
+                loadCircleEngagement();
             } catch (err) {
                 console.error('Reply failed', err);
                 send.disabled = false;
@@ -529,6 +577,7 @@ window.initCommunityFeed = function() {
             // UX.12: drop the per-post comment draft after successful post.
             try { localStorage.removeItem(commentDraftKey(postId)); } catch (_) {}
             await loadComments(postId); // reload list
+            loadCircleEngagement();
         } catch (e) {
             console.error(e);
             toast("Failed to post comment: " + e.message);
@@ -767,16 +816,346 @@ window.initCommunityFeed = function() {
     window.selectPostType = function(btn) {
         document.querySelectorAll('.post-type-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById('post-type-input').value = btn.getAttribute('data-type');
+        const typeInput = document.getElementById('post-type-input');
+        if (typeInput) typeInput.value = btn.getAttribute('data-type');
+        updateDisclaimerWarning();
     };
 
     const contentInput = document.getElementById('post-content-input');
+    const postTypeInput = document.getElementById('post-type-input');
+    const postTagsInput = document.getElementById('post-tags-input');
+    const circleContext = window.POOOL_CIRCLE_CONTEXT && window.POOOL_CIRCLE_CONTEXT.id
+        ? window.POOOL_CIRCLE_CONTEXT
+        : null;
+    function getPostCreateEndpoint() {
+        if (!circleContext) return '/api/community/posts';
+        return `/api/community/circles/${encodeURIComponent(circleContext.id)}/posts`;
+    }
+
+    async function fetchCircleJson(path) {
+        const res = await fetch(path, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+    }
+
+    function formatCircleDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(date);
+    }
+
+    function setCircleEngagementEmpty(containerId, message) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const empty = document.createElement('p');
+        empty.className = 'circle-engagement-empty';
+        empty.textContent = message;
+        container.replaceChildren(empty);
+    }
+
+    function renderCircleAnnouncements(payload) {
+        const container = document.getElementById('circle-announcements-list');
+        if (!container) return;
+        const announcements = Array.isArray(payload && payload.announcements) ? payload.announcements : [];
+        if (!announcements.length) {
+            setCircleEngagementEmpty('circle-announcements-list', 'No Circle announcements yet.');
+            return;
+        }
+        container.replaceChildren(...announcements.slice(0, 3).map((announcement) => {
+            const item = document.createElement('article');
+            item.className = 'circle-engagement-item';
+
+            const title = document.createElement('div');
+            title.className = 'circle-engagement-item__title';
+            title.textContent = announcement.post_type === 'official_update'
+                ? 'Official Update'
+                : 'Announcement';
+
+            const body = document.createElement('p');
+            body.className = 'circle-engagement-item__body';
+            body.textContent = announcement.content || '';
+
+            const meta = document.createElement('div');
+            meta.className = 'circle-engagement-item__meta';
+            const createdAt = formatCircleDate(announcement.created_at);
+            meta.textContent = [announcement.author_name, createdAt].filter(Boolean).join(' · ');
+
+            item.append(title, body, meta);
+            return item;
+        }));
+    }
+
+    function renderCircleEvents(payload) {
+        const container = document.getElementById('circle-events-list');
+        if (!container) return;
+        const events = Array.isArray(payload && payload.events) ? payload.events : [];
+        if (!events.length) {
+            setCircleEngagementEmpty('circle-events-list', 'No Circle AMAs scheduled.');
+            return;
+        }
+        container.replaceChildren(...events.slice(0, 3).map((event) => {
+            const item = document.createElement('article');
+            item.className = 'circle-engagement-item';
+
+            const title = document.createElement('div');
+            title.className = 'circle-engagement-item__title';
+            title.textContent = event.title || 'Circle AMA';
+
+            const body = document.createElement('p');
+            body.className = 'circle-engagement-item__body';
+            body.textContent = event.description || event.expert_name || '';
+
+            const meta = document.createElement('div');
+            meta.className = 'circle-engagement-item__meta';
+            const scheduledAt = formatCircleDate(event.scheduled_at);
+            meta.textContent = [event.status, scheduledAt].filter(Boolean).join(' · ');
+
+            item.append(title, body, meta);
+            return item;
+        }));
+    }
+
+    function renderCircleResources(payload) {
+        const container = document.getElementById('circle-resources-list');
+        if (!container) return;
+        const resources = Array.isArray(payload && payload.resources) ? payload.resources : [];
+        if (!resources.length) {
+            setCircleEngagementEmpty('circle-resources-list', 'No resources available yet.');
+            return;
+        }
+        container.replaceChildren(...resources.slice(0, 5).map((resource) => {
+            const item = document.createElement('article');
+            item.className = 'circle-engagement-item circle-resource-item';
+
+            const title = document.createElement(resource.delivery_url ? 'a' : 'div');
+            title.className = 'circle-engagement-item__title circle-resource-item__title';
+            title.textContent = resource.title || 'Circle resource';
+            if (resource.delivery_url) {
+                title.href = resource.delivery_url;
+                title.rel = 'noopener noreferrer';
+                title.target = '_blank';
+            }
+
+            const body = document.createElement('p');
+            body.className = 'circle-engagement-item__body';
+            body.textContent = resource.description || '';
+
+            const meta = document.createElement('div');
+            meta.className = 'circle-engagement-item__meta';
+            const typeLabel = String(resource.resource_type || 'resource').replace(/_/g, ' ');
+            const scopeLabel = String(resource.access_scope || 'member').replace(/_/g, ' ');
+            const versionLabel = resource.version_label ? `Version ${resource.version_label}` : null;
+            meta.textContent = [
+                resource.is_official ? 'Official' : null,
+                typeLabel,
+                scopeLabel,
+                versionLabel,
+            ].filter(Boolean).join(' · ');
+
+            item.append(title, body, meta);
+            return item;
+        }));
+    }
+
+    function renderCircleChallenges(payload) {
+        const container = document.getElementById('circle-challenges-list');
+        if (!container) return;
+        const challenges = Array.isArray(payload && payload.challenges) ? payload.challenges : [];
+        if (!challenges.length) {
+            setCircleEngagementEmpty('circle-challenges-list', 'No Circle challenges available.');
+            return;
+        }
+        container.replaceChildren(...challenges.slice(0, 6).map((challenge) => {
+            const item = document.createElement('div');
+            item.className = 'circle-engagement-challenge';
+            if (challenge.is_completed) item.classList.add('circle-engagement-challenge--complete');
+
+            const label = document.createElement('div');
+            label.className = 'circle-engagement-challenge__label';
+            label.textContent = challenge.title || 'Circle challenge';
+
+            const value = document.createElement('div');
+            value.className = 'circle-engagement-challenge__value';
+            const current = Number(challenge.current_value || 0);
+            const target = Number(challenge.requirement_value || 1);
+            value.textContent = challenge.is_completed ? 'Complete' : `${Math.min(current, target)} / ${target}`;
+
+            const bar = document.createElement('div');
+            bar.className = 'circle-engagement-challenge__bar';
+            const fill = document.createElement('span');
+            fill.style.width = `${Math.min(100, Math.round((current / Math.max(target, 1)) * 100))}%`;
+            bar.appendChild(fill);
+
+            item.append(label, value, bar);
+            return item;
+        }));
+    }
+
+    function renderCircleOnboarding(payload) {
+        const panel = document.getElementById('circle-onboarding-panel');
+        const list = document.getElementById('circle-onboarding-steps');
+        const progress = document.getElementById('circle-onboarding-progress');
+        if (!panel || !list) return;
+        const steps = Array.isArray(payload && payload.steps) ? payload.steps : [];
+        if (!payload || !payload.enabled || payload.is_completed || !steps.length) {
+            panel.hidden = true;
+            return;
+        }
+
+        const completed = steps.filter((step) => step.completed).length;
+        if (progress) progress.textContent = `${completed} / ${steps.length}`;
+
+        list.replaceChildren(...steps.map((step) => {
+            const row = document.createElement('div');
+            row.className = 'circle-onboarding-step';
+            if (step.completed) row.classList.add('circle-onboarding-step--complete');
+
+            const status = document.createElement('span');
+            status.className = 'circle-onboarding-step__status';
+            status.setAttribute('aria-hidden', 'true');
+            status.textContent = step.completed ? '✓' : '';
+
+            const label = document.createElement('span');
+            label.className = 'circle-onboarding-step__label';
+            label.textContent = step.label || step.code;
+
+            row.append(status, label);
+            if (!step.completed && step.action === 'confirm') {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'circle-onboarding-step__button';
+                button.textContent = 'Done';
+                button.addEventListener('click', () => window.markCircleOnboardingStep(step.code));
+                row.appendChild(button);
+            } else if (!step.completed && step.action === 'post_question') {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'circle-onboarding-step__button';
+                button.textContent = 'Ask';
+                button.addEventListener('click', () => {
+                    const select = document.getElementById('post-type-input');
+                    const input = document.getElementById('post-content-input');
+                    if (select) select.value = 'question';
+                    if (input) input.focus();
+                });
+                row.appendChild(button);
+            }
+            return row;
+        }));
+        panel.hidden = false;
+    }
+
+    async function loadCircleEngagement() {
+        if (!circleContext || !circleContext.id) return;
+        const id = encodeURIComponent(circleContext.id);
+        const requests = [
+            fetchCircleJson(`/api/community/circles/${id}/announcements`).then(renderCircleAnnouncements).catch(() => setCircleEngagementEmpty('circle-announcements-list', 'Announcements could not be loaded.')),
+            fetchCircleJson(`/api/community/circles/${id}/events`).then(renderCircleEvents).catch(() => setCircleEngagementEmpty('circle-events-list', 'Events could not be loaded.')),
+            fetchCircleJson(`/api/community/circles/${id}/resources`).then(renderCircleResources).catch(() => setCircleEngagementEmpty('circle-resources-list', 'Resources could not be loaded.')),
+            fetchCircleJson(`/api/community/circles/${id}/challenges`).then(renderCircleChallenges).catch(() => setCircleEngagementEmpty('circle-challenges-list', 'Challenges could not be loaded.')),
+            fetchCircleJson(`/api/community/circles/${id}/onboarding`).then(renderCircleOnboarding).catch(() => {
+                const panel = document.getElementById('circle-onboarding-panel');
+                if (panel) panel.hidden = true;
+            }),
+        ];
+        await Promise.allSettled(requests);
+    }
+
+    window.loadCircleEngagement = loadCircleEngagement;
+    window.markCircleOnboardingStep = async function(stepCode) {
+        if (!circleContext || !circleContext.id || !stepCode) return;
+        const res = await fetch(`/api/community/circles/${encodeURIComponent(circleContext.id)}/onboarding/${encodeURIComponent(stepCode)}`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        });
+        if (!res.ok) {
+            toast('Could not update Circle onboarding.');
+            return;
+        }
+        loadCircleEngagement();
+    };
     // UX.12: composer drafts auto-saved to localStorage so an accidental
     // navigation doesn't lose work. Cleared on successful submit. Per-user
     // namespacing isn't necessary because the draft only lives in the
     // current browser profile.
-    const DRAFT_KEY = 'poool:community:draft:v1';
+    const DRAFT_KEY = circleContext
+        ? `poool:community:circle:${circleContext.id}:draft:v1`
+        : 'poool:community:draft:v1';
     let _draftSaveTimer = null;
+    const COMPLIANCE_POST_TYPES = new Set([
+        'market_insight',
+        'property_update',
+        'due_diligence',
+        'risk_discussion',
+        'official_update',
+    ]);
+    const COMPLIANCE_TAGS = new Set([
+        'risk',
+        'yield',
+        'real_estate',
+        'commodity',
+        'tokenization',
+        'property_update',
+        'due_diligence',
+        'legal',
+        'tax',
+        'liquidity',
+    ]);
+    const INVESTMENT_KEYWORDS = [
+        'invest',
+        'return',
+        'yield',
+        'profit',
+        'dividend',
+        'roi',
+        'price target',
+        'buy now',
+        'sell now',
+    ];
+
+    function canonicalCommunityCode(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .replace(/_{2,}/g, '_');
+    }
+
+    function getSelectedPostType() {
+        return canonicalCommunityCode(postTypeInput ? postTypeInput.value : 'discussion') || 'discussion';
+    }
+
+    function parsePostTags() {
+        if (!postTagsInput || !postTagsInput.value.trim()) return [];
+        const tags = [];
+        postTagsInput.value.split(',').forEach((raw) => {
+            const tag = canonicalCommunityCode(raw);
+            if (tag && !tags.includes(tag)) tags.push(tag);
+        });
+        return tags.slice(0, 8);
+    }
+
+    function updateDisclaimerWarning() {
+        const warning = document.getElementById('post-disclaimer-warning');
+        if (!warning) return;
+        const postType = getSelectedPostType();
+        const tags = parsePostTags();
+        const content = contentInput ? contentInput.value.toLowerCase() : '';
+        const needsDisclaimer = COMPLIANCE_POST_TYPES.has(postType)
+            || tags.some((tag) => COMPLIANCE_TAGS.has(tag))
+            || INVESTMENT_KEYWORDS.some((keyword) => content.includes(keyword));
+        warning.hidden = !needsDisclaimer;
+        warning.style.display = needsDisclaimer ? 'block' : 'none';
+    }
+
     function saveDraft(value) {
         clearTimeout(_draftSaveTimer);
         _draftSaveTimer = setTimeout(() => {
@@ -794,10 +1173,7 @@ window.initCommunityFeed = function() {
     };
     if (contentInput) {
         contentInput.addEventListener('input', () => {
-            const val = contentInput.value.toLowerCase();
-            const investmentKeywords = ["invest", "return", "yield", "profit", "dividend", "roi", "price target", "buy now", "sell now"];
-            const needsDisclaimer = investmentKeywords.some(k => val.includes(k));
-            document.getElementById('post-disclaimer-warning').style.display = needsDisclaimer ? 'block' : 'none';
+            updateDisclaimerWarning();
             saveDraft(contentInput.value);
         });
         // Restore on init only when the textarea is currently empty (don't
@@ -810,9 +1186,50 @@ window.initCommunityFeed = function() {
             }
         } catch (_) { /* localStorage disabled */ }
     }
+    if (postTypeInput) postTypeInput.addEventListener('change', updateDisclaimerWarning);
+    if (postTagsInput) postTagsInput.addEventListener('input', updateDisclaimerWarning);
 
 
     window.postImageUrls = [];
+
+    window.openCircleQaTab = function(event) {
+        if (event) event.preventDefault();
+        window.location.hash = 'qa';
+        const tabItems = document.querySelectorAll('.circle-space-tabs__item');
+        tabItems.forEach((item) => {
+            const isQa = item.getAttribute('href') && item.getAttribute('href').endsWith('#qa');
+            item.classList.toggle('circle-space-tabs__item--active', Boolean(isQa));
+            item.setAttribute('aria-selected', isQa ? 'true' : 'false');
+        });
+        window.setPostTypeFilter('question');
+    };
+
+    window.markOfficialAnswer = async function(commentId, shouldMark) {
+        if (!commentId) return;
+        try {
+            const response = await fetch(`/api/community/comments/${encodeURIComponent(commentId)}/official-answer`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    is_official_answer: Boolean(shouldMark),
+                    is_verified_answer: Boolean(shouldMark),
+                }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Could not update answer status.');
+            if (data.post_id) {
+                await window.loadComments(data.post_id);
+            }
+            document.body.dispatchEvent(new Event('reload-feed'));
+            if (window.showToast) {
+                window.showToast(shouldMark ? 'Official answer marked.' : 'Official answer removed.', 'success');
+            }
+        } catch (error) {
+            console.error('markOfficialAnswer failed', error);
+            if (window.showToast) window.showToast(error.message || 'Could not update answer status.', 'error');
+        }
+    };
     
     // ─── Phase 4 task 33: post image lightbox ─────────────────
     function ensureLightbox() {
@@ -990,8 +1407,9 @@ window.initCommunityFeed = function() {
     };
 
     window.submitUserPost = async function() {
-        const postType = document.getElementById('post-type-input').value;
+        const postType = getSelectedPostType();
         const content = document.getElementById('post-content-input').value.trim();
+        const contentTags = parsePostTags();
 
         if (!content) return toast("Content cannot be empty");
         
@@ -1010,7 +1428,9 @@ window.initCommunityFeed = function() {
         const requestBody = {
             post_type: postType,
             content: content,
+            content_tags: contentTags,
             asset_id: null,
+            circle_id: circleContext ? circleContext.id : null,
             image_urls: window.postImageUrls.length > 0 ? window.postImageUrls : null,
             // UX.11: Poll data
             poll_question: null,
@@ -1030,6 +1450,7 @@ window.initCommunityFeed = function() {
                     requestBody.poll_question = pollQ.value.trim();
                     requestBody.poll_options = validOptions;
                     requestBody.poll_expires_hours = pollExpiry ? parseInt(pollExpiry.value) || null : null;
+                    requestBody.post_type = 'poll';
                 }
             }
         }
@@ -1040,7 +1461,7 @@ window.initCommunityFeed = function() {
         submitBtn.disabled = true;
 
         try {
-            const res = await fetch('/api/community/posts', {
+            const res = await fetch(getPostCreateEndpoint(), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: csrfHeaders({ 'Content-Type': 'application/json' }),
@@ -1053,7 +1474,13 @@ window.initCommunityFeed = function() {
             }
             
             document.getElementById('post-content-input').value = '';
-            document.getElementById('post-disclaimer-warning').style.display = 'none';
+            const tagInput = document.getElementById('post-tags-input');
+            if (tagInput) tagInput.value = '';
+            const warning = document.getElementById('post-disclaimer-warning');
+            if (warning) {
+                warning.hidden = true;
+                warning.style.display = 'none';
+            }
             window.postImageUrls = [];
             renderPostImagePreviews();
             // UX.12: drop the draft so it doesn't reappear on the next visit
@@ -1066,6 +1493,7 @@ window.initCommunityFeed = function() {
 
             // Refresh feed via HTMX event
             document.body.dispatchEvent(new Event('reload-feed'));
+            loadCircleEngagement();
         } catch (e) {
             console.error(e);
             toast("Failed to submit post: " + e.message);
@@ -1278,14 +1706,16 @@ window.initCommunityFeed = function() {
         const oldText = btn ? btn.textContent : '';
         if (btn) { btn.textContent = 'Sharing…'; btn.disabled = true; }
         try {
-            const res = await fetch('/api/community/posts', {
+            const res = await fetch(getPostCreateEndpoint(), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
-                    post_type: 'general',
+                    post_type: 'discussion',
                     content,
+                    content_tags: [],
                     asset_id: null,
+                    circle_id: circleContext ? circleContext.id : null,
                     image_urls: null,
                     poll_question: null,
                     poll_options: null,
@@ -1996,6 +2426,12 @@ window.initCommunityFeed = function() {
         timeEl.textContent = p.created_at ? timeAgo(p.created_at) : '';
         meta.appendChild(timeEl);
         header.appendChild(meta);
+        if (p.post_type && p.post_type !== 'general') {
+            const typeBadge = document.createElement('span');
+            typeBadge.className = 'feed-post-badge feed-post-badge--neutral';
+            typeBadge.textContent = String(p.post_type).replace(/_/g, ' ');
+            header.appendChild(typeBadge);
+        }
         card.appendChild(header);
 
         const body = document.createElement('div');
@@ -2007,6 +2443,19 @@ window.initCommunityFeed = function() {
             body.innerHTML = raw;
         } else {
             renderContentWithHashtags(body, raw);
+        }
+        if (Array.isArray(p.content_tags) && p.content_tags.length > 0) {
+            const tags = document.createElement('div');
+            tags.className = 'feed-post-tags';
+            p.content_tags.forEach((tag) => {
+                const tagButton = document.createElement('button');
+                tagButton.type = 'button';
+                tagButton.className = 'feed-post-tag';
+                tagButton.textContent = String(tag);
+                tagButton.addEventListener('click', () => window.setPostTagFilter(String(tag)));
+                tags.appendChild(tagButton);
+            });
+            body.appendChild(tags);
         }
         card.appendChild(body);
 
@@ -2428,6 +2877,7 @@ window.initCommunityFeed = function() {
         window.location.href = '/community/me/edit';
     };
 
+    loadCircleEngagement();
     renderSsrPostDetail();
 
 };

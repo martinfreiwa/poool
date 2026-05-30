@@ -28,9 +28,12 @@ pub struct SnapshotResult {
 }
 
 pub async fn api_admin_villa_nav_snapshot_run(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<SnapshotResult>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.snapshot.run")
+        .await?;
     let result = run_snapshot_for_all_assets(&state.db)
         .await
         .map_err(ApiError::Database)?;

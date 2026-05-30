@@ -294,13 +294,176 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 220px;
 }
-.dae-empty__hero-art svg {
+
+.dae-empty__hero-art > svg {
   width: 100%;
   max-width: 320px;
   height: auto;
   border-radius: 16px;
   filter: drop-shadow(0 8px 24px rgba(0, 0, 255, 0.08));
+}
+
+.dae-empty__brand-art {
+  position: relative;
+  width: min(100%, 420px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 255, 0.2);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(3, 255, 136, 0.16) 0%, rgba(3, 255, 136, 0) 42%),
+    linear-gradient(135deg, #0000FF 0%, #001DCA 62%, #07107C 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 255, 0.16);
+}
+
+.dae-empty__brand-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.45;
+}
+
+.dae-empty__brand-art::after {
+  content: '';
+  position: absolute;
+  right: -42px;
+  bottom: -68px;
+  width: 240px;
+  height: 170px;
+  transform: rotate(-10deg);
+  border: 1px solid rgba(3, 255, 136, 0.22);
+  border-radius: 28px;
+  background: rgba(3, 255, 136, 0.08);
+}
+
+.dae-empty__brand-ribbon {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  z-index: 2;
+}
+
+.dae-empty__brand-lockup {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 164px;
+  height: 54px;
+  border: 1px solid rgba(3, 255, 136, 0.46);
+  border-radius: 12px;
+  background: #03FF88;
+  box-shadow: 0 14px 28px rgba(0, 0, 255, 0.22);
+}
+
+.dae-empty__brand-lockup img {
+  display: block;
+  width: 132px;
+  height: auto;
+}
+
+.dae-empty__brand-stage {
+  position: absolute;
+  left: 48px;
+  bottom: 34px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 210px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 34px rgba(0, 0, 255, 0.18);
+}
+
+.dae-empty__brand-stage-top,
+.dae-empty__brand-line,
+.dae-empty__brand-progress {
+  display: block;
+  border-radius: 999px;
+}
+
+.dae-empty__brand-stage-top {
+  width: 52px;
+  height: 10px;
+  background: #03FF88;
+}
+
+.dae-empty__brand-line {
+  width: 66%;
+  height: 8px;
+  background: #D6E3FF;
+}
+
+.dae-empty__brand-line--wide {
+  width: 100%;
+  background: #AFC6FF;
+}
+
+.dae-empty__brand-progress {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  background: #EEF2FF;
+}
+
+.dae-empty__brand-progress span {
+  display: block;
+  width: 74%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
+
+.dae-empty__brand-side {
+  position: absolute;
+  right: 44px;
+  top: 64px;
+  z-index: 3;
+  display: grid;
+  gap: 12px;
+  width: 72px;
+}
+
+.dae-empty__brand-side span {
+  display: block;
+  height: 52px;
+  border: 1px solid rgba(3, 255, 136, 0.36);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(3, 255, 136, 0.22), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.dae-empty__brand-footer {
+  position: absolute;
+  right: 34px;
+  bottom: 32px;
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+}
+
+.dae-empty__brand-footer span {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(3, 255, 136, 0.36);
+  border-radius: 10px;
+  background: rgba(3, 255, 136, 0.15);
 }
 
 /* Metrics row */
@@ -838,14 +1001,13 @@ body#developer-assets-body .dae-empty {
 }
 
 .dev-assets-table-wrap {
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 .dev-assets-table {
   width: 100%;
-  min-width: 760px;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .dev-assets-table th,
@@ -1136,10 +1298,37 @@ body#developer-assets-body .dae-empty {
   display: block;
 }
 
+body#developer-assets-body .dev-assets-preview__metrics > div::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
+}
+
+body#developer-assets-body .dev-assets-preview__metrics > div {
+  border-top: 0 !important;
+}
+
 .dev-assets-preview__metrics > div:hover {
   border-color: rgba(0, 0, 255, 0.18);
   box-shadow: 0 6px 18px -10px rgba(0, 0, 255, 0.18);
   transform: translateY(-1px);
+}
+
+body#developer-assets-body .dev-assets-preview__metrics > div,
+body#developer-assets-body .dev-assets-preview__metrics > div:hover,
+body#developer-assets-body .dev-assets-preview__metrics > div:focus-within {
+  border-top: 0 !important;
+  border-top-width: 0 !important;
+  border-top-style: none !important;
+}
+
+body#developer-assets-body .dev-assets-preview__metrics > div:nth-of-type(4),
+body#developer-assets-body .dev-assets-preview__metrics > div:nth-of-type(4):hover,
+body#developer-assets-body .dev-assets-preview__metrics > div:nth-of-type(4):focus-within {
+  border-top: 0 !important;
+  border-top-width: 0 !important;
+  border-top-style: none !important;
 }
 
 .dev-assets-preview__metrics dt {
@@ -1308,4 +1497,204 @@ body#developer-assets-body .dae-empty {
   .dev-assets-preview__metrics {
     grid-template-columns: 1fr;
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   STANDARD — Card With Table override for .dev-assets-table-card
+   Mirrors the canonical .developer-assets-performance-section pattern
+   on the developer dashboard. See docs/DESIGN.md → Tables → Card With
+   Table — Reference Pattern (STANDARD).
+   ════════════════════════════════════════════════════════════════════ */
+
+/* 4px brand-gradient strip on top of the card (matches the standard). */
+.dev-assets-table-card {
+  position: relative;
+}
+.dev-assets-table-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+body#developer-assets-body .dev-assets-table-card::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
+}
+
+/* Header row — white background (no tint), uppercase 12px tracked label. */
+.dev-assets-table-card .dev-assets-table th {
+  background: #FFFFFF;
+  color: var(--dev-assets-muted, #717680);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Cell padding — 14px vertical / 12px horizontal (the standard rhythm). */
+.dev-assets-table-card .dev-assets-table th,
+.dev-assets-table-card .dev-assets-table td {
+  padding: 14px 12px;
+}
+/* First + last cells get 16px outer gutter so content lines up with the
+   toolbar title + matches the section header on dashboard cards. */
+.dev-assets-table-card .dev-assets-table th:first-child,
+.dev-assets-table-card .dev-assets-table td:first-child {
+  padding-left: 16px;
+}
+.dev-assets-table-card .dev-assets-table th:last-child,
+.dev-assets-table-card .dev-assets-table td:last-child {
+  padding-right: 16px;
+}
+
+/* Numeric columns right-aligned — Funding, Value, Raised, Actions. */
+.dev-assets-table-card .dev-assets-table th:nth-child(n+2),
+.dev-assets-table-card .dev-assets-table td:nth-child(n+2) {
+  text-align: right;
+}
+/* The Actions cell uses an inline-flex group; push to the right edge. */
+.dev-assets-table-card .dev-assets-table .dev-assets-table__actions,
+.dev-assets-table-card .dev-assets-table td.dev-assets-table__actions,
+.dev-assets-table-card .dev-assets-table td:last-child > * {
+  justify-content: flex-end;
+}
+
+/* Row hover/selected — use the dashboard reference green wash; selected
+   still avoids the old blue left bar. */
+.dev-assets-table-card .dev-asset-row,
+.dev-assets-table-card .dev-asset-row.is-selected {
+  background: #FFFFFF;
+}
+.dev-assets-table-card .dev-asset-row:hover {
+  background: rgba(3, 255, 136, 0.08);
+}
+.dev-assets-table-card .dev-asset-row.is-selected td:first-child {
+  box-shadow: none;
+}
+
+/* Cell typography — match dashboard (.developer-assets-table__row .table__cell). */
+.dev-assets-table-card .dev-assets-table tbody td {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary, #535862);
+  vertical-align: middle;
+}
+.dev-assets-table-card .dev-assets-table .table__cell-text-value {
+  color: var(--page-title-color, #181D27);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Asset thumb — 44×44 rounded 8px to match dashboard
+   (.developer-assets-table__asset-link .table__cell-image). */
+.dev-assets-table-card .dev-assets-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.dev-assets-table-card .dev-assets-asset {
+  gap: 10px;
+}
+.dev-assets-table-card .dev-assets-asset__text strong {
+  color: var(--page-title-color, #181D27);
+  font-weight: 600;
+}
+.dev-assets-table-card .dev-assets-location-line {
+  color: var(--text-secondary, #717680);
+  font-size: 13px;
+}
+
+/* Sortable header buttons — mirror dashboard .developer-assets-table__sort. */
+.dev-assets-table-card .dev-assets-table th .developer-assets-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+.dev-assets-table-card .dev-assets-table th .developer-assets-table__sort .table__header-text {
+  text-transform: inherit;
+  letter-spacing: inherit;
+  font-weight: inherit;
+}
+.dev-assets-table-card .dev-assets-table th .developer-assets-table__sort::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid #A4A7AE;
+  opacity: 0.65;
+}
+.dev-assets-table-card .dev-assets-table th .developer-assets-table__sort:hover::after {
+  opacity: 1;
+}
+.dev-assets-table-card .dev-assets-table th .developer-assets-table__sort--active {
+  color: var(--page-title-color, #181D27);
+}
+.dev-assets-table-card .dev-assets-table th .developer-assets-table__sort--active[data-direction="asc"]::after {
+  border-top: 0;
+  border-bottom: 4px solid var(--primary-color, #0000FF);
+  opacity: 1;
+}
+.dev-assets-table-card .dev-assets-table th .developer-assets-table__sort--active[data-direction="desc"]::after {
+  border-top-color: var(--primary-color, #0000FF);
+  opacity: 1;
+}
+/* For right-aligned numeric headers, push the sort button to the right edge. */
+.dev-assets-table-card .dev-assets-table th:nth-child(n+2) .developer-assets-table__sort {
+  margin-left: auto;
+}
+
+/* Icon action buttons — match dashboard .developer-assets-table__icon-btn.
+   Grey default, brand-blue on hover, color-only (no bg fill). */
+.dev-assets-table-card .dev-assets-table .developer-assets-table__action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.dev-assets-table-card .dev-assets-table .developer-assets-table__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: #98A2B3;
+  background: transparent;
+  text-decoration: none;
+  transition: color .15s ease, background .15s ease;
+}
+.dev-assets-table-card .dev-assets-table .developer-assets-table__icon-btn:hover,
+.dev-assets-table-card .dev-assets-table .developer-assets-table__icon-btn:focus-visible {
+  color: var(--primary-color, #0000FF);
+  background: transparent;
+  outline: none;
+}
+.dev-assets-table-card .dev-assets-table .developer-assets-table__icon-btn svg {
+  display: block;
+}
+
+/* Toolbar (header band) gets the 16px gutter too so title aligns with the
+   first table column. */
+.dev-assets-table-card .dev-assets-toolbar {
+  padding: 16px 16px;
 }

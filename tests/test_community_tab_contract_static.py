@@ -87,11 +87,11 @@ def test_circle_dynamic_user_data_uses_dom_text_nodes():
 def test_circle_modals_have_accessible_dialog_contracts():
     partial = read("frontend/platform/partials/community_circle.html")
     page = read("frontend/platform/community.html")
+    settings_page = read("frontend/platform/community-circle-settings.html")
 
     for modal_id in [
         "create-circle-modal",
         "invite-modal",
-        "circle-settings-modal",
     ]:
         assert f'id="{modal_id}"' in partial
         modal_start = partial.index(f'id="{modal_id}"')
@@ -108,13 +108,16 @@ def test_circle_modals_have_accessible_dialog_contracts():
     for control_id in [
         "circle-name-input",
         "circle-desc-input",
-        "circle-emoji-input",
-        "settings-circle-name",
-        "settings-circle-desc",
-        "settings-circle-emoji",
-        "settings-circle-public",
     ]:
-        assert f'for="{control_id}"' in partial or f'aria-label="Public circle"' in partial
+        assert f'for="{control_id}"' in partial
+
+    for control_id in [
+        "ccs-input-name",
+        "ccs-input-desc",
+        "ccs-input-slug",
+        "ccs-input-public",
+    ]:
+        assert f'id="{control_id}"' in settings_page
 
     assert "window._communityModalPreviousFocus" in page
     assert "modal.setAttribute('aria-hidden', 'false')" in page
@@ -123,6 +126,20 @@ def test_circle_modals_have_accessible_dialog_contracts():
     assert "event.key !== 'Tab'" in page
     assert "last.focus()" in page
     assert "first.focus()" in page
+
+    # Circle settings are no longer the default Circle destination or a
+    # modal; they live on the dedicated manage route.
+    assert "Circle Settings" in settings_page
+    assert "/community/circles" in settings_page
+
+
+def test_community_topbar_uses_plural_circles_and_client_tab_anchors():
+    topbar = read("frontend/platform/components/investor-topbar.html")
+
+    assert ">My Circles<" in topbar
+    assert ">My Circle<" not in topbar
+    assert 'data-tab="community-dms-tab"' in topbar
+    assert 'data-client-tab="dms"' in topbar
 
 
 def test_announcement_fragment_uses_server_rendered_contract():
@@ -147,6 +164,9 @@ def test_announcement_fragment_uses_server_rendered_contract():
         assert category not in tab
         assert category not in list_template
 
+    assert "community-empty-state__art" not in list_template
+    assert "<svg viewBox=\"0 0 160 120\"" not in list_template
+
     handler = main.split("async fn community_announcements_list_htmx", 1)[1].split(
         "/// GET /community", 1
     )[0]
@@ -161,5 +181,5 @@ def test_announcement_fragment_uses_server_rendered_contract():
     # page instead of dispatching a tab-switch event via JS, so the
     # "Read more" affordance is a real <a> tag.
     assert '<a class="ann-read-more" href="/community/post/' in list_template
-    assert "onclick=" not in list_template
+    assert '<a class="ann-read-more" onclick=' not in list_template
     assert "data-community-ann-read-more" not in list_template

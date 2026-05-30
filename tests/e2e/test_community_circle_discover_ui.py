@@ -1,8 +1,8 @@
 """
-Wave A — MyCircle Tab UI tests.
+Wave A — My Circles Tab UI tests.
 
 Drives the browser against /community?tab=circle. Verifies:
-  1. Discovery sections (My Circles, Trending, New) render after page load.
+  1. Discovery sections (My Circles and unified Discover) render after page load.
   2. Typing in the search input shows the Search Results section.
   3. Create Circle modal opens + closes cleanly.
   4. A circle the user already belongs to appears in "My Circles".
@@ -77,23 +77,23 @@ def _open_circle_tab(playwright_session, user):
 
 @pytest.mark.community
 def test_circle_tab_renders_toolbar_and_sections(playwright_session, lone_user):
-    """Loading /community?tab=circle paints the toolbar + at least the
-    My-Circles, Trending, and New rails."""
+    """Loading /community?tab=circle paints the actionbar, My-Circles strip,
+    and unified Discover grid."""
     ctx, page, errors = _open_circle_tab(playwright_session, lone_user)
     try:
-        # Toolbar present.
-        expect(page.locator(".cc-toolbar__title")).to_have_text("Circles")
+        # Actionbar present.
+        expect(page.locator(".cc-actionbar")).to_be_visible()
         expect(page.locator("#cc-search-input")).to_be_visible()
-        expect(page.locator(".cc-create-btn")).to_be_visible()
+        expect(page.locator(".cc-actionbar__create")).to_be_visible()
 
-        # Always-on rails.
+        # Always-on areas.
         expect(page.locator("#cc-my-circles-section")).to_be_visible()
-        expect(page.locator("#cc-trending-section")).to_be_visible()
-        expect(page.locator("#cc-new-section")).to_be_visible()
+        expect(page.locator("#cc-discover-section")).to_be_visible()
+        expect(page.locator("#cc-discover-filters")).to_be_visible()
 
-        # Wait for trending list to leave its loading state (API resolved).
+        # Wait for discover list to leave its loading state (API resolved).
         page.wait_for_function(
-            "() => { const el = document.getElementById('cc-trending-list');"
+            "() => { const el = document.getElementById('cc-discover-list');"
             "  return el && !el.textContent.includes('Loading'); }",
             timeout=10000,
         )
@@ -147,7 +147,7 @@ def test_circle_create_modal_opens_and_closes(playwright_session, lone_user):
         assert display == "none", f"Modal not hidden on load (display={display})"
 
         # Open.
-        page.click(".cc-create-btn")
+        page.click(".cc-actionbar__create")
         expect(modal).to_be_visible(timeout=3000)
         expect(page.locator("#create-circle-title")).to_have_text("Create a Circle")
         expect(page.locator("#circle-name-input")).to_be_visible()

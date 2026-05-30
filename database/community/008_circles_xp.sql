@@ -15,7 +15,7 @@ ALTER TABLE community_profiles
 -- ────────────────────────────────────────────────────────────────────────
 -- M4-DB.1: Circles System
 -- ────────────────────────────────────────────────────────────────────────
-CREATE TABLE circles (
+CREATE TABLE IF NOT EXISTS circles (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name            VARCHAR(100) NOT NULL,
     description     TEXT CHECK (char_length(description) <= 500),
@@ -31,10 +31,10 @@ CREATE TABLE circles (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_circles_owner ON circles(owner_id);
-CREATE INDEX idx_circles_total_xp ON circles(total_xp DESC);
+CREATE INDEX IF NOT EXISTS idx_circles_owner ON circles(owner_id);
+CREATE INDEX IF NOT EXISTS idx_circles_total_xp ON circles(total_xp DESC);
 
-CREATE TABLE circle_members (
+CREATE TABLE IF NOT EXISTS circle_members (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     circle_id   UUID NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
     user_id     UUID NOT NULL,
@@ -43,17 +43,27 @@ CREATE TABLE circle_members (
     UNIQUE (circle_id, user_id)
 );
 
-CREATE INDEX idx_circle_members_user ON circle_members(user_id);
-CREATE INDEX idx_circle_members_circle ON circle_members(circle_id);
+CREATE INDEX IF NOT EXISTS idx_circle_members_user ON circle_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_circle_members_circle ON circle_members(circle_id);
 
--- Add FK from community_profiles.circle_id → circles.id
-ALTER TABLE community_profiles
-  ADD CONSTRAINT fk_cp_circle FOREIGN KEY (circle_id) REFERENCES circles(id) ON DELETE SET NULL;
+-- Add FK from community_profiles.circle_id to circles.id
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'fk_cp_circle'
+      AND conrelid = 'community_profiles'::regclass
+  ) THEN
+    ALTER TABLE community_profiles
+      ADD CONSTRAINT fk_cp_circle FOREIGN KEY (circle_id) REFERENCES circles(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- ────────────────────────────────────────────────────────────────────────
 -- M4-DB.3: Circle Invites
 -- ────────────────────────────────────────────────────────────────────────
-CREATE TABLE circle_invites (
+CREATE TABLE IF NOT EXISTS circle_invites (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     circle_id   UUID NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
     inviter_id  UUID NOT NULL,
@@ -64,12 +74,12 @@ CREATE TABLE circle_invites (
     UNIQUE (circle_id, invitee_id, status)  -- One pending invite per circle per user
 );
 
-CREATE INDEX idx_circle_invites_invitee ON circle_invites(invitee_id, status);
+CREATE INDEX IF NOT EXISTS idx_circle_invites_invitee ON circle_invites(invitee_id, status);
 
 -- ────────────────────────────────────────────────────────────────────────
 -- M4-DB.2: XP Ledger (Append-Only)
 -- ────────────────────────────────────────────────────────────────────────
-CREATE TABLE xp_ledger (
+CREATE TABLE IF NOT EXISTS xp_ledger (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID NOT NULL,
     amount      INTEGER NOT NULL CHECK (amount != 0),
@@ -99,13 +109,13 @@ CREATE TABLE xp_ledger (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_xp_ledger_user ON xp_ledger(user_id, created_at DESC);
-CREATE INDEX idx_xp_ledger_created ON xp_ledger(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_xp_ledger_user ON xp_ledger(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_xp_ledger_created ON xp_ledger(created_at DESC);
 
 -- ────────────────────────────────────────────────────────────────────────
 -- XP Level Definitions (reference table)
 -- ────────────────────────────────────────────────────────────────────────
-CREATE TABLE xp_levels (
+CREATE TABLE IF NOT EXISTS xp_levels (
     level       INTEGER PRIMARY KEY,
     name        VARCHAR(50) NOT NULL,
     min_xp      INTEGER NOT NULL,
@@ -122,4 +132,8 @@ INSERT INTO xp_levels (level, name, min_xp, icon) VALUES
 (7,  'Expert',         2500,  '📊'),
 (8,  'Strategist',     4000,  '🎯'),
 (9,  'Mogul',          6000,  '💎'),
-(10, 'Legend',         10000, '👑');
+(10, 'Legend',         10000, '👑')
+ON CONFLICT (level) DO UPDATE SET
+  name = EXCLUDED.name,
+  min_xp = EXCLUDED.min_xp,
+  icon = EXCLUDED.icon;

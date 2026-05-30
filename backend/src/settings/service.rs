@@ -894,6 +894,12 @@ pub async fn change_email(
         .execute(pool)
         .await?;
 
+    // Invalidate all sessions for this user (security: force re-auth after email change)
+    sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
     // Audit log
     crate::common::audit::log(
         pool,
@@ -1370,9 +1376,11 @@ pub async fn delete_account_selective(
 ) -> Result<(), AppError> {
     use sqlx::Row;
 
-    if confirm_phrase != "DELETE" {
+    // Confirmation phrase must match the prompt shown to the user on
+    // /account-deletion. Compare case-insensitively after trimming whitespace.
+    if confirm_phrase.trim().to_lowercase() != "delete my account" {
         return Err(AppError::BadRequest(
-            "Type DELETE to confirm account deletion.".to_string(),
+            "Type the confirmation phrase exactly as shown.".to_string(),
         ));
     }
 

@@ -10,8 +10,18 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created_at
     ON notifications (created_at DESC);
 
 -- /api/admin/community/reports: WHERE status='pending' ORDER BY created_at ASC
-CREATE INDEX IF NOT EXISTS idx_content_reports_status_created
-    ON content_reports (status, created_at ASC);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = current_schema()
+          AND table_name = 'content_reports'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_content_reports_status_created
+            ON content_reports (status, created_at ASC);
+    END IF;
+END $$;
 
 -- /api/admin/rewards/affiliates/pending: LATERAL subquery on
 -- affiliate_payout_requests WHERE affiliate_id=$ AND status IN (...) ORDER BY requested_at

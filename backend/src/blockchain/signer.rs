@@ -495,13 +495,15 @@ mod tests {
         let settler = super::super::signing::format_address(&signer.address());
         println!("Settler: {}", settler);
 
-        // Bootstrap distribution: (recipient, amount).
+        // Bootstrap distribution: (recipient, amount). Recipient labels are
+        // intentionally anonymised — match against `users.chain_wallet_address`
+        // in the DB to resolve identities.
         let dist: Vec<(&str, u128)> = vec![
-            ("0xfD32FA370F2951e22c5Ce4c381f1eE88f9869fF0", 1223), // support@traffic-creator.com
-            ("0x482035530fFa865DEf841c2F19b82526341FC67d", 674),  // admin@poool.app
-            ("0xCaD52994B74F0A76df664486efC1294ACbe15e6b", 92),   // jonas.freiwald@poool.app
-            ("0xE8C2F2b4fBe6584d5f2b987BE5d8F8E85dCAC16A", 10),   // martin.freiwald.work@gmail.com
-            ("0xB074f9C09FEA4eEc56CB50dB946ff15D5c87Aa5c", 1),    // poool.test+...
+            ("0xfD32FA370F2951e22c5Ce4c381f1eE88f9869fF0", 1223), // holder #1
+            ("0x482035530fFa865DEf841c2F19b82526341FC67d", 674),  // holder #2
+            ("0xCaD52994B74F0A76df664486efC1294ACbe15e6b", 92),   // holder #3
+            ("0xE8C2F2b4fBe6584d5f2b987BE5d8F8E85dCAC16A", 10),   // holder #4
+            ("0xB074f9C09FEA4eEc56CB50dB946ff15D5c87Aa5c", 1),    // holder #5
         ];
 
         let clone = "0xf92814f3538e5604bc2f18c5bf5bc5cd2dbcd978";

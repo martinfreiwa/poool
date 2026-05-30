@@ -7,6 +7,7 @@
  *   - Returns typed, display-ready objects consumed by the UI layer
  *
  * @typedef {Object} InvestmentItem
+ * @property {string}      asset_id
  * @property {string}      asset_title
  * @property {string}      asset_slug
  * @property {string|null} cover_image
@@ -177,7 +178,7 @@ const PortfolioDataService = (function () {
      *
      * InvestmentRow:
      * {
-     *   assetTitle, assetSlug, coverImage,
+     *   assetId, assetTitle, assetSlug, coverImage,
      *   currentValueDisplay, appreciationDisplay, appreciationClass, appreciationPrefix,
      *   totalRentalDisplay,
      *   statusCss, statusLabel,
@@ -251,6 +252,7 @@ const PortfolioDataService = (function () {
                 inv.payout_expected_at
             );
             return {
+                assetId: inv.asset_id,
                 assetTitle: inv.asset_title,
                 assetSlug: inv.asset_slug,
                 coverImage: inv.cover_image || "/static/images/portfolio_asset_details/Property%20image.webp",
@@ -330,4 +332,3 @@ const PortfolioDataService = (function () {
         mapInvestmentStatus,
     };
 })();
-

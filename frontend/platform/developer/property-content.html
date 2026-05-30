@@ -1,4 +1,4 @@
-{% with title="Developer Property Content", meta_description="Add property content and media for listing on POOOL.", extra_css=['leaderboard', 'property-content', 'developer-property-content', 'developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-property-content', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Property Content", meta_description="Add property content and media for listing on POOOL.", extra_css=['leaderboard', 'property-content', 'developer-property-content', 'developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar', 'mobile-developer-property-content'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-property-content', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="property-content-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -139,7 +139,7 @@
               <label for="rental-yield" class="form-label">Rental Yield</label>
               <div class="input-wrapper percent-input">
                 <input type="text" id="rental-yield" name="rental_yield" class="form-input" placeholder="10"
-                  value="10" />
+                  value="" />
                 <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
                     <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
@@ -152,7 +152,7 @@
               <label for="capital-appreciation" class="form-label">Capital Appreciation</label>
               <div class="input-wrapper percent-input">
                 <input type="text" id="capital-appreciation" name="capital_appreciation" class="form-input"
-                  placeholder="10" value="10" />
+                  placeholder="10" value="" />
                 <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
                     <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
@@ -168,7 +168,7 @@
               <label for="investor-share" class="form-label">Investor Share of Profits</label>
               <div class="input-wrapper percent-input">
                 <input type="text" id="investor-share" name="investor_share" class="form-input" placeholder="10"
-                  value="10" />
+                  value="" />
                 <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
                     <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
@@ -196,8 +196,9 @@
             <div id="total-return-group" class="form-group">
               <label for="total-return" class="form-label">Total Expected Return</label>
               <div class="input-wrapper percent-input">
-                <input type="text" id="total-return" name="total_return" class="form-input" placeholder="10"
-                  value="10" />
+                <input type="text" id="total-return" name="total_return" class="form-input" placeholder="—"
+                  value="" readonly aria-readonly="true"
+                  title="Computed: Rental Yield + Capital Appreciation" />
                 <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
                     <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>

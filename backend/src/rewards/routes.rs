@@ -1603,10 +1603,14 @@ pub async fn api_affiliate_postback_save(
 }
 
 /// GET /api/affiliate/referrals
-/// Provides a detailed list of referrals and their commissions, used for the Referrals & Payouts Funnel
+/// Provides a detailed list of referrals and their commissions, used for the Referrals & Payouts Funnel.
+///
+/// Bounded to 500 rows per page (`?page=N`, zero-indexed) to prevent OOM for
+/// power affiliates with thousands of referrals. See CDDRP §3.5 (B6).
 pub async fn api_affiliate_referrals_list(
     jar: CookieJar,
     State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
     let user_id = require_user_id(&jar, &state)
         .await
@@ -1619,9 +1623,18 @@ pub async fn api_affiliate_referrals_list(
         ));
     }
 
+    // Pagination cap (CDDRP B6 fix).
+    const REFERRALS_PAGE_SIZE: i64 = 500;
+    let page = params
+        .get("page")
+        .and_then(|p| p.parse::<i64>().ok())
+        .unwrap_or(0)
+        .max(0);
+    let offset = page.saturating_mul(REFERRALS_PAGE_SIZE);
+
     // Join referrals with commissions
     let referrals = sqlx::query!(
-        r#"SELECT 
+        r#"SELECT
                ar.id::text as referral_id,
                ar.status as referral_status,
                ar.created_at::text as created_at,
@@ -1633,8 +1646,11 @@ pub async fn api_affiliate_referrals_list(
            JOIN users u ON u.id = ar.referred_user_id
            LEFT JOIN affiliate_commissions c ON c.referral_id = ar.id
            WHERE ar.affiliate_id = $1
-           ORDER BY ar.created_at DESC"#,
-        user_id
+           ORDER BY ar.created_at DESC
+           LIMIT $2 OFFSET $3"#,
+        user_id,
+        REFERRALS_PAGE_SIZE,
+        offset
     )
     .fetch_all(&state.db)
     .await?;
@@ -1690,16 +1706,20 @@ pub async fn api_affiliate_upload_tax_document(
     while let Ok(Some(field)) = multipart.next_field().await {
         if field.name().unwrap_or("") == "file" {
             original_filename = field.file_name().unwrap_or("tax_document").to_string();
-            let bytes = field
-                .bytes()
-                .await
-                .map_err(|_| crate::error::AppError::BadRequest("Failed to read file".into()))?;
-            if bytes.len() > 10 * 1024 * 1024 {
-                return Err(crate::error::AppError::BadRequest(
-                    "File must be ≤ 10 MB".into(),
-                ));
-            }
-            file_bytes = Some(bytes.to_vec());
+            let mut field = field;
+            let bytes = crate::storage::upload_helpers::read_field_capped(
+                &mut field,
+                10 * 1024 * 1024,
+                "tax_document",
+            )
+            .await
+            .map_err(|e| match e {
+                crate::admin::extractors::ApiError::BadRequest(m) => {
+                    crate::error::AppError::BadRequest(m)
+                }
+                _ => crate::error::AppError::BadRequest("Failed to read file".into()),
+            })?;
+            file_bytes = Some(bytes);
         }
     }
 
@@ -1935,10 +1955,23 @@ pub async fn api_affiliate_upload_material(
             "file" => {
                 original_filename = field.file_name().unwrap_or("material").to_string();
                 declared_content_type = field.content_type().map(|ct| ct.to_string());
-                let bytes = field.bytes().await.map_err(|_| {
-                    crate::error::AppError::BadRequest("Failed to read file".into())
+                // Chunked read with hard cap — prevents `field.bytes()` from
+                // buffering the full payload before the size check inside
+                // `validate_affiliate_material_upload`.
+                let mut field = field;
+                let bytes = crate::storage::upload_helpers::read_field_capped(
+                    &mut field,
+                    AFFILIATE_MATERIAL_MAX_BYTES,
+                    "material",
+                )
+                .await
+                .map_err(|e| match e {
+                    crate::admin::extractors::ApiError::BadRequest(m) => {
+                        crate::error::AppError::BadRequest(m)
+                    }
+                    _ => crate::error::AppError::BadRequest("Failed to read file".into()),
                 })?;
-                file_bytes = Some(bytes.to_vec());
+                file_bytes = Some(bytes);
             }
             "name" => {
                 asset_name = field
@@ -2520,11 +2553,12 @@ pub async fn page_affiliate_invoice(
                 .into_response()
         }
         Err(e) => {
+            tracing::error!("Invoice fetch error: {}", e);
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Html(format!("<pre>{}</pre>", e)),
+                Html("<h1>Internal Server Error</h1>"),
             )
-                .into_response()
+                .into_response();
         }
     };
 

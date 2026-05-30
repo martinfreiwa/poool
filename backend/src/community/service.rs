@@ -1,4 +1,4 @@
-use crate::community::models::{ContentReport, Post};
+use crate::community::models::{ContentReport, Post, ReputationFlairDisplay};
 use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -22,6 +22,8 @@ pub async fn get_community_feed(
     category: Option<String>,
     only_following_user_id: Option<Uuid>,
     sort_by: Option<String>,
+    post_type_filter: Option<String>,
+    tag_filter: Option<String>,
     limit: i64,
     offset: i64,
     // 14.8.2: when Some, the feed query also filters out posts authored by
@@ -60,10 +62,13 @@ pub async fn get_community_feed(
             JOIN community_profiles cp ON p.user_id = cp.user_id
             WHERE p.is_hidden = false
               AND cp.is_shadowbanned = false
+              AND p.circle_id IS NULL
               -- CO.7: hide future-scheduled posts until their time arrives
               AND (p.scheduled_for IS NULL OR p.scheduled_for <= NOW())
               AND (ac.category = $1 OR $1 = '')
               AND ($2 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $2))
+              AND ($6::text IS NULL OR p.post_type = $6)
+              AND ($7::text IS NULL OR $7 = ANY(COALESCE(p.content_tags, '{{}}'::text[])))
               {block_mute}
             {order_clause}
             LIMIT $4 OFFSET $5
@@ -77,6 +82,8 @@ pub async fn get_community_feed(
             .bind(current_user_id)
             .bind(limit)
             .bind(offset)
+            .bind(post_type_filter.as_deref())
+            .bind(tag_filter.as_deref())
             .fetch_all(pool)
             .await?
     } else {
@@ -87,9 +94,12 @@ pub async fn get_community_feed(
             JOIN community_profiles cp ON p.user_id = cp.user_id
             WHERE p.is_hidden = false
               AND cp.is_shadowbanned = false
+              AND p.circle_id IS NULL
               -- CO.7: hide future-scheduled posts until their time arrives
               AND (p.scheduled_for IS NULL OR p.scheduled_for <= NOW())
               AND ($1 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
+              AND ($5::text IS NULL OR p.post_type = $5)
+              AND ($6::text IS NULL OR $6 = ANY(COALESCE(p.content_tags, '{{}}'::text[])))
               {block_mute}
             {order_clause}
             LIMIT $3 OFFSET $4
@@ -102,9 +112,68 @@ pub async fn get_community_feed(
             .bind(current_user_id)
             .bind(limit)
             .bind(offset)
+            .bind(post_type_filter.as_deref())
+            .bind(tag_filter.as_deref())
             .fetch_all(pool)
             .await?
     };
+
+    Ok(rows)
+}
+
+/// Gets posts for a single Circle, paginated and isolated from the global feed.
+pub async fn get_circle_feed(
+    pool: &PgPool,
+    circle_id: Uuid,
+    sort_by: Option<String>,
+    post_type_filter: Option<String>,
+    tag_filter: Option<String>,
+    limit: i64,
+    offset: i64,
+    current_user_id: Option<Uuid>,
+) -> Result<Vec<Post>, AppError> {
+    let limit = limit.clamp(1, 50);
+    let is_hot = sort_by.as_deref() == Some("hot");
+    let order_clause = if is_hot {
+        "ORDER BY p.is_pinned DESC, (p.reaction_count + p.comment_count * 2) DESC, p.created_at DESC"
+    } else {
+        "ORDER BY p.is_pinned DESC, p.created_at DESC"
+    };
+
+    let block_mute_predicate = "
+              AND ($2 IS NULL OR p.user_id NOT IN (
+                  SELECT target_user_id FROM block_relationships WHERE actor_user_id = $2
+                  UNION SELECT actor_user_id FROM block_relationships WHERE target_user_id = $2
+                  UNION SELECT target_user_id FROM mute_relationships WHERE actor_user_id = $2
+              ))";
+
+    let query_str = format!(
+        r#"
+        SELECT p.*
+        FROM posts p
+        JOIN community_profiles cp ON p.user_id = cp.user_id
+        WHERE p.is_hidden = false
+          AND cp.is_shadowbanned = false
+          AND p.circle_id = $1
+          AND (p.scheduled_for IS NULL OR p.scheduled_for <= NOW())
+          AND ($5::text IS NULL OR p.post_type = $5)
+          AND ($6::text IS NULL OR $6 = ANY(COALESCE(p.content_tags, '{{}}'::text[])))
+          {block_mute}
+        {order_clause}
+        LIMIT $3 OFFSET $4
+        "#,
+        block_mute = block_mute_predicate,
+    );
+
+    let rows = sqlx::query_as::<_, Post>(&query_str)
+        .bind(circle_id)
+        .bind(current_user_id)
+        .bind(limit)
+        .bind(offset)
+        .bind(post_type_filter.as_deref())
+        .bind(tag_filter.as_deref())
+        .fetch_all(pool)
+        .await?;
 
     Ok(rows)
 }
@@ -123,7 +192,7 @@ pub async fn get_announcements(
                p.reaction_count, p.comment_count, p.is_pinned, p.created_at
         FROM posts p
         JOIN announcement_categories ac ON ac.post_id = p.id
-        WHERE p.is_hidden = false AND ac.category = $1
+        WHERE p.is_hidden = false AND p.circle_id IS NULL AND ac.category = $1
         ORDER BY p.is_pinned DESC, p.created_at DESC
         LIMIT $2
         "#
@@ -134,7 +203,7 @@ pub async fn get_announcements(
                p.reaction_count, p.comment_count, p.is_pinned, p.created_at
         FROM posts p
         JOIN announcement_categories ac ON ac.post_id = p.id
-        WHERE p.is_hidden = false
+        WHERE p.is_hidden = false AND p.circle_id IS NULL
         ORDER BY p.is_pinned DESC, p.created_at DESC
         LIMIT $1
         "#
@@ -469,6 +538,12 @@ pub async fn create_user_post(
     // Moderate content
     let mod_result =
         crate::community::moderation::moderate_content(&req.content, is_high_level_user);
+    let content_tags = req.content_tags.clone().unwrap_or_default();
+    let disclaimer_shown = mod_result.needs_disclaimer
+        || crate::community::moderation::post_requires_compliance_disclaimer(
+            &req.post_type,
+            &content_tags,
+        );
 
     // UX.16 — quote-repost validation. Reject self-quoting (silly) and
     // chains (one level deep). The quoted post must exist and not be
@@ -527,8 +602,8 @@ pub async fn create_user_post(
 
     let post_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO posts (user_id, post_type, content, content_sanitized, asset_id, image_urls, is_hidden, hidden_reason, disclaimer_shown, quoted_post_id, scheduled_for)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        INSERT INTO posts (user_id, post_type, content, content_sanitized, asset_id, circle_id, image_urls, content_tags, is_hidden, hidden_reason, disclaimer_shown, quoted_post_id, scheduled_for)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING id
         "#,
     )
@@ -537,10 +612,12 @@ pub async fn create_user_post(
     .bind(&req.content)
     .bind(&mod_result.sanitized_content)
     .bind(req.asset_id)
+    .bind(req.circle_id)
     .bind(req.image_urls.as_deref())
+    .bind(&content_tags)
     .bind(mod_result.is_flagged)
     .bind(&mod_result.flag_reason)
-    .bind(mod_result.needs_disclaimer)
+    .bind(disclaimer_shown)
     .bind(req.quoted_post_id)
     .bind(scheduled_for)
     .fetch_one(&mut *tx)
@@ -548,6 +625,15 @@ pub async fn create_user_post(
 
     // UX.4: Extract and link hashtags from content
     extract_and_link_hashtags(&mut tx, &req.content, post_id).await?;
+
+    if let Some(circle_id) = req.circle_id {
+        sqlx::query(
+            "UPDATE circles SET recent_post_count = COALESCE(recent_post_count, 0) + 1, updated_at = NOW() WHERE id = $1",
+        )
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+    }
 
     // UX.11: Create poll if poll data is provided
     if let (Some(question), Some(options)) = (&req.poll_question, &req.poll_options) {
@@ -750,10 +836,17 @@ pub async fn delete_user_post(pool: &PgPool, post_id: Uuid, user_id: Uuid) -> Re
     Ok(())
 }
 
+/// Get pending content reports (bounded).
+///
+/// B6 (CDDRP Phase 3.3): hard cap of 200 rows to prevent unbounded response
+/// growth in the admin moderation queue. Pagination plumbing is intentionally
+/// deferred to avoid invasive changes at the call site.
 pub async fn get_pending_reports(pool: &PgPool) -> Result<Vec<ContentReport>, AppError> {
+    const REPORTS_PAGE_LIMIT: i64 = 200;
     let reports = sqlx::query_as::<_, ContentReport>(
-        "SELECT * FROM content_reports WHERE status = 'pending' ORDER BY created_at ASC",
+        "SELECT * FROM content_reports WHERE status = 'pending' ORDER BY created_at ASC LIMIT $1",
     )
+    .bind(REPORTS_PAGE_LIMIT)
     .fetch_all(pool)
     .await?;
 
@@ -1074,6 +1167,133 @@ pub async fn get_flairs_batch(
     Ok(out)
 }
 
+/// Phase 3: batch-resolve admin/system-granted reputation flairs.
+///
+/// These flairs are deliberately separate from the user-editable `flair`
+/// column. Users can describe themselves, but only the system/admin paths can
+/// grant Official, Expert, Holder, or Verified reputation signals.
+pub async fn get_reputation_flairs_batch(
+    pool: &PgPool,
+    user_ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, Vec<ReputationFlairDisplay>>, AppError> {
+    let mut out: std::collections::HashMap<Uuid, Vec<ReputationFlairDisplay>> =
+        std::collections::HashMap::new();
+    if user_ids.is_empty() {
+        return Ok(out);
+    }
+
+    use sqlx::Row;
+    let rows = sqlx::query(
+        r#"
+        SELECT user_id, flair_code, label, scope_circle_id
+        FROM community_reputation_flair_grants
+        WHERE is_active = TRUE
+          AND user_id = ANY($1)
+        ORDER BY
+          CASE flair_code
+            WHEN 'official_poool' THEN 0
+            WHEN 'verified_investor' THEN 1
+            WHEN 'asset_holder' THEN 2
+            WHEN 'real_estate_analyst' THEN 3
+            WHEN 'commodity_expert' THEN 4
+            WHEN 'ama_speaker' THEN 5
+            ELSE 10
+          END,
+          created_at ASC
+        "#,
+    )
+    .bind(user_ids)
+    .fetch_all(pool)
+    .await?;
+
+    for row in rows {
+        let user_id: Uuid = row.try_get("user_id")?;
+        out.entry(user_id)
+            .or_default()
+            .push(ReputationFlairDisplay {
+                code: row.try_get("flair_code")?,
+                label: row.try_get("label")?,
+                scope_circle_id: row.try_get("scope_circle_id").ok().flatten(),
+            });
+    }
+
+    Ok(out)
+}
+
+fn is_allowed_reputation_flair_code(code: &str) -> bool {
+    matches!(
+        code,
+        "verified_investor"
+            | "asset_holder"
+            | "helpful_contributor"
+            | "founder_member"
+            | "long_term_member"
+            | "ama_speaker"
+            | "official_poool"
+            | "real_estate_analyst"
+            | "commodity_expert"
+    )
+}
+
+/// Phase 3: system/admin grant path for non-user-editable reputation flairs.
+/// This function is intentionally not called from `update_user_profile`; user
+/// payloads must never mint Official/Expert/Holder status.
+#[allow(dead_code)]
+pub async fn grant_reputation_flair(
+    pool: &PgPool,
+    user_id: Uuid,
+    flair_code: &str,
+    label: &str,
+    granted_by: Option<Uuid>,
+    source: &str,
+    scope_circle_id: Option<Uuid>,
+    scope_asset_id: Option<Uuid>,
+    metadata: Option<serde_json::Value>,
+) -> Result<(), AppError> {
+    let code = flair_code.trim();
+    if !is_allowed_reputation_flair_code(code) {
+        return Err(AppError::BadRequest(
+            "Unsupported reputation flair code.".into(),
+        ));
+    }
+
+    let label = label.trim();
+    if label.is_empty() || label.chars().count() > 80 {
+        return Err(AppError::BadRequest(
+            "Reputation flair label must be 1-80 characters.".into(),
+        ));
+    }
+
+    let source = source.trim();
+    if !matches!(source, "system" | "admin" | "asset" | "kyc" | "event") {
+        return Err(AppError::BadRequest(
+            "Unsupported reputation flair source.".into(),
+        ));
+    }
+
+    let metadata = metadata.unwrap_or_else(|| serde_json::json!({}));
+
+    sqlx::query(
+        r#"
+        INSERT INTO community_reputation_flair_grants
+          (user_id, flair_code, label, granted_by, source, scope_circle_id, scope_asset_id, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "#,
+    )
+    .bind(user_id)
+    .bind(code)
+    .bind(label)
+    .bind(granted_by)
+    .bind(source)
+    .bind(scope_circle_id)
+    .bind(scope_asset_id)
+    .bind(metadata)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 // ─── Gamification & Badges ──────────────────────────────────────────────────
 
 /// Fetches badges for a batch of users (useful for feed rendering without N+1)
@@ -1294,8 +1514,8 @@ pub async fn trigger_investment_milestones(
     .fetch_one(core_pool)
     .await?;
 
-    // 2. Get Asset Name
-    let asset_name: String = sqlx::query_scalar("SELECT name FROM assets WHERE id = $1")
+    // 2. Get Asset display title from the core asset catalogue.
+    let asset_name: String = sqlx::query_scalar("SELECT title FROM assets WHERE id = $1")
         .bind(new_asset_id)
         .fetch_one(core_pool)
         .await?;

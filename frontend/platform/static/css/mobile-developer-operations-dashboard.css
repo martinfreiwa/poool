@@ -1,0 +1,301 @@
+/* Mobile Developer — Operations Dashboard
+ *
+ * Page: /developer/operations  (body#developer-operations-body)
+ * Pattern: developer-operations.css already swaps the desktop matrix
+ * (.ops-matrix-wrap) for the mobile card list (.ops-mobile-list) under
+ * 768px. This sheet polishes shell, stats, action queue, info banner,
+ * empty state, and the mobile-only card chrome (.ops-mcard).
+ *
+ * NOTE: For tablet portrait (769-1024px) we DO still need to scroll the
+ * matrix horizontally — the desktop sheet handles overflow on .ops-table-scroll,
+ * but we tighten paddings.
+ */
+
+@media (max-width: 1024px) {
+  /* Sidebar collapse */
+  #developer-operations-body #developer-operations-sidebar,
+  #developer-operations-body .marketplace-sidebar {
+    display: none !important;
+  }
+
+  #developer-operations-body .marketplace-page,
+  #developer-operations-body #developer-operations-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Tablet: keep matrix but ensure scroll affordance is obvious */
+  #developer-operations-body .ops-table-scroll {
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Hide cart icon on developer pages */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-operations-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-operations-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ── Page shell ──────────────────────────────────── */
+  #developer-operations-body {
+    background: #fafafa;
+  }
+
+  #developer-operations-body .ds-main,
+  #developer-operations-body .marketplace-main {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: calc(100vh - 64px);
+  }
+
+  #developer-operations-body .admin-content,
+  #developer-operations-body #ops-content {
+    padding: 16px !important;
+    padding-top: 88px !important; /* clear mobile header */
+    box-sizing: border-box;
+  }
+
+  /* ── Stats grid: 2-up bento + last cell spans 2 (inherited from desktop)
+        Polish padding + count typography ────────────── */
+  #developer-operations-body .ops-stats-grid {
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  #developer-operations-body .ops-stats-grid .dev-stat {
+    padding: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  #developer-operations-body .ops-stat__num {
+    font-size: 24px !important;
+  }
+
+  #developer-operations-body .ops-stat__label {
+    font-size: 11px !important;
+  }
+
+  #developer-operations-body .ops-stat__trend {
+    font-size: 10px !important;
+  }
+
+  #developer-operations-body .ops-stat__top {
+    align-items: flex-start;
+  }
+
+  /* ── Info banner + action queue ──────────────────── */
+  #developer-operations-body .ops-info-banner {
+    padding: 12px 14px !important;
+    gap: 10px !important;
+    border-radius: 10px !important;
+  }
+
+  #developer-operations-body .ops-info-banner__icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  #developer-operations-body .ops-info-banner__title {
+    font-size: 13px !important;
+  }
+
+  #developer-operations-body .ops-info-banner__sub {
+    font-size: 12px !important;
+  }
+
+  /* Action queue */
+  #developer-operations-body .ops-action-queue {
+    border-radius: 12px !important;
+    margin-bottom: 16px;
+  }
+
+  #developer-operations-body .ops-action-queue__header {
+    flex-wrap: wrap;
+    padding: 12px 14px !important;
+    gap: 10px;
+  }
+
+  #developer-operations-body .ops-action-queue__header-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  #developer-operations-body .ops-action-queue__title {
+    font-size: 14px !important;
+  }
+
+  #developer-operations-body .ops-action-queue__subtitle {
+    font-size: 12px !important;
+  }
+
+  #developer-operations-body .ops-action-queue__row {
+    padding: 10px 14px !important;
+    gap: 10px;
+  }
+
+  #developer-operations-body .ops-action-queue__row-asset {
+    font-size: 13px !important;
+  }
+
+  #developer-operations-body .ops-action-queue__row-period {
+    font-size: 11px !important;
+  }
+
+  #developer-operations-body .ops-action-queue__row-btn {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* ── Mobile card list (.ops-mobile-list) chrome polish ── */
+  #developer-operations-body .ops-mobile-list {
+    gap: 12px;
+  }
+
+  #developer-operations-body .ops-mcard {
+    padding: 14px !important;
+    gap: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  #developer-operations-body .ops-mcard__title {
+    font-size: 15px !important;
+  }
+
+  #developer-operations-body .ops-mcard__meta {
+    font-size: 11px !important;
+  }
+
+  #developer-operations-body .ops-mcard__pills {
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  #developer-operations-body .ops-mcard__pill {
+    font-size: 10px !important;
+    padding: 6px 0 !important;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #developer-operations-body .ops-mcard__action {
+    padding: 10px 12px;
+  }
+
+  #developer-operations-body .ops-mcard__action-label {
+    font-size: 13px;
+  }
+
+  #developer-operations-body .ops-mcard__action-note {
+    font-size: 11px;
+  }
+
+  #developer-operations-body .ops-mcard__action-cta {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* ── Skeleton padding tweak ──────────────────────── */
+  #developer-operations-body .ops-skeleton__stats {
+    gap: 10px !important;
+  }
+
+  #developer-operations-body .ops-skeleton__stat {
+    height: 80px !important;
+  }
+
+  /* ── Empty state (no villas) — already adjusted by ops sheet for hero;
+        just make sure metrics/steps stack 1-up ──────── */
+  #developer-operations-body .dae-empty__hero {
+    flex-direction: column !important;
+    padding: 20px !important;
+    gap: 16px !important;
+  }
+
+  #developer-operations-body .dae-empty__hero-art {
+    width: 100% !important;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  #developer-operations-body .dae-empty__title {
+    font-size: 22px !important;
+    line-height: 28px !important;
+  }
+
+  #developer-operations-body .dae-empty__lede {
+    font-size: 14px !important;
+  }
+
+  #developer-operations-body .dae-empty__actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  #developer-operations-body .dae-empty__actions .ds-btn {
+    width: 100% !important;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  #developer-operations-body .dae-empty__metrics,
+  #developer-operations-body .dae-empty__steps {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #developer-operations-body .admin-content,
+  #developer-operations-body #ops-content {
+    padding: 12px !important;
+    padding-top: 80px !important;
+  }
+
+  /* Stats: 1-up stacked on tight screens */
+  #developer-operations-body .ops-stats-grid {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #developer-operations-body .ops-stats-grid .dev-stat:last-child {
+    grid-column: auto !important;
+  }
+
+  /* Mobile card pill grid: tighter cols if 12 months feels squished */
+  #developer-operations-body .ops-mcard__pills {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  #developer-operations-body .ops-mcard__pill {
+    font-size: 11px !important;
+    padding: 8px 0 !important;
+  }
+
+  #developer-operations-body .ops-action-queue__row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #developer-operations-body .ops-action-queue__row-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

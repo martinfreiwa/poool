@@ -330,11 +330,7 @@ function renderTable(items) {
         <div class="submission-asset-cell">
           ${coverHtml}
           <div class="submission-asset-info">
-                    <span class="submission-title">${safeTitle}</span>
-                    <span class="submission-asset-meta">
-                      <span class="submission-type-badge">${safeTypeLabel}</span>
-                      <span class="submission-app-number">#APP-${escapeHtml(itemId.substring(0, 6).toUpperCase())}</span>
-            </span>
+            <span class="submission-title">${safeTitle}</span>
           </div>
         </div>
       </td>

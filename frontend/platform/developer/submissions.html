@@ -1,4 +1,4 @@
-{% with title="My Submissions", meta_description="Manage your property submissions on POOOL.", extra_css=['developer-submissions', 'developer-assets', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar', 'developer-ui'], extra_js=['profile-dropdown', 'mobile-navigation', 'poool-confirm', 'developer-submissions'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="My Submissions", meta_description="Manage your property submissions on POOOL.", extra_css=['developer-submissions', 'developer-assets', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar', 'developer-ui', 'mobile-developer-submissions'], extra_js=['profile-dropdown', 'mobile-navigation', 'poool-confirm', 'developer-submissions'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-submissions-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -39,8 +39,23 @@
         </button>
       </div>
 
-      <!-- Submissions Table -->
-      <div id="submissions-table-container" class="submissions-table-container" style="display: none;">
+      <!-- Submissions Table — STANDARD card-with-table pattern
+           (per docs/DESIGN.md → Tables → Card With Table — Reference Pattern). -->
+      <section id="submissions-table-container" class="ds-card developer-assets-performance-section dev-submissions-table-card submissions-table-container" style="display: none;" aria-labelledby="dev-submissions-table-title">
+        <div class="developer-assets-performance-section__header">
+          <div class="developer-assets-performance-section__title-wrap">
+            <span class="developer-assets-performance-section__icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+                <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+              </svg>
+            </span>
+            <div>
+              <h2 id="dev-submissions-table-title">Submissions</h2>
+              <p>Drafts, in review, approved and rejected submissions.</p>
+            </div>
+          </div>
+        </div>
         <!-- Toolbar: Search + Sort -->
         <div id="sub-toolbar" class="sub-toolbar">
           <!-- Bulk Action Bar (shown when rows selected) -->
@@ -88,7 +103,6 @@
                   </button>
                 </div>
               </div>
-              <span class="sub-result-count" id="sub-result-count"></span>
             </div>
           </div>
         </div>
@@ -159,7 +173,7 @@
             <span class="sub-chip__count" id="stat-rejected">—</span>
           </button>
         </div>
-      </div>
+      </section>
 
       <!-- Empty State -->
       <div id="submissions-empty-state" class="dae-empty" role="region" aria-labelledby="dae-empty-title" style="display: none;">
@@ -185,42 +199,27 @@
           </div>
 
           <div class="dae-empty__hero-art" aria-hidden="true">
-            <svg viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="dae-bg-sub" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stop-color="#EEF4FF"/>
-                  <stop offset="1" stop-color="#F0FFF6"/>
-                </linearGradient>
-                <linearGradient id="dae-card-sub" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#FFFFFF"/>
-                  <stop offset="1" stop-color="#F8FAFF"/>
-                </linearGradient>
-                <linearGradient id="dae-bar-sub" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0" stop-color="#0000FF"/>
-                  <stop offset="1" stop-color="#03FF88"/>
-                </linearGradient>
-              </defs>
-              <rect width="320" height="240" rx="16" fill="url(#dae-bg-sub)"/>
-              <circle cx="260" cy="48" r="48" fill="#D7E3FF" opacity="0.65"/>
-              <circle cx="64" cy="196" r="34" fill="#C6F7D9" opacity="0.55"/>
-              <!-- Submission form card -->
-              <rect x="40" y="40" width="200" height="160" rx="12" fill="url(#dae-card-sub)" stroke="#D7E3FF" stroke-width="1.5"/>
-              <rect x="56" y="58" width="80" height="8" rx="4" fill="#0000FF" opacity="0.25"/>
-              <rect x="56" y="74" width="120" height="6" rx="3" fill="#E5E7EB"/>
-              <!-- Form rows -->
-              <rect x="56" y="94" width="168" height="22" rx="6" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
-              <rect x="56" y="124" width="168" height="22" rx="6" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
-              <rect x="56" y="154" width="80" height="22" rx="6" fill="#F2F4F7" stroke="#E5E7EB" stroke-width="1"/>
-              <!-- Status pill -->
-              <rect x="148" y="154" width="76" height="22" rx="11" fill="#03FF88" opacity="0.2" stroke="#03FF88" stroke-width="1"/>
-              <text x="186" y="169" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="9" fill="#0A0D12">IN REVIEW</text>
-              <!-- Progress card -->
-              <rect x="232" y="80" width="64" height="80" rx="10" fill="#FFFFFF" stroke="#D7E3FF" stroke-width="1.5"/>
-              <text x="264" y="104" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="9" fill="#717680">PROGRESS</text>
-              <rect x="244" y="116" width="40" height="6" rx="3" fill="#E5E7EB"/>
-              <rect x="244" y="116" width="28" height="6" rx="3" fill="url(#dae-bar-sub)"/>
-              <text x="264" y="142" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="14" fill="#0000FF">70%</text>
-            </svg>
+            <div class="dae-empty__submission-art">
+              <div class="dae-empty__submission-ribbon"></div>
+              <div class="dae-empty__submission-lockup">
+                <img src="/static/images/icons/logo-pool.svg" alt="">
+              </div>
+              <div class="dae-empty__submission-card">
+                <span class="dae-empty__submission-card-header"></span>
+                <span class="dae-empty__submission-line dae-empty__submission-line--wide"></span>
+                <span class="dae-empty__submission-line"></span>
+                <span class="dae-empty__submission-progress"><span></span></span>
+              </div>
+              <div class="dae-empty__submission-review">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="dae-empty__submission-stack">
+                <span></span>
+                <span></span>
+              </div>
+            </div>
           </div>
         </div>
 

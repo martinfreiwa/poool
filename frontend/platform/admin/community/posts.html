@@ -83,6 +83,28 @@
   </div>
 
   <script>
+    const escapeHtml = (s) => {
+      if (s == null) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+    const escapeAttr = escapeHtml; // attributes need the same escaping; alias for readability
+    const escapeJsString = (s) => {
+      if (s == null) return '';
+      return String(s)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/</g, '\\u003c')  // defeat closing script tag breakout
+        .replace(/>/g, '\\u003e');
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         loadPosts();
     });
@@ -111,22 +133,22 @@
                     html += `
                         <tr>
                             <td>
-                                <div class="admin-table__cell-primary">${p.author_name}</div>
+                                <div class="admin-table__cell-primary">${escapeHtml(p.author_name)}</div>
                                 <div class="admin-table__cell-secondary">${p.user_id.substring(0,8)}...</div>
                             </td>
                             <td>
-                                <span class="admin-badge ${typeClass}">${p.post_type}</span>
+                                <span class="admin-badge ${typeClass}">${escapeHtml(p.post_type)}</span>
                             </td>
                             <td>
-                                <div class="admin-table__cell-text">${truncContent}</div>
-                                ${p.content_tags ? `<div class="admin-table__tag-row">${p.content_tags.map(t => `<span class="admin-badge admin-badge--tag">${t}</span>`).join('')}</div>` : ''}
+                                <div class="admin-table__cell-text">${escapeHtml(truncContent)}</div>
+                                ${p.content_tags ? `<div class="admin-table__tag-row">${p.content_tags.map(t => `<span class="admin-badge admin-badge--tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
                             </td>
                             <td>${statusBadge}</td>
-                            <td><span class="admin-table__cell-muted">${date}</span></td>
+                            <td><span class="admin-table__cell-muted">${escapeHtml(date)}</span></td>
                             <td class="admin-table__cell-actions">
                                 <div class="admin-table__action-row">
-                                    ${!p.is_locked ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="toggleLock('${p.id}', true)">Lock</button>` : `<button class="admin-btn admin-btn--warning admin-btn--sm" onclick="toggleLock('${p.id}', false)">Unlock</button>`}
-                                    ${!p.is_hidden ? `<button class="admin-btn admin-btn--danger admin-btn--sm" onclick="hidePost('${p.id}')">Hide</button>` : `<span class="admin-table__cell-muted admin-table__inline-status">Hidden</span>`}
+                                    ${!p.is_locked ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="toggleLock('${escapeAttr(p.id)}', true)">Lock</button>` : `<button class="admin-btn admin-btn--warning admin-btn--sm" onclick="toggleLock('${escapeAttr(p.id)}', false)">Unlock</button>`}
+                                    ${!p.is_hidden ? `<button class="admin-btn admin-btn--danger admin-btn--sm" onclick="hidePost('${escapeAttr(p.id)}')">Hide</button>` : `<span class="admin-table__cell-muted admin-table__inline-status">Hidden</span>`}
                                 </div>
                             </td>
                         </tr>

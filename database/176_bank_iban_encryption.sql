@@ -37,7 +37,6 @@ CREATE INDEX IF NOT EXISTS idx_developer_teams_bank_iban_set
 
 COMMIT;
 
-\echo '── plaintext rows still present (need backfill via Rust admin task) ──'
 SELECT COUNT(*) AS plaintext_count,
        COUNT(*) FILTER (WHERE bank_iban_encrypted IS NOT NULL) AS already_encrypted
   FROM developer_teams

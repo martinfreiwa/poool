@@ -230,11 +230,17 @@
     margin-bottom: 4px;
 }
 
+.support-card-title-group {
+    min-width: 0;
+}
+
 .support-card-header p {
     color: var(--support-muted);
     font-size: 13px;
     line-height: 18px;
     margin: 0;
+    padding-left: 48px;
+    max-width: 620px;
 }
 
 .support-draft-status {
@@ -248,6 +254,10 @@
 #your-tickets,
 #faq {
     scroll-margin-top: 96px;
+}
+
+#submit-ticket.support-form-card {
+    overflow: visible;
 }
 
 .support-form-card > :last-child {
@@ -358,6 +368,69 @@
     outline: none;
     border-color: var(--input-border-focus, #0000FF);
     box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+.support-form-card .support-form-group > .poool-dropdown {
+    width: 100%;
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__trigger {
+    height: var(--input-height, 44px);
+    padding: var(--input-padding, 10px 14px);
+    background: var(--input-bg, #FFFFFF);
+    border: 1px solid var(--input-border-color, #D0D5DD);
+    border-radius: var(--input-border-radius, 8px);
+    box-shadow: none;
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__trigger:hover {
+    border-color: #98A2B3;
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__trigger:focus,
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__trigger--active {
+    border-color: var(--input-border-focus, #0000FF);
+    box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__value {
+    color: var(--input-text-color, #101828);
+    font-size: var(--input-font-size, 14px);
+    line-height: 20px;
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__panel {
+    z-index: 50;
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: 8px;
+    padding: 6px;
+    max-height: 244px;
+    box-shadow:
+        0 8px 8px -4px rgba(16, 24, 40, 0.03),
+        0 20px 24px -4px rgba(16, 24, 40, 0.08);
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__option {
+    min-height: 40px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: var(--input-text-color, #101828);
+    font-weight: 500;
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__option:hover,
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__option--focused {
+    background: rgba(3, 255, 136, 0.08);
+    color: var(--page-title-color, #181D27);
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__option--selected {
+    background: rgba(0, 0, 255, 0.04);
+    color: var(--btn-primary-bg, #0000FF);
+}
+
+.support-form-card .support-form-group > .poool-dropdown .poool-dropdown__check {
+    color: var(--checkbox-selected-check-color, #03FF88);
 }
 
 .support-form-group textarea {
@@ -1261,6 +1334,10 @@ body#support-body {
         flex-direction: column;
     }
 
+    .support-card-header p {
+        padding-left: 0;
+    }
+
     .support-form-footer {
         flex-direction: column-reverse;
         align-items: stretch;
@@ -1331,7 +1408,7 @@ body#support-body {
 
 .support-faq-summary {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     padding: 20px 24px;
     color: var(--page-title-color);
@@ -1341,6 +1418,19 @@ body#support-body {
     letter-spacing: -0.01em;
     line-height: 24px;
     list-style: none;
+}
+
+.support-faq-summary__title {
+    display: block;
+}
+
+.support-faq-summary p {
+    color: var(--support-muted);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 18px;
+    margin: 4px 0 0;
 }
 
 .support-faq-summary::-webkit-details-marker {
@@ -1455,39 +1545,45 @@ body#support-body {
 
 /* ═══════════════════════════════════════════════
    Support — v2 polish (2026-05-18)
-   Lifts the support page from "amateur" to the
-   "big-industry SaaS" baseline: solid primary CTA
-   with white text, brand-tinted drop zone, pill
+   Solid primary CTA, brand-tinted drop zone, pill
    tabs, search field, and consistent ticket cards.
    ═══════════════════════════════════════════════ */
 
-/* ── Primary submit — white text, cobalt fill ─────────────────────── */
-body#support-body .support-submit-btn,
-body#support-body .support-submit-btn:hover,
-body#support-body .support-submit-btn:active {
-  background: #0000FF !important;
-  color: #FFFFFF !important;
-  border: 0 !important;
-  border-radius: 10px !important;
-  height: 44px !important;
+/* ── Primary submit — platform primary button contract ───────────── */
+body#support-body #submit-ticket-btn.support-submit-btn,
+body#support-body #submit-ticket-btn.support-submit-btn:hover,
+body#support-body #submit-ticket-btn.support-submit-btn:active {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--btn-icon-gap, 8px) !important;
+  min-height: 44px !important;
   padding: 0 22px !important;
+  border: 1px solid var(--btn-primary-bg, #0000FF) !important;
+  border-radius: var(--btn-border-radius, 8px) !important;
+  background: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-color, #98FB96) !important;
   font-weight: 700 !important;
-  letter-spacing: -0.01em !important;
-  box-shadow: 0 8px 20px -8px rgba(0, 0, 255, 0.45) !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+  letter-spacing: 0 !important;
+  box-shadow: none !important;
+  transition: var(--btn-transition, all 0.15s ease) !important;
 }
-body#support-body .support-submit-btn:hover {
-  background: #1F2BFF !important;
+body#support-body #submit-ticket-btn.support-submit-btn:hover {
+  background: var(--btn-primary-hover-bg, #0000CC) !important;
+  border-color: var(--btn-primary-hover-bg, #0000CC) !important;
+  color: var(--btn-primary-color, #98FB96) !important;
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px -10px rgba(0, 0, 255, 0.55) !important;
 }
-body#support-body .support-submit-btn svg {
-  color: #FFFFFF;
-  stroke: #FFFFFF;
+body#support-body #submit-ticket-btn.support-submit-btn svg {
+  color: currentColor;
+  stroke: currentColor;
+  flex-shrink: 0;
 }
-body#support-body .support-submit-btn:disabled {
-  background: #1F2BFF !important;
-  opacity: 0.45 !important;
+body#support-body #submit-ticket-btn.support-submit-btn:disabled {
+  background: var(--btn-primary-bg, #0000FF) !important;
+  border-color: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-color, #98FB96) !important;
+  opacity: 0.5 !important;
   transform: none !important;
   box-shadow: none !important;
 }

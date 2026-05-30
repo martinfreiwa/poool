@@ -189,19 +189,16 @@ COMMENT ON FUNCTION recompute_team_tier IS
 COMMIT;
 
 -- ── Verification queries ─────────────────────────────────────────────────
-\echo '── gross_amount_cents backfill ──'
 SELECT COUNT(*) AS rows_total,
        COUNT(*) FILTER (WHERE gross_amount_cents > 0) AS rows_backfilled,
        COUNT(*) FILTER (WHERE gross_amount_cents = 0) AS rows_unmatched_tier
   FROM affiliate_commissions
  WHERE payout_user_id = (SELECT id FROM users WHERE email='support@traffic-creator.com');
 
-\echo '── qualified_at backfill ──'
 SELECT status, COUNT(*) AS total, COUNT(qualified_at) AS with_qualified_at
   FROM affiliate_referrals
  GROUP BY status ORDER BY total DESC;
 
-\echo '── Cascade-trigger sanity (no terminated teams expected) ──'
 SELECT id, display_name, status,
        (SELECT COUNT(*) FROM affiliate_links WHERE team_id = developer_teams.id AND status = 'active') AS active_links
   FROM developer_teams ORDER BY status;

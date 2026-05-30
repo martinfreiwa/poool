@@ -45,6 +45,137 @@
   display: contents;
 }
 
+/* Application review banner */
+.dev-review-banner {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 82px;
+  margin-bottom: var(--section-gap, 24px);
+  padding: 18px 22px;
+  overflow: hidden;
+  border: 1px solid rgba(112, 132, 255, 0.46);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, #0000FF 0%, #001DCA 58%, #06106F 100%);
+  box-shadow:
+    0 18px 42px -24px rgba(0, 0, 255, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+.dev-review-banner::before {
+  content: none;
+  display: none;
+}
+
+.dev-review-banner::after {
+  content: "POOOL";
+  position: absolute;
+  right: 76px;
+  bottom: -18px;
+  color: rgba(3, 255, 136, 0.10);
+  font-size: 82px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dev-review-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dev-review-banner__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 118px;
+  height: 42px;
+  flex: 0 0 auto;
+  border: 1px solid var(--checkbox-selected-check-color, #03FF88);
+  border-radius: 10px;
+  background: var(--checkbox-selected-check-color, #03FF88);
+  box-shadow:
+    0 10px 24px rgba(3, 255, 136, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44);
+}
+
+.dev-review-banner__brand img {
+  display: block;
+  width: 96px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.dev-review-banner__content {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dev-review-banner__eyebrow {
+  color: #03FF88;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 14px;
+  text-transform: uppercase;
+}
+
+.dev-review-banner__text {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dev-review-banner__text strong {
+  color: #98FB96;
+  font-weight: 800;
+}
+
+.dev-review-banner__status {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid var(--checkbox-selected-check-color, #03FF88);
+  border-radius: 999px;
+  background: var(--checkbox-selected-check-color, #03FF88);
+  color: var(--btn-primary-bg, #0000FF);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 16px;
+  box-shadow:
+    0 8px 20px rgba(3, 255, 136, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+.dev-review-banner__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(152, 251, 150, 0.36);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #98FB96;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.dev-review-banner__dismiss:hover,
+.dev-review-banner__dismiss:focus-visible {
+  border-color: rgba(3, 255, 136, 0.78);
+  background: rgba(3, 255, 136, 0.16);
+  color: #03FF88;
+  outline: none;
+}
+
 /* Metric Card */
 .metric-card {
   box-sizing: border-box;
@@ -73,6 +204,34 @@
   transform-origin: left center;
   transform: scaleX(var(--bar-fill, 1));
   will-change: transform;
+}
+
+body#developer-dashboard-body #metrics-section .metric-card::before {
+  content: "" !important;
+  display: block !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%) !important;
+}
+
+body#developer-dashboard-body #metrics-section [id="metric-card-Funding Target"].metric-card::before {
+  content: "" !important;
+  display: block !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%) !important;
+}
+
+body#developer-dashboard-body #metrics-section [id="metric-card-Amount Raised"].metric-card::before {
+  content: "" !important;
+  display: block !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%) !important;
+}
+
+body#developer-dashboard-body #metrics-section [id="metric-card-Amount Remaining"].metric-card::before {
+  content: "" !important;
+  display: block !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%) !important;
 }
 
 .metric-card:hover {
@@ -172,6 +331,14 @@
   overflow: hidden;
 }
 
+.dashboard-insights-grid .developer-secondary-metrics {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100%;
+  margin-bottom: 0;
+}
+
 .developer-secondary-metrics::before {
   content: "";
   position: absolute;
@@ -181,6 +348,13 @@
   border-radius: 12px 12px 0 0;
   pointer-events: none;
   display: block;
+}
+
+body#developer-dashboard-body #activity-snapshot-section::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
 }
 
 .developer-secondary-metrics__header {
@@ -347,14 +521,24 @@
   overflow: hidden;
 }
 
+.dashboard-insights-grid .developer-secondary-metrics__grid {
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .developer-secondary-metric {
   min-width: 0;
   background: var(--card-bg);
-  padding: 16px 18px 14px;
+  padding: 15px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   transition: background 0.15s ease;
+}
+
+.dashboard-insights-grid .developer-secondary-metric {
+  justify-content: center;
+  min-height: 104px;
 }
 .developer-secondary-metric:hover {
   background: rgba(0, 0, 255, 0.025);
@@ -392,13 +576,54 @@
   color: #b42318;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   STANDARD — Card With Table (reference pattern)
+   ════════════════════════════════════════════════════════════════════
+   This block defines the canonical "card-with-table" layout for the
+   whole platform. Any new card containing a table MUST mirror this
+   visual + structural contract. Do NOT invent a new card-table style.
+
+   Spec + rationale: docs/DESIGN.md → Tables → Card With Table.
+   Quick reminder:
+     - Brand 4px blue→green strip on top (via .ds-card::before / ucard).
+     - Header: icon tile (36×36 blue→navy gradient + green stroke) +
+       <h2> title + <p> subtitle, flex-row with optional action link.
+     - White .table__header-row (no tint), uppercase 12px tracked labels.
+     - Row outer gutter = 16px (overridden in ucard.css), cell padding
+       14px 12px, numeric cells right-aligned (text-align + flex-end).
+     - Row hover wash = rgba(3,255,136,0.08) brand green.
+     - Action icons (.developer-assets-table__icon-btn) grey #98A2B3,
+       hover changes ONLY the icon color to POOOL blue, no bg.
+     - Funding cell = formatted % text (no inline progress bar).
+   ════════════════════════════════════════════════════════════════════ */
 .developer-assets-performance-section {
+  position: relative;
   padding: 24px;
   margin-bottom: 24px;
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--card-border-color, #E5E7EB);
   border-radius: var(--card-border-radius, 12px);
   box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  overflow: hidden;
+}
+/* 4px brand-gradient strip on top — the STANDARD chrome for every
+   card-with-table on the platform. */
+.developer-assets-performance-section::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+body#developer-dashboard-body section[aria-labelledby="developer-assets-performance-title"].developer-assets-performance-section::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
 }
 
 .developer-assets-performance-section__header {
@@ -578,8 +803,9 @@
 
 .developer-assets-table__row {
   display: grid !important;
-  grid-template-columns: minmax(190px, 1fr) 76px 66px 76px 100px 130px 88px;
-  min-width: 860px;
+  /* asset | sales | views | conv | funding | actions */
+  grid-template-columns: minmax(220px, 1fr) 100px 80px 100px 100px 96px;
+  min-width: 696px;
   align-items: center;
   border-bottom: 1px solid var(--table-border-color, #eaecf0);
 }
@@ -589,7 +815,7 @@
 }
 
 .developer-assets-table__row:hover {
-  background: var(--table-row-hover-bg, #f8f9fc);
+  background: rgba(3, 255, 136, 0.08);
 }
 
 .developer-assets-table__header .table__time-tabs {
@@ -605,14 +831,19 @@
   border-bottom: 0;
   overflow: visible;
 }
+/* First + last cells keep their default 12px horizontal padding so labels +
+   icons get breathing room from the card edges. Combined with the row's
+   16px outer gutter (ucard.css), that's 28px from each card edge. */
 
 .developer-assets-table__row .table__header-cell {
-  background: var(--table-header-bg, #fafafa);
+  background: #FFFFFF;
   color: var(--table-header-color, #717680);
   font-family: 'TT Norms Pro', sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
@@ -631,11 +862,34 @@
 
 .developer-assets-table__sales .table__cell-value,
 .developer-assets-table__views .table__cell-text-value,
-.developer-assets-table__saved .table__cell-text-value,
-.developer-assets-table__conversion .table__cell-text-value {
+.developer-assets-table__conversion .table__cell-text-value,
+.developer-assets-table__funding .table__cell-text-value {
   color: var(--page-title-color);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* Right-align numeric columns — both header AND cell — so numbers line up
+   under their labels and read in a clean column edge. */
+.developer-assets-table__row .developer-assets-table__sales,
+.developer-assets-table__row .developer-assets-table__views,
+.developer-assets-table__row .developer-assets-table__conversion,
+.developer-assets-table__row .developer-assets-table__funding {
+  text-align: right;
+  justify-content: flex-end;
+}
+.developer-assets-table__row .developer-assets-table__sales .developer-assets-table__sort,
+.developer-assets-table__row .developer-assets-table__views .developer-assets-table__sort,
+.developer-assets-table__row .developer-assets-table__conversion .developer-assets-table__sort,
+.developer-assets-table__row .developer-assets-table__funding .developer-assets-table__sort {
+  /* Sort buttons inside numeric headers — push to the right edge of the cell */
+  display: inline-flex;
+  margin-left: auto;
+}
+/* Right-align the actions column header (icons cell already right-flexes) */
+.developer-assets-table__row .developer-assets-table__actions {
+  text-align: right;
+  justify-content: flex-end;
 }
 
 .developer-assets-table__sort {
@@ -650,6 +904,13 @@
   font: inherit;
   min-width: 0;
   text-align: left;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+.developer-assets-table__sort .table__header-text {
+  text-transform: inherit;
+  letter-spacing: inherit;
+  font-weight: inherit;
 }
 
 .developer-assets-table__sort::after {
@@ -723,7 +984,7 @@
 .developer-assets-table__action-group {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 8px;
   width: 100%;
 }
@@ -747,9 +1008,11 @@
   height: 16px;
 }
 
-.developer-assets-table__icon-btn:hover {
+.developer-assets-table__icon-btn:hover,
+.developer-assets-table__icon-btn:focus-visible {
   color: #0000FF;
-  background: rgba(0, 0, 255, 0.08);
+  background: transparent;
+  outline: none;
 }
 
 .metric-dropdown-btn {
@@ -781,20 +1044,46 @@
   width: 100%;
 }
 
+.dashboard-insights-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.42fr) minmax(360px, 0.92fr);
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
 /* Sales Chart */
 .sales-chart-section {
-  margin-bottom: 24px;
+  display: flex;
+  min-width: 0;
+  margin-bottom: 0;
   width: 100%;
 }
 
 .sales-chart-card {
+  position: relative;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 32px 24px;
-  gap: 24px;
+  padding: 24px;
+  gap: 20px;
   width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  border-color: rgba(0, 0, 255, 0.10);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 255, 0.025) 0%, rgba(255, 255, 255, 0) 112px),
+    var(--card-bg, #FFFFFF);
+}
+
+.sales-chart-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+  pointer-events: none;
 }
 
 .chart-header {
@@ -825,7 +1114,7 @@
   line-height: 18px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #717680;
+  color: #5F6B85;
   margin: 0;
 }
 
@@ -848,7 +1137,7 @@
   font-size: 36px;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: #181D27;
+  color: var(--page-title-color, #181D27);
   font-variant-numeric: tabular-nums;
 }
 
@@ -857,7 +1146,7 @@
   font-weight: 500;
   font-size: 13px;
   line-height: 1.2;
-  color: #717680;
+  color: var(--text-secondary, #717680);
 }
 
 .chart-percentage {
@@ -894,17 +1183,22 @@
 /* Unified period tabs (in the dashboard topbar — replaces the per-card
    chart-tabs + assets-time-tabs). Same pill-segmented look as the legacy
    chart-tabs so the design language stays consistent. */
+/* Brand-pair segmented tabs:
+   - inactive pill = POOOL green tile + POOOL blue text
+   - active pill   = POOOL blue tile + POOOL green text */
 .dev-period-tabs {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 2px;
-  gap: 2px;
-  min-height: 28px;
-  background: #F2F4F7;
-  border: 1px solid var(--table-border-color, #E5E7EB);
-  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+  min-height: 32px;
+  /* Brand-tinted trough — subtle POOOL blue wash + matching hairline so the
+     segmented control reads as on-brand without overpowering the pills. */
+  background: rgba(0, 0, 255, 0.06);
+  border: 1px solid rgba(0, 0, 255, 0.16);
+  border-radius: 10px;
   margin-left: 16px;
 }
 .dev-period-tab {
@@ -914,25 +1208,25 @@
   padding: 4px 10px;
   min-height: 24px;
   border-radius: 6px;
-  background: transparent;
+  background: #03FF88;
   border: none;
   cursor: pointer;
   font-family: 'TT Norms Pro', sans-serif;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 12px;
   line-height: 16px;
-  color: #717680;
+  color: #0000FF;
   white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .dev-period-tab:hover:not(.dev-period-tab--active) {
+  background: #00CC6F;
   color: #0000FF;
 }
 .dev-period-tab--active {
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.06);
-  color: #101828;
-  font-weight: 600;
+  background: #0000FF;
+  color: #03FF88;
+  box-shadow: none;
 }
 @media (max-width: 768px) {
   .dev-period-tabs {
@@ -994,11 +1288,16 @@
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  padding: 0px;
-  gap: 4px;
+  padding: 14px 12px 12px;
+  gap: 8px;
   width: 100%;
-  height: 268px;
+  height: 292px;
   position: relative;
+  border: 1px solid rgba(0, 0, 255, 0.08);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(3, 255, 136, 0.05) 0%, rgba(3, 255, 136, 0) 44%),
+    #FFFFFF;
 }
 
 .chart-y-axis {
@@ -1026,8 +1325,8 @@
 .chart-area {
   flex: 1;
   position: relative;
-  height: 240px;
-  background: #ffffff;
+  height: 260px;
+  background: transparent;
   overflow: visible;
 }
 
@@ -1043,7 +1342,6 @@
     stroke-dashoffset: 0;
   }
 }
-
 @keyframes fadeInArea {
   from {
     opacity: 0;
@@ -1695,6 +1993,10 @@
 }
 
 @media (max-width: 1100px) {
+  .dashboard-insights-grid {
+    grid-template-columns: 1fr;
+  }
+
   .metrics-section {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1709,14 +2011,63 @@
 }
 
 @media (max-width: 640px) {
+  .dev-review-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px;
+  }
+
+  .dev-review-banner::after {
+    right: 24px;
+    bottom: -10px;
+    font-size: 54px;
+  }
+
+  .dev-review-banner__brand {
+    width: 104px;
+    height: 38px;
+  }
+
+  .dev-review-banner__brand img {
+    width: 86px;
+    height: 29px;
+  }
+
+  .dev-review-banner__content {
+    flex-basis: calc(100% - 116px);
+  }
+
+  .dev-review-banner__status {
+    order: 3;
+  }
+
+  .dev-review-banner__dismiss {
+    margin-left: auto;
+  }
+
   .metrics-section,
   .developer-secondary-metrics__grid {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-insights-grid {
+    gap: 16px;
+  }
+
   .metric-card,
-  .developer-secondary-metrics {
+  .developer-secondary-metrics,
+  .sales-chart-card {
     padding: 18px;
+  }
+
+  .chart-container {
+    height: 254px;
+    padding: 12px 10px;
+  }
+
+  .chart-area {
+    height: 226px;
   }
 
   .developer-secondary-metrics__header {

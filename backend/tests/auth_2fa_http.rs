@@ -25,7 +25,34 @@ use uuid::Uuid;
 
 const TEST_TOTP_KEY: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
+/// A15 (CDDRP Phase 3.2): hard-block running integration tests against a
+/// non-local Postgres. Tests `set_var` deterministic encryption keys; if a
+/// developer accidentally pointed `DATABASE_URL` at production and ran
+/// `cargo test -- --ignored`, real ciphertext columns would be re-encrypted
+/// under the public test key. This guard refuses to connect in that case.
+mod safety {
+    pub fn assert_database_url_is_local() {
+        let url = std::env::var("DATABASE_URL").unwrap_or_default();
+        // Allow: localhost, 127.0.0.1, ::1, unix socket (/cloudsql dev), empty,
+        // or the dev-user convention `postgres://martin@…`.
+        let is_local = url.is_empty()
+            || url.contains("@localhost")
+            || url.contains("@127.0.0.1")
+            || url.contains("@[::1]")
+            || url.contains("@/")
+            || url.starts_with("postgres://martin@");
+        if !is_local {
+            panic!(
+                "Refusing to run integration tests against non-local DATABASE_URL: {} \
+                 — set DATABASE_URL=postgres://martin@localhost/poool first",
+                url.split('@').nth(1).unwrap_or("(redacted)")
+            );
+        }
+    }
+}
+
 fn install_test_totp_key() {
+    safety::assert_database_url_is_local();
     std::env::set_var("TOTP_SECRET_ENCRYPTION_KEY", TEST_TOTP_KEY);
 }
 
@@ -39,6 +66,7 @@ fn init_tracing() {
 }
 
 async fn pool() -> PgPool {
+    safety::assert_database_url_is_local();
     let url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
     PgPoolOptions::new()
         .max_connections(4)

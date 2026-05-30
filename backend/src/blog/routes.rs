@@ -178,7 +178,7 @@ pub async fn page_blog_article(
                 tracing::error!("Blog article template render error: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Render Error: {}</h1>", e)),
+                    Html("<h1>Internal Server Error</h1>".to_string()),
                 )
                     .into_response()
             }
@@ -273,7 +273,7 @@ pub async fn page_blog_category(
                 tracing::error!("Blog category template render error: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Render Error: {}</h1>", e)),
+                    Html("<h1>Internal Server Error</h1>".to_string()),
                 )
                     .into_response()
             }
@@ -985,10 +985,12 @@ pub async fn admin_blog_upload_asset(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_blog_permission(&admin, &state, "blog.edit").await?;
 
+    const MAX_BLOG_ASSET_BYTES: usize = 8 * 1024 * 1024;
+
     let mut bytes = None;
     let mut filename = None;
     let mut content_type = None;
-    while let Some(field) = multipart
+    while let Some(mut field) = multipart
         .next_field()
         .await
         .map_err(|_| ApiError::BadRequest("Invalid multipart upload".to_string()))?
@@ -996,23 +998,32 @@ pub async fn admin_blog_upload_asset(
         if field.name() == Some("file") {
             filename = field.file_name().map(ToString::to_string);
             content_type = field.content_type().map(ToString::to_string);
-            bytes = Some(
-                field
-                    .bytes()
-                    .await
-                    .map_err(|_| ApiError::BadRequest("Invalid upload body".to_string()))?
-                    .to_vec(),
-            );
+            // Stream chunk-by-chunk so an oversized upload is rejected before
+            // the whole body sits in memory. `field.bytes()` would buffer the
+            // entire payload first.
+            let mut buf: Vec<u8> = Vec::with_capacity(8 * 1024);
+            loop {
+                match field.chunk().await {
+                    Ok(Some(chunk)) => {
+                        if buf.len().saturating_add(chunk.len()) > MAX_BLOG_ASSET_BYTES {
+                            return Err(ApiError::BadRequest(
+                                "Image must be 8 MB or smaller".to_string(),
+                            ));
+                        }
+                        buf.extend_from_slice(&chunk);
+                    }
+                    Ok(None) => break,
+                    Err(_) => {
+                        return Err(ApiError::BadRequest("Invalid upload body".to_string()));
+                    }
+                }
+            }
+            bytes = Some(buf);
             break;
         }
     }
 
     let bytes = bytes.ok_or_else(|| ApiError::BadRequest("Missing file field".to_string()))?;
-    if bytes.len() > 8 * 1024 * 1024 {
-        return Err(ApiError::BadRequest(
-            "Image must be 8 MB or smaller".to_string(),
-        ));
-    }
 
     let client = SanityClient::from_config(&state.config);
     let asset = client

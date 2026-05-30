@@ -128,11 +128,20 @@
         if (!res.ok) return [];
         const data = await res.json();
         if (info.char === "@") {
-          return (data.users || []).map((u) => ({
+          const circles = (data.circles || []).map((c) => ({
+            kind: "circle",
+            label: c.name || c.slug,
+            value: "circle/" + c.slug,
+            subtitle: c.visibility === "public" ? "Circle" : "Your Circle",
+          }));
+          const users = (data.users || []).map((u) => ({
+            kind: "user",
             label: u.display_name,
             value: u.display_name,
             subtitle: "",
           }));
+          if (info.query.indexOf("circle/") === 0) return circles;
+          return circles.concat(users);
         }
         if (info.char === "#") {
           return (data.hashtags || []).map((h) => ({

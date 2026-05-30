@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POOOL Auth Image Direction Preview</title>
+  <link rel="stylesheet" href="/frontend/platform/static/css/auth-preview.css">
+</head>
+<body>
+  <main class="preview-shell">
+    <header class="preview-header">
+      <img src="/frontend/platform/static/images/icons/logo-pool.svg" alt="POOOL" width="148" height="40">
+      <div>
+        <p class="eyebrow">Auth image direction</p>
+        <h1>Login experience preview</h1>
+      </div>
+    </header>
+
+    <nav class="preview-tabs" aria-label="Preview options">
+      <a href="#asset-first">Option 1: Customer portrait</a>
+      <a href="#property-context">Option 2: Customer story</a>
+      <a href="#product-trust">Option 3: Community trust</a>
+    </nav>
+
+    <section class="preview-option" id="asset-first">
+      <div class="auth-frame">
+        <section class="auth-form">
+          <img src="/frontend/platform/static/images/icons/logo-pool.svg" alt="POOOL" width="148" height="40">
+          <div class="auth-copy">
+            <h2>Welcome back</h2>
+            <p>Access your portfolio, wallet, and active ownership account.</p>
+          </div>
+          <button type="button" class="social-auth-button">
+            <img src="/frontend/platform/static/images/icons/social-google.svg" alt="" width="20" height="20">
+            <span>Continue with Google</span>
+          </button>
+          <div class="auth-divider"><span>or log in with email</span></div>
+          <form>
+            <label>Email<input type="email" placeholder="Enter your email"></label>
+            <label>Password<input type="password" placeholder="Enter your password"></label>
+            <div class="form-row">
+              <span><input type="checkbox"> Remember me</span>
+              <a href="#">Forgot password?</a>
+            </div>
+            <button type="button">Log in</button>
+          </form>
+          <p class="switch-copy">Don't have an account? <a href="#">Sign up</a></p>
+        </section>
+        <section class="auth-visual asset-visual auth-carousel" aria-label="Customer stories">
+          <img id="auth-carousel-image" src="/frontend/platform/static/images/auth/generated/login-investor-ardi.webp" alt="POOOL customer portrait">
+          <div class="quote-card" aria-live="polite">
+            <div class="quote-copy">
+              <div class="quote-kicker">
+                <span class="quote-label">Customer story</span>
+              </div>
+              <blockquote id="auth-carousel-quote">"I always know what I am signing into: my wallet, my assets, and the next step."</blockquote>
+            </div>
+            <div class="quote-person">
+              <strong id="auth-carousel-name" class="quote-name">Ardi Pratama</strong>
+              <span>POOOL customer</span>
+            </div>
+          </div>
+          <div class="carousel-controls">
+            <button type="button" class="carousel-control" id="auth-carousel-prev" aria-label="Previous customer story">‹</button>
+            <div class="carousel-dots" aria-label="Customer story pagination">
+              <button type="button" class="carousel-dot is-active" aria-label="Show customer story 1"></button>
+              <button type="button" class="carousel-dot" aria-label="Show customer story 2"></button>
+              <button type="button" class="carousel-dot" aria-label="Show customer story 3"></button>
+            </div>
+            <button type="button" class="carousel-control" id="auth-carousel-next" aria-label="Next customer story">›</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="preview-option" id="property-context">
+      <div class="auth-frame">
+        <section class="auth-form">
+          <img src="/frontend/platform/static/images/icons/logo-pool.svg" alt="POOOL" width="148" height="40">
+          <div class="auth-copy">
+            <h2>Create your account</h2>
+            <p>Create your account in a few minutes. You can finish identity checks after your first sign-in.</p>
+          </div>
+          <button type="button" class="social-auth-button">
+            <img src="/frontend/platform/static/images/icons/social-google.svg" alt="" width="20" height="20">
+            <span>Sign up with Google</span>
+          </button>
+          <div class="auth-divider"><span>or sign up with email</span></div>
+          <form>
+            <label>Email<input type="email" placeholder="Enter your email"></label>
+            <label>Password<input type="password" placeholder="Create a strong password"></label>
+            <p class="field-hint">Use at least 8 characters with uppercase, lowercase, and a number.</p>
+            <label class="terms"><input type="checkbox"> <span>I agree to the <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</span></label>
+            <button type="button">Create account</button>
+          </form>
+          <p class="switch-copy">Already have an account? <a href="#">Log in</a></p>
+        </section>
+        <section class="auth-visual property-visual">
+          <img src="/frontend/platform/static/images/profiles/Jonathan Rizky.webp" alt="POOOL customer story portrait">
+          <div class="property-card-preview">
+            <span class="pill">Customer story</span>
+            <h3>"I can understand exactly what I own before I invest."</h3>
+            <p>Jonathan, POOOL customer</p>
+            <div class="metric-grid">
+              <span><strong>3</strong> assets owned</span>
+              <span><strong>$500</strong> first investment</span>
+              <span><strong>24/7</strong> account access</span>
+              <span><strong>12 min</strong> setup flow</span>
+            </div>
+            <div class="progress"><span></span></div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="preview-option" id="product-trust">
+      <div class="auth-frame product-frame">
+        <section class="auth-form">
+          <img src="/frontend/platform/static/images/icons/logo-pool.svg" alt="POOOL" width="148" height="40">
+          <div class="auth-copy">
+            <h2>Reset your password</h2>
+            <p>Securely regain access to your ownership dashboard.</p>
+          </div>
+          <form>
+            <label>Email<input type="email" placeholder="Enter your email"></label>
+            <button type="button">Send reset link</button>
+          </form>
+          <p class="switch-copy"><a href="#">Back to log in</a></p>
+        </section>
+        <section class="auth-visual product-visual">
+          <img src="/frontend/platform/static/images/profiles/team/monique-howeth.webp" alt="POOOL community member portrait">
+          <div class="dashboard-preview">
+            <div class="dash-top">
+              <span>Portfolio value</span>
+              <strong>$42,860</strong>
+            </div>
+            <div class="dash-chart">
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="dash-row"><span>Cash wallet</span><strong>$3,240</strong></div>
+            <div class="dash-row"><span>Active assets</span><strong>7</strong></div>
+            <div class="dash-row"><span>Verification</span><strong class="status">Protected</strong></div>
+          </div>
+          <div class="visual-overlay visual-overlay--small">
+            <span class="pill">Community trust</span>
+            <h3>People pooling capital into real ownership.</h3>
+            <p>Best when the login should feel warmer and more human while still showing the account dashboard.</p>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var stories = [
+        {
+          image: "/frontend/platform/static/images/auth/generated/login-investor-ardi.webp",
+          alt: "Young POOOL customer portrait in a calm workspace",
+          quote: "I always know what I am signing into: my wallet, my assets, and the next step.",
+          name: "Ardi Pratama",
+          position: "68% center"
+        },
+        {
+          image: "/frontend/platform/static/images/auth/generated/login-investor-maya.webp",
+          alt: "POOOL customer portrait in a modern apartment workspace",
+          quote: "POOOL makes ownership feel simple without making it feel casual.",
+          name: "Maya Wijaya",
+          position: "72% center"
+        },
+        {
+          image: "/frontend/platform/static/images/auth/generated/login-investor-david.webp",
+          alt: "POOOL customer portrait in a premium fintech lounge",
+          quote: "The account view gives me a clear place to continue, review, and decide.",
+          name: "David Tan",
+          position: "66% center"
+        }
+      ];
+
+      var current = 0;
+      var intervalMs = 8500;
+      var timer = null;
+      var image = document.getElementById("auth-carousel-image");
+      var quote = document.getElementById("auth-carousel-quote");
+      var name = document.getElementById("auth-carousel-name");
+      var dots = Array.prototype.slice.call(document.querySelectorAll(".carousel-dot"));
+      var prev = document.getElementById("auth-carousel-prev");
+      var next = document.getElementById("auth-carousel-next");
+
+      function showStory(index) {
+        current = (index + stories.length) % stories.length;
+        var story = stories[current];
+        image.src = story.image;
+        image.alt = story.alt;
+        image.style.objectPosition = story.position;
+        quote.textContent = '"' + story.quote + '"';
+        name.textContent = story.name;
+        dots.forEach(function (dot, dotIndex) {
+          dot.classList.toggle("is-active", dotIndex === current);
+        });
+      }
+
+      function startTimer() {
+        window.clearInterval(timer);
+        timer = window.setInterval(function () {
+          showStory(current + 1);
+        }, intervalMs);
+      }
+
+      function moveTo(index) {
+        showStory(index);
+        startTimer();
+      }
+
+      prev.addEventListener("click", function () {
+        moveTo(current - 1);
+      });
+      next.addEventListener("click", function () {
+        moveTo(current + 1);
+      });
+      dots.forEach(function (dot, dotIndex) {
+        dot.addEventListener("click", function () {
+          moveTo(dotIndex);
+        });
+      });
+
+      showStory(0);
+      startTimer();
+    })();
+  </script>
+</body>
+</html>

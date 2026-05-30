@@ -252,6 +252,10 @@
     <!-- Unified card system. Aliases legacy card classes (ds-stat-card,
          kpi-card, metric-card, dev-stat, sub-stat, etc) onto one base. -->
     <link rel="stylesheet" href="/static/css/ucard.css?v={{ asset_version }}" />
+
+    <!-- Shared card-with-table standard. Loaded after ucard.css so table
+         cards inherit the Top Performing Assets chrome consistently. -->
+    <link rel="stylesheet" href="/static/css/card-table-standard.css?v={{ asset_version }}" />
     <!-- u2-cards.js — restructures legacy .metric-card to split layout
          (icon + KPI left · sparkline right). Idempotent, no-op if none. -->
     <script defer src="/static/js/u2-cards.js?v={{ asset_version }}"></script>

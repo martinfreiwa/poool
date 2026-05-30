@@ -1,6 +1,6 @@
 {% with title="Affiliate Team Analytics – POOOL", no_index=True,
 extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
-'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team', 'mobile-developer-affiliate-team'],
 extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'poool-line-chart', 'developer-affiliate-team-analytics'],
 external_scripts=['https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js'] %}{% include
 "components/head.html" %}{% endwith %}
@@ -221,22 +221,45 @@ external_scripts=['https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.j
 
         <!-- ── Members at risk (Top performers removed — duplicated the
              "Top members by commission" bar chart above) ────────────── -->
-        <section class="ds-card dat-content-card dat-deficit-card">
-          <header class="dat-section__intro">
-            <h3 class="dat-section__title">Members at risk</h3>
-            <p class="dat-section__hint">Active members with zero commission in selected period.</p>
-          </header>
+        <section class="ds-card dat-content-card dat-content-card--with-header dat-deficit-card" aria-labelledby="dat-deficit-title">
+          <div class="dat-card-header">
+            <div class="dat-card-header__title-group">
+              <span class="dat-card-header__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </span>
+              <div class="dat-card-header__title-text">
+                <h3 class="dat-section__title" id="dat-deficit-title">Members at risk</h3>
+                <p class="dat-section__hint">Active members with zero commission in selected period.</p>
+              </div>
+            </div>
+          </div>
           <ol class="dat-rank-list" id="dat-rank-deficit">
             <li class="dat-empty">Loading…</li>
           </ol>
         </section>
 
         <!-- ── Full breakdown table ─────────────────────────────────── -->
-        <section class="ds-card dat-content-card" aria-labelledby="dat-bymember-title">
-          <header class="dat-section__intro">
-            <h3 class="dat-section__title" id="dat-bymember-title">By member</h3>
-            <p class="dat-section__hint" id="dat-bymember-hint">Activity for every team member in the selected period — including members who haven't converted yet.</p>
-          </header>
+        <section class="ds-card dat-content-card dat-content-card--with-header dat-table-card" aria-labelledby="dat-bymember-title">
+          <div class="dat-card-header">
+            <div class="dat-card-header__title-group">
+              <span class="dat-card-header__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </span>
+              <div class="dat-card-header__title-text">
+                <h3 class="dat-section__title" id="dat-bymember-title">By member</h3>
+                <p class="dat-section__hint" id="dat-bymember-hint">Activity for every team member in the selected period — including members who haven't converted yet.</p>
+              </div>
+            </div>
+          </div>
           <div class="dat-table-wrap">
             <table class="dat-table dat-table--hoverable" id="dat-bymember-table" aria-describedby="dat-bymember-hint">
               <!-- FA2 fix: explicit scope="col" + sr-only caption for screen-reader landmark navigation. -->
@@ -259,11 +282,21 @@ external_scripts=['https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.j
           </div>
         </section>
 
-        <section class="ds-card dat-content-card" aria-labelledby="dat-byasset-title">
-          <header class="dat-section__intro">
-            <h3 class="dat-section__title" id="dat-byasset-title">Assets sold</h3>
-            <p class="dat-section__hint" id="dat-byasset-hint">Properties your team's business links converted in the selected period, ranked by revenue.</p>
-          </header>
+        <section class="ds-card dat-content-card dat-content-card--with-header dat-table-card" aria-labelledby="dat-byasset-title">
+          <div class="dat-card-header">
+            <div class="dat-card-header__title-group">
+              <span class="dat-card-header__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+                  <path d="M9 21V12h6v9"/>
+                </svg>
+              </span>
+              <div class="dat-card-header__title-text">
+                <h3 class="dat-section__title" id="dat-byasset-title">Assets sold</h3>
+                <p class="dat-section__hint" id="dat-byasset-hint">Properties your team's business links converted in the selected period, ranked by revenue.</p>
+              </div>
+            </div>
+          </div>
           <div class="dat-table-wrap">
             <table class="dat-table dat-table--hoverable" id="dat-byasset-table" aria-describedby="dat-byasset-hint">
               <!-- FA2 fix: explicit scope="col" + sr-only caption. -->

@@ -90,8 +90,7 @@
         <!-- Commodity type -->
         <div>
           <label style="font-size:13px;font-weight:500;color:#414651;display:block;margin-bottom:6px;">Commodity Type</label>
-          <select id="filter-commodity-type"
-            style="width:100%;height:40px;border:1px solid #d5d7da;border-radius:8px;padding:0 12px;font-size:14px;color:#181d27;background:#fff;cursor:pointer;appearance:none;-webkit-appearance:none;">
+          <select id="filter-commodity-type" class="ds-select">
             <option value="any" selected>All types</option>
             <option value="agriculture">Agriculture</option>
           </select>

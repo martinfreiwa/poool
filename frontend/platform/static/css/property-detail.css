@@ -1915,6 +1915,25 @@ body.lightbox-open {
   height: auto;
 }
 
+.how-it-works-video {
+  position: relative;
+  width: 100%;
+  margin-top: 16px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--table-border-color, #E9EAEB);
+  border-radius: 12px;
+  background: #0a0d12;
+}
+
+.how-it-works-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .info-card {
   box-sizing: border-box;
   position: relative;
@@ -3866,6 +3885,94 @@ body.youtube-modal-active {
   margin-top: 0;
   margin-bottom: 0;
   border-top: none;
+}
+
+.asset-circle-cta-section {
+  width: 100%;
+  padding: 32px 28px 0;
+  box-sizing: border-box;
+}
+
+.asset-circle-cta-section[hidden] {
+  display: none;
+}
+
+.asset-circle-cta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px;
+  border: 1px solid #E9EAEB;
+  border-radius: 8px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.04);
+}
+
+.asset-circle-cta__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: #0000FF;
+  background: #EEF4FF;
+  border: 1px solid #D7E3FF;
+  border-radius: 8px;
+}
+
+.asset-circle-cta__copy {
+  min-width: 0;
+}
+
+.asset-circle-cta__eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.asset-circle-cta__title {
+  margin: 0;
+  color: #181D27;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.asset-circle-cta__meta,
+.asset-circle-cta__body {
+  margin: 2px 0 0;
+  color: #535862;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.asset-circle-cta__button {
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .asset-circle-cta-section {
+    padding: 24px 16px 0;
+  }
+
+  .asset-circle-cta {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .asset-circle-cta__button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
 }
 
 /* Financial header */

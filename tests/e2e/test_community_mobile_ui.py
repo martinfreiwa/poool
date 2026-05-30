@@ -19,10 +19,12 @@ Run:
     pytest tests/e2e/test_community_mobile_ui.py -v
 """
 
+import uuid
+
 import pytest
 from playwright.sync_api import expect
 
-from community_helpers import BASE_URL, mint_user, make_context, cleanup_user
+from community_helpers import BASE_URL, mint_user, make_context, cleanup_user, seed_circle
 
 
 # ─── Fixtures ──────────────────────────────────────────────────────────
@@ -31,6 +33,17 @@ from community_helpers import BASE_URL, mint_user, make_context, cleanup_user
 def mobile_user():
     user = mint_user(prefix="e2e-mobile", display_name="Mobile Tester")
     yield user
+    cleanup_user(user["user_id"])
+
+
+@pytest.fixture(scope="function")
+def mobile_circle_user():
+    user = mint_user(prefix="e2e-mobile-circle", display_name="Mobile Circle Tester")
+    circle = seed_circle(
+        user["user_id"],
+        name=f"Mobile Circle {uuid.uuid4().hex[:6]}",
+    )
+    yield user, circle
     cleanup_user(user["user_id"])
 
 
@@ -120,13 +133,66 @@ def test_mobile_community_main(playwright_session, mobile_user):
 @pytest.mark.community
 @pytest.mark.mobile
 def test_mobile_community_circle_tab(playwright_session, mobile_user):
-    """/community?tab=circle at 375px — toolbar + discovery rails."""
+    """/community?tab=circle at 375px — actionbar + discovery grid."""
     ctx, page, errors = _open_mobile(
         playwright_session, mobile_user, "/community?tab=circle"
     )
     try:
         expect(page.locator("#community-circle-tab")).to_be_visible(timeout=10000)
-        expect(page.locator(".cc-toolbar__title")).to_be_visible()
+        expect(page.locator(".cc-actionbar")).to_be_visible()
+        expect(page.locator("#cc-discover-section")).to_be_visible()
+        _assert_no_horizontal_overflow(page)
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        ctx.close()
+
+
+@pytest.mark.community
+@pytest.mark.mobile
+def test_mobile_community_circles_canonical_page(playwright_session, mobile_circle_user):
+    """/community/circles at 375px — canonical My Circles route renders cleanly."""
+    user, circle = mobile_circle_user
+    ctx, page, errors = _open_mobile(playwright_session, user, "/community/circles")
+    try:
+        expect(page.locator("#community-circle-tab")).to_be_visible(timeout=10000)
+        expect(page.locator("#cc-my-circles-list")).to_contain_text(
+            circle["name"],
+            timeout=10000,
+        )
+        _assert_no_horizontal_overflow(page)
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        ctx.close()
+
+
+@pytest.mark.community
+@pytest.mark.mobile
+def test_mobile_circle_feed_and_settings_pages(playwright_session, mobile_circle_user):
+    """/community/circle/:slug and /settings fit the mobile viewport."""
+    user, circle = mobile_circle_user
+    ctx, page, errors = _open_mobile(
+        playwright_session,
+        user,
+        f"/community/circle/{circle['slug']}",
+    )
+    try:
+        expect(page.locator("#circle-space-title")).to_have_text(
+            circle["name"],
+            timeout=10000,
+        )
+        page.wait_for_function(
+            "() => { const el = document.getElementById('community-feed-container');"
+            " return el && !el.querySelector('.community-feed-skeleton'); }",
+            timeout=10000,
+        )
+        _assert_no_horizontal_overflow(page)
+
+        page.goto(
+            f"{BASE_URL}/community/circle/{circle['slug']}/settings",
+            wait_until="domcontentloaded",
+            timeout=15000,
+        )
+        expect(page.locator("#ccs-root")).to_be_visible(timeout=10000)
         _assert_no_horizontal_overflow(page)
         assert not errors, f"JS errors: {errors[:5]}"
     finally:

@@ -8,6 +8,12 @@ pub const REQUIREMENT_TYPES: &[&str] = &[
     "write_review",
     "join_circle",
     "login_streak",
+    "circle_introduction",
+    "circle_due_diligence_question",
+    "circle_ama_join",
+    "circle_guide_read",
+    "circle_market_insight",
+    "circle_comment",
     // Vote-based: progress = total upvotes received on the user's submission.
     // Increment is driven by `challenge_submission_votes` insert, not by
     // `increment_progress`.
@@ -15,6 +21,7 @@ pub const REQUIREMENT_TYPES: &[&str] = &[
 ];
 
 pub const FREQUENCIES: &[&str] = &["one_time", "daily", "weekly"];
+pub const CHALLENGE_SCOPES: &[&str] = &["global", "circle", "asset"];
 
 const MAX_TITLE_LEN: usize = 255;
 const MAX_DESCRIPTION_LEN: usize = 5_000;
@@ -34,12 +41,28 @@ pub struct Challenge {
     pub requirement_type: String, // e.g., "buy_asset"
     pub requirement_value: i32,
     pub frequency: String,
+    #[sqlx(default)]
+    pub circle_id: Option<Uuid>,
+    #[sqlx(default)]
+    pub challenge_scope: String,
+    #[sqlx(default)]
+    pub sort_order: i32,
     pub is_active: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, serde::Serialize, sqlx::FromRow)]
 pub struct ChallengeWithProgress {
+    #[serde(flatten)]
+    #[sqlx(flatten)]
+    pub challenge: Challenge,
+    pub current_value: i32,
+    pub is_completed: bool,
+    pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, serde::Serialize, sqlx::FromRow)]
+pub struct CircleChallengeWithProgress {
     #[serde(flatten)]
     #[sqlx(flatten)]
     pub challenge: Challenge,
@@ -57,19 +80,63 @@ pub async fn list_challenges_for_user(
 ) -> Result<Vec<ChallengeWithProgress>, AppError> {
     let rows = sqlx::query_as::<_, ChallengeWithProgress>(
         r#"
-        SELECT 
-            c.id, c.title, c.description, c.xp_reward, c.badge_reward, 
-            c.requirement_type, c.requirement_value, c.frequency, c.is_active, c.created_at,
+        SELECT
+            c.id, c.title, c.description, c.xp_reward, c.badge_reward,
+            c.requirement_type, c.requirement_value, c.frequency,
+            c.circle_id, c.challenge_scope, c.sort_order,
+            c.is_active, c.created_at,
             COALESCE(cp.current_value, 0) AS current_value,
             COALESCE(cp.is_completed, false) AS is_completed,
             cp.completed_at
         FROM challenges c
         LEFT JOIN challenge_progress cp ON cp.challenge_id = c.id AND cp.user_id = $1
         WHERE c.is_active = true
+          AND COALESCE(c.challenge_scope, 'global') = 'global'
         ORDER BY COALESCE(cp.is_completed, false) ASC, c.xp_reward DESC, c.created_at ASC
         "#,
     )
     .bind(user_id)
+    .fetch_all(community_pool)
+    .await?;
+
+    Ok(rows)
+}
+
+/// List active Circle-scoped challenges for one Circle. Template challenges
+/// have challenge_scope='circle' and circle_id IS NULL; Circle-specific
+/// overrides can set circle_id to a concrete Circle.
+pub async fn list_circle_challenges_for_user(
+    community_pool: &PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+) -> Result<Vec<CircleChallengeWithProgress>, AppError> {
+    let rows = sqlx::query_as::<_, CircleChallengeWithProgress>(
+        r#"
+        SELECT
+            c.id, c.title, c.description, c.xp_reward, c.badge_reward,
+            c.requirement_type, c.requirement_value, c.frequency,
+            c.circle_id, c.challenge_scope, c.sort_order,
+            c.is_active, c.created_at,
+            COALESCE(cp.current_value, 0) AS current_value,
+            COALESCE(cp.is_completed, false) AS is_completed,
+            cp.completed_at
+        FROM challenges c
+        LEFT JOIN circle_challenge_progress cp
+          ON cp.challenge_id = c.id
+         AND cp.user_id = $1
+         AND cp.circle_id = $2
+        WHERE c.is_active = true
+          AND c.challenge_scope = 'circle'
+          AND (c.circle_id = $2 OR c.circle_id IS NULL)
+        ORDER BY
+            COALESCE(cp.is_completed, false) ASC,
+            c.sort_order ASC,
+            c.xp_reward DESC,
+            c.created_at ASC
+        "#,
+    )
+    .bind(user_id)
+    .bind(circle_id)
     .fetch_all(community_pool)
     .await?;
 
@@ -151,6 +218,86 @@ pub async fn increment_progress(
                 Some("/community?tab=challenges"),
             )
             .await;
+
+            newly_completed.push(challenge.id);
+        }
+    }
+
+    Ok(newly_completed)
+}
+
+/// Increment Circle-scoped challenge progress. Progress is keyed by
+/// (circle_id, user_id, challenge_id), so activity in one Circle cannot
+/// complete another Circle's challenge.
+pub async fn increment_circle_progress(
+    community_pool: &PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+    requirement_type: &str,
+    increment_by: i32,
+) -> Result<Vec<Uuid>, AppError> {
+    let matching_challenges: Vec<Challenge> = sqlx::query_as(
+        r#"
+        SELECT *
+        FROM challenges
+        WHERE requirement_type = $1
+          AND is_active = true
+          AND challenge_scope = 'circle'
+          AND (circle_id = $2 OR circle_id IS NULL)
+        ORDER BY sort_order ASC, created_at ASC
+        "#,
+    )
+    .bind(requirement_type)
+    .bind(circle_id)
+    .fetch_all(community_pool)
+    .await?;
+
+    let mut newly_completed = Vec::new();
+
+    for challenge in matching_challenges {
+        let (current_val, was_completed): (i32, bool) = sqlx::query_as(
+            r#"
+            INSERT INTO circle_challenge_progress (circle_id, user_id, challenge_id, current_value)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (circle_id, user_id, challenge_id) DO UPDATE SET
+                current_value = LEAST(circle_challenge_progress.current_value + EXCLUDED.current_value, $5),
+                updated_at = NOW()
+            RETURNING current_value, is_completed
+            "#,
+        )
+        .bind(circle_id)
+        .bind(user_id)
+        .bind(challenge.id)
+        .bind(increment_by)
+        .bind(challenge.requirement_value)
+        .fetch_one(community_pool)
+        .await?;
+
+        if !was_completed && current_val >= challenge.requirement_value {
+            sqlx::query(
+                r#"
+                UPDATE circle_challenge_progress
+                SET is_completed = true, completed_at = NOW(), updated_at = NOW()
+                WHERE circle_id = $1 AND user_id = $2 AND challenge_id = $3
+                "#,
+            )
+            .bind(circle_id)
+            .bind(user_id)
+            .bind(challenge.id)
+            .execute(community_pool)
+            .await?;
+
+            if challenge.xp_reward > 0 {
+                let metadata = format!("Completed Circle challenge: {}", challenge.title);
+                let _ = crate::community::xp::award_xp(
+                    community_pool,
+                    user_id,
+                    "challenge_completed",
+                    Some(&metadata),
+                    Some(challenge.xp_reward),
+                )
+                .await;
+            }
 
             newly_completed.push(challenge.id);
         }

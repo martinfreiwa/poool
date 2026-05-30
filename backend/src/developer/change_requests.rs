@@ -12,7 +12,8 @@ use serde::Deserialize;
 use sqlx::Row;
 use uuid::Uuid;
 
-use crate::auth::{self, middleware, routes::AppState};
+use crate::admin::extractors::{AdminUser, ApiError};
+use crate::auth::{middleware, routes::AppState};
 use crate::common::sanitize;
 
 // ── Models ────────────────────────────────────────────────────────────────────
@@ -306,14 +307,13 @@ pub async fn get_pending(
 // ── Admin Routes ──────────────────────────────────────────────────────────────
 
 /// GET /api/admin/change-requests — List all change requests.
-pub async fn admin_list(jar: CookieJar, State(state): State<AppState>) -> axum::response::Response {
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+pub async fn admin_list(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.view")
+        .await?;
 
     let rows = sqlx::query(
         "SELECT cr.id, cr.asset_id, cr.developer_id, cr.original_values, cr.proposed_values, \
@@ -363,28 +363,24 @@ pub async fn admin_list(jar: CookieJar, State(state): State<AppState>) -> axum::
     let approved_count = items.iter().filter(|i| i["status"] == "approved").count();
     let rejected_count = items.iter().filter(|i| i["status"] == "rejected").count();
 
-    Json(serde_json::json!({
+    Ok(Json(serde_json::json!({
         "items": items,
         "pending_count": pending_count,
         "approved_count": approved_count,
         "rejected_count": rejected_count,
     }))
-    .into_response()
+    .into_response())
 }
 
 /// GET /api/admin/change-requests/:id — Get detail with diff.
 pub async fn admin_detail(
-    jar: CookieJar,
+    admin: AdminUser,
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> axum::response::Response {
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.view")
+        .await?;
 
     let row = sqlx::query(
         "SELECT cr.*, a.title AS asset_title, a.slug, a.asset_type, \
@@ -401,7 +397,7 @@ pub async fn admin_detail(
     .await;
 
     match row {
-        Ok(Some(row)) => Json(serde_json::json!({
+        Ok(Some(row)) => Ok(Json(serde_json::json!({
             "id": row.get::<Uuid, _>("id").to_string(),
             "asset_id": row.get::<Uuid, _>("asset_id").to_string(),
             "asset_title": row.get::<String, _>("asset_title"),
@@ -416,40 +412,25 @@ pub async fn admin_detail(
                 .map(|d| d.to_rfc3339()),
             "created_at": row.get::<chrono::DateTime<chrono::Utc>, _>("created_at").to_rfc3339(),
         }))
-        .into_response(),
-        _ => (
+        .into_response()),
+        _ => Ok((
             axum::http::StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "Change request not found"})),
         )
-            .into_response(),
+            .into_response()),
     }
 }
 
 /// POST /api/admin/change-requests/:id/approve — Approve and apply changes.
 pub async fn admin_approve(
-    jar: CookieJar,
+    admin: AdminUser,
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
     Json(body): Json<ApprovePayload>,
-) -> axum::response::Response {
-    let admin = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Please log in"})),
-            )
-                .into_response();
-        }
-    };
-
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.write")
+        .await?;
 
     // Load the change request
     let cr_row = match sqlx::query(
@@ -462,21 +443,21 @@ pub async fn admin_approve(
     {
         Ok(Some(row)) => row,
         _ => {
-            return (
+            return Ok((
                 axum::http::StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"error": "Change request not found"})),
             )
-                .into_response();
+                .into_response());
         }
     };
 
     let cr_status: String = cr_row.get("status");
     if cr_status != "pending" {
-        return (
+        return Ok((
             axum::http::StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Change request is not pending"})),
         )
-            .into_response();
+            .into_response());
     }
 
     let asset_id: Uuid = cr_row.get("asset_id");
@@ -488,11 +469,11 @@ pub async fn admin_approve(
         Ok(tx) => tx,
         Err(e) => {
             tracing::error!("Failed to begin transaction: {e}");
-            return (
+            return Ok((
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({"error": "Internal error"})),
             )
-                .into_response();
+                .into_response());
         }
     };
 
@@ -506,7 +487,7 @@ pub async fn admin_approve(
              admin_notes = $2, updated_at = NOW() \
          WHERE id = $3",
     )
-    .bind(admin.id)
+    .bind(admin.user.id)
     .bind(body.notes.as_deref())
     .bind(id)
     .execute(&mut *tx)
@@ -517,7 +498,7 @@ pub async fn admin_approve(
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state) \
          VALUES ($1, 'asset.change_request.approved', 'asset', $2, $3, $4)",
     )
-    .bind(admin.id)
+    .bind(admin.user.id)
     .bind(asset_id)
     .bind(&original_values)
     .bind(&proposed_values)
@@ -525,47 +506,32 @@ pub async fn admin_approve(
     .await;
 
     match tx.commit().await {
-        Ok(_) => Json(serde_json::json!({
+        Ok(_) => Ok(Json(serde_json::json!({
             "status": "success",
             "message": "Changes approved and applied"
         }))
-        .into_response(),
+        .into_response()),
         Err(e) => {
             tracing::error!("Failed to commit approval: {e}");
-            (
+            Ok((
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({"error": "Failed to apply changes"})),
             )
-                .into_response()
+                .into_response())
         }
     }
 }
 
 /// POST /api/admin/change-requests/:id/reject — Reject with reason.
 pub async fn admin_reject(
-    jar: CookieJar,
+    admin: AdminUser,
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
     Json(body): Json<RejectPayload>,
-) -> axum::response::Response {
-    let admin = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Please log in"})),
-            )
-                .into_response();
-        }
-    };
-
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.write")
+        .await?;
 
     // Check status
     let cr_status: Option<String> =
@@ -576,11 +542,11 @@ pub async fn admin_reject(
             .unwrap_or(None);
 
     if cr_status.as_deref() != Some("pending") {
-        return (
+        return Ok((
             axum::http::StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Change request is not pending"})),
         )
-            .into_response();
+            .into_response());
     }
 
     let result = sqlx::query(
@@ -590,18 +556,18 @@ pub async fn admin_reject(
          WHERE id = $3",
     )
     .bind(body.notes.as_deref())
-    .bind(admin.id)
+    .bind(admin.user.id)
     .bind(id)
     .execute(&state.db)
     .await;
 
     if let Err(e) = result {
         tracing::error!("Failed to reject change request: {e}");
-        return (
+        return Ok((
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": "Failed to reject"})),
         )
-            .into_response();
+            .into_response());
     }
 
     // Audit log
@@ -609,42 +575,28 @@ pub async fn admin_reject(
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata) \
          VALUES ($1, 'asset.change_request.rejected', 'asset_change_request', $2, $3)",
     )
-    .bind(admin.id)
+    .bind(admin.user.id)
     .bind(id)
     .bind(serde_json::json!({"reason": body.notes}))
     .execute(&state.db)
     .await;
 
-    Json(serde_json::json!({
+    Ok(Json(serde_json::json!({
         "status": "success",
         "message": "Change request rejected"
     }))
-    .into_response()
+    .into_response())
 }
 
 /// POST /api/admin/change-requests/bulk-approve — approve many at once.
 pub async fn admin_bulk_approve(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<BulkPayload>,
-) -> axum::response::Response {
-    let admin = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Please log in"})),
-            )
-                .into_response();
-        }
-    };
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.write")
+        .await?;
 
     let mut approved = 0usize;
     let mut failed: Vec<String> = Vec::new();
@@ -687,7 +639,7 @@ pub async fn admin_bulk_approve(
                  admin_notes = $2, updated_at = NOW() \
              WHERE id = $3",
         )
-        .bind(admin.id)
+        .bind(admin.user.id)
         .bind(body.notes.as_deref())
         .bind(id)
         .execute(&mut *tx)
@@ -696,7 +648,7 @@ pub async fn admin_bulk_approve(
             "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state) \
              VALUES ($1, 'asset.change_request.approved', 'asset', $2, $3, $4)",
         )
-        .bind(admin.id)
+        .bind(admin.user.id)
         .bind(asset_id)
         .bind(&original_values)
         .bind(&proposed_values)
@@ -709,37 +661,23 @@ pub async fn admin_bulk_approve(
         }
     }
 
-    Json(serde_json::json!({
+    Ok(Json(serde_json::json!({
         "status": "success",
         "approved": approved,
         "failed": failed,
     }))
-    .into_response()
+    .into_response())
 }
 
 /// POST /api/admin/change-requests/bulk-reject — reject many at once.
 pub async fn admin_bulk_reject(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<BulkPayload>,
-) -> axum::response::Response {
-    let admin = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Please log in"})),
-            )
-                .into_response();
-        }
-    };
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.write")
+        .await?;
 
     // Update + return ids actually rejected (so audit log only logs real rejections).
     let rows = sqlx::query(
@@ -750,7 +688,7 @@ pub async fn admin_bulk_reject(
          RETURNING id, asset_id",
     )
     .bind(body.notes.as_deref())
-    .bind(admin.id)
+    .bind(admin.user.id)
     .bind(&body.ids)
     .fetch_all(&state.db)
     .await
@@ -765,7 +703,7 @@ pub async fn admin_bulk_reject(
             "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata) \
              VALUES ($1, 'asset.change_request.rejected', 'asset', $2, $3)",
         )
-        .bind(admin.id)
+        .bind(admin.user.id)
         .bind(asset_id)
         .bind(serde_json::json!({
             "change_request_id": cr_id.to_string(),
@@ -776,79 +714,63 @@ pub async fn admin_bulk_reject(
         .await;
     }
 
-    Json(serde_json::json!({
+    Ok(Json(serde_json::json!({
         "status": "success",
         "rejected": rejected,
     }))
-    .into_response()
+    .into_response())
 }
 
 /// POST /api/admin/change-requests/:id/assign — claim review (assigns to caller).
 pub async fn admin_assign_self(
-    jar: CookieJar,
+    admin: AdminUser,
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> axum::response::Response {
-    let admin = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Please log in"})),
-            )
-                .into_response();
-        }
-    };
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.write")
+        .await?;
+
     let res = sqlx::query(
         "UPDATE asset_change_requests SET assigned_to = $1, updated_at = NOW() \
          WHERE id = $2 AND status = 'pending'",
     )
-    .bind(admin.id)
+    .bind(admin.user.id)
     .bind(id)
     .execute(&state.db)
     .await;
     match res {
-        Ok(r) if r.rows_affected() == 1 => Json(serde_json::json!({
+        Ok(r) if r.rows_affected() == 1 => Ok(Json(serde_json::json!({
             "status": "success",
-            "assigned_to": admin.id.to_string(),
+            "assigned_to": admin.user.id.to_string(),
         }))
-        .into_response(),
-        Ok(_) => (
+        .into_response()),
+        Ok(_) => Ok((
             axum::http::StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "Request not pending or not found"})),
         )
-            .into_response(),
+            .into_response()),
         Err(e) => {
             tracing::error!("Failed to assign change request: {e}");
-            (
+            Ok((
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({"error": "Failed to assign"})),
             )
-                .into_response()
+                .into_response())
         }
     }
 }
 
 /// POST /api/admin/change-requests/:id/unassign — release review.
 pub async fn admin_unassign(
-    jar: CookieJar,
+    admin: AdminUser,
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> axum::response::Response {
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "developer_projects.write")
+        .await?;
+
     let res = sqlx::query(
         "UPDATE asset_change_requests SET assigned_to = NULL, updated_at = NOW() WHERE id = $1",
     )
@@ -856,12 +778,12 @@ pub async fn admin_unassign(
     .execute(&state.db)
     .await;
     match res {
-        Ok(_) => Json(serde_json::json!({"status": "success"})).into_response(),
-        Err(_) => (
+        Ok(_) => Ok(Json(serde_json::json!({"status": "success"})).into_response()),
+        Err(_) => Ok((
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": "Failed to unassign"})),
         )
-            .into_response(),
+            .into_response()),
     }
 }
 

@@ -583,7 +583,7 @@
     }
 
     if (labelEl) {
-      labelEl.textContent = myRank.rank ? 'You are currently in the top tier of institutional traders.' : 'Start investing to get ranked.';
+      labelEl.textContent = myRank.rank ? ('You are currently ranked #' + myRank.rank + '.') : 'Start investing to get ranked.';
     }
   }
 

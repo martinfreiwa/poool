@@ -29,11 +29,9 @@ pub async fn enqueue_notification(
     link_url: Option<&str>,
     metadata: serde_json::Value,
 ) -> Result<Uuid, AppError> {
-    let clipped_title = if title.len() > 180 {
-        &title[..180]
-    } else {
-        title
-    };
+    // Cap by char count (not bytes) — byte-slicing on `&str` panics when the
+    // 180th byte sits inside a multi-byte UTF-8 sequence (emoji, CJK, accents).
+    let clipped_title: String = title.chars().take(180).collect();
     let id = sqlx::query_scalar!(
         r#"INSERT INTO notifications
               (user_id, type, title, message, link_url, metadata, is_read)

@@ -88,11 +88,14 @@ pub struct NavPreviewQuery {
 /// GET /api/admin/villas/:asset_id/valuations/nav-preview?valuation_idr_cents=...
 /// Returns the NAV that would result from a given draft valuation (PDF §7).
 pub async fn api_admin_villa_nav_preview(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
     Query(q): Query<NavPreviewQuery>,
 ) -> Result<Json<NavPreview>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.view")
+        .await?;
     let cfg = load_asset_token_config(&state.db, asset_id).await?;
     Ok(Json(compute_nav_preview(q.valuation_idr_cents, &cfg)))
 }
@@ -154,6 +157,9 @@ pub async fn api_admin_villa_valuations_create(
     Path(asset_id): Path<Uuid>,
     Json(input): Json<ValuationInput>,
 ) -> Result<Json<ValuationRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.write")
+        .await?;
     if input.valuation_idr_cents <= 0 {
         return Err(ApiError::BadRequest("Valuation must be > 0".to_string()));
     }
@@ -203,6 +209,9 @@ pub async fn api_admin_villa_valuations_update(
     Path((asset_id, val_id)): Path<(Uuid, i64)>,
     Json(input): Json<ValuationInput>,
 ) -> Result<Json<ValuationRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.write")
+        .await?;
     let existing = load_row(&state.db, val_id).await?;
     if existing.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -257,6 +266,9 @@ pub async fn api_admin_villa_valuations_submit(
     State(state): State<AppState>,
     Path((asset_id, val_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<ValuationRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.write")
+        .await?;
     transition(&state.db, asset_id, val_id, admin.user.id, "submit").await
 }
 
@@ -265,6 +277,9 @@ pub async fn api_admin_villa_valuations_approve(
     State(state): State<AppState>,
     Path((asset_id, val_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<ValuationRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.write")
+        .await?;
     let existing = load_row(&state.db, val_id).await?;
     if existing.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -288,6 +303,9 @@ pub async fn api_admin_villa_valuations_publish(
     State(state): State<AppState>,
     Path((asset_id, val_id)): Path<(Uuid, i64)>,
 ) -> Result<Json<ValuationRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.approve")
+        .await?;
     let existing = load_row(&state.db, val_id).await?;
     if existing.asset_id != asset_id {
         return Err(ApiError::BadRequest("asset_id mismatch".to_string()));
@@ -382,6 +400,9 @@ pub async fn api_admin_villa_valuations_reject(
     Path((asset_id, val_id)): Path<(Uuid, i64)>,
     Json(input): Json<RejectInput>,
 ) -> Result<Json<ValuationRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.approve")
+        .await?;
     if input.reason.trim().is_empty() {
         return Err(ApiError::BadRequest(
             "Rejection reason required".to_string(),
@@ -419,11 +440,14 @@ pub async fn api_admin_villa_valuations_reject(
 }
 
 pub async fn api_admin_villa_valuations_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
     Query(q): Query<ValuationsQuery>,
 ) -> Result<Json<Vec<ValuationRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.valuations.view")
+        .await?;
     let rows: Vec<ValuationRow> = sqlx::query_as(
         r#"
         SELECT * FROM villa_valuations

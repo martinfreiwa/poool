@@ -45,10 +45,13 @@ pub struct ForecastAssumptionInput {
 /// GET /api/admin/villas/:asset_id/forecast-assumptions
 /// Returns all finalized assumption rows for this asset, newest year first.
 pub async fn api_admin_forecast_assumptions_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
 ) -> Result<Json<Vec<ForecastAssumptionRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.forecast.view")
+        .await?;
     let rows: Vec<ForecastAssumptionRow> = sqlx::query_as(
         r#"
         SELECT * FROM villa_forecast_assumptions
@@ -72,6 +75,9 @@ pub async fn api_admin_forecast_assumption_upsert(
     Path(asset_id): Path<Uuid>,
     Json(input): Json<ForecastAssumptionInput>,
 ) -> Result<Json<ForecastAssumptionRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.forecast.write")
+        .await?;
     if !(2000..=2100).contains(&input.forecast_year) {
         return Err(ApiError::BadRequest(
             "forecast_year must be 2000–2100".into(),
@@ -160,10 +166,13 @@ pub struct ProcessInput {
 
 /// GET /api/admin/villas/:asset_id/forecast-suggestions
 pub async fn api_admin_forecast_suggestions_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>,
 ) -> Result<Json<Vec<ForecastSuggestionRow>>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.forecast.view")
+        .await?;
     let rows: Vec<ForecastSuggestionRow> = sqlx::query_as(
         r#"
         SELECT * FROM villa_forecast_suggestions
@@ -188,6 +197,9 @@ pub async fn api_admin_forecast_suggestion_accept(
     Path((asset_id, id)): Path<(Uuid, i64)>,
     Json(input): Json<ProcessInput>,
 ) -> Result<Json<ForecastSuggestionRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.forecast.write")
+        .await?;
     let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
 
     let row: ForecastSuggestionRow = sqlx::query_as(
@@ -288,6 +300,9 @@ pub async fn api_admin_forecast_suggestion_discard(
     Path((asset_id, id)): Path<(Uuid, i64)>,
     Json(input): Json<ProcessInput>,
 ) -> Result<Json<ForecastSuggestionRow>, ApiError> {
+    admin
+        .require_permission(&state.db, "villa.forecast.write")
+        .await?;
     let row: ForecastSuggestionRow = sqlx::query_as(
         r#"
         UPDATE villa_forecast_suggestions

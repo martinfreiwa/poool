@@ -149,7 +149,7 @@
         <tr>
           <td style="font-weight: 600; font-size: 13px;">${esc(a.title)}</td>
           <td>
-            <a href="${explorerUrl}/address/${esc(a.chain_contract_address || '')}" target="_blank" class="basescan-link">
+            <a href="${explorerUrl}/address/${esc(a.chain_contract_address || '')}" target="_blank" rel="noopener noreferrer" class="basescan-link">
               ${truncateAddr(a.chain_contract_address || '—')}
             </a>
           </td>
@@ -199,7 +199,7 @@
         : '<span class="admin-badge admin-badge--neutral">Pending</span>';
 
       const txLink = b.tx_hash
-        ? `<a href="${explorerUrl}/tx/${b.tx_hash}" target="_blank" class="basescan-link">${truncateAddr(b.tx_hash)}</a>`
+        ? `<a href="${explorerUrl}/tx/${b.tx_hash}" target="_blank" rel="noopener noreferrer" class="basescan-link">${truncateAddr(b.tx_hash)}</a>`
         : '—';
 
       const gasInfo = b.gas_used ? `${fmt(b.gas_used)} gas` : '—';

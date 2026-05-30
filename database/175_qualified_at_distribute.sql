@@ -32,7 +32,6 @@ UPDATE affiliate_referrals
 
 COMMIT;
 
-\echo '── Synthetic-cluster check after re-spread ──'
 SELECT to_char(qualified_at, 'YYYY-MM-DD HH24:MI') AS minute,
        COUNT(*) AS n
   FROM affiliate_referrals

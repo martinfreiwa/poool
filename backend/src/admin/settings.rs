@@ -219,10 +219,27 @@ pub async fn api_admin_add_admin(
     ).bind(user_id).bind(role_uuid).execute(&state.db).await;
 
     match result {
-        Ok(_) => Ok(
-            Json(serde_json::json!({"status":"added","user_id": user_id.to_string()}))
-                .into_response(),
-        ),
+        Ok(_) => {
+            // Invalidate target user's existing sessions so the new role takes
+            // effect on next sign-in rather than silently elevating live sessions.
+            sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+                .bind(user_id)
+                .execute(&state.db)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "Failed to invalidate sessions for {} after role grant: {}",
+                        user_id,
+                        e
+                    );
+                    ApiError::Database(e)
+                })?;
+
+            Ok(
+                Json(serde_json::json!({"status":"added","user_id": user_id.to_string()}))
+                    .into_response(),
+            )
+        }
         Err(e) => {
             tracing::error!("Failed to add admin: {e}");
             Err(ApiError::Internal("Database error".to_string()))
@@ -256,6 +273,21 @@ pub async fn api_admin_remove_admin(
 
     match result {
         Ok(r) if r.rows_affected() > 0 => {
+            // Invalidate target user's existing sessions so the revocation takes
+            // effect immediately rather than leaving them logged in with stale roles.
+            sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+                .bind(uid)
+                .execute(&state.db)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "Failed to invalidate sessions for {} after admin removal: {}",
+                        uid,
+                        e
+                    );
+                    ApiError::Database(e)
+                })?;
+
             Ok(Json(serde_json::json!({"status":"removed"})).into_response())
         }
         Ok(_) => Err(ApiError::NotFound("Admin role not found".to_string())),
@@ -322,7 +354,24 @@ pub async fn api_admin_update_admin_role(
     ).bind(uid).bind(role_uuid).execute(&state.db).await;
 
     match result {
-        Ok(_) => Ok(Json(serde_json::json!({"status":"updated"})).into_response()),
+        Ok(_) => {
+            // Invalidate target user's existing sessions so the role change takes
+            // effect on next sign-in rather than silently mutating live sessions.
+            sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+                .bind(uid)
+                .execute(&state.db)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "Failed to invalidate sessions for {} after role change: {}",
+                        uid,
+                        e
+                    );
+                    ApiError::Database(e)
+                })?;
+
+            Ok(Json(serde_json::json!({"status":"updated"})).into_response())
+        }
         Err(e) => {
             tracing::error!("Failed to update admin role: {e}");
             Err(ApiError::Internal("Database error".to_string()))

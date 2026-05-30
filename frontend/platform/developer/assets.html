@@ -27,21 +27,57 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
         </div>
 
         <div class="dev-assets-shell">
-          <section class="dev-assets-table-card" aria-labelledby="dev-assets-table-title">
-            <div class="dev-assets-toolbar">
-              <div>
-                <h2 id="dev-assets-table-title" class="dev-assets-section-title">Assets</h2>
-                <p class="dev-assets-section-subtitle">{{ developer_assets | length }} total</p>
+          <section class="ds-card developer-assets-performance-section dev-assets-table-card" aria-labelledby="dev-assets-table-title">
+            <!-- 1:1 mirror of the dashboard "Top Performing Assets" card header
+                 (per docs/DESIGN.md → Tables → Card With Table — Reference Pattern). -->
+            <div class="developer-assets-performance-section__header">
+              <div class="developer-assets-performance-section__title-wrap">
+                <span class="developer-assets-performance-section__icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 21h18"/>
+                    <path d="M5 21V7l7-4 7 4v14"/>
+                    <path d="M9 9h2M9 13h2M9 17h2M13 9h2M13 13h2M13 17h2"/>
+                  </svg>
+                </span>
+                <div>
+                  <h2 id="dev-assets-table-title">Assets</h2>
+                  <p>All listed assets with funding progress, value and quick actions.</p>
+                </div>
               </div>
+            </div>
+
+            <!-- H-3 filter strip — search input + status tabs the JS already binds to.
+                 IDs/data-attrs mirror selectors in static/js/developer-assets.js
+                 (bindStatusTabs, bindSearch, updateFilterCounts, applyAssetFilters). -->
+            <div class="dev-assets-toolbar" role="toolbar" aria-label="Filter assets">
+              <label class="dev-assets-search" for="dev-assets-search-input">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7"/>
+                  <path d="m20 20-3.5-3.5"/>
+                </svg>
+                <input
+                  id="dev-assets-search-input"
+                  type="search"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Search assets, locations, status…"
+                  aria-label="Search assets by title, location, or status"
+                />
+              </label>
               <div class="dev-assets-controls">
-                <label class="dev-assets-search" for="dev-assets-search-input">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                  <input id="dev-assets-search-input" type="search" placeholder="Search assets..." autocomplete="off">
-                </label>
-                <div id="dev-assets-status-tabs" class="dev-assets-segmented" role="group" aria-label="Filter assets">
-                  <button type="button" class="dev-assets-tab active" data-dev-assets-tab="all">All <span data-dev-assets-count="all">0</span></button>
-                  <button type="button" class="dev-assets-tab" data-dev-assets-tab="available">Available <span data-dev-assets-count="available">0</span></button>
-                  <button type="button" class="dev-assets-tab" data-dev-assets-tab="funded">Funded <span data-dev-assets-count="funded">0</span></button>
+                <div class="dev-assets-segmented" role="group" aria-label="Filter by funding status">
+                  <button type="button" class="dev-assets-tab active" data-dev-assets-tab="all" aria-pressed="true">
+                    All
+                    <span data-dev-assets-count="all">0</span>
+                  </button>
+                  <button type="button" class="dev-assets-tab" data-dev-assets-tab="available" aria-pressed="false">
+                    Available
+                    <span data-dev-assets-count="available">0</span>
+                  </button>
+                  <button type="button" class="dev-assets-tab" data-dev-assets-tab="funded" aria-pressed="false">
+                    Funded
+                    <span data-dev-assets-count="funded">0</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -50,11 +86,29 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
               <table id="dev-assets-table" class="dev-assets-table">
                 <thead>
                   <tr>
-                    <th>Asset</th>
-                    <th>Funding</th>
-                    <th>Value</th>
-                    <th>Raised</th>
-                    <th class="dev-assets-table__actions">Actions</th>
+                    <th>
+                      <button type="button" class="developer-assets-table__sort" data-dev-sort="asset">
+                        <span class="table__header-text">Asset</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" class="developer-assets-table__sort" data-dev-sort="funding">
+                        <span class="table__header-text">Funding</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" class="developer-assets-table__sort" data-dev-sort="value">
+                        <span class="table__header-text">Value</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" class="developer-assets-table__sort" data-dev-sort="raised">
+                        <span class="table__header-text">Raised</span>
+                      </button>
+                    </th>
+                    <th class="dev-assets-table__actions">
+                      <span class="table__header-text">Actions</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -90,31 +144,27 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                         <img class="dev-assets-thumb" src="{{ asset.cover_image_url }}" alt="">
                         <div class="dev-assets-asset__text">
                           <strong>{{ asset.title }}</strong>
-                          <span class="dev-assets-location-line">{% if asset.city %}{{ asset.city }}{% if asset.country %}, {{ asset.country }}{% endif %}{% else %}No location{% endif %} · {{ lease_label }}</span>
                         </div>
                       </div>
                     </td>
-                    <td>
-                      <div class="dev-assets-funding">
-                        <div class="dev-assets-funding__top"><span>{{ (funded_percentage | round(1)) }}%</span><span>{{ asset.amount_remaining_display }} left</span></div>
-                        <div class="dev-assets-progress" aria-hidden="true"><span style="width: {{ funded_percentage }}%"></span></div>
-                      </div>
-                    </td>
-                    <td class="dev-assets-value">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</td>
-                    <td>{{ asset.total_sales_display }}</td>
+                    <td><span class="table__cell-text-value">{{ (funded_percentage | round(1)) }}%</span></td>
+                    <td><span class="table__cell-text-value">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</span></td>
+                    <td><span class="table__cell-text-value">{{ asset.total_sales_display }}</span></td>
                     <td class="dev-assets-table__actions">
-                      <a class="dev-assets-action dev-assets-action--primary" href="/developer/asset-detail?id={{ asset.id }}" aria-label="View {{ asset.title }}" title="View asset">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M2.06 12.35a1 1 0 0 1 0-.7C3.47 7.46 7.42 4.5 12 4.5s8.53 2.96 9.94 7.15a1 1 0 0 1 0 .7C20.53 16.54 16.58 19.5 12 19.5s-8.53-2.96-9.94-7.15Z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                      </a>
-                      <a class="dev-assets-action" href="/developer/asset-detail?id={{ asset.id }}&edit=1" aria-label="Edit {{ asset.title }}" title="Edit asset">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M12 20h9"></path>
-                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                        </svg>
-                      </a>
+                      <div class="developer-assets-table__action-group">
+                        <a href="/developer/asset-detail?id={{ asset.id }}" class="developer-assets-table__icon-btn" aria-label="View {{ asset.title }}" title="View asset">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.8"/>
+                          </svg>
+                        </a>
+                        <a href="/developer/asset-detail?id={{ asset.id }}&edit=1" class="developer-assets-table__icon-btn" aria-label="Edit {{ asset.title }}" title="Edit asset">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 20h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </a>
+                      </div>
                     </td>
                   </tr>
                   {% endfor %}
@@ -179,59 +229,27 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
             </div>
 
             <div class="dae-empty__hero-art" aria-hidden="true">
-              <svg viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="dae-bg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#EEF4FF"/>
-                    <stop offset="1" stop-color="#F0FFF6"/>
-                  </linearGradient>
-                  <linearGradient id="dae-card" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stop-color="#FFFFFF"/>
-                    <stop offset="1" stop-color="#F8FAFF"/>
-                  </linearGradient>
-                  <linearGradient id="dae-bar" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0" stop-color="#0000FF"/>
-                    <stop offset="1" stop-color="#03FF88"/>
-                  </linearGradient>
-                </defs>
-                <!-- Background -->
-                <rect width="320" height="240" rx="16" fill="url(#dae-bg)"/>
-                <!-- Decorative blobs -->
-                <circle cx="260" cy="48" r="48" fill="#D7E3FF" opacity="0.65"/>
-                <circle cx="64" cy="196" r="34" fill="#C6F7D9" opacity="0.55"/>
-                <!-- Property card body -->
-                <rect x="56" y="48" width="168" height="148" rx="12" fill="url(#dae-card)" stroke="#D7E3FF" stroke-width="1.5"/>
-                <!-- Card image area -->
-                <rect x="56" y="48" width="168" height="72" rx="12" fill="#0000FF" opacity="0.08"/>
-                <rect x="56" y="108" width="168" height="12" fill="#0000FF" opacity="0.08"/>
-                <!-- House icon -->
-                <path d="M128 62 L140 72 L140 86 L116 86 L116 72 Z" stroke="#0000FF" stroke-width="1.8" stroke-linejoin="round" fill="none" opacity="0.5"/>
-                <path d="M122 86 L122 79 L134 79 L134 86" stroke="#0000FF" stroke-width="1.8" stroke-linejoin="round" fill="none" opacity="0.5"/>
-                <!-- Card content lines -->
-                <rect x="68" y="128" width="80" height="7" rx="3.5" fill="#D0D5DD"/>
-                <rect x="68" y="141" width="56" height="5" rx="2.5" fill="#E5E7EB"/>
-                <!-- Funding progress bar -->
-                <rect x="68" y="158" width="144" height="6" rx="3" fill="#E5E7EB"/>
-                <rect x="68" y="158" width="96" height="6" rx="3" fill="url(#dae-bar)"/>
-                <text x="175" y="165" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="8" fill="#0000FF">67%</text>
-                <!-- Investor avatars -->
-                <circle cx="68" cy="182" r="8" fill="#D7E3FF" stroke="#FFFFFF" stroke-width="1.5"/>
-                <circle cx="78" cy="182" r="8" fill="#C6F7D9" stroke="#FFFFFF" stroke-width="1.5"/>
-                <circle cx="88" cy="182" r="8" fill="#EEF4FF" stroke="#FFFFFF" stroke-width="1.5"/>
-                <text x="68" y="185" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-size="7" fill="#0000FF" font-weight="600">MF</text>
-                <text x="78" y="185" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-size="7" fill="#027A48" font-weight="600">AK</text>
-                <text x="88" y="185" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-size="7" fill="#535862" font-weight="600">+4</text>
-                <!-- Dashed add card -->
-                <rect x="236" y="80" width="60" height="80" rx="10" stroke="#0000FF" stroke-width="1.5" stroke-dasharray="4 3" fill="none" opacity="0.5"/>
-                <line x1="266" y1="108" x2="266" y2="132" stroke="#0000FF" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-                <line x1="254" y1="120" x2="278" y2="120" stroke="#0000FF" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-                <!-- LIVE badge -->
-                <rect x="232" y="48" width="36" height="18" rx="9" fill="#03FF88"/>
-                <text x="250" y="60" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="8" fill="#0000FF">LIVE</text>
-                <!-- USD chip -->
-                <rect x="188" y="172" width="52" height="20" rx="10" fill="#0000FF"/>
-                <text x="214" y="185" text-anchor="middle" font-family="TT Norms Pro, sans-serif" font-weight="700" font-size="9" fill="#98FB96">$50K</text>
-              </svg>
+              <div class="dae-empty__brand-art">
+                <div class="dae-empty__brand-ribbon"></div>
+                <div class="dae-empty__brand-lockup">
+                  <img src="/static/images/icons/logo-pool.svg" alt="">
+                </div>
+                <div class="dae-empty__brand-stage">
+                  <span class="dae-empty__brand-stage-top"></span>
+                  <span class="dae-empty__brand-line dae-empty__brand-line--wide"></span>
+                  <span class="dae-empty__brand-line"></span>
+                  <span class="dae-empty__brand-progress"><span></span></span>
+                </div>
+                <div class="dae-empty__brand-side">
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="dae-empty__brand-footer">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
             </div>
           </div>
 

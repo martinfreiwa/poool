@@ -310,7 +310,11 @@ pub async fn api_roles_update_permissions(
 
     let audit_data = serde_json::to_value(&payload.roles).unwrap_or_default();
 
+    let mut affected_role_ids: Vec<uuid::Uuid> = Vec::with_capacity(payload.roles.len());
+
     for role_update in payload.roles {
+        affected_role_ids.push(role_update.id);
+
         sqlx::query!(
             "DELETE FROM admin_permissions WHERE role_id = $1",
             role_update.id
@@ -359,6 +363,32 @@ pub async fn api_roles_update_permissions(
         .await
         .map_err(|e| ApiError::Internal(format!("Commit: {}", e)))?;
 
+    // Invalidate sessions for every user holding an affected role so their
+    // cached permission set is refreshed from the DB on next request.
+    let affected = sqlx::query(
+        r#"DELETE FROM user_sessions
+            WHERE user_id IN (
+                SELECT user_id FROM user_roles
+                WHERE role_id = ANY($1) AND is_active = TRUE
+            )"#,
+    )
+    .bind(&affected_role_ids)
+    .execute(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!(
+            "Failed to invalidate sessions after role-perm change on {:?}: {}",
+            affected_role_ids,
+            e
+        );
+        ApiError::Database(e)
+    })?;
+    tracing::info!(
+        affected_roles = ?affected_role_ids,
+        sessions_invalidated = affected.rows_affected(),
+        "Invalidated user sessions following role-permission update"
+    );
+
     Ok(Json(serde_json::json!({"status": "success"})).into_response())
 }
 
@@ -383,20 +413,6 @@ pub async fn api_roles_create(
 
     let user = &admin.user;
 
-    let exists = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM roles WHERE name = $1) as \"exists!\"",
-        payload.name
-    )
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(true);
-
-    if exists {
-        return Err(ApiError::Conflict(
-            "A role with this name already exists".to_string(),
-        ));
-    }
-
     let mut tx = state
         .db
         .begin()
@@ -404,16 +420,17 @@ pub async fn api_roles_create(
         .map_err(|e| ApiError::Internal(format!("TX begin: {}", e)))?;
 
     let role_id = sqlx::query_scalar!(
-        "INSERT INTO roles (name, description) VALUES ($1, $2) RETURNING id",
+        "INSERT INTO roles (name, description) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING RETURNING id",
         payload.name,
         payload.description.unwrap_or_default()
     )
-    .fetch_one(&mut *tx)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| {
         tracing::error!("Failed to create role: {}", e);
         ApiError::Database(e)
-    })?;
+    })?
+    .ok_or_else(|| ApiError::Conflict("A role with this name already exists".to_string()))?;
 
     if let Some(perms) = payload.permissions {
         for perm in &perms {

@@ -16,6 +16,8 @@ pub struct Post {
     pub content: String,
     pub content_sanitized: Option<String>,
     pub asset_id: Option<Uuid>,
+    #[sqlx(default)]
+    pub circle_id: Option<Uuid>,
     pub image_urls: Option<Vec<String>>,
     pub is_pinned: bool,
     pub is_hidden: bool,
@@ -26,6 +28,18 @@ pub struct Post {
     pub link_preview: Option<serde_json::Value>,
     pub reaction_count: i32,
     pub comment_count: i32,
+    #[sqlx(default)]
+    pub qa_status: String,
+    #[sqlx(default)]
+    pub official_answer_comment_id: Option<Uuid>,
+    #[sqlx(default)]
+    pub faq_candidate: bool,
+    #[sqlx(default)]
+    pub featured_question: bool,
+    #[sqlx(default)]
+    pub related_resource_url: Option<String>,
+    #[sqlx(default)]
+    pub related_asset_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     // UX.16 — quote-repost target (NULL for original posts).
@@ -67,6 +81,14 @@ pub struct Comment {
     pub reaction_count: i32,
     // 14.8.12 — nullable self-FK; NULL for top-level comments.
     pub parent_comment_id: Option<Uuid>,
+    #[sqlx(default)]
+    pub is_official_answer: bool,
+    #[sqlx(default)]
+    pub is_verified_answer: bool,
+    #[sqlx(default)]
+    pub answer_marked_by: Option<Uuid>,
+    #[sqlx(default)]
+    pub answer_marked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -117,9 +139,12 @@ pub struct AnnouncementDisplay {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CreatePostRequest {
-    pub post_type: String, // 'general' or 'market_insight'
+    pub post_type: String,
     pub content: String,
     pub asset_id: Option<Uuid>,
+    pub circle_id: Option<Uuid>,
+    #[serde(default)]
+    pub content_tags: Option<Vec<String>>,
     pub image_urls: Option<Vec<String>>,
     // UX.11: Poll support — optional
     pub poll_question: Option<String>,
@@ -135,6 +160,13 @@ pub struct CreatePostRequest {
     pub scheduled_for: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct ReputationFlairDisplay {
+    pub code: String,
+    pub label: String,
+    pub scope_circle_id: Option<Uuid>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct PostDisplay {
     pub id: Uuid,
@@ -144,14 +176,23 @@ pub struct PostDisplay {
     pub author_avatar: Option<String>,
     pub author_badges: Vec<String>,
     pub post_type: String,
+    pub content_tags: Vec<String>,
     pub content: String,
     pub rendered_content: String,
     pub asset_id: Option<Uuid>,
+    pub circle_id: Option<Uuid>,
+    pub circle_name: Option<String>,
     pub image_urls: Vec<String>,
     pub link_preview: Option<serde_json::Value>,
     pub link_preview_domain: Option<String>,
     pub reaction_count: i32,
     pub comment_count: i32,
+    pub qa_status: String,
+    pub official_answer_comment_id: Option<Uuid>,
+    pub faq_candidate: bool,
+    pub featured_question: bool,
+    pub related_resource_url: Option<String>,
+    pub related_asset_id: Option<Uuid>,
     pub current_user_reacted: bool,
     pub is_bookmarked: bool,
     pub is_hidden: bool,
@@ -175,6 +216,9 @@ pub struct PostDisplay {
     /// `get_flairs_batch` at the route layer; partial renders nothing
     /// when None.
     pub author_flair: Option<String>,
+    /// Phase 3: admin/system-granted reputation signals. These are
+    /// verification and participation labels, not investment advice.
+    pub author_reputation_flairs: Vec<ReputationFlairDisplay>,
     /// UX.17: true when the author is currently in the top-N by XP.
     /// Recomputed on every feed read (cheap; one indexed query).
     pub author_top_contributor: bool,

@@ -728,7 +728,7 @@ impl CommodityDisplayData {
                     let paragraphs: Vec<&str> = trimmed.split("\n\n").collect();
                     let html: String = paragraphs
                         .iter()
-                        .map(|p| format!("<p>{}</p>", p.trim()))
+                        .map(|p| format!("<p>{}</p>", escape_html(p.trim())))
                         .collect::<Vec<_>>()
                         .join("\n");
                     Some(html)

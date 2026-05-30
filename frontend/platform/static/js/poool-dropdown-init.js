@@ -1,7 +1,7 @@
 /**
  * POOOL Dropdown Auto-Init
  * ========================
- * Automatically converts ALL native <select> elements on the page
+ * Automatically converts opted-in native <select> elements on the page
  * to the unified POOOL custom dropdown design.
  *
  * Include this AFTER poool-dropdown.js:
@@ -16,9 +16,9 @@
       return;
     }
 
-    // Convert all native <select> elements
+    // Convert native <select> elements that need the full custom menu.
     const selects = document.querySelectorAll(
-      "select.settings-select, select.dropdown-select, select.form-select, select.input-dropdown",
+      "select.settings-select, select.dropdown-select, select.form-select, select.input-dropdown, select[data-poool-dropdown]",
     );
 
     selects.forEach(function (selectEl) {
@@ -60,7 +60,7 @@
   document.addEventListener("htmx:afterSwap", function (e) {
     setTimeout(function () {
       var newSelects = e.detail.target.querySelectorAll(
-        "select.settings-select, select.dropdown-select, select.form-select, select.input-dropdown, select.admin-select",
+        "select.settings-select, select.dropdown-select, select.form-select, select.input-dropdown, select[data-poool-dropdown], select.admin-select",
       );
       newSelects.forEach(function (selectEl) {
         if (

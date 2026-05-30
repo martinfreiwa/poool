@@ -210,6 +210,45 @@ async fn user_has_developer_access(state: &AppState, user_id: uuid::Uuid) -> boo
     .unwrap_or(false)
 }
 
+pub(crate) async fn user_can_view_developer_dashboard(
+    state: &AppState,
+    user_id: uuid::Uuid,
+) -> bool {
+    if user_has_developer_access(state, user_id).await {
+        return true;
+    }
+
+    sqlx::query_scalar!(
+        "SELECT EXISTS(
+            SELECT 1
+              FROM developer_applications
+             WHERE user_id = $1
+               AND status IN ('pending', 'needs_kyc', 'approved')
+        )",
+        user_id
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(Some(false))
+    .unwrap_or(false)
+}
+
+async fn require_developer_dashboard_page(
+    jar: &CookieJar,
+    state: &AppState,
+) -> Result<User, axum::response::Response> {
+    let user = match middleware::get_current_user(jar, &state.db).await {
+        Some(u) => u,
+        None => return Err(Redirect::to("/auth/login").into_response()),
+    };
+
+    if !user_can_view_developer_dashboard(state, user.id).await {
+        return Err(Redirect::to("/developer/application-form").into_response());
+    }
+
+    Ok(user)
+}
+
 async fn require_developer_page(
     jar: &CookieJar,
     state: &AppState,
@@ -245,7 +284,7 @@ pub async fn page_developer_dashboard(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> axum::response::Response {
-    let user = match require_developer_page(&jar, &state).await {
+    let user = match require_developer_dashboard_page(&jar, &state).await {
         Ok(u) => u,
         Err(response) => return response,
     };
@@ -478,7 +517,18 @@ pub async fn page_developer_onboarding(
     .await
 }
 
-/// POST /api/developer/apply — Save developer application + auto-grant developer role.
+/// POST /api/developer/apply — Persist a "Become a Developer" application.
+///
+/// Security model (post-2026-05-19 audit, C-1 fix):
+///   • The handler does NOT grant the `developer` role. It only inserts a
+///     row in `developer_applications` with `status='pending'`.
+///   • An admin must approve via `POST /api/admin/developer-applications/
+///     :id/approve` for the role to be granted, and only after the
+///     applicant's KYC is `approved` (C-3 fix).
+///   • Returns 202 Accepted on success — the frontend treats any `ok:true`
+///     response as success, so this is non-breaking.
+///   • Each field on the application payload (11 fields, matching the
+///     onboarding form) is persisted so admins have something to review.
 pub async fn api_developer_apply(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -497,44 +547,100 @@ pub async fn api_developer_apply(
         }
     };
 
-    // Auto-grant developer role if not already a developer
-    let is_developer: bool = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer','admin','super_admin'))",
-        user.id
-    )
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(Some(false))
-    .unwrap_or(false);
-
-    if !is_developer {
-        let role_id: Option<uuid::Uuid> =
-            sqlx::query_scalar("SELECT id FROM roles WHERE name = 'developer'")
-                .fetch_optional(&state.db)
-                .await
-                .unwrap_or(None);
-        if let Some(rid) = role_id {
-            let _ = sqlx::query(
-                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-            )
-            .bind(user.id)
-            .bind(rid)
-            .execute(&state.db)
-            .await;
-        }
+    // Trim + truncate each text field defensively so a malicious client
+    // can't push multi-MB blobs into the table.
+    fn pick(body: &serde_json::Value, key: &str, max_len: usize) -> Option<String> {
+        body.get(key)
+            .and_then(|v| v.as_str())
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.chars().take(max_len).collect())
     }
 
-    // Log application data (future: persist to developer_applications table)
+    let first_name = pick(&body, "first_name", 100);
+    let last_name = pick(&body, "last_name", 100);
+    let phone = pick(&body, "phone", 60);
+    let whatsapp = pick(&body, "whatsapp", 60);
+    let nationality = pick(&body, "nationality", 60);
+    let country = pick(&body, "country", 60);
+    let website = pick(&body, "website", 500);
+    let assets_count = pick(&body, "assets_count", 32);
+    let asset_value = pick(&body, "asset_value", 32);
+    let monthly_income = pick(&body, "monthly_income", 32);
+    let bio = pick(&body, "bio", 4_000);
+
+    // Sanitize the free-form text fields so a stored XSS payload can't be
+    // rendered raw on an admin dashboard later.
+    use crate::common::sanitize::sanitize_text;
+    let first_name = first_name.as_deref().map(sanitize_text);
+    let last_name = last_name.as_deref().map(sanitize_text);
+    let website = website.as_deref().map(sanitize_text);
+    let bio = bio.as_deref().map(sanitize_text);
+
+    let app_id: Result<uuid::Uuid, sqlx::Error> = sqlx::query_scalar(
+        r#"INSERT INTO developer_applications (
+              user_id, first_name, last_name, phone, whatsapp,
+              nationality, country, website,
+              assets_count, asset_value, monthly_income, bio,
+              status
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending')
+           RETURNING id"#,
+    )
+    .bind(user.id)
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(&phone)
+    .bind(&whatsapp)
+    .bind(&nationality)
+    .bind(&country)
+    .bind(&website)
+    .bind(&assets_count)
+    .bind(&asset_value)
+    .bind(&monthly_income)
+    .bind(&bio)
+    .fetch_one(&state.db)
+    .await;
+
+    let app_id = match app_id {
+        Ok(id) => id,
+        Err(e) => {
+            tracing::error!(user_id = %user.id, "Failed to persist developer application: {e}");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({
+                    "ok": false,
+                    "error": "Could not save your application. Please try again."
+                })),
+            )
+                .into_response();
+        }
+    };
+
+    // Audit-log so admins can trace every submission.
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'developer.application_submitted', 'developer_applications', $2, $3)"#,
+    )
+    .bind(user.id)
+    .bind(app_id)
+    .bind(serde_json::json!({"status": "pending"}))
+    .execute(&state.db)
+    .await;
+
     tracing::info!(
         user_id = %user.id,
-        assets_count = ?body.get("assets_count"),
-        asset_value = ?body.get("asset_value"),
-        "Developer application submitted"
+        application_id = %app_id,
+        "Developer application submitted (pending admin review)"
     );
 
     (
-        StatusCode::OK,
-        axum::Json(serde_json::json!({"ok": true, "redirect": "/developer/dashboard"})),
+        StatusCode::ACCEPTED,
+        axum::Json(serde_json::json!({
+            "ok": true,
+            "application_id": app_id,
+            "status": "pending",
+            "message": "Application received. We'll review and email you within 2 business days."
+        })),
     )
         .into_response()
 }
@@ -654,6 +760,24 @@ pub async fn page_developer_operations_submit(
         .await
 }
 
+/// GET /developer/villas/:asset_id/operations/:log_id — Villa-Returns P2 edit-existing-log form.
+///
+/// Serves the same template as the `…/new` variant; the page-side JS detects
+/// edit mode from the URL (`parts[3] != "new"`) and hydrates from
+/// `GET /api/developer/villas/:asset_id/operations/:log_id`. The auth gate is
+/// identical to the submit handler; per-villa write enforcement happens at
+/// the API layer via `DeveloperUser::require_asset_link`.
+pub async fn page_developer_operations_log_edit(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
+    crate::common::routes_helper::serve_protected(jar, &state, "developer/operations-submit.html")
+        .await
+}
+
 /// GET /developer/villas/:asset_id/annual/:year — Villa-Returns C3 annual data page.
 pub async fn page_developer_annual_data(
     jar: CookieJar,
@@ -704,46 +828,13 @@ pub async fn api_developer_create_draft(
         }
     };
 
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => return Err(AppError::Unauthorized("Please log in".to_string())),
-    };
-
-    // The application form is the entry point for any user to become a developer.
-    // If the user doesn't have the developer role yet, auto-assign it on first draft creation.
-    let is_developer = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin'))",
-        user.id
-    ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
-
-    if !is_developer {
-        // Auto-assign the developer role
-        let developer_role_id: Option<uuid::Uuid> =
-            sqlx::query_scalar("SELECT id FROM roles WHERE name = 'developer'")
-                .fetch_optional(&state.db)
-                .await
-                .unwrap_or(None);
-
-        if let Some(role_id) = developer_role_id {
-            let _ = sqlx::query(
-                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-            )
-            .bind(user.id)
-            .bind(role_id)
-            .execute(&state.db)
-            .await;
-
-            tracing::info!(
-                "Auto-assigned developer role to user {} via application form",
-                user.id
-            );
-        } else {
-            tracing::error!("Developer role not found in roles table — cannot auto-assign");
-            return Err(AppError::Internal(
-                "System configuration error: developer role missing".to_string(),
-            ));
-        }
-    }
+    // C-2 fix (2026-05-19 audit): NEVER self-promote on draft create.
+    // Previously this handler auto-granted the `developer` role to any
+    // authenticated user that POSTed a draft — a second self-promotion
+    // path that bypassed admin review. The role must now be granted only
+    // via POST /api/admin/developer-applications/:id/approve, which is
+    // additionally gated on KYC.
+    let user = require_developer_api(&jar, &state).await?;
 
     // ── Enforce 100-draft limit ──
     let draft_count: i64 = sqlx::query_scalar(

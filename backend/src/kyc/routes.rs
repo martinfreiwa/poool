@@ -471,7 +471,7 @@ pub async fn wallet_bind(
     // Reject re-binding to a DIFFERENT address than what's already set.
     // Allow re-binding the SAME address (idempotent — covers retries
     // after a network hiccup mid-bind).
-    if let Err(e) = sqlx::query(
+    let update_result = match sqlx::query(
         r#"UPDATE users SET chain_wallet_address = $1, chain_whitelisted_at = NULL
            WHERE id = $2
              AND (chain_wallet_address IS NULL OR chain_wallet_address = $1)"#,
@@ -481,10 +481,27 @@ pub async fn wallet_bind(
     .execute(&mut *tx)
     .await
     {
-        tracing::error!("wallet_bind user update failed: {}", e);
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("wallet_bind user update failed: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "DB error"})),
+            )
+                .into_response();
+        }
+    };
+
+    // Zero rows updated = the WHERE NULL-or-equal guard rejected the bind
+    // because the user already has a different `chain_wallet_address` set.
+    // Without this check we'd silently 200-OK a no-op while telling the
+    // client (and the audit row below) that the new address was bound.
+    if update_result.rows_affected() == 0 {
         return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": "DB error"})),
+            StatusCode::CONFLICT,
+            Json(serde_json::json!({
+                "error": "Account already linked to a different wallet address"
+            })),
         )
             .into_response();
     }

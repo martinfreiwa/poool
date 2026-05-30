@@ -67,10 +67,16 @@
     let baseReferralLink = data.referral.referralLink || '';
     
     if (input) {
-      input.value = baseReferralLink;
-      input.placeholder = "No Link generated";
+      if ('value' in input) {
+        input.value = baseReferralLink;
+        input.placeholder = "No Link generated";
+      } else {
+        input.dataset.copyValue = baseReferralLink;
+        input.textContent = baseReferralLink || "No link generated";
+        input.title = baseReferralLink || "";
+      }
     }
-    
+
     if (linkGenInput) {
       linkGenInput.value = baseReferralLink;
       linkGenInput.dataset.baseLink = baseReferralLink;
@@ -118,28 +124,52 @@
   // 2. Interaktivität: Event Listeners
   function copyReferralLink(elementId = "rewards-referral-input") {
     const input = document.getElementById(elementId);
-    if (!input || !input.value) {
+    const value = getCopyValue(input);
+    if (!value) {
       showToast("No valid referral link to copy", "error");
       return;
     }
 
-    // Fallback and modern clipboard API (UX Best Practice)
+    copyTextToClipboard(value, input, "Referral link copied!");
+  }
+
+  function copyTextToClipboard(value, sourceElement, successMessage) {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(input.value)
-        .then(() => showToast("Referral link copied!", "success"))
-        .catch(() => execCopyCmd(input));
+      navigator.clipboard.writeText(value)
+        .then(() => showToast(successMessage, "success"))
+        .catch(() => execCopyCmd(sourceElement, value, successMessage));
     } else {
-      execCopyCmd(input);
+      execCopyCmd(sourceElement, value, successMessage);
     }
   }
 
-  function execCopyCmd(inputElement) {
-    inputElement.select();
+  function getCopyValue(element) {
+    if (!element) return "";
+    if (element.dataset && element.dataset.copyValue) return element.dataset.copyValue.trim();
+    if ('value' in element && element.value) return element.value.trim();
+    return (element.textContent || "").trim();
+  }
+
+  function execCopyCmd(inputElement, copyValue = getCopyValue(inputElement), successMessage = "Referral link copied!") {
+    let temporaryInput = null;
+    if (inputElement && typeof inputElement.select === "function") {
+      inputElement.select();
+    } else {
+      temporaryInput = document.createElement("textarea");
+      temporaryInput.value = copyValue;
+      temporaryInput.setAttribute("readonly", "");
+      temporaryInput.style.position = "fixed";
+      temporaryInput.style.top = "-9999px";
+      document.body.appendChild(temporaryInput);
+      temporaryInput.select();
+    }
     try {
       document.execCommand("copy");
-      showToast("Referral link copied!", "success");
+      showToast(successMessage, "success");
     } catch (err) {
       showToast("Failed to copy link", "error");
+    } finally {
+      if (temporaryInput) temporaryInput.remove();
     }
   }
 
@@ -656,12 +686,13 @@
   // Social Sharing Logic (Exposed to window)
   window.shareSocial = function(platform) {
     const linkInput = document.getElementById('campaign-generated-link') || document.getElementById('rewards-referral-input');
-    if (!linkInput || !linkInput.value || linkInput.value === 'Loading...') {
+    const linkValue = getCopyValue(linkInput);
+    if (!linkValue || linkValue === 'Loading...') {
       showToast('Please wait or try again, your link is not ready.', 'error');
       return;
     }
     
-    const url = encodeURIComponent(linkInput.value);
+    const url = encodeURIComponent(linkValue);
     const text = encodeURIComponent("I'm investing in properties globally with POOOL. Sign up with my link and get USD 30!");
     
     let shareUrl = '';

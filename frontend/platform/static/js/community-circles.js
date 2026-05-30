@@ -1,9 +1,9 @@
 /**
  * community-circles.js — Circles & XP Tab Logic
- * Wires the My Circle tab to real /api/community/ endpoints
+ * Wires the My Circles tab to real /api/community/ endpoints
  */
 window.initCommunityCircles = function () {
-    // Bail only if the My Circle tab markup hasn't loaded yet — without the
+    // Bail only if the My Circles tab markup hasn't loaded yet — without the
     // modal mount point there's nothing to wire up. (The legacy `xp-level-icon`
     // probe was deleted with the XP card and was killing all bindings.)
     if (!document.getElementById('create-circle-modal')) return;

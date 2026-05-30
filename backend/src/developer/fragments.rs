@@ -5,6 +5,7 @@ use axum::{
 use axum_extra::extract::cookie::CookieJar;
 use serde::Deserialize;
 
+use super::routes::user_can_view_developer_dashboard;
 use super::service;
 use crate::auth::middleware;
 use crate::auth::routes::AppState;
@@ -30,17 +31,8 @@ pub async fn fragment_chart(
                 .into_response()
         }
     };
-    let is_developer = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",
-        user.id
-    )
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(Some(false))
-    .unwrap_or(false);
-
-    if !is_developer {
-        return Redirect::to("/marketplace").into_response();
+    if !user_can_view_developer_dashboard(&state, user.id).await {
+        return Redirect::to("/developer/application-form").into_response();
     }
 
     let period = query.period.unwrap_or_else(|| "all".to_string());
@@ -85,17 +77,8 @@ pub async fn fragment_assets(
                 .into_response()
         }
     };
-    let is_developer = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",
-        user.id
-    )
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(Some(false))
-    .unwrap_or(false);
-
-    if !is_developer {
-        return Redirect::to("/marketplace").into_response();
+    if !user_can_view_developer_dashboard(&state, user.id).await {
+        return Redirect::to("/developer/application-form").into_response();
     }
 
     let period = query.period.unwrap_or_else(|| "all".to_string());

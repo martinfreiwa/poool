@@ -16,11 +16,6 @@
           <span class="table__header-text">Views</span>
         </button>
       </div>
-      <div id="developer-assets-th-saved" class="table__header-cell developer-assets-table__saved">
-        <button type="button" class="developer-assets-table__sort" data-dev-sort="saved">
-          <span class="table__header-text">Saved</span>
-        </button>
-      </div>
       <div id="developer-assets-th-conversion" class="table__header-cell table__header-cell--conversion developer-assets-table__conversion">
         <button type="button" class="developer-assets-table__sort" data-dev-sort="conversion">
           <span class="table__header-text">Conv. Rate</span>
@@ -44,7 +39,6 @@
         data-asset="{{ asset.title | lower }}"
         data-sales="{{ asset.total_sales_cents }}"
         data-views="{{ asset.views }}"
-        data-saved="{{ asset.saved_count }}"
         data-conversion="{{ asset.conversion_rate }}"
         data-funding="{{ asset.funding_pct }}">
         <div id="developer-assets-cell-asset-{{ loop.index }}" class="table__cell table__cell--asset developer-assets-table__asset">
@@ -64,20 +58,12 @@
           <span class="table__cell-text-value">{{ asset.views }}</span>
         </div>
 
-        <div id="developer-assets-cell-saved-{{ loop.index }}" class="table__cell developer-assets-table__saved">
-          <span class="table__cell-text-value">{{ asset.saved_count }}</span>
-        </div>
-
         <div id="developer-assets-cell-conversion-{{ loop.index }}" class="table__cell table__cell--conversion developer-assets-table__conversion">
           <span class="table__cell-text-value">{{ asset.conversion_display }}</span>
         </div>
 
         <div id="developer-assets-cell-funding-{{ loop.index }}" class="table__cell table__cell--funding developer-assets-table__funding">
-          <div class="table__progress-group">
-            <div class="table__progress-bar ds-progress ds-progress--sm">
-              <div class="table__progress-fill ds-progress__fill" style="width: {{ asset.funding_pct }}%"></div>
-            </div>
-          </div>
+          <span class="table__cell-text-value">{{ asset.funding_display }}</span>
         </div>
 
         <div id="developer-assets-cell-actions-{{ loop.index }}" class="table__cell table__cell--actions developer-assets-table__actions">

@@ -57,7 +57,6 @@ COMMENT ON TABLE affiliate_links IS
 
 COMMIT;
 
-\echo '── RLS state — INERT tables ──'
 SELECT table_name, rls_enabled, rls_forced, effective_state, policy_count
   FROM rls_status_audit
  WHERE effective_state = 'INERT (owner bypass)'

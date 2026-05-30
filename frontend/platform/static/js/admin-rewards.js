@@ -921,7 +921,7 @@ function renderApplications() {
       <td><div class="admin-user-inline"><div><div class="admin-user-inline-name">${esc(a.user_name)}</div><div class="admin-user-inline-email">${esc(a.user_email)}</div></div></div></td>
       <td style="font-size:13px;">${esc(a.traffic_source || 'N/A')}</td>
       <td style="font-size:13px; font-weight: 600;">${esc(a.audience_size || 'N/A')}</td>
-      <td style="font-size:13px;"><a href="${esc(a.main_url)}" target="_blank" style="color: var(--admin-accent); text-decoration: none;">Link</a></td>
+      <td style="font-size:13px;"><a href="${esc(a.main_url)}" target="_blank" rel="noopener noreferrer" style="color: var(--admin-accent); text-decoration: none;">Link</a></td>
       <td style="font-size:12px;color:var(--admin-text-muted);">${fmtDate(a.created_at)}</td>
       <td>${actionBtn}</td>
     </tr>`;

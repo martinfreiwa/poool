@@ -33,6 +33,10 @@ fn build_display_name(
     }
 }
 
+fn normalize_email(email: impl Into<Option<String>>) -> Option<String> {
+    email.into()
+}
+
 /// W3.4: derive a portfolio "tier" from total invested capital. Pure
 /// function so we can compute it from any cents value (per-user batch sum
 /// or a single-user sidebar lookup).
@@ -127,7 +131,7 @@ pub async fn get_user_info(
                     r.display_name,
                     r.first_name,
                     r.last_name,
-                    Some(r.email),
+                    normalize_email(r.email),
                 ),
                 avatar_url: r
                     .avatar_url
@@ -228,7 +232,7 @@ pub async fn get_users_info_batch(
                             r.display_name.clone(),
                             r.first_name.clone(),
                             r.last_name.clone(),
-                            Some(r.email.clone()),
+                            normalize_email(r.email.clone()),
                         ),
                         avatar_url: r
                             .avatar_url
@@ -250,7 +254,7 @@ pub async fn get_users_info_batch(
                             r.display_name,
                             r.first_name,
                             r.last_name,
-                            Some(r.email),
+                            normalize_email(r.email),
                         ),
                         avatar_url: r
                             .avatar_url
@@ -267,7 +271,7 @@ pub async fn get_users_info_batch(
                         r.display_name,
                         r.first_name,
                         r.last_name,
-                        Some(r.email),
+                        normalize_email(r.email),
                     ),
                     avatar_url: r
                         .avatar_url

@@ -650,7 +650,7 @@ pub async fn page_property(
             Ok(html) => Html(html).into_response(),
             Err(e) => {
                 tracing::error!("Template rendering error: {}", e);
-                Html(format!("<h1>Internal Server Error</h1><p>{}</p>", e)).into_response()
+                Html("<h1>Internal Server Error</h1>".to_string()).into_response()
             }
         },
         Err(e) => {
@@ -867,7 +867,7 @@ pub async fn page_property_public(
             Ok(html) => Html(html).into_response(),
             Err(e) => {
                 tracing::error!("Template rendering error (property-public): {}", e);
-                Html(format!("<h1>Internal Server Error</h1><p>{}</p>", e)).into_response()
+                Html("<h1>Internal Server Error</h1>".to_string()).into_response()
             }
         },
         Err(e) => {
@@ -1372,7 +1372,6 @@ pub async fn api_marketplace_tab(
                         <div class="property-dots">{dots_html}</div>
                     </div>
                     <div class="property-badge ds-badge ds-badge--overlay {badge_class}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3538CD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h.01M9 15h6M15 9h.01"/></svg>
                         <span class="badge-text">{lease_label}</span>
                     </div>
                 </div>

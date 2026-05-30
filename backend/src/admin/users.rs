@@ -3,11 +3,12 @@ use crate::auth::routes::AppState;
 use crate::common::idempotency::{self, Reservation};
 use crate::common::sanitize;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
 };
 use chrono::Datelike;
+use std::collections::HashMap;
 
 /// GET /api/admin/users - List all users with roles, KYC, and balances.
 pub async fn api_admin_users(
@@ -135,15 +136,28 @@ pub async fn api_admin_users(
 }
 
 /// GET /api/admin/users/:user_id - Full user detail with all related data.
+///
+/// Investments list is bounded to 500 rows per page (`?page=N`, zero-indexed) to
+/// avoid OOM on whales with thousands of positions. See CDDRP §3.5 (B6).
 pub async fn api_admin_user_detail(
     admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<axum::response::Response, ApiError> {
     admin.require_permission(&state.db, "users.view").await?;
     admin.require_permission(&state.db, "pii.view").await?;
 
     let uid = ApiError::parse_uuid(&user_id)?;
+
+    // Pagination cap for investments list (CDDRP B6 fix).
+    const INVESTMENTS_PAGE_SIZE: i64 = 500;
+    let page = params
+        .get("page")
+        .and_then(|p| p.parse::<i64>().ok())
+        .unwrap_or(0)
+        .max(0);
+    let investments_offset = page.saturating_mul(INVESTMENTS_PAGE_SIZE);
 
     // Audit the read — user detail returns PII (profile, DOB, address,
     // tax_id, payment methods, KYC records, transactions).
@@ -379,9 +393,12 @@ pub async fn api_admin_user_detail(
            FROM investments i
            LEFT JOIN assets a ON a.id = i.asset_id
            WHERE i.user_id = $1
-           ORDER BY i.purchased_at DESC"#,
+           ORDER BY i.purchased_at DESC
+           LIMIT $2 OFFSET $3"#,
     )
     .bind(uid)
+    .bind(INVESTMENTS_PAGE_SIZE)
+    .bind(investments_offset)
     .fetch_all(&state.db)
     .await
     .unwrap_or_default();

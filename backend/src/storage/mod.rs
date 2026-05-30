@@ -15,6 +15,7 @@ pub mod routes;
 ///   properties/{asset_id}/{filename}      ← property images & documents
 /// ```
 pub mod service;
+pub mod upload_helpers;
 
 use crate::auth::routes::AppState;
 use axum::{

@@ -7,6 +7,11 @@ use axum::{
 };
 use axum_extra::extract::cookie::CookieJar;
 
+/// Hard per-field cap for support attachments. Mirrors the post-upload size
+/// guard in `service::MAX_ATTACHMENT_BYTES` (5 MB) so an oversized payload is
+/// rejected before the multipart body is buffered into RAM.
+const SUPPORT_ATTACHMENT_MAX_BYTES: usize = 5 * 1024 * 1024;
+
 async fn require_support_rate_limit(
     state: &AppState,
     user_id: uuid::Uuid,
@@ -124,16 +129,22 @@ pub async fn api_support_tickets_submit(
                 }
             }
 
-            match field.bytes().await {
-                Ok(data) if !data.is_empty() => file_bytes = Some(data.to_vec()),
+            // Chunked read with hard cap (5 MB) — matches MAX_ATTACHMENT_BYTES
+            // enforced by the service layer. Prevents `field.bytes()` from
+            // buffering the full payload before the size check.
+            let mut field = field;
+            match crate::storage::upload_helpers::read_field_capped(
+                &mut field,
+                SUPPORT_ATTACHMENT_MAX_BYTES,
+                "attachment",
+            )
+            .await
+            {
+                Ok(data) if !data.is_empty() => file_bytes = Some(data),
                 Ok(_) => {}
                 Err(e) => {
-                    tracing::warn!("Failed reading support attachment bytes: {}", e);
-                    return (
-                        StatusCode::BAD_REQUEST,
-                        Json(serde_json::json!({"error": "Could not read attachment"})),
-                    )
-                        .into_response();
+                    tracing::warn!("Failed reading support attachment bytes");
+                    return e.into_response();
                 }
             }
         } else if let Ok(text) = field.text().await {
@@ -269,9 +280,20 @@ pub async fn api_support_ticket_reply(
                         .into_response();
                 }
             }
-            match field.bytes().await {
-                Ok(data) if !data.is_empty() => file_bytes = Some(data.to_vec()),
-                _ => {}
+            // Chunked read with hard cap — reply path previously had NO size
+            // limit at all. Capped at the same 5 MB used by the submit path so
+            // a single field cannot buffer the full 25 MB request body.
+            let mut field = field;
+            match crate::storage::upload_helpers::read_field_capped(
+                &mut field,
+                SUPPORT_ATTACHMENT_MAX_BYTES,
+                "attachment",
+            )
+            .await
+            {
+                Ok(data) if !data.is_empty() => file_bytes = Some(data),
+                Ok(_) => {}
+                Err(e) => return e.into_response(),
             }
         }
     }

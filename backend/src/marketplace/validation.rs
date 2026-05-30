@@ -322,7 +322,14 @@ pub async fn check_concentration_limit_tx(
     .await
     .map_err(AppError::Database)?;
 
-    let new_total = current_owned + additional_tokens;
+    let new_total = match current_owned.checked_add(additional_tokens) {
+        Some(t) => t,
+        None => {
+            return Err(AppError::BadRequest(
+                "Order quantity exceeds maximum holdable amount".to_string(),
+            ));
+        }
+    };
     let new_pct = (new_total as f64 / total_tokens as f64) * 100.0;
 
     if new_pct > MAX_CONCENTRATION_PCT {
@@ -362,7 +369,12 @@ pub async fn check_concentration_limit(
     .flatten()
     .unwrap_or(0);
 
-    let new_total = current_owned + additional_tokens;
+    let new_total = match current_owned.checked_add(additional_tokens) {
+        Some(t) => t,
+        None => {
+            return Err(OrderRejection::InvalidQuantity);
+        }
+    };
     let new_pct = (new_total as f64 / total_tokens as f64) * 100.0;
 
     if new_pct > MAX_CONCENTRATION_PCT {

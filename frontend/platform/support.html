@@ -27,7 +27,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
           <!-- Submit a New Ticket -->
           <div class="ds-card support-form-card" id="submit-ticket">
             <div class="support-card-header">
-              <div>
+              <div class="support-card-title-group">
                 <h2>
                   <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -35,6 +35,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
                   </svg>
                   New ticket
                 </h2>
+                <p>Send us the details and we will route your request to the right team.</p>
               </div>
               <span id="support-draft-status" class="support-draft-status" aria-live="polite"></span>
             </div>
@@ -42,7 +43,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
               <div class="support-form-grid">
               <div class="support-form-group support-form-group--compact">
                 <label for="ticket-category">Category</label>
-                <select id="ticket-category" class="ds-select">
+                <select id="ticket-category" class="ds-select form-select support-select">
                   <option value="general">General</option>
                   <option value="account">Account &amp; Security</option>
                   <option value="deposits">Deposits &amp; Withdrawals</option>
@@ -55,7 +56,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
               </div>
               <div class="support-form-group support-form-group--compact">
                 <label for="ticket-priority" class="priority-label">Priority <span id="expected-response-time" class="response-time-badge">Response: ~4 hours</span></label>
-                <select id="ticket-priority" class="ds-select">
+                <select id="ticket-priority" class="ds-select form-select support-select">
                   <option value="low">Low — General question</option>
                   <option value="normal" selected>Normal — Standard issue</option>
                   <option value="high">High — Affecting my account</option>
@@ -132,14 +133,19 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
 
           <!-- Your Tickets -->
           <div class="ds-card support-form-card" id="your-tickets">
-            <h2>
-              <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="3" width="16" height="14" rx="2" />
-                <path d="M7 7h6M7 11h4" />
-              </svg>
-              Your Tickets
-            </h2>
+            <div class="support-card-header">
+              <div class="support-card-title-group">
+                <h2>
+                  <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="16" height="14" rx="2" />
+                    <path d="M7 7h6M7 11h4" />
+                  </svg>
+                  Your Tickets
+                </h2>
+                <p>Track open, pending, and resolved support conversations.</p>
+              </div>
+            </div>
             <div class="support-tabs">
               <button class="support-tab active" data-filter="">All <span id="support-tab-count-all">0</span></button>
               <button class="support-tab" data-filter="open">Open <span id="support-tab-count-open">0</span></button>
@@ -157,7 +163,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
           </div>
 
           <!-- FAQ / Knowledge Base -->
-          <details class="ds-card support-form-card support-faq-card support-faq-disclosure" id="faq">
+          <details class="ds-card support-form-card support-faq-card support-faq-disclosure" id="faq" open>
             <summary class="support-faq-summary">
               <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -165,7 +171,10 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-
                 <path d="M7.5 7.5a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5" />
                 <circle cx="10" cy="14.5" r="0.5" fill="currentColor" />
               </svg>
-              Knowledge base
+              <div class="support-card-title-group">
+                <span class="support-faq-summary__title">Knowledge base</span>
+                <p>Find quick answers before opening a new support conversation.</p>
+              </div>
             </summary>
 
             <input type="text" id="faq-search" class="ds-input" placeholder="Search the knowledge base…" />

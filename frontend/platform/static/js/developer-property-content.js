@@ -157,6 +157,22 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // ── Live-compute Total Expected Return = Rental Yield + Capital Appreciation ──
+  const totalReturnInput = document.getElementById("total-return");
+  function recomputeTotalReturn() {
+    if (!totalReturnInput) return;
+    const y = parsePercentField("rental-yield");
+    const a = parsePercentField("capital-appreciation");
+    if (y === null && a === null) { totalReturnInput.value = ""; return; }
+    const sum = (y || 0) + (a || 0);
+    totalReturnInput.value = Number.isFinite(sum) ? sum.toFixed(2).replace(/\.00$/, "") : "";
+  }
+  ["rental-yield", "capital-appreciation"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", recomputeTotalReturn);
+  });
+  recomputeTotalReturn();
+
   // ── Pre-fill form from existing draft data ─────────────────────────
   const assetId = getDraftId();
   if (assetId) {
@@ -188,6 +204,7 @@ document.addEventListener("DOMContentLoaded", function () {
               "occupancy-rate",
               (data.occupancy_rate_bps / 100).toString()
             );
+          recomputeTotalReturn();
 
           // Populate assetImages from existing draft
           if (data.images && Array.isArray(data.images)) {
@@ -592,10 +609,12 @@ document.addEventListener("DOMContentLoaded", function () {
         throw new Error(err.error || "Failed to submit for review");
       }
 
-      // Success — clear draft state and redirect to the success page
+      // Success — clear draft state and redirect to the success page with asset context
+      const submittedTitle = (typeof assetTitle === "string" && assetTitle.trim()) ? assetTitle.trim() : "";
       localStorage.removeItem("draft_asset_id");
       localStorage.removeItem("selectedAssetType");
-      window.location.href = "/developer/submission-success";
+      const qs = submittedTitle ? ("?title=" + encodeURIComponent(submittedTitle)) : "";
+      window.location.href = "/developer/submission-success" + qs;
     } catch (err) {
       console.error("Submission error:", err);
       showFormError(err.message || "An unexpected error occurred.");

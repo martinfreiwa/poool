@@ -240,7 +240,7 @@
 
 .sidebar__search-icon path {
   stroke: #717680;
-  stroke-width: 1.66667px;
+  stroke-width: 1.4px;
 }
 
 /* From: .sidebar-search-input (sidebar-navigation.css:164-183) */
@@ -1179,7 +1179,7 @@
 
 .sidebar__account-menu-icon path {
   stroke: #a4a7ae;
-  stroke-width: 1.66667px;
+  stroke-width: 1.4px;
 }
 
 /* Soon badge

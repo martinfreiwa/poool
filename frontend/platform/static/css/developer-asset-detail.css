@@ -540,13 +540,21 @@
 .ad-select {
     width: 100%;
     padding: var(--input-padding);
+    padding-right: 36px;
     border: 1px solid var(--input-border-color);
     border-radius: var(--input-border-radius);
     font-size: var(--input-font-size);
     font-family: inherit;
-    background: var(--input-bg);
+    background-color: var(--input-bg);
+    background-image: var(--select-chevron-icon);
+    background-repeat: no-repeat;
+    background-position: var(--select-chevron-position);
+    background-size: var(--select-chevron-size);
     color: var(--input-text-color);
     height: var(--input-height);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     outline: none;
     transition: border-color 0.2s;
 }
@@ -1096,4 +1104,219 @@ body#developer-asset-detail-body .media-item:hover {
 
 body#developer-asset-detail-body .document-item:hover {
     border-color: #D5D7DA;
+}
+
+/* Asset-detail table cards mirror the Developer Dashboard "Top Performing Assets"
+   pattern. This local adapter keeps the page correct even when the shared
+   card-table stylesheet is not yet loaded by a running dev server. */
+body#developer-asset-detail-body .ad-table-card {
+    position: relative;
+    padding: 0 !important;
+    background: var(--card-table-bg, #FFFFFF) !important;
+    border: 1px solid var(--card-border-color, #EAECF0) !important;
+    border-radius: var(--card-border-radius, 12px) !important;
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05)) !important;
+    overflow: hidden !important;
+}
+
+body#developer-asset-detail-body .ad-table-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+    border-radius: var(--card-border-radius, 12px) var(--card-border-radius, 12px) 0 0;
+    pointer-events: none;
+    z-index: 3;
+}
+
+body#developer-asset-detail-body .ad-table-card:hover {
+    transform: none !important;
+    border-color: var(--card-border-color, #EAECF0) !important;
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05)) !important;
+}
+
+body#developer-asset-detail-body .ad-table-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 0;
+    padding: 20px 24px !important;
+    margin: 0 !important;
+    background: #FFFFFF !important;
+    border-bottom: 1px solid var(--card-border-color, #EAECF0) !important;
+}
+
+body#developer-asset-detail-body .ad-table-card__title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+body#developer-asset-detail-body .ad-table-card__title-text {
+    min-width: 0;
+}
+
+body#developer-asset-detail-body .ad-table-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+body#developer-asset-detail-body .ad-table-card__icon {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%) !important;
+    color: #03FF88 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 255, 0.18);
+    flex-shrink: 0;
+}
+
+body#developer-asset-detail-body .ad-table-card__icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: #03FF88 !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-card__title {
+    margin: 0;
+    color: var(--page-title-color, #0A0D12);
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    letter-spacing: 0;
+}
+
+body#developer-asset-detail-body .ad-table-card__hint {
+    margin: 2px 0 0;
+    color: var(--text-secondary, #717680);
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-card__body {
+    padding: 0 !important;
+    overflow-x: auto;
+    background: transparent !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table thead,
+body#developer-asset-detail-body .ad-table-card .ad-table thead tr,
+body#developer-asset-detail-body .ad-table-card .ad-table th {
+    background: #FFFFFF !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table th {
+    height: auto !important;
+    padding: 14px 12px !important;
+    color: var(--table-header-color, #717680) !important;
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--card-border-color, #EAECF0) !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table td {
+    padding: 14px 12px !important;
+    color: var(--text-secondary, #535862);
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 14px;
+    line-height: 20px;
+    border-bottom: 1px solid var(--card-border-color, #EAECF0);
+    vertical-align: middle;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table th:first-child,
+body#developer-asset-detail-body .ad-table-card .ad-table td:first-child {
+    padding-left: 24px !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table th:last-child,
+body#developer-asset-detail-body .ad-table-card .ad-table td:last-child {
+    padding-right: 24px !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table tbody tr:hover td {
+    background: rgba(3, 255, 136, 0.08) !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-empty-cell,
+body#developer-asset-detail-body .ad-table-card .ad-empty {
+    padding: 48px 24px !important;
+    background: #FFFFFF !important;
+    color: var(--text-secondary, #717680) !important;
+    text-align: center;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-table tbody tr:hover .ad-empty-cell,
+body#developer-asset-detail-body .ad-table-card .ad-table tbody tr:hover .ad-empty {
+    background: #FFFFFF !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-branded-empty {
+    min-height: 180px;
+    background: #FFFFFF !important;
+}
+
+body#developer-asset-detail-body .ad-table-card .ad-branded-empty::before,
+body#developer-asset-detail-body .ad-table-card .ad-branded-empty__mark {
+    display: none;
+}
+
+body#developer-asset-detail-body .ad-table-card--financials .ad-table th:nth-child(n+2),
+body#developer-asset-detail-body .ad-table-card--financials .ad-table td:nth-child(n+2),
+body#developer-asset-detail-body .ad-table-card--captable .ad-table th:nth-child(n+2),
+body#developer-asset-detail-body .ad-table-card--captable .ad-table td:nth-child(n+2),
+body#developer-asset-detail-body .ad-table-card--orders .ad-table th:nth-child(n+3),
+body#developer-asset-detail-body .ad-table-card--orders .ad-table td:nth-child(n+3) {
+    text-align: right;
+}
+
+@media (max-width: 720px) {
+    body#developer-asset-detail-body .ad-table-card__header {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 18px !important;
+    }
+
+    body#developer-asset-detail-body .ad-table-card__actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    body#developer-asset-detail-body .ad-table-card .ad-table th:first-child,
+    body#developer-asset-detail-body .ad-table-card .ad-table td:first-child {
+        padding-left: 18px !important;
+    }
+
+    body#developer-asset-detail-body .ad-table-card .ad-table th:last-child,
+    body#developer-asset-detail-body .ad-table-card .ad-table td:last-child {
+        padding-right: 18px !important;
+    }
 }

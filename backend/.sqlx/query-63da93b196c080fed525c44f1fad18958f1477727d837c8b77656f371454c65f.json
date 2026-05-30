@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS(\n            SELECT 1\n              FROM developer_applications\n             WHERE user_id = $1\n               AND status IN ('pending', 'needs_kyc', 'approved')\n        )",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "63da93b196c080fed525c44f1fad18958f1477727d837c8b77656f371454c65f"
+}

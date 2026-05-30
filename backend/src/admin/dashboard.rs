@@ -296,10 +296,11 @@ pub struct AdminSearchQuery {
 
 /// GET /api/admin/search?q=... - Minimal capped search for the admin topbar.
 pub async fn api_admin_search(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Query(params): Query<AdminSearchQuery>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "users.view").await?;
     let raw_query = params.q.unwrap_or_default();
     let trimmed = raw_query.trim();
     if trimmed.len() < 2 {

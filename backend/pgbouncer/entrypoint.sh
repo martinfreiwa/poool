@@ -12,23 +12,36 @@
 
 set -e
 
+strict_fail() {
+    echo "ERROR: $1"
+    if [ "${POOOL_LOCAL_LIVE_STRICT:-false}" = "true" ]; then
+        exit 1
+    fi
+}
+
 # ── Parse DATABASE_URL ────────────────────────────────────────────
 # Expected format: postgres://user:password@host:port/dbname?params
 # or: postgres://user@host:port/dbname
 
 if [ -z "$DATABASE_URL" ]; then
-    echo "ERROR: DATABASE_URL is not set. Cannot configure PgBouncer."
+    strict_fail "DATABASE_URL is not set. Cannot configure PgBouncer."
     exec /app/poool-backend
 fi
 
 # Check if PgBouncer should be enabled (disabled by default for local dev)
 if [ "${PGBOUNCER_ENABLED:-true}" = "false" ]; then
+    if [ "${POOOL_LOCAL_LIVE_STRICT:-false}" = "true" ]; then
+        strict_fail "PGBOUNCER_ENABLED=false is not allowed in local-live strict mode."
+    fi
     echo "PgBouncer disabled (PGBOUNCER_ENABLED=false). Starting backend directly."
     exec /app/poool-backend
 fi
 
 # Check if pgbouncer binary exists
 if ! command -v pgbouncer >/dev/null 2>&1; then
+    if [ "${POOOL_LOCAL_LIVE_STRICT:-false}" = "true" ]; then
+        strict_fail "pgbouncer binary not found; local-live strict mode requires PgBouncer."
+    fi
     echo "WARN: pgbouncer binary not found. Starting backend directly."
     exec /app/poool-backend
 fi
@@ -82,6 +95,7 @@ mkdir -p "$PGBOUNCER_DIR"
 cat > "$PGBOUNCER_DIR/pgbouncer.ini" <<EOF
 [databases]
 ${DB_NAME} = host=${DB_HOST} port=${DB_PORT} dbname=${DB_NAME} user=${DB_USER} password='${DB_PASS}'
+* = host=${DB_HOST} port=${DB_PORT} user=${DB_USER} password='${DB_PASS}'
 
 [pgbouncer]
 listen_addr = 127.0.0.1
@@ -121,6 +135,9 @@ EOF
 # ── Start PgBouncer ───────────────────────────────────────────────
 echo "Starting PgBouncer on 127.0.0.1:6432..."
 pgbouncer -d "$PGBOUNCER_DIR/pgbouncer.ini" 2>&1 || {
+    if [ "${POOOL_LOCAL_LIVE_STRICT:-false}" = "true" ]; then
+        strict_fail "PgBouncer failed to start; refusing direct backend fallback in local-live strict mode."
+    fi
     echo "WARN: PgBouncer failed to start. Starting backend without connection pooling proxy."
     exec /app/poool-backend
 }
@@ -133,6 +150,15 @@ if [ -n "$DB_PASS" ]; then
     export DATABASE_URL="postgres://${DB_USER}:${DB_PASS}@127.0.0.1:6432/${DB_NAME}"
 else
     export DATABASE_URL="postgres://${DB_USER}@127.0.0.1:6432/${DB_NAME}"
+fi
+
+if [ -n "${COMMUNITY_DATABASE_NAME:-}" ]; then
+    if [ -n "$DB_PASS" ]; then
+        export COMMUNITY_DATABASE_URL="postgres://${DB_USER}:${DB_PASS}@127.0.0.1:6432/${COMMUNITY_DATABASE_NAME}"
+    else
+        export COMMUNITY_DATABASE_URL="postgres://${DB_USER}@127.0.0.1:6432/${COMMUNITY_DATABASE_NAME}"
+    fi
+    echo "Community database will connect via PgBouncer to ${COMMUNITY_DATABASE_NAME}."
 fi
 
 echo "PgBouncer started. Backend will connect via 127.0.0.1:6432."

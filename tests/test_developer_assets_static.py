@@ -1,12 +1,51 @@
+"""Static checks for /developer/assets.
+
+This module combines two layers of checks:
+
+1) Source-only assertions on the template, JS, and CSS files (the original
+   pre-HTTP regression tests — kept verbatim below). These run without a
+   backend.
+2) HTTP template-render assertions (status code, IDs, scripts, no
+   placeholders) that hit a running backend if `DEV_SESSION_COOKIE` is set.
+   They skip cleanly otherwise.
+
+Run:
+    python3 -m pytest tests/test_developer_assets_static.py -v
+    BASE_URL=http://localhost:8888 DEV_SESSION_COOKIE=<session> \\
+        python3 -m pytest tests/test_developer_assets_static.py -v
+"""
+import os
+import sys
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _developer_static import (  # noqa: E402
+    assert_meta_viewport,
+    assert_no_deleted_file_refs,
+    assert_no_forbidden_global_text,
+    assert_no_placeholder_anchors,
+    assert_required_ids,
+    assert_scripts_present,
+    assert_stylesheets_present,
+    assert_title_non_empty,
+    fetch_page,
+    parse_page,
+)
 
 
 def read(path: str) -> str:
     return (ROOT / path).read_text()
 
+
+# --------------------------------------------------------------------------
+# Source-only regression tests (no backend required) ----------------------
+# --------------------------------------------------------------------------
 
 def test_developer_assets_uses_management_table_and_preview_panel():
     template = read("frontend/platform/developer/assets.html")
@@ -75,6 +114,24 @@ def test_developer_assets_design_system_density_styles_are_present():
     assert "border: 1px solid var(--dev-assets-border);" in css
 
 
+def test_developer_assets_empty_hero_uses_branded_art():
+    template = read("frontend/platform/developer/assets.html")
+    css = read("frontend/platform/static/css/developer-assets.css")
+
+    assert 'class="dae-empty__brand-art"' in template
+    assert 'class="dae-empty__brand-lockup"' in template
+    assert 'src="/static/images/icons/logo-pool.svg"' in template
+    assert "67%" not in template
+    assert "$50K" not in template
+    assert 'id="dae-bg"' not in template
+
+    assert ".dae-empty__brand-art {" in css
+    assert ".dae-empty__brand-lockup {" in css
+    assert "background: #03FF88;" in css
+    assert "linear-gradient(135deg, #0000FF 0%, #001DCA 62%, #07107C 100%)" in css
+    assert ".dae-empty__brand-progress span" in css
+
+
 def test_developer_assets_empty_metrics_use_quiet_card_style():
     css = read("frontend/platform/static/css/developer-assets.css")
 
@@ -105,3 +162,80 @@ def test_developer_assets_empty_step_cards_match_submissions_design():
     assert ".dae-empty__step-num {\n  display: inline-flex;" in css
     assert "background: linear-gradient(135deg, #0000FF 0%, #3344FF 100%);" in css
     assert "color: #03FF88;" in css
+
+
+# --------------------------------------------------------------------------
+# HTTP template-render tests (skip when backend unreachable) -------------
+# --------------------------------------------------------------------------
+
+ROUTE = "/developer/assets"
+
+REQUIRED_IDS = {
+    "developer-assets-body",
+    "developer-assets-page",
+    "developer-assets-sidebar",
+    "developer-assets-main",
+    "dev-assets-search-input",
+}
+REQUIRED_SCRIPT_HINTS = {
+    "developer-assets.js",
+    "property-card.js",
+    "profile-dropdown.js",
+    "mobile-navigation.js",
+}
+REQUIRED_CSS_HINTS = {
+    "developer-assets.css",
+    "developer-leaderboard-navbar.css",
+}
+
+
+@pytest.fixture(scope="module")
+def response():
+    return fetch_page(ROUTE)
+
+
+@pytest.fixture(scope="module")
+def page(response):
+    return parse_page(response)
+
+
+def test_http_status_200(response):
+    assert response.status_code == 200
+
+
+def test_http_meta_viewport_present(page):
+    assert_meta_viewport(page)
+
+
+def test_http_title_non_empty(page):
+    assert_title_non_empty(page)
+
+
+def test_http_has_required_ids(page):
+    assert_required_ids(page, REQUIRED_IDS)
+
+
+def test_http_required_scripts_loaded(page):
+    assert_scripts_present(page, REQUIRED_SCRIPT_HINTS)
+
+
+def test_http_required_stylesheets_loaded(page):
+    assert_stylesheets_present(page, REQUIRED_CSS_HINTS)
+
+
+def test_http_status_tabs_present(page):
+    # The "all" / "available" / "funded" filter tabs drive the JS row filter.
+    found = [v for (_t, k, v) in page.data_attrs if k == "data-dev-assets-tab"]
+    assert "all" in found, f"data-dev-assets-tab=\"all\" missing — found {found}"
+
+
+def test_http_no_placeholder_or_lorem_text(response):
+    assert_no_forbidden_global_text(response, extra=("coming soon",))
+
+
+def test_http_no_references_to_deleted_files(response):
+    assert_no_deleted_file_refs(response)
+
+
+def test_http_no_bare_anchor_placeholders(page):
+    assert_no_placeholder_anchors(page)

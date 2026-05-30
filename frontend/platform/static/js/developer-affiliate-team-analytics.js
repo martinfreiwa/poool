@@ -506,6 +506,13 @@
   let lastMembers = [];
   let lastAssets = [];
 
+  function tableEmptyState(message) {
+    return DAT.el('div', { class: 'dat-table-empty-state' },
+      DAT.el('span', { class: 'dat-table-empty-state__logo', 'aria-hidden': 'true' }),
+      DAT.el('span', { class: 'dat-table-empty-state__msg' }, message),
+    );
+  }
+
   function renderMembersTable(rows) {
     const tbody = DAT.$('#dat-bymember-tbody');
     DAT.clear(tbody);
@@ -513,7 +520,7 @@
       tbody.appendChild(DAT.el(
         'tr', {},
         DAT.el('td', { colspan: 7, class: 'dat-empty' },
-          "No activity yet. Members appear here once they drive their first referral click."),
+          tableEmptyState("No activity yet. Members appear here once they drive their first referral click.")),
       ));
       return;
     }
@@ -538,7 +545,7 @@
       tbody.appendChild(DAT.el(
         'tr', {},
         DAT.el('td', { colspan: 4, class: 'dat-empty' },
-          'No sales yet. Properties appear here once a customer your team referred completes a purchase.'),
+          tableEmptyState('No sales yet. Properties appear here once a customer your team referred completes a purchase.')),
       ));
       return;
     }

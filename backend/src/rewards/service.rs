@@ -3266,6 +3266,7 @@ pub async fn create_webhook_subscription(
     if !url.starts_with("https://") {
         return Err(AppError::BadRequest("URL must be HTTPS".into()));
     }
+    let _ = validate_postback_url(url).await?;
     if event_types.is_empty() || event_types.len() > 500 {
         return Err(AppError::BadRequest(
             "event_types must be 1..500 chars (comma-separated, or '*')".into(),
@@ -3419,6 +3420,7 @@ pub async fn dispatch_webhook_event(
 pub async fn run_affiliate_postback_worker(pool: PgPool) {
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
+        .redirect(reqwest::redirect::Policy::none())
         .build()
     {
         Ok(c) => c,

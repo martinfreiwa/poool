@@ -301,10 +301,11 @@ pub struct RetentionQuery {
 /// worker (GwG §8 deletions). Admin-only. See
 /// `docs/storage/04-compliance-and-retention.md` for the runbook.
 pub async fn api_admin_storage_retention_run(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Query(q): Query<RetentionQuery>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "kyc.write").await?;
     let default_bucket = state
         .config
         .gcs_bucket
@@ -339,11 +340,12 @@ pub struct ArmRetentionQuery {
 /// POST /api/admin/storage/retention/arm/:user_id — set the retention
 /// clock for the given user's KYC docs. Idempotent.
 pub async fn api_admin_storage_retention_arm(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<String>,
     Query(q): Query<ArmRetentionQuery>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "kyc.write").await?;
     let uid = ApiError::parse_uuid(&user_id)?;
     let years = q.years.unwrap_or(5).clamp(5, 10);
 

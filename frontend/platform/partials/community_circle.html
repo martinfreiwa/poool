@@ -1,12 +1,12 @@
 {# ═══════════════════════════════════════════════════════════════════
-   Community → My Circle tab — 2026-05-18 v3 redesign
+   Community -> My Circles tab — 2026-05-18 v3 redesign
    ═══════════════════════════════════════════════════════════════════
    One-screen vision:
      • Pending invites/requests banner (top, only when populated)
      • Single spotlight hero tile (one recommendation, not one per section)
      • Slim action bar (search + create)
      • My Circles horizontal pinned strip (compact pill cards)
-     • Unified Discover grid with filter chips (All / Featured / Trending / New)
+     • Unified Discover grid with Phase 2 filter chips
      • Search results override the discover grid when active
 
    IDs preserved for handler compat:
@@ -104,24 +104,30 @@
       <div id="cc-search-pagination" class="cc-pagination"></div>
     </section>
 
-    <!-- ── Discover (single unified grid with filter chips) ──────── -->
+    <!-- ── Discover (single unified grid with Phase 2 filter chips) ─ -->
     <section id="cc-discover-section" class="cc-section cc-section--v3">
       <div class="cc-section__head">
         <h3 class="cc-section__title">Discover</h3>
         <div id="cc-discover-filters" class="cc-chips" role="group" aria-label="Discover filter">
-          <button type="button" class="cc-chip cc-chip--active" data-cc-filter="all">All</button>
-          <button type="button" class="cc-chip" data-cc-filter="featured">
+          <button type="button" class="cc-chip cc-chip--active" data-cc-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="cc-chip" data-cc-filter="featured" aria-pressed="false">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             Featured
           </button>
-          <button type="button" class="cc-chip" data-cc-filter="trending">
+          <button type="button" class="cc-chip" data-cc-filter="trending" aria-pressed="false">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             Trending
           </button>
-          <button type="button" class="cc-chip" data-cc-filter="new">
+          <button type="button" class="cc-chip" data-cc-filter="new" aria-pressed="false">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             New
           </button>
+          <button type="button" class="cc-chip" data-cc-filter="asset" aria-pressed="false">Asset Circles</button>
+          <button type="button" class="cc-chip" data-cc-filter="private" aria-pressed="false">Private</button>
+          <button type="button" class="cc-chip" data-cc-filter="public" aria-pressed="false">Public</button>
+          <button type="button" class="cc-chip" data-cc-filter="official" aria-pressed="false">Official</button>
+          <button type="button" class="cc-chip" data-cc-filter="holder-only" aria-pressed="false">Holder-only</button>
+          <button type="button" class="cc-chip" data-cc-filter="kyc-gated" aria-pressed="false">KYC-gated</button>
         </div>
       </div>
       <div id="cc-discover-list" class="cc-grid">
@@ -135,6 +141,7 @@
   <div id="create-circle-modal" class="cc-modal community-modal"
        role="dialog" aria-modal="true"
        aria-labelledby="create-circle-title"
+       aria-describedby="create-circle-desc"
        aria-hidden="true" style="display:none;"
        onclick="if(event.target===this)closeCommunityModal('create-circle-modal')">
     <div class="ds-card cc-modal__panel">
@@ -149,6 +156,7 @@
         </button>
       </header>
       <div class="cc-modal__body">
+        <p id="create-circle-desc" class="ds-sr-only">Create a new community Circle with a name and description.</p>
         <div class="cc-form-row">
           <label for="circle-name-input" class="cc-form-row__label">Name</label>
           <input id="circle-name-input" type="text" class="ds-input" maxlength="100"
@@ -171,6 +179,7 @@
   <div id="invite-modal" class="cc-modal community-modal"
        role="dialog" aria-modal="true"
        aria-labelledby="invite-circle-title"
+       aria-describedby="invite-circle-desc"
        aria-hidden="true" style="display:none;"
        onclick="if(event.target===this)closeCommunityModal('invite-modal')">
     <div class="ds-card cc-modal__panel">
@@ -185,6 +194,7 @@
         </button>
       </header>
       <div class="cc-modal__body">
+        <p id="invite-circle-desc" class="ds-sr-only">Invite another investor to your Circle or copy the invite link.</p>
         <div class="cc-form-row">
           <label for="circle-invite-search" class="cc-form-row__label">Find an investor</label>
           <input id="circle-invite-search" type="text" class="ds-input"

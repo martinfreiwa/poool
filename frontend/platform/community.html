@@ -17,6 +17,7 @@ include
   <script>
     window.SSR_POST_ID = '{{ ssr_post_id | default("") }}';
     window.SSR_POST_FOUND = {% if ssr_post_found %}true{% else %}false{% endif %};
+    window.POOOL_INITIAL_COMMUNITY_TAB = '{{ initial_tab | default("") }}';
   </script>
   {% include 'components/mobile-menu.html' %}
 
@@ -86,25 +87,34 @@ include
           function switchCommunityTab(clickedBtn) {
             if (!clickedBtn) return;
 
+            const selectedTab = clickedBtn.dataset.clientTab || clickedBtn.dataset.tab?.replace(/^community-/, '').replace(/-tab$/, '') || 'feed';
             document.querySelectorAll('.community-tab-btn').forEach(function (b) {
               b.classList.remove('active');
               if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', 'false');
             });
             clickedBtn.classList.add('active');
             if (clickedBtn.getAttribute('role') === 'tab') clickedBtn.setAttribute('aria-selected', 'true');
+            document.querySelectorAll('.community-bottom-nav__btn').forEach(function (b) {
+              b.classList.toggle('community-bottom-nav__btn--active', b.dataset.bottomTab === selectedTab);
+            });
 
             const contentArea = document.getElementById('community-content-area');
             const targetPanel = document.getElementById(clickedBtn.dataset.tab);
-            document.querySelectorAll('.community-tab-panel').forEach(function (panel) {
-              panel.classList.add('hidden');
-            });
 
             if (clickedBtn.dataset.clientTab) {
               if (contentArea) contentArea.style.display = 'none';
+              document.querySelectorAll('.community-tab-panel').forEach(function (panel) {
+                panel.classList.add('hidden');
+              });
               if (targetPanel) targetPanel.classList.remove('hidden');
               const tab = clickedBtn.dataset.clientTab;
-              const url = tab === 'search' ? '/community?tab=search' : '/community?tab=' + tab;
-              window.history.replaceState({}, '', url);
+              window.history.replaceState({}, '', '/community?tab=' + tab);
+              if (tab === 'saved' && typeof window.loadCommunitySavedPosts === 'function') {
+                window.loadCommunitySavedPosts();
+              }
+              if (tab === 'members' && typeof window.loadCommunityMembers === 'function') {
+                window.loadCommunityMembers();
+              }
               if (tab === 'dms' && typeof window.loadDmThreads === 'function') {
                 window.loadDmThreads();
               }
@@ -116,6 +126,9 @@ include
             }
 
             if (contentArea) contentArea.style.display = '';
+            document.querySelectorAll('#community-search-tab, #community-notifications-tab, #community-dms-tab, #community-saved-tab, #community-members-tab').forEach(function (panel) {
+              panel.classList.add('hidden');
+            });
           }
 
           /**
@@ -130,7 +143,7 @@ include
 
           window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const tab = urlParams.get('tab');
+            const tab = urlParams.get('tab') || window.POOOL_INITIAL_COMMUNITY_TAB;
             if (tab && tab !== 'feed') {
               const targetTab = document.querySelector(`.community-tab-btn[data-tab="community-${tab}-tab"]`);
               if (targetTab) {
@@ -744,6 +757,44 @@ include
           </div>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB: SAVED POSTS
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="community-saved-tab" class="community-tab-panel hidden">
+          <section class="community-panel">
+            <div class="community-panel__header">
+              <div>
+                <h2 class="ds-text-xl">Saved posts</h2>
+                <p class="ds-text-muted">Posts you bookmarked for later.</p>
+              </div>
+            </div>
+            <div id="community-saved-feed-container">
+              <div class="community-loading-state">Loading saved posts...</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB: MEMBERS
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="community-members-tab" class="community-tab-panel hidden">
+          <section class="community-panel">
+            <div class="community-panel__header">
+              <div>
+                <h2 class="ds-text-xl">Members</h2>
+                <p class="ds-text-muted">Find investors to follow or message.</p>
+              </div>
+            </div>
+            <div class="community-search__form" style="margin-bottom:16px;">
+              <label for="community-members-query" class="ds-sr-only">Search members</label>
+              <input id="community-members-query" class="ds-input community-search__input" type="search" placeholder="Search members...">
+            </div>
+            <div id="community-members-list">
+              <div class="community-loading-state">Loading members...</div>
+            </div>
+          </section>
+        </div>
+
         <!-- DM new-thread modal -->
         <div id="community-dm-new-modal" class="ds-modal" role="dialog" aria-modal="true"
           aria-labelledby="community-dm-new-title" style="display:none;">
@@ -1158,6 +1209,74 @@ include
     }
   </style>
   <script>
+    window.loadCommunitySavedPosts = async function () {
+      const container = document.getElementById('community-saved-feed-container');
+      if (!container || container.dataset.loaded === 'true') return;
+      container.innerHTML = '<div class="community-loading-state">Loading saved posts...</div>';
+      try {
+        const res = await fetch('/community/partials/feed/list?source=bookmarks', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Failed to load saved posts');
+        container.innerHTML = await res.text();
+        container.dataset.loaded = 'true';
+      } catch (error) {
+        console.error('Failed to load saved posts', error);
+        container.innerHTML = '<div class="ds-card community-feed-empty"><h3 class="community-feed-empty__title">Saved posts could not be loaded</h3><p class="community-feed-empty__desc">Try again in a moment.</p></div>';
+      }
+    };
+
+    window.loadCommunityMembers = async function () {
+      const list = document.getElementById('community-members-list');
+      const input = document.getElementById('community-members-query');
+      if (!list) return;
+      const query = input ? input.value.trim() : '';
+      list.innerHTML = '<div class="community-loading-state">Loading members...</div>';
+      try {
+        const url = new URL('/api/community/members', window.location.origin);
+        if (query) url.searchParams.set('q', query);
+        const res = await fetch(url.toString(), { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Failed to load members');
+        const data = await res.json();
+        const members = Array.isArray(data.members) ? data.members : [];
+        if (members.length === 0) {
+          list.innerHTML = '<div class="ds-card community-feed-empty"><h3 class="community-feed-empty__title">No members found</h3><p class="community-feed-empty__desc">Try a different search.</p></div>';
+          return;
+        }
+        list.innerHTML = members.map((member) => {
+          const id = String(member.user_id || member.id || '');
+          const name = String(member.display_name || member.name || 'Community member');
+          const bio = String(member.bio || member.flair || '');
+          const avatar = member.avatar_url ? '<img class="community-search-user-row__avatar" src="' + String(member.avatar_url).replace(/"/g, '&quot;') + '" alt="">' : '<div class="community-search-user-row__avatar community-search-user-row__avatar--initials">' + name.charAt(0).toUpperCase() + '</div>';
+          return '<a class="ds-card community-search-user-row" href="/community/u/' + encodeURIComponent(id) + '">' +
+            '<div class="community-search-user-row__main">' + avatar +
+            '<div><div class="ds-text-body-lg community-search-user-row__name"></div><div class="ds-text-caption community-search-user-row__meta"></div></div>' +
+            '</div></a>';
+        }).join('');
+        Array.from(list.querySelectorAll('.community-search-user-row')).forEach((row, index) => {
+          const member = members[index];
+          row.querySelector('.community-search-user-row__name').textContent = member.display_name || member.name || 'Community member';
+          row.querySelector('.community-search-user-row__meta').textContent = member.bio || member.flair || '';
+        });
+      } catch (error) {
+        console.error('Failed to load members', error);
+        list.innerHTML = '<div class="ds-card community-feed-empty"><h3 class="community-feed-empty__title">Members could not be loaded</h3><p class="community-feed-empty__desc">Try again in a moment.</p></div>';
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const membersSearch = document.getElementById('community-members-query');
+      if (membersSearch) {
+        let timer = null;
+        membersSearch.addEventListener('input', function () {
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            if (!document.getElementById('community-members-tab')?.classList.contains('hidden')) {
+              window.loadCommunityMembers();
+            }
+          }, 250);
+        });
+      }
+    });
+
     (function () {
       // Wire bottom-nav taps to the existing tab-switch system. Marks the
       // active button so users see what surface they're on.
@@ -1173,7 +1292,7 @@ include
         btn.addEventListener('click', () => activate(btn.dataset.bottomTab));
       });
       // Highlight the initial tab from the URL ?tab=foo (default 'feed').
-      const initialTab = new URLSearchParams(window.location.search).get('tab') || 'feed';
+      const initialTab = new URLSearchParams(window.location.search).get('tab') || window.POOOL_INITIAL_COMMUNITY_TAB || 'feed';
       const initialBtn = document.querySelector(`.community-bottom-nav__btn[data-bottom-tab="${initialTab}"]`);
       if (initialBtn) initialBtn.classList.add('community-bottom-nav__btn--active');
     })();

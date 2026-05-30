@@ -57,6 +57,28 @@
   </div>
 
   <script>
+    const escapeHtml = (s) => {
+      if (s == null) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+    const escapeAttr = escapeHtml; // attributes need the same escaping; alias for readability
+    const escapeJsString = (s) => {
+      if (s == null) return '';
+      return String(s)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/</g, '\\u003c')  // defeat </script> breakout
+        .replace(/>/g, '\\u003e');
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const postId = urlParams.get('id');
@@ -102,14 +124,14 @@
                 <tbody>
                     ${cmts.map(c => `
                         <tr style="${c.is_hidden ? 'opacity: 0.5' : ''}; ${c.is_pinned ? 'background:#f0fdf4' : ''}">
-                            <td style="width:150px;"><b>${c.author_name}</b><br><small style="color:#667085">${c.user_id.substring(0,8)}</small></td>
+                            <td style="width:150px;"><b>${escapeHtml(c.author_name)}</b><br><small style="color:#667085">${c.user_id.substring(0,8)}</small></td>
                             <td style="max-width: 250px; white-space: normal;">
                                 ${c.is_pinned ? '<span style="font-size:10px; background:#22c55e; color:white; padding:2px 4px; border-radius:4px; margin-right:4px;">PINNED</span>' : ''}
-                                ${c.content}
+                                ${escapeHtml(c.content)}
                             </td>
-                            <td style="width:120px;"><small>${new Date(c.created_at).toLocaleString()}</small></td>
+                            <td style="width:120px;"><small>${escapeHtml(new Date(c.created_at).toLocaleString())}</small></td>
                             <td style="text-align:right;">
-                                <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="togglePinComment('${c.id}', ${c.is_pinned})">${c.is_pinned ? 'Unpin' : 'Pin'}</button>
+                                <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="togglePinComment('${escapeAttr(c.id)}', ${c.is_pinned ? 'true' : 'false'})">${c.is_pinned ? 'Unpin' : 'Pin'}</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -123,10 +145,10 @@
                 <tbody>
                     ${reps.map(r => `
                         <tr>
-                            <td><b>${r.reporter_name}</b></td>
-                            <td>${r.reason}</td>
-                            <td><span class="admin-badge">${r.status}</span></td>
-                            <td><small>${new Date(r.created_at).toLocaleDateString()}</small></td>
+                            <td><b>${escapeHtml(r.reporter_name)}</b></td>
+                            <td>${escapeHtml(r.reason)}</td>
+                            <td><span class="admin-badge">${escapeHtml(r.status)}</span></td>
+                            <td><small>${escapeHtml(new Date(r.created_at).toLocaleDateString())}</small></td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -135,24 +157,24 @@
 
         let reactionsHtml = reacs.length === 0 ? '<p style="color:#667085;">No reactions.</p>' : `
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                ${reacs.map(r => `<span class="admin-badge">${r.reaction_type} - ${r.author_name}</span>`).join('')}
+                ${reacs.map(r => `<span class="admin-badge">${escapeHtml(r.reaction_type)} - ${escapeHtml(r.author_name)}</span>`).join('')}
             </div>
         `;
 
-        const lockBtn = p.is_locked 
-            ? `<button class="admin-btn admin-btn--secondary" style="color:#d97706; border-color:#d97706;" onclick="toggleLock('${p.id}', false)">Unlock Thread</button>`
-            : `<button class="admin-btn admin-btn--secondary" onclick="toggleLock('${p.id}', true)">Lock Thread</button>`;
+        const lockBtn = p.is_locked
+            ? `<button class="admin-btn admin-btn--secondary" style="color:#d97706; border-color:#d97706;" onclick="toggleLock('${escapeAttr(p.id)}', false)">Unlock Thread</button>`
+            : `<button class="admin-btn admin-btn--secondary" onclick="toggleLock('${escapeAttr(p.id)}', true)">Lock Thread</button>`;
 
         document.getElementById('post-detail-container').innerHTML = `
             <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
                 <h1 class="admin-page-title">Post Detail</h1>
-                <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${p.id}</span></p>
+                <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${escapeHtml(p.id)}</span></p>
                 </div>
                 <div style="display:flex; gap: 8px;">
                 ${lockBtn}
-                ${!p.is_hidden 
-                    ? `<button class="admin-btn admin-btn--secondary" style="color:#d92d20; border-color:#d92d20;" onclick="hidePost('${p.id}')">Hide Post</button>` 
+                ${!p.is_hidden
+                    ? `<button class="admin-btn admin-btn--secondary" style="color:#d92d20; border-color:#d92d20;" onclick="hidePost('${escapeAttr(p.id)}')">Hide Post</button>`
                     : ``}
                 </div>
             </div>
@@ -165,24 +187,24 @@
                             <h2 class="admin-card-title">Content</h2>
                         </div>
                         <div class="admin-card-body" style="background:#f9fafb; font-size:15px; line-height:1.5;">
-                            ${p.content}
-                            ${p.content_tags ? `<div style="margin-top:12px; display:flex; gap:8px;">${p.content_tags.map(t => `<span class="admin-badge" style="background:#fef3c7; color:#b45309;">${t}</span>`).join('')}</div>` : ''}
+                            ${escapeHtml(p.content)}
+                            ${p.content_tags ? `<div style="margin-top:12px; display:flex; gap:8px;">${p.content_tags.map(t => `<span class="admin-badge" style="background:#fef3c7; color:#b45309;">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
                         </div>
                         <div class="admin-card-body" style="display:flex; justify-content: flex-end; padding-top: 0; background:#f9fafb;">
-                            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="editTags('${p.id}', '${(p.content_tags || []).join(',')}')">Edit Tags</button>
+                            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="editTags('${escapeAttr(p.id)}', '${escapeAttr(escapeJsString((p.content_tags || []).join(',')))}')">Edit Tags</button>
                         </div>
                         <div class="admin-card-body" style="display:flex; gap: 40px; border-top: 1px solid var(--admin-border-color);">
                             <div>
                                 <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Author</div>
-                                <div><b>${p.author_name}</b></div>
+                                <div><b>${escapeHtml(p.author_name)}</b></div>
                             </div>
                             <div>
                                 <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date</div>
-                                <div>${date}</div>
+                                <div>${escapeHtml(date)}</div>
                             </div>
                             <div>
                                 <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Type</div>
-                                <div><span class="admin-badge" style="background:${typeColor}; color:${typeText};">${p.post_type}</span></div>
+                                <div><span class="admin-badge" style="background:${typeColor}; color:${typeText};">${escapeHtml(p.post_type)}</span></div>
                             </div>
                             <div>
                                 <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Status</div>

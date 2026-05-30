@@ -182,6 +182,13 @@ poool/
 - **JS pattern**: Each page has its own `static/js/<page-name>.js`
 - **CSS pattern**: Page-specific CSS in `static/css/<page-name>.css`
 - **SSR**: Pages are rendered by MiniJinja templates on the Rust backend
+- **Card-with-table standard**: Any new or refactored "card containing a table"
+  MUST match the **`.developer-assets-performance-section`** reference pattern
+  on the developer dashboard (Top Performing Assets). Spec: `docs/DESIGN.md` →
+  *Tables → Card With Table — Reference Pattern (STANDARD)*. Brand-gradient
+  top strip, icon tile + title + subtitle header, white `.table__header-row`,
+  right-aligned numeric columns, brand-green hover wash on rows, grey-default
+  icon buttons that color-only on hover. Do not invent new card-table styles.
 
 ---
 

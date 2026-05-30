@@ -175,6 +175,7 @@
       errBox.textContent = "";
 
       const password = document.getElementById("del-password").value;
+      const typedConfirm = confirmInput.value.trim();
 
       // Get CSRF token
       const csrfValue = `; ${document.cookie}`;
@@ -189,7 +190,7 @@
         const resp = await fetch("/api/settings/delete-account", {
           method: "POST",
           headers,
-          body: JSON.stringify({ current_password: password, confirm: "DELETE" }),
+          body: JSON.stringify({ current_password: password, confirm: typedConfirm }),
         });
 
         const data = await resp.json().catch(() => ({}));

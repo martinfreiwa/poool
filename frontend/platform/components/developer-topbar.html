@@ -157,14 +157,6 @@
       {% endif %}
 
       {% if dev_nav_show_team_actions %}
-      <button type="button" class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="dat-page-export-csv" title="Download full member breakdown as CSV" aria-label="Export full member breakdown to CSV">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        <span>Export CSV</span>
-      </button>
       <a href="/developer/affiliate-team/members?invite=1" class="developer-lb-topbar-action investor-topbar-action" id="dat-page-invite-cta" aria-label="Invite new team member">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -174,16 +166,23 @@
         </svg>
         <span>Invite member</span>
       </a>
+      <button type="button" class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="dat-page-export-csv" title="Download full member breakdown as CSV" aria-label="Export full member breakdown to CSV">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
       {% endif %}
 
       {% if dev_nav_show_asset_actions %}
-      <button class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="btn-refresh" title="Refresh">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+      <button class="topbar-icon-btn" id="btn-refresh" title="Refresh" aria-label="Refresh">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
           <path d="M1 1v5h5"></path>
           <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5"></path>
           <path d="M15 10A7 7 0 011.8 13.2"></path>
         </svg>
-        <span>Refresh</span>
       </button>
       <div class="edit-toolbar" id="edit-toolbar" style="display:none;">
         <button class="btn-edit-mode" id="btn-edit-mode" title="Edit asset details">

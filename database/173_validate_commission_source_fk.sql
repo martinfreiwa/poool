@@ -73,7 +73,6 @@ COMMIT;
 --     WHERE conname = 'affiliate_commissions_source_order_id_fkey';
 --    -- should return `t`
 
-\echo '── Current FK state ──'
 SELECT conname, convalidated, pg_get_constraintdef(oid)
   FROM pg_constraint
  WHERE conrelid = 'affiliate_commissions'::regclass

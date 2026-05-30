@@ -139,13 +139,21 @@ body.my-trading-body {
     background: #0000cc;
 }
 
+.myt-hero,
+.myt-stats-row.sub-stats,
+.myt-table-card.submissions-table-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    align-self: stretch;
+}
+
 
 /* === Summary Cards — Override sub-stats grid to 4 columns === */
 .myt-stats-row.sub-stats {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
     margin-bottom: 24px;
-    width: 100%;
+    width: 100% !important;
 }
 
 /* Holographic p-icon inside sub-stat cards — prevent collapse */
@@ -163,14 +171,19 @@ body.my-trading-body {
     overflow: hidden;
 }
 
-.myt-stats-row .sub-stat::before,
-.myt-table-card.submissions-table-container::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 3px;
-    background: var(--myt-card-accent);
-    z-index: 1;
+.myt-stats-row .sub-stat {
+    min-height: 88px !important;
+    padding: 18px 20px !important;
+    justify-content: center !important;
+}
+
+body.my-trading-body .myt-stats-row .sub-stat::before,
+body.my-trading-body .myt-stats-row .sub-stat.active::before,
+body.my-trading-body .myt-table-card.submissions-table-container::before {
+    content: none !important;
+    display: none !important;
+    height: 0 !important;
+    background: none !important;
 }
 
 .myt-stats-row .sub-stat:hover,
@@ -206,7 +219,8 @@ body.my-trading-body {
 /* === Card Header with integrated tabs (leaderboard pattern) === */
 .myt-table-card.submissions-table-container {
     border-radius: 12px;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
     overflow: hidden;
 }
 
@@ -307,6 +321,12 @@ body.my-trading-body {
 /* Table inside the card */
 .myt-table-card .submissions-table {
     font-variant-numeric: tabular-nums;
+}
+
+.myt-table-card .submissions-table thead,
+.myt-table-card .submissions-table thead tr,
+.myt-table-card .submissions-table th {
+    background: #FFFFFF;
 }
 
 .myt-table-card .submissions-table th {

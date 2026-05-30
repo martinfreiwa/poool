@@ -1,6 +1,6 @@
 -- Module 5: Gamified Challenges & Progress
 
-CREATE TABLE challenges (
+CREATE TABLE IF NOT EXISTS challenges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE challenges (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE challenge_progress (
+CREATE TABLE IF NOT EXISTS challenge_progress (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
     challenge_id UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
@@ -24,14 +24,19 @@ CREATE TABLE challenge_progress (
     UNIQUE(user_id, challenge_id)
 );
 
-CREATE INDEX idx_challenge_progress_user_id ON challenge_progress(user_id);
-CREATE INDEX idx_challenges_active ON challenges(is_active);
+CREATE INDEX IF NOT EXISTS idx_challenge_progress_user_id ON challenge_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_challenges_active ON challenges(is_active);
 
 -- Insert some default one-time challenges
 INSERT INTO challenges (title, description, xp_reward, requirement_type, requirement_value, frequency)
-VALUES 
+SELECT title, description, xp_reward, requirement_type, requirement_value, frequency
+FROM (VALUES
     ('First Steps', 'Complete your KYC and verify your identity.', 100, 'kyc_approved', 1, 'one_time'),
     ('First Investment', 'Make your first property investment.', 250, 'buy_asset', 1, 'one_time'),
     ('Community Voice', 'Write a verified review for a property you own.', 50, 'write_review', 1, 'one_time'),
     ('Social Butterfly', 'Join a community circle.', 50, 'join_circle', 1, 'one_time'),
-    ('Consistent Investor', 'Log in for 5 consecutive days.', 100, 'login_streak', 5, 'one_time');
+    ('Consistent Investor', 'Log in for 5 consecutive days.', 100, 'login_streak', 5, 'one_time')
+) AS seed(title, description, xp_reward, requirement_type, requirement_value, frequency)
+WHERE NOT EXISTS (
+  SELECT 1 FROM challenges WHERE challenges.title = seed.title
+);

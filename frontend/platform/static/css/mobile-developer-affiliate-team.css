@@ -1,0 +1,788 @@
+/* ─────────────────────────────────────────────────────────────────────
+ * Mobile Developer Affiliate Team — unified mobile sheet for all 7
+ * /developer/affiliate-team/* sub-pages (they all share the body ID
+ * `developer-affiliate-team-body`).
+ *
+ * Mobile-first phases:
+ *   - ≤768px  : phones + small tablets (the bulk of overrides)
+ *   - ≤480px  : phone-only refinements (full-screen modals etc.)
+ *   - 769..1024px : landscape-tablet polish
+ *
+ * NOTE: The desktop sheet (`developer-affiliate-team.css`) hard-codes
+ * minimum widths on the three data tables (~1000–1240px) which trap the
+ * page in horizontal scroll on phones. The header rows are neutralized
+ * below and the tables are wrapped in a sticky-first-cell scroll
+ * container so users can still scan every column with the row identifier
+ * in view.
+ *
+ * The HTML files in this module DO NOT render `data-label` attributes on
+ * <td> cells (rows are built by DAT.dataTable in
+ * developer-affiliate-team-shell.js, lines 1081-1086 — plain td.class only),
+ * so the "collapse-to-cards" pattern is not viable without modifying JS.
+ * All three data tables therefore use the wrap-and-scroll strategy with a
+ * sticky first column.
+ * ─────────────────────────────────────────────────────────────────── */
+
+/* ════════════════════════════════════════════════════════════════════
+   ≤768px  — phones + small tablets
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Cross-developer baseline: hide cart icon, right-align mobile-header */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-affiliate-team-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-affiliate-team-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ── Layout shell ────────────────────────────────────────────────
+     Desktop topbar is already hidden at ≤768px by
+     developer-leaderboard-navbar.css (.developer-lb-topbar.lb-topbar
+     { display:none }). Re-layout the main column to match the
+     developer-dashboard mobile baseline. */
+  #developer-affiliate-team-body .developer-dashboard-page {
+    display: block !important;
+  }
+  #developer-affiliate-team-body .developer-dashboard-sidebar {
+    display: none !important;
+  }
+  #developer-affiliate-team-body #developer-affiliate-team-main {
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+    background: #fafafa !important;
+  }
+  /* ds-main__content rule from developer-leaderboard-navbar.css already
+     pushes 80px top to clear mobile-header, but it caps width at 1200px.
+     Force fluid + 16px gutter, matching the rest of the developer mobile
+     pages. */
+  #developer-affiliate-team-body #developer-affiliate-team-main .ds-main__content {
+    padding: 80px 16px 32px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Cards: full-width, tighter padding, no horizontal overflow ── */
+  #developer-affiliate-team-body .ds-card,
+  #developer-affiliate-team-body .dat-content-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+  #developer-affiliate-team-body .dat-content-card {
+    padding: 18px 16px 20px;
+  }
+  /* card-with-header keeps 0 padding (header band handles its own) */
+  #developer-affiliate-team-body .dat-content-card--with-header,
+  #developer-affiliate-team-body section.dat-content-card--with-header {
+    padding: 0 !important;
+  }
+
+  /* ── Card header band ─────────────────────────────────────────── */
+  #developer-affiliate-team-body .dat-card-header {
+    padding: 16px 16px;
+    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #developer-affiliate-team-body .dat-card-header__title-group {
+    min-width: 0;
+    gap: 10px;
+    align-items: center;
+  }
+  #developer-affiliate-team-body .dat-card-header__icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  #developer-affiliate-team-body .dat-card-header__icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  #developer-affiliate-team-body .dat-section__title {
+    font-size: 16px;
+    line-height: 22px;
+  }
+  #developer-affiliate-team-body .dat-section__hint {
+    font-size: 12px;
+    line-height: 18px;
+  }
+  #developer-affiliate-team-body .dat-card-header__controls {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  /* Search slot takes full width on phones. */
+  #developer-affiliate-team-body .dat-card-header__search,
+  #developer-affiliate-team-body .dat-card-header__search .dat-table-toolbar__search {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+  #developer-affiliate-team-body .dat-card-header__search .dat-table-toolbar__search-input {
+    width: 100%;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     DATA TABLES — Strategy A: wrap-and-scroll with sticky first column.
+     Neutralizes the hard-coded min-widths in the desktop sheet
+     (lines 295-321) so the *card* doesn't horizontally scroll — only
+     the inner table-wrap does. First cell stays pinned so the row
+     identifier (customer / member / asset name) is always in view.
+     ════════════════════════════════════════════════════════════════ */
+
+  /* Wrapper becomes the horizontal scroll viewport. */
+  #developer-affiliate-team-body .dat-table-wrap,
+  #developer-affiliate-team-body .dat-table-card > .dat-table-wrap,
+  #developer-affiliate-team-body .dat-content-card--with-header > .dat-table-wrap {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    max-width: 100%;
+    padding: 0 !important;
+  }
+  #developer-affiliate-team-body .dat-table-wrap::-webkit-scrollbar {
+    height: 6px;
+  }
+  #developer-affiliate-team-body .dat-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 3px;
+  }
+
+  /* Tables: tighter cell padding + readable font size on phones. */
+  #developer-affiliate-team-body .dat-table,
+  #developer-affiliate-team-body .dat-table-card .dat-table {
+    width: max-content;
+    min-width: 100%;
+    font-size: 13px;
+  }
+  #developer-affiliate-team-body .dat-table th,
+  #developer-affiliate-team-body .dat-table td,
+  #developer-affiliate-team-body .dat-table-card .dat-table th,
+  #developer-affiliate-team-body .dat-table-card .dat-table td {
+    padding: 10px 10px;
+    font-size: 13px;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+  #developer-affiliate-team-body .dat-table th:first-child,
+  #developer-affiliate-team-body .dat-table td:first-child,
+  #developer-affiliate-team-body .dat-table-card .dat-table th:first-child,
+  #developer-affiliate-team-body .dat-table-card .dat-table td:first-child {
+    padding-left: 14px;
+  }
+  #developer-affiliate-team-body .dat-table th:last-child,
+  #developer-affiliate-team-body .dat-table td:last-child,
+  #developer-affiliate-team-body .dat-table-card .dat-table th:last-child,
+  #developer-affiliate-team-body .dat-table-card .dat-table td:last-child {
+    padding-right: 14px;
+  }
+
+  /* Neutralize the desktop-hard-coded min-widths so the wrapper, not
+     the card, owns the horizontal scroll. Override every column. */
+  #developer-affiliate-team-body #dat-customers-thead-row th,
+  #developer-affiliate-team-body #dat-members-thead-row th,
+  #developer-affiliate-team-body #dat-products-thead-row th {
+    min-width: 100px !important;
+  }
+  /* Identifier column (column 1) gets a touch more room since it
+     also hosts the sub-text (email) on customers/members. */
+  #developer-affiliate-team-body #dat-customers-thead-row th:nth-child(1),
+  #developer-affiliate-team-body #dat-members-thead-row th:nth-child(1),
+  #developer-affiliate-team-body #dat-products-thead-row th:nth-child(1) {
+    min-width: 180px !important;
+  }
+  /* Action / status / numeric columns: keep them narrow. */
+  #developer-affiliate-team-body #dat-customers-thead-row th:nth-child(6),
+  #developer-affiliate-team-body #dat-customers-thead-row th:nth-child(9),
+  #developer-affiliate-team-body #dat-members-thead-row th:nth-child(2),
+  #developer-affiliate-team-body #dat-members-thead-row th:nth-child(8) {
+    min-width: 84px !important;
+  }
+
+  /* Sticky first column — keeps the row identifier visible during
+     horizontal scroll. White background prevents see-through onto
+     scrolled content beneath. */
+  #developer-affiliate-team-body #dat-customers-tbody td:first-child,
+  #developer-affiliate-team-body #dat-members-tbody td:first-child,
+  #developer-affiliate-team-body #dat-products-tbody td:first-child,
+  #developer-affiliate-team-body #dat-customers-thead-row th:first-child,
+  #developer-affiliate-team-body #dat-members-thead-row th:first-child,
+  #developer-affiliate-team-body #dat-products-thead-row th:first-child {
+    position: sticky;
+    left: 0;
+    background: #FFFFFF;
+    z-index: 2;
+    box-shadow: 1px 0 0 var(--card-border-color, #EAECF0);
+  }
+  /* Header sticky cell sits above body sticky cells in z. */
+  #developer-affiliate-team-body #dat-customers-thead-row th:first-child,
+  #developer-affiliate-team-body #dat-members-thead-row th:first-child,
+  #developer-affiliate-team-body #dat-products-thead-row th:first-child {
+    z-index: 3;
+  }
+
+  /* Pager + footer: compact, fit-on-phone */
+  #developer-affiliate-team-body .dat-table-pager-host,
+  #developer-affiliate-team-body .dat-card-footer,
+  #developer-affiliate-team-body .dat-table-card > .dat-table-pager-host,
+  #developer-affiliate-team-body .dat-table-card > .dat-card-footer,
+  #developer-affiliate-team-body .dat-content-card--with-header > .dat-table-pager-host,
+  #developer-affiliate-team-body .dat-content-card--with-header > .dat-card-footer {
+    padding: 10px 14px;
+  }
+  #developer-affiliate-team-body .dat-table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  #developer-affiliate-team-body .dat-table-toolbar__search {
+    max-width: none;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  #developer-affiliate-team-body .dat-table-toolbar__summary {
+    text-align: left;
+    margin-left: 0;
+    font-size: 12px;
+  }
+  #developer-affiliate-team-body .dat-pager {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  /* ── Chip bar (status filters on customers/members) ──────────── */
+  #developer-affiliate-team-body .dat-chip-bar-host {
+    margin: 0 0 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #developer-affiliate-team-body .dat-chip-bar-host::-webkit-scrollbar {
+    display: none;
+  }
+  #developer-affiliate-team-body .dat-chip-bar {
+    flex-wrap: nowrap;
+    min-height: 36px;
+    padding: 2px 0;
+  }
+  #developer-affiliate-team-body .dat-chip {
+    flex-shrink: 0;
+    min-height: 32px;
+    padding: 0 14px;
+  }
+
+  /* ── Topbar date-range picker (DAT.topbarDateRange) ──────────────
+     The desktop topbar is hidden on mobile by the leaderboard sheet,
+     but DAT.topbarDateRange still reads inputs from the (hidden) DOM.
+     If a future mobile topbar surface ever shows the picker, stack the
+     trigger label + popover vertically. Defensive — currently hidden. */
+  #developer-affiliate-team-body .dat-topbar-date-range {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  #developer-affiliate-team-body .dat-topbar-date-range__trigger {
+    width: 100%;
+    justify-content: space-between;
+    height: 40px;
+  }
+  #developer-affiliate-team-body .dat-topbar-date-range__popover {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: 8px;
+    min-width: 0;
+    width: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  #developer-affiliate-team-body .dat-topbar-date-range__presets {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* ── Inline toolbar (analytics-orphan page only) — stack preset bar
+     and custom-range row vertically, allow preset bar to scroll. */
+  #developer-affiliate-team-body .dat-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  #developer-affiliate-team-body .dat-toolbar__presets {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #developer-affiliate-team-body .dat-toolbar__range {
+    width: 100%;
+    justify-content: space-between;
+  }
+  #developer-affiliate-team-body .dat-date-input {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  /* ── Hero KPI grid (analytics overview cards) ─────────────────── */
+  #developer-affiliate-team-body .dat-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  #developer-affiliate-team-body .dat-hero-kpi {
+    padding: 18px 16px 16px;
+    min-height: auto;
+  }
+  #developer-affiliate-team-body .dat-hero-kpi__value {
+    font-size: 24px;
+  }
+
+  /* ── Payout pipeline ─────────────────────────────────────────── */
+  #developer-affiliate-team-body .dat-payout-flow {
+    grid-template-columns: 1fr;
+  }
+  #developer-affiliate-team-body .dat-payout-arrow {
+    display: none;
+  }
+  #developer-affiliate-team-body .dat-payout-stage {
+    border-top: 1px solid #F2F4F7;
+    padding: 14px 16px;
+  }
+  #developer-affiliate-team-body .dat-payout-stage:first-of-type {
+    border-top: 0;
+    padding-top: 18px;
+  }
+  #developer-affiliate-team-body .dat-payout-stage__value {
+    font-size: 20px;
+  }
+
+  /* ── Secondary KPI grid ──────────────────────────────────────── */
+  #developer-affiliate-team-body .dat-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  #developer-affiliate-team-body .dat-kpi-grid--3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #developer-affiliate-team-body .dat-kpi {
+    padding: 14px 12px 10px;
+  }
+  #developer-affiliate-team-body .dat-kpi__value {
+    font-size: 18px;
+  }
+
+  /* ── Charts: stack 3-up satellite row to single column ──────── */
+  #developer-affiliate-team-body .dat-charts-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  #developer-affiliate-team-body .dat-chart-card {
+    width: 100%;
+  }
+  #developer-affiliate-team-body .dat-chart-header {
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  #developer-affiliate-team-body .dat-chart-header__title-group {
+    width: 100%;
+    align-items: center;
+  }
+  #developer-affiliate-team-body .dat-chart-header__icon {
+    width: 30px;
+    height: 30px;
+  }
+  #developer-affiliate-team-body .dat-chart-header__icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  #developer-affiliate-team-body .dat-chart-title {
+    font-size: 14px;
+  }
+  #developer-affiliate-team-body .dat-chart-subtitle {
+    font-size: 11px;
+  }
+  #developer-affiliate-team-body .dat-chart-header__controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  #developer-affiliate-team-body .dat-chart-body {
+    min-height: 200px;
+    padding: 12px 14px 14px;
+  }
+  #developer-affiliate-team-body .dat-chart-body--hero {
+    min-height: 240px;
+  }
+  /* Resolution toggle pills don't overflow on phones. */
+  #developer-affiliate-team-body .dat-res-toggle {
+    flex-wrap: wrap;
+    height: auto;
+  }
+  #developer-affiliate-team-body .dat-chart-hover-hint {
+    display: none;
+  }
+
+  /* ── Cohort retention heatmap: horizontal scroll ──────────────── */
+  #developer-affiliate-team-body .dat-cohort-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Insights grid (Top performers / Members at risk) ────────── */
+  #developer-affiliate-team-body .dat-insights-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* ── Meta strip + last-updated row ────────────────────────────── */
+  #developer-affiliate-team-body .dat-meta-strip,
+  #developer-affiliate-team-body .dat-meta-row {
+    justify-content: flex-start;
+    margin: 0;
+  }
+  #developer-affiliate-team-body .dat-last-updated,
+  #developer-affiliate-team-body .dat-toolbar__updated {
+    font-size: 11px;
+    padding: 0;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     SETTINGS PAGE — single-column form, full-width inputs
+     ════════════════════════════════════════════════════════════════ */
+  #developer-affiliate-team-body .dat-settings-form {
+    max-width: 100% !important;
+    width: 100%;
+  }
+  #developer-affiliate-team-body .dat-settings-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  #developer-affiliate-team-body .dat-settings-card {
+    padding: 18px 16px !important;
+  }
+  #developer-affiliate-team-body .dat-settings-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  #developer-affiliate-team-body .dat-form-row {
+    margin-bottom: 12px;
+  }
+  #developer-affiliate-team-body .dat-form-row input,
+  #developer-affiliate-team-body .dat-form-row .ds-input,
+  #developer-affiliate-team-body .dat-settings-form .ds-input {
+    width: 100% !important;
+    box-sizing: border-box;
+    font-size: 16px; /* prevents iOS Safari auto-zoom on focus */
+    padding: 10px 12px;
+  }
+  /* Brand-customization row: collapse the flex row with hard-coded
+     `flex:0 0 200px;` / `display:flex;gap:16px;align-items:flex-end;`
+     inline styles (HTML lines 136-156 of affiliate-team-settings.html).
+     Hard override via attribute selectors so inline styles lose. */
+  #developer-affiliate-team-body .dat-settings-card .ds-form-row[style] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  #developer-affiliate-team-body .dat-settings-card .ds-form-row[style] > .ds-form-group {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  /* Public-link card: stack URL block + actions vertically. */
+  #developer-affiliate-team-body .dat-public-link {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px 14px;
+  }
+  #developer-affiliate-team-body .dat-public-link__url-wrap {
+    flex: 1 1 100%;
+  }
+  #developer-affiliate-team-body .dat-public-link__url {
+    font-size: 12px;
+  }
+  #developer-affiliate-team-body .dat-public-link__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  #developer-affiliate-team-body .dat-public-empty {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    padding: 18px 14px;
+  }
+
+  /* Overview tile grid (settings + tier pages) */
+  #developer-affiliate-team-body .dat-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #developer-affiliate-team-body .dat-overview-tile {
+    padding: 12px 12px;
+  }
+  #developer-affiliate-team-body .dat-overview-tile__value {
+    font-size: 18px;
+  }
+
+  /* Sticky settings footer — vertical stack, full-width actions */
+  #developer-affiliate-team-body .dat-settings-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+    /* Account for the safe-area inset on iOS phones with home indicator. */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  #developer-affiliate-team-body .dat-settings-footer__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  #developer-affiliate-team-body .dat-settings-footer__actions .ds-btn {
+    flex: 1 1 50%;
+    min-height: 40px;
+  }
+  #developer-affiliate-team-body .dat-settings-footer__status {
+    text-align: center;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     TIER PAGE — hero, progress, compare cards
+     ════════════════════════════════════════════════════════════════ */
+  #developer-affiliate-team-body .dat-tier-hero__grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 12px;
+  }
+  #developer-affiliate-team-body .dat-tier-hero__cur,
+  #developer-affiliate-team-body .dat-tier-hero__volume,
+  #developer-affiliate-team-body .dat-tier-hero__next {
+    min-height: 0;
+    padding: 14px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle, #E9EAEB);
+  }
+  #developer-affiliate-team-body .dat-tier-hero__cur {
+    padding-left: 12px;
+  }
+  #developer-affiliate-team-body .dat-tier-hero__next {
+    border-bottom: 0;
+  }
+  #developer-affiliate-team-body .dat-tier-hero__tier {
+    font-size: 24px;
+  }
+  #developer-affiliate-team-body .dat-tier-hero__num {
+    font-size: 18px;
+  }
+  #developer-affiliate-team-body .dat-tier-progress {
+    margin-top: 16px;
+  }
+  #developer-affiliate-team-body .dat-tier-progress__bar {
+    width: 100%;
+  }
+  #developer-affiliate-team-body .dat-compare-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  #developer-affiliate-team-body .dat-compare-panel {
+    min-height: 0;
+    padding: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+  #developer-affiliate-team-body .dat-compare-vs {
+    min-height: 34px;
+    justify-content: flex-start;
+  }
+  #developer-affiliate-team-body .dat-compare-vs::before {
+    top: 50%;
+    right: 0;
+    bottom: auto;
+    left: 48px;
+    width: auto;
+    height: 1px;
+    transform: translateY(-50%);
+  }
+  #developer-affiliate-team-body .dat-compare-vs span {
+    width: 34px;
+    height: 34px;
+    font-size: 11px;
+  }
+  #developer-affiliate-team-body .dat-compare-card__tier {
+    font-size: 20px;
+  }
+  #developer-affiliate-team-body .dat-compare-facts,
+  #developer-affiliate-team-body .dat-compare-panel--personal .dat-compare-facts,
+  #developer-affiliate-team-body .dat-compare-panel--team .dat-compare-facts {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     INVITE MODAL — shared across all 7 pages
+     Tablet-and-phone baseline: 90vw width, vertically scrollable.
+     ════════════════════════════════════════════════════════════════ */
+  #developer-affiliate-team-body .dat-modal {
+    align-items: flex-end;
+    padding: 0;
+    z-index: 2000;
+  }
+  #developer-affiliate-team-body .dat-modal__panel {
+    width: 90vw !important;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px 18px;
+    margin: 0 auto 32px;
+    border-radius: 14px;
+  }
+  #developer-affiliate-team-body .dat-modal__header h3 {
+    font-size: 18px;
+  }
+  #developer-affiliate-team-body .dat-modal__close {
+    font-size: 28px;
+    padding: 4px 10px;
+    line-height: 1;
+  }
+  #developer-affiliate-team-body .dat-form-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  #developer-affiliate-team-body .dat-form-actions .ds-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+  #developer-affiliate-team-body .dat-invite-preview {
+    font-size: 12px;
+  }
+  #developer-affiliate-team-body .dat-invite-preview code {
+    font-size: 11px;
+    padding: 10px;
+  }
+
+  /* ── Branding preview card on settings page — keep tight ──────── */
+  #developer-affiliate-team-body .dat-branding-preview {
+    padding: 10px 12px;
+  }
+  #developer-affiliate-team-body .dat-branding-preview__card {
+    padding: 12px;
+  }
+
+  /* ── Rank list (Top performers / Members at risk) ─────────────── */
+  #developer-affiliate-team-body .dat-rank-list {
+    padding: 0 4px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ≤480px  — phones only: full-screen modal, single-col KPI grid,
+   bottom-sheet style for invite + confirm
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  /* Single-column KPI grid on the narrowest devices. */
+  #developer-affiliate-team-body .dat-kpi-grid,
+  #developer-affiliate-team-body .dat-kpi-grid--3 {
+    grid-template-columns: 1fr;
+  }
+  #developer-affiliate-team-body .dat-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tier-page hero values stay readable. */
+  #developer-affiliate-team-body .dat-tier-hero__tier {
+    font-size: 22px;
+  }
+
+  /* ── INVITE MODAL — bottom-sheet on phones ──────────────────────
+     Pinned to bottom, full-width, rounded only at the top. */
+  #developer-affiliate-team-body .dat-modal__panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    padding: 18px 16px;
+    /* Safe-area inset on iOS phones with home indicator. */
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Drag-affordance dash at the top of the sheet. */
+  #developer-affiliate-team-body .dat-modal__panel::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: #D0D5DD;
+  }
+  #developer-affiliate-team-body .dat-modal__header {
+    margin-top: 8px;
+  }
+
+  /* Settings 2FA / confirm dialogs share the same modal chrome — full
+     bottom-sheet treatment applies via the .dat-modal__panel rule above. */
+
+  /* Pager: compact buttons on the narrowest devices */
+  #developer-affiliate-team-body .dat-pager__btn,
+  #developer-affiliate-team-body .dat-pager--compact .dat-pager__btn {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   769..1024px  — landscape tablet polish
+   The desktop sheet collapses several grids at ≤980 / ≤900 / ≤820 px
+   already; this band only smooths the few remaining over-tight surfaces.
+   ════════════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Card padding rests halfway between phone (16px) and desktop (24px). */
+  #developer-affiliate-team-body .dat-content-card {
+    padding: 20px 18px 22px;
+  }
+  #developer-affiliate-team-body .dat-card-header {
+    padding: 18px 18px;
+  }
+  /* Table cells get a touch tighter so 8-10 column tables fit without
+     hitting the sticky-first-cell scroll fallback that kicks in below. */
+  #developer-affiliate-team-body .dat-table th,
+  #developer-affiliate-team-body .dat-table td,
+  #developer-affiliate-team-body .dat-table-card .dat-table th,
+  #developer-affiliate-team-body .dat-table-card .dat-table td {
+    padding: 12px 10px;
+  }
+  /* Settings two-column grid: keep two columns but tighten gap so the
+     IBAN / account-holder pair fits without text wrapping. */
+  #developer-affiliate-team-body .dat-settings-grid {
+    gap: 14px;
+  }
+  /* Tier hero keeps the flat summary treatment on tablet widths. */
+  #developer-affiliate-team-body .dat-tier-hero__cur,
+  #developer-affiliate-team-body .dat-tier-hero__volume,
+  #developer-affiliate-team-body .dat-tier-hero__next {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}

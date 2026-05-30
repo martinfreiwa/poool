@@ -1,6 +1,6 @@
 {% with title="Affiliate Team Products – POOOL", no_index=True,
 extra_css=['developer-dashboard', 'unified-styles', 'unified-cards',
-'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team'],
+'mobile-developer-dashboard', 'developer-leaderboard-navbar', 'developer-affiliate-team', 'mobile-developer-affiliate-team'],
 extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-shell', 'developer-affiliate-team-products'] %}{% include
 "components/head.html" %}{% endwith %}
 
@@ -20,7 +20,7 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
       <div class="ds-main__content">
         {% include 'developer/_affiliate_team_shell.html' %}
 
-        <section class="ds-card dat-content-card dat-content-card--with-header" aria-labelledby="dat-prod-title">
+        <section class="ds-card dat-content-card dat-content-card--with-header dat-table-card" aria-labelledby="dat-prod-title">
           <div class="dat-card-header">
             <div class="dat-card-header__title-group">
               <span class="dat-card-header__icon" aria-hidden="true">
@@ -30,6 +30,9 @@ extra_js=['profile-dropdown', 'mobile-navigation', 'developer-affiliate-team-she
                 <h3 class="dat-section__title" id="dat-prod-title">Product Sales</h3>
                 <p class="dat-section__hint" id="dat-prod-hint">Assets sold via your team's business affiliate links — sorted by gross revenue.</p>
               </div>
+            </div>
+            <div class="dat-card-header__controls">
+              <div id="dat-products-search-host" class="dat-card-header__search"></div>
             </div>
           </div>
           <div id="dat-products-pager-host" class="dat-table-pager-host"></div>

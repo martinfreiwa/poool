@@ -379,9 +379,9 @@
   transform: none;
 }
 
-/* Row selected */
+/* Row selected — STANDARD card stays white. */
 .submissions-table tbody tr.row-selected {
-  background: rgba(3, 255, 136, 0.05);
+  background: #FFFFFF;
 }
 
 
@@ -432,8 +432,8 @@
 }
 
 .submissions-table th.sortable:hover {
-  color: var(--btn-primary-bg);
-  background: rgba(0, 0, 255, 0.02);
+  color: inherit;
+  background: transparent;
 }
 
 .submissions-table th .sort-indicator {
@@ -478,7 +478,7 @@
 }
 
 .submissions-table tbody tr:hover {
-  background: rgba(3, 255, 136, 0.04);
+  background: #FFFFFF;
 }
 
 .submissions-table tbody tr:last-child td {
@@ -1561,6 +1561,26 @@ body#developer-submissions-body .sub-stat.active::before {
   background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
 }
 
+body#developer-submissions-body #sub-stats-row .sub-stat--submitted::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 0 auto 0 !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%) !important;
+  pointer-events: none !important;
+  display: block !important;
+}
+
+body#developer-submissions-body #sub-stats-row .sub-stat--approved::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 0 auto 0 !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%) !important;
+  pointer-events: none !important;
+  display: block !important;
+}
+
 body#developer-submissions-body .sub-stat__count {
   color: var(--sub-neutral-strong);
   letter-spacing: 0;
@@ -1693,8 +1713,8 @@ body#developer-submissions-body .submissions-table th {
 }
 
 body#developer-submissions-body .submissions-table th.sortable:hover {
-  color: var(--sub-neutral-strong);
-  background: var(--table-header-bg, #F9FAFB);
+  color: inherit;
+  background: transparent;
 }
 
 body#developer-submissions-body .submissions-table th.sort-active {
@@ -1703,7 +1723,6 @@ body#developer-submissions-body .submissions-table th.sort-active {
 
 body#developer-submissions-body .submissions-table td {
   color: var(--table-cell-color, #535862);
-  height: 76px;
 }
 
 body#developer-submissions-body .submissions-table tbody tr {
@@ -1712,12 +1731,9 @@ body#developer-submissions-body .submissions-table tbody tr {
   transition: background 0.12s ease;
 }
 
-body#developer-submissions-body .submissions-table tbody tr:hover {
-  background: var(--table-row-hover-bg, #F8F9FC);
-}
-
+body#developer-submissions-body .submissions-table tbody tr:hover,
 body#developer-submissions-body .submissions-table tbody tr.row-selected {
-  background: #F5F5FF;
+  background: #FFFFFF;
 }
 
 body#developer-submissions-body .submission-cover-thumb,
@@ -2020,6 +2036,178 @@ body#developer-submissions-body .dae-empty__lede {
   color: #535862;
 }
 
+body#developer-submissions-body .dae-empty__submission-art {
+  position: relative;
+  width: min(100%, 420px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 255, 0.2);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(3, 255, 136, 0.18) 0%, rgba(3, 255, 136, 0) 44%),
+    linear-gradient(135deg, #0000FF 0%, #001DCA 62%, #07107C 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 255, 0.16);
+}
+
+body#developer-submissions-body .dae-empty__submission-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.42;
+}
+
+body#developer-submissions-body .dae-empty__submission-art::after {
+  content: '';
+  position: absolute;
+  right: -54px;
+  bottom: -60px;
+  width: 260px;
+  height: 150px;
+  transform: rotate(-8deg);
+  border: 1px solid rgba(3, 255, 136, 0.22);
+  border-radius: 26px;
+  background: rgba(3, 255, 136, 0.09);
+}
+
+body#developer-submissions-body .dae-empty__submission-ribbon {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 5px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
+
+body#developer-submissions-body .dae-empty__submission-lockup {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 164px;
+  height: 54px;
+  border: 1px solid rgba(3, 255, 136, 0.46);
+  border-radius: 12px;
+  background: #03FF88;
+  box-shadow: 0 14px 28px rgba(0, 0, 255, 0.22);
+}
+
+body#developer-submissions-body .dae-empty__submission-lockup img {
+  display: block;
+  width: 132px;
+  height: auto;
+}
+
+body#developer-submissions-body .dae-empty__submission-card {
+  position: absolute;
+  left: 40px;
+  bottom: 30px;
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  width: 214px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 34px rgba(0, 0, 255, 0.18);
+}
+
+body#developer-submissions-body .dae-empty__submission-card-header,
+body#developer-submissions-body .dae-empty__submission-line,
+body#developer-submissions-body .dae-empty__submission-progress {
+  display: block;
+  border-radius: 999px;
+}
+
+body#developer-submissions-body .dae-empty__submission-card-header {
+  width: 58px;
+  height: 10px;
+  background: #03FF88;
+}
+
+body#developer-submissions-body .dae-empty__submission-line {
+  width: 66%;
+  height: 8px;
+  background: #D6E3FF;
+}
+
+body#developer-submissions-body .dae-empty__submission-line--wide {
+  width: 100%;
+  background: #AFC6FF;
+}
+
+body#developer-submissions-body .dae-empty__submission-progress {
+  height: 8px;
+  overflow: hidden;
+  background: #EEF2FF;
+}
+
+body#developer-submissions-body .dae-empty__submission-progress span {
+  display: block;
+  width: 70%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
+
+body#developer-submissions-body .dae-empty__submission-review {
+  position: absolute;
+  right: 42px;
+  top: 60px;
+  z-index: 3;
+  display: grid;
+  gap: 8px;
+  width: 82px;
+  padding: 12px;
+  border: 1px solid rgba(3, 255, 136, 0.34);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+body#developer-submissions-body .dae-empty__submission-review span {
+  display: block;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(3, 255, 136, 0.26);
+}
+
+body#developer-submissions-body .dae-empty__submission-review span:nth-child(2) {
+  width: 72%;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+body#developer-submissions-body .dae-empty__submission-review span:nth-child(3) {
+  width: 46%;
+  background: #03FF88;
+}
+
+body#developer-submissions-body .dae-empty__submission-stack {
+  position: absolute;
+  right: 36px;
+  bottom: 36px;
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+}
+
+body#developer-submissions-body .dae-empty__submission-stack span {
+  display: block;
+  width: 40px;
+  height: 38px;
+  border: 1px solid rgba(3, 255, 136, 0.36);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(3, 255, 136, 0.2), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.1);
+}
+
 body#developer-submissions-body .dae-empty__metrics,
 body#developer-submissions-body .dae-empty__steps {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2133,4 +2321,119 @@ body#developer-submissions-body .dae-empty__step-link:hover {
   body#developer-submissions-body .dae-empty__step:hover {
     transform: none;
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   STANDARD — Card With Table override for .dev-submissions-table-card
+   Mirrors .developer-assets-performance-section on the dashboard /
+   /developer/assets. Spec: docs/DESIGN.md → Tables → Card With Table —
+   Reference Pattern.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Container: drop the legacy border/shadow + horizontal scroll (STANDARD
+   chrome from ucard.css gives the outer card). */
+.dev-submissions-table-card {
+  overflow: visible !important;
+  margin: 0 0 40px !important;
+  border: 1px solid var(--card-border-color, #EAECF0) !important;
+  border-radius: 12px !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05) !important;
+}
+
+body#developer-submissions-body #submissions-table-container::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
+}
+
+/* Inner toolbar + footer chips + checkbox column don't exist on the
+   dashboard/assets reference card — hide them so the submissions card is
+   visually identical: header → table only. Pipeline filter still works
+   via the bento stat tiles above the card. */
+.dev-submissions-table-card .sub-toolbar,
+.dev-submissions-table-card .sub-pipeline--footer,
+.dev-submissions-table-card .submissions-table th.col-checkbox,
+.dev-submissions-table-card .submissions-table tbody td:first-child:has(.sub-checkbox-label),
+.dev-submissions-table-card .submissions-table tbody td.col-checkbox {
+  display: none !important;
+}
+
+/* Header band — gradient strip, icon tile, h2 + p come from ucard.css.
+   Nothing to override here. */
+
+/* Table — drop the grey thead bg, force white header row. */
+.dev-submissions-table-card .submissions-table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+.dev-submissions-table-card .submissions-table thead {
+  background: #FFFFFF;
+}
+.dev-submissions-table-card .submissions-table th {
+  padding: 14px 12px;
+  background: #FFFFFF;
+  color: var(--dev-assets-muted, #717680);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+  border-top: 0;
+}
+.dev-submissions-table-card .submissions-table th:first-child,
+.dev-submissions-table-card .submissions-table td:first-child {
+  padding-left: 16px;
+}
+.dev-submissions-table-card .submissions-table th:last-child,
+.dev-submissions-table-card .submissions-table td:last-child {
+  padding-right: 16px;
+}
+
+/* Cells — match dashboard cell typography. */
+.dev-submissions-table-card .submissions-table td {
+  padding: 14px 12px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary, #535862);
+  border-bottom: 1px solid var(--card-border-color, #EAECF0);
+}
+
+/* Rows — dashboard reference green hover, no selected wash. */
+.dev-submissions-table-card .submissions-table tbody tr,
+.dev-submissions-table-card .submissions-table tbody tr.row-selected {
+  background: #FFFFFF;
+}
+.dev-submissions-table-card .submissions-table tbody tr:hover {
+  background: rgba(3, 255, 136, 0.08);
+}
+
+/* Sortable header hover — no color, no bg change (matches assets/dashboard). */
+.dev-submissions-table-card .submissions-table th.sortable:hover {
+  color: inherit;
+  background: transparent;
+}
+/* Kill container hover-shadow on STANDARD card (legacy `developer-` rule). */
+body[id^="developer-"] .dev-submissions-table-card:hover,
+body[id^="developer-"] .submissions-table-container.dev-submissions-table-card:hover {
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05) !important;
+}
+
+/* Right-align the Actions column header text. */
+.dev-submissions-table-card .submissions-table th.col-actions {
+  text-align: right;
+}
+
+/* Pagination + footer chips — keep inside outer gutter so they line up
+   with the table's first/last column. */
+.dev-submissions-table-card .sub-pagination {
+  padding: 12px 16px;
+}
+.dev-submissions-table-card .sub-pipeline--footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--card-border-color, #EAECF0);
 }

@@ -515,7 +515,7 @@ pub async fn checkout_page(
     let fee_pct_display = platform_fee_pct.normalize().to_string();
     let usd_to_idr_rate = service::get_usd_to_idr_rate_i64().await;
 
-    let cart_json = serde_json::json!({
+    let cart_json = crate::common::json_safe::to_safe_json_script(&serde_json::json!({
         "items": cart_items,
         "count": cart_items.len(),
         "total_cents": cart_total_cents,
@@ -523,8 +523,7 @@ pub async fn checkout_page(
         "fee_pct": fee_pct_display,
         "grand_total_cents": grand_total_cents,
         "usd_to_idr_rate": usd_to_idr_rate
-    })
-    .to_string();
+    }));
 
     // Fetch Wallets
     let wallet_rows = sqlx::query_as::<_, (uuid::Uuid, String, String, i64)>(
@@ -554,11 +553,14 @@ pub async fn checkout_page(
             })
         })
         .collect();
-    let wallet_json = serde_json::json!({ "wallets": wallets }).to_string();
+    let wallet_json =
+        crate::common::json_safe::to_safe_json_script(&serde_json::json!({ "wallets": wallets }));
 
     // Fetch Bank Details
     let (usd, idr) = bank_details_for_user(&user.email);
-    let bank_json = serde_json::json!({ "USD": usd, "IDR": idr }).to_string();
+    let bank_json = crate::common::json_safe::to_safe_json_script(
+        &serde_json::json!({ "USD": usd, "IDR": idr }),
+    );
 
     // Check if user is a referred investor for affiliate disclosure display
     let is_referral_user: bool = sqlx::query_scalar(
@@ -764,6 +766,7 @@ pub async fn handle_checkout(
                         }
                     }
                     "proof_of_transfer" => {
+                        const MAX_PROOF_BYTES: usize = 10 * 1024 * 1024; // 10 MB
                         let ctype = field
                             .content_type()
                             .map(|s| s.to_string())
@@ -772,7 +775,14 @@ pub async fn handle_checkout(
                             .file_name()
                             .map(|s| s.to_string())
                             .unwrap_or_else(|| "proof.bin".to_string());
-                        if let Ok(data) = field.bytes().await {
+                        let mut field = field;
+                        if let Ok(data) = crate::storage::upload_helpers::read_field_capped(
+                            &mut field,
+                            MAX_PROOF_BYTES,
+                            "proof",
+                        )
+                        .await
+                        {
                             if !data.is_empty() {
                                 let Some(bucket) = state.config.gcs_bucket.clone() else {
                                     if app_env_allows_local_upload_placeholder(
@@ -790,11 +800,37 @@ pub async fn handle_checkout(
                                     }
                                     continue;
                                 };
-                                let object_path = format!("proofs/{}/{}", user.id, name);
+                                // Sanitise filename: strip non-[A-Za-z0-9._-] bytes, trim leading
+                                // dots, cap length, fall back to "proof" if empty. UUID prefix
+                                // prevents overwrite of prior proofs (audit-trail immutability).
+                                let mut sanitised: String = name
+                                    .bytes()
+                                    .filter(|b| {
+                                        b.is_ascii_alphanumeric()
+                                            || *b == b'.'
+                                            || *b == b'-'
+                                            || *b == b'_'
+                                    })
+                                    .map(|b| b as char)
+                                    .collect();
+                                let trimmed = sanitised.trim_start_matches('.').to_string();
+                                sanitised = trimmed;
+                                if sanitised.len() > 64 {
+                                    sanitised.truncate(64);
+                                }
+                                if sanitised.is_empty() {
+                                    sanitised = "proof".to_string();
+                                }
+                                let object_path = format!(
+                                    "proofs/{}/{}-{}",
+                                    user.id,
+                                    uuid::Uuid::new_v4(),
+                                    sanitised
+                                );
                                 match crate::storage::service::upload_private(
                                     &bucket,
                                     &object_path,
-                                    data.to_vec(),
+                                    data,
                                     &ctype,
                                 )
                                 .await

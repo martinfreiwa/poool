@@ -28,11 +28,28 @@
           
           <!-- Success Message -->
           <h1 class="submission-title">Submission successful!</h1>
-          
+
+          <!-- Submitted asset title — populated from ?title= query param (echo of what the user submitted) -->
+          <p id="submitted-asset-title" class="submission-asset-title" hidden style="color:#101828;font-weight:600;margin:0 0 8px;font-size:18px;"></p>
+
           <!-- Supporting Text -->
           <p class="submission-subtitle" style="color:#0000FF;font-weight:600;margin-bottom:12px;">
             Your property listing is now under moderation.
           </p>
+          <script>
+            (function () {
+              try {
+                var t = new URLSearchParams(window.location.search).get("title");
+                if (t && t.trim()) {
+                  var el = document.getElementById("submitted-asset-title");
+                  if (el) {
+                    el.textContent = '“' + t.trim() + '”';
+                    el.hidden = false;
+                  }
+                }
+              } catch (_) {}
+            })();
+          </script>
           
           <p class="submission-description">
             We are currently reviewing the information to ensure everything meets our standards. This usually takes up to 24 hours. You'll receive an update once your listing is approved and published.

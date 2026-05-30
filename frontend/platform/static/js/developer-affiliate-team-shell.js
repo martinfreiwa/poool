@@ -815,8 +815,10 @@
     DAT.clear(pagerHost);
     const toolbar = DAT.el('div', { class: 'dat-table-toolbar dat-table-toolbar--compact' });
     const searchWrap = DAT.el('div', { class: 'dat-table-toolbar__search' });
-    // Inline magnifying-glass icon for the compact search field.
-    searchWrap.innerHTML = '<svg class="dat-table-toolbar__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>';
+    if (!searchHost) {
+      // Toolbar search fields keep their icon; card-header search fields stay text-only.
+      searchWrap.innerHTML = '<svg class="dat-table-toolbar__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>';
+    }
     const searchInput = DAT.el('input', {
       type: 'search',
       class: 'dat-table-toolbar__search-input',
@@ -1050,6 +1052,7 @@
       if (!rows.length) {
         tbody.appendChild(DAT.el('tr', null,
           DAT.el('td', { colspan: totalCols, class: 'dat-empty dat-empty--cta' },
+            DAT.el('span', { class: 'dat-empty__logo', 'aria-hidden': 'true' }),
             DAT.el('strong', { class: 'dat-empty__title' }, 'No matches'),
             DAT.el('p', { class: 'dat-empty__msg' }, emptyText)),
         ));

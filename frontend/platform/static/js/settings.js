@@ -208,14 +208,6 @@
 
   function setDeveloperLogos(url) {
     setLogoPreview("settings-dev-logo-preview", url);
-    setLogoPreview("settings-dev-preview-logo", url);
-  }
-
-  function updateDeveloperPreview() {
-    const company = $("settings-dev-preview-company");
-    const description = $("settings-dev-preview-description");
-    if (company) company.textContent = getVal("settings-dev-company") || "Company preview";
-    if (description) description.textContent = getVal("settings-dev-description") || "Your developer description will appear here.";
   }
 
   // ─── State Layer Switcher ─────────────────────────────────────
@@ -389,7 +381,7 @@
 
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "ds-btn ds-btn--ghost ds-btn--sm";
+      button.className = "ds-btn ds-btn--secondary ds-btn--sm settings-oauth-row__action";
       button.dataset.action = conn ? "unlink-oauth" : "link-oauth";
       button.dataset.provider = p;
       if (conn && connectionId) button.dataset.connectionId = connectionId;
@@ -447,7 +439,6 @@
     setVal("settings-dev-company", dev.company_name);
     setVal("settings-dev-description", dev.description);
     updateDevDescriptionCounter();
-    updateDeveloperPreview();
 
     const links = dev.links || {};
     setVal("settings-dev-website", links.website);
@@ -893,11 +884,7 @@
 
   function bindCounters() {
     $("settings-lb-bio")?.addEventListener("input", updateBioCounter);
-    $("settings-dev-description")?.addEventListener("input", () => {
-      updateDevDescriptionCounter();
-      updateDeveloperPreview();
-    });
-    $("settings-dev-company")?.addEventListener("input", updateDeveloperPreview);
+    $("settings-dev-description")?.addEventListener("input", updateDevDescriptionCounter);
   }
 
   function setDateOfBirthLimit() {

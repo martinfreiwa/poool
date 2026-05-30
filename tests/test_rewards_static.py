@@ -8,32 +8,126 @@ def read(path: str) -> str:
     return (ROOT / path).read_text()
 
 
-def test_rewards_referral_input_matches_copy_button_height():
+def css_block(css: str, selector: str, after: int = 0) -> str:
+    start = css.index(selector, after)
+    end = css.index("}", start)
+    return css[start:end]
+
+
+def test_rewards_referral_share_is_compact_inline_control():
+    html = read("frontend/platform/rewards.html")
+    css = read("frontend/platform/static/css/rewards.css")
+    js = read("frontend/platform/static/js/rewards.js")
+
+    refer_start = html.index('<div id="rewards-refer-card"')
+    refer_end = html.index("</div>\n          </div> <!-- end rewards-tab panel -->", refer_start)
+    refer_html = html[refer_start:refer_end]
+    share_start = refer_html.index('<div class="refer-share-form"')
+    share_html = refer_html[share_start:]
+
+    share_block = css_block(css, ".refer-share-form {")
+    share_row_block = css_block(css, ".refer-share-row {")
+    link_block = css_block(css, ".refer-link-value {")
+    icon_block = css_block(css, ".refer-copy-link-icon {")
+    icon_hover_block = css_block(css, ".refer-copy-link-icon:hover {")
+    standard_card_block = css_block(css, "body#rewards-body .rewards-overview-card,")
+    refer_action_override = css_block(css, "body#rewards-body .rewards-overview-card .refer-action-area {")
+    flow_block = css_block(css, ".refer-flow-list {")
+    flow_connector_block = css_block(css, ".refer-flow-step__connector {")
+    flow_number_block = css_block(css, ".refer-flow-step__number {")
+
+    assert '<span id="rewards-referral-input" class="refer-link-value"' in share_html
+    assert '<input id="rewards-referral-input"' not in share_html
+    assert 'class="refer-input-wrapper"' not in share_html
+    assert 'class="refer-share-row"' in share_html
+    assert 'class="refer-copy-link-icon"' in share_html
+    assert 'aria-label="Copy referral link"' in share_html
+    assert "Copy link" not in share_html
+    assert 'class="refer-share-actions"' not in share_html
+    assert 'class="refer-card-main rewards-overview-card__body"' in refer_html
+    assert 'class="refer-action-area rewards-overview-card__footer"' in refer_html
+    assert 'class="refer-flow-list refer-flow-progress"' in refer_html
+    assert 'class="refer-flow-step__connector"' in refer_html
+    assert 'id="rewards-copy-message-btn"' not in share_html
+    assert "Copy message" not in share_html
+    assert 'id="rewards-email-invite-link"' not in share_html
+    assert "Email" not in share_html
+    assert 'class="refer-reward-tiles"' not in refer_html
+    assert "refer-reward-tile" not in css
+
+    assert "display: flex !important;" in standard_card_block
+    assert "flex-direction: column !important;" in standard_card_block
+    assert "padding: 0 !important;" in standard_card_block
+    assert "border-left: 0 !important;" in refer_action_override
+    assert "display: flex;" in flow_block
+    assert "background: linear-gradient(90deg, var(--primary-color, #0000FF), var(--brand-greeny-green, #03FF88));" in flow_connector_block
+    assert "background: #0000FF;" in flow_number_block
+    assert "color: #03FF88;" in flow_number_block
+    assert "display: flex;" in share_block
+    assert "flex-direction: column;" in share_block
+    assert "width: 100%;" in share_block
+    assert "padding: 0;" in share_block
+    assert "border: 0;" in share_block
+    assert "background: transparent;" in share_block
+    assert "gap: 8px;" in share_row_block
+    assert "text-overflow: ellipsis;" in link_block
+    assert "white-space: nowrap;" in link_block
+    assert "width: 28px;" in icon_block
+    assert "height: 28px;" in icon_block
+    assert "color: #667085;" in icon_block
+    assert "background: transparent;" in icon_block
+    assert "border: 0;" in icon_block
+    assert "color: #0000FF;" in icon_hover_block
+    assert "background: transparent;" in icon_hover_block
+    assert "refer-secondary-action" not in css
+    assert "body#rewards-body .refer-share-form .copy-link-btn" not in css
+
+    assert "input.dataset.copyValue = baseReferralLink;" in js
+    assert "input.textContent = baseReferralLink || \"No link generated\";" in js
+    assert "function getCopyValue(element)" in js
+    assert "element.dataset.copyValue" in js
+    assert "function copyReferralMessage" not in js
+    assert "rewards-copy-message-btn" not in js
+    assert "rewards-email-invite-link" not in js
+    assert "function buildReferralMessage" not in js
+    assert "function updateReferralEmailLink" not in js
+
+
+def test_rewards_overview_cards_share_standard_card_structure():
+    html = read("frontend/platform/rewards.html")
     css = read("frontend/platform/static/css/rewards.css")
 
-    group_start = css.index(".refer-input-group {")
-    group_end = css.index(".refer-input-wrapper", group_start)
-    group_block = css[group_start:group_end]
-    wrapper_start = css.index(".refer-input-wrapper {")
-    wrapper_end = css.index(".refer-input-wrapper:focus-within", wrapper_start)
-    wrapper_block = css[wrapper_start:wrapper_end]
-    button_start = css.index(".copy-link-btn {")
-    button_end = css.index(".copy-link-btn:hover", button_start)
-    button_block = css[button_start:button_end]
-    scoped_button_start = css.index("body#rewards-body .copy-link-btn,")
-    scoped_button_end = css.index("body#rewards-body .copy-link-btn:hover", scoped_button_start)
-    scoped_button_block = css[scoped_button_start:scoped_button_end]
-    scoped_input_start = css.index("body#rewards-body .refer-input-wrapper,")
-    scoped_input_end = css.index("body#rewards-body .refer-input-wrapper:focus-within", scoped_input_start)
-    scoped_input_block = css[scoped_input_start:scoped_input_end]
+    rewards_start = html.index('id="rewards-tab"')
+    rewards_end = html.index("<!-- Tab 3: Tier -->", rewards_start)
+    rewards_html = html[rewards_start:rewards_end]
 
-    assert "align-items: center;" in group_block
-    assert "min-height: 40px;" in wrapper_block
-    assert "padding: 0 14px;" in wrapper_block
-    assert "min-height: 40px;" in button_block
-    assert "padding: 0 16px;" in button_block
-    assert "min-height: 40px;" in scoped_button_block
-    assert "min-height: 40px;" in scoped_input_block
+    card_block = css_block(css, "body#rewards-body .rewards-overview-card,")
+    header_block = css_block(css, "body#rewards-body .rewards-overview-card__header {")
+    body_block = css_block(css, "body#rewards-body .rewards-overview-card__body {")
+    footer_block = css_block(css, "body#rewards-body .rewards-overview-card__footer {")
+    icon_block = css_block(css, "body#rewards-body .rewards-overview-card__icon {")
+    title_block = css_block(css, "body#rewards-body .rewards-overview-card__title {")
+
+    assert 'class="tier-progress-card rewards-overview-card"' in rewards_html
+    assert 'class="rewards-summary-card rewards-overview-card"' in rewards_html
+    assert 'class="refer-earn-card refer-earn-card--action rewards-overview-card"' in rewards_html
+    assert rewards_html.count("rewards-overview-card__header") == 3
+    assert rewards_html.count("rewards-overview-card__body") == 3
+    assert rewards_html.count("rewards-overview-card__footer") == 3
+    assert rewards_html.count("rewards-overview-card__icon") == 3
+    assert "summary-card-body rewards-overview-card__body" in rewards_html
+    assert "tp-hint rewards-overview-card__footer" in rewards_html
+
+    assert "padding: 0 !important;" in card_block
+    assert "background: var(--rewards-card-bg) !important;" in card_block
+    assert "border-bottom: 1px solid var(--rewards-card-border) !important;" in header_block
+    assert "padding: 20px 24px !important;" in header_block
+    assert "padding: 18px 24px !important;" in body_block
+    assert "border-top: 1px solid var(--rewards-card-border) !important;" in footer_block
+    assert "padding: 14px 24px 16px !important;" in footer_block
+    assert "background: linear-gradient(135deg, #0000FF 0%, #1E40AF 100%) !important;" in icon_block
+    assert "color: #03FF88 !important;" in icon_block
+    assert "font-size: 18px !important;" in title_block
 
 
 def test_rewards_marketing_tier_icons_card_removed():

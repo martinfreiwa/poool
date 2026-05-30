@@ -93,6 +93,114 @@
           </div>
         </div>
 
+        <div class="admin-card" id="circle-ops-alerts-card">
+          <div class="admin-card-header admin-card-header--filter">
+            <div>
+              <h2 class="admin-card-title">Circle Ops Alerts</h2>
+              <p class="admin-card-subtitle">Platform-wide alert overview for Circle report backlog, moderation SLA, spikes, and workers.</p>
+            </div>
+            <form id="circle-alerts-filter-form" class="admin-filter-form">
+              <label class="admin-form-group admin-form-group--inline">
+                <span class="admin-label">Status</span>
+                <select class="admin-input" id="circle-alerts-status-filter" name="status">
+                  <option value="active">Active</option>
+                  <option value="open">Open</option>
+                  <option value="acknowledged">Acknowledged</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="all">All</option>
+                </select>
+              </label>
+              <label class="admin-form-group admin-form-group--inline">
+                <span class="admin-label">Severity</span>
+                <select class="admin-input" id="circle-alerts-severity-filter" name="severity">
+                  <option value="all">All</option>
+                  <option value="critical">Critical</option>
+                  <option value="warning">Warning</option>
+                  <option value="info">Info</option>
+                </select>
+              </label>
+              <label class="admin-form-group admin-form-group--inline">
+                <span class="admin-label">Type</span>
+                <select class="admin-input" id="circle-alerts-type-filter" name="alert_type">
+                  <option value="all">All</option>
+                  <option value="report_backlog">Report backlog</option>
+                  <option value="moderation_sla">Moderation SLA</option>
+                  <option value="failed_worker">Failed worker</option>
+                  <option value="notification_delivery">Notification delivery</option>
+                  <option value="posting_spike">Posting spike</option>
+                  <option value="spam_spike">Spam spike</option>
+                </select>
+              </label>
+              <button type="submit" class="admin-btn admin-btn--secondary">Apply</button>
+              <button type="button" class="admin-btn admin-btn--secondary" id="circle-alerts-refresh-btn">Refresh</button>
+            </form>
+          </div>
+
+          <div class="admin-card-body">
+            <div id="circle-alerts-status" class="sr-only" role="status" aria-live="polite"></div>
+            <div id="circle-alerts-error" class="admin-alert admin-alert--error" role="alert" hidden>
+              <span id="circle-alerts-error-text"></span>
+            </div>
+            <div class="circle-alerts-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px;">
+                <div class="admin-stat-title">Open</div>
+                <strong class="admin-stat-value" id="circle-alerts-open-count">0</strong>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px;">
+                <div class="admin-stat-title">Critical Active</div>
+                <strong class="admin-stat-value" id="circle-alerts-critical-count">0</strong>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px;">
+                <div class="admin-stat-title">Acknowledged</div>
+                <strong class="admin-stat-value" id="circle-alerts-acknowledged-count">0</strong>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px;">
+                <div class="admin-stat-title">Failed Worker</div>
+                <strong class="admin-stat-value" id="circle-alerts-failed-worker-count">0</strong>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px;">
+                <div class="admin-stat-title">Escalated</div>
+                <strong class="admin-stat-value" id="circle-alerts-escalated-count">0</strong>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px;">
+                <div class="admin-stat-title">Snoozed</div>
+                <strong class="admin-stat-value" id="circle-alerts-snoozed-count">0</strong>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px;">
+                <div class="admin-stat-title">Blocked Workflow</div>
+                <strong class="admin-stat-value" id="circle-alerts-blocked-workflow-count">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-card-body admin-card-body--flush">
+            <div class="admin-table-container">
+              <div id="circle-alerts-loading" class="admin-table-empty" hidden>
+                <p>Loading Circle ops alerts...</p>
+              </div>
+
+              <table class="admin-table" id="circle-alerts-table" hidden>
+                <thead>
+                  <tr>
+                    <th>Alert</th>
+                    <th>Circle</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Workflow</th>
+                    <th>Created</th>
+                    <th class="admin-table__cell-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="circle-alerts-table-body"></tbody>
+              </table>
+
+              <div id="circle-alerts-empty" class="admin-table-empty" hidden>
+                <p>No Circle ops alerts match the selected filters.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="admin-card">
           <div class="admin-card-header admin-card-header--filter">
             <form id="circles-filter-form" class="admin-filter-form">
@@ -106,6 +214,7 @@
                   <option value="all">All</option>
                   <option value="public">Public</option>
                   <option value="private">Private</option>
+                  <option value="hidden">Hidden</option>
                 </select>
               </label>
               <button type="submit" class="admin-btn admin-btn--secondary">Apply</button>
@@ -131,6 +240,7 @@
                     <th>Members</th>
                     <th>Total XP</th>
                     <th>Created</th>
+                    <th>Type</th>
                     <th>Visibility</th>
                     <th class="admin-table__cell-actions">Actions</th>
                   </tr>
@@ -151,6 +261,52 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <div id="circle-alert-action-modal" class="ds-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="circle-alert-action-title">
+    <div class="ds-modal ds-modal--sm" tabindex="-1">
+      <div class="ds-modal__header">
+        <div>
+          <h3 class="ds-modal__title" id="circle-alert-action-title">Update alert</h3>
+        </div>
+        <button type="button" class="ds-modal__close" data-circle-alert-action-cancel aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="ds-modal__body">
+        <input type="hidden" id="circle-alert-action-id">
+        <input type="hidden" id="circle-alert-action-type">
+        <div class="ds-modal__error" id="circle-alert-action-error" role="alert"></div>
+        <p id="circle-alert-action-message" class="ds-modal__body-text"></p>
+        <label class="admin-form-group" for="circle-alert-action-note">
+          <span class="admin-label">Ops Note</span>
+          <textarea id="circle-alert-action-note" class="admin-input" rows="4" maxlength="1000" placeholder="Optional internal context for audit history"></textarea>
+        </label>
+        <label class="admin-form-group" for="circle-alert-action-assignee" id="circle-alert-action-assignee-group" hidden>
+          <span class="admin-label">Assignee user ID</span>
+          <input id="circle-alert-action-assignee" class="admin-input" type="text" inputmode="text" autocomplete="off" placeholder="UUID of the operator responsible for follow-up" disabled>
+        </label>
+        <label class="admin-form-group" for="circle-alert-action-snooze-minutes" id="circle-alert-action-snooze-group" hidden>
+          <span class="admin-label">Snooze minutes</span>
+          <input id="circle-alert-action-snooze-minutes" class="admin-input" type="number" min="5" max="10080" step="5" placeholder="60" disabled>
+        </label>
+        <label class="admin-form-group" for="circle-alert-action-workflow-state" id="circle-alert-action-workflow-group" hidden>
+          <span class="admin-label">Workflow state</span>
+          <select id="circle-alert-action-workflow-state" class="admin-input" disabled>
+            <option value="triage">Triage</option>
+            <option value="investigating">Investigating</option>
+            <option value="waiting_on_moderator">Waiting on moderator</option>
+            <option value="waiting_on_policy">Waiting on policy</option>
+            <option value="mitigated">Mitigated</option>
+            <option value="monitoring">Monitoring</option>
+          </select>
+        </label>
+      </div>
+      <div class="ds-modal__footer ds-modal__footer--bordered">
+        <button type="button" class="ds-btn ds-btn--secondary" data-circle-alert-action-cancel>Cancel</button>
+        <button type="button" class="ds-btn ds-btn--primary" id="circle-alert-action-confirm">Confirm</button>
+      </div>
+    </div>
   </div>
 
   <div id="circle-delete-modal" class="ds-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="circle-delete-title">
