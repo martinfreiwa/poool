@@ -708,7 +708,7 @@ pub async fn api_admin_affiliate_approve(
 
     match result {
         Ok(r) if r.rows_affected() > 0 => {
-            sqlx::query!(
+            sqlx::query(
                 r#"INSERT INTO affiliate_links
                       (code, link_type, attribution_user_id, payout_user_id, team_id, status)
                    VALUES ($1, 'personal', $2, $2, NULL, 'active')
@@ -720,9 +720,9 @@ pub async fn api_admin_affiliate_approve(
                       deactivated_at = NULL,
                       deactivated_reason = NULL,
                       updated_at = NOW()"#,
-                referral_code,
-                uid
             )
+            .bind(&referral_code)
+            .bind(uid)
             .execute(&mut *tx)
             .await
             .map_err(|e| {

@@ -76,16 +76,16 @@ async fn get_or_create_default_team(
     .map_err(ApiError::Database)?
     .unwrap_or_else(|| "My Team".to_string());
 
-    let row = sqlx::query!(
+    let team_id = sqlx::query_scalar::<_, Uuid>(
         r#"INSERT INTO developer_teams (developer_user_id, display_name, is_default, status)
            VALUES ($1, $2, true, 'active')
            ON CONFLICT (developer_user_id)
            WHERE is_default = true AND status <> 'terminated'
            DO UPDATE SET display_name = developer_teams.display_name
            RETURNING id"#,
-        developer_user_id,
-        default_name
     )
+    .bind(developer_user_id)
+    .bind(default_name)
     .fetch_one(pool)
     .await
     .map_err(ApiError::Database)?;
@@ -95,7 +95,7 @@ async fn get_or_create_default_team(
     let _ = crate::rewards::team_links::ensure_developer_has_affiliate_row(pool, developer_user_id)
         .await;
 
-    Ok(row.id)
+    Ok(team_id)
 }
 
 /// Prüft Team-Ownership.
