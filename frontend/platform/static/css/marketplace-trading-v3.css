@@ -1600,7 +1600,7 @@ body.tv3-body {
 }
 .tv3-calc-stat-color.investment { background: #000080; }
 .tv3-calc-stat-color.appreciation { background: #3A4BFF; }
-.tv3-calc-stat-color.rental { background: #98FB96; }
+.tv3-calc-stat-color.rental { background: #16a34a; }
 .tv3-calc-stat-label {
     font-size: 12px; font-weight: 500; color: #717680;
 }
@@ -1670,7 +1670,7 @@ body.tv3-body {
 }
 .tv3-calc-series.series-1 { background: #000080; border-radius: 0 0 0 0; }
 .tv3-calc-series.series-2 { background: #3A4BFF; }
-.tv3-calc-series.series-3 { background: #98FB96; border-radius: 6px 6px 0 0; }
+.tv3-calc-series.series-3 { background: #16a34a; border-radius: 6px 6px 0 0; }
 /* Tooltip */
 .tv3-calc-bar-tooltip {
     position: absolute; bottom: 100%; left: 50%;
@@ -1691,7 +1691,7 @@ body.tv3-body {
 }
 .tv3-calc-bar-tooltip-dot.investment { background: #000080; }
 .tv3-calc-bar-tooltip-dot.appreciation { background: #3A4BFF; }
-.tv3-calc-bar-tooltip-dot.rental { background: #98FB96; }
+.tv3-calc-bar-tooltip-dot.rental { background: #16a34a; }
 .tv3-calc-bar-tooltip-label {
     flex: 1; color: #A4A7AE;
 }
@@ -1701,10 +1701,13 @@ body.tv3-body {
 .tv3-calc-bar-value-label {
     position: absolute; bottom: 100%; left: 50%;
     transform: translateX(-50%);
-    font-size: 11px; font-weight: 600; color: #717680;
-    margin-bottom: 4px; opacity: 0;
+    font-size: 11px; font-weight: 700; color: var(--page-title-color);
+    margin-bottom: 6px; opacity: 1;
+    white-space: nowrap;
     transition: opacity 0.2s ease;
 }
+/* Bar gets a stronger lift on hover; label stays visible regardless. */
+.tv3-calc-bar:hover .tv3-calc-bar-value-label { opacity: 1; }
 /* Sliders */
 .tv3-calc-slider-section {
     margin-bottom: 24px;

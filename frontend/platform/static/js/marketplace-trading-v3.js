@@ -958,20 +958,30 @@
     function populateCalculator(asset) {
         const slider = document.getElementById('tv3-calc-slider-1');
         const limitLabel = document.getElementById('tv3-calc-slider-limit-1');
-        if (slider && asset.propertyValue) {
-            slider.max = Math.round(asset.propertyValue);
-            // If the current value is still the default 100k, we set it to the max if max < 100k, 
-            // or keep it at 100k if max > 100k.
-            if (slider.value === "100000") {
-                slider.value = Math.min(100000, asset.propertyValue).toString();
-            }
-            if (limitLabel) {
-                limitLabel.textContent = '$' + new Intl.NumberFormat('en-US').format(Math.round(asset.propertyValue));
-            }
-            // Trigger track fill update
-            const event = new Event('input');
-            slider.dispatchEvent(event);
+        if (!slider) return;
+
+        // Cap "Amount of Investment" at what's actually purchasable right now:
+        // available shares × current token price. Falls back to the full
+        // property value only when liquidity/price can't be derived, so the
+        // slider never collapses to a 0 max.
+        const availableShares = Math.max(
+            0,
+            (asset.totalSupply || 0) - (asset.sellOrders || []).reduce((s, o) => s + (o.tokens || 0), 0)
+        );
+        const purchasableValue = availableShares * (asset.tokenPrice || 0);
+        const maxInvest = Math.round(purchasableValue > 0 ? purchasableValue : (asset.propertyValue || 0));
+        if (maxInvest <= 0) return;
+
+        slider.max = maxInvest;
+        // If still at the default 100k, clamp it to the new max.
+        if (slider.value === "100000") {
+            slider.value = Math.min(100000, maxInvest).toString();
         }
+        if (limitLabel) {
+            limitLabel.textContent = '$' + new Intl.NumberFormat('en-US').format(maxInvest);
+        }
+        // Trigger track fill + value label update
+        slider.dispatchEvent(new Event('input'));
     }
 
 
@@ -1841,23 +1851,32 @@
             });
         });
 
-        // Calculate 5-year investment returns using integer cents (BIGINT-safe)
+        // Calculate cumulative 5-year portfolio value using integer cents
+        // (BIGINT-safe). Each year's figures are CUMULATIVE up to that year so
+        // the bars represent total accrued wealth — they rise year over year
+        // and the final bar equals principal + total appreciation + total rent.
+        // Appreciation compounds on the growing property value; rental is flat
+        // on the original investment (conservative — see concept doc).
         function calculateReturns(investment, growthRate, yieldRate) {
             var returns = [];
             var investCents = Math.round(investment * 100);
             var propValueCents = investCents;
+            var cumAppreciationCents = 0;
+            var cumRentalCents = 0;
+            var rentalPerYearCents = Math.round(investCents * (yieldRate / 100));
 
             for (var y = 1; y <= 5; y++) {
                 var appreciationCents = Math.round(propValueCents * (growthRate / 100));
                 propValueCents += appreciationCents;
-                var rentalCents = Math.round(investCents * (yieldRate / 100));
+                cumAppreciationCents += appreciationCents;
+                cumRentalCents += rentalPerYearCents;
 
                 returns.push({
                     year: y,
                     investment: investCents / 100,
-                    appreciation: appreciationCents / 100,
-                    rental: rentalCents / 100,
-                    total: (investCents + appreciationCents + rentalCents) / 100
+                    appreciation: cumAppreciationCents / 100,
+                    rental: cumRentalCents / 100,
+                    total: (investCents + cumAppreciationCents + cumRentalCents) / 100
                 });
             }
             return returns;
@@ -1959,8 +1978,9 @@
 
         function updateMainTitle(data) {
             if (!calcMainValue) return;
-            var cumulative = data.reduce(function(sum, yr) { return sum + yr.appreciation + yr.rental; }, 0);
-            calcMainValue.textContent = 'USD ' + formatFullCurrency(cumulative) + ' in 5 years';
+            // data[i].total is already the cumulative portfolio value for year i.
+            var portfolioValue = data.length ? data[data.length - 1].total : 0;
+            calcMainValue.textContent = 'USD ' + formatFullCurrency(portfolioValue) + ' in 5 years';
         }
 
         function updateStatsCard(data) {
@@ -1969,20 +1989,24 @@
             var renEl = document.getElementById('tv3-calc-stat-rental');
 
             if (data.length > 0) {
-                var totalInv = data[0].investment;
-                var totalRen = data.reduce(function(s, y) { return s + y.rental; }, 0);
-                var totalApp = data.reduce(function(s, y) { return s + y.appreciation; }, 0);
-
-                if (invEl) invEl.textContent = '$' + formatFullCurrency(totalInv);
-                if (renEl) renEl.textContent = '$' + formatFullCurrency(totalRen);
-                if (appEl) appEl.textContent = '$' + formatFullCurrency(totalApp);
+                // appreciation/rental are cumulative — the final year holds the
+                // 5-year totals; no re-summing (that would double-count).
+                var last = data[data.length - 1];
+                if (invEl) invEl.textContent = '$' + formatFullCurrency(last.investment);
+                if (renEl) renEl.textContent = '$' + formatFullCurrency(last.rental);
+                if (appEl) appEl.textContent = '$' + formatFullCurrency(last.appreciation);
             }
         }
 
         function updateCalculator() {
-            var inv = parseFloat(investmentSlider.value) || 100000;
-            var gro = parseFloat(growthSlider.value) || 10;
-            var yld = parseFloat(yieldSlider.value) || 12;
+            // Number.isFinite guard, not `|| default` — the latter silently
+            // swaps a legitimate 0 for the default.
+            var invRaw = parseFloat(investmentSlider.value);
+            var groRaw = parseFloat(growthSlider.value);
+            var yldRaw = parseFloat(yieldSlider.value);
+            var inv = Number.isFinite(invRaw) ? invRaw : 100000;
+            var gro = Number.isFinite(groRaw) ? groRaw : 10;
+            var yld = Number.isFinite(yldRaw) ? yldRaw : 12;
             var data = calculateReturns(inv, gro, yld);
             var maxVal = Math.max.apply(null, data.map(function(d) { return d.total; }));
 

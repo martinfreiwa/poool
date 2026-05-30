@@ -874,7 +874,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // Investment Calculator Implementation
 document.addEventListener("DOMContentLoaded", function () {
   // Calculator configuration
-  const CHART_HEIGHT = 180; // Chart container height in pixels
+  const CHART_HEIGHT = 240; // Chart plot height in px (matches .calc-chart-content minus x-axis)
 
   // Calculator elements
   const calcMainValue = document.getElementById("calc-main-value");
@@ -903,22 +903,27 @@ document.addEventListener("DOMContentLoaded", function () {
     // Convert to cents to prevent IEEE754 float precision errors
     const investmentCents = Math.round(investment * 100);
     let currentPropertyValueCents = investmentCents;
+    // Cumulative accruals so each bar represents total wealth up to that year —
+    // bars rise year over year, final bar = principal + total appreciation +
+    // total rent. Appreciation compounds on the growing property value; rental
+    // is flat on the original investment (conservative).
+    let cumulativeAppreciationCents = 0;
+    let cumulativeRentalCents = 0;
+    const rentalPerYearCents = Math.round(investmentCents * (annualYieldRate / 100));
 
     for (let year = 1; year <= 5; year++) {
-      // Property appreciation for this year (compound growth in cents)
       const appreciationCents = Math.round(currentPropertyValueCents * (annualGrowthRate / 100));
       currentPropertyValueCents += appreciationCents;
+      cumulativeAppreciationCents += appreciationCents;
+      cumulativeRentalCents += rentalPerYearCents;
 
-      // Rental income (based on original investment amount, in cents)
-      const rentalIncomeCents = Math.round(investmentCents * (annualYieldRate / 100));
-
-      // Total annual return components (converted back to dollars for UI display)
+      // Cumulative components (converted back to dollars for UI display)
       const yearData = {
         year: year,
         investment: investmentCents / 100,
-        appreciation: appreciationCents / 100,
-        rental: rentalIncomeCents / 100,
-        total: (investmentCents + appreciationCents + rentalIncomeCents) / 100,
+        appreciation: cumulativeAppreciationCents / 100,
+        rental: cumulativeRentalCents / 100,
+        total: (investmentCents + cumulativeAppreciationCents + cumulativeRentalCents) / 100,
       };
 
       returns.push(yearData);
@@ -933,9 +938,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const override = slider.dataset.actualValue;
     if (override !== undefined && override !== "") {
       const parsed = parseFloat(override);
-      if (!isNaN(parsed)) return parsed;
+      if (Number.isFinite(parsed)) return parsed;
     }
-    return parseFloat(slider.value) || fallback;
+    // Number.isFinite guard, not `|| fallback` — the latter swaps a valid 0.
+    const value = parseFloat(slider.value);
+    return Number.isFinite(value) ? value : fallback;
   }
 
   function getCurrentValues() {
@@ -1098,29 +1105,41 @@ document.addEventListener("DOMContentLoaded", function () {
           series3.style.bottom = `${investmentHeight + appreciationHeight}px`;
         }
 
-        // Remove old tooltips and value labels
-        const oldTooltip = bar.querySelector(".calc-bar-tooltip");
-        const oldLabel = bar.querySelector(".calc-bar-value-label");
-        if (oldTooltip) oldTooltip.remove();
-        if (oldLabel) oldLabel.remove();
+        // Remove ALL old tooltips and value labels — querySelectorAll, not
+        // querySelector, so repeated updates can't leave stale duplicates.
+        bar.querySelectorAll(".calc-bar-tooltip, .calc-bar-value-label")
+          .forEach((el) => el.remove());
 
-        // Add new tooltip and value label
+        // Add new tooltip + value label. The value label attaches to the
+        // sized chartBar (not the full-height .calc-bar) so its top:-22px sits
+        // directly above the bar; the tooltip stays on .calc-bar for hover.
         const { tooltip, valueLabel } = createBarOverlays(yearData);
         bar.appendChild(tooltip);
-        bar.appendChild(valueLabel);
+        chartBar.appendChild(valueLabel);
       }
     });
   }
 
-  // Update main title with total return (excluding original investment)
+  // Update main title with the projected portfolio value (principal + gains)
+  // plus the ROI badge (return % and money multiple).
   function updateMainTitle(calculationData) {
-    if (!calcMainValue) return;
-    // Calculate cumulative returns over 5 years (appreciation + rental only)
-    const cumulativeReturns = calculationData.reduce((sum, year) => {
-      return sum + year.appreciation + year.rental;
-    }, 0);
+    if (!calculationData.length) return;
+    const last = calculationData[calculationData.length - 1];
+    const portfolioValue = last.total;        // cumulative — final year is the 5-yr value
+    const principal = last.investment;
 
-    calcMainValue.textContent = `USD ${formatFullCurrency(cumulativeReturns)} in 5 years`;
+    if (calcMainValue) {
+      calcMainValue.textContent = `USD ${formatFullCurrency(portfolioValue)} in 5 years`;
+    }
+
+    const roiBadge = document.getElementById("calc-roi-badge");
+    if (roiBadge && principal > 0) {
+      const gainPct = Math.round(((portfolioValue - principal) / principal) * 100);
+      const multiple = (portfolioValue / principal).toFixed(1);
+      roiBadge.innerHTML =
+        `▲ +${gainPct}% return&nbsp;·&nbsp;` +
+        `<span class="calc-roi-multiple">${multiple}× your money</span>`;
+    }
   }
 
   // Update statistics card with calculated totals
@@ -1130,24 +1149,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const appreciationStat = document.getElementById("calc-stat-appreciation");
 
     if (calculationData.length > 0) {
-      const totalInvestment = calculationData[0].investment;
-      const totalRental = calculationData.reduce(
-        (sum, year) => sum + year.rental,
-        0,
-      );
-      const totalAppreciation = calculationData.reduce(
-        (sum, year) => sum + year.appreciation,
-        0,
-      );
+      // appreciation/rental are already cumulative — take the final year's
+      // values; re-summing would double-count.
+      const last = calculationData[calculationData.length - 1];
 
       if (investmentStat) {
-        investmentStat.textContent = `$${formatFullCurrency(totalInvestment)}`;
+        investmentStat.textContent = `$${formatFullCurrency(last.investment)}`;
       }
+      // Gains get a leading "+" to read as upside; principal stays plain.
       if (rentalStat) {
-        rentalStat.textContent = `$${formatFullCurrency(totalRental)}`;
+        rentalStat.textContent = `+$${formatFullCurrency(last.rental)}`;
       }
       if (appreciationStat) {
-        appreciationStat.textContent = `$${formatFullCurrency(totalAppreciation)}`;
+        appreciationStat.textContent = `+$${formatFullCurrency(last.appreciation)}`;
       }
     }
   }
