@@ -2649,7 +2649,11 @@ pub async fn auto_clawback_for_refunded_investment(
                               ELSE 'clawed_back'
                           END,
                   updated_at = NOW()
-            WHERE source_order_id = $1
+            WHERE referral_id IN (
+                SELECT id
+                  FROM affiliate_referrals
+                 WHERE qualifying_investment_id = $1
+            )
               AND status NOT IN ('clawed_back', 'clawback_pending')
         RETURNING affiliate_id, provisional_amount_cents, status"#,
         investment_id
