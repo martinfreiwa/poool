@@ -1374,7 +1374,7 @@ fn tokenize_inline_mentions(
     let mut cursor = 0;
     while cursor < content.len() {
         let next = content[cursor..]
-            .find(|ch| matches!(ch, '#' | '@' | '$'))
+            .find(['#', '@', '$'])
             .map(|offset| cursor + offset);
         let Some(start) = next else {
             out.push(InlineMentionToken::Text(content[cursor..].to_string()));
