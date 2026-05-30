@@ -20,6 +20,9 @@ path = "src/main.rs"
 name = "backfill-villa-operations"
 path = "src/bin/backfill_villa_operations.rs"
 
+[features]
+live-db-tests = []
+
 [dependencies]
 # Web framework
 axum = { version = "0.7", features = ["multipart", "ws"] }

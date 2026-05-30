@@ -140,9 +140,11 @@ jobs:
             "SELECT gross_amount_cents FROM affiliate_commissions LIMIT 1" > /dev/null
 
       - name: Run affiliate integration tests (live DB)
+        env:
+          SQLX_OFFLINE: "false"
         run: |
           cargo test --locked --test affiliate_state_machine
-          cargo test --locked --test affiliate_money_invariants -- --ignored
+          cargo test --locked --features live-db-tests --test affiliate_money_invariants -- --ignored
 
   # ── 2. Security Audit ────────────────────────────────────────
   security-audit:

@@ -24,6 +24,7 @@
 //! ```
 
 #![cfg(test)]
+#![cfg(feature = "live-db-tests")]
 
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
