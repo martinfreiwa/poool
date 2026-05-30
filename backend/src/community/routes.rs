@@ -850,22 +850,22 @@ fn get_community_pool(state: &AppState) -> Result<sqlx::PgPool, AppError> {
 
 /// FIX-F7: Check if user is community-banned before allowing write operations
 async fn check_user_not_banned(pool: &sqlx::PgPool, user_id: Uuid) -> Result<(), AppError> {
-    let record = sqlx::query!(
+    let record = sqlx::query_as::<_, (bool, Option<chrono::DateTime<chrono::Utc>>)>(
         "SELECT is_community_banned, muted_until FROM community_profiles WHERE user_id = $1",
-        user_id
     )
+    .bind(user_id)
     .fetch_optional(pool)
     .await?;
 
-    if let Some(r) = record {
-        if r.is_community_banned {
+    if let Some((is_community_banned, muted_until)) = record {
+        if is_community_banned {
             return Err(AppError::Forbidden(
                 "Your community access has been suspended. Contact support for more information."
                     .to_string(),
             ));
         }
 
-        if let Some(muted_date) = r.muted_until {
+        if let Some(muted_date) = muted_until {
             if muted_date > chrono::Utc::now() {
                 return Err(AppError::Forbidden(format!(
                     "Your account is muted until {}. You cannot post or comment.",
