@@ -2694,7 +2694,9 @@ pub async fn auto_clawback_for_refunded_investment(
                 .bind(&currency)
                 .fetch_one(&mut *tx)
                 .await
-                .map_err(|e| AppError::Internal(format!("auto-clawback treasury lock failed: {e}")))?;
+                .map_err(|e| {
+                    AppError::Internal(format!("auto-clawback treasury lock failed: {e}"))
+                })?;
                 let wallet_id = wallet_id.ok_or_else(|| {
                     AppError::Internal("auto-clawback wallet disappeared after lock".to_string())
                 })?;
@@ -2734,12 +2736,14 @@ pub async fn auto_clawback_for_refunded_investment(
                 next_status = "clawback_pending";
             }
         }
-        sqlx::query("UPDATE affiliate_commissions SET status = $1, updated_at = NOW() WHERE id = $2")
-            .bind(next_status)
-            .bind(commission_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| AppError::Internal(format!("auto-clawback commission update failed: {e}")))?;
+        sqlx::query(
+            "UPDATE affiliate_commissions SET status = $1, updated_at = NOW() WHERE id = $2",
+        )
+        .bind(next_status)
+        .bind(commission_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(format!("auto-clawback commission update failed: {e}")))?;
         affected.push((affiliate_id, amount_cents, next_status));
     }
     tx.commit()
