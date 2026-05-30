@@ -3594,6 +3594,18 @@ body#rewards-body .commissions-list-title svg {
   stroke: currentColor !important;
 }
 
+/* Restore brand-green stroke for the icon tile inside refer/campaign headers.
+   Must come after the muted rule above to win at equal specificity. */
+body#rewards-body .refer-title-wrap .rewards-overview-card__icon,
+body#rewards-body .campaign-title-wrap .rewards-overview-card__icon {
+  color: #03FF88 !important;
+}
+body#rewards-body .refer-title-wrap .rewards-overview-card__icon svg,
+body#rewards-body .campaign-title-wrap .rewards-overview-card__icon svg {
+  color: #03FF88 !important;
+  stroke: #03FF88 !important;
+}
+
 body#rewards-body .glass-icon-bg,
 body#rewards-body .p-bg,
 body#rewards-body .p-icon::before,

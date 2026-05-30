@@ -275,36 +275,74 @@
     );
   }
 
-  // Discover grid card — intentionally compact: card opens the Circle, while
-  // explicit buttons are reserved for join/request/locked states.
+  // Activity label based on recent_post_count
+  function activityLabel(circle) {
+    var n = Number(circle && circle.recent_post_count) || 0;
+    if (n === 0) return '';
+    if (n === 1) return '1 post this week';
+    return n + ' posts this week';
+  }
+
+  // Minimal source badge — text only, no icon
+  function sourceBadge(source) {
+    if (source === 'featured') return '<span class="cc-badge cc-badge--featured">Featured</span>';
+    if (source === 'trending') return '<span class="cc-badge cc-badge--trending">Trending</span>';
+    if (source === 'new')      return '<span class="cc-badge cc-badge--new">New</span>';
+    return '';
+  }
+
+  // Discover grid card
   function renderCard(item) {
     var c = item.circle || item;
     var source = item._source || null;
     var role = item.role || (_joinedIds.has(c.id) ? 'member' : null);
     var name = escHtml(c.name || 'Untitled');
-    var desc = escHtml((c.description || '').slice(0, 110));
+    var desc = escHtml((c.description || '').slice(0, 120));
     var slug = encodeURIComponent(c.slug || '');
     var initial = escHtml(initialFor(c.name));
-    var meta = escHtml(metaText(c));
     var url = circleUrl(c);
 
+    // Banner strip
+    var bannerHtml = '';
+    if (c.banner_url) {
+      bannerHtml = '<div class="cc-card__banner" style="background-image:url(' + escHtml(c.banner_url) + ')" aria-hidden="true"></div>';
+    }
+
+    // Member count + activity
+    var memberCount = Number(c.member_count) || 0;
+    var memberTxt = memberCount + ' member' + (memberCount === 1 ? '' : 's');
+    var activity = activityLabel(c);
+
+    // Member face-stack
+    var stack = memberStack(c);
+
+    // Source badge
+    var badge = sourceBadge(source);
+
     var actionBtn = primaryAction(c, role, 'cc-card__cta');
-    var footer = actionBtn ? '<div class="cc-card__footer">' + actionBtn + '</div>' : '';
+    var footer = (stack || actionBtn) ?
+      '<div class="cc-card__footer">' +
+        (stack ? '<div class="cc-card__stack">' + stack + '</div>' : '') +
+        (actionBtn ? actionBtn : '') +
+      '</div>' : '';
 
     return (
       '<article class="cc-card cc-card--clickable" tabindex="0" role="link" aria-label="Open circle ' + escAttr(c.name || 'Untitled') + '" data-cc-open="' + escAttr(url) + '" data-circle-id="' + escHtml(c.id) + '" data-circle-slug="' + slug + '" data-cc-source="' + escHtml(source || '') + '" data-cc-filter-tags="' + escHtml(getFilterTags(item).join(' ')) + '">' +
-        '<div class="cc-card__top">' +
-          '<div class="cc-card__avatar" aria-hidden="true">' + initial + '</div>' +
-          '<div class="cc-card__title-block">' +
-            '<div class="cc-card__name-row">' +
-              '<span class="cc-card__name">' + name + '</span>' +
-            '</div>' +
-            '<div class="cc-card__meta">' +
-              meta +
+        bannerHtml +
+        '<div class="cc-card__body">' +
+          '<div class="cc-card__top">' +
+            '<div class="cc-card__avatar" aria-hidden="true">' + initial + '</div>' +
+            '<div class="cc-card__title-block">' +
+              '<div class="cc-card__name-row">' +
+                '<span class="cc-card__name">' + name + '</span>' +
+                (badge ? badge : '') +
+              '</div>' +
+              '<div class="cc-card__meta">' + escHtml(memberTxt) + '</div>' +
             '</div>' +
           '</div>' +
+          (desc ? '<p class="cc-card__desc">' + desc + '</p>' : '') +
+          (activity ? '<p class="cc-card__activity">' + activity + '</p>' : '') +
         '</div>' +
-        (desc ? '<p class="cc-card__desc">' + desc + '</p>' : '') +
         footer +
       '</article>'
     );

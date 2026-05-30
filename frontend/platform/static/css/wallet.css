@@ -2703,16 +2703,15 @@ body.kyc-hidden .wallet-main {
   align-items: center;
   min-height: 44px;
   padding-inline: 20px !important;
-  background: #FFFFFF !important;
-  color: var(--page-title-color, #181D27) !important;
-  border: 1px solid #E5E7EB !important;
+  background: var(--btn-secondary-bg, #98FB96) !important;
+  color: var(--btn-secondary-color, #0000FF) !important;
+  border-color: var(--btn-secondary-border, transparent) !important;
   font-weight: 600 !important;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .wallet-empty__cta-secondary:hover {
-  background: #F9FAFB !important;
-  border-color: var(--btn-primary-bg, #0000FF) !important;
-  color: var(--btn-primary-bg, #0000FF) !important;
+  background: var(--btn-secondary-hover-bg, #7BE079) !important;
+  color: var(--btn-secondary-color, #0000FF) !important;
 }
 
 .wallet-empty__hero-art {

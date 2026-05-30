@@ -573,6 +573,7 @@ window.initCommunityFeed = function() {
                 throw new Error(err);
             }
             input.value = '';
+            input.style.height = 'auto';
             input.disabled = false;
             // UX.12: drop the per-post comment draft after successful post.
             try { localStorage.removeItem(commentDraftKey(postId)); } catch (_) {}
@@ -1280,6 +1281,15 @@ window.initCommunityFeed = function() {
             const postId = target.id.replace('comment-input-', '');
             if (typeof window.submitComment === 'function') window.submitComment(postId);
         }
+    });
+
+    // ─── Auto-resize comment textareas ────────────────────────
+    document.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLTextAreaElement)) return;
+        if (!target.id || !target.id.startsWith('comment-input-')) return;
+        target.style.height = 'auto';
+        target.style.height = target.scrollHeight + 'px';
     });
 
     // ─── Phase 4 task 36: drag-drop image upload onto composer ──

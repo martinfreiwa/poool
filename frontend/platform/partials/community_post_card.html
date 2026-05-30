@@ -24,15 +24,15 @@
                         <span class="feed-post-badge feed-post-badge--neutral">Verified Owner</span>
                     {% endif %}
                 </span>
-                <span class="feed-post-time">{{ p.created_at_display }}</span>
                 {% if p.circle_name %}
-                    <span class="feed-post-circle-name">· {{ p.circle_name }}</span>
+                    <span class="feed-post-circle-name">{{ p.circle_name }}</span>
                 {% endif %}
                 {% if p.read_time_minutes %}
                     <span class="feed-post-readtime ds-text-caption" aria-label="Estimated reading time">· {{ p.read_time_minutes }} min read</span>
                 {% endif %}
             </div>
         </div>
+        <span class="feed-post-time feed-post-time--topright">{{ p.created_at_display }}</span>
 
         {% if p.is_pinned %}
             <span class="feed-post-badge feed-post-badge--neutral">Pinned</span>
