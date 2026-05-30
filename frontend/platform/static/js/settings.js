@@ -359,6 +359,7 @@
       totpAction.classList.toggle("settings-btn--danger-outline", !!d.totp_enabled);
     }
 
+    updatePasskeyBadge(d.passkey_count || 0);
     renderOAuthList(d.oauth_connections || d.oauth_accounts || []);
   }
 
@@ -957,6 +958,7 @@
     bindActions();
     bindModals();
     bindDirectModalButtons();
+    bindPasskeyModal();
     bindFileInputs();
     bindCounters();
     bindSectionNav();
@@ -1013,6 +1015,123 @@
       if (document.getElementById(id)) setActive(id);
     } else {
       setActive(anchorIds[0]);
+    }
+  }
+
+  // ─── Passkey management ───────────────────────────────────────
+
+  function formatPasskeyDate(iso) {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    } catch {
+      return iso;
+    }
+  }
+
+  async function renderPasskeyList() {
+    const listEl = $("modal-passkeys-list");
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="settings-empty-inline">Loading…</div>';
+    try {
+      const passkeys = await Passkeys.list();
+      if (!passkeys.length) {
+        listEl.innerHTML = '<div class="settings-empty-inline">No passkeys registered yet.</div>';
+        return;
+      }
+      listEl.replaceChildren();
+      passkeys.forEach((pk) => {
+        const row = document.createElement("div");
+        row.className = "settings-oauth-row";
+        row.style.cssText = "display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F2F4F7;";
+        row.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#667085">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+          </svg>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:500;color:#101828;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pk.name || "Passkey"}</div>
+            <div style="font-size:12px;color:#667085;">Added ${formatPasskeyDate(pk.created_at)}</div>
+          </div>
+          <button class="ds-btn ds-btn--ghost ds-btn--sm settings-btn--danger-outline" data-passkey-delete="${pk.id}" style="flex-shrink:0;">Remove</button>
+        `;
+        listEl.appendChild(row);
+      });
+    } catch (err) {
+      listEl.innerHTML = `<div class="settings-empty-inline" style="color:#B42318;">Failed to load passkeys.</div>`;
+    }
+  }
+
+  function updatePasskeyBadge(count) {
+    const badge = $("settings-passkey-badge");
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count === 1 ? "1 passkey" : `${count} passkeys`;
+      badge.className = "settings-badge settings-badge--success";
+    } else {
+      badge.textContent = "None";
+      badge.className = "settings-badge settings-badge--muted";
+    }
+  }
+
+  function bindPasskeyModal() {
+    const actionBtn = $("settings-passkey-action");
+    const modal = $("modal-passkeys");
+    const addBtn = $("btn-add-passkey");
+    const noSupportEl = $("modal-passkeys-no-support");
+    const errorEl = $("modal-passkeys-error");
+
+    if (!actionBtn || !modal) return;
+
+    if (!Passkeys.supported() && noSupportEl) noSupportEl.hidden = false;
+    if (!Passkeys.supported() && addBtn) addBtn.disabled = true;
+
+    actionBtn.addEventListener("click", () => {
+      renderPasskeyList();
+      openModal("modal-passkeys");
+    });
+
+    // Delete via event delegation inside list
+    const listEl = $("modal-passkeys-list");
+    if (listEl) {
+      listEl.addEventListener("click", async (e) => {
+        const btn = e.target.closest("[data-passkey-delete]");
+        if (!btn) return;
+        const id = btn.getAttribute("data-passkey-delete");
+        if (!confirm("Remove this passkey? You will no longer be able to sign in with it.")) return;
+        btn.disabled = true;
+        try {
+          await Passkeys.delete(id);
+          await renderPasskeyList();
+          // Refresh badge count
+          const passkeys = await Passkeys.list();
+          updatePasskeyBadge(passkeys.length);
+        } catch (err) {
+          if (errorEl) { errorEl.textContent = err.message || "Failed to remove passkey."; errorEl.hidden = false; }
+          btn.disabled = false;
+        }
+      });
+    }
+
+    if (addBtn) {
+      addBtn.addEventListener("click", async () => {
+        if (!Passkeys.supported()) return;
+        if (errorEl) errorEl.hidden = true;
+        addBtn.disabled = true;
+        addBtn.textContent = "Waiting for device…";
+        try {
+          const name = `Passkey – ${navigator.platform || "Device"}`;
+          await Passkeys.register(name);
+          await renderPasskeyList();
+          const passkeys = await Passkeys.list();
+          updatePasskeyBadge(passkeys.length);
+          toast("Passkey registered!", "success");
+        } catch (err) {
+          const msg = err.message || "Registration failed.";
+          if (errorEl) { errorEl.textContent = msg; errorEl.hidden = false; }
+        } finally {
+          addBtn.disabled = false;
+          addBtn.textContent = "Add passkey";
+        }
+      });
     }
   }
 

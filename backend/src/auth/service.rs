@@ -1546,6 +1546,272 @@ fn generate_session_token() -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
+// ─── Passkey / WebAuthn ────────────────────────────────────────
+
+use webauthn_rs::prelude::{
+    DiscoverableAuthentication, DiscoverableKey, Passkey, PasskeyRegistration,
+    RegisterPublicKeyCredential, PublicKeyCredential as WebAuthnPublicKeyCredential, Webauthn,
+};
+
+/// Store a passkey challenge (registration or authentication) in DB.
+/// Returns the challenge_id UUID to be sent to the frontend.
+pub async fn store_passkey_challenge(
+    pool: &PgPool,
+    user_id: Option<Uuid>,
+    kind: &str,
+    state: &serde_json::Value,
+) -> Result<Uuid, AppError> {
+    let id = Uuid::new_v4();
+    sqlx::query(
+        r#"
+        INSERT INTO passkey_challenges (id, user_id, kind, state_data)
+        VALUES ($1, $2, $3, $4)
+        "#,
+    )
+    .bind(id)
+    .bind(user_id)
+    .bind(kind)
+    .bind(state)
+    .execute(pool)
+    .await?;
+    Ok(id)
+}
+
+/// Fetch and delete a passkey challenge row. Returns (user_id, state_data).
+/// Returns NotFound / Gone if missing or expired.
+pub async fn consume_passkey_challenge(
+    pool: &PgPool,
+    challenge_id: Uuid,
+    expected_kind: &str,
+) -> Result<(Option<Uuid>, serde_json::Value), AppError> {
+    #[derive(sqlx::FromRow)]
+    struct ChallengeRow {
+        user_id: Option<Uuid>,
+        state_data: serde_json::Value,
+    }
+    let row = sqlx::query_as::<_, ChallengeRow>(
+        "DELETE FROM passkey_challenges WHERE id = $1 AND kind = $2 AND expires_at > NOW() RETURNING user_id, state_data",
+    )
+    .bind(challenge_id)
+    .bind(expected_kind)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::Unauthorized("Challenge expired or not found.".to_string()))?;
+
+    Ok((row.user_id, row.state_data))
+}
+
+/// Start passkey registration for an authenticated user.
+/// Returns (challenge_id, CreationChallengeResponse as JSON).
+pub async fn start_passkey_registration(
+    pool: &PgPool,
+    webauthn: &Webauthn,
+    user_id: Uuid,
+    email: &str,
+    display_name: &str,
+) -> Result<(Uuid, serde_json::Value), AppError> {
+    // Collect existing credential IDs to exclude (avoid duplicate registrations).
+    let existing: Vec<String> =
+        sqlx::query_scalar("SELECT credential_id FROM passkey_credentials WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_all(pool)
+            .await?;
+
+    let exclude_credentials = if existing.is_empty() {
+        None
+    } else {
+        use webauthn_rs::prelude::CredentialID;
+        let ids: Vec<CredentialID> = existing
+            .iter()
+            .filter_map(|s| {
+                base64::engine::general_purpose::URL_SAFE_NO_PAD
+                    .decode(s)
+                    .ok()
+                    .map(|b| b.into())
+            })
+            .collect();
+        Some(ids)
+    };
+
+    let (ccr, reg_state) = webauthn
+        .start_passkey_registration(user_id, email, display_name, exclude_credentials)
+        .map_err(|e| AppError::Internal(format!("WebAuthn registration start failed: {e}")))?;
+
+    let state_json = serde_json::to_value(&reg_state)
+        .map_err(|e| AppError::Internal(format!("WebAuthn state serialisation failed: {e}")))?;
+
+    let challenge_id = store_passkey_challenge(pool, Some(user_id), "register", &state_json).await?;
+    let options = serde_json::to_value(&ccr)
+        .map_err(|e| AppError::Internal(format!("WebAuthn CCR serialisation failed: {e}")))?;
+
+    Ok((challenge_id, options))
+}
+
+/// Finish passkey registration: verify the browser response and persist the credential.
+pub async fn finish_passkey_registration(
+    pool: &PgPool,
+    webauthn: &Webauthn,
+    challenge_id: Uuid,
+    expected_user_id: Uuid,
+    credential_json: serde_json::Value,
+    name: Option<String>,
+) -> Result<(), AppError> {
+    let (stored_user_id, state_json) =
+        consume_passkey_challenge(pool, challenge_id, "register").await?;
+
+    // Verify this challenge belongs to the authenticated user.
+    if stored_user_id != Some(expected_user_id) {
+        return Err(AppError::Unauthorized("Challenge user mismatch.".to_string()));
+    }
+
+    let reg_state: PasskeyRegistration = serde_json::from_value(state_json)
+        .map_err(|e| AppError::Internal(format!("WebAuthn state deserialisation failed: {e}")))?;
+
+    let rpkc: RegisterPublicKeyCredential = serde_json::from_value(credential_json)
+        .map_err(|_| AppError::BadRequest("Invalid credential format.".to_string()))?;
+
+    let passkey = webauthn
+        .finish_passkey_registration(&rpkc, &reg_state)
+        .map_err(|e| AppError::Unauthorized(format!("Passkey registration failed: {e}")))?;
+
+    let credential_id = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .encode(passkey.cred_id().as_ref());
+
+    let passkey_json = serde_json::to_value(&passkey)
+        .map_err(|e| AppError::Internal(format!("Passkey serialisation failed: {e}")))?;
+
+    let passkey_name = name.filter(|n| !n.trim().is_empty()).unwrap_or_else(|| "Passkey".to_string());
+
+    sqlx::query(
+        "INSERT INTO passkey_credentials (user_id, credential_id, passkey_data, name) VALUES ($1, $2, $3, $4) ON CONFLICT (credential_id) DO NOTHING",
+    )
+    .bind(expected_user_id)
+    .bind(&credential_id)
+    .bind(passkey_json)
+    .bind(&passkey_name)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Start discoverable (username-less) passkey authentication.
+/// Returns (challenge_id, RequestChallengeResponse as JSON).
+pub async fn start_passkey_authentication(
+    pool: &PgPool,
+    webauthn: &Webauthn,
+) -> Result<(Uuid, serde_json::Value), AppError> {
+    let (rcr, auth_state) = webauthn
+        .start_discoverable_authentication()
+        .map_err(|e| AppError::Internal(format!("WebAuthn auth start failed: {e}")))?;
+
+    let state_json = serde_json::to_value(&auth_state)
+        .map_err(|e| AppError::Internal(format!("WebAuthn auth state serialisation failed: {e}")))?;
+
+    let challenge_id = store_passkey_challenge(pool, None, "authenticate", &state_json).await?;
+    let options = serde_json::to_value(&rcr)
+        .map_err(|e| AppError::Internal(format!("WebAuthn RCR serialisation failed: {e}")))?;
+
+    Ok((challenge_id, options))
+}
+
+/// Finish discoverable passkey authentication.
+/// Returns the authenticated User on success.
+pub async fn finish_passkey_authentication(
+    pool: &PgPool,
+    webauthn: &Webauthn,
+    challenge_id: Uuid,
+    credential_json: serde_json::Value,
+) -> Result<User, AppError> {
+    let (_, state_json) = consume_passkey_challenge(pool, challenge_id, "authenticate").await?;
+
+    let auth_state: DiscoverableAuthentication = serde_json::from_value(state_json)
+        .map_err(|e| AppError::Internal(format!("WebAuthn state deserialisation failed: {e}")))?;
+
+    let pkc: WebAuthnPublicKeyCredential = serde_json::from_value(credential_json)
+        .map_err(|_| AppError::BadRequest("Invalid credential format.".to_string()))?;
+
+    // Look up the credential by ID to find which user and passkey to use.
+    let cred_id_b64 = &pkc.id;
+    #[derive(sqlx::FromRow)]
+    struct PkRow {
+        user_id: Uuid,
+        passkey_data: serde_json::Value,
+    }
+    let row = sqlx::query_as::<_, PkRow>(
+        "SELECT user_id, passkey_data FROM passkey_credentials WHERE credential_id = $1",
+    )
+    .bind(cred_id_b64)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::Unauthorized("Passkey not registered on this account.".to_string()))?;
+
+    let user_id: Uuid = row.user_id;
+    let passkey: Passkey = serde_json::from_value(row.passkey_data)
+        .map_err(|e| AppError::Internal(format!("Passkey deserialisation failed: {e}")))?;
+
+    let auth_result = webauthn
+        .finish_discoverable_authentication(&pkc, auth_state, &[DiscoverableKey::from(&passkey)])
+        .map_err(|e| AppError::Unauthorized(format!("Passkey authentication failed: {e}")))?;
+
+    // Update sign_count to guard against cloning.
+    let mut passkey = passkey;
+    if passkey.update_credential(&auth_result) == Some(true) {
+        if let Ok(json) = serde_json::to_value(&passkey) {
+            let _ = sqlx::query(
+                "UPDATE passkey_credentials SET passkey_data = $1 WHERE credential_id = $2",
+            )
+            .bind(json)
+            .bind(cred_id_b64)
+            .execute(pool)
+            .await;
+        }
+    }
+
+    let user = sqlx::query_as::<_, User>(
+        "SELECT * FROM users WHERE id = $1 AND status = 'active'",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::Unauthorized("Account not found or inactive.".to_string()))?;
+
+    Ok(user)
+}
+
+/// List all passkeys registered by a user.
+pub async fn list_user_passkeys(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<super::models::PasskeyCredential>, AppError> {
+    let rows = sqlx::query_as::<_, super::models::PasskeyCredential>(
+        "SELECT id, user_id, credential_id, name, created_at FROM passkey_credentials WHERE user_id = $1 ORDER BY created_at ASC",
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Delete a single passkey credential by ID, verifying ownership.
+pub async fn delete_passkey(
+    pool: &PgPool,
+    user_id: Uuid,
+    passkey_id: Uuid,
+) -> Result<(), AppError> {
+    let result =
+        sqlx::query("DELETE FROM passkey_credentials WHERE id = $1 AND user_id = $2")
+            .bind(passkey_id)
+            .bind(user_id)
+            .execute(pool)
+            .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Passkey not found.".to_string()));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

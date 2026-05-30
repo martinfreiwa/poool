@@ -9,11 +9,11 @@
 ///
 /// NO business logic lives here.
 use axum::{
-    extract::{Extension, Query, State},
+    extract::{Extension, Path, Query, State},
     http::{HeaderMap, HeaderValue, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
-    routing::{get, post},
-    Form, Router,
+    routing::{delete, get, post},
+    Form, Json, Router,
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use minijinja::context;
@@ -22,7 +22,9 @@ use tokio::time::{sleep, timeout, Instant};
 
 use super::middleware;
 use super::middleware::SESSION_COOKIE;
-use super::models::{LoginForm, SignupForm};
+use super::models::{
+    LoginForm, PasskeyLoginFinishRequest, PasskeyRegisterFinishRequest, SignupForm,
+};
 use crate::common::{email, validation};
 
 /// Determine whether the session cookie should have the `Secure` flag.
@@ -75,6 +77,8 @@ pub struct AppState {
     /// cold and the read path should hydrate it from the DB on next miss.
     pub leaderboard_last_refresh:
         std::sync::Arc<tokio::sync::RwLock<Option<chrono::DateTime<chrono::Utc>>>>,
+    /// WebAuthn / Passkey instance, shared across handlers.
+    pub webauthn: std::sync::Arc<webauthn_rs::Webauthn>,
 }
 
 // Implement FromRef so the auth middleware extractors can access PgPool
@@ -105,6 +109,14 @@ pub fn router(state: AppState) -> Router<AppState> {
         )
         .route("/verify-email", get(verify_email_page))
         .route("/resend-verification", post(resend_verification_submit))
+        // Passkey / WebAuthn
+        .route("/passkey/login/start", post(passkey_login_start))
+        .route("/passkey/login/finish", post(passkey_login_finish))
+        // Passkey management (authenticated user — registration + list + delete)
+        .route("/passkey/register/start", post(passkey_register_start))
+        .route("/passkey/register/finish", post(passkey_register_finish))
+        .route("/passkey/list", get(passkey_list))
+        .route("/passkey/:id", delete(passkey_delete))
         .with_state(state)
 }
 
@@ -2215,4 +2227,189 @@ pub async fn page_profile(jar: CookieJar, State(state): State<AppState>) -> impl
 /// GET /welcome  Welcome page (protected).
 pub async fn page_welcome(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "welcome.html").await
+}
+
+// ─── Passkey / WebAuthn handlers ──────────────────────────────
+
+type PasskeyJson = Json<serde_json::Value>;
+
+fn passkey_err(msg: impl Into<String>) -> (StatusCode, PasskeyJson) {
+    (
+        StatusCode::BAD_REQUEST,
+        Json(serde_json::json!({ "error": msg.into() })),
+    )
+}
+
+fn passkey_unauthorized(msg: impl Into<String>) -> (StatusCode, PasskeyJson) {
+    (
+        StatusCode::UNAUTHORIZED,
+        Json(serde_json::json!({ "error": msg.into() })),
+    )
+}
+
+/// POST /auth/passkey/login/start
+/// Public endpoint — starts discoverable authentication.
+pub async fn passkey_login_start(
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    match service::start_passkey_authentication(&state.db, &state.webauthn).await {
+        Ok((challenge_id, options)) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "challenge_id": challenge_id, "options": options })),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("passkey login start failed: {}", e);
+            passkey_err("Could not start passkey authentication.").into_response()
+        }
+    }
+}
+
+/// POST /auth/passkey/login/finish
+/// Public endpoint — verifies credential, creates session, redirects.
+pub async fn passkey_login_finish(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    headers: HeaderMap,
+    Json(body): Json<PasskeyLoginFinishRequest>,
+) -> impl IntoResponse {
+    let user = match service::finish_passkey_authentication(
+        &state.db,
+        &state.webauthn,
+        body.challenge_id,
+        body.credential,
+    )
+    .await
+    {
+        Ok(u) => u,
+        Err(e) => {
+            tracing::warn!("passkey login finish failed: {}", e);
+            return passkey_unauthorized("Passkey verification failed.").into_response();
+        }
+    };
+
+    let ip = match crate::common::net::client_ip(&headers).as_str() {
+        "unknown" => None,
+        s => Some(s.to_string()),
+    };
+    let user_agent = headers
+        .get("user-agent")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+
+    let session_token =
+        match service::create_session(&state.db, user.id, false, true, ip.as_deref(), user_agent.as_deref()).await {
+            Ok(t) => t,
+            Err(e) => {
+                tracing::error!("passkey session create failed: {}", e);
+                return passkey_err("Session creation failed.").into_response();
+            }
+        };
+
+    let cookie = Cookie::build((SESSION_COOKIE, session_token))
+        .path("/")
+        .http_only(true)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .max_age(time::Duration::seconds(24 * 60 * 60));
+    let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
+
+    (
+        StatusCode::OK,
+        jar,
+        Json(serde_json::json!({ "redirect": "/marketplace" })),
+    )
+        .into_response()
+}
+
+/// POST /auth/passkey/register/start  (authenticated)
+pub async fn passkey_register_start(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return passkey_unauthorized("Not authenticated.").into_response(),
+    };
+
+    let display = user.email.clone();
+    match service::start_passkey_registration(&state.db, &state.webauthn, user.id, &user.email, &display).await {
+        Ok((challenge_id, options)) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "challenge_id": challenge_id, "options": options })),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("passkey register start failed: {}", e);
+            passkey_err("Could not start passkey registration.").into_response()
+        }
+    }
+}
+
+/// POST /auth/passkey/register/finish  (authenticated)
+pub async fn passkey_register_finish(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Json(body): Json<PasskeyRegisterFinishRequest>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return passkey_unauthorized("Not authenticated.").into_response(),
+    };
+
+    match service::finish_passkey_registration(
+        &state.db,
+        &state.webauthn,
+        body.challenge_id,
+        user.id,
+        body.credential,
+        body.name,
+    )
+    .await
+    {
+        Ok(()) => (StatusCode::OK, Json(serde_json::json!({ "success": true }))).into_response(),
+        Err(e) => {
+            tracing::warn!("passkey register finish failed for user {}: {}", user.id, e);
+            passkey_err(format!("{e}")).into_response()
+        }
+    }
+}
+
+/// GET /auth/passkey/list  (authenticated)
+pub async fn passkey_list(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return passkey_unauthorized("Not authenticated.").into_response(),
+    };
+
+    match service::list_user_passkeys(&state.db, user.id).await {
+        Ok(passkeys) => (StatusCode::OK, Json(serde_json::json!({ "passkeys": passkeys }))).into_response(),
+        Err(e) => {
+            tracing::error!("passkey list failed: {}", e);
+            passkey_err("Could not list passkeys.").into_response()
+        }
+    }
+}
+
+/// DELETE /auth/passkey/:id  (authenticated)
+pub async fn passkey_delete(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Path(id): Path<uuid::Uuid>,
+) -> impl IntoResponse {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return passkey_unauthorized("Not authenticated.").into_response(),
+    };
+
+    match service::delete_passkey(&state.db, user.id, id).await {
+        Ok(()) => (StatusCode::OK, Json(serde_json::json!({ "success": true }))).into_response(),
+        Err(e) => {
+            tracing::warn!("passkey delete failed for user {}: {}", user.id, e);
+            passkey_err(format!("{e}")).into_response()
+        }
+    }
 }

@@ -154,6 +154,13 @@ pub async fn get_settings(
         email_notifications: row.try_get("email_notifications").unwrap_or(true),
         push_notifications: row.try_get("push_notifications").unwrap_or(true),
         totp_enabled: row.try_get("totp_enabled").unwrap_or(false),
+        passkey_count: sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM passkey_credentials WHERE user_id = $1",
+        )
+        .bind(user_id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0),
         referral_code: None,
         tier_name: None,
         investment_limit_cents: None,

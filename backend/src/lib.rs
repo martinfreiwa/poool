@@ -373,6 +373,17 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         auth::rate_limit::RateLimiter::new(10, std::time::Duration::from_secs(60))
     };
 
+    // WebAuthn — initialised once at startup, shared via Arc.
+    let webauthn = {
+        use webauthn_rs::WebauthnBuilder;
+        let rp_id = config.webauthn_rp_id();
+        let origin = config.webauthn_origin();
+        let builder = WebauthnBuilder::new(&rp_id, &origin)
+            .expect("Invalid WebAuthn config")
+            .rp_name("POOOL");
+        std::sync::Arc::new(builder.build().expect("Failed to build WebAuthn instance"))
+    };
+
     let state = AppState {
         db: pool.clone(),
         db_replica: pools.replica,
@@ -385,6 +396,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         community_rate_limiter: community_rate_limiter.clone(),
         storage_rate_limiter: storage_rate_limiter.clone(),
         leaderboard_last_refresh: leaderboard_last_refresh.clone(),
+        webauthn,
     };
 
     // Audit task C1 follow-up: hydrate the `last_updated` cache once at

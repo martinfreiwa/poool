@@ -134,6 +134,46 @@ impl Config {
     pub fn facebook_oauth_enabled(&self) -> bool {
         self.facebook_app_id.is_some() && self.facebook_app_secret.is_some()
     }
+
+    /// Derive the WebAuthn Relying Party ID from BASE_URL.
+    /// "https://poool.app"      → "poool.app"
+    /// "http://localhost:8888"  → "localhost"
+    pub fn webauthn_rp_id(&self) -> String {
+        self.base_url
+            .trim_start_matches("https://")
+            .trim_start_matches("http://")
+            .split('/')
+            .next()
+            .unwrap_or("localhost")
+            .split(':')
+            .next()
+            .unwrap_or("localhost")
+            .to_string()
+    }
+
+    /// Derive the WebAuthn origin (scheme + host, no trailing slash) from BASE_URL.
+    /// "https://poool.app/foo" → "https://poool.app"
+    pub fn webauthn_origin(&self) -> url::Url {
+        let trimmed = self
+            .base_url
+            .trim_end_matches('/')
+            .split('?')
+            .next()
+            .unwrap_or(&self.base_url);
+        // Keep only scheme + host (+ port if non-standard)
+        let after_scheme = trimmed
+            .find("://")
+            .map(|i| &trimmed[i + 3..])
+            .unwrap_or(trimmed);
+        let host_part = after_scheme.split('/').next().unwrap_or(after_scheme);
+        let scheme = if self.base_url.starts_with("https://") {
+            "https"
+        } else {
+            "http"
+        };
+        url::Url::parse(&format!("{scheme}://{host_part}"))
+            .expect("BASE_URL must be a valid URL for WebAuthn")
+    }
 }
 
 fn env_required(key: &str) -> String {

@@ -157,3 +157,45 @@ pub struct StepUpVerifyForm {
     /// The financial action to authorize: "withdrawal", "trade", "payment_method", "password_change"
     pub action: String,
 }
+
+// ─── Passkey / WebAuthn ────────────────────────────────────────
+
+/// A registered passkey credential row from `passkey_credentials`.
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct PasskeyCredential {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub credential_id: String,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Request body for finishing passkey registration (from frontend).
+#[derive(Debug, Deserialize)]
+pub struct PasskeyRegisterFinishRequest {
+    pub challenge_id: Uuid,
+    pub credential: serde_json::Value,
+    /// Optional human-readable name, e.g. "My iPhone".
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// Request body for finishing passkey authentication (from frontend).
+#[derive(Debug, Deserialize)]
+pub struct PasskeyLoginFinishRequest {
+    pub challenge_id: Uuid,
+    pub credential: serde_json::Value,
+}
+
+/// JSON response for passkey list.
+#[derive(Debug, Serialize)]
+pub struct PasskeyListResponse {
+    pub passkeys: Vec<PasskeyCredential>,
+}
+
+/// JSON response for start-registration / start-login carrying the challenge.
+#[derive(Debug, Serialize)]
+pub struct PasskeyChallengeResponse {
+    pub challenge_id: Uuid,
+    pub options: serde_json::Value,
+}

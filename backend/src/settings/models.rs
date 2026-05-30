@@ -38,6 +38,7 @@ pub struct SettingsResponse {
     pub push_notifications: bool,
     // Security details
     pub totp_enabled: bool,
+    pub passkey_count: i64,
     // Extensions for full SaaS profile
     pub referral_code: Option<String>,
     pub tier_name: Option<String>,
