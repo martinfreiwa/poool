@@ -66,6 +66,9 @@ CREATE INDEX IF NOT EXISTS idx_affiliate_referrals_qualified_at
 -- Gold/Diamond/Ambassador set. Reset any affiliate currently sitting on one of
 -- those legacy tier names back to Access — the next worker tick will recompute
 -- their tier from 12-month volume against the new thresholds.
+ALTER TABLE affiliates
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
 UPDATE affiliates
    SET current_tier        = 'Access',
        commission_rate_bps = 50,
