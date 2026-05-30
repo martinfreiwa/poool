@@ -2078,6 +2078,16 @@ mod google_oauth_tests {
             community_rate_limiter: RateLimiter::new(30, Duration::from_secs(60)),
             storage_rate_limiter: RateLimiter::new(10, Duration::from_secs(60)),
             leaderboard_last_refresh: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
+            webauthn: std::sync::Arc::new(
+                webauthn_rs::WebauthnBuilder::new(
+                    "localhost",
+                    &url::Url::parse("http://localhost:8888").expect("test WebAuthn origin"),
+                )
+                .expect("test WebAuthn config")
+                .rp_name("POOOL")
+                .build()
+                .expect("build test WebAuthn instance"),
+            ),
         }
     }
 
