@@ -2642,7 +2642,7 @@ pub async fn auto_clawback_for_refunded_investment(
     // `paid` rows here — those need ops review; we just flag for follow-up.
     // RETURNING captures affected affiliates + amounts so we can ping each
     // one ONCE and produce an auditable summary.
-    let affected = sqlx::query!(
+    let affected = sqlx::query_as::<_, (Option<Uuid>, i64, Option<String>)>(
         r#"UPDATE affiliate_commissions
               SET status = CASE
                               WHEN status = 'paid' THEN 'clawback_pending'
@@ -2656,8 +2656,8 @@ pub async fn auto_clawback_for_refunded_investment(
             )
               AND status NOT IN ('clawed_back', 'clawback_pending')
         RETURNING affiliate_id, provisional_amount_cents, status"#,
-        investment_id
     )
+    .bind(investment_id)
     .fetch_all(pool)
     .await
     .map_err(|e| AppError::Internal(format!("auto-clawback update failed: {e}")))?;
@@ -2668,9 +2668,9 @@ pub async fn auto_clawback_for_refunded_investment(
     let mut total_cents: i64 = 0;
     let mut paid_cents: i64 = 0;
     for row in &affected {
-        total_cents += row.provisional_amount_cents;
-        if row.status.as_deref() == Some("clawback_pending") {
-            paid_cents += row.provisional_amount_cents;
+        total_cents += row.1;
+        if row.2.as_deref() == Some("clawback_pending") {
+            paid_cents += row.1;
         }
     }
     if rows > 0 {
@@ -2694,7 +2694,7 @@ pub async fn auto_clawback_for_refunded_investment(
         // commission lines for the same affiliate produces ONE bell ping.
         let mut seen: std::collections::HashSet<Uuid> = std::collections::HashSet::new();
         for row in &affected {
-            if let Some(aff_id) = row.affiliate_id {
+            if let Some(aff_id) = row.0 {
                 if seen.insert(aff_id) {
                     crate::rewards::notifications::notify_commission_clawed_back(
                         pool,
