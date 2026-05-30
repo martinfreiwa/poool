@@ -2684,12 +2684,11 @@ pub async fn auto_clawback_for_refunded_investment(
                 .unwrap_or(0);
             if deductible > 0 {
                 let treasury_id = sqlx::query_scalar::<_, Uuid>(
-                    r#"SELECT id
-                         FROM wallets
-                        WHERE wallet_type = 'affiliate_treasury' AND currency = $1
-                        ORDER BY created_at
-                        LIMIT 1
-                        FOR UPDATE"#,
+                    r#"INSERT INTO wallets (user_id, wallet_type, currency, balance_cents)
+                       VALUES (NULL, 'affiliate_treasury', $1, 0)
+                       ON CONFLICT (wallet_type, currency) WHERE user_id IS NULL
+                       DO UPDATE SET updated_at = wallets.updated_at
+                       RETURNING id"#,
                 )
                 .bind(&currency)
                 .fetch_one(&mut *tx)
