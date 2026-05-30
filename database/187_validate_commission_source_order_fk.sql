@@ -59,23 +59,14 @@ DELETE FROM affiliate_commissions ac
            SELECT 1 FROM orders o WHERE o.id = ac.source_order_id
        );
 
--- 3. Validate the constraint. Postgres only locks the table briefly
---    (ACCESS EXCLUSIVE for the metadata flip, then a SHARE UPDATE
---    EXCLUSIVE during the full-table scan). On a clean column this
---    completes in seconds even on multi-million-row tables.
-DO $$
-BEGIN
-    BEGIN
-        ALTER TABLE affiliate_commissions
-            VALIDATE CONSTRAINT affiliate_commissions_source_order_id_fkey;
-    EXCEPTION
-        WHEN undefined_object THEN
-            -- FK doesn't exist (fresh database). Recreate it as VALIDATED.
-            ALTER TABLE affiliate_commissions
-                ADD CONSTRAINT affiliate_commissions_source_order_id_fkey
-                FOREIGN KEY (source_order_id) REFERENCES orders(id);
-    END;
-END $$;
+-- 3. Replace the legacy FK to investments(id) with the intended FK to
+--    orders(id). Validating the existing constraint is insufficient because
+--    PostgreSQL preserves its original referenced table.
+ALTER TABLE affiliate_commissions
+    DROP CONSTRAINT IF EXISTS affiliate_commissions_source_order_id_fkey;
+ALTER TABLE affiliate_commissions
+    ADD CONSTRAINT affiliate_commissions_source_order_id_fkey
+    FOREIGN KEY (source_order_id) REFERENCES orders(id);
 
 COMMIT;
 
