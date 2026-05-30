@@ -2778,10 +2778,13 @@ body.youtube-modal-active {
   /* Height accommodates chart, sliders, and disclaimer */
   margin-top: 12px;
 
-  background: #ffffff;
+  background:
+    radial-gradient(130% 80% at 100% -10%, rgba(58, 75, 255, 0.05), transparent 55%),
+    #ffffff;
   border: 1px solid var(--table-border-color);
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 8px 28px rgba(10, 0, 36, 0.05);
 
   flex: none;
   order: 1;
@@ -2827,8 +2830,9 @@ body.youtube-modal-active {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 800;
-  font-size: 28px;
-  line-height: 32px;
+  font-size: 30px;
+  line-height: 36px;
+  letter-spacing: -0.4px;
   text-align: center;
   white-space: nowrap;
 
@@ -2852,9 +2856,9 @@ body.youtube-modal-active {
   top: 108px;
 
   border: 1px solid #eaecf0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.02);
+  box-shadow: 0px 6px 18px rgba(10, 0, 36, 0.04);
 }
 
 /* Statistics item */
@@ -2881,8 +2885,9 @@ body.youtube-modal-active {
 
 /* Statistics color dot */
 .calc-stat-color {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -2897,7 +2902,7 @@ body.youtube-modal-active {
 }
 
 .calc-stat-color.rental {
-  background: #98FB96;
+  background: #16a34a;
 }
 
 /* Statistics label */
@@ -2918,9 +2923,9 @@ body.youtube-modal-active {
 .calc-stat-value {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 20px;
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 24px;
   text-align: center;
   color: var(--page-title-color);
   white-space: nowrap;
@@ -3184,7 +3189,7 @@ body.youtube-modal-active {
 
 .calc-bar:hover .calc-bar-value-label {
   opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
+  transform: translateX(-50%) translateY(-6px);
 }
 
 .calc-chart-bar {
@@ -3220,23 +3225,23 @@ body.youtube-modal-active {
 .calc-series.series-3 {
   top: 62.5%;
   bottom: 0%;
-  background: #98FB96;
+  background: #16a34a;
   border-radius: 6px 6px 0 0;
 }
 
-/* Bar value label (above bar) */
+/* Bar value label (above bar) — always visible so the rising totals read at a glance */
 .calc-bar-value-label {
   position: absolute;
   top: -24px;
   left: 50%;
   transform: translateX(-50%) translateY(0px);
   font-family: 'TT Norms Pro', sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 11px;
   line-height: 16px;
   color: var(--page-title-color);
   white-space: nowrap;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
 }
@@ -3292,7 +3297,7 @@ body.youtube-modal-active {
 
 .calc-bar-tooltip-dot.investment { background: #000080; }
 .calc-bar-tooltip-dot.appreciation { background: #3A4BFF; }
-.calc-bar-tooltip-dot.rental { background: #98FB96; }
+.calc-bar-tooltip-dot.rental { background: #16a34a; }
 
 .calc-bar-tooltip-label {
   color: #A4A7AE;
@@ -6872,4 +6877,255 @@ body.youtube-modal-active {
   color: #667085;
   margin: 0;
   line-height: 1.5;
+}
+
+/* ============================================================
+   INVESTMENT CALCULATOR — flow-based redesign (overrides above)
+   Appended last so equal-specificity rules win the cascade.
+   Converts the legacy absolute/fixed-height layout to normal
+   flow, flattens the nested stats card, and applies brand colors.
+   Slider track/thumb visuals are untouched — only repositioned.
+   ============================================================ */
+
+/* Card: absolute fixed-height -> flow flex column */
+.calculator-div {
+  position: static;
+  width: 100%;
+  height: auto;
+  margin-top: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow: visible;
+  background:
+    radial-gradient(130% 80% at 100% -10%, rgba(0, 29, 202, 0.05), transparent 55%),
+    #ffffff;
+  border: 1px solid var(--table-border-color);
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(10, 0, 36, 0.05);
+}
+
+/* Headline */
+.calc-main-title {
+  position: static;
+  width: auto;
+  height: auto;
+  left: auto;
+  top: auto;
+  transform: none;
+  text-align: center;
+  margin: 0;
+  color: var(--text-secondary);
+}
+.calc-main-value {
+  position: static;
+  width: auto;
+  height: auto;
+  left: auto;
+  top: auto;
+  transform: none;
+  text-align: center;
+  margin: 2px 0 0;
+  font-size: 30px;
+  line-height: 38px;
+  letter-spacing: -0.4px;
+  color: var(--page-title-color);
+}
+
+/* ROI badge under the headline */
+.calc-roi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  margin-top: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(3, 255, 136, 0.16);
+  color: #04663A;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.calc-roi-badge .calc-roi-multiple { color: var(--brand-blue, #001DCA); }
+
+/* Stats: nested card -> flat divided row */
+.calc-statistics-card {
+  position: static;
+  width: 100%;
+  height: auto;
+  left: auto;
+  top: auto;
+  padding: 0;
+  gap: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+}
+.calc-stat-item {
+  flex: 1;
+  padding: 0 12px;
+}
+.calc-stat-item + .calc-stat-item {
+  border-left: 1px solid var(--table-border-color);
+}
+.calc-stat-color.investment  { background: #B9C5EC; }  /* desaturated principal */
+.calc-stat-color.appreciation { background: #001DCA; } /* logo blue */
+.calc-stat-color.rental       { background: #03FF88; } /* brand mint */
+
+/* Chart: absolute -> flow with relative plot area */
+.calc-chart-container {
+  position: static;
+  width: 100%;
+  height: auto;
+  left: auto;
+  top: auto;
+}
+.calc-chart-content {
+  position: relative;
+  width: 100%;
+  height: 268px;
+}
+/* Grid / y-axis overlay sits behind bars, spanning the plot (above x-axis) */
+.calc-y-axis {
+  position: absolute;
+  inset: 0 0 28px 0;
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0;
+  z-index: 0;
+}
+.calc-y-axis-line {
+  width: 100%;
+  height: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.calc-y-axis-number {
+  width: 40px;
+  text-align: right;
+  color: var(--text-secondary);
+}
+.calc-y-axis-divider {
+  flex: 1;
+  height: 1px;
+  background: #F0F1F4;
+}
+
+/* Bars layer */
+.calc-chart-bars {
+  position: absolute;
+  left: 48px;
+  right: 8px;
+  top: 0;
+  bottom: 28px;
+  height: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 26px;
+  z-index: 10;
+}
+.calc-bar {
+  flex: 1 1 0;
+  width: auto;
+  height: 100%;
+  position: relative;
+}
+.calc-chart-bar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 100%;
+  max-width: 66px;
+  right: auto;
+  border-radius: 8px 8px 0 0;
+  overflow: visible;
+}
+.calc-series { position: absolute; left: 0; right: 0; }
+.calc-series.series-1 { background: #B9C5EC; border-radius: 0; }                 /* investment */
+.calc-series.series-2 { background: #001DCA; box-shadow: inset 0 1px 0 rgba(255,255,255,.35); } /* appreciation */
+.calc-series.series-3 { background: #03FF88; border-radius: 8px 8px 0 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); } /* rental */
+
+/* Value labels: always visible */
+.calc-bar-value-label {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 1;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Endpoint emphasis — final year is the headline figure */
+.calc-bar:last-child .calc-chart-bar {
+  outline: 2px solid var(--brand-blue, #001DCA);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+.calc-bar:last-child .calc-bar-value-label {
+  color: var(--page-title-color);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* X-axis */
+.calc-x-axis {
+  position: absolute;
+  left: 48px;
+  right: 8px;
+  bottom: 0;
+  width: auto;
+  height: 18px;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  z-index: 2;
+}
+.calc-x-axis span {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+}
+.calc-x-axis span:last-child {
+  color: var(--page-title-color);
+  font-weight: 700;
+}
+
+/* Tooltip dots match new palette */
+.calc-bar-tooltip-dot.investment  { background: #B9C5EC; }
+.calc-bar-tooltip-dot.appreciation { background: #001DCA; }
+.calc-bar-tooltip-dot.rental       { background: #03FF88; }
+
+/* Sliders: keep visuals, drop absolute positioning -> flow */
+.calc-slider-section {
+  position: static;
+  width: 100%;
+  left: auto;
+  top: auto;
+}
+.calc-slider-section.slider-1,
+.calc-slider-section.slider-2,
+.calc-slider-section.slider-3 { top: auto; }
+
+/* Help/disclaimer: absolute -> flow */
+.calc-help-button {
+  position: static;
+  width: 100%;
+  left: auto;
+  bottom: auto;
 }
