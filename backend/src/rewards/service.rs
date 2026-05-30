@@ -2621,13 +2621,11 @@ pub struct ClawbackOutcome {
     /// Sum of `provisional_amount_cents` across every row flipped to
     /// `clawed_back` or `clawback_pending` in this run.
     pub total_clawed_back_cents: i64,
-    /// Subset of `total_clawed_back_cents` that came from rows whose
-    /// status was previously `paid` — these are flagged `clawback_pending`
-    /// for ops to reconcile manually (money already moved).
+    /// Amount recovered from affiliate cash wallets for commissions that
+    /// had already reached `paid`.
     pub paid_deducted_cents: i64,
-    /// Always 0 in this implementation — we never pull funds back from
-    /// `paid` rows automatically. Surfaced so callers can detect future
-    /// shortfall logic (e.g. when ops reconciliation completes).
+    /// Paid commission amount that could not be recovered automatically.
+    /// Rows with a shortfall remain `clawback_pending` for ops follow-up.
     pub shortfall_cents: i64,
 }
 
@@ -2637,42 +2635,116 @@ pub async fn auto_clawback_for_refunded_investment(
     actor_user_id: Uuid,
     reason: &str,
 ) -> Result<ClawbackOutcome, AppError> {
-    // Move every commission tied to this investment that isn't already
-    // clawed_back/paid into the clawback flow. We DON'T pull money out of
-    // `paid` rows here — those need ops review; we just flag for follow-up.
-    // RETURNING captures affected affiliates + amounts so we can ping each
-    // one ONCE and produce an auditable summary.
-    let affected = sqlx::query_as::<_, (Option<Uuid>, i64, Option<String>)>(
-        r#"UPDATE affiliate_commissions
-              SET status = CASE
-                              WHEN status = 'paid' THEN 'clawback_pending'
-                              ELSE 'clawed_back'
-                          END,
-                  updated_at = NOW()
-            WHERE referral_id IN (
-                SELECT id
-                  FROM affiliate_referrals
-                 WHERE qualifying_investment_id = $1
-            )
-              AND status NOT IN ('clawed_back', 'clawback_pending')
-        RETURNING affiliate_id, provisional_amount_cents, status"#,
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("auto-clawback tx begin failed: {e}")))?;
+    let commissions = sqlx::query_as::<_, (Uuid, Option<Uuid>, i64, String, String)>(
+        r#"SELECT ac.id, ac.affiliate_id, ac.provisional_amount_cents,
+                  ac.status, ac.currency
+             FROM affiliate_commissions ac
+             JOIN affiliate_referrals ar ON ar.id = ac.referral_id
+            WHERE ar.qualifying_investment_id = $1
+              AND ac.status NOT IN ('clawed_back', 'clawback_pending')
+            FOR UPDATE OF ac"#,
     )
     .bind(investment_id)
-    .fetch_all(pool)
+    .fetch_all(&mut *tx)
     .await
-    .map_err(|e| AppError::Internal(format!("auto-clawback update failed: {e}")))?;
+    .map_err(|e| AppError::Internal(format!("auto-clawback fetch failed: {e}")))?;
 
-    let rows = affected.len() as u64;
-    // Post-UPDATE `status` reflects the NEW value (`clawed_back` or
-    // `clawback_pending`). Bucket by new status to fill the outcome.
+    let rows = commissions.len() as u64;
+    let mut affected = Vec::with_capacity(commissions.len());
     let mut total_cents: i64 = 0;
     let mut paid_cents: i64 = 0;
-    for row in &affected {
-        total_cents += row.1;
-        if row.2.as_deref() == Some("clawback_pending") {
-            paid_cents += row.1;
+    let mut shortfall_cents: i64 = 0;
+    for (commission_id, affiliate_id, amount_cents, status, currency) in commissions {
+        total_cents += amount_cents;
+        let mut next_status = "clawed_back";
+        if status == "paid" {
+            let wallet = if let Some(affiliate_id) = affiliate_id {
+                sqlx::query_as::<_, (Uuid, i64)>(
+                    r#"SELECT id, balance_cents
+                         FROM wallets
+                        WHERE user_id = $1 AND wallet_type = 'cash' AND currency = $2
+                        FOR UPDATE"#,
+                )
+                .bind(affiliate_id)
+                .bind(&currency)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| AppError::Internal(format!("auto-clawback wallet lock failed: {e}")))?
+            } else {
+                None
+            };
+            let wallet_id = wallet.as_ref().map(|(wallet_id, _)| *wallet_id);
+            let deductible = wallet
+                .as_ref()
+                .map(|(_, balance_cents)| std::cmp::min(amount_cents, *balance_cents))
+                .unwrap_or(0);
+            if deductible > 0 {
+                let treasury_id = sqlx::query_scalar::<_, Uuid>(
+                    r#"SELECT id
+                         FROM wallets
+                        WHERE wallet_type = 'affiliate_treasury' AND currency = $1
+                        ORDER BY created_at
+                        LIMIT 1
+                        FOR UPDATE"#,
+                )
+                .bind(&currency)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| AppError::Internal(format!("auto-clawback treasury lock failed: {e}")))?;
+                let wallet_id = wallet_id.ok_or_else(|| {
+                    AppError::Internal("auto-clawback wallet disappeared after lock".to_string())
+                })?;
+                sqlx::query("UPDATE wallets SET balance_cents = balance_cents - $1, updated_at = NOW() WHERE id = $2")
+                    .bind(deductible)
+                    .bind(wallet_id)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| AppError::Internal(format!("auto-clawback wallet debit failed: {e}")))?;
+                sqlx::query("UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW() WHERE id = $2")
+                    .bind(deductible)
+                    .bind(treasury_id)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| AppError::Internal(format!("auto-clawback treasury credit failed: {e}")))?;
+                sqlx::query(
+                    r#"INSERT INTO wallet_transactions
+                           (wallet_id, type, status, amount_cents, currency, description, external_ref_id, completed_at)
+                       VALUES ($1, 'admin_debit', 'completed', $2, $3, $4, $5, NOW()),
+                              ($6, 'admin_credit', 'completed', $7, $3, $4, $5, NOW())"#,
+                )
+                .bind(wallet_id)
+                .bind(-deductible)
+                .bind(&currency)
+                .bind(format!("Affiliate commission clawback: {reason}"))
+                .bind(investment_id.to_string())
+                .bind(treasury_id)
+                .bind(deductible)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::Internal(format!("auto-clawback ledger write failed: {e}")))?;
+            }
+            paid_cents += deductible;
+            let row_shortfall = amount_cents - deductible;
+            shortfall_cents += row_shortfall;
+            if row_shortfall > 0 {
+                next_status = "clawback_pending";
+            }
         }
+        sqlx::query("UPDATE affiliate_commissions SET status = $1, updated_at = NOW() WHERE id = $2")
+            .bind(next_status)
+            .bind(commission_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(format!("auto-clawback commission update failed: {e}")))?;
+        affected.push((affiliate_id, amount_cents, next_status));
     }
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("auto-clawback commit failed: {e}")))?;
     if rows > 0 {
         // Best-effort audit; failure is non-fatal to the clawback itself.
         let _ = crate::common::audit::log(
@@ -2711,7 +2783,7 @@ pub async fn auto_clawback_for_refunded_investment(
         commission_count: rows,
         total_clawed_back_cents: total_cents,
         paid_deducted_cents: paid_cents,
-        shortfall_cents: 0,
+        shortfall_cents,
     })
 }
 
