@@ -16,3 +16,6 @@ pytest-base-url>=2.0
 
 # Database
 psycopg2-binary>=2.9
+
+# Password hashing (used by test fixtures)
+argon2-cffi>=23.1
