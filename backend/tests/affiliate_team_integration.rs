@@ -26,6 +26,7 @@
 //! UUID isolation so they can run repeatedly without affecting prod data.
 
 #![cfg(test)]
+#![cfg(feature = "live-db-tests")]
 
 use poool_backend::rewards::{service, team_links, team_members, team_models};
 use sqlx::postgres::PgPoolOptions;

@@ -145,6 +145,7 @@ jobs:
         run: |
           cargo test --locked --test affiliate_state_machine
           cargo test --locked --features live-db-tests --test affiliate_money_invariants -- --ignored
+          cargo test --locked --features live-db-tests --test affiliate_team_integration -- --ignored
 
   # ── 2. Security Audit ────────────────────────────────────────
   security-audit:
