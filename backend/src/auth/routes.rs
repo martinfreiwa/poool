@@ -2249,9 +2249,7 @@ fn passkey_unauthorized(msg: impl Into<String>) -> (StatusCode, PasskeyJson) {
 
 /// POST /auth/passkey/login/start
 /// Public endpoint — starts discoverable authentication.
-pub async fn passkey_login_start(
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn passkey_login_start(State(state): State<AppState>) -> impl IntoResponse {
     match service::start_passkey_authentication(&state.db, &state.webauthn).await {
         Ok((challenge_id, options)) => (
             StatusCode::OK,
@@ -2297,14 +2295,22 @@ pub async fn passkey_login_finish(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    let session_token =
-        match service::create_session(&state.db, user.id, false, true, ip.as_deref(), user_agent.as_deref()).await {
-            Ok(t) => t,
-            Err(e) => {
-                tracing::error!("passkey session create failed: {}", e);
-                return passkey_err("Session creation failed.").into_response();
-            }
-        };
+    let session_token = match service::create_session(
+        &state.db,
+        user.id,
+        false,
+        true,
+        ip.as_deref(),
+        user_agent.as_deref(),
+    )
+    .await
+    {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::error!("passkey session create failed: {}", e);
+            return passkey_err("Session creation failed.").into_response();
+        }
+    };
 
     let cookie = Cookie::build((SESSION_COOKIE, session_token))
         .path("/")
@@ -2333,7 +2339,15 @@ pub async fn passkey_register_start(
     };
 
     let display = user.email.clone();
-    match service::start_passkey_registration(&state.db, &state.webauthn, user.id, &user.email, &display).await {
+    match service::start_passkey_registration(
+        &state.db,
+        &state.webauthn,
+        user.id,
+        &user.email,
+        &display,
+    )
+    .await
+    {
         Ok((challenge_id, options)) => (
             StatusCode::OK,
             Json(serde_json::json!({ "challenge_id": challenge_id, "options": options })),
@@ -2376,17 +2390,18 @@ pub async fn passkey_register_finish(
 }
 
 /// GET /auth/passkey/list  (authenticated)
-pub async fn passkey_list(
-    State(state): State<AppState>,
-    jar: CookieJar,
-) -> impl IntoResponse {
+pub async fn passkey_list(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
         None => return passkey_unauthorized("Not authenticated.").into_response(),
     };
 
     match service::list_user_passkeys(&state.db, user.id).await {
-        Ok(passkeys) => (StatusCode::OK, Json(serde_json::json!({ "passkeys": passkeys }))).into_response(),
+        Ok(passkeys) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "passkeys": passkeys })),
+        )
+            .into_response(),
         Err(e) => {
             tracing::error!("passkey list failed: {}", e);
             passkey_err("Could not list passkeys.").into_response()

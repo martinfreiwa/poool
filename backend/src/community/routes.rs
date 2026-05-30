@@ -8605,9 +8605,8 @@ async fn discover_circles_handler(
     // Gather all circle ids surfaced in any of the three rails, then
     // batch-hydrate member previews so each card can render face avatars
     // without a follow-up roundtrip.
-    let mut ids: Vec<Uuid> = Vec::with_capacity(
-        payload.featured.len() + payload.trending.len() + payload.new.len(),
-    );
+    let mut ids: Vec<Uuid> =
+        Vec::with_capacity(payload.featured.len() + payload.trending.len() + payload.new.len());
     for row in payload
         .featured
         .iter()

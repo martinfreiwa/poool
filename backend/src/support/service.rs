@@ -189,10 +189,7 @@ pub async fn submit_ticket(
             crate::storage::service::upload_local(&object_path, bytes)
                 .await
                 .map_err(|e| {
-                    tracing::error!(
-                        "No GCS bucket configured and local fallback failed: {}",
-                        e
-                    );
+                    tracing::error!("No GCS bucket configured and local fallback failed: {}", e);
                     anyhow::anyhow!("Attachment upload failed. Please try again.")
                 })?
         };

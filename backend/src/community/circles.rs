@@ -91,14 +91,17 @@ pub async fn create_circle(
         }
         s.trim_matches('-').chars().take(54).collect::<String>()
     };
-    let mut slug = if base_slug.is_empty() { "circle".to_string() } else { base_slug };
-    let collision: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM circles WHERE LOWER(slug) = LOWER($1))",
-    )
-    .bind(&slug)
-    .fetch_one(pool)
-    .await
-    .unwrap_or(false);
+    let mut slug = if base_slug.is_empty() {
+        "circle".to_string()
+    } else {
+        base_slug
+    };
+    let collision: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM circles WHERE LOWER(slug) = LOWER($1))")
+            .bind(&slug)
+            .fetch_one(pool)
+            .await
+            .unwrap_or(false);
     if collision {
         let suffix: String = Uuid::new_v4()
             .to_string()
@@ -1736,17 +1739,16 @@ pub async fn get_member_previews(
     user_ids.sort();
     user_ids.dedup();
 
-    let info_map = match crate::community::user_bridge::get_users_info_batch(
-        core_pool, redis_pool, &user_ids,
-    )
-    .await
-    {
-        Ok(m) => m,
-        Err(e) => {
-            tracing::warn!("get_member_previews bridge failed: {}", e);
-            return out;
-        }
-    };
+    let info_map =
+        match crate::community::user_bridge::get_users_info_batch(core_pool, redis_pool, &user_ids)
+            .await
+        {
+            Ok(m) => m,
+            Err(e) => {
+                tracing::warn!("get_member_previews bridge failed: {}", e);
+                return out;
+            }
+        };
 
     for (circle_id, user_id) in pairs {
         let entry = out.entry(circle_id).or_default();

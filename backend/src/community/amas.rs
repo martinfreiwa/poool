@@ -297,7 +297,11 @@ pub async fn create_ama(
         validate_optional_text(expert_title, "Expert title", MAX_EXPERT_TITLE_CHARS)?;
     let banner = banner_url.and_then(|s| {
         let trimmed = s.trim();
-        if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
     });
     let st = status.unwrap_or("scheduled");
     validate_ama_status(st)?;

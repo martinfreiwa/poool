@@ -1550,7 +1550,7 @@ fn generate_session_token() -> String {
 
 use webauthn_rs::prelude::{
     DiscoverableAuthentication, DiscoverableKey, Passkey, PasskeyRegistration,
-    RegisterPublicKeyCredential, PublicKeyCredential as WebAuthnPublicKeyCredential, Webauthn,
+    PublicKeyCredential as WebAuthnPublicKeyCredential, RegisterPublicKeyCredential, Webauthn,
 };
 
 /// Store a passkey challenge (registration or authentication) in DB.
@@ -1640,7 +1640,8 @@ pub async fn start_passkey_registration(
     let state_json = serde_json::to_value(&reg_state)
         .map_err(|e| AppError::Internal(format!("WebAuthn state serialisation failed: {e}")))?;
 
-    let challenge_id = store_passkey_challenge(pool, Some(user_id), "register", &state_json).await?;
+    let challenge_id =
+        store_passkey_challenge(pool, Some(user_id), "register", &state_json).await?;
     let options = serde_json::to_value(&ccr)
         .map_err(|e| AppError::Internal(format!("WebAuthn CCR serialisation failed: {e}")))?;
 
@@ -1661,7 +1662,9 @@ pub async fn finish_passkey_registration(
 
     // Verify this challenge belongs to the authenticated user.
     if stored_user_id != Some(expected_user_id) {
-        return Err(AppError::Unauthorized("Challenge user mismatch.".to_string()));
+        return Err(AppError::Unauthorized(
+            "Challenge user mismatch.".to_string(),
+        ));
     }
 
     let reg_state: PasskeyRegistration = serde_json::from_value(state_json)
@@ -1674,13 +1677,15 @@ pub async fn finish_passkey_registration(
         .finish_passkey_registration(&rpkc, &reg_state)
         .map_err(|e| AppError::Unauthorized(format!("Passkey registration failed: {e}")))?;
 
-    let credential_id = base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .encode(passkey.cred_id().as_ref());
+    let credential_id =
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(passkey.cred_id().as_ref());
 
     let passkey_json = serde_json::to_value(&passkey)
         .map_err(|e| AppError::Internal(format!("Passkey serialisation failed: {e}")))?;
 
-    let passkey_name = name.filter(|n| !n.trim().is_empty()).unwrap_or_else(|| "Passkey".to_string());
+    let passkey_name = name
+        .filter(|n| !n.trim().is_empty())
+        .unwrap_or_else(|| "Passkey".to_string());
 
     sqlx::query(
         "INSERT INTO passkey_credentials (user_id, credential_id, passkey_data, name) VALUES ($1, $2, $3, $4) ON CONFLICT (credential_id) DO NOTHING",
@@ -1705,8 +1710,9 @@ pub async fn start_passkey_authentication(
         .start_discoverable_authentication()
         .map_err(|e| AppError::Internal(format!("WebAuthn auth start failed: {e}")))?;
 
-    let state_json = serde_json::to_value(&auth_state)
-        .map_err(|e| AppError::Internal(format!("WebAuthn auth state serialisation failed: {e}")))?;
+    let state_json = serde_json::to_value(&auth_state).map_err(|e| {
+        AppError::Internal(format!("WebAuthn auth state serialisation failed: {e}"))
+    })?;
 
     let challenge_id = store_passkey_challenge(pool, None, "authenticate", &state_json).await?;
     let options = serde_json::to_value(&rcr)
@@ -1768,13 +1774,11 @@ pub async fn finish_passkey_authentication(
         }
     }
 
-    let user = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE id = $1 AND status = 'active'",
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::Unauthorized("Account not found or inactive.".to_string()))?;
+    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1 AND status = 'active'")
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| AppError::Unauthorized("Account not found or inactive.".to_string()))?;
 
     Ok(user)
 }
@@ -1799,12 +1803,11 @@ pub async fn delete_passkey(
     user_id: Uuid,
     passkey_id: Uuid,
 ) -> Result<(), AppError> {
-    let result =
-        sqlx::query("DELETE FROM passkey_credentials WHERE id = $1 AND user_id = $2")
-            .bind(passkey_id)
-            .bind(user_id)
-            .execute(pool)
-            .await?;
+    let result = sqlx::query("DELETE FROM passkey_credentials WHERE id = $1 AND user_id = $2")
+        .bind(passkey_id)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Passkey not found.".to_string()));
