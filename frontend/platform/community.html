@@ -88,6 +88,22 @@ include
             if (!clickedBtn) return;
 
             const selectedTab = clickedBtn.dataset.clientTab || clickedBtn.dataset.tab?.replace(/^community-/, '').replace(/-tab$/, '') || 'feed';
+            const contentArea = document.getElementById('community-content-area');
+            const targetPanel = document.getElementById(clickedBtn.dataset.tab);
+
+            function hideClientPanels() {
+              document.querySelectorAll('#community-search-tab, #community-notifications-tab, #community-dms-tab, #community-saved-tab, #community-members-tab').forEach(function (panel) {
+                panel.classList.add('hidden');
+              });
+            }
+
+            function hideHtmxPanels() {
+              if (!contentArea) return;
+              contentArea.querySelectorAll('.community-tab-panel').forEach(function (panel) {
+                panel.classList.add('hidden');
+              });
+            }
+
             document.querySelectorAll('.community-tab-btn').forEach(function (b) {
               b.classList.remove('active');
               if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', 'false');
@@ -98,23 +114,13 @@ include
               b.classList.toggle('community-bottom-nav__btn--active', b.dataset.bottomTab === selectedTab);
             });
 
-            const contentArea = document.getElementById('community-content-area');
-            const targetPanel = document.getElementById(clickedBtn.dataset.tab);
-
             if (clickedBtn.dataset.clientTab) {
               if (contentArea) contentArea.style.display = 'none';
-              document.querySelectorAll('.community-tab-panel').forEach(function (panel) {
-                panel.classList.add('hidden');
-              });
+              hideClientPanels();
+              hideHtmxPanels();
               if (targetPanel) targetPanel.classList.remove('hidden');
               const tab = clickedBtn.dataset.clientTab;
               window.history.replaceState({}, '', '/community?tab=' + tab);
-              if (tab === 'saved' && typeof window.loadCommunitySavedPosts === 'function') {
-                window.loadCommunitySavedPosts();
-              }
-              if (tab === 'members' && typeof window.loadCommunityMembers === 'function') {
-                window.loadCommunityMembers();
-              }
               if (tab === 'dms' && typeof window.loadDmThreads === 'function') {
                 window.loadDmThreads();
               }
@@ -126,9 +132,7 @@ include
             }
 
             if (contentArea) contentArea.style.display = '';
-            document.querySelectorAll('#community-search-tab, #community-notifications-tab, #community-dms-tab, #community-saved-tab, #community-members-tab').forEach(function (panel) {
-              panel.classList.add('hidden');
-            });
+            hideClientPanels();
           }
 
           /**
@@ -136,18 +140,39 @@ include
            * Used by topbar utility triggers (search input, notifications bell) so the
            * data-tab DOM contract stays the single source of truth.
            */
-          window.activateCommunityTab = function (tabName) {
+          function activateCommunityTab(tabName) {
             const btn = document.querySelector('.community-tab-btn[data-tab="community-' + tabName + '-tab"]');
-            if (btn) switchCommunityTab(btn);
-          };
+            if (btn) btn.click();
+          }
 
           window.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.community-tab-btn').forEach(function (btn) {
+              if (btn.dataset.communityTabBound === 'true') return;
+              btn.dataset.communityTabBound = 'true';
+              btn.addEventListener('click', function () {
+                switchCommunityTab(btn);
+              });
+            });
+
+            document.querySelectorAll('.community-bottom-nav__btn').forEach(function (btn) {
+              if (btn.dataset.communityBottomTabBound === 'true') return;
+              btn.dataset.communityBottomTabBound = 'true';
+              btn.addEventListener('click', function () {
+                activateCommunityTab(btn.dataset.bottomTab);
+              });
+            });
+
+            document.addEventListener('click', function (event) {
+              const trigger = event.target.closest('[data-community-tab]');
+              if (trigger) activateCommunityTab(trigger.dataset.communityTab);
+            });
+
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab') || window.POOOL_INITIAL_COMMUNITY_TAB;
             if (tab && tab !== 'feed') {
               const targetTab = document.querySelector(`.community-tab-btn[data-tab="community-${tab}-tab"]`);
               if (targetTab) {
-                targetTab.click();
+                activateCommunityTab(tab);
               }
             }
             // Default (feed) is already loaded via hx-trigger="load" on #community-content-area
@@ -170,6 +195,16 @@ include
                 }
               });
             }
+          });
+
+          document.body.addEventListener('htmx:afterSwap', function (event) {
+            if (!event.target || event.target.id !== 'community-content-area') return;
+            const activeClientTab = document.querySelector('.community-tab-btn.active[data-client-tab]');
+            if (!activeClientTab) return;
+            event.target.style.display = 'none';
+            event.target.querySelectorAll('.community-tab-panel').forEach(function (panel) {
+              panel.classList.add('hidden');
+            });
           });
         </script>
         <!-- ═══════════════════════════════════════════════════════════
@@ -1021,6 +1056,34 @@ include
           </div>
         </div>
 
+        <!-- Delete Post Modal -->
+        <div id="delete-post-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="delete-post-title" aria-describedby="delete-post-desc" style="display: none;">
+          <div class="ds-modal__backdrop" onclick="closeCommunityModal('delete-post-modal')"></div>
+          <div class="ds-modal__content community-page-modal__content--sm">
+            <div class="ds-modal__header">
+              <h3 id="delete-post-title" class="ds-modal__title">Delete Post</h3>
+              <button type="button" class="ds-modal__close"
+                aria-label="Close delete post dialog" onclick="closeCommunityModal('delete-post-modal')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="ds-modal__body">
+              <input type="hidden" id="delete-post-id">
+              <p id="delete-post-desc" class="ds-text-body">This permanently deletes the post and removes it from community feeds.</p>
+              <div id="delete-post-error" class="ds-form-error" role="alert" hidden></div>
+            </div>
+            <div class="ds-modal__footer community-page-modal__footer">
+              <button type="button" class="ds-btn ds-btn--secondary"
+                onclick="closeCommunityModal('delete-post-modal')">Cancel</button>
+              <button type="button" class="ds-btn ds-btn--danger" id="delete-post-confirm-btn" onclick="submitDeletePost()">Delete Post</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Quote Repost Modal (UX.16) -->
         <div id="quote-post-modal" class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="quote-post-title" style="display: none;">
           <div class="ds-modal__backdrop" onclick="closeCommunityModal('quote-post-modal')"></div>
@@ -1209,7 +1272,7 @@ include
     }
   </style>
   <script>
-    window.loadCommunitySavedPosts = async function () {
+    async function loadCommunitySavedPosts() {
       const container = document.getElementById('community-saved-feed-container');
       if (!container || container.dataset.loaded === 'true') return;
       container.innerHTML = '<div class="community-loading-state">Loading saved posts...</div>';
@@ -1222,9 +1285,9 @@ include
         console.error('Failed to load saved posts', error);
         container.innerHTML = '<div class="ds-card community-feed-empty"><h3 class="community-feed-empty__title">Saved posts could not be loaded</h3><p class="community-feed-empty__desc">Try again in a moment.</p></div>';
       }
-    };
+    }
 
-    window.loadCommunityMembers = async function () {
+    async function loadCommunityMembers() {
       const list = document.getElementById('community-members-list');
       const input = document.getElementById('community-members-query');
       if (!list) return;
@@ -1260,9 +1323,22 @@ include
         console.error('Failed to load members', error);
         list.innerHTML = '<div class="ds-card community-feed-empty"><h3 class="community-feed-empty__title">Members could not be loaded</h3><p class="community-feed-empty__desc">Try again in a moment.</p></div>';
       }
-    };
+    }
+
+    function loadClientTabData(tabName) {
+      if (tabName === 'saved') loadCommunitySavedPosts();
+      if (tabName === 'members') loadCommunityMembers();
+    }
+
+    document.addEventListener('click', function (event) {
+      const tabBtn = event.target.closest('.community-tab-btn[data-client-tab]');
+      if (tabBtn) loadClientTabData(tabBtn.dataset.clientTab);
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
+      const initialTab = new URLSearchParams(window.location.search).get('tab') || window.POOOL_INITIAL_COMMUNITY_TAB;
+      loadClientTabData(initialTab);
+
       const membersSearch = document.getElementById('community-members-query');
       if (membersSearch) {
         let timer = null;
@@ -1270,7 +1346,7 @@ include
           clearTimeout(timer);
           timer = setTimeout(function () {
             if (!document.getElementById('community-members-tab')?.classList.contains('hidden')) {
-              window.loadCommunityMembers();
+              loadCommunityMembers();
             }
           }, 250);
         });
@@ -1281,9 +1357,8 @@ include
       // Wire bottom-nav taps to the existing tab-switch system. Marks the
       // active button so users see what surface they're on.
       function activate(tab) {
-        if (typeof window.activateCommunityTab === 'function') {
-          window.activateCommunityTab(tab);
-        }
+        const target = document.querySelector('.community-tab-btn[data-tab="community-' + tab + '-tab"]');
+        if (target) target.click();
         document.querySelectorAll('.community-bottom-nav__btn').forEach((b) => {
           b.classList.toggle('community-bottom-nav__btn--active', b.dataset.bottomTab === tab);
         });

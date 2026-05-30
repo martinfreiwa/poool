@@ -20,13 +20,13 @@ def test_profile_page_template_has_required_blocks():
     assert "window.PROFILE_USER_ID" in html
     assert "window.PROFILE_IS_OWN" in html
     # Hero header
-    assert 'class="community-profile-hero ds-card"' in html
-    assert "community-profile-hero__avatar" in html
-    assert "community-profile-hero__name" in html
-    # Stat strip
-    assert 'class="community-profile-stats"' in html
-    for label in ["XP", "Level", "Followers", "Following", "Posts", "Streak"]:
-        assert f">{label}<" in html
+    assert 'class="cp-hero"' in html
+    assert "cp-hero__banner" in html
+    assert "cp-hero__avatar" in html
+    assert "cp-hero__name" in html
+    assert "cp-hero__meta" in html
+    for label in ["followers", "following", "posts"]:
+        assert label in html
     # Tab nav contains every panel we wire up in JS
     for tab in [
         "posts", "comments", "followers", "following",
@@ -57,13 +57,18 @@ def test_profile_js_has_required_exports_and_endpoints():
 
 
 def test_profile_css_has_required_classes():
-    css = read("frontend/platform/static/css/community-profile.css")
+    profile_css = read("frontend/platform/static/css/community-profile.css")
+    community_css = read("frontend/platform/static/css/community.css")
     for cls in [
-        ".community-profile-hero",
-        ".community-profile-stats",
-        ".community-profile-stat",
-        ".community-profile-tabs",
-        ".community-profile-tab",
+        ".cp-hero",
+        ".cp-hero__banner",
+        ".cp-hero__avatar",
+        ".cp-hero__name",
+        ".cp-hero__meta",
+        ".cp-tabs",
+    ]:
+        assert cls in community_css, f"missing class {cls} in community.css"
+    for cls in [
         ".community-profile-panel",
         ".community-profile-media-tile",
         ".community-profile-activity-row",
@@ -71,7 +76,7 @@ def test_profile_css_has_required_classes():
         ".community-profile-analytics",
         ".community-profile-load-more",
     ]:
-        assert cls in css, f"missing class {cls} in community-profile.css"
+        assert cls in profile_css, f"missing class {cls} in community-profile.css"
 
 
 def test_backend_routes_registered():

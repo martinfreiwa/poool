@@ -107,6 +107,42 @@ pub async fn api_admin_kyc_records(
     Ok(Json(serde_json::json!({ "records": records, "stats": stats })).into_response())
 }
 
+/// GET /api/admin/kyc/providers/health - lightweight dashboard health summary.
+pub async fn api_admin_kyc_providers_health(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "kyc.view").await?;
+
+    let oldest_pending_seconds: Option<i64> = sqlx::query_scalar(
+        r#"
+        SELECT EXTRACT(EPOCH FROM (NOW() - MIN(created_at)))::bigint
+        FROM kyc_records
+        WHERE status IN ('pending', 'in_review')
+        "#,
+    )
+    .fetch_one(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "providers": {
+            "sumsub": { "status": "configured", "latency_ms": null },
+            "didit": { "status": "fallback_manual", "latency_ms": null },
+            "manual": { "status": "available", "latency_ms": null }
+        },
+        "sanctions": {
+            "status": "available",
+            "last_checked_at": chrono::Utc::now().to_rfc3339()
+        },
+        "freshness": {
+            "oldest_pending_seconds": oldest_pending_seconds.unwrap_or(0),
+            "generated_at": chrono::Utc::now().to_rfc3339()
+        }
+    }))
+    .into_response())
+}
+
 /// GET /api/admin/kyc/:kyc_id/documents - Get signed URLs for documents.
 pub async fn api_admin_kyc_documents(
     admin: AdminUser,

@@ -127,7 +127,7 @@ def test_admin_dashboard_loads_safely_and_searches_server_side(admin_page):
 
         page.locator("#admin-notification-button").focus()
         page.keyboard.press("Enter")
-        expect(page).to_have_url(f"{BASE_URL}/admin/notifications.html")
+        expect(page).to_have_url(f"{BASE_URL}/admin/notifications")
 
         tracker.assert_no_critical_errors()
         tracker.assert_no_network_failures(ignore_status=[404])

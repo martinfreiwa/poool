@@ -447,3 +447,42 @@ def test_phase8_frontend_renders_permissioned_resources_widget():
         "a.circle-resource-item__title:hover",
     ]:
         assert token in css
+
+
+def test_phase8_circle_delete_uses_automatable_confirmation_modal():
+    page = read("frontend/platform/community-circle-settings.html")
+    js = read("frontend/platform/static/js/community-circle-settings.js")
+    css = read("frontend/platform/static/css/community.css")
+
+    for token in [
+        "ccs-delete-confirm-modal",
+        "ccs-delete-confirm-title",
+        "ccs-delete-confirm-desc",
+        "ccs-delete-confirm-name",
+        "ccs-delete-confirm-error",
+        "ccs-delete-confirm-submit",
+        "This permanently deletes the circle",
+    ]:
+        assert token in page
+
+    for token in [
+        "openDeleteCircleConfirm",
+        "closeDeleteCircleConfirm",
+        "setDeleteError",
+        "ccs-delete-confirm-submit",
+        "ccs-delete-confirm-cancel",
+        "ccs-delete-confirm-close",
+        "location.href = '/community/circles'",
+    ]:
+        assert token in js
+
+    assert "confirm('Delete this circle permanently?" not in js
+
+    for token in [
+        ".ccs-page--v2 [hidden]",
+        "display: none !important",
+        ".ccs-confirm-modal__panel",
+        ".ccs-confirm-modal__target",
+        ".ccs-confirm-modal__error",
+    ]:
+        assert token in css

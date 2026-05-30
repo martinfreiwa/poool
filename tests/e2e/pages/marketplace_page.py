@@ -52,12 +52,30 @@ class MarketplacePage(BasePage):
     # ── Actions ──
     def switch_to_funded_tab(self):
         """Click the Funded tab."""
-        self.funded_tab.click()
+        self.page.wait_for_function("() => window.htmx !== undefined", timeout=10000)
+        with self.page.expect_response(
+            lambda response: "/marketplace/tab?tab=funded" in response.url
+            and response.status == 200,
+            timeout=10000,
+        ):
+            self.funded_tab.click()
+        self.page.locator("#property-grid, .marketplace-error-state").first.wait_for(
+            state="visible", timeout=10000
+        )
         return self
 
     def switch_to_available_tab(self):
         """Click the Available tab."""
-        self.available_tab.click()
+        self.page.wait_for_function("() => window.htmx !== undefined", timeout=10000)
+        with self.page.expect_response(
+            lambda response: "/marketplace/tab?tab=available" in response.url
+            and response.status == 200,
+            timeout=10000,
+        ):
+            self.available_tab.click()
+        self.page.locator("#property-grid, .marketplace-error-state").first.wait_for(
+            state="visible", timeout=10000
+        )
         return self
 
     def click_first_asset(self):

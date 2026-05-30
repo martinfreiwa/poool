@@ -275,7 +275,7 @@ pub async fn calculate_dividends(
                    (distribution_id, user_id, asset_id, amount_cents, payout_type, status,
                     tokens_held, percentage_bps, first_acquired_at, holding_days, eligible)
                    VALUES ($1, $2, $3, $4, 'rental', 'scheduled', $5, $6, $7, $8, $9)
-                   ON CONFLICT (distribution_id, user_id) DO NOTHING"#,
+                   ON CONFLICT (distribution_id, user_id) WHERE distribution_id IS NOT NULL DO NOTHING"#,
             )
             .bind(distribution_id)
             .bind(holder.user_id)

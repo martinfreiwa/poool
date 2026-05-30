@@ -709,6 +709,28 @@ pub async fn api_admin_affiliate_approve(
     match result {
         Ok(r) if r.rows_affected() > 0 => {
             sqlx::query!(
+                r#"INSERT INTO affiliate_links
+                      (code, link_type, attribution_user_id, payout_user_id, team_id, status)
+                   VALUES ($1, 'personal', $2, $2, NULL, 'active')
+                   ON CONFLICT (code) DO UPDATE SET
+                      attribution_user_id = EXCLUDED.attribution_user_id,
+                      payout_user_id = EXCLUDED.payout_user_id,
+                      team_id = NULL,
+                      status = 'active',
+                      deactivated_at = NULL,
+                      deactivated_reason = NULL,
+                      updated_at = NOW()"#,
+                referral_code,
+                uid
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to upsert affiliate personal link on approval: {e}");
+                ApiError::Internal("Database error".to_string())
+            })?;
+
+            sqlx::query!(
                 "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)",
                 admin.user.id,
                 "affiliate.approved",

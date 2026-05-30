@@ -985,30 +985,33 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // 2. Token balance invariant: SUM(tokens_owned) per asset == tokens_total - tokens_available
     // 3. Negative wallet balance detection
     // 4. Sentry Fatal alert for cash deltas >$1
-    let recon_pool = pool.clone();
-    tokio::spawn(async move {
-        // Initial delay to not slam the DB on startup
-        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+    let reconciliation_worker_enabled = config.app_env != "development"
+        || std::env::var("ENABLE_FINANCIAL_RECONCILIATION_WORKER").as_deref() == Ok("true");
+    if reconciliation_worker_enabled {
+        let recon_pool = pool.clone();
+        tokio::spawn(async move {
+            // Initial delay to not slam the DB on startup
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
 
-        // 18.11 — Reconciliation runs every 6h (was 24h). All 5 invariants:
-        // cash, token, negative-balance, held-balance, and affiliate-treasury
-        // (18.15). Any violation emits a Fatal Sentry event for pager.
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(6 * 60 * 60));
-        loop {
-            interval.tick().await;
-            tracing::info!("Starting daily financial reconciliation...");
+            // 18.11 — Reconciliation runs every 6h (was 24h). All 5 invariants:
+            // cash, token, negative-balance, held-balance, and affiliate-treasury
+            // (18.15). Any violation emits a Fatal Sentry event for pager.
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(6 * 60 * 60));
+            loop {
+                interval.tick().await;
+                tracing::info!("Starting daily financial reconciliation...");
 
-            // Accumulators for persisting to reconciliation_reports (Task 10.8)
-            let mut recon_cash_delta: i64 = 0;
-            let mut recon_total_wallets: i64 = 0;
-            let mut recon_total_deposits: i64 = 0;
-            let mut recon_total_withdrawals: i64 = 0;
-            let mut recon_total_purchases: i64 = 0;
-            let mut recon_token_mismatches: i32 = 0;
-            let mut recon_negative_count: i32 = 0;
+                // Accumulators for persisting to reconciliation_reports (Task 10.8)
+                let mut recon_cash_delta: i64 = 0;
+                let mut recon_total_wallets: i64 = 0;
+                let mut recon_total_deposits: i64 = 0;
+                let mut recon_total_withdrawals: i64 = 0;
+                let mut recon_total_purchases: i64 = 0;
+                let mut recon_token_mismatches: i32 = 0;
+                let mut recon_negative_count: i32 = 0;
 
-            // ── Check 1: Cash Balance Invariant ────────────────────────
-            let totals = sqlx::query!(
+                // ── Check 1: Cash Balance Invariant ────────────────────────
+                let totals = sqlx::query!(
                 r#"
                 SELECT 
                     (SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE wallet_type = 'cash' AND currency = 'USD') as total_wallets,
@@ -1021,54 +1024,54 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .fetch_one(&recon_pool)
             .await;
 
-            match totals {
-                Ok(t) => {
-                    let total_wallets = t.total_wallets.unwrap_or(0);
-                    let total_deposits = t.total_deposits.unwrap_or(0);
-                    let total_withdrawals = t.total_withdrawals.unwrap_or(0);
-                    let total_purchases = t.total_purchases.unwrap_or(0);
-                    let expected_wallets = t.expected_wallets_ledger.unwrap_or(0);
+                match totals {
+                    Ok(t) => {
+                        let total_wallets = t.total_wallets.unwrap_or(0);
+                        let total_deposits = t.total_deposits.unwrap_or(0);
+                        let total_withdrawals = t.total_withdrawals.unwrap_or(0);
+                        let total_purchases = t.total_purchases.unwrap_or(0);
+                        let expected_wallets = t.expected_wallets_ledger.unwrap_or(0);
 
-                    recon_total_wallets = total_wallets;
-                    recon_total_deposits = total_deposits;
-                    recon_total_withdrawals = total_withdrawals;
-                    recon_total_purchases = total_purchases;
-                    let delta = total_wallets - expected_wallets;
-                    recon_cash_delta = delta;
+                        recon_total_wallets = total_wallets;
+                        recon_total_deposits = total_deposits;
+                        recon_total_withdrawals = total_withdrawals;
+                        recon_total_purchases = total_purchases;
+                        let delta = total_wallets - expected_wallets;
+                        recon_cash_delta = delta;
 
-                    if delta.abs() > 100 {
-                        let msg = format!(
+                        if delta.abs() > 100 {
+                            let msg = format!(
                             "RECONCILIATION FATAL: Cash delta of {} cents (wallets={}, expected={}). Deposits={}, Withdrawals={}, Purchases={}",
                             delta, total_wallets, expected_wallets, total_deposits, total_withdrawals, total_purchases
                         );
-                        tracing::error!("{}", msg);
-                        sentry::with_scope(
-                            |scope| {
-                                scope.set_tag("security.event", "reconciliation_fatal");
-                                scope.set_tag("reconciliation.delta_cents", delta.to_string());
-                            },
-                            || {
-                                sentry::capture_message(&msg, sentry::Level::Fatal);
-                            },
-                        );
-                    } else if delta != 0 {
-                        let msg = format!(
+                            tracing::error!("{}", msg);
+                            sentry::with_scope(
+                                |scope| {
+                                    scope.set_tag("security.event", "reconciliation_fatal");
+                                    scope.set_tag("reconciliation.delta_cents", delta.to_string());
+                                },
+                                || {
+                                    sentry::capture_message(&msg, sentry::Level::Fatal);
+                                },
+                            );
+                        } else if delta != 0 {
+                            let msg = format!(
                             "RECONCILIATION WARNING: Minor delta of {} cents (wallets={}, expected={})",
                             delta, total_wallets, expected_wallets
                         );
-                        tracing::warn!("{}", msg);
-                        sentry::capture_message(&msg, sentry::Level::Warning);
-                    } else {
-                        tracing::info!("Reconciliation check 1/5 PASS: Cash wallets perfectly match deposits/withdrawals/purchases.");
+                            tracing::warn!("{}", msg);
+                            sentry::capture_message(&msg, sentry::Level::Warning);
+                        } else {
+                            tracing::info!("Reconciliation check 1/5 PASS: Cash wallets perfectly match deposits/withdrawals/purchases.");
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Reconciliation check 1 FAILED: {}", e);
                     }
                 }
-                Err(e) => {
-                    tracing::error!("Reconciliation check 1 FAILED: {}", e);
-                }
-            }
 
-            // ── Check 2: Token Balance Invariant ───────────────────────
-            let token_mismatches = sqlx::query!(
+                // ── Check 2: Token Balance Invariant ───────────────────────
+                let token_mismatches = sqlx::query!(
                 r#"
                 SELECT a.id, a.title as "title!", a.tokens_total as "tokens_total!", a.tokens_available as "tokens_available!",
                        (
@@ -1099,108 +1102,110 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .fetch_all(&recon_pool)
             .await;
 
-            match token_mismatches {
-                Ok(rows) => {
-                    recon_token_mismatches = rows.len() as i32;
-                    if rows.is_empty() {
-                        tracing::info!("Reconciliation check 2/5 PASS: All token balances match.");
-                    } else {
-                        for row in &rows {
-                            let expected_sold = row.tokens_total - row.tokens_available;
-                            let msg = format!(
+                match token_mismatches {
+                    Ok(rows) => {
+                        recon_token_mismatches = rows.len() as i32;
+                        if rows.is_empty() {
+                            tracing::info!(
+                                "Reconciliation check 2/5 PASS: All token balances match."
+                            );
+                        } else {
+                            for row in &rows {
+                                let expected_sold = row.tokens_total - row.tokens_available;
+                                let msg = format!(
                                 "TOKEN MISMATCH: Asset '{}' ({:?}): reserved/sold={} but investments plus pending bank orders show {} tokens",
                                 row.title,
                                 row.id,
                                 expected_sold,
                                 row.total_accounted
                             );
-                            tracing::error!("{}", msg);
-                            sentry::capture_message(&msg, sentry::Level::Error);
+                                tracing::error!("{}", msg);
+                                sentry::capture_message(&msg, sentry::Level::Error);
+                            }
                         }
                     }
+                    Err(e) => {
+                        tracing::error!("Reconciliation check 2 FAILED: {}", e);
+                    }
                 }
-                Err(e) => {
-                    tracing::error!("Reconciliation check 2 FAILED: {}", e);
-                }
-            }
 
-            // ── Check 3: Negative Balance Detection ────────────────────
-            let negative_wallets = sqlx::query!(
-                r#"
+                // ── Check 3: Negative Balance Detection ────────────────────
+                let negative_wallets = sqlx::query!(
+                    r#"
                 SELECT w.id, w.user_id, w.wallet_type, w.currency, w.balance_cents, u.email
                 FROM wallets w
                 JOIN users u ON u.id = w.user_id
                 WHERE w.balance_cents < 0
                 LIMIT 50
                 "#
-            )
-            .fetch_all(&recon_pool)
-            .await;
+                )
+                .fetch_all(&recon_pool)
+                .await;
 
-            match negative_wallets {
-                Ok(rows) => {
-                    recon_negative_count = rows.len() as i32;
-                    if rows.is_empty() {
-                        tracing::info!(
-                            "Reconciliation check 3/5 PASS: No negative wallet balances."
-                        );
-                    } else {
-                        for row in &rows {
-                            let msg = format!(
-                                "NEGATIVE BALANCE: User {} ({}) has {} cents in {} {} wallet",
-                                row.user_id,
-                                row.email,
-                                row.balance_cents,
-                                row.currency,
-                                row.wallet_type
+                match negative_wallets {
+                    Ok(rows) => {
+                        recon_negative_count = rows.len() as i32;
+                        if rows.is_empty() {
+                            tracing::info!(
+                                "Reconciliation check 3/5 PASS: No negative wallet balances."
                             );
-                            tracing::error!("{}", msg);
-                            sentry::capture_message(&msg, sentry::Level::Fatal);
+                        } else {
+                            for row in &rows {
+                                let msg = format!(
+                                    "NEGATIVE BALANCE: User {} ({}) has {} cents in {} {} wallet",
+                                    row.user_id,
+                                    row.email,
+                                    row.balance_cents,
+                                    row.currency,
+                                    row.wallet_type
+                                );
+                                tracing::error!("{}", msg);
+                                sentry::capture_message(&msg, sentry::Level::Fatal);
+                            }
                         }
                     }
+                    Err(e) => {
+                        tracing::error!("Reconciliation check 3 FAILED: {}", e);
+                    }
                 }
-                Err(e) => {
-                    tracing::error!("Reconciliation check 3 FAILED: {}", e);
-                }
-            }
 
-            // ── Check 4 (18.11): held_balance ≤ balance ─────────────
-            // Per-wallet sanity: held_balance is funds reserved by open
-            // orders; can never exceed the wallet's actual balance.
-            let over_held = sqlx::query!(
-                r#"SELECT COUNT(*)::int as "n!"
+                // ── Check 4 (18.11): held_balance ≤ balance ─────────────
+                // Per-wallet sanity: held_balance is funds reserved by open
+                // orders; can never exceed the wallet's actual balance.
+                let over_held = sqlx::query!(
+                    r#"SELECT COUNT(*)::int as "n!"
                    FROM wallets
                    WHERE balance_cents < held_balance_cents"#,
-            )
-            .fetch_one(&recon_pool)
-            .await;
-            let mut recon_over_held: i32 = 0;
-            match over_held {
-                Ok(row) => {
-                    recon_over_held = row.n;
-                    if recon_over_held > 0 {
-                        let msg = format!(
+                )
+                .fetch_one(&recon_pool)
+                .await;
+                let mut recon_over_held: i32 = 0;
+                match over_held {
+                    Ok(row) => {
+                        recon_over_held = row.n;
+                        if recon_over_held > 0 {
+                            let msg = format!(
                             "RECONCILIATION FATAL: {} wallets have held_balance_cents > balance_cents",
                             recon_over_held
                         );
-                        tracing::error!("{}", msg);
-                        sentry::capture_message(&msg, sentry::Level::Fatal);
-                    } else {
-                        tracing::info!(
+                            tracing::error!("{}", msg);
+                            sentry::capture_message(&msg, sentry::Level::Fatal);
+                        } else {
+                            tracing::info!(
                             "Reconciliation check 4/5 PASS: held_balance ≤ balance on all wallets."
                         );
+                        }
                     }
+                    Err(e) => tracing::error!("Reconciliation check 4 FAILED: {}", e),
                 }
-                Err(e) => tracing::error!("Reconciliation check 4 FAILED: {}", e),
-            }
 
-            // ── Check 5 (18.15): Affiliate treasury invariant ──────────
-            // SUM(paid affiliate_commissions) ≤ debits to the
-            // affiliate_treasury wallet via wallet_transactions. A violation
-            // means commissions were marked paid without actually moving
-            // funds (or moved without the commission flip).
-            let aff_recon = sqlx::query!(
-                r#"
+                // ── Check 5 (18.15): Affiliate treasury invariant ──────────
+                // SUM(paid affiliate_commissions) ≤ debits to the
+                // affiliate_treasury wallet via wallet_transactions. A violation
+                // means commissions were marked paid without actually moving
+                // funds (or moved without the commission flip).
+                let aff_recon = sqlx::query!(
+                    r#"
                 SELECT
                     (SELECT COALESCE(SUM(provisional_amount_cents), 0)::bigint
                      FROM affiliate_commissions
@@ -1212,56 +1217,56 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                        AND wt.status = 'completed'
                        AND wt.amount_cents < 0) as "treasury_debits!"
                 "#,
-            )
-            .fetch_one(&recon_pool)
-            .await;
-            let mut recon_affiliate_drift: i64 = 0;
-            match aff_recon {
-                Ok(row) => {
-                    let paid = row.paid_commissions;
-                    let debits = row.treasury_debits;
-                    recon_affiliate_drift = paid - debits;
-                    if recon_affiliate_drift > 100 {
-                        let msg = format!(
+                )
+                .fetch_one(&recon_pool)
+                .await;
+                let mut recon_affiliate_drift: i64 = 0;
+                match aff_recon {
+                    Ok(row) => {
+                        let paid = row.paid_commissions;
+                        let debits = row.treasury_debits;
+                        recon_affiliate_drift = paid - debits;
+                        if recon_affiliate_drift > 100 {
+                            let msg = format!(
                             "RECONCILIATION FATAL: Affiliate treasury under-debited by {}c (paid={}, debits={})",
                             recon_affiliate_drift, paid, debits
                         );
-                        tracing::error!("{}", msg);
-                        sentry::capture_message(&msg, sentry::Level::Fatal);
-                    } else if recon_affiliate_drift.abs() > 100 {
-                        let msg = format!(
+                            tracing::error!("{}", msg);
+                            sentry::capture_message(&msg, sentry::Level::Fatal);
+                        } else if recon_affiliate_drift.abs() > 100 {
+                            let msg = format!(
                             "RECONCILIATION WARNING: Affiliate treasury drift {}c (paid={}, debits={})",
                             recon_affiliate_drift, paid, debits
                         );
-                        tracing::warn!("{}", msg);
-                        sentry::capture_message(&msg, sentry::Level::Warning);
-                    } else {
-                        tracing::info!("Reconciliation check 5/5 PASS: Affiliate treasury debits match paid commissions.");
+                            tracing::warn!("{}", msg);
+                            sentry::capture_message(&msg, sentry::Level::Warning);
+                        } else {
+                            tracing::info!("Reconciliation check 5/5 PASS: Affiliate treasury debits match paid commissions.");
+                        }
                     }
+                    Err(e) => tracing::error!("Reconciliation check 5 FAILED: {}", e),
                 }
-                Err(e) => tracing::error!("Reconciliation check 5 FAILED: {}", e),
-            }
 
-            // ── Task 10.8: Persist reconciliation results ──────────────
-            let report_date = chrono::Utc::now().date_naive();
-            let status = if recon_cash_delta.abs() > 100
-                || recon_token_mismatches > 0
-                || recon_negative_count > 0
-                || recon_over_held > 0
-                || recon_affiliate_drift > 100
-            {
-                "fail"
-            } else if recon_cash_delta != 0 || recon_affiliate_drift.abs() > 100 {
-                "warning"
-            } else {
-                "pass"
-            };
-            let notes = format!(
+                // ── Task 10.8: Persist reconciliation results ──────────────
+                let report_date = chrono::Utc::now().date_naive();
+                let status = if recon_cash_delta.abs() > 100
+                    || recon_token_mismatches > 0
+                    || recon_negative_count > 0
+                    || recon_over_held > 0
+                    || recon_affiliate_drift > 100
+                {
+                    "fail"
+                } else if recon_cash_delta != 0 || recon_affiliate_drift.abs() > 100 {
+                    "warning"
+                } else {
+                    "pass"
+                };
+                let notes = format!(
                 "Cash delta: {} cents, Token mismatches: {}, Negative wallets: {}, Over-held wallets: {}, Affiliate drift: {} cents",
                 recon_cash_delta, recon_token_mismatches, recon_negative_count, recon_over_held, recon_affiliate_drift
             );
-            if let Err(e) = sqlx::query(
-                r#"INSERT INTO reconciliation_reports (
+                if let Err(e) = sqlx::query(
+                    r#"INSERT INTO reconciliation_reports (
                     report_date, total_wallet_cents, total_deposits_cents,
                     total_withdrawals_cents, total_purchases_cents, cash_delta_cents,
                     total_fees_earned_cents, fee_wallet_cents, fee_delta_cents,
@@ -1279,34 +1284,39 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                     token_mismatches = EXCLUDED.token_mismatches,
                     status = EXCLUDED.status,
                     notes = EXCLUDED.notes"#,
-            )
-            .bind(report_date)
-            .bind(recon_total_wallets)
-            .bind(recon_total_deposits)
-            .bind(recon_total_withdrawals)
-            .bind(recon_total_purchases)
-            .bind(recon_cash_delta)
-            .bind(0_i64) // total_fees_earned_cents — tracked separately when fee system is wired
-            .bind(0_i64) // fee_wallet_cents — tracked separately when fee system is wired
-            .bind(0_i64) // fee_delta_cents
-            .bind(recon_token_mismatches)
-            .bind(status)
-            .bind(&notes)
-            .execute(&recon_pool)
-            .await
-            {
-                tracing::error!("Failed to persist reconciliation report: {}", e);
-            } else {
-                tracing::info!(
-                    "📊 Reconciliation report persisted for {} — status: {}",
-                    report_date,
-                    status
-                );
-            }
+                )
+                .bind(report_date)
+                .bind(recon_total_wallets)
+                .bind(recon_total_deposits)
+                .bind(recon_total_withdrawals)
+                .bind(recon_total_purchases)
+                .bind(recon_cash_delta)
+                .bind(0_i64) // total_fees_earned_cents — tracked separately when fee system is wired
+                .bind(0_i64) // fee_wallet_cents — tracked separately when fee system is wired
+                .bind(0_i64) // fee_delta_cents
+                .bind(recon_token_mismatches)
+                .bind(status)
+                .bind(&notes)
+                .execute(&recon_pool)
+                .await
+                {
+                    tracing::error!("Failed to persist reconciliation report: {}", e);
+                } else {
+                    tracing::info!(
+                        "📊 Reconciliation report persisted for {} — status: {}",
+                        report_date,
+                        status
+                    );
+                }
 
-            tracing::info!("Daily financial reconciliation completed.");
-        }
-    });
+                tracing::info!("Daily financial reconciliation completed.");
+            }
+        });
+    } else {
+        tracing::info!(
+            "Financial reconciliation worker disabled in development; set ENABLE_FINANCIAL_RECONCILIATION_WORKER=true to run it locally"
+        );
+    }
 
     // ── Marketplace: Matching Engine + Settlement Worker ───────
     // These are the core trading engine tasks. They only start if Redis is
@@ -1489,10 +1499,18 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Hourly check that SUM(wallet balances) == SUM(deposits - withdrawals).
     // Any drift = critical Sentry alert. Also asserts per-wallet
     // (held <= balance) and per-asset (sum_owned <= tokens_total) bounds.
-    let invariant_pool = pool.clone();
-    tokio::spawn(async move {
-        marketplace::invariants::run_invariant_worker(&invariant_pool).await;
-    });
+    let invariant_worker_enabled = config.app_env != "development"
+        || std::env::var("ENABLE_FINANCIAL_INVARIANT_WORKER").as_deref() == Ok("true");
+    if invariant_worker_enabled {
+        let invariant_pool = pool.clone();
+        tokio::spawn(async move {
+            marketplace::invariants::run_invariant_worker(&invariant_pool).await;
+        });
+    } else {
+        tracing::info!(
+            "Fund-conservation invariant worker disabled in development; set ENABLE_FINANCIAL_INVARIANT_WORKER=true to run it locally"
+        );
+    }
 
     //  3. Router configuration
 
@@ -1701,6 +1719,28 @@ pub fn build_platform_router(state: AppState) -> Router {
         // ── Payment result pages ──────────────────────────────────────
         .route("/payment-success", get(page_payment_success))
         .route("/payment-in-progress", get(page_payment_in_progress))
+        // ── Public/protected convenience aliases from current UI links ──
+        .route(
+            "/feedback",
+            get(|| async { Redirect::to("/support?topic=feedback") }),
+        )
+        .route(
+            "/feedback/rate",
+            get(|| async { Redirect::to("/support?topic=review") }),
+        )
+        .route(
+            "/feedback/submit",
+            get(|| async { Redirect::to("/support?topic=feedback") }),
+        )
+        .route(
+            "/referrals",
+            get(|| async { Redirect::to("/rewards#affiliate") }),
+        )
+        .route(
+            "/glossary",
+            get(|| async { Redirect::to("/support?topic=glossary") }),
+        )
+        .route("/changelog", get(|| async { Redirect::to("/blog") }))
         // ── Community (demo + SSR Post Pages) ─────────────────────────
         .route("/community", get(page_community))
         .route("/community/circles", get(page_community_circles))

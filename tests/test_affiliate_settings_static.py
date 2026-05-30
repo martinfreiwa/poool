@@ -45,14 +45,15 @@ def test_affiliate_tax_ids_are_encrypted_at_rest():
     service = read("backend/src/rewards/service.rs")
     routes = read("backend/src/rewards/routes.rs")
     migration = read("database/092_affiliate_tax_id_encryption.sql")
+    plaintext_drop_migration = read("database/154_affiliate_tax_id_drop_plaintext.sql")
 
     assert "TAX_ID_ENCRYPTION_KEY" in service
     assert "tax_id:v1" in service
     assert "encrypt_tax_id_for_storage" in service
     assert "tax_id_encrypted = $2" in service
-    assert "tax_id = NULL" in service
     assert "tax_id_encrypted" in routes
     assert "tax_id_last4" in routes
-    assert "tax_id = NULL" in routes
     assert "ADD COLUMN IF NOT EXISTS tax_id_encrypted TEXT" in migration
     assert "ADD COLUMN IF NOT EXISTS tax_id_last4 VARCHAR(4)" in migration
+    assert "DROP COLUMN tax_id" in plaintext_drop_migration
+    assert "affiliate_legacy_tax_id_cleared" in plaintext_drop_migration

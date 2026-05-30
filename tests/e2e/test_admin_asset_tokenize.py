@@ -158,7 +158,7 @@ def test_admin_asset_tokenize_permissions_csrf_mock_deploy_and_ui(quality_page):
             [{"name": "poool_session", "value": super_admin["session_token"], "url": BASE_URL}]
         )
         tracker.navigate_and_check(f"{BASE_URL}/admin/asset-tokenize")
-        seeded_candidate = page.locator(f".tokenize-candidate[href*='{asset_id}']")
+        seeded_candidate = page.locator(f".tokenize-candidate[data-asset-id='{asset_id}']")
         expect(seeded_candidate).to_be_visible()
         assert seeded_candidate.locator("img[src='x']").count() == 0
 
@@ -175,7 +175,7 @@ def test_admin_asset_tokenize_permissions_csrf_mock_deploy_and_ui(quality_page):
         ) as tokenize_response:
             page.locator("#btn-tokenize").click()
             expect(page.locator(".tokenize-modal")).to_be_visible()
-            page.get_by_role("button", name="Deploy Asset").click()
+            page.locator(".tokenize-modal").get_by_role("button", name="Deploy Asset").click()
         assert tokenize_response.value.status == 200
         payload = tokenize_response.value.json()
         assert payload["success"] is True

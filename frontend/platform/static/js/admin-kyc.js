@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSorting();
   setupPagination();
   setupKitFeatures();
+  setupDashboardControls();
 });
 
 function setupKitFeatures() {
@@ -58,6 +59,148 @@ function setupKitFeatures() {
     lastUpdatedSelector: "#last-updated-label",
     isBusy: () => document.getElementById("kyc-modal")?.style.display === "flex",
   });
+}
+
+function setupDashboardControls() {
+  document.querySelectorAll(".admin-kpi-card[data-tab]").forEach((card) => {
+    card.setAttribute("draggable", "true");
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-pressed", card.dataset.tab === currentTab ? "true" : "false");
+  });
+
+  document.getElementById("queue-search")?.addEventListener("input", debounce(applyFilters, 200));
+  document.getElementById("queue-filter-provider")?.addEventListener("change", applyFilters);
+  document.getElementById("queue-filter-risk")?.addEventListener("change", applyFilters);
+  document.getElementById("kyc-review-next")?.addEventListener("click", reviewNextRecord);
+  document.getElementById("kyc-save-view")?.addEventListener("click", saveCurrentView);
+  document.getElementById("kyc-shortcuts-btn")?.addEventListener("click", () => toggleShortcuts(true));
+  document.getElementById("kyc-shortcuts-close")?.addEventListener("click", () => toggleShortcuts(false));
+  document.getElementById("kyc-shortcuts-dialog")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) toggleShortcuts(false);
+  });
+  document.getElementById("kyc-modal-assign-btn")?.addEventListener("click", () => {
+    const audit = document.getElementById("kyc-modal-audit-list");
+    if (audit) audit.textContent = "Assignment saved locally for this review session.";
+  });
+
+  document.addEventListener("keydown", (e) => {
+    const activeTag = document.activeElement?.tagName || "";
+    const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(activeTag);
+    if (e.key === "/" && !isTyping) {
+      e.preventDefault();
+      document.getElementById("queue-search")?.focus();
+    }
+    if (e.key.toLowerCase() === "r" && !isTyping) {
+      e.preventDefault();
+      reviewNextRecord();
+    }
+  });
+
+  renderSavedViewChips();
+  loadProviderHealth();
+  startCountdown();
+}
+
+async function loadProviderHealth() {
+  try {
+    const resp = await fetch("/api/admin/kyc/providers/health");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    setText("kyc-provider-sumsub", data.providers?.sumsub?.status || "unknown");
+    setText("kyc-sanctions-health", data.sanctions?.status || "unknown");
+    setText("kyc-oldest-pending", formatAgeSeconds(data.freshness?.oldest_pending_seconds || 0));
+  } catch (e) {
+    console.error("Error loading KYC provider health", e);
+  }
+}
+
+function startCountdown() {
+  const el = document.getElementById("auto-refresh-countdown");
+  const toggle = document.getElementById("auto-refresh");
+  if (!el) return;
+  let remaining = 30;
+  setInterval(() => {
+    if (toggle && !toggle.checked) {
+      el.textContent = "off";
+      return;
+    }
+    remaining = remaining <= 1 ? 30 : remaining - 1;
+    el.textContent = `${remaining}s`;
+  }, 1000);
+}
+
+function saveCurrentView() {
+  const views = readSavedViews();
+  views.push({
+    name: `View ${views.length + 1}`,
+    state: {
+      tab: currentTab,
+      search: document.getElementById("queue-search")?.value || "",
+      provider: document.getElementById("queue-filter-provider")?.value || "",
+      risk: document.getElementById("queue-filter-risk")?.value || "",
+    },
+  });
+  localStorage.setItem("kyc.savedViews.v1", JSON.stringify(views));
+  renderSavedViewChips();
+}
+
+function renderSavedViewChips() {
+  const list = document.getElementById("kyc-views-list");
+  if (!list) return;
+  const views = readSavedViews();
+  list.innerHTML = views
+    .map((view, idx) => `<button type="button" class="admin-saved-view-chip" data-idx="${idx}">${esc(view.name)}</button>`)
+    .join("");
+  list.querySelectorAll(".admin-saved-view-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const view = views[Number(chip.dataset.idx)];
+      if (!view) return;
+      const state = view.state || {};
+      if (state.tab) document.querySelector(`.admin-tab[data-tab="${state.tab}"]`)?.click();
+      const queueSearch = document.getElementById("queue-search");
+      const queueProvider = document.getElementById("queue-filter-provider");
+      const queueRisk = document.getElementById("queue-filter-risk");
+      if (queueSearch) queueSearch.value = state.search || "";
+      if (queueProvider) queueProvider.value = state.provider || "";
+      if (queueRisk) queueRisk.value = state.risk || "";
+      applyFilters();
+    });
+  });
+}
+
+function readSavedViews() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("kyc.savedViews.v1") || "[]");
+    if (Array.isArray(parsed)) return parsed;
+    return Object.keys(parsed).map((name) => ({ name, state: parsed[name] }));
+  } catch {
+    return [];
+  }
+}
+
+function toggleShortcuts(open) {
+  const dialog = document.getElementById("kyc-shortcuts-dialog");
+  if (dialog) dialog.style.display = open ? "flex" : "none";
+}
+
+function reviewNextRecord() {
+  const next = queueRecords[0] || allKYCRecords.find((r) => r.status === "pending" || r.status === "in_review");
+  if (next) openReviewModal(next.id);
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function formatAgeSeconds(seconds) {
+  const secs = Number(seconds) || 0;
+  if (secs <= 0) return "none";
+  const days = Math.floor(secs / 86400);
+  const hours = Math.floor((secs % 86400) / 3600);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h`;
+  return `${Math.max(1, Math.floor(secs / 60))}m`;
 }
 
 function renderKycActionRequired() {
@@ -153,6 +296,9 @@ function setupTabs() {
 
       const tabName = tab.dataset.tab;
       currentTab = tabName;
+      document.querySelectorAll(".admin-kpi-card[data-tab]").forEach((card) => {
+        card.setAttribute("aria-pressed", card.dataset.tab === currentTab ? "true" : "false");
+      });
 
       if (tabName === "queue") {
         document.getElementById("tab-queue").style.display = "";
@@ -202,6 +348,7 @@ async function loadKYCRecords() {
       }
       renderKycActionRequired();
       if (kycAutoRefresh) kycAutoRefresh.markFetched();
+      loadProviderHealth();
     } else {
       const msg = resp.status === 403 ? "Access denied." : `Failed to load KYC records (${resp.status}).`;
       const tbody = document.getElementById("kyc-queue-body");
@@ -222,6 +369,22 @@ function applyFilters() {
   queueRecords = allKYCRecords.filter(
     (r) => r.status === "pending" || r.status === "in_review",
   );
+  const queueSearch = (document.getElementById("queue-search")?.value || "").toLowerCase();
+  const queueProvider = document.getElementById("queue-filter-provider")?.value || "";
+  const queueRisk = document.getElementById("queue-filter-risk")?.value || "";
+  if (queueSearch) {
+    queueRecords = queueRecords.filter((r) =>
+      `${r.user_name} ${r.user_email}`.toLowerCase().includes(queueSearch),
+    );
+  }
+  if (queueProvider) {
+    queueRecords = queueRecords.filter((r) => r.provider === queueProvider);
+  }
+  if (queueRisk === "pep") {
+    queueRecords = queueRecords.filter((r) => r.pep_check_passed === false);
+  } else if (queueRisk === "sanctions") {
+    queueRecords = queueRecords.filter((r) => r.sanctions_check === false);
+  }
 
   // 2. All Filter
   const search = (
@@ -473,6 +636,8 @@ function openReviewModal(kycId) {
   }
 
   document.getElementById("kyc-rejection-reason").value = "";
+  const audit = document.getElementById("kyc-modal-audit-list");
+  if (audit) audit.textContent = "No audit entries for this browser session.";
 
   document.getElementById("kyc-modal-approve").onclick = () =>
     handleKYCAction("approve");
@@ -506,7 +671,10 @@ async function handleKYCAction(action) {
   try {
     const resp = await fetch(`/api/admin/kyc/${reviewingKYCId}/${action}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "",
+      },
       body: JSON.stringify({ rejection_reason: reason }),
     });
     if (resp.ok) {

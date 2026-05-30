@@ -2348,15 +2348,9 @@ body#developer-submissions-body #submissions-table-container::before {
   background: none !important;
 }
 
-/* Inner toolbar + footer chips + checkbox column don't exist on the
-   dashboard/assets reference card — hide them so the submissions card is
-   visually identical: header → table only. Pipeline filter still works
-   via the bento stat tiles above the card. */
-.dev-submissions-table-card .sub-toolbar,
-.dev-submissions-table-card .sub-pipeline--footer,
-.dev-submissions-table-card .submissions-table th.col-checkbox,
-.dev-submissions-table-card .submissions-table tbody td:first-child:has(.sub-checkbox-label),
-.dev-submissions-table-card .submissions-table tbody td.col-checkbox {
+/* Footer chips duplicate the bento stat tiles above the card, so keep them
+   hidden while preserving the search/sort toolbar and bulk-selection column. */
+.dev-submissions-table-card .sub-pipeline--footer {
   display: none !important;
 }
 

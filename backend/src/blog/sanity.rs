@@ -1603,6 +1603,10 @@ fn clean_public_url(value: Option<String>) -> Option<String> {
     })
 }
 
+fn rewrite_asset_url(value: Option<String>) -> Option<String> {
+    value.map(|url| crate::storage::service::rewrite_gcs_url(&url))
+}
+
 fn map_article(row: SanityArticle) -> ArticleResponse {
     let content_html = row.body.as_ref().map(portable_text_to_safe_html);
     ArticleResponse {
@@ -1616,7 +1620,7 @@ fn map_article(row: SanityArticle) -> ArticleResponse {
         meta_title: row.meta_title,
         meta_description: row.meta_description,
         canonical_url: row.canonical_url,
-        og_image_url: row.og_image_url,
+        og_image_url: rewrite_asset_url(row.og_image_url),
         author: row
             .author
             .map(map_author_summary)
@@ -1645,7 +1649,7 @@ fn map_article(row: SanityArticle) -> ArticleResponse {
                 icon: None,
             }),
         tags: row.tags.unwrap_or_default(),
-        cover_image_url: row.cover_image_url,
+        cover_image_url: rewrite_asset_url(row.cover_image_url),
         reading_time_minutes: row.reading_time_minutes.unwrap_or(5).max(1),
         featured: row.featured.unwrap_or(false),
         share_links: row

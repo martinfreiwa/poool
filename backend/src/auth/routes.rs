@@ -317,9 +317,15 @@ pub async fn login_submit(
         Err(err) => return Ok(login_error_response(err, &headers)),
     };
 
-    // 2. Login-time 2FA challenge is temporarily disabled. Existing 2FA
-    // enrollment, setup, settings, and step-up routes remain available.
-    let (is_2fa_verified, redirect_to) = (true, "/marketplace");
+    // 2. Enforce login-time 2FA for enrolled accounts. Unenrolled users can
+    // continue directly, while enrolled users receive an unverified session
+    // that is only accepted by the 2FA verification route.
+    let totp_enabled = service::user_totp_enabled(&state.db, user.id).await?;
+    let (is_2fa_verified, redirect_to) = if totp_enabled {
+        (false, "/auth/2fa")
+    } else {
+        (true, "/marketplace")
+    };
 
     // Extract client info for session
     let ip = match crate::common::net::client_ip(&headers).as_str() {
@@ -332,8 +338,7 @@ pub async fn login_submit(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    // 3. Create session. Mark it 2FA-verified so enrolled accounts can log
-    // in without the temporary login-time challenge.
+    // 3. Create session with the correct 2FA verification state.
     let session_token = timeout(
         Duration::from_secs(5),
         service::create_session(
@@ -1620,9 +1625,13 @@ async fn google_callback_inner(
     )
     .await?;
 
-    // Apply same temporary login-time 2FA bypass as password login. Existing
-    // enrollment, setup, settings, and step-up routes remain available.
-    let (is_2fa_verified, redirect_to) = (true, "/marketplace");
+    // Apply the same login-time 2FA enforcement as password login.
+    let totp_enabled = service::user_totp_enabled(&state.db, user.id).await?;
+    let (is_2fa_verified, redirect_to) = if totp_enabled {
+        (false, "/auth/2fa")
+    } else {
+        (true, "/marketplace")
+    };
 
     // Clear transient OAuth cookies
     let jar = clear_oauth_cookies(jar);

@@ -83,7 +83,7 @@ def _seed_leaderboard_rows(user_id, display_name, total_invested_cents, tier_id=
             """
             INSERT INTO leaderboard_scores (
                 user_id, total_invested_cents, asset_count, portfolio_roi_bps,
-                affiliate_count, referral_revenue_cents, highest_investment_cents,
+                affiliate_count, referral_network_value_cents, highest_investment_cents,
                 rank_invested, computed_at
             ) VALUES (%s, %s, 1, 500, 0, 0, %s, 1, NOW())
             ON CONFLICT (user_id) DO UPDATE SET
@@ -161,83 +161,49 @@ def test_authed_user_sees_my_rank_card_populated(quality_page):
         _cleanup(user_id, token)
 
 
-def test_search_filters_table_to_matching_display_name(quality_page):
-    """Typing in the search input narrows the table to matching rows."""
+def test_rankings_table_shows_other_visible_users_not_current_viewer(quality_page):
+    """The public table lists other visible investors while keeping the viewer in My Rank."""
     page, tracker = quality_page
-    user_id, token = _create_session()
+    viewer_id, token = _create_session()
+    target_id, target_token = _create_session()
     unique = uuid.uuid4().hex[:8].upper()
     display_name = f"NEEDLE-{unique}"
-    _seed_leaderboard_rows(user_id, display_name, total_invested_cents=900_000_000)
+    _seed_leaderboard_rows(target_id, display_name, total_invested_cents=900_000_000)
     _attach_session(page, token)
     try:
         tracker.navigate_and_check(f"{BASE_URL}/leaderboard")
         # Wait for the table to render at least one row
         expect(page.locator("#lb-rankings-body tr").first).to_be_visible(timeout=15_000)
-
-        page.locator("#lb-search-input").fill(f"NEEDLE-{unique}")
-        # 300ms debounce + network round-trip
         expect(page.locator("#lb-rankings-body")).to_contain_text(
             f"NEEDLE-{unique}", timeout=10_000
         )
-        # No unrelated entries should remain in the visible body.
         visible_rows = page.locator("#lb-rankings-body tr").count()
-        assert visible_rows >= 1, "search result should contain the seeded user"
+        assert visible_rows >= 1, "rankings should contain the seeded public user"
+        expect(page.locator("#lb-rankings-body")).not_to_contain_text("E2E LB")
         tracker.assert_no_critical_errors()
     finally:
-        _cleanup(user_id, token)
+        _cleanup(target_id, target_token)
+        _cleanup(viewer_id, token)
 
 
-def test_tier_filter_updates_participants_count(quality_page):
-    """Clicking a tier filter chip updates the visible row set + count display."""
+def test_removed_filter_and_visibility_controls_stay_out_of_leaderboard(quality_page):
+    """Search, tier filters, and visibility settings are no longer managed on this page."""
     page, tracker = quality_page
     user_id, token = _create_session()
-    display_name = f"TierE2E-{uuid.uuid4().hex[:6]}"
-    # Seed into tier_id=3 to exercise a non-default chip.
-    _seed_leaderboard_rows(user_id, display_name, total_invested_cents=700_000_000, tier_id=3)
-    _attach_session(page, token)
-    try:
-        tracker.navigate_and_check(f"{BASE_URL}/leaderboard")
-        # Wait for default "All Tiers" view to be populated.
-        expect(page.locator("#lb-total-participants")).to_contain_text("investors", timeout=15_000)
-        # Click tier_id=3 chip ("Pro" per the existing UI).
-        page.locator('button.lb-topbar-tab[data-tier-id="3"]').click()
-        # The chip becomes active (regex tolerates other classes alongside `active`).
-        import re
-        expect(page.locator('button.lb-topbar-tab[data-tier-id="3"]')).to_have_class(
-            re.compile(r"\bactive\b"),
-            timeout=10_000,
-        )
-        # The participants count refreshes after the filter applies.
-        expect(page.locator("#lb-total-participants")).to_contain_text("investors", timeout=10_000)
-        tracker.assert_no_critical_errors()
-    finally:
-        _cleanup(user_id, token)
-
-
-def test_visibility_toggle_persists_across_reload(quality_page):
-    """Flipping the visibility checkbox persists after a full page reload (audit fix 3)."""
-    page, tracker = quality_page
-    user_id, token = _create_session()
+    target_id, target_token = _create_session()
     display_name = f"VisE2E-{uuid.uuid4().hex[:6]}"
     _seed_leaderboard_rows(user_id, display_name, total_invested_cents=400_000_000)
+    _seed_leaderboard_rows(target_id, f"Visible-{uuid.uuid4().hex[:6]}", total_invested_cents=800_000_000)
     _attach_session(page, token)
     try:
         tracker.navigate_and_check(f"{BASE_URL}/leaderboard")
-        toggle = page.locator("#lb-visibility-toggle")
-        expect(toggle).to_be_visible(timeout=15_000)
-        # Initial seeded state: visible=true → checkbox checked.
-        expect(toggle).to_be_checked(timeout=10_000)
-        toggle.uncheck()
-        # Wait for PUT to fire.
-        expect(page.locator("#lb-preference-status")).to_contain_text(
-            "Preference saved", timeout=10_000
-        )
-
-        # Reload the page; the persisted state must come back un-checked.
-        page.reload(wait_until="domcontentloaded")
-        expect(page.locator("#lb-visibility-toggle")).not_to_be_checked(timeout=15_000)
+        expect(page).to_have_title("Leaderboard - POOOL", timeout=15_000)
+        assert page.locator("#lb-search-input").count() == 0
+        assert page.locator("#lb-visibility-toggle").count() == 0
+        assert page.locator('button.lb-topbar-tab[data-tier-id]').count() == 0
         tracker.assert_no_critical_errors()
     finally:
+        _cleanup(target_id, target_token)
         _cleanup(user_id, token)
 
 
@@ -265,8 +231,10 @@ def test_admin_sees_refresh_now_button(quality_page):
     """An admin user sees the audit-A2 Refresh button (regular users don't)."""
     page, tracker = quality_page
     admin_id, admin_token = _create_session(roles=("admin", "super_admin"))
+    target_id, target_token = _create_session()
     display_name = f"AdminE2E-{uuid.uuid4().hex[:6]}"
     _seed_leaderboard_rows(admin_id, display_name, total_invested_cents=200_000_000)
+    _seed_leaderboard_rows(target_id, f"AdminVisible-{uuid.uuid4().hex[:6]}", total_invested_cents=800_000_000)
     _attach_session(page, admin_token)
     try:
         tracker.navigate_and_check(f"{BASE_URL}/leaderboard")
@@ -275,6 +243,7 @@ def test_admin_sees_refresh_now_button(quality_page):
         expect(btn).to_be_visible(timeout=15_000)
         tracker.assert_no_critical_errors()
     finally:
+        _cleanup(target_id, target_token)
         _cleanup(admin_id, admin_token)
 
 

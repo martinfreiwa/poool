@@ -40,4 +40,5 @@ def test_user_bridge_accepts_nullable_email_without_nested_option():
 
     assert "Some(r.email" not in batch_handler
     assert "r.email.clone()" in batch_handler
-    assert "r.email," in batch_handler
+    assert "normalize_email(r.email.clone())" in batch_handler
+    assert batch_handler.count("normalize_email(r.email)") >= 2

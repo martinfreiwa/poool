@@ -31,7 +31,62 @@ Notes:
 ## Workflow Areas
 
 - Community workflows live in [`docs/workflows/community/README.md`](./workflows/community/README.md).
+- Cross-role product workflows live in [`docs/workflows/cross-role/README.md`](./workflows/cross-role/README.md).
+- Public/auth workflows live in [`docs/workflows/public-auth/README.md`](./workflows/public-auth/README.md).
+- Investor workflows live in [`docs/workflows/investor/README.md`](./workflows/investor/README.md).
+- Developer workflows live in [`docs/workflows/developer/README.md`](./workflows/developer/README.md).
+- Admin workflows live in [`docs/workflows/admin/README.md`](./workflows/admin/README.md).
+- Operations and cross-cutting workflows live in [`docs/workflows/ops/README.md`](./workflows/ops/README.md).
+- Full discovery coverage is tracked in [`docs/workflows/WORKFLOW_COVERAGE_MATRIX.md`](./workflows/WORKFLOW_COVERAGE_MATRIX.md).
 - Keep Community workflows separate from account/settings, marketplace, developer, and deployment workflows.
+- Use cross-role workflows for end-to-end behavior where Developer, Admin, Investor, Affiliate, and Public Visitor roles interact with the same business object.
+
+## Workflow Section Registry
+
+Use this registry to track which product areas still need dedicated workflow files. A section is `Covered` only when it has a repeatable workflow with prerequisites, steps, expected results, notes, and coverage variants. Route/action inventories alone do not count as workflow coverage.
+
+| Section | Current workflow coverage | Workflow files still needed |
+|---------|---------------------------|-----------------------------|
+| Shared navigation and shell | Partial: covered as a supporting check in cross-role workflows. | Add a dedicated shared desktop/mobile navigation, sidebar/topbar, profile menu, cart/notification controls, role switch, global search, and unauthenticated redirect workflow. |
+| Public marketing pages | Missing. | Add landing page, Indonesian landing, public property detail, blog index/article/category, legal footer, language switch, mobile menu, property carousel, WhatsApp/contact, and 404-linked legal recovery workflows. |
+| Authentication and account entry | Partial: `Local Browser Login` covers email/password login; cross-role workflows cover signup, 2FA, reset, and protected routes in context. | Add a standalone auth-only workflow for all account entry variants and rate limits. |
+| Investor marketplace and asset discovery | Partial: cross-role asset purchase and KYC workflows cover marketplace/property discovery in context. | Add a standalone investor discovery workflow for all filter/media/document variants. |
+| Investor cart and checkout | Partial: cross-role asset purchase, referral checkout, and KYC workflows cover major checkout paths; HTTP coverage exists in tests. | Add standalone checkout edge-case workflow for all negative/idempotency variants. |
+| Investor wallet and payment methods | Partial: cross-role deposit and withdrawal workflows cover admin-linked wallet flows. | Add standalone wallet UI workflow for all payment-method validation and retry states. |
+| Investor portfolio | Partial: cross-role purchase, dividend, and trading workflows cover portfolio readback. | Add standalone portfolio workflow for every holding row/detail action. |
+| Investor transactions and tax reports | Partial: cross-role purchase, wallet, dividend, and trading workflows cover transaction readback. | Add standalone transaction/tax artifact workflow for filters, pagination, and downloads. |
+| Investor leaderboard | Partial: cross-role purchase/trading workflows include readback; page-specific tests and closeout docs exist. | Add standalone leaderboard workflow for ranking controls and preference persistence. |
+| Investor settings and data rights | Partial: `Profile Settings Persistence Check` and cross-role security workflow cover most data-rights behavior. | Add standalone destructive account-deletion workflow with disposable account cleanup. |
+| Investor support | Partial: cross-role support workflow covers investor/developer/admin lifecycle. | Add standalone support UI workflow for every filter/empty/error state. |
+| Investor rewards and referral | Partial: cross-role affiliate referral workflow covers referral-to-checkout-to-payout. | Add standalone rewards dashboard workflow for non-conversion controls and exports. |
+| Investor affiliate program | Partial: cross-role affiliate referral workflow covers core conversion path. | Add standalone affiliate onboarding/settings/materials workflow. |
+| Investor secondary trading | Partial: cross-role trading workflow covers buyer/seller/admin settlement. | Add standalone trading UI workflow for every trading shell and validation state. |
+| Community user workflows | Covered: Community workflows live under `docs/workflows/community/`. | Maintain coverage as the Community product changes; add new files there, not in this root file. |
+| Admin community workflows | Covered: Admin Community workflows live under `docs/workflows/community/`. | Keep admin-community-specific changes in `docs/workflows/community/` alongside the existing operations, settings, audit log, badges, leaderboard, and moderation files. |
+| Developer shell and dashboard | Partial: cross-role asset workflow covers dashboard entry and role authorization. | Add standalone dashboard workflow for fragments, charts, and all empty/error states. |
+| Developer onboarding | Partial: cross-role KYC/developer setup references role state, but onboarding remains shallow. | Add standalone developer onboarding workflow. |
+| Developer asset management | Partial: cross-role asset and change-request workflows cover management/readback. | Add standalone asset management workflow for all table/detail variants. |
+| Developer asset submission wizard | Covered in cross-role asset-to-purchase workflow. | Add standalone edge-case workflow for wizard validation and file upload permutations. |
+| Developer operations reporting | Covered in cross-role operations-to-dividends workflow. | Add standalone operations UI workflow for every matrix/filter/error state. |
+| Developer annual data | Covered in cross-role operations-to-dividends workflow. | Add standalone annual data workflow for CapEx/forecast/document validation permutations. |
+| Developer ranking | Partial: cross-role workflows include readback only. | Add standalone developer ranking workflow. |
+| Developer settings | Partial: root settings and cross-role security workflows cover major behavior. | Add standalone developer settings workflow. |
+| Developer support | Covered in cross-role support workflow. | Add standalone support UI workflow if deeper empty/error/filter states are needed. |
+| Developer affiliate team overview | Covered in cross-role developer affiliate-team lifecycle workflow. | Add standalone analytics/chart workflow if chart-specific regressions recur. |
+| Developer affiliate team members | Covered in cross-role developer affiliate-team lifecycle workflow. | Add standalone invitation edge-case workflow. |
+| Developer affiliate team customers/products | Covered in cross-role developer affiliate-team lifecycle workflow. | Add standalone export/data-consistency workflow. |
+| Developer affiliate team settings | Covered in cross-role developer affiliate-team lifecycle workflow. | Add standalone banking/slug validation workflow. |
+| Developer affiliate team analytics and tier | Covered in cross-role developer affiliate-team lifecycle workflow. | Add standalone tier progression workflow. |
+| Admin core dashboard and users | Partial: cross-role KYC/security/live workflows cover selected admin user surfaces. | Add standalone admin core workflow. |
+| Admin KYC and support | Covered in cross-role KYC and support workflows. | Add standalone admin queue edge-case workflow. |
+| Admin developer and asset approval | Covered in cross-role asset-to-purchase and change-request workflows. | Add standalone admin asset review workflow for all reject/approve/tokenize variants. |
+| Admin orders, deposits, treasury, rewards, dividends | Partial: cross-role wallet, affiliate, and dividend workflows cover major financial paths. | Add standalone finance admin workflow for all filters/exports/retry states. |
+| Admin marketplace operations | Covered in cross-role secondary trading workflow for core settlement path. | Add standalone admin marketplace workflow for all management pages. |
+| Admin content, notifications, and reports | Partial: cross-role content publish workflow covers blog/notification readback. | Add standalone admin reports/email/storage workflow. |
+| Admin access governance and system ops | Partial: cross-role live/security workflows cover read-only and permission checks. | Add standalone RBAC/system operations workflow. |
+| Deployment and local operations | Partial: `.agent/workflows/deploy.md`, `.agent/workflows/push.md`, and `.agent/workflows/start-kyc-local.md` exist. | Add root docs workflows for local backend start/stop, migrations, SQLx offline cache, test batches, production deploy, rollback, PgBouncer/Cloud SQL checks, live smoke, Sentry/health monitoring, secrets rotation, backup/restore drill, and Cloud Armor/Redis readiness. |
+| Live confidence pass | Covered by cross-role live read-only confidence workflow. | Add controlled staging/live mutation workflow only after explicit approval. |
+| Cross-cutting edge cases | Partial: cross-role README defines global execution rules; Community has its own edge-case matrix. | Add global edge-case workflow for auth boundaries, CSRF, uploads, mobile layout, accessibility, network failures, empty states, authorization errors, destructive-action safeguards, audit logs, money-in-cents checks, and cleanup rules. |
 
 ## Local Browser Login
 

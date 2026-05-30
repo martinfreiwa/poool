@@ -11,10 +11,14 @@ import requests
 import psycopg2
 import sys
 import uuid
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from tests.e2e.conftest import cleanup_test_user, create_e2e_user
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 DB_DSN = os.environ.get("DB_DSN", "dbname=poool user=martin host=localhost")
-TEST_EMAIL = os.environ.get("TEST_EMAIL", "test@poool.app")
+TEST_EMAIL = os.environ.get("TEST_EMAIL")
 
 class E2EResults:
     def __init__(self):
@@ -51,7 +55,19 @@ def fix_secure_cookies(session):
     for cookie in session.cookies:
         cookie.secure = False
 
-def get_session():
+def get_session(user=None):
+    if user:
+        session = requests.Session()
+        session.cookies.set("poool_session", str(user["session_token"]))
+        r = session.get(f"{BASE_URL}/wallet", timeout=10)
+        fix_secure_cookies(session)
+        if "csrf_token" in session.cookies:
+            session.headers.update({"X-CSRF-Token": session.cookies["csrf_token"]})
+        return session
+
+    if not TEST_EMAIL:
+        return None
+
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -81,17 +97,23 @@ def run_wallet_e2e():
     results = E2EResults()
     print("\n--- Starting Wallet & Ledger Automation Flow ---")
 
-    session = get_session()
+    user = create_e2e_user(
+        email_prefix="e2e-wallet-ledger-script",
+        display_name="E2E Wallet Ledger Script",
+        roles=("investor",),
+        cash_balance_cents=10_000,
+    )
+    session = get_session(user)
     if not session:
         results.check("Session Auth", False, "Missing Auth Token")
+        cleanup_test_user(user["user_id"])
         return results
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        cur.execute("SELECT id FROM users WHERE email=%s", (TEST_EMAIL,))
-        user_id = cur.fetchone()[0]
+        user_id = user["user_id"]
 
         # Reset user wallet to 100 USD with a matching ledger entry.
         cur.execute(
@@ -116,23 +138,45 @@ def run_wallet_e2e():
         )
         conn.commit()
 
-        # Step 1: Deposit Test
-        deposit_amount_dollars = 50.00
-        resp = session.post(f"{BASE_URL}/wallet/deposit", data={
-            "amount": str(deposit_amount_dollars),
-            "currency": "USD",
-            "payment_method_id": "none"  # Fallback to manual deposit as per backend logic
-        }, allow_redirects=False)
-        results.check("Deposit API Status", resp.status_code in [200, 302, 303], f"Status: {resp.status_code}")
-        
-        # Check Ledger for Deposit
-        cur.execute("SELECT amount_cents, type, status FROM wallet_transactions WHERE wallet_id=(SELECT id FROM wallets WHERE user_id=%s AND wallet_type='cash' LIMIT 1) ORDER BY created_at DESC LIMIT 1", (user_id,))
-        txn = cur.fetchone()
-        
-        # Depending on how the API is structured, deposit might be pending or completed, and positive
-        results.check("DB Ledger - Deposit Verification", 
-            txn is not None and int(txn[0]) == 5000 and str(txn[1]).lower() == 'deposit', 
-            f"Row: {txn}")
+        # Step 1: Current two-step deposit workflow.
+        init_resp = session.post(
+            f"{BASE_URL}/api/wallet/deposit/init",
+            json={"amount": "50.00"},
+            headers={**session.headers, "Idempotency-Key": str(uuid.uuid4())},
+        )
+        results.check("Deposit Init API Status", init_resp.status_code == 200, f"Status: {init_resp.status_code}")
+        init_data = init_resp.json() if init_resp.ok else {}
+        submit_url = init_data.get("submit_url")
+        deposit_id = init_data.get("deposit_id")
+
+        proof_png = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc```\x00\x00"
+            b"\x00\x04\x00\x01\xf6\x178U\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        submit_resp = session.post(
+            f"{BASE_URL}{submit_url}",
+            files={"proof": ("proof.png", proof_png, "image/png")},
+            data={"notes": "E2E wallet ledger proof"},
+            headers={**session.headers, "Idempotency-Key": str(uuid.uuid4())},
+            allow_redirects=False,
+        ) if submit_url else None
+        results.check(
+            "Deposit Submit API Status",
+            submit_resp is not None and submit_resp.status_code in [302, 303],
+            f"Status: {getattr(submit_resp, 'status_code', None)}",
+        )
+
+        cur.execute(
+            "SELECT amount_cents, status, proof_gcs_path FROM deposit_requests WHERE id = %s",
+            (deposit_id,),
+        )
+        deposit_row = cur.fetchone()
+        results.check(
+            "DB Deposit Request Verification",
+            deposit_row is not None and int(deposit_row[0]) == 5000 and deposit_row[1] == "pending" and bool(deposit_row[2]),
+            f"Row: {deposit_row}",
+        )
 
         # Step 2: Negative Constraint - Over-withdrawal Test
         # The balance is $100. We will try to withdraw $200.
@@ -177,6 +221,7 @@ def run_wallet_e2e():
     finally:
         cur.close()
         conn.close()
+        cleanup_test_user(user["user_id"])
 
     return results
 

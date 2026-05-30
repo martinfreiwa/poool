@@ -23,6 +23,7 @@ Client-side panels:
 - Messages: `/community?tab=dms`
 - Notifications: `/community?tab=notifications`
 - Saved posts: `/community?tab=saved`
+- Members: `/community?tab=members`
 
 Related pages:
 - `/community/post/:id`

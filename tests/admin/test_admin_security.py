@@ -14,7 +14,7 @@ import sys
 import psycopg2
 import requests
 
-BASE_URL = "http://localhost:8888"
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 DB_DSN = os.environ.get("DATABASE_URL", "dbname=poool user=martin host=localhost")
 REQUEST_TIMEOUT = 5
 
@@ -110,7 +110,7 @@ def get_standard_user_session():
         
     return requests.Session()
 
-def test_admin_routes(session, logger, is_unauth=False):
+def check_admin_routes(session, logger, is_unauth=False):
     prefix = "Unauthenticated User" if is_unauth else "Standard Investor"
     print(f"\n================== TESTING: {prefix} ==================")
     
@@ -145,14 +145,14 @@ def main():
     
     # 1. Unauthenticated test
     unauth_session = requests.Session()
-    test_admin_routes(unauth_session, logger, is_unauth=True)
+    check_admin_routes(unauth_session, logger, is_unauth=True)
     
     # 2. Standard user test
     std_session = get_standard_user_session()
     # Check if we successfully got a non-admin session
     r = std_session.get(f"{BASE_URL}/api/me")
     if r.status_code == 200 and "admin" not in r.json().get("role", "").lower():
-        test_admin_routes(std_session, logger, is_unauth=False)
+        check_admin_routes(std_session, logger, is_unauth=False)
     else:
         print("Could not find a valid standard investor session to test with.")
         
@@ -161,6 +161,20 @@ def main():
         sys.exit(1)
     else:
         sys.exit(0)
+
+def test_admin_routes_deny_unauthenticated_and_standard_users():
+    logger = SecurityLogger()
+
+    unauth_session = requests.Session()
+    check_admin_routes(unauth_session, logger, is_unauth=True)
+
+    std_session = get_standard_user_session()
+    r = std_session.get(f"{BASE_URL}/api/me", timeout=REQUEST_TIMEOUT)
+    assert r.status_code == 200, "Could not create or find a standard investor session"
+    assert "admin" not in r.json().get("role", "").lower()
+
+    check_admin_routes(std_session, logger, is_unauth=False)
+    assert logger.failed == 0, f"{logger.failed} admin route security checks failed"
 
 if __name__ == "__main__":
     main()

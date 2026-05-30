@@ -586,6 +586,7 @@ def _create_context_and_page(browser, test_name, viewport="desktop"):
         "ignore_https_errors": True,
         "locale": "en-US",
         "timezone_id": "Asia/Jakarta",  # POOOL is Indonesia-based
+        "service_workers": "block",
     }
     if ua:
         context_opts["user_agent"] = ua

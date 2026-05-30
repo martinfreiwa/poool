@@ -69,7 +69,8 @@ def test_approval_frontend_has_accessible_reject_modal_and_busy_buttons():
     html = read("frontend/platform/admin/approvals.html")
 
     assert "requestRejectionReason" in js
-    assert 'role="dialog" aria-modal="true"' in js
+    assert 'overlay.setAttribute("role", "dialog")' in js
+    assert 'overlay.setAttribute("aria-modal", "true")' in js
     assert "textarea.focus()" in js
     assert "setCardBusy(id, true)" in js
     assert 'btn.setAttribute("aria-busy", busy ? "true" : "false")' in js

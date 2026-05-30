@@ -107,6 +107,27 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           <div class="checkout-payment-card">
             <div class="checkout-payment-card__title">Payment Method</div>
 
+              <!-- Wallet Option -->
+              <div class="payment-method-option" data-method="wallet" id="pm-wallet">
+                <div class="payment-method-option__radio"></div>
+                <div class="payment-method-option__icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12V8H6a2 2 0 0 1 0-4h12v4" stroke="#717680"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M4 6v12a2 2 0 0 0 2 2h14v-4" stroke="#717680"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M18 12a2 2 0 0 0 0 4h4v-4z" stroke="#717680"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div class="payment-method-option__text">
+                  <div class="payment-method-option__name">POOOL Wallet</div>
+                  <div class="payment-method-option__desc">
+                    Instant settlement from your USD wallet
+                  </div>
+                </div>
+              </div>
+
               <!-- Bank Transfer Option (Default) -->
               <div class="payment-method-option selected" data-method="bank" id="pm-bank">
                 <div class="payment-method-option__radio"></div>

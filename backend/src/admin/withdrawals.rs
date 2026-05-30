@@ -172,7 +172,7 @@ pub async fn api_admin_withdrawal_approve(
     sqlx::query(
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id) VALUES ($1, 'withdrawal.approved', 'withdrawal_request', $2)",
     )
-    .bind(user_id)
+    .bind(admin.user.id)
     .bind(req_id)
     .execute(&mut *tx)
     .await
@@ -224,7 +224,7 @@ fn spawn_withdraw_email(
 
         let destination = if let Some(pmid) = pm_id {
             sqlx::query_scalar::<_, Option<String>>(
-                "SELECT label FROM payment_methods WHERE id = $1",
+                "SELECT COALESCE(brand, 'Bank Account') || COALESCE(' ending in ' || NULLIF(last4, ''), '') FROM payment_methods WHERE id = $1",
             )
             .bind(pmid)
             .fetch_optional(&db)
@@ -309,14 +309,16 @@ pub async fn api_admin_withdrawals_bulk(
         };
 
         let outcome: Result<&'static str, String> = match payload.action.as_str() {
-            "approve" => approve_one(&state.db, uid).await.map(|_| "approved"),
+            "approve" => approve_one(&state.db, uid, admin.user.id)
+                .await
+                .map(|_| "approved"),
             "reject" => {
                 let reason = payload
                     .reason
                     .clone()
                     .filter(|s| !s.trim().is_empty())
                     .unwrap_or_else(|| "Bulk admin rejection".to_string());
-                reject_one(&state.db, uid, &reason)
+                reject_one(&state.db, uid, admin.user.id, &reason)
                     .await
                     .map(|_| "rejected")
             }
@@ -344,7 +346,7 @@ pub async fn api_admin_withdrawals_bulk(
 
 /// Approve a single withdrawal. Extracted so the bulk handler shares
 /// the same transition logic as the per-row endpoint.
-async fn approve_one(db: &sqlx::PgPool, req_id: Uuid) -> Result<(), String> {
+async fn approve_one(db: &sqlx::PgPool, req_id: Uuid, admin_user_id: Uuid) -> Result<(), String> {
     let mut tx = db.begin().await.map_err(|e| e.to_string())?;
     let req: Option<(Uuid, i64, String, String)> = sqlx::query_as(
         "SELECT user_id, amount_cents, currency, status FROM withdrawal_requests
@@ -377,7 +379,7 @@ async fn approve_one(db: &sqlx::PgPool, req_id: Uuid) -> Result<(), String> {
         "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id)
          VALUES ($1, 'withdrawal.approved_bulk', 'withdrawal_request', $2)",
     )
-    .bind(user_id)
+    .bind(admin_user_id)
     .bind(req_id)
     .execute(&mut *tx)
     .await
@@ -396,7 +398,12 @@ async fn approve_one(db: &sqlx::PgPool, req_id: Uuid) -> Result<(), String> {
 
 /// Reject a single withdrawal + refund amount + fee. Mirrors the
 /// per-row endpoint's logic.
-async fn reject_one(db: &sqlx::PgPool, req_id: Uuid, reason: &str) -> Result<(), String> {
+async fn reject_one(
+    db: &sqlx::PgPool,
+    req_id: Uuid,
+    admin_user_id: Uuid,
+    reason: &str,
+) -> Result<(), String> {
     let mut tx = db.begin().await.map_err(|e| e.to_string())?;
     let req: Option<(String, i64, i64, String, Uuid)> = sqlx::query_as(
         "SELECT status, amount_cents, fee_cents, currency, user_id
@@ -434,6 +441,15 @@ async fn reject_one(db: &sqlx::PgPool, req_id: Uuid, reason: &str) -> Result<(),
            WHERE external_ref_id = $1 AND type = 'withdrawal'",
     )
     .bind(req_id.to_string())
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id)
+         VALUES ($1, 'withdrawal.rejected_bulk', 'withdrawal_request', $2)",
+    )
+    .bind(admin_user_id)
+    .bind(req_id)
     .execute(&mut *tx)
     .await
     .map_err(|e| e.to_string())?;
@@ -514,6 +530,16 @@ pub async fn api_admin_withdrawal_reject(
     .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Ledger tx update failed: {}", e)))?;
+
+    sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id)
+         VALUES ($1, 'withdrawal.rejected', 'withdrawal_request', $2)",
+    )
+    .bind(admin.user.id)
+    .bind(req_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| AppError::Internal(format!("Audit log failed: {}", e)))?;
 
     tx.commit()
         .await

@@ -190,7 +190,7 @@ pub async fn submit_ticket(
                 .await
                 .map_err(|e| {
                     tracing::error!("No GCS bucket configured and local fallback failed: {}", e);
-                    anyhow::anyhow!("Attachment upload failed. Please try again.")
+                    anyhow::anyhow!("Attachment upload is not configured. Please try again later.")
                 })?
         };
         uploaded_attachment = Some((file_url, mime.to_string()));

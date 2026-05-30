@@ -175,7 +175,7 @@
   // swap is outerHTML (target = parent) or innerHTML (target = the swap
   // target itself). MutationObserver below covers any case the event
   // misses (programmatic `htmx.ajax`, oob swaps, etc).
-  document.body.addEventListener("htmx:afterSwap", function () {
+  document.addEventListener("htmx:afterSwap", function () {
     if (document.getElementById("sales-chart-card") &&
         !document.getElementById("sales-chart-echarts")) {
       safeMount();
@@ -184,7 +184,7 @@
 
   // MutationObserver: catch any DOM mutation that replaces the chart card
   // (HTMX outerHTML, manual innerHTML, etc.) and re-render ECharts.
-  const sectionRoot = document.getElementById("sales-chart-section") || document.body;
+  const sectionRoot = document.getElementById("sales-chart-section") || document.body || document.documentElement;
   const mo = new MutationObserver(() => {
     if (document.getElementById("sales-chart-card") &&
         !document.getElementById("sales-chart-echarts")) {

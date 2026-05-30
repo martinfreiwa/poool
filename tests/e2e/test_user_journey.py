@@ -1,7 +1,6 @@
 import re
 from playwright.sync_api import expect
 import os
-from pathlib import Path
 import psycopg2
 import pytest
 
@@ -34,7 +33,7 @@ def test_full_user_journey(authenticated_user_page):
     page, tracker, current_user = authenticated_user_page
     
     # 1. Verify Deposit / Initial Balance on Wallet page
-    page.goto(f"{BASE_URL}/wallet")
+    page.goto(f"{BASE_URL}/wallet", wait_until="domcontentloaded")
     
     # Wait for the wallet header to confirm page load
     page.wait_for_selector("h1:has-text('Wallet')", timeout=15000)
@@ -45,7 +44,7 @@ def test_full_user_journey(authenticated_user_page):
     page.wait_for_selector(".wallet-balance-card-amount:has-text('10,000')", timeout=15000)
     
     # 2. Go to Marketplace
-    page.goto(f"{BASE_URL}/marketplace")
+    page.goto(f"{BASE_URL}/marketplace", wait_until="domcontentloaded")
     page.wait_for_selector(".marketplace-container, #marketplace-body, .sidebar", timeout=15000)
     page.wait_for_load_state("domcontentloaded")
     
@@ -54,8 +53,12 @@ def test_full_user_journey(authenticated_user_page):
     if not asset_id:
         pytest.skip("No available assets to run the purchase journey")
         
-    page.goto(f"{BASE_URL}/property/{asset_id}")
+    page.goto(f"{BASE_URL}/property/{asset_id}", wait_until="domcontentloaded")
     page.wait_for_load_state("domcontentloaded")
+    amount_input = page.locator("#investment-amount-input")
+    if amount_input.is_visible():
+        token_price = amount_input.get_attribute("data-token-price") or "500"
+        amount_input.fill(token_price.replace(",", ""))
     
     # Attempt to click add to cart or buy now
     buy_button = page.locator(
@@ -91,12 +94,12 @@ def test_full_user_journey(authenticated_user_page):
         page.wait_for_url(re.compile(r".*/cart.*"), timeout=15000)
     except:
         # Fallback if the redirect doesn't happen automatically
-        page.goto(f"{BASE_URL}/cart")
+        page.goto(f"{BASE_URL}/cart", wait_until="domcontentloaded")
         
     page.wait_for_load_state("domcontentloaded")
     
-    # Wait for cart items or content to load
-    page.locator(".cart-item-card, .mobile-cart-item-card, .cart-page-content").first.wait_for(state="visible", timeout=10000)
+    # Wait for a real cart item, not only the cart wrapper or empty state.
+    page.locator(".cart-item-card, .mobile-cart-item-card").first.wait_for(state="visible", timeout=10000)
     
     # Accept terms and proceed in Cart
     print("Checking terms in cart...")
@@ -116,19 +119,11 @@ def test_full_user_journey(authenticated_user_page):
     if accept_legal.is_visible():
         accept_legal.click()
     
-    # Perform mock bank transfer checkout
-    print("Performing checkout at /checkout...")
-    # Upload dummy proof
-    proof_path = Path("/tmp/poool_e2e_dummy_proof.png")
-    proof_path.write_bytes(
-        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
-        b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc```\x00\x00"
-        b"\x00\x04\x00\x01\xf6\x178U\x00\x00\x00\x00IEND\xaeB`\x82"
-    )
-    page.locator("#proof-upload").set_input_files(str(proof_path))
-    page.locator("#bank-terms-checkbox").evaluate(
-        "el => { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }"
-    )
+    print("Performing wallet checkout at /checkout...")
+    wallet_option = page.locator("#pm-wallet")
+    expect(wallet_option).to_be_visible(timeout=10000)
+    wallet_option.click()
+    expect(page.locator("#payment_method")).to_have_value("wallet")
     
     # Click confirm
     with page.expect_response(lambda r: r.url == f"{BASE_URL}/checkout" and r.request.method == "POST", timeout=30000) as checkout_response_info:
@@ -145,13 +140,13 @@ def test_full_user_journey(authenticated_user_page):
         data = checkout_response.json()
         redirect_url = data.get("redirect_url")
         if redirect_url:
-            page.goto(f"{BASE_URL}{redirect_url}")
+            page.goto(f"{BASE_URL}{redirect_url}", wait_until="domcontentloaded")
         else:
             raise
     
     # 3. Verify it shows up in portfolio
     print("Verifying portfolio...")
-    page.goto(f"{BASE_URL}/portfolio")
+    page.goto(f"{BASE_URL}/portfolio", wait_until="domcontentloaded")
     
     # Wait for either the content sections or the empty state to be visible
     print("Waiting for portfolio state transition...")
@@ -163,8 +158,8 @@ def test_full_user_journey(authenticated_user_page):
     
     # Verify the assets section and rows are visible
     print("Checking for My Assets section and rows...")
-    page.locator("#assets-title").wait_for(state="visible", timeout=10000)
-    page.locator(".portfolio-assets-row").first.wait_for(state="visible", timeout=15000)
+    page.locator("#portfolio-assets-table").wait_for(state="visible", timeout=10000)
+    page.locator(".portfolio-assets-row[data-asset-id]").first.wait_for(state="visible", timeout=15000)
     print("Portfolio verification successful.")
     
     print("Full user journey test completed successfully.")

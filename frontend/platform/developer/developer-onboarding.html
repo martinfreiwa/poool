@@ -505,12 +505,12 @@
     .then(function(data) {
       if (data.ok || data.success) {
         // Application is now pending admin review (post-2026-05-19 audit fix).
-        // The dashboard page allows pending applicants to see their review state
-        // without granting developer-only API write access.
+        // Keep applicants on the investor side until admin approval grants
+        // the developer role.
         localStorage.setItem('dev_application_review', '1');
         localStorage.setItem('dev_application_message',
           data.message || 'Application received. We will review and email you within 2 business days.');
-        window.location.href = '/developer/dashboard';
+        window.location.href = '/marketplace';
       } else {
         if (btn) { btn.disabled = false; btn.textContent = 'Submit Application'; }
         alert(data.error || 'Something went wrong. Please try again.');

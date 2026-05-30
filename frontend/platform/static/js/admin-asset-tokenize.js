@@ -931,6 +931,7 @@
     const row = document.createElement('div');
     row.className = 'tokenize-candidate';
     if (pickerState.selectedId === asset.asset_id) row.classList.add('tokenize-candidate--selected');
+    row.dataset.assetId = asset.asset_id;
     row.setAttribute('role', 'button');
     row.setAttribute('tabindex', '0');
     row.setAttribute('aria-selected', pickerState.selectedId === asset.asset_id ? 'true' : 'false');
@@ -1490,7 +1491,7 @@
       overlay.setAttribute('aria-labelledby', 'tokenize-confirm-title');
 
       const dialog = document.createElement('div');
-      dialog.className = 'ds-modal ds-modal--sm';
+      dialog.className = 'ds-modal ds-modal--sm tokenize-modal';
 
       // Header
       const header = document.createElement('div');

@@ -101,18 +101,31 @@ def test_admin_marketplace_compliance_exports_auth_and_real_csv_data():
     trade_id = None
     asset_id = None
     tax_report_user_id = None
+    fiscal_year = 2100
+    quarter = f"{fiscal_year}-Q1"
+    trade_date = f"{fiscal_year}-02-15 12:00:00+00"
+    period_start = f"{fiscal_year}-02-01"
+    period_end = f"{fiscal_year}-02-28"
 
     conn = db_connect()
     conn.autocommit = False
     cur = conn.cursor()
     try:
         compliance = create_user(cur, email_prefix="e2e-mp-compliance", roles=("compliance",))
+        approver = create_user(cur, email_prefix="e2e-mp-compliance-approver", roles=("compliance",))
         finance = create_user(cur, email_prefix="e2e-mp-finance", roles=("finance",))
         buyer = create_user(cur, email_prefix="e2e-mp-travel-buyer")
         seller = create_user(cur, email_prefix="e2e-mp-travel-seller")
         tax_user = create_user(cur, email_prefix="e2e-mp-tax-user")
         created_user_ids.extend(
-            [compliance["id"], finance["id"], buyer["id"], seller["id"], tax_user["id"]]
+            [
+                compliance["id"],
+                approver["id"],
+                finance["id"],
+                buyer["id"],
+                seller["id"],
+                tax_user["id"],
+            ]
         )
         tax_report_user_id = tax_user["id"]
 
@@ -127,10 +140,10 @@ def test_admin_marketplace_compliance_exports_auth_and_real_csv_data():
                 asset_id, buy_order_id, sell_order_id, buyer_user_id, seller_user_id,
                 price_cents, quantity, fee_cents, fee_bps, executed_at
             )
-            VALUES (%s, %s, %s, %s, %s, 12345, 4, 321, 65, '2026-02-15 12:00:00+00')
+            VALUES (%s, %s, %s, %s, %s, 12345, 4, 321, 65, %s)
             RETURNING id
             """,
-            (asset_id, buy_order_id, sell_order_id, buyer["id"], seller["id"]),
+            (asset_id, buy_order_id, sell_order_id, buyer["id"], seller["id"], trade_date),
         )
         trade_id = cur.fetchone()[0]
 
@@ -140,28 +153,56 @@ def test_admin_marketplace_compliance_exports_auth_and_real_csv_data():
                 user_id, fiscal_year, total_investment_cents, total_dividends_cents,
                 capital_gains_cents, withholding_tax_cents, status, generated_at
             )
-            VALUES (%s, 2025, 1000000, 25000, 75000, 5000, 'generated', NOW())
+            VALUES (%s, %s, 1000000, 25000, 75000, 5000, 'generated', NOW())
             """,
-            (tax_user["id"],),
+            (tax_user["id"], fiscal_year),
         )
         conn.commit()
 
         session = compliance_session(compliance["session_token"])
         page_response = session.get(f"{BASE_URL}/admin/marketplace/compliance", timeout=10)
         assert page_response.status_code == 200, page_response.text[:500]
-        assert "Compliance & OJK Reports" in page_response.text
+        assert "Compliance &amp; OJK Reports" in page_response.text
 
         ojk_response = session.get(
-            f"{BASE_URL}/api/admin/marketplace/compliance/ojk-report?quarter=2026-Q1",
+            f"{BASE_URL}/api/admin/marketplace/compliance/ojk-report?quarter={quarter}",
             timeout=10,
         )
         assert ojk_response.status_code == 200, ojk_response.text
         assert ojk_response.headers["content-type"].startswith("text/csv")
-        assert "Total Trade Volume (cents),49380,2026-Q1" in ojk_response.text
-        assert "Total Trades,1,2026-Q1" in ojk_response.text
+        assert f"Total Trade Volume (cents),49380,{quarter}" in ojk_response.text
+        assert f"Total Trades,1,{quarter}" in ojk_response.text
 
-        travel_response = session.get(
-            f"{BASE_URL}/api/admin/marketplace/compliance/travel-rule?from_date=2026-02-01&to_date=2026-02-28",
+        csrf = session.cookies.get("csrf_token", "")
+        request_response = session.post(
+            f"{BASE_URL}/api/admin/marketplace/compliance/requests",
+            json={
+                "export_type": "travel_rule",
+                "period_label": f"{fiscal_year}-02",
+                "period_start": period_start,
+                "period_end": period_end,
+                "reason": "E2E Travel Rule export",
+            },
+            headers={"X-CSRF-Token": csrf},
+            timeout=10,
+        )
+        assert request_response.status_code == 200, request_response.text
+        request_id = request_response.json()["id"]
+
+        approver_session = compliance_session(approver["session_token"])
+        approver_session.get(f"{BASE_URL}/admin/marketplace/compliance", timeout=10)
+        approve_response = approver_session.post(
+            f"{BASE_URL}/api/admin/marketplace/compliance/requests/{request_id}/approve",
+            json={"notes": "E2E approval"},
+            headers={"X-CSRF-Token": approver_session.cookies.get("csrf_token", "")},
+            timeout=10,
+        )
+        assert approve_response.status_code == 200, approve_response.text
+        token = approve_response.json()["download_token"]
+        assert token
+
+        travel_response = approver_session.get(
+            f"{BASE_URL}/api/admin/marketplace/compliance/travel-rule?from_date={period_start}&to_date={period_end}&token={token}",
             timeout=10,
         )
         assert travel_response.status_code == 200, travel_response.text
@@ -171,23 +212,23 @@ def test_admin_marketplace_compliance_exports_auth_and_real_csv_data():
         assert "12345,4,49380" in travel_response.text
 
         invalid_range = session.get(
-            f"{BASE_URL}/api/admin/marketplace/compliance/travel-rule?from_date=2026-03-01&to_date=2026-02-01",
+            f"{BASE_URL}/api/admin/marketplace/compliance/travel-rule?from_date={fiscal_year}-03-01&to_date={period_start}",
             timeout=10,
         )
         assert invalid_range.status_code == 400
 
         tax_response = session.get(
-            f"{BASE_URL}/api/admin/marketplace/compliance/tax-export?year=2025",
+            f"{BASE_URL}/api/admin/marketplace/compliance/tax-export?year={fiscal_year}",
             timeout=10,
         )
         assert tax_response.status_code == 200, tax_response.text
         assert tax_user["email"] in tax_response.text
-        assert "2025,1000000,25000,75000,5000,generated" in tax_response.text
+        assert f"{fiscal_year},1000000,25000,75000,5000,generated" in tax_response.text
         assert "user_placeholder@poool.app" not in tax_response.text
 
         finance_session = compliance_session(finance["session_token"])
         forbidden = finance_session.get(
-            f"{BASE_URL}/api/admin/marketplace/compliance/ojk-report?quarter=2026-Q1",
+            f"{BASE_URL}/api/admin/marketplace/compliance/ojk-report?quarter={quarter}",
             timeout=10,
         )
         assert forbidden.status_code == 403
@@ -205,6 +246,18 @@ def test_admin_marketplace_compliance_exports_auth_and_real_csv_data():
         if tax_report_user_id is not None:
             cur.execute("DELETE FROM tax_reports WHERE user_id = %s", (tax_report_user_id,))
         if created_user_ids:
+            cur.execute(
+                "DELETE FROM compliance_export_audit WHERE requested_by = ANY(%s::uuid[])",
+                ([str(uid) for uid in created_user_ids],),
+            )
+            cur.execute(
+                """
+                DELETE FROM compliance_export_request
+                WHERE requested_by = ANY(%s::uuid[])
+                   OR decided_by = ANY(%s::uuid[])
+                """,
+                ([str(uid) for uid in created_user_ids], [str(uid) for uid in created_user_ids]),
+            )
             cur.execute(
                 "DELETE FROM user_sessions WHERE user_id = ANY(%s::uuid[])",
                 ([str(uid) for uid in created_user_ids],),

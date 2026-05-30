@@ -16,10 +16,11 @@ from tests.e2e.conftest import (
 
 
 STALE_COPY = [
-    "4.50%",
-    "Sovereign",
-    "trailing 12-mo",
     "48 hours",
+    "Bronze",
+    "Gold",
+    "Diamond",
+    "Ambassador",
 ]
 
 
@@ -60,9 +61,9 @@ def test_affiliate_promo_authenticated_desktop_regression(authenticated_user_pag
     expect(page).to_have_url(f"{BASE_URL}/affiliate")
     expect(page.get_by_role("heading", name="Monetize your Audience with Institutional Assets")).to_be_visible()
     expect(page.get_by_role("heading", name="Who We Approve")).to_be_visible()
-    expect(page.get_by_text("1.75%").first).to_be_visible()
-    expect(page.get_by_role("cell", name="Ambassador")).to_be_visible()
-    expect(page.get_by_text("500+ qualified referrals")).to_be_visible()
+    expect(page.get_by_text("4.50%").first).to_be_visible()
+    expect(page.get_by_role("cell", name="Sovereign")).to_be_visible()
+    expect(page.get_by_text("~$2,500,000 qualified referral volume").first).to_be_visible()
     expect(page.get_by_text("1–3 business days").first).to_be_visible()
 
     body_text = page.locator("body").inner_text()
@@ -76,9 +77,9 @@ def test_affiliate_promo_authenticated_desktop_regression(authenticated_user_pag
     expect(page.get_by_label("Qualified Referrals per Month")).to_be_visible()
     _set_range_value(page, "#calc-investment", 100000)
     _set_range_value(page, "#calc-referrals", 50)
-    expect(page.locator("#calc-tier-badge")).to_have_text("Ambassador")
-    expect(page.locator("#calc-tier-rate")).to_have_text("1.75%")
-    expect(page.locator("#calc-monthly-earnings")).to_have_text("87,500")
+    expect(page.locator("#calc-tier-badge")).to_have_text("Sovereign")
+    expect(page.locator("#calc-tier-rate")).to_have_text("4.50%")
+    expect(page.locator("#calc-monthly-earnings")).to_have_text("225,000")
 
     page.get_by_text("How does the commission structure work?").click()
     expect(page.get_by_text("There are no downlines")).to_be_visible()
@@ -135,7 +136,7 @@ def test_affiliate_promo_authenticated_mobile_layout(authenticated_mobile_page):
     assert layout["scrollWidth"] <= layout["viewportWidth"] + 1, layout
 
     _set_range_value(page, "#calc-referrals", 1)
-    expect(page.locator("#calc-tier-badge")).to_have_text("Silver")
+    expect(page.locator("#calc-tier-badge")).to_have_text("Elite")
 
     tracker.assert_basic_a11y()
     tracker.assert_no_critical_errors()

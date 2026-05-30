@@ -12,6 +12,7 @@ import psycopg2
 import os
 
 DB_URL = os.environ.get("DATABASE_URL", "postgres://martin@localhost/poool")
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 
 def get_live_asset_for_testing():
     """Retrieve an asset ID from DB that has tokens available for purchase."""
@@ -123,7 +124,7 @@ def test_marketplace_tabs_and_filtering(authenticated_user_page, mock_funded_ass
     card = page.locator(asset_selector).first
     title_link = card.locator(".property-title-link").first
     expect(title_link).to_be_visible()
-    with page.expect_navigation(url=re.compile(r".*/property/.+")):
+    with page.expect_navigation(url=re.compile(r".*/property/.+"), wait_until="domcontentloaded"):
         title_link.press("Enter")
 
 @pytest.mark.marketplace
@@ -158,7 +159,7 @@ def test_p2p_offer_modal_launch(authenticated_user_page):
     if not asset_id:
         pytest.skip("No live assets found for P2P test")
         
-    tracker.navigate_and_check(f"http://localhost:8888/property/{asset_slug}")
+    tracker.navigate_and_check(f"{BASE_URL}/property/{asset_slug}")
     
     # Try finding the "P2P" or "Secondary Market" tab
     secondary_tab = page.locator("button[data-tab='secondary'], .tab-secondary")

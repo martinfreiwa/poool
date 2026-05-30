@@ -168,8 +168,9 @@ pub async fn get_rankings(
             }
             headers.insert(
                 axum::http::header::CACHE_CONTROL,
-                HeaderValue::from_static("private, max-age=30"),
+                HeaderValue::from_static("private, no-store"),
             );
+            headers.insert(axum::http::header::VARY, HeaderValue::from_static("Cookie"));
             return (StatusCode::NOT_MODIFIED, headers).into_response();
         }
     }
@@ -192,13 +193,13 @@ pub async fn get_rankings(
             if let Ok(h) = HeaderValue::from_str(&etag) {
                 headers.insert(axum::http::header::ETAG, h);
             }
-            // `private` so a shared CDN never serves one user's listing to
-            // another — visibility prefs are personal. `max-age=30` keeps
-            // browsers from spamming the API while score data is fresh.
+            // Includes `my_rank`, so it must not be reused across session
+            // cookie changes in the same browser context.
             headers.insert(
                 axum::http::header::CACHE_CONTROL,
-                HeaderValue::from_static("private, max-age=30"),
+                HeaderValue::from_static("private, no-store"),
             );
+            headers.insert(axum::http::header::VARY, HeaderValue::from_static("Cookie"));
             (headers, Json(response)).into_response()
         }
         Err(e) => {

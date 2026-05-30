@@ -10,14 +10,44 @@ pub async fn list_user_payment_methods(
     user_id: &Uuid,
     method_type_filter: Option<&str>,
 ) -> Result<Vec<PaymentMethod>, sqlx::Error> {
-    let mut query =
-        String::from("SELECT * FROM payment_methods WHERE user_id = $1 AND status != 'failed'");
+    let mut query = String::from(
+        r#"
+        SELECT
+            id,
+            user_id,
+            method_type,
+            provider_name AS processor_type,
+            provider_token AS processor_token,
+            NULL::text AS customer_id,
+            brand,
+            last4 AS last_four,
+            exp_month AS expiry_month,
+            exp_year AS expiry_year,
+            account_name AS holder_name,
+            routing_number,
+            bank_country,
+            bank_system,
+            CASE
+                WHEN method_type = 'bank_account' THEN
+                    COALESCE(brand, 'Bank Account') || COALESCE(' ending in ' || NULLIF(last4, ''), '')
+                ELSE
+                    COALESCE(brand, 'Card') || COALESCE(' ending in ' || NULLIF(last4, ''), '')
+            END AS label,
+            is_default,
+            status,
+            created_at,
+            updated_at
+        FROM payment_methods
+        WHERE user_id = $1 AND status != 'failed'
+        "#,
+    );
 
     let methods = if let Some(t) = method_type_filter {
+        let db_type = if t == "bank" { "bank_account" } else { t };
         query.push_str(" AND method_type = $2 ORDER BY is_default DESC, created_at DESC");
         sqlx::query_as::<_, PaymentMethod>(&query)
             .bind(user_id)
-            .bind(t)
+            .bind(db_type)
             .fetch_all(pool)
             .await?
     } else {
@@ -62,21 +92,35 @@ pub async fn attach_card(
         (brand, last4)
     };
 
-    let label = form
-        .label
-        .map(|l| sanitize::sanitize_text(&l))
-        .unwrap_or_else(|| format!("{} ending in {}", extracted_brand, extracted_last4));
-
     let holder_name = sanitize::sanitize_text(&form.holder_name);
 
     let res = sqlx::query_as::<_, PaymentMethod>(
         r#"
         INSERT INTO payment_methods (
-            user_id, method_type, processor_type, processor_token,
-            brand, last_four, holder_name, label, is_default, status
+            user_id, method_type, provider_name, provider_token,
+            brand, last4, exp_month, exp_year, account_name, is_default, status
         )
-        VALUES ($1, 'card', 'stripe', $2, $3, $4, $5, $6, false, 'active')
-        RETURNING *
+        VALUES ($1, 'card', 'stripe', $2, $3, $4, NULL, NULL, $5, false, 'active')
+        RETURNING
+            id,
+            user_id,
+            method_type,
+            provider_name AS processor_type,
+            provider_token AS processor_token,
+            NULL::text AS customer_id,
+            brand,
+            last4 AS last_four,
+            exp_month AS expiry_month,
+            exp_year AS expiry_year,
+            account_name AS holder_name,
+            routing_number,
+            bank_country,
+            bank_system,
+            COALESCE(brand, 'Card') || COALESCE(' ending in ' || NULLIF(last4, ''), '') AS label,
+            is_default,
+            status,
+            created_at,
+            updated_at
         "#,
     )
     .bind(user_id)
@@ -84,7 +128,6 @@ pub async fn attach_card(
     .bind(&extracted_brand)
     .bind(&extracted_last4)
     .bind(holder_name)
-    .bind(&label)
     .fetch_one(pool)
     .await?;
 
@@ -110,21 +153,36 @@ pub async fn add_bank(
 
     let bank_name = sanitize::sanitize_text(&form.bank_name);
     let holder_name = sanitize::sanitize_text(&form.account_holder_name);
-    let default_label = format!("{} ending in {}", bank_name, last_four);
-    let final_label = form
-        .label
-        .map(|l| sanitize::sanitize_text(&l))
-        .unwrap_or(default_label);
+    let _display_label = form.label.map(|l| sanitize::sanitize_text(&l));
 
     let res = sqlx::query_as::<_, PaymentMethod>(
         r#"
         INSERT INTO payment_methods (
-            user_id, method_type, processor_type, processor_token,
-            brand, last_four, holder_name, routing_number, bank_country,
-            bank_system, label, is_default, status
+            user_id, method_type, provider_name, provider_token,
+            brand, last4, account_name, routing_number, bank_country,
+            bank_system, is_default, status
         )
-        VALUES ($1, 'bank', 'manual', $2, $3, $4, $5, $6, $7, $8, $9, false, 'active')
-        RETURNING *
+        VALUES ($1, 'bank_account', 'manual', $2, $3, $4, $5, $6, $7, $8, false, 'active')
+        RETURNING
+            id,
+            user_id,
+            method_type,
+            provider_name AS processor_type,
+            provider_token AS processor_token,
+            NULL::text AS customer_id,
+            brand,
+            last4 AS last_four,
+            exp_month AS expiry_month,
+            exp_year AS expiry_year,
+            account_name AS holder_name,
+            routing_number,
+            bank_country,
+            bank_system,
+            COALESCE(brand, 'Bank Account') || COALESCE(' ending in ' || NULLIF(last4, ''), '') AS label,
+            is_default,
+            status,
+            created_at,
+            updated_at
         "#,
     )
     .bind(user_id)
@@ -135,7 +193,6 @@ pub async fn add_bank(
     .bind(form.routing_code)
     .bind(form.bank_country)
     .bind(form.bank_system)
-    .bind(&final_label)
     .fetch_one(pool)
     .await?;
 

@@ -1012,7 +1012,7 @@ async function resolveDispute(disputeId) {
   try {
     const resp = await fetch(`/api/admin/disputes/${disputeId}/status`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
       body: JSON.stringify({ status: newStatus }),
     });
     if (resp.ok) {

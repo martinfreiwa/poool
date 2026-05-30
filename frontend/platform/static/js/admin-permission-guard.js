@@ -162,10 +162,14 @@
         roles = Array.isArray(roles) && roles.length ? roles : [data.role];
       }
 
-      // Fetch permissions for the user's admin roles
+      // Fetch permissions for the user's admin roles. The backend is the source
+      // of truth for granular admin permissions; a plain admin role is not
+      // equivalent to all permissions.
       let allPerms = [];
-      if (roles.includes("super_admin") || roles.includes("admin")) {
+      if (roles.includes("super_admin")) {
         allPerms = ["all"];
+      } else if (Array.isArray(data.admin_permissions)) {
+        allPerms = data.admin_permissions;
       } else {
         // Fetch from the roles API
         try {
@@ -195,8 +199,6 @@
       // Allow local UI development to bypass Zero Trust if there are no permissions
       const isLocal =
         window.location.protocol === "file:" ||
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
         window.location.hostname === ""; // sometimes empty in certain test runners
 
       if (

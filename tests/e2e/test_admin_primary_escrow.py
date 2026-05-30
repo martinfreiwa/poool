@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 
 import psycopg2
@@ -203,18 +204,20 @@ def test_admin_primary_escrow_release_requires_permission_and_four_eyes_approval
         tracker.assert_page_loaded()
         card = page.locator(".escrow-card").filter(has_text=asset_title).first
         expect(card).to_be_visible()
-        card.locator('[name="notarization_reference"]').fill("E2E-NOTARY-001")
-        card.locator('[name="reason"]').fill("E2E release after soft cap")
+        card.get_by_role("button", name="Request Release").click()
+        expect(page.locator("#release-modal")).to_have_class(re.compile("visible"))
+        page.locator("#m-notarization").fill("E2E-NOTARY-001")
+        page.locator("#m-reason").fill("E2E release after soft cap")
         with page.expect_response(
             lambda response: "/api/admin/primary-escrow/" in response.url
             and response.request.method == "POST"
         ) as release_response:
-            card.get_by_role("button", name="Request Release").click()
+            page.locator("#release-submit").click()
         release_result = release_response.value
         assert release_result.status == 200
         release_body = release_result.json()
         approval_id = release_body["approval_id"]
-        expect(card.locator(".escrow-release-feedback")).to_contain_text(
+        expect(page.locator("#release-feedback")).to_contain_text(
             "Approval request created"
         )
         tracker.assert_no_critical_errors()

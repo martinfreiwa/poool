@@ -69,6 +69,28 @@ include "components/head.html" %}{% endwith %}
         </section>
 
         <div class="circle-space-tabs-row">
+          <nav class="circle-space-tabs" role="tablist" aria-label="Circle feed views">
+            <a class="circle-space-tabs__item circle-space-tabs__item--active"
+               id="circle-tab-all"
+               role="tab"
+               href="#all"
+               aria-selected="true"
+               aria-controls="circle-feed-panel"
+               tabindex="0"
+               onclick="event.preventDefault(); document.querySelectorAll('.circle-space-tabs__item').forEach(function(item){ var active = item.getAttribute('href') === '#all'; item.classList.toggle('circle-space-tabs__item--active', active); item.setAttribute('aria-selected', active ? 'true' : 'false'); item.setAttribute('tabindex', active ? '0' : '-1'); }); var panel = document.getElementById('circle-feed-panel'); if (panel) panel.setAttribute('aria-labelledby', 'circle-tab-all'); window.setPostTypeFilter && window.setPostTypeFilter('all');">
+              All
+            </a>
+            <a class="circle-space-tabs__item"
+               id="circle-tab-qa"
+               role="tab"
+               href="#qa"
+               aria-selected="false"
+               aria-controls="circle-feed-panel"
+               tabindex="-1"
+               onclick="openCircleQaTab(event)">
+              Q&amp;A
+            </a>
+          </nav>
           <div class="circle-space-sort ds-segmented" role="group" aria-label="Circle feed sort">
             <button type="button" class="ds-segmented__item feed-toggle-btn active" id="sort-btn-fresh"
               aria-pressed="true" onclick="setSortMode('fresh')">Fresh</button>
@@ -78,7 +100,7 @@ include "components/head.html" %}{% endwith %}
         </div>
 
         <div class="circle-space-layout">
-          <section class="circle-space-feed" aria-label="Circle feed">
+          <section class="circle-space-feed" id="circle-feed-panel" role="tabpanel" aria-labelledby="circle-tab-all">
             {% if can_view %}
               <form id="feed-filters" class="ds-sr-only" aria-hidden="true">
                 <input type="hidden" id="form-feed-mode" name="feed_mode" value="all">

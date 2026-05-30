@@ -1006,6 +1006,7 @@ body#developer-assets-body .dae-empty {
 
 .dev-assets-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   table-layout: auto;
 }

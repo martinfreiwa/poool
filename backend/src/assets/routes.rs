@@ -173,7 +173,7 @@ fn render_commodity_card(asset: &CommodityDisplayData) -> String {
                     </div>
                     <div class="card-meta-divider"></div>
                     <div class="card-meta-item">
-                        <img src="/static/images/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
+                        <img src="/static/images/prop-details/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
                         <span>{location_city}, {location_country}</span>
                     </div>
                 </div>
@@ -405,6 +405,9 @@ pub async fn page_property(
     {
         Ok(Some(asset)) => asset,
         Ok(None) => {
+            if super::public_assets::lookup(&slug).is_some() {
+                return Redirect::to(&format!("/p/{}", slug)).into_response();
+            }
             return (
                 StatusCode::NOT_FOUND,
                 Html("<h1>Property not found</h1>".to_string()),
@@ -644,9 +647,16 @@ pub async fn page_property(
         .collect();
 
     match state.templates.get_template("property.html") {
-        Ok(template) => match template
-            .render(context! { asset => display_data, similar_assets => similar_display, documents => documents, fee_pct => platform_fee_pct, fee_pct_display => fee_pct_display })
-        {
+        Ok(template) => match template.render(context! {
+            asset => display_data,
+            similar_assets => similar_display,
+            documents => documents,
+            fee_pct => platform_fee_pct,
+            fee_pct_display => fee_pct_display,
+            user => user,
+            user_display_name => sidebar_user_display_name(&user.email),
+            is_developer => false,
+        }) {
             Ok(html) => Html(html).into_response(),
             Err(e) => {
                 tracing::error!("Template rendering error: {}", e);
@@ -883,9 +893,11 @@ pub async fn page_commodity(
     path_slug: Option<Path<String>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> axum::response::Response {
-    if !crate::auth::middleware::is_authenticated(&jar, &state.db).await {
-        return Redirect::to("/auth/login").into_response();
-    }
+    let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
+    let user_display_name = sidebar_user_display_name(&user.email);
 
     // Accept slug from either /commodity/:slug (path) or /commodity?id=slug (query)
     let slug = path_slug
@@ -1168,6 +1180,9 @@ pub async fn page_commodity(
             similar_assets => similar_assets,
             fee_pct => fee_pct_display,
             fee_pct_display => fee_pct_display,
+            user => user,
+            user_display_name => user_display_name,
+            is_developer => false,
         }) {
             Ok(html) => Html(html).into_response(),
             Err(e) => {

@@ -39,6 +39,19 @@
     .spinning {
       animation: spin 1s linear infinite;
     }
+
+    .comments-table-container .admin-table-empty {
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .comments-table-container .admin-table-empty::before {
+      content: none !important;
+    }
   </style>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
@@ -114,7 +127,7 @@
 
         <div class="admin-card">
           <div class="admin-card-body admin-card-body--flush">
-            <div class="admin-table-container">
+            <div class="admin-table-container comments-table-container">
               <div id="comments-loading" class="admin-table-empty">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   class="spinning" style="color: var(--text-tertiary); margin-bottom: 12px;" aria-hidden="true">
@@ -159,7 +172,7 @@
                   stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); margin-bottom: 16px;" aria-hidden="true">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
-                <p>No comments found.</p>
+                <p>New community comments will appear here for moderation.</p>
               </div>
             </div>
           </div>

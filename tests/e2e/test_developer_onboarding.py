@@ -9,10 +9,9 @@ Key contract (post-2026-05-19 audit, C-1 + C-2 + H-15 fixes):
     (H-15 regression guard).
   • The page has a "Submit Application" CTA on the final step.
   • Filling + submitting the application form returns 202 Accepted and
-    redirects to /marketplace (frontend redirect handles success).
+    redirects pending applicants to /marketplace.
   • After submission, the user does NOT acquire the `developer` role and
-    so /developer/dashboard remains gated — confirmed via a follow-up
-    GET that must redirect away from /dashboard (C-1 + C-2 regression guard).
+    developer-only APIs remain forbidden until admin approval.
 """
 
 import os
@@ -103,13 +102,24 @@ def _fill_step_1(page):
     page.fill("#ob-first-name", "E2E")
     page.fill("#ob-last-name", "Tester")
     page.fill("#ob-phone", "+62 812 555 0001")
-    page.select_option("#ob-nationality", "DE")
-    page.select_option("#ob-country", "ID")
+    _set_select_value(page, "#ob-nationality", "DE")
+    _set_select_value(page, "#ob-country", "ID")
 
 
 def _fill_step_2(page):
-    page.select_option("#ob-asset-value", "500k-1m")
-    page.select_option("#ob-monthly-income", "5k-15k")
+    _set_select_value(page, "#ob-asset-value", "500k-1m")
+    _set_select_value(page, "#ob-monthly-income", "5k-15k")
+
+
+def _set_select_value(page: Page, selector: str, value: str):
+    """Set POOOL-enhanced selects that keep the native <select> hidden."""
+    page.locator(selector).evaluate(
+        """(el, value) => {
+            el.value = value;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }""",
+        value,
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -173,7 +183,7 @@ def test_application_submit_returns_202_and_redirects(onboarding_user):
     """
     Filling the application form and clicking Submit must:
       • POST /api/developer/apply with status 202 Accepted
-      • redirect the user to /marketplace (per onboarding-agent change).
+      • redirect the pending applicant to /marketplace.
     """
     page, tracker, _ = onboarding_user
     _go_onboarding(page, tracker)
@@ -196,7 +206,7 @@ def test_application_submit_returns_202_and_redirects(onboarding_user):
         f"Application submit should return 202 Accepted, got {resp.status}: {resp.text()}"
     )
 
-    # The JS then redirects to /marketplace
+    # The JS then redirects away from the protected developer area.
     page.wait_for_url("**/marketplace**", timeout=TIMEOUT)
 
 
@@ -205,9 +215,8 @@ def test_submitting_application_does_not_grant_developer_role(onboarding_user):
     """
     C-1 + C-2 regression guard. After submitting the application:
       • the user MUST NOT acquire the developer role automatically
-      • /developer/dashboard must therefore redirect/403 them
-      • The redirect target is /developer/application-form (per
-        require_developer_page in backend/routes.rs).
+      • protected developer pages remain unavailable until admin approval
+      • developer-only APIs must still reject them until admin approval.
     """
     page, tracker, _ = onboarding_user
     _go_onboarding(page, tracker)
@@ -225,24 +234,22 @@ def test_submitting_application_does_not_grant_developer_role(onboarding_user):
 
     page.wait_for_url("**/marketplace**", timeout=TIMEOUT)
 
-    # Now attempt /developer/dashboard — must NOT serve the dashboard.
-    response = page.goto(f"{BASE_URL}/developer/dashboard", wait_until="domcontentloaded")
-    final_url = page.url
-    # Either the response itself was a 4xx, OR the URL ended somewhere
-    # outside /developer/dashboard (redirect to /developer/application-form
-    # or /auth/login).
-    landed_on_dashboard = final_url.rstrip("/").endswith("/developer/dashboard")
-    assert not landed_on_dashboard, (
-        f"Dashboard should NOT be reachable post-application — final URL: {final_url} "
-        f"(C-1 + C-2 regression!)"
+    dashboard_response = page.goto(
+        f"{BASE_URL}/developer/dashboard",
+        wait_until="domcontentloaded",
+        timeout=TIMEOUT,
     )
-    # Defensive: assert the redirect landed on a known onboarding/auth surface.
-    assert any(s in final_url for s in (
-        "/developer/application-form",
-        "/developer/onboarding",
-        "/auth/login",
-        "/marketplace",
-    )), f"Unexpected post-dashboard URL: {final_url}"
+    assert dashboard_response is None or dashboard_response.status in {200, 302, 303, 403}
+    assert not page.url.rstrip("/").endswith("/developer/dashboard"), (
+        "Pending developer applicants must not reach the protected developer "
+        "dashboard before admin approval"
+    )
+
+    api_resp = page.request.get(f"{BASE_URL}/api/developer/dashboard/stats")
+    assert api_resp.status == 403, (
+        "Pending developer applicants must not get developer API access before "
+        f"admin approval; got HTTP {api_resp.status}"
+    )
 
 
 @pytest.mark.developer

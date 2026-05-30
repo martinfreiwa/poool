@@ -160,8 +160,6 @@
                 if (months <= 12) visible = false;
               } else if (!durationText.includes("year")) visible = false;
             }
-          } else {
-            visible = false;
           }
         }
 
@@ -237,7 +235,7 @@
         }
         existingMsg.style.display = "";
       } else if (existingMsg) {
-        existingMsg.style.display = "none";
+        existingMsg.remove();
       }
     }
 
@@ -309,7 +307,7 @@
 
         // Hide no-results message
         const msg = propertyGrid.querySelector(".marketplace-no-results");
-        if (msg) msg.style.display = "none";
+        if (msg) msg.remove();
       });
     }
 

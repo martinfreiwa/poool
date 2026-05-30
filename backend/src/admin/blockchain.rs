@@ -301,14 +301,56 @@ async fn fetch_clone_asset(
     .ok_or_else(|| ApiError::NotFound("EIP-1167 Clone not found mapped to this address".into()))
 }
 
-fn parse_cast_tx_hash(stdout: &str) -> String {
-    serde_json::from_str::<serde_json::Value>(stdout)
-        .ok()
-        .and_then(|v| {
-            v.get("transactionHash")
-                .and_then(|h| h.as_str().map(String::from))
-        })
-        .unwrap_or_else(|| stdout.trim().to_string())
+fn is_tx_hash(value: &str) -> bool {
+    value.len() == 66
+        && value.starts_with("0x")
+        && value[2..].chars().all(|ch| ch.is_ascii_hexdigit())
+}
+
+fn find_tx_hash_in_json(value: &serde_json::Value) -> Option<String> {
+    for key in ["transactionHash", "transaction_hash", "hash"] {
+        if let Some(hash) = value.get(key).and_then(|candidate| candidate.as_str()) {
+            if is_tx_hash(hash) {
+                return Some(hash.to_string());
+            }
+        }
+    }
+
+    match value {
+        serde_json::Value::Array(items) => items.iter().find_map(find_tx_hash_in_json),
+        serde_json::Value::Object(map) => map.values().find_map(find_tx_hash_in_json),
+        serde_json::Value::String(text) if is_tx_hash(text) => Some(text.clone()),
+        _ => None,
+    }
+}
+
+fn find_tx_hash_in_text(stdout: &str) -> Option<String> {
+    let bytes = stdout.as_bytes();
+    if bytes.len() < 66 {
+        return None;
+    }
+
+    for idx in 0..=(bytes.len() - 66) {
+        if bytes[idx] == b'0' && bytes[idx + 1] == b'x' {
+            let candidate = &stdout[idx..idx + 66];
+            if is_tx_hash(candidate) {
+                return Some(candidate.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn parse_cast_tx_hash(stdout: &str) -> Result<String, ApiError> {
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(stdout) {
+        if let Some(hash) = find_tx_hash_in_json(&value) {
+            return Ok(hash);
+        }
+    }
+
+    find_tx_hash_in_text(stdout).ok_or_else(|| {
+        ApiError::Internal("Blockchain control response missing transaction hash".to_string())
+    })
 }
 
 fn explorer_url_for_network(network: &str) -> &'static str {
@@ -496,7 +538,7 @@ fn execute_clone_control(address: &str, method: &str) -> Result<(String, bool), 
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    Ok((parse_cast_tx_hash(&stdout), false))
+    Ok((parse_cast_tx_hash(&stdout)?, false))
 }
 
 async fn persist_clone_control_result(

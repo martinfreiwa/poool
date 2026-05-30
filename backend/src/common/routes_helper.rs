@@ -147,7 +147,9 @@ pub async fn serve_public_with_context<T: serde::Serialize>(
         _ => serde_json::Map::new(),
     };
 
-    // Optionally inject user if logged in, but DO NOT redirect if missing
+    // Optionally inject user if logged in, but DO NOT redirect if missing.
+    // Some public templates include shared sidebar components that read
+    // `user.email`; provide a neutral guest object for anonymous renders.
     if let Some(user) = middleware::get_current_user(&jar, &state.db).await {
         if let Ok(u_val) = serde_json::to_value(&user) {
             map.insert("user".to_string(), u_val);
@@ -166,6 +168,16 @@ pub async fn serve_public_with_context<T: serde::Serialize>(
             "affiliate_status".to_string(),
             serde_json::json!(affiliate_status),
         );
+    } else {
+        map.entry("user".to_string()).or_insert_with(|| {
+            serde_json::json!({
+                "email": "",
+            })
+        });
+        map.entry("user_display_name".to_string())
+            .or_insert_with(|| serde_json::json!("Guest"));
+        map.entry("affiliate_status".to_string())
+            .or_insert_with(|| serde_json::json!("unregistered"));
     }
 
     map.entry("is_developer".to_string())

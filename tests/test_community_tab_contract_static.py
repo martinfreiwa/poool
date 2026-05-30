@@ -142,6 +142,13 @@ def test_community_topbar_uses_plural_circles_and_client_tab_anchors():
     assert 'data-client-tab="dms"' in topbar
 
 
+def test_community_dms_profile_links_use_registered_profile_route():
+    js = read("frontend/platform/static/js/community-dms.js")
+
+    assert "/community/profile?user=" not in js
+    assert "/community/u/${encodeURIComponent(thread.other_user_id)}" in js
+
+
 def test_announcement_fragment_uses_server_rendered_contract():
     tab = read("frontend/platform/partials/community_announcements.html")
     list_template = read("frontend/platform/partials/community_announcements_list.html")

@@ -1381,6 +1381,8 @@ pub struct UserProfile {
     pub address_line_1: Option<String>,
     pub postal_code: Option<String>,
     pub avatar_url: Option<String>,
+    /// Fine-grained permissions for the current admin roles. Empty for non-admin users.
+    pub admin_permissions: Vec<String>,
 }
 
 /// Get the user's display profile by their session token.
@@ -1471,6 +1473,27 @@ pub async fn get_user_profile(
             .unwrap_or_else(|| "investor".to_string())
     };
 
+    let admin_permissions = if roles.iter().any(|r| r == "super_admin") {
+        vec!["all".to_string()]
+    } else if roles.iter().any(|r| r == "admin") {
+        sqlx::query_scalar(
+            r#"
+            SELECT DISTINCT ap.permission
+            FROM user_roles ur
+            JOIN admin_permissions ap ON ap.role_id = ur.role_id
+            WHERE ur.user_id = $1
+              AND ur.is_active = TRUE
+            ORDER BY ap.permission
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
     let first = first_name.clone().unwrap_or_default();
     let last = last_name.clone().unwrap_or_default();
 
@@ -1515,6 +1538,7 @@ pub async fn get_user_profile(
         address_line_1,
         postal_code,
         avatar_url,
+        admin_permissions,
     }))
 }
 

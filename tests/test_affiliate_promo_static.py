@@ -10,12 +10,19 @@ def read(path: str) -> str:
 
 
 def backend_affiliate_tiers() -> list[tuple[int, str, int]]:
-    backend = read("backend/src/rewards/service.rs")
-    match = re.search(r"const AFFILIATE_TIERS:.*?=\s*&\[(.*?)\];", backend, re.S)
-    assert match, "AFFILIATE_TIERS constant not found"
+    migration = read("database/123_affiliate_volume_tiers.sql")
+    match = re.search(
+        r"INSERT INTO affiliate_tiers .*? VALUES\s*(.*?)\nON CONFLICT",
+        migration,
+        re.S,
+    )
+    assert match, "affiliate_tiers seed values not found"
 
     tiers: list[tuple[int, str, int]] = []
-    for threshold, name, bps in re.findall(r'\((\d+),\s*"([^"]+)",\s*(\d+)\)', match.group(1)):
+    for name, bps, threshold in re.findall(
+        r"\('([^']+)',\s*(\d+),\s*(\d+),\s*\d+\)",
+        match.group(1),
+    ):
         tiers.append((int(threshold), name, int(bps)))
     assert tiers
     return tiers
@@ -23,16 +30,15 @@ def backend_affiliate_tiers() -> list[tuple[int, str, int]]:
 
 def test_affiliate_promo_tiers_match_backend_contract():
     html = read("frontend/platform/affiliate-promo.html")
+    compact_html = re.sub(r"\s+", " ", html)
     tiers = backend_affiliate_tiers()
 
     for threshold, name, bps in tiers:
         assert f'data-tier="{name}"' in html
-        assert f"name: '{name}', minQualifiedReferrals: {threshold}, bps: {bps}" in html
+        assert f"name: '{name}', minVolumeCents: {threshold}, bps: {bps}" in compact_html
         assert f"<td>{name}</td>" in html
         assert f"<td><span class=\"tier-rate\">{bps // 100}.{bps % 100:02d}%</span></td>" in html
 
-    assert "4.50%" not in html
-    assert "Sovereign" not in html
     assert "trailing 12-mo volume" not in html
 
 

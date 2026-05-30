@@ -1049,8 +1049,7 @@
 
         // Submit button state machine
         const btn = document.getElementById('tv3-submit-btn');
-        const opposingHasLiquidity = hasOpposingLiquidity(currentAsset, currentSide);
-        const isMarketWithoutLiquidity = priceMode === 'market' && !opposingHasLiquidity;
+        const isMarketWithoutLiquidity = priceMode === 'market' && getMarketData(currentAsset, currentSide).totalShares <= 0;
 
         const setDisabled = (label) => {
             btn.textContent = label;
@@ -1069,8 +1068,8 @@
 
         if (isMarketWithoutLiquidity) {
             setDisabled(currentSide === 'buy'
-                ? 'No asks available — switch to Custom Price to place a bid'
-                : 'No bids available — switch to Custom Price to place an ask');
+                ? 'No sell orders available — switch to Custom Price to place a bid'
+                : 'No buy offers available — switch to Custom Price to place an ask');
             return;
         }
         if (!hasPrice) {

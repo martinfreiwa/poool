@@ -119,12 +119,28 @@ def test_admin_marketplace_analytics_authenticated_e2e(admin_page):
     try:
         with page.expect_response(lambda r: "/api/admin/marketplace/stats" in r.url and r.status == 200):
             with page.expect_response(lambda r: "/api/admin/marketplace/trades" in r.url and r.status == 200):
-                tracker.navigate_and_check(f"{BASE_URL}/admin/marketplace/analytics")
+                tracker.navigate_and_check(f"{BASE_URL}/admin/marketplace/analytics", timeout=30000)
 
         expect(page).to_have_title("Trading Analytics | Admin | POOOL")
-        expect(page.locator("#metabase-empty")).to_be_visible()
+        metabase = page.evaluate(
+            """() => {
+                const card = document.getElementById('metabase-card');
+                return {
+                    baseUrl: card?.dataset.metabaseBaseUrl || '',
+                    publicDashboardPath: card?.dataset.metabasePublicDashboardPath || '',
+                    cardDisplay: card ? getComputedStyle(card).display : '',
+                    frameSrc: document.getElementById('metabase-frame')?.getAttribute('src') || '',
+                    openDisabled: document.getElementById('btn-open-metabase')?.disabled ?? true,
+                };
+            }"""
+        )
         expect(page.locator("#metabase-frame")).to_have_attribute("title", "Marketplace analytics dashboard")
-        expect(page.locator("#btn-open-metabase")).to_be_disabled()
+        if metabase["baseUrl"] and metabase["publicDashboardPath"]:
+            expect(page.locator("#metabase-empty")).to_be_hidden()
+            assert metabase["frameSrc"], "Configured Metabase should set iframe src"
+        else:
+            assert metabase["cardDisplay"] == "none"
+            assert metabase["openDisabled"] is True
 
         expect(page.locator(".mp-analytics-stat-label", has_text="Trades 24h")).to_be_visible()
         expect(page.locator(".mp-analytics-stat-label", has_text="Volume 24h")).to_be_visible()

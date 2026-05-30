@@ -30,17 +30,15 @@ pub async fn list_payment_methods(jar: CookieJar, State(state): State<AppState>)
         }
     };
 
-    match sqlx::query_as::<_, PaymentMethod>(
-        "SELECT * FROM payment_methods WHERE user_id = $1 AND status != 'failed' ORDER BY is_default DESC, created_at DESC"
-    )
-    .bind(user_id)
-    .fetch_all(&state.db)
-    .await
-    {
+    match service::list_user_payment_methods(&state.db, &user_id, None).await {
         Ok(methods) => Json(serde_json::json!({ "payment_methods": methods })).into_response(),
         Err(e) => {
             tracing::error!("Failed to list payment methods: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error": "Failed to load payment methods"}))).into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Failed to load payment methods"})),
+            )
+                .into_response()
         }
     }
 }

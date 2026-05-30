@@ -9,11 +9,12 @@ Run:
 Requires: pytest-playwright, a running backend, and a test user seeded in DB.
 """
 
+import os
 import pytest
 import re
 from playwright.sync_api import expect, Page
 
-BASE_URL = "http://localhost:8888"
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 TIMEOUT = 10_000  # ms
 
 

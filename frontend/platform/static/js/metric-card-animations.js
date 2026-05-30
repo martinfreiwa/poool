@@ -153,7 +153,7 @@
   }
 
   // Re-run after HTMX swaps that touch the metrics section
-  document.body.addEventListener("htmx:afterSwap", function (evt) {
+  document.addEventListener("htmx:afterSwap", function (evt) {
     const target = evt && evt.detail && evt.detail.target;
     if (!target) return;
     if (target.id === "metrics-section" || target.querySelector?.(".metric-card")) {

@@ -538,7 +538,7 @@ pub async fn api_admin_support_ticket_detail(
         };
 
         messages.push(serde_json::json!({
-            "id": lg.get::<uuid::Uuid, _>("id").to_string(),
+            "id": format!("audit-{}", lg.get::<i64, _>("id")),
             "content": format!("<i>* {}</i>", content),
             "type": "internal_note",
             "author_role": "system",

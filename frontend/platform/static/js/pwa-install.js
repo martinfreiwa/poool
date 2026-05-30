@@ -116,6 +116,10 @@
       console.warn('SW registration failed', e);
       return null;
     }
+    if (!registration) {
+      console.warn('SW registration unavailable');
+      return null;
+    }
 
     // Step 3: update detection → show toast when a new worker is ready.
     if (registration.waiting && navigator.serviceWorker.controller) {

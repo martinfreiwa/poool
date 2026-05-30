@@ -481,6 +481,15 @@
         container.appendChild(el("div", {}, "No orders at this level."));
         return;
       }
+      let bulkBtn;
+      const selectedIds = () =>
+        orders.filter((o) => state.bulkSelected.has(o.id)).map((o) => o.id);
+      const updateBulkBtn = () => {
+        if (!bulkBtn) return;
+        const hasSelection = selectedIds().length > 0;
+        bulkBtn.disabled = !hasSelection;
+        bulkBtn.setAttribute("aria-disabled", hasSelection ? "false" : "true");
+      };
       const headerCheckbox = el("input", {
         type: "checkbox",
         "aria-label": "Select all orders at level",
@@ -492,19 +501,20 @@
           container.querySelectorAll('input[type="checkbox"][data-oid]').forEach((cb) => {
             cb.checked = checked;
           });
+          updateBulkBtn();
           renderBulkBar();
         },
       });
-      const bulkBtn = el(
+      bulkBtn = el(
         "button",
         {
           class: "admin-btn admin-btn--danger admin-btn--sm",
           type: "button",
+          disabled: true,
+          "aria-disabled": "true",
           onClick: (ev) => {
             ev.stopPropagation();
-            const ids = orders
-              .filter((o) => state.bulkSelected.has(o.id))
-              .map((o) => o.id);
+            const ids = selectedIds();
             if (!ids.length) return;
             bulkCancel(ids);
           },
@@ -563,6 +573,7 @@
                   ev.stopPropagation();
                   if (ev.target.checked) state.bulkSelected.add(o.id);
                   else state.bulkSelected.delete(o.id);
+                  updateBulkBtn();
                   renderBulkBar();
                 },
               }),
@@ -604,6 +615,7 @@
       });
       table.appendChild(tbody);
       container.appendChild(table);
+      updateBulkBtn();
     } catch (err) {
       clearNode(container);
       container.appendChild(

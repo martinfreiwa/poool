@@ -143,7 +143,9 @@ def test_community_feed_reaction_comment_accessibility(authenticated_user_page):
             lambda response: response.url.endswith(f"/api/community/posts/{post_id}/comments")
             and response.request.method == "POST"
         ) as comment_response:
-            post.locator("#comments-section-%s button" % post_id, has_text="Post").click()
+            post.locator(
+                f"#comments-section-{post_id} button.feed-post-comments__submit"
+            ).click()
         assert comment_response.value.status == 200
         expect(page.locator(f"#comments-list-{post_id}")).to_contain_text(initial_comment)
 
@@ -252,7 +254,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):
+def test_circle_settings_subpage_keyboard_and_mobile(authenticated_user_page):
     page, tracker, current_user = authenticated_user_page
     page.set_viewport_size({"width": 390, "height": 844})
 
@@ -267,7 +269,7 @@ def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):
         "circle": {
             "id": "circle-1",
             "name": "E2E Circle",
-            "description": "Seeded circle for modal coverage",
+            "description": "Seeded circle for settings coverage",
             "avatar_emoji": "G",
             "member_count": 1,
             "total_xp": 1500,
@@ -275,7 +277,9 @@ def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):
             "level_name": "Sprout",
             "owner_id": current_user["user_id"],
             "is_public": True,
+            "slug": "e2e-circle",
         },
+        "my_role": "owner",
         "members": [
             {
                 "user_id": current_user["user_id"],
@@ -302,6 +306,7 @@ def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):
             {
                 "id": "circle-1",
                 "name": "E2E Circle",
+                "slug": "e2e-circle",
                 "avatar_emoji": "G",
                 "is_public": True,
                 "member_count": 1,
@@ -312,45 +317,64 @@ def test_circle_settings_modal_keyboard_and_mobile(authenticated_user_page):
     }))
     page.route("**/api/community/invites", lambda route: fulfill_json(route, {"invites": []}))
     page.route("**/api/community/circles/circle-1/requests", lambda route: fulfill_json(route, {"requests": []}))
+    page.route(
+        "**/api/community/circles/by-slug/e2e-circle",
+        lambda route: fulfill_json(route, circle_payload),
+    )
+    page.route("**/api/community/circles/circle-1/manage", lambda route: fulfill_json(route, {
+        "circle": circle_payload["circle"],
+        "analytics": {
+            "posts_7d": 0,
+            "comments_7d": 0,
+            "active_members_7d": 1,
+            "pending_reports": 0,
+        },
+        "audit_log": [],
+    }))
+    page.route("**/api/community/circles/circle-1/members", lambda route: fulfill_json(route, {
+        "members": [
+            {
+                "user_id": current_user["user_id"],
+                "display_name": "E2E Owner",
+                "role": "owner",
+            }
+        ]
+    }))
+    page.route("**/api/community/circles/circle-1/reports", lambda route: fulfill_json(route, {"reports": []}))
+    page.route("**/api/community/circles/circle-1/ops-alerts", lambda route: fulfill_json(route, {"alerts": []}))
+    page.route("**/api/community/circles/circle-1/resources/manage", lambda route: fulfill_json(route, {"resources": []}))
+    page.route("**/browser.sentry-cdn.com/**", lambda route: route.fulfill(
+        status=200,
+        content_type="application/javascript",
+        body=(
+            "window.Sentry={init:function(){},browserTracingIntegration:function(){return {};},"
+            "replayIntegration:function(){return {};},setUser:function(){},"
+            "captureException:function(){},captureMessage:function(){}};"
+        ),
+    ))
+    page.route("**/*sentry.io/**", lambda route: route.fulfill(status=200, body=""))
 
-    page.goto(f"{BASE_URL}/community")
+    page.goto(f"{BASE_URL}/community/circle/e2e-circle/settings")
     page.wait_for_load_state("networkidle")
 
-    circle_tab = page.locator(
-        "button.community-tab-btn", has_text=re.compile(r"My Circle", re.IGNORECASE)
-    )
-    # The mobile topbar (WS1.5) puts tabs in a horizontally scrolling row;
-    # the "My Circle" tab can be off-screen at 390px width. Scroll it in,
-    # then click programmatically — the mobile-header overlay intercepts
-    # pointer events on the tab's actual coords.
-    circle_tab.scroll_into_view_if_needed()
-    expect(circle_tab).to_be_visible(timeout=10000)
-    circle_tab.evaluate("el => el.click()")
+    root = page.locator("#ccs-root")
+    expect(root).to_be_visible(timeout=10000)
+    expect(page.locator("#ccs-name")).to_have_text("E2E Circle", timeout=10000)
+    expect(page.locator("#ccs-input-name")).to_have_value("E2E Circle")
+    expect(page.locator("#ccs-view-feed-link")).to_have_attribute("href", "/community/circle/e2e-circle")
 
-    settings_button = page.locator("button", has_text=re.compile(r"Settings", re.IGNORECASE)).first
-    expect(settings_button).to_be_visible(timeout=10000)
-    settings_button.click()
+    # The old inline settings modal was replaced by the dedicated settings
+    # subpage. Keep this regression focused on the mobile keyboard surface.
+    expect(page.locator("#circle-settings-modal")).to_have_count(0)
+    page.locator("#ccs-input-name").focus()
+    expect(page.locator("#ccs-input-name")).to_be_focused()
+    page.keyboard.press("Tab")
+    expect(page.locator("#ccs-input-desc")).to_be_focused()
 
-    modal = page.locator("#circle-settings-modal")
-    expect(modal).to_be_visible(timeout=5000)
-    expect(modal).to_have_attribute("role", "dialog")
-    expect(modal).to_have_attribute("aria-modal", "true")
-    expect(modal).to_have_attribute("aria-hidden", "false")
-    expect(page.locator("button[aria-label='Close circle settings']")).to_be_focused()
-
-    page.keyboard.press("Shift+Tab")
-    expect(page.locator("#settings-save-btn")).to_be_focused()
-
-    panel_box = modal.locator(".ds-card").bounding_box()
-    assert panel_box
-    assert panel_box["x"] >= 0
-    assert panel_box["y"] >= 0
-    assert panel_box["x"] + panel_box["width"] <= 390
-    assert panel_box["y"] + panel_box["height"] <= 844
-
-    page.keyboard.press("Escape")
-    expect(modal).not_to_be_visible(timeout=3000)
-    expect(settings_button).to_be_focused()
+    root_box = root.bounding_box()
+    assert root_box
+    assert root_box["x"] >= 0
+    assert root_box["width"] <= 390
 
     tracker.assert_no_critical_errors()
 
@@ -383,7 +407,7 @@ def _fetch_ban_appeals(user_id):
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT status, appeal_text FROM ban_appeals WHERE user_id = %s",
+            "SELECT id, status, appeal_text FROM ban_appeals WHERE user_id = %s",
             (str(user_id),),
         )
         rows = cur.fetchall()
@@ -436,8 +460,24 @@ def test_community_ban_appeal_banner_and_submission(authenticated_user_page):
 
     appeals = _fetch_ban_appeals(user_id)
     assert len(appeals) == 1, f"expected exactly one appeal row, got {appeals!r}"
-    assert appeals[0][0] == "pending"
-    assert "policy violation" in appeals[0][1].lower()
+    appeal_id, status, appeal_text = appeals[0]
+    assert status == "pending"
+    assert "policy violation" in appeal_text.lower()
+    with get_community_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT COUNT(*)
+                FROM community_audit_logs
+                WHERE action = 'appeal.submit'
+                  AND entity_type = 'ban_appeal'
+                  AND entity_id = %s
+                  AND actor_user_id = %s
+                  AND target_user_id = %s
+                """,
+                (appeal_id, str(user_id), str(user_id)),
+            )
+            assert cur.fetchone()[0] == 1
 
     tracker.assert_no_critical_errors()
 
@@ -512,6 +552,76 @@ def _block_via_api(page, target_user_id):
         f"{BASE_URL}/api/community/users/{target_user_id}/block",
         headers={**_csrf_headers(page), "Content-Type": "application/json"},
     )
+
+
+def test_community_report_post_validates_reason_and_persists_note(authenticated_user_page):
+    """Report flow rejects invalid reasons, saves valid reports, and caps notes."""
+    page, tracker, current_user = authenticated_user_page
+    post_id = _seed_community_post(
+        current_user["user_id"],
+        f"report-fixture-{uuid.uuid4().hex}",
+    )
+    try:
+        page.goto(f"{BASE_URL}/community")
+        page.wait_for_load_state("networkidle")
+        post = page.locator(f"#post-{post_id}")
+        expect(post).to_be_visible(timeout=10000)
+
+        invalid = page.request.post(
+            f"{BASE_URL}/api/community/posts/{post_id}/report",
+            headers={**_csrf_headers(page), "Content-Type": "application/json"},
+            data='{"reason": "", "note": "missing reason"}',
+        )
+        assert invalid.status == 400
+
+        post.locator("button[aria-label='Report post']").click()
+        expect(page.locator("#report-post-modal")).to_be_visible(timeout=5000)
+        page.select_option("#report-reason", "financial_advice")
+        page.fill("#report-note", "Looks like unlicensed advice.")
+        with page.expect_response(
+            lambda response: response.url.endswith(f"/api/community/posts/{post_id}/report")
+            and response.request.method == "POST",
+            timeout=10000,
+        ) as report_response:
+            page.click("#submit-report-btn")
+        assert report_response.value.status == 200
+
+        long_note = "x" * 620
+        capped = page.request.post(
+            f"{BASE_URL}/api/community/posts/{post_id}/report",
+            headers={**_csrf_headers(page), "Content-Type": "application/json"},
+            data=json.dumps({"reason": "spam", "note": long_note}),
+        )
+        assert capped.status == 200
+
+        conn = get_community_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT reason, reporter_note, status
+                  FROM content_reports
+                 WHERE post_id = %s AND reporter_id = %s
+                """,
+                (str(post_id), str(current_user["user_id"])),
+            )
+            row = cur.fetchone()
+            assert row is not None
+            assert row[0] == "financial_advice"
+            assert row[1] == "x" * 500
+            assert row[2] == "pending"
+        finally:
+            conn.close()
+
+        tracker.assert_no_critical_errors()
+    finally:
+        conn = get_community_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM posts WHERE id = %s", (str(post_id),))
+            conn.commit()
+        finally:
+            conn.close()
 
 
 def test_community_block_unblock_and_feed_hides_blocked_author(authenticated_user_page):

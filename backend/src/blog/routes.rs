@@ -5,7 +5,6 @@ use axum::{
     http::{header::CONTENT_TYPE, HeaderMap, StatusCode},
     response::{Html, IntoResponse, Json},
 };
-use axum_extra::extract::cookie::CookieJar;
 use minijinja::context;
 use serde::Deserialize;
 use serde_json::json;
@@ -1266,29 +1265,12 @@ async fn list_authors_for_source(
 
 // ── Admin-only endpoints ──────────────────────────────────────────
 
-/// Helper: require admin auth for write endpoints.
-async fn require_admin(jar: &CookieJar, state: &AppState) -> Result<(), axum::response::Response> {
-    if middleware::is_admin(jar, &state.db).await {
-        Ok(())
-    } else {
-        Err((
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Admin access required."})),
-        )
-            .into_response())
-    }
-}
-
 /// POST /api/blog/articles — Create a new article (admin only).
 pub async fn create_article(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(req): Json<super::models::CreateArticleRequest>,
 ) -> axum::response::Response {
-    if let Err(resp) = require_admin(&jar, &state).await {
-        return resp;
-    }
-
     // Basic validation
     if req.slug.is_empty() || req.title.is_empty() || req.excerpt.is_empty() {
         return (
@@ -1299,11 +1281,14 @@ pub async fn create_article(
     }
 
     match service::create_article(&state.db, &req).await {
-        Ok(id) => (
-            StatusCode::CREATED,
-            Json(serde_json::json!({"id": id, "slug": req.slug, "status": "created"})),
-        )
-            .into_response(),
+        Ok(id) => {
+            audit_blog_action(&state, &admin, "blog.article.create", &id, "created").await;
+            (
+                StatusCode::CREATED,
+                Json(serde_json::json!({"id": id, "slug": req.slug, "status": "created"})),
+            )
+                .into_response()
+        }
         Err(e) => {
             tracing::error!("Failed to create blog article: {}", e);
             let msg = if e.to_string().contains("duplicate key") {
@@ -1322,17 +1307,16 @@ pub async fn create_article(
 
 /// PUT /api/blog/articles/:id — Update an article (admin only).
 pub async fn update_article(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<super::models::UpdateArticleRequest>,
 ) -> axum::response::Response {
-    if let Err(resp) = require_admin(&jar, &state).await {
-        return resp;
-    }
-
     match service::update_article(&state.db, &id, &req).await {
-        Ok(true) => Json(serde_json::json!({"status": "updated", "id": id})).into_response(),
+        Ok(true) => {
+            audit_blog_action(&state, &admin, "blog.article.update", &id, "updated").await;
+            Json(serde_json::json!({"status": "updated", "id": id})).into_response()
+        }
         Ok(false) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "Article not found."})),
@@ -1351,16 +1335,15 @@ pub async fn update_article(
 
 /// DELETE /api/blog/articles/:id — Archive an article (admin only, soft delete).
 pub async fn delete_article(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> axum::response::Response {
-    if let Err(resp) = require_admin(&jar, &state).await {
-        return resp;
-    }
-
     match service::archive_article(&state.db, &id).await {
-        Ok(true) => Json(serde_json::json!({"status": "archived", "id": id})).into_response(),
+        Ok(true) => {
+            audit_blog_action(&state, &admin, "blog.article.archive", &id, "archived").await;
+            Json(serde_json::json!({"status": "archived", "id": id})).into_response()
+        }
         Ok(false) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "Article not found."})),
@@ -1379,21 +1362,20 @@ pub async fn delete_article(
 
 /// POST /api/blog/articles/:id/publish — Publish an article (admin only).
 pub async fn publish_article(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> axum::response::Response {
-    if let Err(resp) = require_admin(&jar, &state).await {
-        return resp;
-    }
-
     match service::publish_article(&state.db, &id).await {
-        Ok(true) => Json(serde_json::json!({
-            "status": "published",
-            "id": id,
-            "message": "Article published successfully."
-        }))
-        .into_response(),
+        Ok(true) => {
+            audit_blog_action(&state, &admin, "blog.article.publish", &id, "published").await;
+            Json(serde_json::json!({
+                "status": "published",
+                "id": id,
+                "message": "Article published successfully."
+            }))
+            .into_response()
+        }
         Ok(false) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "Article not found or already published."})),

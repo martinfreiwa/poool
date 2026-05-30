@@ -295,11 +295,7 @@ body[id^="developer-"] .submissions-table-container.dev-submissions-table-card:h
   background: var(--card-table-bg) !important;
 }
 
-.dev-submissions-table-card .sub-toolbar,
-.dev-submissions-table-card .sub-pipeline--footer,
-.dev-submissions-table-card .submissions-table th.col-checkbox,
-.dev-submissions-table-card .submissions-table tbody td:first-child:has(.sub-checkbox-label),
-.dev-submissions-table-card .submissions-table tbody td.col-checkbox {
+.dev-submissions-table-card .sub-pipeline--footer {
   display: none !important;
 }
 

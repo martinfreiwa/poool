@@ -57,13 +57,21 @@ def test_support_endpoints():
 
     # Setup multipart data for new ticket
     client_context = json.dumps({"userAgent": "PythonRequests", "timezone": "Europe/Berlin"})
+    jpeg_bytes = (
+        b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00\x01\x00\x01\x00\x00"
+        b"\xff\xdb\x00C\x00" + (b"\x08" * 64) +
+        b"\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x03\x01\x11\x00\x02\x11\x01\x03\x11\x01"
+        b"\xff\xc4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\xff\xc4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00\x00\xff\xd9"
+    )
     files = {
         'subject': (None, 'Help with deposit'),
         'message': (None, 'My deposit is failing when I try to use my card.'),
         'priority': (None, 'high'),
         'category': (None, 'billing'),
         'context': (None, client_context),
-        'attachment': ('screenshot.jpg', b'fake image data, trust me', 'image/jpeg')
+        'attachment': ('screenshot.jpg', jpeg_bytes, 'image/jpeg')
     }
 
     # Submit ticket!

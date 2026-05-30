@@ -34,8 +34,10 @@ function parseUrl() {
   // /developer/villas/<asset_id>/operations/new   (create mode)
   // /developer/villas/<asset_id>/operations/<log_id>  (edit mode)
   const parts = window.location.pathname.split("/").filter(Boolean);
-  assetId = parts[2];
-  const trailing = parts[3];
+  const villaIdx = parts.indexOf("villas");
+  const operationsIdx = parts.indexOf("operations");
+  assetId = villaIdx >= 0 ? parts[villaIdx + 1] : null;
+  const trailing = operationsIdx >= 0 ? parts[operationsIdx + 1] : null;
   if (trailing && trailing !== "new") {
     existingLogId = trailing;
   }
@@ -128,6 +130,10 @@ function attachFormatter(el, currency = true) {
 
 async function hydrate() {
   try {
+    if (!assetId) {
+      throw new Error("Missing asset id in URL");
+    }
+
     const cfgResp = await fetch(`/api/developer/villas/${encodeURIComponent(assetId)}/asset-config`);
     if (cfgResp.ok) {
       assetConfig = await cfgResp.json();

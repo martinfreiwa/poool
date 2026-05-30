@@ -124,8 +124,9 @@ def test_phase5_frontend_composer_exposes_types_tags_filters_and_payload():
     assert "community-feed__filters" not in circle_page
     assert "circle-space-tabs-row" in circle_page
     assert 'aria-label="Circle sections"' not in circle_page
-    assert 'role="tablist"' not in circle_page
-    assert "circle-space-tabs__item" not in circle_page
+    assert 'role="tablist"' in circle_page
+    assert 'role="tab"' in circle_page
+    assert 'role="tabpanel"' in circle_page
     assert 'id="members"' not in circle_page
     assert "{{ member_count }} members - {{ role_label }}" not in circle_page
     assert "circle-space-sort ds-segmented" in circle_page
@@ -149,8 +150,6 @@ def test_phase5_circle_section_tabs_are_removed_but_sort_remains():
     css = read("frontend/platform/static/css/community.css")
 
     assert ".circle-space-tabs-row" in css
-    assert ".circle-space-tabs {" not in css
-    assert ".circle-space-tabs__item" not in css
     assert ".circle-space-sort" in css
     assert ".circle-space-hero__icon" not in css
     assert "grid-template-columns: minmax(0, 1fr) auto;" in css

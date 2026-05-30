@@ -20,11 +20,32 @@
   <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .admin-kyc-page .admin-topbar {
+      flex-wrap: nowrap;
+    }
+
+    .admin-kyc-page .admin-topbar-right .admin-search {
+      width: clamp(220px, 26vw, 320px);
+      max-width: 320px;
+    }
+
+    @media (max-width: 900px) {
+      .admin-kyc-page .admin-topbar {
+        flex-wrap: wrap;
+      }
+
+      .admin-kyc-page .admin-topbar-right .admin-search {
+        width: 100%;
+        max-width: none;
+      }
+    }
+  </style>
   <script src="/static/js/admin-page-kit.js"></script>
   <script defer src="/static/js/admin-command-palette.js"></script>
 </head>
 
-<body class="admin-body dom-ready">
+<body class="admin-body admin-kyc-page dom-ready">
   <div class="admin-wrapper">
     {% include 'admin/components/sidebar.html' %}
 
@@ -75,12 +96,41 @@
         <!-- Toolbar -->
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--admin-text-muted);cursor:pointer;white-space:nowrap"><input type="checkbox" id="auto-refresh" style="accent-color:var(--admin-accent)" checked /> Auto 30s</label>
+          <span id="auto-refresh-countdown" style="font-size:11px;color:var(--admin-text-muted);white-space:nowrap">30s</span>
           <span id="last-updated-label" style="font-size:11px;color:var(--admin-text-muted);white-space:nowrap" title="Last fetched">—</span>
+          <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" id="kyc-review-next">Review next</button>
           <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="kyc-refresh-btn" title="Refresh now">Refresh</button>
+          <select id="kyc-export-scope" class="admin-select" aria-label="Export scope">
+            <option value="current">Current view</option>
+            <option value="queue">Review queue</option>
+            <option value="all">All records</option>
+          </select>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="kyc-save-view">Save view</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="kyc-shortcuts-btn">Shortcuts</button>
           <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="kyc-export-csv" title="Export filtered records as CSV" style="margin-left:auto">
             <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M8 1v9m0 0l-3-3m3 3l3-3M2 13v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
             Export CSV
           </button>
+        </div>
+        <div id="kyc-data-freshness" class="admin-card" style="padding:10px 14px;margin-bottom:16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--admin-text-secondary)">
+          <span>Provider: <strong id="kyc-provider-sumsub">—</strong></span>
+          <span>Oldest pending: <strong id="kyc-oldest-pending">—</strong></span>
+          <span>Sanctions: <strong id="kyc-sanctions-health">—</strong></span>
+        </div>
+        <div class="admin-card" style="padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="queue-search" class="admin-input" placeholder="Search queue…" aria-label="Search KYC queue" style="max-width:220px" />
+          <select id="queue-filter-provider" class="admin-select" aria-label="Filter queue by provider">
+            <option value="">All providers</option>
+            <option value="sumsub">Sumsub</option>
+            <option value="didit">Didit</option>
+            <option value="manual">Manual</option>
+          </select>
+          <select id="queue-filter-risk" class="admin-select" aria-label="Filter queue by risk">
+            <option value="">All risk</option>
+            <option value="pep">PEP flagged</option>
+            <option value="sanctions">Sanctions hit</option>
+          </select>
+          <div id="kyc-views-list" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></div>
         </div>
 
         <!-- KPI Cards -->
@@ -99,6 +149,7 @@
             <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-warning)" id="kyc-pending">
               —
             </div>
+            <div class="admin-kpi-scope">Pending and in review</div>
           </div>
           <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="approved" title="Click to view approved records">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
@@ -114,6 +165,7 @@
             <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-success)" id="kyc-approved">
               —
             </div>
+            <div class="admin-kpi-scope">Approved records</div>
           </div>
           <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="rejected" title="Click to view rejected records">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
@@ -129,6 +181,7 @@
             <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-danger)" id="kyc-rejected">
               —
             </div>
+            <div class="admin-kpi-scope">Rejected records</div>
           </div>
           <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="pep" title="Click to view PEP flags">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
@@ -144,6 +197,7 @@
             <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-danger)" id="kyc-pep">
               —
             </div>
+            <div class="admin-kpi-scope">PEP review flags</div>
           </div>
           <div class="admin-kpi-card admin-kpi-card--clickable" style="padding: 16px" data-tab="expiring" title="Click to view records expiring soon">
             <div class="admin-kpi-header" style="margin-bottom: 8px">
@@ -159,6 +213,7 @@
             <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-warning)" id="kyc-expiring">
               —
             </div>
+            <div class="admin-kpi-scope">Approved, expiring soon</div>
           </div>
         </div>
 
@@ -351,6 +406,17 @@
           📁 View Documents
         </button>
       </div>
+      <div id="kyc-modal-audit" class="admin-card" style="padding:12px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--admin-text-primary);margin-bottom:8px">Audit trail</div>
+        <div id="kyc-modal-audit-list" style="font-size:12px;color:var(--admin-text-muted)">Loading…</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+        <select id="kyc-modal-assignee" class="admin-select" aria-label="Assign KYC review">
+          <option value="">Unassigned</option>
+          <option value="compliance">Compliance desk</option>
+        </select>
+        <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" id="kyc-modal-assign-btn">Assign</button>
+      </div>
       <div style="display: flex; gap: 8px; justify-content: flex-end">
         <button class="admin-btn admin-btn--secondary" id="kyc-modal-cancel">
           Cancel
@@ -369,6 +435,19 @@
           </svg>
           Approve
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="kyc-shortcuts-dialog" role="dialog" aria-modal="true" aria-labelledby="kyc-shortcuts-title" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,0.45);align-items:center;justify-content:center">
+    <div class="admin-card" style="width:min(420px,90vw);padding:20px">
+      <h3 id="kyc-shortcuts-title" style="margin:0 0 12px;color:var(--admin-text-primary)">Keyboard shortcuts</h3>
+      <div style="font-size:13px;color:var(--admin-text-secondary);display:grid;gap:8px">
+        <div><strong>R</strong> Review next</div>
+        <div><strong>/</strong> Search queue</div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <button type="button" class="admin-btn admin-btn--secondary" id="kyc-shortcuts-close">Close</button>
       </div>
     </div>
   </div>

@@ -5,8 +5,12 @@ Verifies that /p/:slug pages are accessible without authentication,
 do not redirect to login, and render correctly with images intact.
 """
 
+import os
+
 import pytest
 from playwright.sync_api import expect
+
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 
 BASE_SLUGS = [
     "sunset-luxury-villa",
@@ -28,7 +32,7 @@ def test_public_property_no_auth_redirect(quality_page):
     page, tracker = quality_page
     slug = "sunset-luxury-villa"
 
-    tracker.navigate_and_check(f"http://localhost:8888/p/{slug}")
+    tracker.navigate_and_check(f"{BASE_URL}/p/{slug}")
 
     # Must stay on the property page — not redirected to login
     assert "/auth/login" not in page.url, (
@@ -43,7 +47,7 @@ def test_public_property_no_auth_redirect(quality_page):
 def test_public_property_content_renders(quality_page):
     """Property title, price card and sign-up CTA are visible."""
     page, tracker = quality_page
-    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+    tracker.navigate_and_check(f"{BASE_URL}/p/sunset-luxury-villa")
 
     # Heading
     expect(page.locator("h1#property-title")).to_be_visible(timeout=8000)
@@ -64,10 +68,9 @@ def test_public_property_content_renders(quality_page):
 def test_public_property_images_load(quality_page):
     """No broken images on the public property page."""
     page, tracker = quality_page
-    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+    tracker.navigate_and_check(f"{BASE_URL}/p/sunset-luxury-villa")
 
-    # Give images time to load
-    page.wait_for_load_state("networkidle", timeout=10000)
+    expect(page.locator("img").first).to_be_visible(timeout=10000)
     tracker.assert_no_broken_images()
 
 
@@ -75,7 +78,7 @@ def test_public_property_images_load(quality_page):
 def test_all_landing_card_slugs_resolve(quality_page, slug):
     """Every landing page card slug returns a 200 and stays off login."""
     page, tracker = quality_page
-    response = tracker.navigate_and_check(f"http://localhost:8888/p/{slug}")
+    response = tracker.navigate_and_check(f"{BASE_URL}/p/{slug}")
 
     assert response is not None and response.status == 200, (
         f"/p/{slug} returned HTTP {response.status if response else 'no response'}"
@@ -88,7 +91,7 @@ def test_all_landing_card_slugs_resolve(quality_page, slug):
 def test_fully_funded_property_shows_sold_out(quality_page):
     """Fully-funded cards show 'sold out' CTA, not 'sign up to invest'."""
     page, tracker = quality_page
-    tracker.navigate_and_check("http://localhost:8888/p/beachfront-bungalow")
+    tracker.navigate_and_check(f"{BASE_URL}/p/beachfront-bungalow")
 
     cta = page.locator("#property-price-card .add-to-cart-btn")
     expect(cta).to_be_visible(timeout=8000)
@@ -100,7 +103,7 @@ def test_fully_funded_property_shows_sold_out(quality_page):
 def test_breadcrumb_links_back_to_landing(quality_page):
     """Breadcrumb 'Properties' link points to landing-v2 marketplace section."""
     page, tracker = quality_page
-    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+    tracker.navigate_and_check(f"{BASE_URL}/p/sunset-luxury-villa")
 
     breadcrumb = page.locator("#property-breadcrumbs a").first
     expect(breadcrumb).to_be_visible(timeout=5000)
@@ -114,8 +117,8 @@ def test_public_property_full_health(quality_page):
     """Full quality check: no JS errors, no HTTP failures, no broken images.
     401s on /api/me and /api/user/legal-status are expected for unauthenticated visits."""
     page, tracker = quality_page
-    tracker.navigate_and_check("http://localhost:8888/p/echo-beach-loft")
-    page.wait_for_load_state("networkidle", timeout=10000)
+    tracker.navigate_and_check(f"{BASE_URL}/p/echo-beach-loft")
+    expect(page.locator("h1#property-title")).to_be_visible(timeout=10000)
     tracker.assert_page_loaded()
     tracker.assert_no_critical_errors()
     tracker.assert_no_network_failures(ignore_status=[401, 404])
@@ -126,7 +129,7 @@ def test_public_property_mobile_gallery_dots_do_not_error(quality_page):
     """Mobile gallery dot taps should navigate without undefined JS handlers."""
     page, tracker = quality_page
     page.set_viewport_size({"width": 375, "height": 812})
-    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+    tracker.navigate_and_check(f"{BASE_URL}/p/sunset-luxury-villa")
 
     dots = page.locator(".mobile-gallery-dot")
     expect(dots.first).to_be_visible(timeout=8000)
@@ -140,7 +143,7 @@ def test_public_property_mobile_quick_amount_adds_once(quality_page):
     """Public mobile amount chips must add the displayed amount once."""
     page, tracker = quality_page
     page.set_viewport_size({"width": 375, "height": 812})
-    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+    tracker.navigate_and_check(f"{BASE_URL}/p/sunset-luxury-villa")
 
     amount_input = page.locator("#mobile-investment-amount")
     expect(amount_input).to_be_visible(timeout=8000)
@@ -155,7 +158,7 @@ def test_public_property_contact_and_tour_controls_are_real_or_hidden(quality_pa
     """Public lead-capture controls should not expose fake/dead actions."""
     page, tracker = quality_page
     page.set_viewport_size({"width": 375, "height": 812})
-    tracker.navigate_and_check("http://localhost:8888/p/sunset-luxury-villa")
+    tracker.navigate_and_check(f"{BASE_URL}/p/sunset-luxury-villa")
 
     contact = page.locator(".contact-button.chat-button").first
     expect(contact).to_be_visible(timeout=8000)

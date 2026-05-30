@@ -86,8 +86,8 @@
 
   /* ── Force the inline .dad-grid (auto-fit minmax 360px) to single column ── */
   #developer-annual-data-body .dad-grid {
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
     gap: 16px !important;
     width: 100% !important;
   }

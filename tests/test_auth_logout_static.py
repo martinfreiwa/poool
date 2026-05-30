@@ -42,10 +42,10 @@ def test_logout_cookie_expiry_matches_root_session_cookie_attributes():
 
 
 def test_platform_logout_alias_supports_post_and_get_interstitial():
-    main = read("backend/src/main.rs")
+    app = read("backend/src/lib.rs")
 
-    assert '"/logout",' in main
-    assert "get(auth::routes::logout_page).post(auth::routes::logout)" in main
+    assert '"/logout",' in app
+    assert "get(auth::routes::logout_page).post(auth::routes::logout)" in app
 
 
 def test_shared_logout_controls_submit_post_with_csrf_fallback():

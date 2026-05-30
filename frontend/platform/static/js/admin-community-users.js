@@ -252,9 +252,11 @@
         return;
       }
 
-      setStatus(`${activeModerationTarget.displayName} ${activeModerationTarget.shouldBan ? "banned" : "unbanned"}.`);
+      const successMessage = `${activeModerationTarget.displayName} ${activeModerationTarget.shouldBan ? "banned" : "unbanned"}.`;
+      setStatus(successMessage);
       banDialog.close();
       await loadUsers();
+      setStatus(successMessage);
     } catch (error) {
       console.error(error);
       banDialogStatus.textContent = "Error connecting to server.";

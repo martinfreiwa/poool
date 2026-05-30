@@ -536,7 +536,7 @@ pub async fn api_admin_user_detail(
             String,
         ),
     >(
-        r#"SELECT id::text, method_type, brand, last_four, holder_name,
+        r#"SELECT id::text, method_type, brand, last4, account_name,
                   is_default, status, created_at::text
            FROM payment_methods WHERE user_id = $1
            ORDER BY is_default DESC, created_at DESC"#,

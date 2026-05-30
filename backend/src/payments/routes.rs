@@ -49,6 +49,15 @@ fn should_use_test_bank_details(email: &str) -> bool {
     )
 }
 
+fn sidebar_user_display_name(email: &str) -> String {
+    email
+        .split('@')
+        .next()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or("User")
+        .to_string()
+}
+
 fn bank_details_for_user(email: &str) -> (serde_json::Value, serde_json::Value) {
     let (usd_raw, idr_raw) = if should_use_test_bank_details(email) {
         (
@@ -587,9 +596,13 @@ pub async fn checkout_page(
         wallet_json => wallet_json,
         bank_json => bank_json,
         is_referral_user => is_referral_user,
+        is_developer => false,
+        user_display_name => sidebar_user_display_name(&user.email),
+        user => user.clone(),
     }) {
         Ok(content) => content,
-        Err(_) => {
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to render checkout page");
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 Html("<h1>Internal Server Error</h1>".to_string()),
@@ -839,14 +852,28 @@ pub async fn handle_checkout(
                                         proof_url = Some(url);
                                     }
                                     Err(e) => {
-                                        tracing::error!(
-                                            user_id = %user.id,
-                                            bucket = %bucket,
-                                            path = %object_path,
-                                            error = %e,
-                                            "GCS upload failed for proof of transfer"
-                                        );
-                                        proof_upload_failed = true;
+                                        if app_env_allows_local_upload_placeholder(
+                                            &state.config.app_env,
+                                        ) {
+                                            tracing::warn!(
+                                                user_id = %user.id,
+                                                bucket = %bucket,
+                                                path = %object_path,
+                                                error = %e,
+                                                app_env = %state.config.app_env,
+                                                "GCS upload failed for proof of transfer; using local-only proof placeholder"
+                                            );
+                                            proof_url = Some(local_test_proof_url(user.id, &name));
+                                        } else {
+                                            tracing::error!(
+                                                user_id = %user.id,
+                                                bucket = %bucket,
+                                                path = %object_path,
+                                                error = %e,
+                                                "GCS upload failed for proof of transfer"
+                                            );
+                                            proof_upload_failed = true;
+                                        }
                                     }
                                 }
                             }

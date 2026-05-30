@@ -92,6 +92,11 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                       </button>
                     </th>
                     <th>
+                      <button type="button" class="developer-assets-table__sort" data-dev-sort="status">
+                        <span class="table__header-text">Status</span>
+                      </button>
+                    </th>
+                    <th>
                       <button type="button" class="developer-assets-table__sort" data-dev-sort="funding">
                         <span class="table__header-text">Funding</span>
                       </button>
@@ -99,6 +104,11 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                     <th>
                       <button type="button" class="developer-assets-table__sort" data-dev-sort="value">
                         <span class="table__header-text">Value</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" class="developer-assets-table__sort" data-dev-sort="duration">
+                        <span class="table__header-text">Duration</span>
                       </button>
                     </th>
                     <th>
@@ -144,11 +154,16 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                         <img class="dev-assets-thumb" src="{{ asset.cover_image_url }}" alt="">
                         <div class="dev-assets-asset__text">
                           <strong>{{ asset.title }}</strong>
+                          <span class="dev-assets-location-line">
+                            {% if asset.city %}{{ asset.city }}{% endif %}{% if asset.country %}{% if asset.city %}, {% endif %}{{ asset.country }}{% endif %}
+                          </span>
                         </div>
                       </div>
                     </td>
+                    <td><span class="table__cell-text-value">{{ funding_status_label }}</span></td>
                     <td><span class="table__cell-text-value">{{ (funded_percentage | round(1)) }}%</span></td>
                     <td><span class="table__cell-text-value">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</span></td>
+                    <td><span class="table__cell-text-value">{% if asset.lease_term_years %}{{ asset.lease_term_years }} yrs{% else %}N/A{% endif %}</span></td>
                     <td><span class="table__cell-text-value">{{ asset.total_sales_display }}</span></td>
                     <td class="dev-assets-table__actions">
                       <div class="developer-assets-table__action-group">
@@ -169,7 +184,7 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
                   </tr>
                   {% endfor %}
                   <tr id="dev-assets-empty-row" class="dev-assets-empty-row" hidden>
-                    <td colspan="5">
+                    <td colspan="7">
                       <div class="dev-assets-empty-row__content">
                         <strong>No assets match your filters</strong>
                         <span>Adjust the search or switch status tabs.</span>

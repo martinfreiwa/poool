@@ -35,11 +35,21 @@ def run_legal_tests():
     
     pages = [
         "/terms",
+        "/legal/terms",
         "/privacy-policy",
+        "/privacy",
+        "/legal/privacy",
         "/imprint",
+        "/legal/imprint",
         "/aml-kyc-policy",
+        "/legal/aml-kyc-policy",
         "/currency-policy",
-        "/cookies"
+        "/legal/currency",
+        "/legal/currency-policy",
+        "/cookies",
+        "/legal/cookies",
+        "/gdpr-data-request",
+        "/legal/gdpr-data-request",
     ]
     
     for page in pages:
@@ -47,6 +57,11 @@ def run_legal_tests():
         results.check(f"GET {page}", resp.status_code == 200, f"Status: {resp.status_code}")
         if resp.status_code == 200:
              results.check(f"Content Check {page}", "<html" in resp.text.lower(), "Missing HTML output")
+             results.check(
+                 f"Not Found Template Check {page}",
+                 "404 page not found" not in resp.text.lower(),
+                 "Rendered 404 template",
+             )
         
     return results
 

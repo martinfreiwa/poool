@@ -480,15 +480,23 @@
 
         const dataIcon =
           opt.getAttribute("data-icon") || opt.getAttribute("data-flag");
-        const iconHtml = dataIcon
-          ? `<span class="poool-dropdown__option-icon">${dataIcon}</span>`
-          : "";
 
-        optionEl.innerHTML = `
-          ${iconHtml}
-          <span class="poool-dropdown__option-text">${opt.textContent}</span>
-          <span class="poool-dropdown__check">${CHECK_SVG}</span>
-        `;
+        if (dataIcon) {
+          const iconEl = document.createElement("span");
+          iconEl.className = "poool-dropdown__option-icon";
+          iconEl.textContent = dataIcon;
+          optionEl.appendChild(iconEl);
+        }
+
+        const textEl = document.createElement("span");
+        textEl.className = "poool-dropdown__option-text";
+        textEl.textContent = opt.textContent;
+        optionEl.appendChild(textEl);
+
+        const checkEl = document.createElement("span");
+        checkEl.className = "poool-dropdown__check";
+        checkEl.innerHTML = CHECK_SVG;
+        optionEl.appendChild(checkEl);
 
         panel.appendChild(optionEl);
       });

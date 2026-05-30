@@ -14348,14 +14348,27 @@ async fn submit_ban_appeal(
         ));
     }
 
-    sqlx::query("INSERT INTO ban_appeals (user_id, appeal_text) VALUES ($1, $2)")
-        .bind(user.id)
-        .bind(payload.appeal_text)
-        .execute(&c_pool)
-        .await?;
+    let appeal_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO ban_appeals (user_id, appeal_text) VALUES ($1, $2) RETURNING id",
+    )
+    .bind(user.id)
+    .bind(payload.appeal_text)
+    .fetch_one(&c_pool)
+    .await?;
+
+    crate::community::audit::log(
+        &c_pool,
+        user.id,
+        "appeal.submit",
+        "ban_appeal",
+        Some(appeal_id),
+        Some(user.id),
+        Some(serde_json::json!({"status": "pending"})),
+    )
+    .await;
 
     Ok(Json(
-        serde_json::json!({"success": true, "message": "Appeal submitted successfully."}),
+        serde_json::json!({"success": true, "id": appeal_id, "message": "Appeal submitted successfully."}),
     ))
 }
 
@@ -14418,8 +14431,6 @@ async fn review_ban_appeal(
     Path(appeal_id): Path<Uuid>,
     Json(payload): Json<models::AdminReviewAppealReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    // Unused admin variable
-    let _a = admin;
     let c_pool = get_community_pool(&state)?;
 
     let status = match payload.action.as_str() {
@@ -14480,6 +14491,24 @@ async fn review_ban_appeal(
     }
 
     tx.commit().await.map_err(AppError::Database)?;
+
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        if status == "approved" {
+            "appeal.approve"
+        } else {
+            "appeal.reject"
+        },
+        "ban_appeal",
+        Some(appeal_id),
+        Some(user_id),
+        Some(serde_json::json!({
+            "status": status,
+            "admin_notes": payload.admin_notes,
+        })),
+    )
+    .await;
 
     Ok(Json(serde_json::json!({"success": true, "status": status})))
 }

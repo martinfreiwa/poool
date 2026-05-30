@@ -41,6 +41,18 @@ function showError(message) {
     }
   }
 
+  function getCsrfToken() {
+    const value = `; ${document.cookie || ""}`;
+    const parts = value.split("; csrf_token=");
+    if (parts.length !== 2) return "";
+    return decodeURIComponent(parts.pop().split(";").shift() || "");
+  }
+
+  function csrfHeaders(headers) {
+    const token = getCsrfToken();
+    return token ? { ...headers, "X-CSRF-Token": token } : headers;
+  }
+
   function formatDateTime(value, options) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "-";
@@ -246,7 +258,7 @@ function showError(message) {
     try {
       const response = await fetch(`/api/admin/community/comments/${encodeURIComponent(comment.id)}/hide`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         credentials: "same-origin",
         body: JSON.stringify({ reason: "Admin hide" }),
       });
@@ -270,6 +282,7 @@ function showError(message) {
     try {
       const response = await fetch(`/api/admin/community/comments/${encodeURIComponent(comment.id)}`, {
         method: "DELETE",
+        headers: csrfHeaders({}),
         credentials: "same-origin",
       });
 

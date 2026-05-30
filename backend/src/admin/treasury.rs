@@ -465,18 +465,24 @@ pub async fn api_admin_dividends_execute_distribution(
         }))
         .into_response()),
         Err(e) => {
-            tracing::error!(
-                "[P0-FINANCIAL] Dividend execution failed for {}: {}",
-                dist_id,
-                e
-            );
-            if e.starts_with("DB ")
+            let is_internal_failure = e.starts_with("DB ")
                 || e.starts_with("TX ")
                 || e.starts_with("Wallet credit failed")
-                || e.starts_with("[P0-FINANCIAL]")
-            {
+                || e.starts_with("[P0-FINANCIAL]");
+
+            if is_internal_failure {
+                tracing::error!(
+                    "[P0-FINANCIAL] Dividend execution failed for {}: {}",
+                    dist_id,
+                    e
+                );
                 Err(ApiError::Internal(format!("Distribution failed: {}", e)))
             } else {
+                tracing::warn!(
+                    "Dividend execution rejected for {} by business rule: {}",
+                    dist_id,
+                    e
+                );
                 Err(ApiError::BadRequest(format!("Distribution failed: {}", e)))
             }
         }

@@ -479,6 +479,21 @@ body.admin-sidebar-collapsed .admin-main {
   flex-direction: column;
 }
 
+@media (max-width: 768px) {
+  .admin-sidebar,
+  body.admin-sidebar-collapsed .admin-sidebar {
+    display: none;
+    pointer-events: none;
+  }
+
+  .admin-main,
+  body.admin-sidebar-collapsed .admin-main {
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 /* ===========================
    Top Bar
    =========================== */

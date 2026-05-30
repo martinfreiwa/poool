@@ -55,64 +55,183 @@ def _seed_affiliate_referrals_fixture():
             "UPDATE users SET email = %s WHERE id = %s",
             (hostile_email, referred_payable["user_id"]),
         )
+        cur.execute(
+            """
+            INSERT INTO affiliate_links (
+                code, link_type, attribution_user_id, payout_user_id, status
+            )
+            VALUES (%s, 'personal', %s, %s, 'active')
+            RETURNING id
+            """,
+            (referral_code, affiliate["user_id"], affiliate["user_id"]),
+        )
+        link_id = cur.fetchone()[0]
+        asset_slug = f"e2e-affiliate-referrals-{uuid.uuid4().hex[:10]}"
+        cur.execute(
+            """
+            INSERT INTO assets (
+                title, slug, asset_type, total_value_cents, token_price_cents,
+                tokens_total, tokens_available, funding_status, published
+            )
+            VALUES (%s, %s, 'real_estate', 10000000, 10000, 1000, 900, 'funding_open', true)
+            RETURNING id
+            """,
+            (f"E2E Affiliate Referrals {asset_slug}", asset_slug),
+        )
+        asset_id = cur.fetchone()[0]
+        cur.execute(
+            """
+            INSERT INTO investments (
+                user_id, asset_id, tokens_owned, purchase_value_cents, current_value_cents
+            )
+            VALUES (%s, %s, 10, 100000, 100000)
+            RETURNING id
+            """,
+            (referred_payable["user_id"], asset_id),
+        )
+        payable_investment_id = cur.fetchone()[0]
+        cur.execute(
+            """
+            INSERT INTO orders (user_id, order_number, total_cents, status, payment_method)
+            VALUES (%s, %s, 100000, 'completed', 'wallet')
+            RETURNING id
+            """,
+            (referred_payable["user_id"], f"E2E-AFF-PAYABLE-{uuid.uuid4().hex[:10]}"),
+        )
+        payable_order_id = cur.fetchone()[0]
+        cur.execute(
+            """
+            INSERT INTO order_items (
+                order_id, asset_id, tokens_quantity, token_price_cents, subtotal_cents
+            )
+            VALUES (%s, %s, 10, 10000, 100000)
+            """,
+            (payable_order_id, asset_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO investments (
+                user_id, asset_id, tokens_owned, purchase_value_cents, current_value_cents
+            )
+            VALUES (%s, %s, 20, 200000, 200000)
+            RETURNING id
+            """,
+            (referred_paid["user_id"], asset_id),
+        )
+        paid_investment_id = cur.fetchone()[0]
+        cur.execute(
+            """
+            INSERT INTO orders (user_id, order_number, total_cents, status, payment_method)
+            VALUES (%s, %s, 200000, 'completed', 'wallet')
+            RETURNING id
+            """,
+            (referred_paid["user_id"], f"E2E-AFF-PAID-{uuid.uuid4().hex[:10]}"),
+        )
+        paid_order_id = cur.fetchone()[0]
+        cur.execute(
+            """
+            INSERT INTO order_items (
+                order_id, asset_id, tokens_quantity, token_price_cents, subtotal_cents
+            )
+            VALUES (%s, %s, 20, 10000, 200000)
+            """,
+            (paid_order_id, asset_id),
+        )
 
         cur.execute(
             """
             INSERT INTO affiliate_referrals (
-                affiliate_id, referred_user_id, status, holdback_expires_at, sub_id, utm_source
+                affiliate_id, referred_user_id, link_id, attribution_user_id, payout_user_id,
+                status, holdback_expires_at, sub_id, utm_source
             )
-            VALUES (%s, %s, 'under_holdback', NOW() + INTERVAL '14 days', 'holdback-campaign', 'e2e')
+            VALUES (%s, %s, %s, %s, %s, 'under_holdback', NOW() + INTERVAL '14 days', 'holdback-campaign', 'e2e')
             RETURNING id
             """,
-            (affiliate["user_id"], referred_holdback["user_id"]),
+            (
+                affiliate["user_id"],
+                referred_holdback["user_id"],
+                link_id,
+                affiliate["user_id"],
+                affiliate["user_id"],
+            ),
         )
         holdback_referral_id = cur.fetchone()[0]
 
         cur.execute(
             """
             INSERT INTO affiliate_referrals (
-                affiliate_id, referred_user_id, status, sub_id, utm_source
+                affiliate_id, referred_user_id, link_id, attribution_user_id, payout_user_id,
+                status, sub_id, utm_source
             )
-            VALUES (%s, %s, 'qualified', 'payable,campaign', 'e2e')
+            VALUES (%s, %s, %s, %s, %s, 'qualified', 'payable,campaign', 'e2e')
             RETURNING id
             """,
-            (affiliate["user_id"], referred_payable["user_id"]),
+            (
+                affiliate["user_id"],
+                referred_payable["user_id"],
+                link_id,
+                affiliate["user_id"],
+                affiliate["user_id"],
+            ),
         )
         payable_referral_id = cur.fetchone()[0]
 
         cur.execute(
             """
             INSERT INTO affiliate_referrals (
-                affiliate_id, referred_user_id, status, sub_id, utm_source
+                affiliate_id, referred_user_id, link_id, attribution_user_id, payout_user_id,
+                status, sub_id, utm_source
             )
-            VALUES (%s, %s, 'paid', 'paid-campaign', 'e2e')
+            VALUES (%s, %s, %s, %s, %s, 'paid', 'paid-campaign', 'e2e')
             RETURNING id
             """,
-            (affiliate["user_id"], referred_paid["user_id"]),
+            (
+                affiliate["user_id"],
+                referred_paid["user_id"],
+                link_id,
+                affiliate["user_id"],
+                affiliate["user_id"],
+            ),
         )
         paid_referral_id = cur.fetchone()[0]
 
         cur.execute(
             """
             INSERT INTO affiliate_commissions (
-                referral_id, affiliate_id, source_order_id, provisional_amount_cents, status, tier_at_execution
+                referral_id, affiliate_id, link_id, attribution_user_id, payout_user_id,
+                source_order_id, provisional_amount_cents, status, tier_at_execution
             )
-            VALUES (%s, %s, %s, 7500, 'payable', 'Access')
+            VALUES (%s, %s, %s, %s, %s, %s, 7500, 'payable', 'Access')
             RETURNING id
             """,
-            (payable_referral_id, affiliate["user_id"], str(uuid.uuid4())),
+            (
+                payable_referral_id,
+                affiliate["user_id"],
+                link_id,
+                affiliate["user_id"],
+                affiliate["user_id"],
+                payable_order_id,
+            ),
         )
         payable_commission_id = cur.fetchone()[0]
 
         cur.execute(
             """
             INSERT INTO affiliate_commissions (
-                referral_id, affiliate_id, source_order_id, provisional_amount_cents, status, tier_at_execution
+                referral_id, affiliate_id, link_id, attribution_user_id, payout_user_id,
+                source_order_id, provisional_amount_cents, status, tier_at_execution
             )
-            VALUES (%s, %s, %s, 12500, 'paid', 'Access')
+            VALUES (%s, %s, %s, %s, %s, %s, 12500, 'paid', 'Access')
             RETURNING id
             """,
-            (paid_referral_id, affiliate["user_id"], str(uuid.uuid4())),
+            (
+                paid_referral_id,
+                affiliate["user_id"],
+                link_id,
+                affiliate["user_id"],
+                affiliate["user_id"],
+                paid_order_id,
+            ),
         )
         paid_commission_id = cur.fetchone()[0]
 
@@ -122,6 +241,10 @@ def _seed_affiliate_referrals_fixture():
             "referred_users": [referred_holdback, referred_payable, referred_paid],
             "referral_ids": [holdback_referral_id, payable_referral_id, paid_referral_id],
             "commission_ids": [payable_commission_id, paid_commission_id],
+            "investment_ids": [payable_investment_id, paid_investment_id],
+            "order_ids": [payable_order_id, paid_order_id],
+            "asset_id": asset_id,
+            "link_id": link_id,
             "hostile_email": hostile_email,
         }
     finally:
@@ -136,6 +259,11 @@ def _cleanup_affiliate_referrals_fixture(fixture):
         affiliate_id = fixture["affiliate"]["user_id"]
         cur.execute("DELETE FROM affiliate_commissions WHERE affiliate_id = %s", (affiliate_id,))
         cur.execute("DELETE FROM affiliate_referrals WHERE affiliate_id = %s", (affiliate_id,))
+        cur.execute("DELETE FROM investments WHERE id = ANY(%s::uuid[])", (fixture["investment_ids"],))
+        cur.execute("DELETE FROM order_items WHERE order_id = ANY(%s::uuid[])", (fixture["order_ids"],))
+        cur.execute("DELETE FROM orders WHERE id = ANY(%s::uuid[])", (fixture["order_ids"],))
+        cur.execute("DELETE FROM assets WHERE id = %s", (fixture["asset_id"],))
+        cur.execute("DELETE FROM affiliate_links WHERE id = %s", (fixture["link_id"],))
         cur.execute("DELETE FROM affiliates WHERE user_id = %s", (affiliate_id,))
         conn.commit()
     finally:
@@ -217,8 +345,9 @@ def test_affiliate_referrals_redirects_inactive_affiliates(quality_page):
 
         attach_session_cookie(page.context, user["session_token"])
         tracker.navigate_and_check(f"{BASE_URL}/affiliate/referrals")
-        page.wait_for_url("**/affiliate/onboarding", timeout=10000)
-        assert "/affiliate/onboarding" in page.url
+        if "/affiliate/dashboard" not in page.url:
+            page.wait_for_url("**/affiliate/dashboard", timeout=10000)
+        assert "/affiliate/dashboard" in page.url
     finally:
         try:
             cur.execute("DELETE FROM affiliates WHERE user_id = %s", (user["user_id"],))

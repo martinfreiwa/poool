@@ -51,3 +51,42 @@ pub async fn page_cookies(jar: CookieJar, State(state): State<AppState>) -> impl
     )
     .await
 }
+
+/// GET /imprint  Legal imprint / Impressum.
+pub async fn page_imprint(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "imprint.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /gdpr-data-request  GDPR data request form.
+pub async fn page_gdpr_data_request(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "gdpr-data-request.html",
+        serde_json::json!({}),
+    )
+    .await
+}
+
+/// GET /aml-kyc-policy  AML/KYC policy.
+pub async fn page_aml_kyc_policy(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_public_with_context(
+        jar,
+        &state,
+        "aml-kyc-policy.html",
+        serde_json::json!({}),
+    )
+    .await
+}

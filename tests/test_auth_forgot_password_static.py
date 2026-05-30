@@ -20,7 +20,7 @@ def test_forgot_password_backend_uses_html_errors_and_delivery_guard():
     service = (ROOT / "backend/src/auth/service.rs").read_text()
     email = (ROOT / "backend/src/common/email.rs").read_text()
     csrf = (ROOT / "backend/src/auth/csrf.rs").read_text()
-    main = (ROOT / "backend/src/main.rs").read_text()
+    app = (ROOT / "backend/src/lib.rs").read_text()
     migration = (ROOT / "database/091_password_reset_email_outbox.sql").read_text()
 
     assert "wait_for_password_reset_response_floor" in routes
@@ -36,5 +36,5 @@ def test_forgot_password_backend_uses_html_errors_and_delivery_guard():
     assert "prt.expires_at > NOW()" in email
     assert 'env.eq_ignore_ascii_case("production")' in email
     assert "Security check failed. Please refresh the page and try again." in csrf
-    assert "run_transactional_email_outbox_worker" in main
+    assert "run_transactional_email_outbox_worker" in app
     assert "CREATE TABLE IF NOT EXISTS password_reset_email_outbox" in migration

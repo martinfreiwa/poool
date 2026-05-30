@@ -20,6 +20,7 @@ from community_helpers import (
     make_context,
     cleanup_user,
     seed_poll,
+    comm_conn,
 )
 
 
@@ -54,6 +55,15 @@ def _open_feed_and_wait_for_poll(playwright_session, user, post_id):
         state="visible", timeout=10000
     )
     return ctx, page, errors
+
+
+def _csrf_headers(context):
+    token = next(
+        (cookie["value"] for cookie in context.cookies() if cookie["name"] == "csrf_token"),
+        None,
+    )
+    assert token, "Expected csrf_token cookie after opening community page"
+    return {"X-CSRF-Token": token}
 
 
 # ─── Tests ─────────────────────────────────────────────────────────────
@@ -112,6 +122,131 @@ def test_poll_vote_click_marks_option_voted(playwright_session, voter_with_poll)
             "  } return false; }"
         )
         page.wait_for_function(js, timeout=5000)
+
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        ctx.close()
+
+
+@pytest.mark.community
+def test_poll_single_choice_vote_replaces_previous_vote(playwright_session, voter_with_poll):
+    """A single-choice poll moves the user's vote instead of accumulating two votes."""
+    user, poll = voter_with_poll
+    ctx, page, errors = _open_feed_and_wait_for_poll(
+        playwright_session, user, poll["post_id"]
+    )
+    try:
+        post_id = poll["post_id"]
+        container = page.locator(f"#poll-container-{post_id}")
+        alpha = container.locator(".poll-option").filter(has_text="Alpha").first
+        charlie = container.locator(".poll-option").filter(has_text="Charlie").first
+
+        with page.expect_response(
+            lambda r: "/poll/vote" in r.url and r.request.method == "POST",
+            timeout=10000,
+        ) as first_vote:
+            alpha.click()
+        assert first_vote.value.status == 200
+        page.wait_for_function(
+            f"""() => Array.from(document.querySelectorAll('#poll-container-{post_id} .poll-option'))
+                .some((option) => option.textContent.includes('Alpha') && option.classList.contains('voted'))""",
+            timeout=5000,
+        )
+
+        with page.expect_response(
+            lambda r: "/poll/vote" in r.url and r.request.method == "POST",
+            timeout=10000,
+        ) as second_vote:
+            charlie.click()
+        assert second_vote.value.status == 200
+        page.wait_for_function(
+            f"""() => {{
+                const options = Array.from(document.querySelectorAll('#poll-container-{post_id} .poll-option'));
+                const alpha = options.find((option) => option.textContent.includes('Alpha'));
+                const charlie = options.find((option) => option.textContent.includes('Charlie'));
+                return alpha && charlie && !alpha.classList.contains('voted') && charlie.classList.contains('voted');
+            }}""",
+            timeout=5000,
+        )
+
+        conn = comm_conn()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT COUNT(*), COUNT(DISTINCT option_id) FROM poll_votes WHERE poll_id = %s AND user_id = %s",
+                (poll["poll_id"], user["user_id"]),
+            )
+            assert cur.fetchone() == (1, 1)
+        finally:
+            conn.close()
+
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        ctx.close()
+
+
+@pytest.mark.community
+def test_poll_expired_state_blocks_ui_and_api_votes(playwright_session, voter_with_poll):
+    """Expired polls render disabled options and the vote endpoint rejects attempts."""
+    user, poll = voter_with_poll
+    conn = comm_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE polls SET expires_at = NOW() - INTERVAL '1 hour' WHERE id = %s",
+            (poll["poll_id"],),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    ctx, page, errors = _open_feed_and_wait_for_poll(
+        playwright_session, user, poll["post_id"]
+    )
+    try:
+        post_id = poll["post_id"]
+        container = page.locator(f"#poll-container-{post_id}")
+        expect(container).to_contain_text("Poll ended", timeout=5000)
+        assert container.locator(".poll-option:disabled").count() == 3
+
+        alpha = container.locator(".poll-option").filter(has_text="Alpha").first
+        alpha.click(force=True)
+        page.wait_for_timeout(300)
+        assert not alpha.evaluate("(el) => el.classList.contains('voted')")
+
+        rejected = page.request.post(
+            f"{BASE_URL}/api/community/posts/{post_id}/poll/vote",
+            headers={**_csrf_headers(ctx), "Content-Type": "application/json"},
+            data={"option_id": poll["option_ids"][0]},
+        )
+        assert rejected.status == 400
+        assert "expired" in rejected.text().lower()
+
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        ctx.close()
+
+
+@pytest.mark.community
+def test_poll_rejects_option_from_another_poll(playwright_session, voter_with_poll):
+    """The vote endpoint refuses an option id that belongs to a different poll."""
+    user, poll = voter_with_poll
+    other_poll = seed_poll(
+        user["user_id"],
+        question="UI test — unrelated poll?",
+        options=["Outside option", "Another outside option"],
+    )
+    ctx, page, errors = _open_feed_and_wait_for_poll(
+        playwright_session, user, poll["post_id"]
+    )
+    try:
+        rejected = page.request.post(
+            f"{BASE_URL}/api/community/posts/{poll['post_id']}/poll/vote",
+            headers={**_csrf_headers(ctx), "Content-Type": "application/json"},
+            data={"option_id": other_poll["option_ids"][0]},
+        )
+        assert rejected.status == 400
+        assert "invalid poll option" in rejected.text().lower()
 
         assert not errors, f"JS errors: {errors[:5]}"
     finally:

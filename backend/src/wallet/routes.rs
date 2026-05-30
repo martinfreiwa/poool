@@ -229,7 +229,7 @@ fn build_payment_method_html(
 
     for pm in pms {
         let label = pm.label.clone().unwrap_or_else(|| {
-            if pm.method_type == "bank" {
+            if pm.method_type == "bank" || pm.method_type == "bank_account" {
                 pm.brand
                     .clone()
                     .unwrap_or_else(|| "Bank Account".to_string())
@@ -1658,7 +1658,7 @@ pub async fn handle_withdraw(
                         tokio::spawn(async move {
                             let destination = if let Some(pmid) = pm_uuid_owned {
                                 sqlx::query_scalar::<_, Option<String>>(
-                                    "SELECT label FROM payment_methods WHERE id = $1",
+                                    "SELECT COALESCE(brand, 'Bank Account') || COALESCE(' ending in ' || NULLIF(last4, ''), '') FROM payment_methods WHERE id = $1",
                                 )
                                 .bind(pmid)
                                 .fetch_optional(&db_clone)
@@ -2543,7 +2543,15 @@ async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDe
                         if let Some(pid) = pm_id {
                             // Look up payment method label for the destination
                             if let Ok(Some(pm)) = sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>, String)>(
-                                "SELECT label, brand, last_four, method_type FROM payment_methods WHERE id = $1 AND user_id = $2"
+                                "SELECT
+                                    CASE
+                                        WHEN method_type = 'bank_account' THEN COALESCE(brand, 'Bank Account') || COALESCE(' ending in ' || NULLIF(last4, ''), '')
+                                        ELSE COALESCE(brand, 'Card') || COALESCE(' ending in ' || NULLIF(last4, ''), '')
+                                    END AS label,
+                                    brand,
+                                    last4,
+                                    method_type
+                                 FROM payment_methods WHERE id = $1 AND user_id = $2"
                             )
                             .bind(pid)
                             .bind(row.user_id)
@@ -2552,7 +2560,7 @@ async fn build_detail_context(pool: &sqlx::PgPool, row: &TxRow) -> TransactionDe
                             {
                                 let (label, brand, last4, method_type) = pm;
                                 let dest = label.unwrap_or_else(|| {
-                                    if method_type == "bank" {
+                                    if method_type == "bank" || method_type == "bank_account" {
                                         brand.unwrap_or_else(|| "Bank Account".to_string())
                                     } else {
                                         format!(

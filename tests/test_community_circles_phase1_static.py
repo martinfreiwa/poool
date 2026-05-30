@@ -69,3 +69,31 @@ def test_circle_frontend_posts_to_circle_endpoint_when_context_exists():
     assert "circle_id: circleContext ? circleContext.id : null" in js
     assert "New Circle · Be the first to post" in partial
     assert "{% if current_circle_id %}&circle_id={{ current_circle_id }}{% endif %}" in partial
+    assert 'hx-include="this"' in partial
+
+
+def test_feed_owner_post_delete_uses_automatable_modal():
+    page = read("frontend/platform/community.html")
+    js = read("frontend/platform/static/js/community-feed.js")
+
+    for token in [
+        "delete-post-modal",
+        "delete-post-title",
+        "delete-post-desc",
+        "delete-post-id",
+        "delete-post-error",
+        "delete-post-confirm-btn",
+        "This permanently deletes the post",
+    ]:
+        assert token in page
+
+    for token in [
+        "window.deleteOwnPost = function",
+        "window.submitDeletePost = async function",
+        "delete-post-confirm-btn",
+        "window.openCommunityModal('delete-post-modal')",
+        "window.closeCommunityModal('delete-post-modal')",
+    ]:
+        assert token in js
+
+    assert "confirm('Delete this post? This cannot be undone.')" not in js

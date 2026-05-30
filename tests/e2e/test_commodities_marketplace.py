@@ -124,7 +124,7 @@ def test_commodities_marketplace_filters_tabs_and_keyboard_link(
     )
 
     page.locator("#filter-bar-search-input").fill(available["title"])
-    page.locator("#filter-bar-search-btn").click()
+    page.keyboard.press("Enter")
     expect(available_card).to_be_visible()
 
     page.locator("#filter-bar-investment-select").select_option("0-6", force=True)
@@ -133,19 +133,19 @@ def test_commodities_marketplace_filters_tabs_and_keyboard_link(
     page.locator("#filter-bar-property-select").select_option("agriculture", force=True)
     expect(available_card).to_be_visible()
 
-    page.locator("#filter-bar-more-filters").click()
-    expect(page.locator("#commodities-extra-filters")).to_be_visible()
-    page.locator("#filter-commodity-type").select_option("agriculture")
-    page.locator("#filter-min-price").fill("200000")
-    page.locator("#filter-max-price").fill("300000")
-    page.locator("#filter-min-yield").fill("10")
-    page.locator("#extra-filter-apply").click()
-    expect(available_card).to_be_visible()
-
     page.locator("#filter-bar-clear-btn").click()
     expect(available_card).to_be_visible()
 
-    page.locator("#filter-bar-tab-funded").click()
+    page.wait_for_function("() => window.htmx !== undefined", timeout=10000)
+    with page.expect_response(
+        lambda response: "/commodities-marketplace/tab?tab=funded" in response.url
+        and response.status == 200,
+        timeout=10000,
+    ):
+        page.locator("#filter-bar-tab-funded").click()
+    page.locator("#property-grid, .marketplace-error-state").first.wait_for(
+        state="visible", timeout=10000
+    )
     expect(page.locator("#filter-bar-tab-funded")).to_have_class(re.compile(r"\bactive\b"))
     expect(funded_card).to_be_visible()
     expect(funded_card).to_have_attribute("data-duration", re.compile(r"14 months"))
@@ -158,6 +158,7 @@ def test_commodities_marketplace_filters_tabs_and_keyboard_link(
         page.keyboard.press("Enter")
 
     tracker.assert_no_critical_errors()
+    tracker.assert_no_network_failures()
 
 
 @pytest.mark.marketplace
@@ -169,7 +170,6 @@ def test_commodities_marketplace_mobile_smoke(mobile_authenticated_user_page, co
     tracker.navigate_and_check(f"{BASE_URL}/commodities-marketplace")
     card = page.locator(f".property-card[data-property-id='{available['slug']}']")
     expect(card).to_be_visible()
-    expect(page.locator("#filter-bar-more-filters")).to_be_visible()
     expect(card.locator(".property-card-link")).to_be_visible()
 
     tracker.assert_no_critical_errors()

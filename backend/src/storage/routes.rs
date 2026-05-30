@@ -471,6 +471,14 @@ pub async fn upload_kyc_document(
     let bucket = state.config.gcs_bucket.clone();
 
     if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("kyc:upload:{}", user.id))
+        .await
+    {
+        return crate::error::AppError::RateLimited(retry_after).into_response();
+    }
+
+    if let Err(retry_after) = state
         .storage_rate_limiter
         .check(&format!("storage:kyc:{}", user.id))
         .await

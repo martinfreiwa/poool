@@ -126,7 +126,7 @@ def test_admin_marketplace_approvals_hold_release_audit_and_orderbook_visibility
     conn.autocommit = False
     cur = conn.cursor()
     try:
-        admin = create_user(cur, email_prefix="e2e-mp-admin", roles=("admin",))
+        admin = create_user(cur, email_prefix="e2e-mp-admin", roles=("admin", "super_admin"))
         buy_user = create_user(
             cur,
             email_prefix="e2e-mp-buy",

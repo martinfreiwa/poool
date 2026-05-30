@@ -78,7 +78,7 @@
       iconSvg = iconSvg.replace('stroke="currentColor"', 'stroke="' + iconStyle.stroke + '"');
 
       var overlay = document.createElement("div");
-      overlay.className = "ds-modal-overlay active";
+      overlay.className = "ds-modal-overlay pc-overlay active";
       overlay.setAttribute("role", "dialog");
       overlay.setAttribute("aria-modal", "true");
       overlay.setAttribute("aria-labelledby", "pc-title");
@@ -110,6 +110,10 @@
 
       function close(result) {
         document.removeEventListener("keydown", onKey);
+        confirmBtn.removeAttribute("id");
+        cancelBtn.removeAttribute("id");
+        overlay.removeAttribute("aria-labelledby");
+        overlay.setAttribute("aria-hidden", "true");
         overlay.classList.remove("active");
         setTimeout(function () {
           if (overlay.parentNode) overlay.parentNode.removeChild(overlay);

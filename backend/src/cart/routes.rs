@@ -22,6 +22,15 @@ fn html_e(s: &str) -> String {
         .replace('\'', "&#x27;")
 }
 
+fn sidebar_user_display_name(email: &str) -> String {
+    email
+        .split('@')
+        .next()
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or("Investor")
+        .to_string()
+}
+
 // ─── Form data ──────────────────────────────────────────────────
 
 /// Submitted by `property-detail-cart.js` when clicking "Add to Cart".
@@ -576,9 +585,14 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                 .into_response();
         }
     };
-    let html = match template.render(minijinja::context! {}) {
+    let html = match template.render(minijinja::context! {
+        user => user,
+        user_display_name => sidebar_user_display_name(&user.email),
+        is_developer => false,
+    }) {
         Ok(content) => content,
-        Err(_) => {
+        Err(e) => {
+            tracing::error!(error = %e, "Cart template rendering error");
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 Html("<h1>Internal Server Error</h1>".to_string()),

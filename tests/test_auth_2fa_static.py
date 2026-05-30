@@ -35,8 +35,9 @@ def test_2fa_template_handles_htmx_error_and_loading_states_locally():
 def test_2fa_route_uses_dedicated_rate_limit_buckets_and_html_errors():
     routes = read("backend/src/auth/routes.rs")
 
-    assert '.check(&format!("2fa:ip:{}"' in routes
-    assert '.check(&format!("2fa:user:{}"' in routes
+    assert ".check_dual(" in routes
+    assert '&format!("2fa:ip:{}"' in routes
+    assert '&format!("2fa:user:{}"' in routes
     assert 'Invalid authentication code.' in routes
     assert "return Ok(login_error_response(" in routes
     assert 'HeaderValue::from_static("/marketplace")' in routes

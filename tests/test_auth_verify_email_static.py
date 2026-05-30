@@ -50,7 +50,7 @@ def test_resend_requires_session_throttles_and_surfaces_failures():
     assert 'Verification email resent successfully!"' not in body
 
 
-def test_resend_token_creation_replaces_old_tokens_and_deletes_undelivered_token():
+def test_resend_token_creation_replaces_old_tokens_and_queues_durable_email():
     service = read("backend/src/auth/service.rs")
     body = function_body(
         service,
@@ -62,9 +62,11 @@ def test_resend_token_creation_replaces_old_tokens_and_deletes_undelivered_token
     assert "DELETE FROM email_verification_tokens WHERE user_id = $1" in body
     assert "INSERT INTO email_verification_tokens" in body
     assert "tx.commit().await?" in body
-    assert "send_email_verification(email, base_url, &token).await" in body
-    assert "DELETE FROM email_verification_tokens WHERE token_hash = $1" in body
-    assert "return Err(error);" in body
+    assert "transactional_email_outbox" in body
+    assert "'verify_email'" in body
+    assert "send_transactional_outbox_item(pool, id).await" in body
+    assert "DELETE FROM email_verification_tokens WHERE token_hash = $1" not in body
+    assert "return Err(error);" not in body
 
 
 def test_verify_email_template_has_accessible_feedback_and_loading_state():

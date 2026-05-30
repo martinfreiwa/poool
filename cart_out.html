@@ -3,9 +3,25 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+
+    <!-- PWA manifest + theme. Mirrors components/head.html so auth flows
+         remain installable; install button itself is hidden on /auth/*. -->
+    <link rel="manifest" href="/static/manifest.webmanifest" />
+    <meta name="theme-color" content="#001DCA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0b2e" media="(prefers-color-scheme: dark)" />
+    <meta name="application-name" content="POOOL" />
+    <link rel="apple-touch-icon" href="/static/images/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/images/icons/apple-touch-icon-152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/images/icons/apple-touch-icon-167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="POOOL" />
+
     <title>Login – POOOL</title>
     
     <meta name="description" content="Log in to your POOOL account to access the marketplace, manage your portfolio, and track your investments in real world assets." />
@@ -49,14 +65,16 @@
             }
         })();
     </script>
-    <script src="/static/js/vendor/htmx.min.js?v=1777363420"></script>
-    <script src="/static/js/toast.js?v=1777363420"></script>
+    <script src="/static/js/vendor/htmx.min.js?v=1780078439"></script>
+    <script src="/static/js/toast.js?v=1780078439"></script>
+    <script defer src="/static/js/auth-customer-carousel.js?v=1780078439"></script>
+    <script defer src="/static/js/pwa-install.js?v=1780078439"></script>
 
     <!-- Design tokens only (no dashboard CSS) -->
-    <link rel="stylesheet" href="/static/css/dashboard-tokens.css?v=1777363420" />
+    <link rel="stylesheet" href="/static/css/dashboard-tokens.css?v=1780078439" />
 
     <!-- Auth page CSS -->
-    <link rel="stylesheet" href="/static/css/login.css?v=1777363420" />
+    <link rel="stylesheet" href="/static/css/login.css?v=1780078439" />
 
     <!-- Reveal body once CSS is ready (required by dashboard-tokens.css anti-flicker rule) -->
     <script>
@@ -75,10 +93,12 @@
 </head>
 
 <body>
-  <a id="back-link" href="/">
+  
+  <a id="back-link" href="https://poool.app">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
     Back
   </a>
+  
   <div id="login-container">
     <section id="left-section">
       <div id="container">
@@ -90,7 +110,7 @@
             </div>
             <div id="text-and-supporting-text">
               <h1 id="text">Welcome back</h1>
-              <p id="supporting-text">Please enter your details</p>
+              <p id="supporting-text">Access your portfolio, wallet, and active ownership account.</p>
             </div>
           </div>
 
@@ -99,26 +119,28 @@
             
           </div>
 
+          
           <!-- Social login buttons -->
           <div id="social-buttons">
             <button id="google-button" class="social-button" onclick="window.location.href='/auth/google'">
               <div class="social-icon">
                 <img  src="/static/images/icons/social-google.svg" alt="Google" width="24" height="24">
               </div>
-              <span class="social-text">Log in with Google</span>
+              <span class="social-text">Continue with Google</span>
             </button>
           </div>
 
           <!-- Divider -->
           <div id="content-divider">
             <div id="divider-left"></div>
-            <span id="or-text">OR</span>
+            <span id="or-text">or log in with email</span>
             <div id="divider-right"></div>
           </div>
+          
 
           <!-- Login form -->
-          <form id="login-form" method="post" action="/auth/login" hx-post="/auth/login" hx-target="#auth-error" hx-swap="innerHTML">
-            <input type="hidden" id="csrf-token-input" name="csrf_token" value="2203e735-aee5-4988-bc86-7d5f805a61fe">
+          <form id="login-form" method="post" action="/auth/login" hx-post="/auth/login" hx-target="#auth-error" hx-swap="innerHTML" aria-busy="false">
+            <input type="hidden" id="csrf-token-input" name="csrf_token" value="47ef2fd5-5515-4225-9ebb-6b1b9881902f">
             <div class="input-field">
               <div class="input-with-label">
                 <label for="email-input" class="input-label">Email</label>
@@ -133,7 +155,7 @@
                 <label for="password-input" class="input-label">Password</label>
                 <div class="input-wrapper">
                   <input type="password" id="password-input" name="password" placeholder="Enter your password" required autocomplete="current-password">
-                  <button type="button" id="toggle-password" onclick="var i=document.getElementById('password-input');i.type=i.type==='password'?'text':'password';this.querySelector('.eye-off').style.display=i.type==='password'?'none':'block';this.querySelector('.eye-on').style.display=i.type==='password'?'block':'none';">
+                  <button type="button" id="toggle-password" aria-label="Show password" aria-pressed="false" onclick="var i=document.getElementById('password-input');var isHidden=i.type==='password';i.type=isHidden?'text':'password';this.setAttribute('aria-pressed', isHidden ? 'true' : 'false');this.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');this.querySelector('.eye-off').style.display=isHidden?'block':'none';this.querySelector('.eye-on').style.display=isHidden?'none':'block';">
                     <svg class="eye-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     <svg class="eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                   </button>
@@ -151,7 +173,7 @@
               </a>
             </div>
 
-            <button type="submit" id="login-button">
+            <button type="submit" id="login-button" aria-busy="false">
               <span id="button-text">Log in</span>
             </button>
           </form>
@@ -159,7 +181,9 @@
           <!-- Sign up link -->
           <div id="signup-row">
             <span id="signup-text">Don't have an account?</span>
+            
             <a href="/auth/signup" id="signup-link">
+            
               <span id="signup-link-text">Sign up</span>
             </a>
           </div>
@@ -168,42 +192,42 @@
     </section>
 
     <section id="right-section">
-      <div id="testimonial-container">
-        <img
-          id="testimonial-image"
-          src="/static/images/auth/indonesian-login-portrait.webp"
-          alt="Portrait of a POOOL investor"
-          width="1536"
-          height="1024"
-          fetchpriority="high"
-        >
-        <div id="quote-panel">
-          <div id="attribution-card">
-            <h2 id="testimonial-quote">"POOOL made my first real estate investment feel clear, local, and within reach."</h2>
-            <div id="name-and-stars">
-              <div id="text-and-supporting">
-                <span id="author-name">POOOL Investor</span>
-                <span id="author-company">Indonesia</span>
-              </div>
-              <div id="stars-container">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              </div>
-            </div>
-          </div>
-          <div id="arrows-container">
-            <button class="carousel-arrow" id="prev-arrow">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-            </button>
-            <button class="carousel-arrow" id="next-arrow">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      
+      <div class="auth-customer-carousel" data-auth-carousel aria-label="Customer stories">
+  <img
+    class="auth-customer-carousel__image"
+    data-auth-carousel-image
+    src="/static/images/auth/generated/customer-ardi.webp"
+    alt="POOOL customer portrait"
+    width="1536"
+    height="1024"
+    fetchpriority="high"
+  >
+  <div class="auth-customer-carousel__quote" aria-live="polite">
+    <div class="auth-customer-carousel__copy">
+      <div class="auth-customer-carousel__kicker">Customer story</div>
+      <blockquote data-auth-carousel-quote>"I always know what I am signing into: my wallet, my assets, and the next step."</blockquote>
+    </div>
+    <div class="auth-customer-carousel__person">
+      <strong data-auth-carousel-name>Ardi Pratama</strong>
+      <span>POOOL customer</span>
+    </div>
+  </div>
+  <div class="auth-customer-carousel__controls">
+    <button type="button" class="auth-customer-carousel__arrow" data-auth-carousel-prev aria-label="Previous customer story">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="auth-customer-carousel__dots" aria-label="Customer story pagination">
+      <button type="button" class="auth-customer-carousel__dot is-active" data-auth-carousel-dot aria-label="Show customer story 1"></button>
+      <button type="button" class="auth-customer-carousel__dot" data-auth-carousel-dot aria-label="Show customer story 2"></button>
+      <button type="button" class="auth-customer-carousel__dot" data-auth-carousel-dot aria-label="Show customer story 3"></button>
+    </div>
+    <button type="button" class="auth-customer-carousel__arrow" data-auth-carousel-next aria-label="Next customer story">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</div>
+      
     </section>
   </div>
 
@@ -219,55 +243,13 @@
       }
       var csrfInput = document.getElementById('csrf-token-input');
       if (csrfInput) {
-        csrfInput.value = decodeURIComponent(getCookie('csrf_token') || '');
+        var cookieToken = getCookie('csrf_token');
+        if (cookieToken) {
+          csrfInput.value = decodeURIComponent(cookieToken);
+        }
       }
     })();
 
-    var team = [
-      { img: '/static/images/auth/indonesian-login-portrait.webp', quote: 'POOOL made my first real estate investment feel clear, local, and within reach.', name: 'POOOL Investor', role: 'Indonesia' },
-      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'All my real estate experience was building up to this moment — launching <span class="highlight-green">POOOL</span>.', name: 'Jonas Freiwald',       role: 'Co-CEO, Founder' },
-      { img: '/webp/team/Dmitry Sikorski.webp',       quote: 'I know what it\'s like to build from zero. <span class="highlight-green">POOOL</span> gives that chance to anyone.', name: 'Dmitry Sikorski',       role: 'Co-CEO, Founder' },
-      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Before it was a rich man\'s game. <span class="highlight-green">POOOL</span> hacked the rules for everyone.', name: 'Nikita Kokhanevych',    role: 'CTO, Blockchain' },
-      { img: '/webp/team/Mykyta Hlukhuvskyi.webp',   quote: 'Investing in real estate is now simpler than ordering a taxi. That\'s <span class="highlight-green">POOOL</span>.', name: 'Mykyta Hlukhuvskyi',   role: 'CTO, Back-end' },
-      { img: '/webp/team/Nataly Vovque.webp',         quote: 'Old money owned the buildings. <span class="highlight-green">POOOL</span> lets new money own the future.', name: 'Nataly Vovque',         role: 'Branding' },
-      { img: '/png/Jonathan Rizky.webp',              quote: 'For me, <span class="highlight-green">POOOL</span> is where compliance meets innovation — trust built on regulation.', name: 'Jonathan Rizky',         role: 'Compliance Officer' },
-      { img: '/png/Khai.webp',                        quote: 'For me, <span class="highlight-green">POOOL</span> is where ideas turn into action, and teamwork creates real change.', name: 'Khairatul Raudah',       role: 'Corporate Assistant' },
-      { img: '/webp/team/Sean Reno.webp',             quote: 'Seen so many platforms promise trust — <span class="highlight-green">POOOL</span> actually backs it up with law.', name: 'Sean Reno',              role: 'Government Relations' },
-      { img: '/webp/team/Patrick Werner.webp',        quote: '<span class="highlight-green">POOOL</span> is a fantastic tool to help people from around the world invest money.', name: 'Patrick Werner',         role: 'Local Director' },
-      { img: '/webp/team/Daniel Todorov.webp',        quote: 'Everyone sells dreams. We built <span class="highlight-green">POOOL</span> to fractionalize what\'s real.', name: 'Daniel Todorov',         role: 'Head of Design' },
-      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'Through <span class="highlight-green">POOOL</span>, I invested in a Bali villa. Real estate felt complex, but now I can invest in minutes from my phone.', name: 'Dewi Lestari',           role: 'Real Estate Investor' },
-      { img: '/webp/team/Patrick Werner.webp',        quote: '<span class="highlight-green">POOOL</span> gave me access to properties I never thought I could afford. My first investment was €500 in a Lisbon apartment.', name: 'Marco Fernandes',        role: 'Software Engineer' },
-      { img: '/webp/team/Sean Reno.webp',             quote: 'I\'ve tried stocks, crypto, and now real estate via <span class="highlight-green">POOOL</span>. This is the most transparent platform I\'ve used.', name: 'Aiko Tanaka',             role: 'Portfolio Investor' },
-      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Finally a platform where a teacher\'s salary can buy into real estate. <span class="highlight-green">POOOL</span> changed what I thought was possible.', name: 'Fatima Al-Rashid',        role: 'Educator & Investor' },
-      { img: '/webp/team/Nataly Vovque.webp',         quote: 'No bank ever offered me this. <span class="highlight-green">POOOL</span> let me diversify across three countries with one account.', name: 'Lena Hoffmann',           role: 'Independent Investor' },
-    ];
-    var current = 0;
-    var container = document.getElementById('testimonial-container');
-    var imageEl   = document.getElementById('testimonial-image');
-    var quoteEl   = document.getElementById('testimonial-quote');
-    var nameEl    = document.getElementById('author-name');
-    var roleEl    = document.getElementById('author-company');
-
-    function show(idx) {
-      var t = team[idx];
-      if (imageEl) {
-        imageEl.src = t.img;
-      } else {
-        container.style.backgroundImage = 'url("' + t.img + '")';
-      }
-      quoteEl.innerHTML = '\u201c' + t.quote + '\u201d';
-      nameEl.textContent = t.name;
-      roleEl.textContent = t.role;
-    }
-
-    document.getElementById('prev-arrow').addEventListener('click', function () {
-      current = (current - 1 + team.length) % team.length;
-      show(current);
-    });
-    document.getElementById('next-arrow').addEventListener('click', function () {
-      current = (current + 1) % team.length;
-      show(current);
-    });
   </script>
 
   <script>
@@ -279,17 +261,32 @@
     });
 
     document.body.addEventListener('htmx:beforeRequest', function (evt) {
+      var csrfInput = document.getElementById('csrf-token-input');
+      if (csrfInput) {
+        var match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+        if (match) { csrfInput.value = decodeURIComponent(match[1]); }
+      }
       var btn = document.getElementById('login-button');
+      var form = document.getElementById('login-form');
+      if (form) {
+        form.setAttribute('aria-busy', 'true');
+      }
       if (btn) {
         btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
         btn.querySelector('#button-text').textContent = 'Logging in...';
       }
     });
 
     document.body.addEventListener('htmx:afterRequest', function (evt) {
       var btn = document.getElementById('login-button');
+      var form = document.getElementById('login-form');
+      if (form) {
+        form.setAttribute('aria-busy', 'false');
+      }
       if (btn) {
         btn.disabled = false;
+        btn.setAttribute('aria-busy', 'false');
         btn.querySelector('#button-text').textContent = 'Log in';
       }
     });

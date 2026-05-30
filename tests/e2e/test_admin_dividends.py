@@ -309,7 +309,21 @@ def test_admin_dividends_lifecycle_permissions_csrf_audit_and_browser(quality_pa
         )
         assert self_approve.status_code == 403
 
-        set_admin_permissions(cur, ("financials.payout.draft", "financials.payout.approve"))
+        set_admin_permissions(
+            cur,
+            (
+                "financials.payout.draft",
+                "financials.payout.approve",
+                "assets.view",
+                "developer_projects.view",
+                "marketplace.view",
+                "marketplace.compliance",
+                "notifications.view",
+                "approvals.manage",
+                "community.view",
+                "affiliates.manage",
+            ),
+        )
         conn.commit()
         approver_session = admin_session(approver["session_token"])
         executor_session = admin_session(executor["session_token"])

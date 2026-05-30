@@ -64,7 +64,11 @@ def test_developer_assets_table_exposes_operational_columns_and_actions():
     template = read("frontend/platform/developer/assets.html")
 
     for heading in ("Asset", "Status", "Funding", "Value", "Duration", "Raised", "Actions"):
-        assert f"<th>{heading}</th>" in template or f'class="dev-assets-table__actions">{heading}</th>' in template
+        assert (
+            f"<th>{heading}</th>" in template
+            or f'class="dev-assets-table__actions">{heading}</th>' in template
+            or f'<span class="table__header-text">{heading}</span>' in template
+        )
 
     assert 'href="/developer/asset-detail?id={{ asset.id }}"' in template
     assert 'href="/developer/asset-detail?id={{ asset.id }}&edit=1"' in template

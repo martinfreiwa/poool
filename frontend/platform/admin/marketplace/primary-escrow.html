@@ -1062,15 +1062,15 @@
       track.appendChild(fill);
       progressWrap.appendChild(track);
 
-      const meta = document.createElement('div'); meta.className = 'progress-meta';
+      const progressMeta = document.createElement('div'); progressMeta.className = 'progress-meta';
       const left = document.createElement('span');
       left.textContent = progress.toFixed(1) + '% Funded';
       if (softCapPct > 0 && softCapPct < 100) left.textContent += ' (soft cap ' + softCapPct.toFixed(0) + '%)';
-      meta.appendChild(left);
+      progressMeta.appendChild(left);
       const sold = Number(camp.tokens_total || 0) - Number(camp.tokens_available || 0);
       const right = document.createElement('span'); right.textContent = sold + ' / ' + Number(camp.tokens_total || 0) + ' Tokens';
-      meta.appendChild(right);
-      progressWrap.appendChild(meta);
+      progressMeta.appendChild(right);
+      progressWrap.appendChild(progressMeta);
       card.appendChild(progressWrap);
 
       // Stats grid

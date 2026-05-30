@@ -120,6 +120,7 @@ def make_context(browser, user, viewport="desktop"):
             viewport={"width": 375, "height": 812},
             has_touch=True,
             is_mobile=True,
+            service_workers="block",
             user_agent=(
                 "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
                 "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 "
@@ -127,7 +128,7 @@ def make_context(browser, user, viewport="desktop"):
             ),
         )
     else:
-        ctx = browser.new_context()
+        ctx = browser.new_context(service_workers="block")
     install_cookie_consent(ctx)
     attach_session(ctx, user["session_token"])
     page = ctx.new_page()

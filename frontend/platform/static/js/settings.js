@@ -31,14 +31,24 @@
 
   const SettingsDataService = (function () {
     function csrfToken() {
-      return typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+      const helperToken = typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+      if (helperToken) return decodeURIComponent(helperToken);
+      const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function csrfHeaders(headers) {
+      const merged = { ...(headers || {}) };
+      const token = csrfToken();
+      if (token) merged["X-CSRF-Token"] = token;
+      return merged;
     }
 
     async function apiFetch(url, method, body) {
       const opts = {
         method,
         credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken() },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
       };
       if (body) opts.body = JSON.stringify(body);
 
@@ -70,7 +80,7 @@
         const res = await fetch(url, {
           method: "POST",
           credentials: "same-origin",
-          headers: { "X-CSRF-Token": csrfToken() },
+          headers: csrfHeaders(),
           body: formData,
         });
         if (res.status === 401) {
@@ -118,7 +128,7 @@
           const res = await fetch("/api/settings/export-data", {
             method: "POST",
             credentials: "same-origin",
-            headers: { "X-CSRF-Token": csrfToken() },
+            headers: csrfHeaders(),
           });
           if (res.status === 401) {
             window.location.href = "/auth/login";

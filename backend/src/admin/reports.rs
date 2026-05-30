@@ -291,15 +291,21 @@ pub async fn api_admin_disputes_generate_evidence(
     let evidence_url = format!("/api/admin/disputes/{}/evidence", dispute_id);
 
     let mut tx = state.db.begin().await.map_err(ApiError::from)?;
-    let previous_evidence_url: Option<String> =
-        sqlx::query_scalar("SELECT evidence_url FROM payment_disputes WHERE id = $1 FOR UPDATE")
-            .bind(dispute_id)
-            .fetch_optional(&mut *tx)
-            .await
-            .map_err(ApiError::from)?;
+    let previous_evidence_url_row: Option<String> = sqlx::query_scalar(
+        "SELECT COALESCE(evidence_url, '') FROM payment_disputes WHERE id = $1 FOR UPDATE",
+    )
+    .bind(dispute_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
 
-    let Some(previous_evidence_url) = previous_evidence_url else {
+    let Some(previous_evidence_url) = previous_evidence_url_row else {
         return Err(ApiError::NotFound("Dispute not found".to_string()));
+    };
+    let previous_evidence_url = if previous_evidence_url.is_empty() {
+        None
+    } else {
+        Some(previous_evidence_url)
     };
 
     sqlx::query("UPDATE payment_disputes SET evidence_url = $1, updated_at = NOW() WHERE id = $2")

@@ -49,6 +49,7 @@
         <div class="community-feed-sentinel"
              hx-get="/community/partials/feed/list?page={{ next_page }}{% if current_feed_mode %}&feed_mode={{ current_feed_mode }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_circle_id %}&circle_id={{ current_circle_id }}{% endif %}"
              hx-trigger="revealed"
+             hx-include="this"
              hx-disinherit="hx-include"
              hx-swap="outerHTML">
             <div class="community-feed-sentinel__hint ds-helper-text">Loading more...</div>

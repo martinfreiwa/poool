@@ -36,6 +36,8 @@ pub enum ApiError {
     Conflict(String),
     /// 429 — rate-limit exceeded; message tells caller when to retry.
     TooManyRequests(String),
+    /// 428 — step-up 2FA required before the operation may continue.
+    TwoFactorRequired(String),
     /// Database error – wrapped and hidden from client.
     Database(sqlx::Error),
 }
@@ -53,6 +55,7 @@ impl std::fmt::Display for ApiError {
             ApiError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
             ApiError::Conflict(msg) => write!(f, "Conflict: {}", msg),
             ApiError::TooManyRequests(msg) => write!(f, "TooManyRequests: {}", msg),
+            ApiError::TwoFactorRequired(msg) => write!(f, "TwoFactorRequired: {}", msg),
             ApiError::Database(_) => write!(f, "Database"),
         }
     }
@@ -75,6 +78,10 @@ impl IntoResponse for ApiError {
             ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg.clone()),
             ApiError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
             ApiError::TooManyRequests(msg) => (StatusCode::TOO_MANY_REQUESTS, msg.clone()),
+            ApiError::TwoFactorRequired(msg) => (
+                StatusCode::from_u16(428).unwrap_or(StatusCode::PRECONDITION_REQUIRED),
+                msg.clone(),
+            ),
             ApiError::Database(err) => {
                 tracing::error!("API database error: {}", err);
                 sentry::capture_error(err);
@@ -114,6 +121,9 @@ impl From<crate::error::AppError> for ApiError {
             AppError::Forbidden(m) => ApiError::Forbidden(m),
             AppError::Conflict(m) => ApiError::Conflict(m),
             AppError::Database(e) => ApiError::Database(e),
+            AppError::TwoFactorRequired => ApiError::TwoFactorRequired(
+                "Two-factor authentication is required for this operation.".to_string(),
+            ),
             AppError::RateLimited(secs) => ApiError::TooManyRequests(format!(
                 "Too many requests. Retry after {} seconds.",
                 secs

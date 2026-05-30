@@ -124,6 +124,10 @@ pub fn router() -> axum::Router<AppState> {
         // ── HTML Pages ──────────────────────────────────────────
         .route("/admin/", get(page_admin_dashboard))
         .route("/admin/index.html", get(page_admin_dashboard))
+        .route(
+            "/admin/dashboard",
+            get(|| async { axum::response::Redirect::permanent("/admin/") }),
+        )
         .route("/admin/blog.html", get(page_admin_blog))
         .route("/admin/blog", get(page_admin_blog))
         .route("/admin/blog-persona.html", get(page_admin_blog_persona))
@@ -195,6 +199,10 @@ pub fn router() -> axum::Router<AppState> {
         // ── Admin Community Pages ─────────────────────────────────
         .route("/admin/community/", get(page_admin_generic))
         .route("/admin/community/index.html", get(page_admin_generic))
+        .route(
+            "/admin/community/index",
+            get(|| async { axum::response::Redirect::permanent("/admin/community/") }),
+        )
         .route("/admin/community/amas.html", get(page_admin_community_amas))
         .route("/admin/community/amas", get(page_admin_community_amas))
         .route(
@@ -230,6 +238,16 @@ pub fn router() -> axum::Router<AppState> {
         )
         .route("/admin/community/comments.html", get(page_admin_generic))
         .route("/admin/community/comments", get(page_admin_generic))
+        .route(
+            "/admin/community/moderation",
+            get(|| async { axum::response::Redirect::permanent("/admin/community/reports") }),
+        )
+        .route(
+            "/admin/community/audit-log",
+            get(|| async {
+                axum::response::Redirect::permanent("/admin/audit-logs?scope=community")
+            }),
+        )
         .route("/admin/community/leaderboard.html", get(page_admin_generic))
         .route("/admin/community/leaderboard", get(page_admin_generic))
         .route("/admin/community/post-detail.html", get(page_admin_generic))
@@ -498,6 +516,10 @@ pub fn router() -> axum::Router<AppState> {
         )
         // KYC
         .route("/api/admin/kyc", get(api_admin_kyc_records))
+        .route(
+            "/api/admin/kyc/providers/health",
+            get(api_admin_kyc_providers_health),
+        )
         .route(
             "/api/admin/kyc/:kyc_id/documents",
             get(api_admin_kyc_documents),

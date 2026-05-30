@@ -397,6 +397,255 @@ def _fetch_ops_alert_workflow(alert_id):
         conn.close()
 
 
+def _circle_exists(circle_id):
+    conn = psycopg2.connect(COMMUNITY_DB_URL)
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT EXISTS(SELECT 1 FROM circles WHERE id = %s)", (circle_id,))
+        return bool(cur.fetchone()[0])
+    finally:
+        conn.close()
+
+
+def _csrf_header(context):
+    token = next(
+        (cookie["value"] for cookie in context.cookies() if cookie["name"] == "csrf_token"),
+        "",
+    )
+    return {"X-CSRF-Token": token}
+
+
+def _seed_circle_delete_dependency_fixture(circle_id, owner_id, member_id, requester_id):
+    """Create representative Circle-owned rows that must disappear with the Circle."""
+    resource = _seed_resource_review_fixture(circle_id, owner_id)
+    alert = _seed_ops_alert_fixture(circle_id)
+    conn = psycopg2.connect(COMMUNITY_DB_URL)
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO circle_join_requests (circle_id, user_id, status)
+            VALUES (%s, %s, 'pending')
+            ON CONFLICT DO NOTHING
+            """,
+            (circle_id, requester_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO circle_bans (circle_id, banned_user_id, banned_by, reason)
+            VALUES (%s, %s, %s, 'Delete cascade fixture')
+            ON CONFLICT (circle_id, banned_user_id) DO NOTHING
+            """,
+            (circle_id, requester_id, owner_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO posts (user_id, post_type, content, image_urls, circle_id)
+            VALUES (%s, 'announcement', 'Circle delete cascade fixture post', %s, %s)
+            RETURNING id
+            """,
+            (
+                owner_id,
+                ["https://example.com/circle-delete-fixture.png"],
+                circle_id,
+            ),
+        )
+        post_id = str(cur.fetchone()[0])
+        cur.execute(
+            """
+            INSERT INTO content_reports (post_id, reporter_id, reason)
+            VALUES (%s, %s, 'Circle delete cascade fixture report')
+            """,
+            (post_id, requester_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO circle_ops_alert_notifications (
+                alert_id,
+                trigger_action,
+                target_user_id,
+                payload
+            )
+            VALUES (%s, 'auto_critical', %s, '{"fixture": true}'::jsonb)
+            """,
+            (alert["alert_id"], owner_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO amas (
+                title,
+                description,
+                expert_name,
+                expert_title,
+                scheduled_at,
+                status,
+                created_by,
+                circle_id,
+                rsvp_enabled
+            )
+            VALUES (
+                'Circle delete cascade fixture AMA',
+                'Fixture scoped to deleted Circle',
+                'Workflow Expert',
+                'Fixture',
+                NOW() + INTERVAL '1 day',
+                'scheduled',
+                %s,
+                %s,
+                TRUE
+            )
+            RETURNING id
+            """,
+            (owner_id, circle_id),
+        )
+        ama_id = str(cur.fetchone()[0])
+        cur.execute(
+            """
+            INSERT INTO circle_event_rsvps (ama_id, circle_id, user_id, status)
+            VALUES (%s, %s, %s, 'going')
+            """,
+            (ama_id, circle_id, member_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO challenges (
+                title,
+                description,
+                xp_reward,
+                requirement_type,
+                requirement_value,
+                frequency,
+                circle_id,
+                challenge_scope
+            )
+            VALUES (
+                'Circle delete cascade fixture challenge',
+                'Fixture scoped to deleted Circle',
+                5,
+                'circle_comment',
+                1,
+                'one_time',
+                %s,
+                'circle'
+            )
+            RETURNING id
+            """,
+            (circle_id,),
+        )
+        challenge_id = str(cur.fetchone()[0])
+        cur.execute(
+            """
+            INSERT INTO circle_challenge_progress (
+                circle_id,
+                user_id,
+                challenge_id,
+                current_value
+            )
+            VALUES (%s, %s, %s, 1)
+            """,
+            (circle_id, member_id, challenge_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO circle_onboarding_progress (
+                circle_id,
+                user_id,
+                rules_read,
+                introduced_self
+            )
+            VALUES (%s, %s, TRUE, TRUE)
+            """,
+            (circle_id, member_id),
+        )
+        cur.execute(
+            """
+            INSERT INTO circle_daily_analytics (
+                circle_id,
+                snapshot_date,
+                member_count,
+                active_members,
+                posts_count,
+                comments_count,
+                reported_content_count
+            )
+            VALUES (%s, CURRENT_DATE, 2, 2, 1, 0, 1)
+            ON CONFLICT (circle_id, snapshot_date) DO NOTHING
+            """,
+            (circle_id,),
+        )
+        conn.commit()
+        return {
+            "post_id": post_id,
+            "resource_id": resource["resource_id"],
+            "alert_id": alert["alert_id"],
+            "ama_id": ama_id,
+            "challenge_id": challenge_id,
+        }
+    finally:
+        conn.close()
+
+
+def _count_circle_delete_dependencies(circle_id, fixture):
+    conn = psycopg2.connect(COMMUNITY_DB_URL)
+    try:
+        cur = conn.cursor()
+        checks = {
+            "circles": ("SELECT COUNT(*) FROM circles WHERE id = %s", (circle_id,)),
+            "circle_members": ("SELECT COUNT(*) FROM circle_members WHERE circle_id = %s", (circle_id,)),
+            "circle_join_requests": (
+                "SELECT COUNT(*) FROM circle_join_requests WHERE circle_id = %s",
+                (circle_id,),
+            ),
+            "circle_bans": ("SELECT COUNT(*) FROM circle_bans WHERE circle_id = %s", (circle_id,)),
+            "posts": ("SELECT COUNT(*) FROM posts WHERE circle_id = %s", (circle_id,)),
+            "content_reports": (
+                "SELECT COUNT(*) FROM content_reports WHERE post_id = %s",
+                (fixture["post_id"],),
+            ),
+            "circle_resources": (
+                "SELECT COUNT(*) FROM circle_resources WHERE circle_id = %s",
+                (circle_id,),
+            ),
+            "circle_resource_versions": (
+                "SELECT COUNT(*) FROM circle_resource_versions WHERE circle_id = %s",
+                (circle_id,),
+            ),
+            "circle_ops_alerts": (
+                "SELECT COUNT(*) FROM circle_ops_alerts WHERE circle_id = %s",
+                (circle_id,),
+            ),
+            "circle_ops_alert_notifications": (
+                "SELECT COUNT(*) FROM circle_ops_alert_notifications WHERE alert_id = %s",
+                (fixture["alert_id"],),
+            ),
+            "amas": ("SELECT COUNT(*) FROM amas WHERE circle_id = %s", (circle_id,)),
+            "circle_event_rsvps": (
+                "SELECT COUNT(*) FROM circle_event_rsvps WHERE circle_id = %s",
+                (circle_id,),
+            ),
+            "challenges": ("SELECT COUNT(*) FROM challenges WHERE circle_id = %s", (circle_id,)),
+            "circle_challenge_progress": (
+                "SELECT COUNT(*) FROM circle_challenge_progress WHERE circle_id = %s",
+                (circle_id,),
+            ),
+            "circle_onboarding_progress": (
+                "SELECT COUNT(*) FROM circle_onboarding_progress WHERE circle_id = %s",
+                (circle_id,),
+            ),
+            "circle_daily_analytics": (
+                "SELECT COUNT(*) FROM circle_daily_analytics WHERE circle_id = %s",
+                (circle_id,),
+            ),
+        }
+        counts = {}
+        for name, (sql, params) in checks.items():
+            cur.execute(sql, params)
+            counts[name] = int(cur.fetchone()[0])
+        return counts
+    finally:
+        conn.close()
+
+
 # ─── Tests ─────────────────────────────────────────────────────────────
 
 @pytest.mark.community
@@ -704,6 +953,109 @@ def test_circle_multi_user_manage_and_resource_access_matrix(
         cleanup_user(moderator["user_id"])
         cleanup_user(member["user_id"])
         cleanup_user(outsider["user_id"])
+
+
+@pytest.mark.community
+def test_circle_settings_non_owners_cannot_use_or_call_danger_zone(
+    playwright_session,
+    circle_owner,
+):
+    """Circle admin/mod/member can open settings but cannot see or call owner-only deletion."""
+    owner, circle = circle_owner
+    non_owner_roles = [
+        ("admin", mint_user(prefix="e2e-ccs-admin", display_name="CCS Admin")),
+        ("moderator", mint_user(prefix="e2e-ccs-mod", display_name="CCS Moderator")),
+        ("member", mint_user(prefix="e2e-ccs-member", display_name="CCS Member")),
+    ]
+    contexts = []
+    try:
+        for role, user in non_owner_roles:
+            _add_circle_member(circle["id"], user["user_id"], role)
+            ctx, page, errors = make_context(playwright_session, user)
+            contexts.append(ctx)
+            page.goto(
+                f"{BASE_URL}/community/circle/{circle['slug']}/settings",
+                wait_until="domcontentloaded",
+                timeout=15000,
+            )
+            expect(page.locator("#ccs-root")).to_be_visible(timeout=10000)
+            _wait_for_hydration(page, circle["slug"])
+
+            expect(page.locator("#ccs-danger-card")).to_be_hidden()
+            expect(page.locator("#ccs-nav-danger")).to_be_hidden()
+            expect(page.locator("#ccs-delete-confirm-modal")).to_be_hidden()
+
+            denied = page.request.delete(
+                f"{BASE_URL}/api/community/circles/{circle['id']}",
+                headers=_csrf_header(ctx),
+            )
+            assert denied.status == 403, f"{role} delete should be forbidden"
+            assert _circle_exists(circle["id"]), f"{role} delete attempt removed the circle"
+            assert not errors, f"{role} JS errors: {errors[:5]}"
+
+        owner_ctx, owner_page, owner_errors = make_context(playwright_session, owner)
+        contexts.append(owner_ctx)
+        still_present = owner_page.request.get(
+            f"{BASE_URL}/api/community/circles/by-slug/{circle['slug']}"
+        )
+        assert still_present.status == 200
+        assert still_present.json()["circle"]["id"] == circle["id"]
+        assert not owner_errors, f"owner JS errors: {owner_errors[:5]}"
+    finally:
+        for ctx in contexts:
+            ctx.close()
+        for _, user in non_owner_roles:
+            cleanup_user(user["user_id"])
+
+
+@pytest.mark.community
+def test_circle_owner_delete_cascades_representative_dependent_data(
+    playwright_session,
+    circle_owner,
+):
+    """Deleting a disposable Circle removes the major Circle-scoped records it owns."""
+    owner, circle = circle_owner
+    member = mint_user(prefix="e2e-ccs-delete-member", display_name="CCS Delete Member")
+    requester = mint_user(prefix="e2e-ccs-delete-requester", display_name="CCS Delete Requester")
+    ctx = None
+    try:
+        _add_circle_member(circle["id"], member["user_id"], "member")
+        fixture = _seed_circle_delete_dependency_fixture(
+            circle["id"],
+            owner["user_id"],
+            member["user_id"],
+            requester["user_id"],
+        )
+        before = _count_circle_delete_dependencies(circle["id"], fixture)
+        missing = {name: count for name, count in before.items() if count <= 0}
+        assert not missing, f"Dependency fixture did not seed rows: {missing}"
+
+        ctx, page, errors = make_context(playwright_session, owner)
+        page.goto(
+            f"{BASE_URL}/community/circle/{circle['slug']}/settings",
+            wait_until="domcontentloaded",
+            timeout=15000,
+        )
+        expect(page.locator("#ccs-root")).to_be_visible(timeout=10000)
+        delete_response = page.request.delete(
+            f"{BASE_URL}/api/community/circles/{circle['id']}",
+            headers=_csrf_header(ctx),
+        )
+        assert delete_response.status == 200
+        assert delete_response.json()["success"] is True
+
+        after = _count_circle_delete_dependencies(circle["id"], fixture)
+        remaining = {name: count for name, count in after.items() if count != 0}
+        assert not remaining, f"Circle delete left dependent rows behind: {remaining}"
+
+        by_slug = page.request.get(f"{BASE_URL}/api/community/circles/by-slug/{circle['slug']}")
+        assert by_slug.status == 404
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        if ctx:
+            ctx.close()
+        cleanup_user(member["user_id"])
+        cleanup_user(requester["user_id"])
 
 
 @pytest.mark.community

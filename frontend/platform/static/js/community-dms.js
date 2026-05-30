@@ -146,7 +146,7 @@
     name.className = 'community-dms__active-name';
     name.textContent = thread.other_display_name || 'Anonymous';
     const viewProfile = document.createElement('a');
-    viewProfile.href = `/community/profile?user=${thread.other_user_id}`;
+    viewProfile.href = `/community/u/${encodeURIComponent(thread.other_user_id)}`;
     viewProfile.className = 'community-dms__active-link';
     viewProfile.textContent = 'View profile';
     header.append(name, viewProfile);

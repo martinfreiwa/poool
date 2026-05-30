@@ -39,9 +39,9 @@ Expected validation result:
 - No stale route patterns or TODO/FIXME markers from the final search.
 
 Known audit notes:
-- Direct `?tab=search`, `?tab=notifications`, and `?tab=dms` previously activated the correct topbar button but left `community-feed-tab` visible in the DOM. Recheck through `shell-and-tabs.md` and `search-messages-notifications.md`.
-- `frontend/platform/static/js/community-dms.js` currently builds profile links as `/community/profile?user=...`; registered profile pages use `/community/u/:user_id`.
-- `frontend/platform/partials/community_post_list.html` and `frontend/platform/partials/community_feed.html` link to `/community?tab=members`; verify whether a members client panel is intentionally implemented.
+- Direct `?tab=search`, `?tab=notifications`, `?tab=dms`, `?tab=saved`, and `?tab=members` were rechecked in the 2026-05-29 browser run. Each activates a single visible client panel and hides the HTMX feed panel.
+- `frontend/platform/static/js/community-dms.js` now builds profile links with the registered `/community/u/:user_id` route. Recheck the clickable link during the next DM mutation pass with a disposable thread.
+- `frontend/platform/partials/community_post_list.html` and `frontend/platform/partials/community_feed.html` link to `/community?tab=members`; the members client panel is now implemented and covered by `browser-run-2026-05-29.md`.
 
 When adding new Community routes:
 1. Add or update the specific workflow that owns the route.

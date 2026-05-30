@@ -16,6 +16,8 @@ Run:
 """
 
 import uuid
+from urllib.parse import parse_qs, urlparse
+
 import pytest
 from playwright.sync_api import expect
 
@@ -25,6 +27,7 @@ from community_helpers import (
     make_context,
     cleanup_user,
     seed_post,
+    comm_conn,
 )
 
 
@@ -140,6 +143,44 @@ def test_feed_seeded_post_renders(playwright_session, feed_user_with_post):
 
 
 @pytest.mark.community
+def test_feed_pagination_does_not_duplicate_filter_query_params(
+    playwright_session,
+    fresh_feed_user,
+):
+    """The infinite-scroll sentinel must not submit inherited filter params twice."""
+    unique = uuid.uuid4().hex[:8]
+    for idx in range(25):
+        seed_post(
+            fresh_feed_user["user_id"],
+            content=f"pagination fixture {unique} #{idx:02d}",
+            post_type="general",
+        )
+
+    ctx, page, errors = make_context(playwright_session, fresh_feed_user)
+    try:
+        page.goto(f"{BASE_URL}/community?tab=feed", wait_until="domcontentloaded", timeout=15000)
+        expect(page.locator("#community-feed-container")).to_be_visible(timeout=10000)
+        _wait_for_feed_render(page, timeout=10000)
+
+        sentinel = page.locator(".community-feed-sentinel").first
+        expect(sentinel).to_be_attached(timeout=10000)
+        with page.expect_response(
+            lambda r: "/community/partials/feed/list" in r.url and "page=2" in r.url,
+            timeout=10000,
+        ) as response_info:
+            sentinel.scroll_into_view_if_needed(timeout=5000)
+
+        response = response_info.value
+        assert response.status == 200
+        params = parse_qs(urlparse(response.url).query)
+        assert params.get("feed_mode") == ["all"]
+        assert params.get("sort_by") == ["fresh"]
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        ctx.close()
+
+
+@pytest.mark.community
 def test_feed_fire_reaction_toggles_active_class(playwright_session, feed_user_with_post):
     """Clicking the default reaction button flips `.active` class."""
     user, pid = feed_user_with_post
@@ -170,7 +211,7 @@ def test_feed_fire_reaction_toggles_active_class(playwright_session, feed_user_w
 
 @pytest.mark.community
 def test_feed_bookmark_btn_toggles_state(playwright_session, feed_user_with_post):
-    """Clicking the bookmark icon toggles `.bookmarked` + flips aria-pressed."""
+    """Bookmark state persists into Saved and can be removed from Saved."""
     user, pid = feed_user_with_post
     ctx, page, errors = _open_feed(playwright_session, user)
     try:
@@ -182,13 +223,128 @@ def test_feed_bookmark_btn_toggles_state(playwright_session, feed_user_with_post
         cls_before = bookmark.get_attribute("class") or ""
         assert "bookmarked" not in cls_before
 
-        bookmark.click()
+        with page.expect_response(
+            lambda r: r.url.endswith(f"/api/community/posts/{pid}/bookmark")
+            and r.request.method == "POST",
+            timeout=10000,
+        ) as bookmark_response:
+            bookmark.click()
+        assert bookmark_response.value.status == 200
 
         page.wait_for_function(
             f"() => document.getElementById('bookmark-btn-{pid}')"
             ".classList.contains('bookmarked')",
             timeout=5000,
         )
+        expect(bookmark).to_have_attribute("aria-pressed", "true")
+
+        status = page.request.get(f"{BASE_URL}/api/community/posts/{pid}/bookmark/status")
+        assert status.status == 200
+        assert status.json()["bookmarked"] is True
+
+        page.goto(f"{BASE_URL}/community?tab=saved", wait_until="domcontentloaded", timeout=15000)
+        saved_post = page.locator(f"#community-saved-feed-container #post-{pid}")
+        expect(saved_post).to_be_visible(timeout=10000)
+
+        saved_bookmark = page.locator(f"#community-saved-feed-container #bookmark-btn-{pid}")
+        with page.expect_response(
+            lambda r: r.url.endswith(f"/api/community/posts/{pid}/bookmark")
+            and r.request.method == "POST",
+            timeout=10000,
+        ) as unbookmark_response:
+            saved_bookmark.click()
+        assert unbookmark_response.value.status == 200
+
+        page.goto(f"{BASE_URL}/community?tab=saved", wait_until="domcontentloaded", timeout=15000)
+        page.wait_for_function(
+            f"""() => {{
+                const container = document.getElementById('community-saved-feed-container');
+                return container
+                    && !container.textContent.includes('Loading saved posts')
+                    && !document.getElementById('post-{pid}');
+            }}""",
+            timeout=10000,
+        )
+
+        assert not errors, f"JS errors: {errors[:5]}"
+    finally:
+        ctx.close()
+
+
+@pytest.mark.community
+def test_feed_owner_edit_validation_and_delete_modal(playwright_session, feed_user_with_post):
+    """Owners can edit via modal, blank edits are blocked, and delete is modal-based."""
+    user, pid = feed_user_with_post
+    ctx, page, errors = _open_feed(playwright_session, user)
+    try:
+        _wait_for_feed_render(page, post_id=pid)
+        card = page.locator(f'.feed-post[data-post-id="{pid}"]')
+        menu_toggle = card.locator(".feed-post-owner-menu__toggle")
+        expect(menu_toggle).to_be_visible(timeout=5000)
+
+        menu_toggle.click()
+        edit_item = card.locator(".feed-post-owner-menu__item").filter(has_text="Edit")
+        expect(edit_item).to_be_visible(timeout=5000)
+        edit_item.click()
+        expect(page.locator("#edit-post-modal")).to_be_visible(timeout=5000)
+
+        page.fill("#edit-post-content", "   ")
+        page.click("#submit-edit-post-btn")
+        expect(page.locator("#edit-post-error")).to_contain_text(
+            "Post content cannot be empty",
+            timeout=5000,
+        )
+
+        edited_content = f"Edited owner post {uuid.uuid4().hex[:8]}"
+        page.fill("#edit-post-content", edited_content)
+        with page.expect_response(
+            lambda r: r.url.endswith(f"/api/community/posts/{pid}")
+            and r.request.method == "PUT",
+            timeout=10000,
+        ) as edit_response:
+            page.click("#submit-edit-post-btn")
+        assert edit_response.value.status == 200
+        expect(page.get_by_text(edited_content, exact=False).first).to_be_visible(
+            timeout=10000
+        )
+
+        conn = comm_conn()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT content FROM posts WHERE id = %s", (pid,))
+            row = cur.fetchone()
+            assert row is not None
+            assert row[0] == edited_content
+        finally:
+            conn.close()
+
+        card = page.locator(f'.feed-post[data-post-id="{pid}"]')
+        card.locator(".feed-post-owner-menu__toggle").click()
+        delete_item = card.locator(".feed-post-owner-menu__item").filter(has_text="Delete")
+        expect(delete_item).to_be_visible(timeout=5000)
+        delete_item.click()
+        expect(page.locator("#delete-post-modal")).to_be_visible(timeout=5000)
+        expect(page.locator("#delete-post-id")).to_have_value(pid)
+
+        with page.expect_response(
+            lambda r: r.url.endswith(f"/api/community/posts/{pid}")
+            and r.request.method == "DELETE",
+            timeout=10000,
+        ) as delete_response:
+            page.click("#delete-post-confirm-btn")
+        assert delete_response.value.status == 200
+        expect(page.locator(f'.feed-post[data-post-id="{pid}"]')).to_have_count(
+            0,
+            timeout=10000,
+        )
+
+        conn = comm_conn()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM posts WHERE id = %s", (pid,))
+            assert cur.fetchone()[0] == 0
+        finally:
+            conn.close()
 
         assert not errors, f"JS errors: {errors[:5]}"
     finally:

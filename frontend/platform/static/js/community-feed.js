@@ -1200,7 +1200,10 @@ window.initCommunityFeed = function() {
             const isQa = item.getAttribute('href') && item.getAttribute('href').endsWith('#qa');
             item.classList.toggle('circle-space-tabs__item--active', Boolean(isQa));
             item.setAttribute('aria-selected', isQa ? 'true' : 'false');
+            item.setAttribute('tabindex', isQa ? '0' : '-1');
         });
+        const panel = document.getElementById('circle-feed-panel');
+        if (panel) panel.setAttribute('aria-labelledby', 'circle-tab-qa');
         window.setPostTypeFilter('question');
     };
 
@@ -1805,8 +1808,36 @@ window.initCommunityFeed = function() {
         }
     };
 
-    window.deleteOwnPost = async function (postId) {
-        if (!confirm('Delete this post? This cannot be undone.')) return;
+    window.deleteOwnPost = function (postId) {
+        const idInput = document.getElementById('delete-post-id');
+        const errEl = document.getElementById('delete-post-error');
+        if (idInput) idInput.value = postId;
+        if (errEl) {
+            errEl.hidden = true;
+            errEl.textContent = '';
+        }
+        if (typeof window.openCommunityModal === 'function') {
+            window.openCommunityModal('delete-post-modal');
+        } else {
+            document.getElementById('delete-post-modal').style.display = 'block';
+        }
+        document.getElementById(`owner-menu-${postId}`)?.setAttribute('hidden', '');
+    };
+
+    window.submitDeletePost = async function () {
+        const postId = document.getElementById('delete-post-id')?.value;
+        const btn = document.getElementById('delete-post-confirm-btn');
+        const errEl = document.getElementById('delete-post-error');
+        if (!postId) return;
+        if (errEl) {
+            errEl.hidden = true;
+            errEl.textContent = '';
+        }
+        const oldText = btn ? btn.textContent : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Deleting...';
+        }
         try {
             const res = await fetch(`/api/community/posts/${encodeURIComponent(postId)}`, {
                 method: 'DELETE',
@@ -1826,10 +1857,23 @@ window.initCommunityFeed = function() {
             }
             if (window.showToast) window.showToast('Post deleted', 'success');
             document.body.dispatchEvent(new Event('reload-feed'));
+            if (typeof window.closeCommunityModal === 'function') {
+                window.closeCommunityModal('delete-post-modal');
+            } else {
+                document.getElementById('delete-post-modal').style.display = 'none';
+            }
         } catch (err) {
             console.error('Delete post failed', err);
-            if (window.showToast) window.showToast('Failed to delete post', 'error');
+            if (errEl) {
+                errEl.textContent = err.message || 'Failed to delete post.';
+                errEl.hidden = false;
+            } else if (window.showToast) window.showToast('Failed to delete post', 'error');
             else toast(err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = oldText || 'Delete Post';
+            }
         }
     };
 
@@ -1941,7 +1985,7 @@ window.initCommunityFeed = function() {
 
             container.innerHTML = html;
         } catch (e) {
-            console.error("Failed to load trending assets", e);
+            console.warn("Failed to load trending assets", e);
         }
     };
 
@@ -2251,7 +2295,7 @@ window.initCommunityFeed = function() {
                 modSummary.hidden = false;
             }
         } catch (e) {
-            console.error("Failed to load community profile", e);
+            console.warn("Failed to load community profile", e);
         }
     }
 
@@ -2795,7 +2839,7 @@ window.initCommunityFeed = function() {
                 if (widget) widget.style.display = 'block';
             }
         } catch (e) {
-            console.error('Failed to load sidebar AMA', e);
+            console.warn('Failed to load sidebar AMA', e);
         }
     }
     loadSidebarAMA();

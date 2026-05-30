@@ -10,11 +10,17 @@ import os
 import requests
 import psycopg2
 import sys
+from pathlib import Path
+from decimal import Decimal, ROUND_CEILING
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.e2e.conftest import cleanup_test_user, create_e2e_user
 
 # Configuration matching the environment
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 DB_DSN = os.environ.get("DB_DSN", "dbname=poool user=martin")
-TEST_EMAIL = os.environ.get("TEST_EMAIL", "test@poool.app")
+TEST_EMAIL = os.environ.get("TEST_EMAIL")
 
 class E2EResults:
     def __init__(self):
@@ -48,8 +54,21 @@ def fix_secure_cookies(session):
     for cookie in session.cookies:
         cookie.secure = False
 
-def get_session():
+def get_session(user=None):
     """Retrieve the robust poool_session cookie for standard E2E testing."""
+    if user:
+        session = requests.Session()
+        session.cookies.set("poool_session", str(user["session_token"]))
+        session.get(f"{BASE_URL}/cart")
+        fix_secure_cookies(session)
+        if "csrf_token" in session.cookies:
+            session.headers.update({"X-CSRF-Token": session.cookies["csrf_token"]})
+        return session
+
+    if not TEST_EMAIL:
+        print("⚠️ TEST_EMAIL not set; use a disposable E2E user instead.")
+        return None
+
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -80,18 +99,25 @@ def run_checkout_e2e():
     results = E2EResults()
     print("\n--- Starting Atomic Checkout Automation Flow ---")
 
-    session = get_session()
+    disposable_user = create_e2e_user(
+        email_prefix="e2e-checkout-script",
+        cash_balance_cents=50_000_000,
+        kyc_status="approved",
+    )
+    session = get_session(disposable_user)
     if not session:
         results.check("Session Auth Setup", False, "Missing Auth Token Data")
         return results
 
     conn = get_db_connection()
     cur = conn.cursor()
+    asset_id = None
+    original_tokens_available = None
+    original_funding_status = None
 
     try:
         # Step 1: Pre-condition Checks (Get IDs and inject funds)
-        cur.execute("SELECT id FROM users WHERE email=%s", (TEST_EMAIL,))
-        user_id = cur.fetchone()[0]
+        user_id = disposable_user["user_id"]
 
         # Ensure the user has money and matching ledger state, then delete any stale cart items
         cur.execute(
@@ -117,14 +143,15 @@ def run_checkout_e2e():
         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (user_id,))
         
         # Grab a mock asset that is funding_in_progress
-        cur.execute("SELECT id, token_price_cents, tokens_total, tokens_available FROM assets WHERE funding_status = 'funding_in_progress' AND tokens_available > 0 LIMIT 1")
+        cur.execute("SELECT id, token_price_cents, tokens_total, tokens_available, funding_status FROM assets WHERE funding_status = 'funding_in_progress' AND tokens_available > 0 LIMIT 1")
         asset = cur.fetchone()
         
         if not asset:
             results.check("Asset Selection", False, "No active asset available for testing")
             return results
             
-        asset_id, token_price_cents, tokens_total, tokens_available = asset
+        asset_id, token_price_cents, tokens_total, tokens_available, original_funding_status = asset
+        original_tokens_available = tokens_available
         conn.commit()
 
         qty_to_buy = 2
@@ -146,7 +173,15 @@ def run_checkout_e2e():
         cur.execute("SELECT balance_cents FROM wallets WHERE user_id=%s AND wallet_type='cash'", (user_id,))
         initial_balance_cents = int(cur.fetchone()[0])
 
-        expected_total_cost_cents = token_price_cents * qty_to_buy
+        expected_subtotal_cents = token_price_cents * qty_to_buy
+        cur.execute("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
+        fee_row = cur.fetchone()
+        fee_pct = Decimal(str(fee_row[0])) if fee_row else Decimal("0")
+        expected_fee_cents = int(
+            (Decimal(expected_subtotal_cents) * fee_pct / Decimal("100"))
+            .to_integral_value(rounding=ROUND_CEILING)
+        )
+        expected_total_cost_cents = expected_subtotal_cents + expected_fee_cents
         expected_balance_after_cents = initial_balance_cents - expected_total_cost_cents
 
         # Step 4: Execute Full Atomic Checkout POST
@@ -168,7 +203,9 @@ def run_checkout_e2e():
         cur.execute("SELECT amount_cents, type, status FROM wallet_transactions WHERE wallet_id=(SELECT id FROM wallets WHERE user_id=%s AND wallet_type='cash' LIMIT 1) ORDER BY created_at DESC LIMIT 1", (user_id,))
         txn = cur.fetchone()
         
-        # Order payment is actually logged as "purchase" type, and being a deduction, the amount is negative
+        # Order payment is logged as "purchase" type. The deduction includes
+        # the platform fee because the wallet pays the grand total, not only
+        # the asset subtotal.
         results.check("DB Wallet Ledger Accuracy", 
             txn is not None and int(txn[0]) == -expected_total_cost_cents and str(txn[1]).lower() == 'purchase', 
             f"Ledger Row mismatch: {txn}")
@@ -186,8 +223,18 @@ def run_checkout_e2e():
     except Exception as e:
         results.check("E2E Test Exception", False, f"Exception occurred: {str(e)}")
     finally:
+        if asset_id is not None and original_tokens_available is not None:
+            try:
+                cur.execute(
+                    "UPDATE assets SET tokens_available = %s, funding_status = %s WHERE id = %s",
+                    (original_tokens_available, original_funding_status, asset_id),
+                )
+                conn.commit()
+            except Exception:
+                conn.rollback()
         cur.close()
         conn.close()
+        cleanup_test_user(disposable_user["user_id"])
 
     return results
 

@@ -326,8 +326,16 @@ def test_draft_cell_navigates_to_log_edit_url(developer_with_villa):
     assert response.status < 400, (
         f"Edit-mode URL returned HTTP {response.status} — C-4 regression!"
     )
-    # The page is the same template as /new; topbar back link should be present
-    expect(page.locator(".dops-back, #dop-form, body")).to_be_visible(timeout=TIMEOUT)
+    # The page is the same template as /new; wait for the form to survive
+    # edit-mode hydration and become visible.
+    page.wait_for_function(
+        """() => {
+            const form = document.getElementById('dop-form');
+            return !!form && form.offsetParent !== null;
+        }""",
+        timeout=TIMEOUT,
+    )
+    assert page.locator("#dop-form").count() == 1
 
 
 @pytest.mark.developer
@@ -380,7 +388,8 @@ def test_operations_dashboard_mobile_horizontal_scroll(developer_with_villa_mobi
     matrix_scroll = page.locator(".ops-table-scroll")
 
     has_mobile_list = (
-        mobile_list.count() > 0 and mobile_list.evaluate("el => el.style.display !== 'none'")
+        mobile_list.count() > 0
+        and mobile_list.evaluate("el => getComputedStyle(el).display !== 'none'")
     )
     if not has_mobile_list:
         expect(matrix_scroll).to_be_visible()

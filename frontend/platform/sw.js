@@ -109,7 +109,14 @@ async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
     return response;
-  } catch (_err) {
+  } catch (err) {
+    // A superseded navigation can abort while the user or a test runner is
+    // moving quickly between pages. That is not an offline state; let the
+    // browser treat it as a cancelled navigation instead of rendering the
+    // offline shell over a healthy session.
+    if (err && err.name === 'AbortError') {
+      throw err;
+    }
     const cache = await caches.open(STATIC_CACHE);
     const offline = await cache.match(OFFLINE_URL);
     if (offline) return offline;

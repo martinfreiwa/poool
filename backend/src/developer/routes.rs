@@ -214,23 +214,7 @@ pub(crate) async fn user_can_view_developer_dashboard(
     state: &AppState,
     user_id: uuid::Uuid,
 ) -> bool {
-    if user_has_developer_access(state, user_id).await {
-        return true;
-    }
-
-    sqlx::query_scalar!(
-        "SELECT EXISTS(
-            SELECT 1
-              FROM developer_applications
-             WHERE user_id = $1
-               AND status IN ('pending', 'needs_kyc', 'approved')
-        )",
-        user_id
-    )
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(Some(false))
-    .unwrap_or(false)
+    user_has_developer_access(state, user_id).await
 }
 
 async fn require_developer_dashboard_page(

@@ -49,6 +49,16 @@ def _create_admin_session():
         )
         cur.execute(
             """
+            INSERT INTO admin_permissions (role_id, permission)
+            SELECT id, permission
+            FROM roles
+            CROSS JOIN (VALUES ('community.view'), ('community.manage')) AS p(permission)
+            WHERE name = 'admin'
+            ON CONFLICT DO NOTHING
+            """
+        )
+        cur.execute(
+            """
             INSERT INTO user_sessions (user_id, session_token, remember_me, expires_at)
             VALUES (%s, %s, FALSE, NOW() + INTERVAL '1 hour')
             """,

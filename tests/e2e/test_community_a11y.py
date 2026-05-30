@@ -106,8 +106,24 @@ def _audit_page(playwright_session, user, path):
     ctx, page, errors = make_context(playwright_session, user)
     try:
         page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded", timeout=15000)
-        # Give the page a beat for HTMX swaps + lazy mounts to settle.
-        page.wait_for_load_state("networkidle", timeout=10000)
+        # Community pages keep background fetches/pollers alive, so
+        # Playwright's networkidle is a flaky readiness signal here.
+        page.wait_for_function(
+            "() => document.body && document.body.innerText.trim().length > 0",
+            timeout=10000,
+        )
+        if path == "/community":
+            expect(page.locator("#community-content-area")).to_be_visible(timeout=10000)
+        elif path == "/community?tab=circle":
+            expect(page.locator("#community-circle-tab")).to_be_visible(timeout=10000)
+        elif path == "/community?tab=dms":
+            expect(page.locator("#community-dms-tab")).to_be_visible(timeout=10000)
+        elif path.startswith("/community/circle/") and path.endswith("/settings"):
+            expect(page.locator("#ccs-root")).to_be_visible(timeout=10000)
+        elif path.startswith("/community/circle/"):
+            expect(page.locator("#community-circle-body")).to_be_attached(timeout=10000)
+        elif path == "/community/circles":
+            expect(page.locator("#community-circle-tab")).to_be_visible(timeout=10000)
         violations = _inject_axe_and_run(page)
     finally:
         ctx.close()

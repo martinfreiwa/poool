@@ -104,7 +104,7 @@ def test_admin_marketplace_orderbook_live_assets_rebuild_and_audit():
     conn.autocommit = False
     cur = conn.cursor()
     try:
-        admin = create_user(cur, email_prefix="e2e-ob-admin", roles=("admin",))
+        admin = create_user(cur, email_prefix="e2e-ob-admin", roles=("admin", "super_admin"))
         buy_user = create_user(cur, email_prefix="e2e-ob-buy")
         sell_user = create_user(cur, email_prefix="e2e-ob-sell")
         created_user_ids.extend([admin["id"], buy_user["id"], sell_user["id"]])

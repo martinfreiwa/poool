@@ -4,7 +4,7 @@ Coverage:
   * Page loads clean (no console errors, no 5xx).
   * Without seeded drafts → empty-state hero renders.
   * With a seeded draft → table renders + row count >= 1.
-  * Searching by title filters the rendered rows.
+  * Visible pipeline tiles filter the rendered rows.
   * Select-all checkbox toggles the bulk selection mechanism.
   * Mobile viewport renders cleanly.
 
@@ -24,7 +24,11 @@ TIMEOUT = 15_000
 
 # ─── DB helper ─────────────────────────────────────────────────────────────
 
-def _seed_draft(user_id, title: str = "E2E Submission Draft") -> str:
+def _seed_draft(
+    user_id,
+    title: str = "E2E Submission Draft",
+    status: str = "draft",
+) -> str:
     """
     Insert an assets row + developer_projects row owned by the test developer.
     Returns the asset UUID. Cleaned up by conftest's _cleanup_developer_assets.
@@ -50,15 +54,17 @@ def _seed_draft(user_id, title: str = "E2E Submission Draft") -> str:
             (title, slug, str(user_id)),
         )
         asset_id = cur.fetchone()[0]
-        # Try to insert a developer_projects row too (status='draft'); some local
+        # Try to insert a developer_projects row too; some local
         # schemas may not have all columns — best-effort.
         try:
             cur.execute(
                 """
-                INSERT INTO developer_projects (developer_id, asset_id, status)
-                VALUES (%s, %s, 'draft')
+                INSERT INTO developer_projects (
+                    developer_id, asset_id, project_name, status
+                )
+                VALUES (%s, %s, %s, %s)
                 """,
-                (str(user_id), asset_id),
+                (str(user_id), asset_id, title, status),
             )
         except Exception:
             conn.rollback()
@@ -133,11 +139,11 @@ def test_table_renders_with_seeded_draft(developer_page):
 
 
 @pytest.mark.developer
-def test_search_filters_rows(developer_page):
-    """Typing in the search box filters the rendered submission rows."""
+def test_pipeline_tile_filters_rows(developer_page):
+    """Clicking a visible pipeline tile filters the rendered submission rows."""
     page, tracker, user = developer_page
-    _seed_draft(user["user_id"], title="E2E Submission Alpha Beach")
-    _seed_draft(user["user_id"], title="E2E Submission Bravo Mountain")
+    _seed_draft(user["user_id"], title="E2E Submission Alpha Beach", status="draft")
+    _seed_draft(user["user_id"], title="E2E Submission Bravo Mountain", status="submitted")
     _goto_submissions(page, tracker)
 
     # Wait for table to be visible after JS render.
@@ -149,17 +155,22 @@ def test_search_filters_rows(developer_page):
         timeout=TIMEOUT,
     )
 
-    search = page.locator("#sub-search-input")
-    expect(search).to_be_visible()
+    submitted_tile = page.locator('.sub-stat[data-filter="submitted"]')
+    expect(submitted_tile).to_be_visible(timeout=TIMEOUT)
+    submitted_tile.click()
+    expect(submitted_tile).to_have_attribute("aria-pressed", "true")
 
-    # Search for "Alpha" — should leave only the Alpha row.
-    search.fill("Alpha")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        """() => {
+            const rows = Array.from(document.querySelectorAll('#submissions-tbody tr:not(.sub-empty-row)'));
+            return rows.length === 1 && rows[0].innerText.includes('Bravo Mountain');
+        }""",
+        timeout=TIMEOUT,
+    )
 
     visible_rows = page.locator("#submissions-tbody tr:not(.sub-empty-row):visible")
-    count = visible_rows.count()
-    # Either filtered down OR matches both because of substring overlap — at least 1.
-    assert count >= 1, f"Expected at least 1 visible row after search, got {count}"
+    assert visible_rows.count() == 1
+    expect(visible_rows.first).to_contain_text("Bravo Mountain")
 
 
 @pytest.mark.developer

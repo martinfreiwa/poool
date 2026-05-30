@@ -11,8 +11,9 @@ def test_login_template_avoids_script_inner_html_and_names_icon_controls():
 
     assert ".innerHTML" not in scripts
     assert 'id="toggle-password" aria-label="Show password" aria-pressed="false"' in html
-    assert 'id="prev-arrow" aria-label="Previous testimonial"' in html
-    assert 'id="next-arrow" aria-label="Next testimonial"' in html
+    carousel = (ROOT / "frontend/platform/components/auth-customer-carousel.html").read_text()
+    assert 'data-auth-carousel-prev aria-label="Previous customer story"' in carousel
+    assert 'data-auth-carousel-next aria-label="Next customer story"' in carousel
     assert 'id="login-form"' in html and 'aria-busy="false"' in html
     assert 'id="login-button" aria-busy="false"' in html
     assert "{% if google_enabled %}" in html
@@ -34,7 +35,7 @@ def test_failed_login_telemetry_does_not_include_raw_email_patterns():
         assert pattern not in service
 
     assert "Rate limit exceeded for login on email:" not in routes
-    assert "Rate limit exceeded for login on submitted email bucket" in routes
+    assert "Rate limit exceeded on login (IP or email bucket)" in routes
 
 
 def test_auth_htmx_csrf_failures_return_login_error_fragment():
@@ -65,7 +66,7 @@ def test_successful_login_path_does_not_block_on_noncritical_side_effects():
     assert "crate::community::xp::track_login_streak" in side_effects
 
 
-def test_login_time_2fa_challenge_is_temporarily_disabled_but_routes_remain():
+def test_login_time_2fa_challenge_is_enforced_for_enrolled_accounts():
     routes = (ROOT / "backend/src/auth/routes.rs").read_text()
     login_body = routes.split("pub async fn login_submit(", 1)[1].split(
         "fn spawn_login_side_effects(", 1
@@ -76,10 +77,12 @@ def test_login_time_2fa_challenge_is_temporarily_disabled_but_routes_remain():
 
     assert 'route("/2fa", get(totp_verify_page).post(totp_verify_submit))' in routes
     assert 'route("/2fa/setup", get(totp_setup_page).post(totp_setup_submit))' in routes
-    assert 'let (is_2fa_verified, redirect_to) = (true, "/marketplace");' in login_body
-    assert 'let (is_2fa_verified, redirect_to) = (true, "/marketplace");' in oauth_callback
-    assert 'redirect_to) = if settings.totp_enabled' not in login_body
-    assert 'redirect_to) = if settings.totp_enabled' not in oauth_callback
+    assert "service::user_totp_enabled(&state.db, user.id).await?" in login_body
+    assert "service::user_totp_enabled(&state.db, user.id).await?" in oauth_callback
+    assert '(false, "/auth/2fa")' in login_body
+    assert '(false, "/auth/2fa")' in oauth_callback
+    assert '(true, "/marketplace")' in login_body
+    assert '(true, "/marketplace")' in oauth_callback
 
 
 def test_totp_verify_errors_return_auth_html_fragments_not_json_bubbles():

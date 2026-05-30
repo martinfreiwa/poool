@@ -73,6 +73,15 @@ from conftest import (
 )
 
 
+def _csrf_header(page):
+    token = next(
+        (cookie["value"] for cookie in page.context.cookies() if cookie["name"] == "csrf_token"),
+        None,
+    )
+    assert token, "Expected csrf_token cookie before mutating request"
+    return {"X-CSRF-Token": token}
+
+
 # ─── DB seeding helpers (used to skip the admin-UI step) ─────────────────
 
 
@@ -328,6 +337,7 @@ def _drive_workflow(page, tracker, user, *, viewport_label):
 
     apply_resp = page.request.post(
         f"{BASE_URL}/api/developer/apply",
+        headers=_csrf_header(page),
         data={
             "first_name": "E2E",
             "last_name": "Dev",
@@ -379,6 +389,7 @@ def _drive_workflow(page, tracker, user, *, viewport_label):
     #            browser's request context (so cookies + CSRF flow naturally).
     create_resp = page.request.post(
         f"{BASE_URL}/api/developer/villas/{asset_id}/operations",
+        headers=_csrf_header(page),
         data=_operations_payload(),
     )
     assert create_resp.status == 200, (
@@ -394,6 +405,7 @@ def _drive_workflow(page, tracker, user, *, viewport_label):
     # ── Step 9 — Submit (lock) the log.
     submit_resp = page.request.put(
         f"{BASE_URL}/api/developer/villas/{asset_id}/operations/{log_id}/submit",
+        headers=_csrf_header(page),
         data={},
     )
     assert submit_resp.status == 200, (

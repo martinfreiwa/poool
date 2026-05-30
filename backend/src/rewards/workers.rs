@@ -30,7 +30,8 @@ const DEFAULT_RETENTION_MONTHS: i32 = 24;
 /// oder eine Commission die mit Verzögerung committed) zuverlässig erfasst.
 /// Für Tage älter als gestern: stable, kein Update mehr.
 ///
-/// Idempotent über ON CONFLICT (rollup_date, link_id) DO UPDATE.
+/// Idempotent über den aktuellen Rollup-Key
+/// `(rollup_date, link_id, currency)`.
 pub async fn run_affiliate_rollup_worker(pool: PgPool) {
     // 30s Offset damit Worker nicht im Boot-Sturm starten
     tokio::time::sleep(Duration::from_secs(30)).await;
@@ -154,7 +155,7 @@ pub async fn recompute_rollups_for_recent_days(
                link_type, clicks_count, signups_count, qualified_count,
                gross_revenue_cents, commission_cents, NOW()
         FROM per_link
-        ON CONFLICT (rollup_date, link_id) DO UPDATE SET
+        ON CONFLICT (rollup_date, link_id, currency) DO UPDATE SET
             clicks_count        = EXCLUDED.clicks_count,
             signups_count       = EXCLUDED.signups_count,
             qualified_count     = EXCLUDED.qualified_count,

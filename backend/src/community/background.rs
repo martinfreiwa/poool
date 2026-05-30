@@ -560,6 +560,21 @@ pub struct CircleResourceObjectCleanupSummary {
 /// Background worker that materializes bounded Circle analytics snapshots and
 /// operational alerts for the Manage/Ops surface.
 pub async fn circle_ops_snapshot_worker(c_pool: PgPool) {
+    if std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()) == "development" {
+        let schema_ready = sqlx::query_scalar::<_, bool>(
+            "SELECT to_regclass('public.circle_daily_analytics') IS NOT NULL",
+        )
+        .fetch_one(&c_pool)
+        .await
+        .unwrap_or(false);
+        if !schema_ready {
+            tracing::warn!(
+                "Circle ops snapshot worker disabled in development because circle_daily_analytics is not present"
+            );
+            return;
+        }
+    }
+
     let interval_secs: u64 = std::env::var("POOOL_CIRCLE_OPS_SNAPSHOT_SECS")
         .ok()
         .and_then(|s| s.parse::<u64>().ok())
@@ -605,7 +620,7 @@ pub async fn circle_ops_snapshot_worker(c_pool: PgPool) {
                 tracing::error!(
                     metric_name = "circle_ops_snapshot_failure",
                     consecutive_failures = consecutive_failures,
-                    error = %e,
+                    error = %e.detail(),
                     "Circle ops snapshot failed"
                 );
                 if consecutive_failures >= 3 {
@@ -1102,7 +1117,7 @@ pub async fn enqueue_circle_ops_alert_notification_tx(
             trigger_action,
             (COALESCE(target_user_id, '00000000-0000-0000-0000-000000000000'::UUID))
         )
-        WHERE status IN ('queued', 'sending')
+        WHERE status = ANY (ARRAY['queued'::TEXT, 'sending'::TEXT])
         DO UPDATE SET
             payload = EXCLUDED.payload,
             recipient_role = EXCLUDED.recipient_role,
@@ -1287,7 +1302,7 @@ async fn refresh_circle_report_backlog_alerts(
                 'critical_threshold', $2
             )
         FROM backlog
-        ON CONFLICT (circle_id, alert_type) WHERE status = 'open'
+        ON CONFLICT (circle_id, alert_type) WHERE status = 'open' AND circle_id IS NOT NULL
         DO UPDATE SET
             severity = EXCLUDED.severity,
             summary = EXCLUDED.summary,
@@ -1364,7 +1379,7 @@ async fn refresh_circle_moderation_sla_alerts(
                 'oldest_report_at', oldest_report_at
             )
         FROM stale
-        ON CONFLICT (circle_id, alert_type) WHERE status = 'open'
+        ON CONFLICT (circle_id, alert_type) WHERE status = 'open' AND circle_id IS NOT NULL
         DO UPDATE SET
             severity = EXCLUDED.severity,
             summary = EXCLUDED.summary,
@@ -1505,7 +1520,7 @@ async fn enqueue_auto_critical_circle_ops_alert_notifications_for_channel(
             trigger_action,
             (COALESCE(target_user_id, '00000000-0000-0000-0000-000000000000'::UUID))
         )
-        WHERE status IN ('queued', 'sending')
+        WHERE status = ANY (ARRAY['queued'::TEXT, 'sending'::TEXT])
         DO NOTHING
         "#,
     )

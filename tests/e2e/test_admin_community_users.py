@@ -276,9 +276,10 @@ def test_admin_community_users_browser_rendering_detail_link_and_dialog(quality_
 
         row = page.locator("tbody#users-table tr", has_text=fixture["display_name"]).first
         expect(row).to_be_visible(timeout=10000)
-        expect(row.get_by_text("3")).to_be_visible()
-        expect(row.get_by_text("2 Warnings")).to_be_visible()
-        expect(row.get_by_text("Active")).to_be_visible()
+        cells = row.locator("td")
+        expect(cells.nth(1)).to_have_text("3")
+        expect(cells.nth(2)).to_have_text("2 Warnings")
+        expect(cells.nth(3)).to_have_text("Active")
         expect(row.locator("img")).to_have_count(0)
         expect(page.locator("img[src^='javascript:']")).to_have_count(0)
         expect(page.locator("img[src='x']")).to_have_count(0)
@@ -287,10 +288,15 @@ def test_admin_community_users_browser_rendering_detail_link_and_dialog(quality_
         page.get_by_role("button", name="Refresh").click()
         expect(page.get_by_text("community users loaded")).to_be_visible(timeout=10000)
 
-        with page.expect_popup() as popup_info:
-            row.get_by_role("link", name="View").click(modifiers=["Meta"])
-        detail_page = popup_info.value
-        detail_page.wait_for_load_state("domcontentloaded")
+        row = page.locator("tbody#users-table tr", has_text=fixture["display_name"]).first
+        expect(row).to_be_visible(timeout=10000)
+        detail_link = row.get_by_role("link", name="View")
+        expect(detail_link).to_be_visible(timeout=10000)
+        detail_href = detail_link.get_attribute("href")
+        assert detail_href is not None
+        assert f"id={target['user_id']}" in detail_href
+        detail_page = page.context.new_page()
+        detail_page.goto(f"{BASE_URL}{detail_href}", wait_until="domcontentloaded", timeout=15000)
         assert f"id={target['user_id']}" in detail_page.url
         detail_page.close()
 

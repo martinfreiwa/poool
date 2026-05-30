@@ -1,9 +1,9 @@
 import json
 import os
-import sys
 import uuid
 import requests
 import psycopg2
+import pytest
 
 BASE_URL = "http://localhost:8888"
 DB_DSN = os.environ.get("DATABASE_URL", "dbname=poool user=martin host=localhost")
@@ -42,13 +42,78 @@ def get_admin_session():
         return session, csrf
     return None, None
 
-def test_notes_and_images():
+def test_notes_and_images(request):
     session, csrf = get_admin_session()
     if not session:
-        print("❌ Failed to authenticate as Admin")
-        sys.exit(1)
+        pytest.fail("Failed to authenticate as Admin")
         
     session.headers.update({"X-CSRF-Token": csrf})
+    created_asset_id = None
+    created_project_id = None
+
+    def create_fixture_project():
+        nonlocal created_asset_id, created_project_id
+        conn = psycopg2.connect(DB_DSN)
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                SELECT u.id
+                FROM users u
+                JOIN user_roles ur ON ur.user_id = u.id
+                JOIN roles r ON r.id = ur.role_id
+                WHERE r.name IN ('admin', 'super_admin')
+                LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+            if not row:
+                pytest.fail("No user available for admin image fixture")
+            developer_id = row[0]
+            slug = f"workflow-notes-images-{uuid.uuid4().hex[:8]}"
+            title = "Workflow Test Notes And Images"
+            cur.execute(
+                """
+                INSERT INTO assets (
+                    developer_user_id, title, slug, asset_type, total_value_cents,
+                    token_price_cents, tokens_total, tokens_available,
+                    funding_status, published, submission_step
+                )
+                VALUES (%s, %s, %s, 'real_estate', 100000000, 10000,
+                        10000, 10000, 'available', FALSE, 4)
+                RETURNING id
+                """,
+                (developer_id, title, slug),
+            )
+            created_asset_id = str(cur.fetchone()[0])
+            cur.execute(
+                """
+                INSERT INTO developer_projects (developer_id, asset_id, project_name, status, is_test)
+                VALUES (%s, %s, %s, 'draft', TRUE)
+                RETURNING id
+                """,
+                (developer_id, created_asset_id, title),
+            )
+            created_project_id = str(cur.fetchone()[0])
+            conn.commit()
+
+            def cleanup_fixture():
+                cleanup_conn = psycopg2.connect(DB_DSN)
+                cleanup_cur = cleanup_conn.cursor()
+                try:
+                    cleanup_cur.execute("DELETE FROM asset_images WHERE asset_id = %s", (created_asset_id,))
+                    cleanup_cur.execute("DELETE FROM developer_projects WHERE id = %s", (created_project_id,))
+                    cleanup_cur.execute("DELETE FROM assets WHERE id = %s", (created_asset_id,))
+                    cleanup_conn.commit()
+                finally:
+                    cleanup_cur.close()
+                    cleanup_conn.close()
+
+            request.addfinalizer(cleanup_fixture)
+            return created_project_id, created_asset_id
+        finally:
+            cur.close()
+            conn.close()
 
     # Get a submission to test
     print("Fetching developer projects...")
@@ -74,8 +139,8 @@ def test_notes_and_images():
         conn.close()
         
         if not project_id or not asset_id:
-            print("❌ DB is completely empty (no projects or assets). Run seeds first.")
-            sys.exit(1)
+            print("⚠️ DB has no linked project/asset fixture. Creating disposable fixture.")
+            project_id, asset_id = create_fixture_project()
             
         print(f"Fallback picked Project ID: {project_id}, Asset ID: {asset_id}")
     else:
@@ -85,8 +150,8 @@ def test_notes_and_images():
         asset_id = r2.json().get("asset", {}).get("id")
 
     if not asset_id:
-        print("❌ Could not determine asset ID to test image upload.")
-        sys.exit(1)
+        print("⚠️ Selected project has no linked asset. Creating disposable fixture.")
+        project_id, asset_id = create_fixture_project()
 
     print(f"\n==========================================")
     print(f"Testing on Project: {project_id}")
@@ -105,20 +170,17 @@ def test_notes_and_images():
         print("→ Testing GET Admin Notes")
         r_get = session.get(f"{BASE_URL}/api/admin/developer-projects/{project_id}/notes")
         if r_get.status_code != 200:
-            print(f"❌ Failed to GET notes. Status: {r_get.status_code}, {r_get.text}")
-            sys.exit(1)
+            pytest.fail(f"Failed to GET notes. Status: {r_get.status_code}, {r_get.text}")
         
         notes = r_get.json().get("notes", [])
         if any(n["id"] == note_id for n in notes):
             print(f"✅ Note {note_id} found in history!")
         else:
-            print(f"❌ Note {note_id} NOT found in GET response.")
-            sys.exit(1)
+            pytest.fail(f"Note {note_id} NOT found in GET response.")
     elif r_post.status_code == 405:
         print(f"⚠️  Notes endpoint not yet registered as route (405). Skipping notes tests.")
     else:
-        print(f"❌ Failed to POST note. Status: {r_post.status_code}, {r_post.text}")
-        sys.exit(1)
+        pytest.fail(f"Failed to POST note. Status: {r_post.status_code}, {r_post.text}")
 
     # 2. Test Image Upload to draft endpoint as Admin
     print("\n→ Testing Image Upload")
@@ -132,8 +194,8 @@ def test_notes_and_images():
         'is_cover': 'false'
     }
     
-    print(f"POST /api/developer/draft/{asset_id}/images")
-    r_img = session.post(f"{BASE_URL}/api/developer/draft/{asset_id}/images", files=files, data=data)
+    print(f"POST /api/admin/assets/{asset_id}/images")
+    r_img = session.post(f"{BASE_URL}/api/admin/assets/{asset_id}/images", files=files, data=data)
     
     if r_img.status_code == 200:
         img_id = r_img.json().get("image_id")
@@ -141,14 +203,27 @@ def test_notes_and_images():
         
         # Cleanup
         print("Cleaning up image...")
-        r_del = session.delete(f"{BASE_URL}/api/developer/draft/{asset_id}/images/{img_id}")
+        r_del = session.delete(f"{BASE_URL}/api/admin/assets/{asset_id}/images/{img_id}")
         if r_del.status_code == 200:
             print(f"✅ Image deleted successfully.")
         else:
             print(f"⚠️ Image deletion returned status {r_del.status_code}")
     else:
-        print(f"❌ Failed to upload image. Status: {r_img.status_code}\n{r_img.text}")
-        sys.exit(1)
+        pytest.fail(f"Failed to upload image. Status: {r_img.status_code}\n{r_img.text}")
+    if created_project_id or created_asset_id:
+        conn = psycopg2.connect(DB_DSN)
+        cur = conn.cursor()
+        try:
+            if created_asset_id:
+                cur.execute("DELETE FROM asset_images WHERE asset_id = %s", (created_asset_id,))
+            if created_project_id:
+                cur.execute("DELETE FROM developer_projects WHERE id = %s", (created_project_id,))
+            if created_asset_id:
+                cur.execute("DELETE FROM assets WHERE id = %s", (created_asset_id,))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
         
     print("\n🎉 ALL TESTS PASSED SUCCESSFULLY!")
 

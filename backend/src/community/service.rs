@@ -721,6 +721,14 @@ pub async fn create_content_report(
     reason: String,
     note: Option<String>,
 ) -> Result<Uuid, AppError> {
+    let reason = reason.trim();
+    if !matches!(
+        reason,
+        "spam" | "harassment" | "financial_advice" | "inappropriate"
+    ) {
+        return Err(AppError::BadRequest("Invalid report reason.".into()));
+    }
+
     // Cap user-supplied note length defensively; the textarea has a 500-char
     // maxlength but we don't trust client validation.
     let trimmed_note = note
@@ -741,7 +749,7 @@ pub async fn create_content_report(
     )
     .bind(post_id)
     .bind(reporter_id)
-    .bind(&reason)
+    .bind(reason)
     .bind(trimmed_note.as_deref())
     .fetch_one(pool)
     .await?;
