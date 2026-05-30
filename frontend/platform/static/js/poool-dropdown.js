@@ -407,6 +407,13 @@
      * Replaces it with the custom POOOL dropdown while keeping the hidden <select> synced.
      */
     static fromSelect(selectEl, options = {}) {
+      // Idempotency guard: skip if this select was already converted
+      // (e.g. by a page-specific init running before/after the global one).
+      if (selectEl.dataset.pooolConverted === "1" || selectEl.closest("[data-dropdown]")) {
+        return null;
+      }
+      selectEl.dataset.pooolConverted = "1";
+
       const wrapper = document.createElement("div");
       wrapper.className =
         "poool-dropdown" + (options.className ? " " + options.className : "");

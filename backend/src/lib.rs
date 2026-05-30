@@ -1153,7 +1153,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                             for row in &rows {
                                 let msg = format!(
                                     "NEGATIVE BALANCE: User {} ({}) has {} cents in {} {} wallet",
-                                    row.user_id,
+                                    row.user_id.map(|u| u.to_string()).unwrap_or_default(),
                                     row.email,
                                     row.balance_cents,
                                     row.currency,

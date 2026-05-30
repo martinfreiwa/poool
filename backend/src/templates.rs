@@ -34,7 +34,7 @@ pub fn create_engine() -> Templates {
         .unwrap_or(false);
 
     let version = if is_dev {
-        // Use current timestamp as version in dev mode to break cache
+        // Use startup timestamp — templates call now_ms() for per-request busting
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -47,6 +47,17 @@ pub fn create_engine() -> Templates {
 
     env.add_global("asset_version", version.clone());
     env.add_global("is_dev", is_dev);
+
+    // Per-request cache-bust function for dev. Templates use:
+    //   ?v={{ now_ms() if is_dev else asset_version }}
+    // Returns millisecond timestamp so each page load gets a fresh URL in dev.
+    env.add_function("now_ms", || -> String {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis()
+            .to_string()
+    });
 
     // Custom filter: format an integer with comma separators (e.g. 1334000 → "1,334,000")
     env.add_filter("format_number", |value: i64| -> String {

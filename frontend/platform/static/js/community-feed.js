@@ -2475,11 +2475,11 @@ window.initCommunityFeed = function() {
         nameEl.className = 'feed-post-name';
         nameEl.textContent = p.author_name || 'Community Member';
         meta.appendChild(nameEl);
-        const timeEl = document.createElement('div');
-        timeEl.className = 'feed-post-time';
-        timeEl.textContent = p.created_at ? timeAgo(p.created_at) : '';
-        meta.appendChild(timeEl);
         header.appendChild(meta);
+        const timeEl = document.createElement('span');
+        timeEl.className = 'feed-post-time feed-post-time--topright';
+        timeEl.textContent = p.created_at ? timeAgo(p.created_at) : '';
+        header.appendChild(timeEl);
         if (p.post_type && p.post_type !== 'general') {
             const typeBadge = document.createElement('span');
             typeBadge.className = 'feed-post-badge feed-post-badge--neutral';

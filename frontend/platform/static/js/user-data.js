@@ -189,6 +189,17 @@ if (typeof window.getCsrfToken === "undefined") {
       // Re-run after HTMX swaps — partials like community_feed inject
       // #my-profile-avatar-img AFTER this script first runs.
       document.body.addEventListener("htmx:afterSwap", paintAvatarSlots);
+
+      // ── Cache user data so sidebars can restore synchronously on next load ──
+      try {
+        localStorage.setItem('poool_user_cache', JSON.stringify({
+          name: user.name,
+          full_name: user.full_name || user.name,
+          email: user.email,
+          role: user.role,
+          avatar_src: avatarSrc
+        }));
+      } catch (_) { /* quota exceeded — ignore */ }
       // Profile switcher rows (Investor / Developer / Admin) — always replace.
       // The static markup in sidebar.html uses a `data:image/svg+xml,...` blue-circle
       // placeholder that does NOT match the isPlaceholder() keyword list, so

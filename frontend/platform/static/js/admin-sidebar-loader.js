@@ -10,6 +10,13 @@
         );
         if (!sidebarPlaceholder) return;
 
+        // Restore cached user data synchronously to avoid flash of placeholder values
+        var cachedUser = {};
+        try { cachedUser = JSON.parse(localStorage.getItem('poool_user_cache') || '{}'); } catch (_) {}
+        var cachedName   = cachedUser.full_name || cachedUser.name || 'Admin User';
+        var cachedRole   = cachedUser.role ? cachedUser.role.replace('_', ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'Super Admin';
+        var cachedAvatar = cachedUser.avatar_src || '/static/images/ui/Image.webp';
+
         const currentPath = window.location.pathname;
 
         // Robust path matching helper
@@ -373,12 +380,12 @@
                     <div class="admin-sidebar-user-menu" id="admin-sidebar-user-menu">
                         <button type="button" class="admin-sidebar-user" id="admin-sidebar-user-btn" aria-haspopup="menu" aria-expanded="false">
                             <span class="admin-sidebar-avatar-wrap">
-                                <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
+                                <img src="${cachedAvatar}" alt="${cachedName}" class="admin-sidebar-avatar" id="sidebar-user-avatar" onerror="this.style.display='none'">
                                 <span class="admin-sidebar-avatar-status admin-sidebar-avatar-status--online" id="sidebar-user-status" aria-label="Online" title="Online"></span>
                             </span>
                             <div class="admin-sidebar-user-info">
-                                <div class="admin-sidebar-user-name" id="sidebar-user-name">Admin User</div>
-                                <div class="admin-sidebar-user-role" id="sidebar-user-role">Super Admin</div>
+                                <div class="admin-sidebar-user-name" id="sidebar-user-name">${cachedName}</div>
+                                <div class="admin-sidebar-user-role" id="sidebar-user-role">${cachedRole}</div>
                             </div>
                             <svg class="admin-sidebar-user-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
                         </button>

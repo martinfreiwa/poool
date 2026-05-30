@@ -659,6 +659,17 @@
   </aside>
   {% endif %}
 <script>
+  // Restore cached avatar synchronously to avoid placeholder flash on reload
+  (function() {
+    var cache = {};
+    try { cache = JSON.parse(localStorage.getItem('poool_user_cache') || '{}'); } catch (_) {}
+    if (cache.avatar_src) {
+      document.querySelectorAll(
+        '#account-avatar img, .sidebar__account-avatar img'
+      ).forEach(function(img) { img.src = cache.avatar_src; });
+    }
+  })();
+
   // GLOBAL Profile Dropdown Functions (persistent across sidebar changes)
   window.toggleProfileDropdown = function () {
     const dropdown = document.getElementById("profile-dropdown-menu");

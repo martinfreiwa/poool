@@ -274,20 +274,26 @@
 }
 
 .dae-empty__cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--page-title-color, #0A0D12);
+  color: #0000FF;
   text-decoration: none;
   padding: 10px 20px;
-  border: 1px solid var(--card-border-color, #E5E7EB);
+  border: 1px solid #98FB96;
   border-radius: 10px;
-  background: var(--card-bg, #FFFFFF);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  background: #98FB96;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 .dae-empty__cta-secondary:hover {
-  border-color: rgba(0, 0, 255, 0.25);
-  box-shadow: 0 2px 8px rgba(0, 0, 255, 0.08);
+  background: #8AF188;
+  border-color: #8AF188;
+  color: #0000FF;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -8px rgba(3, 255, 136, 0.45);
 }
 
 .dae-empty__hero-art {

@@ -83,6 +83,14 @@
 
     if (!loading || !empty || !content || !questionsList || !questionInput || !submitBtn) return;
 
+    // Auto-resize textarea as user types
+    questionInput.style.overflow = "hidden";
+    questionInput.style.resize = "none";
+    questionInput.addEventListener("input", function () {
+      this.style.height = "auto";
+      this.style.height = this.scrollHeight + "px";
+    });
+
     let activeAmaId = null;
 
     function setLoading() {

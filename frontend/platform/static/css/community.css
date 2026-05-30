@@ -436,7 +436,7 @@ button .poool-icon-custom {
   color: #E11D48;
 }
 .feed-reaction-btn--icon-only.feed-reaction-btn--comments:hover {
-  color: var(--btn-primary-bg, #0000FF);
+  color: #03FF88;
 }
 .feed-reaction-btn--icon-only.active {
   color: #E11D48;
@@ -1256,8 +1256,8 @@ a.ann-reactions__stat--btn:hover { color: var(--btn-primary-bg, #0000FF); }
 }
 
 .feed-bookmark-btn:hover {
-  color: var(--btn-primary-bg);
-  background: #EEF4FF;
+  color: #667085;
+  background: #F2F4F7;
 }
 
 .feed-bookmark-btn.bookmarked {

@@ -224,48 +224,48 @@
     {% endif %}
 
     <!-- CSS Bundle (design system + common styles, built by build-bundle.sh) -->
-    <link rel="stylesheet" href="/static/css/bundle.css?v={{ asset_version }}" />
-    <link rel="stylesheet" href="/static/css/poool-dropdown.css?v={{ asset_version }}" />
-    <script src="/static/js/toast.js?v={{ asset_version }}"></script>
-    <script src="/static/js/user-data.js?v={{ asset_version }}"></script>
+    <link rel="stylesheet" href="/static/css/bundle.css?v={{ now_ms() if is_dev else asset_version }}" />
+    <link rel="stylesheet" href="/static/css/poool-dropdown.css?v={{ now_ms() if is_dev else asset_version }}" />
+    <script src="/static/js/toast.js?v={{ now_ms() if is_dev else asset_version }}"></script>
+    <script src="/static/js/user-data.js?v={{ now_ms() if is_dev else asset_version }}"></script>
     <!-- PWA: install button, SW registration, iOS instructions modal. Loaded
          globally so every platform page is installable (was previously
          community-only). -->
-    <script defer src="/static/js/pwa-install.js?v={{ asset_version }}"></script>
-    <script src="/static/js/poool-dropdown.js?v={{ asset_version }}"></script>
-    <script src="/static/js/poool-dropdown-init.js?v={{ asset_version }}"></script>
-    <script src="/static/js/sidebar-community.js?v={{ asset_version }}"></script>
-    <link rel="stylesheet" href="/static/css/global-search.css?v={{ asset_version }}" />
-    <script src="/static/js/global-search.js?v={{ asset_version }}"></script>
+    <script defer src="/static/js/pwa-install.js?v={{ now_ms() if is_dev else asset_version }}"></script>
+    <script src="/static/js/poool-dropdown.js?v={{ now_ms() if is_dev else asset_version }}"></script>
+    <script src="/static/js/poool-dropdown-init.js?v={{ now_ms() if is_dev else asset_version }}"></script>
+    <script src="/static/js/sidebar-community.js?v={{ now_ms() if is_dev else asset_version }}"></script>
+    <link rel="stylesheet" href="/static/css/global-search.css?v={{ now_ms() if is_dev else asset_version }}" />
+    <script src="/static/js/global-search.js?v={{ now_ms() if is_dev else asset_version }}"></script>
     <!-- Phase-3 P1: in-app inbox bell icon + dropdown. Loaded globally so
          the bell appears on every page that includes investor-topbar. -->
-    <link rel="stylesheet" href="/static/css/inbox-bell.css?v={{ asset_version }}" />
-    <script defer src="/static/js/inbox-bell.js?v={{ asset_version }}"></script>
+    <link rel="stylesheet" href="/static/css/inbox-bell.css?v={{ now_ms() if is_dev else asset_version }}" />
+    <script defer src="/static/js/inbox-bell.js?v={{ now_ms() if is_dev else asset_version }}"></script>
 
     <!-- Page Specific CSS and Scripts -->
     {% if extra_css %}
     {% for css in extra_css %}
-    <link rel="stylesheet" href="/static/css/{{ css }}.css?v={{ asset_version }}" />
+    <link rel="stylesheet" href="/static/css/{{ css }}.css?v={{ now_ms() if is_dev else asset_version }}" />
     {% endfor %}
     {% endif %}
 
     <!-- Unified badge system. Loaded last so alias rules win over legacy
          badge CSS (.submission-status, .sub-chip, .dev-assets-tab, etc). -->
-    <link rel="stylesheet" href="/static/css/ubadge.css?v={{ asset_version }}" />
+    <link rel="stylesheet" href="/static/css/ubadge.css?v={{ now_ms() if is_dev else asset_version }}" />
 
     <!-- Unified card system. Aliases legacy card classes (ds-stat-card,
          kpi-card, metric-card, dev-stat, sub-stat, etc) onto one base. -->
-    <link rel="stylesheet" href="/static/css/ucard.css?v={{ asset_version }}" />
+    <link rel="stylesheet" href="/static/css/ucard.css?v={{ now_ms() if is_dev else asset_version }}" />
 
     <!-- Shared card-with-table standard. Loaded after ucard.css so table
          cards inherit the Top Performing Assets chrome consistently. -->
-    <link rel="stylesheet" href="/static/css/card-table-standard.css?v={{ asset_version }}" />
+    <link rel="stylesheet" href="/static/css/card-table-standard.css?v={{ now_ms() if is_dev else asset_version }}" />
     <!-- u2-cards.js — restructures legacy .metric-card to split layout
          (icon + KPI left · sparkline right). Idempotent, no-op if none. -->
-    <script defer src="/static/js/u2-cards.js?v={{ asset_version }}"></script>
+    <script defer src="/static/js/u2-cards.js?v={{ now_ms() if is_dev else asset_version }}"></script>
     {% if extra_js %}
     {% for js in extra_js %}
-    <script src="/static/js/{{ js }}.js?v={{ asset_version }}"></script>
+    <script src="/static/js/{{ js }}.js?v={{ now_ms() if is_dev else asset_version }}"></script>
     {% endfor %}
     {% endif %}
 

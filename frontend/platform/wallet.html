@@ -165,29 +165,29 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
 
           <!-- Onboarding steps -->
-          <ol class="wallet-empty__steps" aria-label="Fund your wallet in three steps">
-            <li class="wallet-empty__step" data-step-id="verify">
-              <span class="wallet-empty__step-num">01</span>
-              <div class="wallet-empty__step-body">
-                <h4 class="wallet-empty__step-title">Verify your identity</h4>
-                <p class="wallet-empty__step-desc">Required once by regulation. Takes under two minutes.</p>
-                <a href="/kyc" class="wallet-empty__step-link">Start verification →</a>
+          <ol class="ds-steps" aria-label="Fund your wallet in three steps">
+            <li class="ds-step" data-step-id="verify">
+              <span class="ds-step__num">01</span>
+              <div class="ds-step__body">
+                <h4 class="ds-step__title">Verify your identity</h4>
+                <p class="ds-step__desc">Required once by regulation. Takes under two minutes.</p>
+                <a href="/kyc" class="ds-step__link">Start verification →</a>
               </div>
             </li>
-            <li class="wallet-empty__step" data-step-id="method">
-              <span class="wallet-empty__step-num">02</span>
-              <div class="wallet-empty__step-body">
-                <h4 class="wallet-empty__step-title">Link a payment method</h4>
-                <p class="wallet-empty__step-desc">Bank transfer, debit, or credit card. No fee on deposits.</p>
-                <a href="{% if account_frozen %}#wallet-frozen-banner{% else %}#wallet-payment-methods{% endif %}" class="wallet-empty__step-link"{% if account_frozen %} aria-disabled="true"{% endif %}>Add a method →</a>
+            <li class="ds-step" data-step-id="method">
+              <span class="ds-step__num">02</span>
+              <div class="ds-step__body">
+                <h4 class="ds-step__title">Link a payment method</h4>
+                <p class="ds-step__desc">Bank transfer, debit, or credit card. No fee on deposits.</p>
+                <a href="{% if account_frozen %}#wallet-frozen-banner{% else %}#wallet-payment-methods{% endif %}" class="ds-step__link"{% if account_frozen %} aria-disabled="true"{% endif %}>Add a method →</a>
               </div>
             </li>
-            <li class="wallet-empty__step" data-step-id="fund">
-              <span class="wallet-empty__step-num">03</span>
-              <div class="wallet-empty__step-body">
-                <h4 class="wallet-empty__step-title">Deposit funds</h4>
-                <p class="wallet-empty__step-desc">Start with as little as $50. Balance appears in seconds.</p>
-                <button type="button" class="wallet-empty__step-link wallet-empty__step-link--btn" onclick="openDepositModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>Deposit now →</button>
+            <li class="ds-step" data-step-id="fund">
+              <span class="ds-step__num">03</span>
+              <div class="ds-step__body">
+                <h4 class="ds-step__title">Deposit funds</h4>
+                <p class="ds-step__desc">Start with as little as $50. Balance appears in seconds.</p>
+                <button type="button" class="ds-step__link ds-step__link" onclick="openDepositModal()"{% if account_frozen %} disabled aria-disabled="true"{% endif %}>Deposit now →</button>
               </div>
             </li>
           </ol>

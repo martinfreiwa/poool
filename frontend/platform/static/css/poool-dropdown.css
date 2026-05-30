@@ -416,6 +416,34 @@
    SIZE VARIANTS
    ============================= */
 
+/* Sizes: xs (28) · sm (36) · md/default (44) · lg (52) · xl (60) */
+
+/* Extra small */
+.poool-dropdown--xs .poool-dropdown__trigger {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+}
+
+.poool-dropdown--xs .poool-dropdown__value {
+  font-size: 12px;
+}
+
+.poool-dropdown--xs .poool-dropdown__chevron {
+  width: 16px;
+  height: 16px;
+}
+
+.poool-dropdown--xs .poool-dropdown__option {
+  padding: 5px 8px;
+  min-height: 28px;
+  font-size: 12px;
+}
+
+.poool-dropdown--xs .poool-dropdown__panel {
+  border-radius: 5px;
+}
+
 /* Small */
 .poool-dropdown--sm .poool-dropdown__trigger {
   height: 36px;
@@ -456,6 +484,27 @@
 
 .poool-dropdown--lg .poool-dropdown__panel {
   border-radius: 10px;
+}
+
+/* Extra large */
+.poool-dropdown--xl .poool-dropdown__trigger {
+  height: 60px;
+  padding: 0 18px;
+  border-radius: 12px;
+}
+
+.poool-dropdown--xl .poool-dropdown__value {
+  font-size: 18px;
+}
+
+.poool-dropdown--xl .poool-dropdown__option {
+  padding: 12px 18px;
+  min-height: 48px;
+  font-size: 18px;
+}
+
+.poool-dropdown--xl .poool-dropdown__panel {
+  border-radius: 12px;
 }
 
 /* =============================

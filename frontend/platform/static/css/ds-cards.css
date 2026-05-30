@@ -312,3 +312,95 @@
 @media (max-width: 768px) {
   .ds-segmented__item { min-height: 44px; }
 }
+
+/* ─── ds-steps: shared 3-step empty-state component ───────────── */
+.ds-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ds-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ds-step:hover {
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.ds-step__num {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--btn-primary-bg, #0000FF);
+  background: var(--badge-info-bg, #EEF4FF);
+  border-radius: 8px;
+  padding: 6px 10px;
+  line-height: 1;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.ds-step__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ds-step__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  margin: 0;
+}
+
+.ds-step__desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--page-subtitle-color, #475467);
+  margin: 0;
+}
+
+.ds-step__link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--btn-primary-bg, #0000FF);
+  text-decoration: none;
+  margin-top: 4px;
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-block;
+}
+.ds-step__link:hover { text-decoration: underline; }
+.ds-step__link--muted { color: var(--page-subtitle-color, #667085); opacity: 0.6; cursor: default; }
+.ds-step__link--muted:hover { text-decoration: none; }
+
+.ds-step[data-complete="true"] {
+  background: #F0FDF4;
+  border-color: #BBF7D0;
+}
+.ds-step[data-complete="true"] .ds-step__num {
+  color: var(--badge-success-color, #027A48);
+  background: var(--badge-success-bg, #ECFDF3);
+}
+.ds-step[data-complete="true"] .ds-step__link {
+  color: var(--badge-success-color, #027A48);
+}
+
+@media (max-width: 768px) {
+  .ds-steps { grid-template-columns: 1fr; }
+}
